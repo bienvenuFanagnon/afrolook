@@ -23,7 +23,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:afrotok/models/model_data.dart';
-import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:afrotok/pages/postComments.dart';
 import 'package:afrotok/services/linkService.dart';
@@ -31,6 +30,7 @@ import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:path_provider/path_provider.dart';
+import '../providers/authProvider.dart';
 import '../providers/coin_gift_provider.dart';
 import 'canaux/detailsCanal.dart';
 import 'coins/coin_gift_dialog.dart';
@@ -698,7 +698,9 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     _videoController?.dispose();
     _chewieController?.dispose();
     try {
-      _videoController = VideoPlayerController.network(_currentPost.url_media!);
+      final String optimizedUrl = authProvider.convertToCdnUrl(_currentPost.url_media!, authProvider.appDefaultData);
+      _videoController = VideoPlayerController.network(optimizedUrl);
+      // _videoController = VideoPlayerController.network(_currentPost.url_media!);
       await _videoController!.initialize();
       _chewieController = ChewieController(
         videoPlayerController: _videoController!,

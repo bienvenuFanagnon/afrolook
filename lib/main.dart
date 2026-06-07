@@ -78,6 +78,7 @@ import 'package:afrotok/providers/userProvider.dart';
 import 'package:afrotok/services/ad_service.dart';
 import 'package:afrotok/services/challengeMonh/challenge_month_service.dart';
 import 'package:afrotok/services/linkService.dart';
+import 'package:afrotok/services/nav_cache_service.dart';
 
 import 'package:afrotok/services/workManagerService.dart';
 import 'package:app_links/app_links.dart';
@@ -88,6 +89,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:page_transition/page_transition.dart';
@@ -99,60 +101,39 @@ import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:workmanager/workmanager.dart';
 // Import du service App Links
 
+
+import 'dart:async';
+import 'dart:io';
+import 'package:afrotok/services/navigation_service.dart';
+
 late List<CameraDescription> _cameras;
+bool _shouldRestart = false;
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialiser AdMob seulement sur mobile
+  // Initialisation AdMob
   if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-    // await MobileAds.instance.initialize();
-    AdService.setMode(false); // À changer en false avant publication
-
-    await AdService.init();    // Configurer votre appareil comme appareil de test
-    // Remplacer par l'ID obtenu dans les logs
-    // await MobileAds.instance.updateRequestConfiguration(
-    //   RequestConfiguration(
-    //     testDeviceIds: ['011935FC78A51EF87681BE382AACD2B4','84A5B8717F83446C0B570C4358962A6A'], // Votre ID de test
-    //   ),);
-
-
-    // Mode TEST (true) / PRODUCTION (false)
+    AdService.setMode(false);
+    await AdService.init();
   }
-  // EMPECHE LE CRASH : On essaie de charger les caméras, mais on n'arrête pas l'app si ça échoue
+
+  // Initialisation caméras
   try {
     _cameras = await availableCameras();
   } catch (e) {
     print("Erreur initialisation caméra : $e");
-    _cameras = []; // On initialise avec une liste vide pour éviter l'erreur 'late initialization'
+    _cameras = [];
   }
 
+  // Initialisation Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // App Check - Attention: le mode debug peut parfois bloquer sur Chrome Web
-  // await FirebaseAppCheck.instance.activate(
-  //   webProvider: ReCaptchaV3Provider('ton-site-key'), // Optionnel pour le web
-  //   androidProvider: AndroidProvider.debug,
-  //   appleProvider: AppleProvider.debug,
-  // );
-
-
-  // Date debut challenge
-  // final service = ChallengeMonthService();
-  // await service.setChallengeStartDate(DateTime(2026, 4, 1));
-  // Le reste de ton code...
-  FirebaseAuth.instance.authStateChanges().listen((User? user) {
-    if (user == null) {
-      print('Utilisateur non connecté');
-    } else {
-      print('Utilisateur connecté: ${user.uid}');
-    }
-  });
-
   await DeviceInfoService.initializeDeviceId();
 
-  // OneSignal ne fonctionne pas toujours bien sur le Web, on l'isole
+  // OneSignal
   if (!kIsWeb) {
     OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
     OneSignal.initialize("b1b8e6b8-b9f4-4c48-b5ac-6ccae1423c98");
@@ -161,7 +142,7 @@ Future<void> main() async {
 
   initLocalNotifications();
 
-  // Workmanager n'est PAS supporté sur le Web
+  // Workmanager
   if (!kIsWeb) {
     await Workmanager().initialize(callbackDispatcher);
     Workmanager().registerPeriodicTask(
@@ -173,7 +154,7 @@ Future<void> main() async {
     );
   }
 
-  // FlutterDownloader n'est PAS supporté sur le Web
+  // FlutterDownloader
   if (!kIsWeb) {
     await FlutterDownloader.initialize(
       debug: !kReleaseMode,
@@ -192,273 +173,133 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  final AppLinkService _appLinkService = AppLinkService();
-  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-  StreamSubscription<Uri>? _linkSubscription;
-
-  Future<List<Post>> getPostsVideosById(String post_id) async {
-    List<Post> posts = [];
-    CollectionReference postCollect = await FirebaseFirestore.instance.collection('Posts');
-    QuerySnapshot querySnapshotPost = await postCollect
-        .where("id", isEqualTo: '${post_id}')
-        .get();
-
-    List<Post> postList = querySnapshotPost.docs.map((doc) =>
-        Post.fromJson(doc.data() as Map<String, dynamic>)).toList();
-
-    return postList;
-  }
-  FirebaseDynamicLinks dynamicLinks = FirebaseDynamicLinks.instance;
-  Future<List<Post>> getPostsImagesById(String post_id) async {
-    List<Post> posts = [];
-    CollectionReference postCollect = await FirebaseFirestore.instance.collection('Posts');
-    QuerySnapshot querySnapshotPost = await postCollect
-        .where("id", isEqualTo: '${post_id}')
-        .get();
-
-    List<Post> postList = querySnapshotPost.docs.map((doc) =>
-        Post.fromJson(doc.data() as Map<String, dynamic>)).toList();
-
-    return postList;
-  }
-
-  void onClickNotification() {
-    try {
-      OneSignal.Notifications.addClickListener((event) async {
-        print("notif additionalData: ${event.notification.additionalData}");
-
-        // Petit délai pour laisser l'app s'initialiser
-        await Future.delayed(const Duration(milliseconds: 300));
-
-        final additionalData = event.notification.additionalData;
-        if (additionalData == null) return;
-
-        final typeNotif = additionalData['type_notif'] as String?;
-        final postType = additionalData['post_type'] as String? ?? '';
-        final postId = additionalData['post_id'] as String?;
-        final chatId = additionalData['chat_id'] as String?;
-        final sendUserId = additionalData['send_user_id'] as String?;
-
-        // ==================== CHRONIQUES ====================
-        if (postType == 'CHRONIQUE' ||
-            typeNotif == 'CHRONIQUE' ||
-            typeNotif == 'LIKE' && postType == 'CHRONIQUE' ||
-            typeNotif == 'COMMENT' && postType == 'CHRONIQUE' ||
-            typeNotif == 'COMMENT_LIKE') {
-
-          if (postId != null && postId.isNotEmpty) {
-            navigatorKey.currentState?.push(
-              MaterialPageRoute(
-                builder: (context) => ChroniqueDetailPage(
-                  initialChroniqueId: postId,
-                ),
-              ),
-            );
-          } else {
-            navigatorKey.currentState?.push(
-              MaterialPageRoute(builder: (context) => const ChroniqueHomePage()),
-            );
-          }
-          return;
-        }
-
-        // ==================== MESSAGE ====================
-        if (typeNotif == NotificationType.MESSAGE.name) {
-          try {
-            if (chatId == null || sendUserId == null) return;
-
-            final chatDoc = await FirebaseFirestore.instance
-                .collection('Chats')
-                .doc(chatId)
-                .get();
-
-            if (!chatDoc.exists) return;
-
-            final chat = Chat.fromJson(chatDoc.data() as Map<String, dynamic>);
-
-            final userDoc = await FirebaseFirestore.instance
-                .collection('Users')
-                .doc(sendUserId)
-                .get();
-
-            if (userDoc.exists) {
-              chat.chatFriend = UserData.fromJson(userDoc.data() as Map<String, dynamic>);
-              chat.receiver = chat.chatFriend;
-            }
-
-            final messagesSnapshot = await FirebaseFirestore.instance
-                .collection('Messages')
-                .where('chat_id', isEqualTo: chatId)
-                .orderBy('createdAt', descending: true)
-                .limit(50)
-                .get();
-
-            chat.messages = messagesSnapshot.docs
-                .map((doc) => Message.fromJson(doc.data() as Map<String, dynamic>))
-                .toList();
-
-            navigatorKey.currentState?.push(
-              MaterialPageRoute(
-                builder: (context) => MyChat(title: 'mon chat', chat: chat),
-              ),
-            );
-          } catch (e) {
-            print("Erreur message: $e");
-            navigatorKey.currentState?.push(
-              MaterialPageRoute(builder: (context) => MyHomePage(title: "")),
-            );
-          }
-          return;
-        }
-
-        // ==================== INVITATION ====================
-        if (typeNotif == NotificationType.INVITATION.name) {
-          navigatorKey.currentState?.push(
-            MaterialPageRoute(
-              builder: (context) => MesInvitationsPage(context: navigatorKey.currentContext!),
-            ),
-          );
-          return;
-        }
-
-        // ==================== ARTICLE ====================
-        if (typeNotif == NotificationType.ARTICLE.name) {
-          navigatorKey.currentState?.push(
-            MaterialPageRoute(builder: (context) => MesNotification()),
-          );
-          return;
-        }
-
-        // ==================== ACCEPTATION INVITATION ====================
-        if (typeNotif == NotificationType.ACCEPTINVITATION.name) {
-          navigatorKey.currentState?.push(
-            MaterialPageRoute(builder: (context) => Amis()),
-          );
-          return;
-        }
-
-        // ==================== POST (VIDEO / IMAGE) ====================
-        if (typeNotif == NotificationType.POST.name) {
-          if (postId != null && postId.isNotEmpty) {
-            navigatorKey.currentState?.push(
-              MaterialPageRoute(
-                builder: (context) => SplahsChargement(
-                  postId: postId,
-                  postType: postType,
-                ),
-              ),
-            );
-          } else {
-            navigatorKey.currentState?.push(
-              MaterialPageRoute(builder: (context) => MyHomePage(title: "")),
-            );
-          }
-          return;
-        }
-
-        // ==================== PARRAINAGE ====================
-        if (typeNotif == NotificationType.PARRAINAGE.name) {
-          navigatorKey.currentState?.push(
-            MaterialPageRoute(builder: (context) => MonetisationPage()),
-          );
-          return;
-        }
-
-        // ==================== FAVORI ====================
-        if (typeNotif == NotificationType.FAVORITE.name) {
-          if (postId != null && postId.isNotEmpty) {
-            navigatorKey.currentState?.push(
-              MaterialPageRoute(
-                builder: (context) => SplahsChargement(
-                  postId: postId,
-                  postType: postType,
-                ),
-              ),
-            );
-          } else {
-            navigatorKey.currentState?.push(
-              MaterialPageRoute(builder: (context) => MyHomePage(title: "")),
-            );
-          }
-          return;
-        }
-
-        // ==================== DEFAULT ====================
-        navigatorKey.currentState?.push(
-          MaterialPageRoute(builder: (context) => MyHomePage(title: "")),
-        );
-        navigatorKey.currentState?.push(
-          MaterialPageRoute(builder: (context) => MesNotification()),
-        );
-      });
-    } catch (e) {
-      printVm("erreur notification:  $e");
-      navigatorKey.currentState?.pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => MyHomePage(title: "")),
-            (route) => false,
-      );
-    }
-  }
-  Future<void> initDeepLinks() async {
-    printVm("Lien deeplink cliqiable");
-    _linkSubscription = AppLinks().uriLinkStream.listen((Uri? uri) {
-      if (uri != null) {
-        final segments = uri.pathSegments;
-        // if (segments.length >= 3 && segments[0] == 'share') {
-        //   final typeStr = segments[1];
-        //   final id = segments[2];
-        //   print("Type1: $typeStr");
-        //   print("ID: $id");
-        //   _appLinkService.handleNavigation(navigatorKey.currentContext!, id, typeStr);
-        // }
-        if (segments.length >= 3 && segments[0] == 'share') {
-          // Nettoie l'ID en enlevant tout ce qui vient après ? ou #
-          String rawId = segments[2];
-
-          // Supprime les paramètres de requête (tout ce qui suit ? ou #)
-          final cleanId = rawId.split('?')[0].split('#')[0];
-
-          final typeStr = segments[1];
-          final id = cleanId; // Utilise l'ID nettoyé
-
-          print("Type1: $typeStr");
-          print("ID original: $rawId");
-          print("ID nettoyé: $id");
-
-          _appLinkService.handleNavigation(navigatorKey.currentContext!, id, typeStr);
-        }
-      }
-    }, onError: (err) {
-      print("Erreur de lien: $err");
-    });
-  }
-  final DynamicLinkService _dynamicLinkService = DynamicLinkService();
   @override
   void initState() {
     super.initState();
-    // migratePostsCountries();
-    onClickNotification();
-    // CryptoInitializer.initializeCryptos();
-    // Initialiser les deep links
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // MigrationAncienPostService.migrateOldPostsToCountrySystem();
-      // MigrationAncienPostService.migrateOldPostsSimple();
-      initDeepLinks();
+    _initNotificationListeners();
+    _initDeepLinks();
+  }
 
+  void _initNotificationListeners() {
+    if (kIsWeb) return;
+
+    // Listener pour les clics de notification (stocke dans cache et redémarre)
+    OneSignal.Notifications.addClickListener((event) async {
+      print("📱 [NOTIFICATION] Clic détecté");
+
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      final additionalData = event.notification.additionalData;
+      if (additionalData == null) return;
+
+      final typeNotif = additionalData['type_notif'] as String?;
+      final postType = additionalData['post_type'] as String? ?? '';
+      final postId = additionalData['post_id'] as String?;
+      final chatId = additionalData['chat_id'] as String?;
+      final sendUserId = additionalData['send_user_id'] as String?;
+
+      // Stocker dans le cache selon le type
+      if (postType == 'CHRONIQUE' ||
+          typeNotif == 'CHRONIQUE' ||
+          (typeNotif == 'LIKE' && postType == 'CHRONIQUE') ||
+          (typeNotif == 'COMMENT' && postType == 'CHRONIQUE') ||
+          (typeNotif == 'COMMENT_LIKE')) {
+
+        if (postId != null && postId.isNotEmpty) {
+          await NavigationCacheService().storeChroniqueNavigation(postId);
+        } else {
+          await NavigationCacheService().storePendingNavigation({'type': 'chronique_home'});
+        }
+      }
+      else if (typeNotif == NotificationType.MESSAGE.name) {
+        if (chatId != null && sendUserId != null) {
+          await NavigationCacheService().storeMessageNavigation(chatId, sendUserId);
+        }
+      }
+      else if (typeNotif == NotificationType.INVITATION.name) {
+        await NavigationCacheService().storeInvitationNavigation();
+      }
+      else if (typeNotif == NotificationType.ACCEPTINVITATION.name) {
+        await NavigationCacheService().storeAcceptInvitationNavigation();
+      }
+      else if (typeNotif == NotificationType.PARRAINAGE.name) {
+        await NavigationCacheService().storeParrainageNavigation();
+      }
+      else if (typeNotif == NotificationType.ARTICLE.name) {
+        await NavigationCacheService().storeArticleNavigation();
+      }
+      else if (typeNotif == NotificationType.POST.name || typeNotif == NotificationType.FAVORITE.name) {
+        if (postId != null && postId.isNotEmpty) {
+          await NavigationCacheService().storePostNavigation(postId, postType);
+        }
+      }
+
+      print("💾 [NOTIFICATION] Données stockées dans le cache");
+
+      // Redémarrer l'application
+      _navigateToSplashAndClearStack();
     });
   }
 
-  @override
-  void dispose() {
-    _appLinkService.dispose();
-    _linkSubscription?.cancel();
-    super.dispose();
-  }
+  void _initDeepLinks() {
+    AppLinks().uriLinkStream.listen((Uri? uri) async {
+      if (uri != null) {
+        final segments = uri.pathSegments;
+        if (segments.length >= 3 && segments[0] == 'share') {
+          String rawId = segments[2];
+          final cleanId = rawId.split('?')[0].split('#')[0];
+          final typeStr = segments[1];
 
+          print("🔗 [DEEPLINK] Reçu: type=$typeStr, id=$cleanId");
+
+          if (typeStr.toLowerCase() == 'chronique') {
+            await NavigationCacheService().storeChroniqueNavigation(cleanId);
+          } else {
+            String postType = typeStr.toLowerCase() == 'video' ? 'VIDEO' : 'IMAGE';
+            await NavigationCacheService().storePostNavigation(cleanId, postType);
+          }
+
+          print("💾 [DEEPLINK] Données stockées dans le cache");
+
+          // Redémarrer l'application
+          _navigateToSplashAndClearStack();
+
+
+        }
+      }
+    });
+  }
+  final NavigationCacheService _cacheService = NavigationCacheService();
+
+  // Nouvelle méthode : redirige vers SplashChargement sans fermer l'app
+  void _navigateToSplashAndClearStack() {
+    final context = _cacheService.navigatorKey.currentContext;
+    if (context != null) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const SplashChargement()),
+            (route) => false,
+      );
+    } else {
+      // Fallback : attendre que le context soit disponible
+      Future.delayed(const Duration(milliseconds: 150), () {
+        final ctx = _cacheService.navigatorKey.currentContext;
+        if (ctx != null) {
+          Navigator.of(ctx).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const SplashChargement()),
+                (route) => false,
+          );
+        } else {
+          // Dernier recours (très rare) : on recharge l'app
+          if (!kIsWeb) SystemNavigator.pop();
+        }
+      });
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        // ... tous tes providers
         ChangeNotifierProvider(create: (context) => UserShopAuthProvider()),
         ChangeNotifierProvider(create: (context) => CategorieProduitProvider()),
         ChangeNotifierProvider(create: (context) => UserAuthProvider()),
@@ -472,26 +313,21 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (_) => CryptoPortfolioProvider()),
         ChangeNotifierProvider(create: (_) => MixedFeedServiceProvider()),
         ChangeNotifierProvider(create: (_) => PronosticProvider()),
-// Dans main.dart, modifier l'initialisation de CoinGiftUserProvider
         ChangeNotifierProxyProvider<UserAuthProvider, CoinGiftUserProvider>(
           create: (context) => CoinGiftUserProvider(
             authProvider: context.read<UserAuthProvider>(),
           ),
           update: (context, authProvider, previous) =>
               CoinGiftUserProvider(authProvider: authProvider),
-        ),        // ChangeNotifierProvider(create: (_) => ChallengeProvider()),
+        ),
         ChangeNotifierProxyProvider<UserAuthProvider, ContentProvider>(
           create: (context) => ContentProvider(authProvider: context.read<UserAuthProvider>()),
           update: (context, authProvider, previous) => ContentProvider(authProvider: authProvider),
-
         ),
-
         ChangeNotifierProvider(
           create: (context) => RecentPostsProvider(),
           child: HomeConstPostPage(type: TabBarType.LOOKS.name,),
         ),
-
-        // NOUVEAUX PROVIDERS
         ChangeNotifierProxyProvider<UserAuthProvider, DatingProvider>(
           create: (context) => DatingProvider(authProvider: context.read<UserAuthProvider>()),
           update: (context, authProvider, previous) =>
@@ -509,133 +345,644 @@ class _MyAppState extends State<MyApp> {
         ),
       ],
       child: MaterialApp(
-          navigatorKey: navigatorKey,
-          title: 'Afrolook',
-          debugShowCheckedModeBanner: false,
-          theme: ThemeData.light().copyWith(
-            textTheme: ThemeData.light().textTheme.apply(
-              fontFamily: 'Nunito',
-            ),
-            primaryTextTheme: ThemeData.dark().textTheme.apply(
-              fontFamily: 'Nunito',
-            ),
+        navigatorKey: NavigationCacheService().navigatorKey,
+        title: 'Afrolook',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData.light().copyWith(
+          textTheme: ThemeData.light().textTheme.apply(
+            fontFamily: 'Nunito',
           ),
-          // DIRECTEMENT vers SplahsChargement optimisé - plus besoin de gestion d'état complexe
-          home: const SplahsChargement(postId: '', postType: ''),
-          onGenerateRoute: (settings) {
-            switch (settings.name) {
-              case '/home':
-                return PageTransition(child: MyHomePage(title: ""), type: PageTransitionType.fade);
-              case '/videos':
-                // return PageTransition(child: VideoTikTokPage(), type: PageTransitionType.fade);
-                // return PageTransition(child: AfroVideoThreads(), type: PageTransitionType.fade);
-                return PageTransition(child: HomeConstPostPage(type: '',isVideoPage: true,), type: PageTransitionType.fade);
-              case '/home_profile_user':
-                return PageTransition(child: UserProfil(), type: PageTransitionType.fade);
-              case '/profile_entreprise':
-                return PageTransition(child: EntrepriseProfil(), type: PageTransitionType.fade);
-              case '/new_entreprise':
-                return PageTransition(child: NewEntreprise(), type: PageTransitionType.fade);
-              case '/bon_a_savoir':
-                return PageTransition(child: BonASavoir(), type: PageTransitionType.fade);
-              case '/introduction':
-                return PageTransition(child: IntroductionPage(), type: PageTransitionType.fade);
-              case '/basic_chat':
-                return PageTransition(child: const WelcomeScreen(), type: PageTransitionType.fade);
-                case '/list_users_chat':
-                return PageTransition(child: const ListUserChatsOptimized(), type: PageTransitionType.fade);
-              case '/mes_notifications':
-                return PageTransition(child: MesNotification(), type: PageTransitionType.fade);
-              case '/user_posts_form':
-                return PageTransition(child: UserPostForm(), type: PageTransitionType.fade);
-              case '/welcome':
-                return PageTransition(child: WelcomeScreen(), type: PageTransitionType.fade);
-              case '/amis':
-                return PageTransition(child: Amis(), type: PageTransitionType.fade);
-              case '/add_list_amis':
-                return PageTransition(child: AddListAmis(), type: PageTransitionType.fade);
-
-              case '/create_live':
-                return PageTransition(child: CreateLivePage(), type: PageTransitionType.fade);
-              case '/list_live':
-                return PageTransition(child: LiveListPage(), type: PageTransitionType.fade);
-              case '/app_info':
-                return PageTransition(child: AppInfos(), type: PageTransitionType.fade);
-              case '/contact':
-                return PageTransition(child: ContactPage(), type: PageTransitionType.fade);
-              case '/gagner_point_infos':
-                return PageTransition(child: GagnerPointInfo(), type: PageTransitionType.fade);
-              case '/new_annonce':
-                return PageTransition(child: NewAppAnnonce(), type: PageTransitionType.fade);
-
-              case '/profil_detail_user2':
-                return PageTransition(child: UserProfileDetails(), type: PageTransitionType.fade);
-              case '/profil_detail_user':
-                return PageTransition(child: ProfilePage(), type: PageTransitionType.fade);
-              case '/classemnent':
-                return PageTransition(child: UserClassement(), type: PageTransitionType.fade);
-              case '/splahs_chargement2':
-                return PageTransition(child: SplashVideo(), type: PageTransitionType.fade);
-              case '/splahs_chargement':
-                return PageTransition(
-                    child: const SplahsChargement(postId: '', postType: ''),
-                    type: PageTransitionType.fade
-                );
-              case '/chargement':
-                return PageTransition(child: Chargement(), type: PageTransitionType.fade);
-              case '/login':
-                return PageTransition(child: LoginPageUser(), type: PageTransitionType.fade);
-
-
-            // NOUVELLES ROUTES
-              case '/dating':
-                return PageTransition(child: DatingSwipePage(), type: PageTransitionType.fade);
-              case '/dating/list':
-                return PageTransition(child: DatingProfilesListPage(), type: PageTransitionType.fade);
-              case '/dating/profile-setup':
-                return PageTransition(child: DatingProfileSetupPage(profile: null), type: PageTransitionType.fade);
-              case '/creator/profile':
-                final args = settings.arguments as Map<String, dynamic>;
-                return PageTransition(child: CreatorProfilePage(userId: args['userId']), type: PageTransitionType.fade);
-              case '/dating/connections':
-                return PageTransition(child: DatingConnectionsPage(), type: PageTransitionType.fade);
-              case '/dating/conversations':
-                return PageTransition(child: DatingConversationsPage(), type: PageTransitionType.fade);
-
-              case '/creator/subscription':
-                final args = settings.arguments as Map<String, dynamic>;
-                return PageTransition(child: CreatorSubscriptionPage(
-                  creatorId: args['creatorId'],
-                  creatorName: args['creatorName'],
-                ), type: PageTransitionType.fade);
-              case '/coins/buy':
-                return PageTransition(child: BuyCoinsPage(), type: PageTransitionType.fade);
-              case '/coins/transactions':
-                return PageTransition(child: CoinTransactionsPage(), type: PageTransitionType.fade);
-              case '/dating/likes-list':
-                return PageTransition(
-                  child: DatingLikesListPage(),
-                  type: PageTransitionType.fade,
-                );
-              case '/dating/super-likes':
-                return PageTransition(
-                  child: DatingSuperLikesPage(),
-                  type: PageTransitionType.fade,
-                );
-              case '/dating/notifications':
-                return PageTransition(
-                  child: DatingNotificationsPage(),
-                  type: PageTransitionType.fade,
-                );
-              default:
-                return PageTransition(
-                    child: const SplahsChargement(postId: '', postType: ''),
-                    type: PageTransitionType.fade
-                );
-            }
+          primaryTextTheme: ThemeData.dark().textTheme.apply(
+            fontFamily: 'Nunito',
+          ),
+        ),
+        home: const SplashChargement(),
+        onGenerateRoute: (settings) {
+          switch (settings.name) {
+            case '/home':
+              return PageTransition(child: MyHomePage(title: ""), type: PageTransitionType.fade);
+            case '/videos':
+              return PageTransition(child: HomeConstPostPage(type: '', isVideoPage: true), type: PageTransitionType.fade);
+            case '/home_profile_user':
+              return PageTransition(child: UserProfil(), type: PageTransitionType.fade);
+            case '/profile_entreprise':
+              return PageTransition(child: EntrepriseProfil(), type: PageTransitionType.fade);
+            case '/new_entreprise':
+              return PageTransition(child: NewEntreprise(), type: PageTransitionType.fade);
+            case '/bon_a_savoir':
+              return PageTransition(child: BonASavoir(), type: PageTransitionType.fade);
+            case '/introduction':
+              return PageTransition(child: IntroductionPage(), type: PageTransitionType.fade);
+            case '/basic_chat':
+              return PageTransition(child: const WelcomeScreen(), type: PageTransitionType.fade);
+            case '/list_users_chat':
+              return PageTransition(child: const ListUserChatsOptimized(), type: PageTransitionType.fade);
+            case '/mes_notifications':
+              return PageTransition(child: MesNotification(), type: PageTransitionType.fade);
+            case '/user_posts_form':
+              return PageTransition(child: UserPostForm(), type: PageTransitionType.fade);
+            case '/welcome':
+              return PageTransition(child: WelcomeScreen(), type: PageTransitionType.fade);
+            case '/amis':
+              return PageTransition(child: Amis(), type: PageTransitionType.fade);
+            case '/add_list_amis':
+              return PageTransition(child: AddListAmis(), type: PageTransitionType.fade);
+            case '/create_live':
+              return PageTransition(child: CreateLivePage(), type: PageTransitionType.fade);
+            case '/list_live':
+              return PageTransition(child: LiveListPage(), type: PageTransitionType.fade);
+            case '/app_info':
+              return PageTransition(child: AppInfos(), type: PageTransitionType.fade);
+            case '/contact':
+              return PageTransition(child: ContactPage(), type: PageTransitionType.fade);
+            case '/gagner_point_infos':
+              return PageTransition(child: GagnerPointInfo(), type: PageTransitionType.fade);
+            case '/new_annonce':
+              return PageTransition(child: NewAppAnnonce(), type: PageTransitionType.fade);
+            case '/profil_detail_user2':
+              return PageTransition(child: UserProfileDetails(), type: PageTransitionType.fade);
+            case '/profil_detail_user':
+              return PageTransition(child: ProfilePage(), type: PageTransitionType.fade);
+            case '/classemnent':
+              return PageTransition(child: UserClassement(), type: PageTransitionType.fade);
+            case '/dating':
+              return PageTransition(child: DatingSwipePage(), type: PageTransitionType.fade);
+            case '/dating/list':
+              return PageTransition(child: DatingProfilesListPage(), type: PageTransitionType.fade);
+            case '/dating/profile-setup':
+              return PageTransition(child: DatingProfileSetupPage(profile: null), type: PageTransitionType.fade);
+            case '/creator/profile':
+              final args = settings.arguments as Map<String, dynamic>;
+              return PageTransition(child: CreatorProfilePage(userId: args['userId']), type: PageTransitionType.fade);
+            case '/dating/connections':
+              return PageTransition(child: DatingConnectionsPage(), type: PageTransitionType.fade);
+            case '/dating/conversations':
+              return PageTransition(child: DatingConversationsPage(), type: PageTransitionType.fade);
+            case '/creator/subscription':
+              final args = settings.arguments as Map<String, dynamic>;
+              return PageTransition(child: CreatorSubscriptionPage(
+                creatorId: args['creatorId'],
+                creatorName: args['creatorName'],
+              ), type: PageTransitionType.fade);
+            case '/coins/buy':
+              return PageTransition(child: BuyCoinsPage(), type: PageTransitionType.fade);
+            case '/coins/transactions':
+              return PageTransition(child: CoinTransactionsPage(), type: PageTransitionType.fade);
+            case '/dating/likes-list':
+              return PageTransition(child: DatingLikesListPage(), type: PageTransitionType.fade);
+            case '/dating/super-likes':
+              return PageTransition(child: DatingSuperLikesPage(), type: PageTransitionType.fade);
+            case '/dating/notifications':
+              return PageTransition(child: DatingNotificationsPage(), type: PageTransitionType.fade);
+            default:
+              return PageTransition(
+                child: const SplashChargement(),
+                type: PageTransitionType.fade,
+              );
           }
+        },
       ),
     );
   }
 }
+
+// late List<CameraDescription> _cameras;
+// Future<void> main() async {
+//   WidgetsFlutterBinding.ensureInitialized();
+//
+//   // Initialiser AdMob seulement sur mobile
+//   if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+//     // await MobileAds.instance.initialize();
+//     AdService.setMode(false); // À changer en false avant publication
+//
+//     await AdService.init();    // Configurer votre appareil comme appareil de test
+//     // Remplacer par l'ID obtenu dans les logs
+//     // await MobileAds.instance.updateRequestConfiguration(
+//     //   RequestConfiguration(
+//     //     testDeviceIds: ['011935FC78A51EF87681BE382AACD2B4','84A5B8717F83446C0B570C4358962A6A'], // Votre ID de test
+//     //   ),);
+//
+//
+//     // Mode TEST (true) / PRODUCTION (false)
+//   }
+//   // EMPECHE LE CRASH : On essaie de charger les caméras, mais on n'arrête pas l'app si ça échoue
+//   try {
+//     _cameras = await availableCameras();
+//   } catch (e) {
+//     print("Erreur initialisation caméra : $e");
+//     _cameras = []; // On initialise avec une liste vide pour éviter l'erreur 'late initialization'
+//   }
+//
+//   await Firebase.initializeApp(
+//     options: DefaultFirebaseOptions.currentPlatform,
+//   );
+//
+//   // App Check - Attention: le mode debug peut parfois bloquer sur Chrome Web
+//   // await FirebaseAppCheck.instance.activate(
+//   //   webProvider: ReCaptchaV3Provider('ton-site-key'), // Optionnel pour le web
+//   //   androidProvider: AndroidProvider.debug,
+//   //   appleProvider: AppleProvider.debug,
+//   // );
+//
+//
+//   // Date debut challenge
+//   // final service = ChallengeMonthService();
+//   // await service.setChallengeStartDate(DateTime(2026, 4, 1));
+//   // Le reste de ton code...
+//   FirebaseAuth.instance.authStateChanges().listen((User? user) {
+//     if (user == null) {
+//       print('Utilisateur non connecté');
+//     } else {
+//       print('Utilisateur connecté: ${user.uid}');
+//     }
+//   });
+//
+//   await DeviceInfoService.initializeDeviceId();
+//
+//   // OneSignal ne fonctionne pas toujours bien sur le Web, on l'isole
+//   if (!kIsWeb) {
+//     OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
+//     OneSignal.initialize("b1b8e6b8-b9f4-4c48-b5ac-6ccae1423c98");
+//     OneSignal.Notifications.requestPermission(true);
+//   }
+//
+//   initLocalNotifications();
+//
+//   // Workmanager n'est PAS supporté sur le Web
+//   if (!kIsWeb) {
+//     await Workmanager().initialize(callbackDispatcher);
+//     Workmanager().registerPeriodicTask(
+//       afrolookTask,
+//       afrolookTask,
+//       frequency: const Duration(hours: 5),
+//       initialDelay: const Duration(seconds: 10),
+//       existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
+//     );
+//   }
+//
+//   // FlutterDownloader n'est PAS supporté sur le Web
+//   if (!kIsWeb) {
+//     await FlutterDownloader.initialize(
+//       debug: !kReleaseMode,
+//       ignoreSsl: !kReleaseMode,
+//     );
+//   }
+//
+//   runApp(const MyApp());
+// }
+//
+// class MyApp extends StatefulWidget {
+//   const MyApp({super.key});
+//
+//   @override
+//   State<MyApp> createState() => _MyAppState();
+// }
+//
+// class _MyAppState extends State<MyApp> {
+//   final AppLinkService _appLinkService = AppLinkService();
+//   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+//   StreamSubscription<Uri>? _linkSubscription;
+//
+//   Future<List<Post>> getPostsVideosById(String post_id) async {
+//     List<Post> posts = [];
+//     CollectionReference postCollect = await FirebaseFirestore.instance.collection('Posts');
+//     QuerySnapshot querySnapshotPost = await postCollect
+//         .where("id", isEqualTo: '${post_id}')
+//         .get();
+//
+//     List<Post> postList = querySnapshotPost.docs.map((doc) =>
+//         Post.fromJson(doc.data() as Map<String, dynamic>)).toList();
+//
+//     return postList;
+//   }
+//   FirebaseDynamicLinks dynamicLinks = FirebaseDynamicLinks.instance;
+//   Future<List<Post>> getPostsImagesById(String post_id) async {
+//     List<Post> posts = [];
+//     CollectionReference postCollect = await FirebaseFirestore.instance.collection('Posts');
+//     QuerySnapshot querySnapshotPost = await postCollect
+//         .where("id", isEqualTo: '${post_id}')
+//         .get();
+//
+//     List<Post> postList = querySnapshotPost.docs.map((doc) =>
+//         Post.fromJson(doc.data() as Map<String, dynamic>)).toList();
+//
+//     return postList;
+//   }
+//
+//   void onClickNotification() {
+//     try {
+//       OneSignal.Notifications.addClickListener((event) async {
+//         print("notif additionalData: ${event.notification.additionalData}");
+//
+//         // Petit délai pour laisser l'app s'initialiser
+//         await Future.delayed(const Duration(milliseconds: 300));
+//
+//         final additionalData = event.notification.additionalData;
+//         if (additionalData == null) return;
+//
+//         final typeNotif = additionalData['type_notif'] as String?;
+//         final postType = additionalData['post_type'] as String? ?? '';
+//         final postId = additionalData['post_id'] as String?;
+//         final chatId = additionalData['chat_id'] as String?;
+//         final sendUserId = additionalData['send_user_id'] as String?;
+//
+//         // ==================== CHRONIQUES ====================
+//         if (postType == 'CHRONIQUE' ||
+//             typeNotif == 'CHRONIQUE' ||
+//             typeNotif == 'LIKE' && postType == 'CHRONIQUE' ||
+//             typeNotif == 'COMMENT' && postType == 'CHRONIQUE' ||
+//             typeNotif == 'COMMENT_LIKE') {
+//
+//           if (postId != null && postId.isNotEmpty) {
+//             navigatorKey.currentState?.push(
+//               MaterialPageRoute(
+//                 builder: (context) => ChroniqueDetailPage(
+//                   initialChroniqueId: postId,
+//                 ),
+//               ),
+//             );
+//           } else {
+//             navigatorKey.currentState?.push(
+//               MaterialPageRoute(builder: (context) => const ChroniqueHomePage()),
+//             );
+//           }
+//           return;
+//         }
+//
+//         // ==================== MESSAGE ====================
+//         if (typeNotif == NotificationType.MESSAGE.name) {
+//           try {
+//             if (chatId == null || sendUserId == null) return;
+//
+//             final chatDoc = await FirebaseFirestore.instance
+//                 .collection('Chats')
+//                 .doc(chatId)
+//                 .get();
+//
+//             if (!chatDoc.exists) return;
+//
+//             final chat = Chat.fromJson(chatDoc.data() as Map<String, dynamic>);
+//
+//             final userDoc = await FirebaseFirestore.instance
+//                 .collection('Users')
+//                 .doc(sendUserId)
+//                 .get();
+//
+//             if (userDoc.exists) {
+//               chat.chatFriend = UserData.fromJson(userDoc.data() as Map<String, dynamic>);
+//               chat.receiver = chat.chatFriend;
+//             }
+//
+//             final messagesSnapshot = await FirebaseFirestore.instance
+//                 .collection('Messages')
+//                 .where('chat_id', isEqualTo: chatId)
+//                 .orderBy('createdAt', descending: true)
+//                 .limit(50)
+//                 .get();
+//
+//             chat.messages = messagesSnapshot.docs
+//                 .map((doc) => Message.fromJson(doc.data() as Map<String, dynamic>))
+//                 .toList();
+//
+//             navigatorKey.currentState?.push(
+//               MaterialPageRoute(
+//                 builder: (context) => MyChat(title: 'mon chat', chat: chat),
+//               ),
+//             );
+//           } catch (e) {
+//             print("Erreur message: $e");
+//             navigatorKey.currentState?.push(
+//               MaterialPageRoute(builder: (context) => MyHomePage(title: "")),
+//             );
+//           }
+//           return;
+//         }
+//
+//         // ==================== INVITATION ====================
+//         if (typeNotif == NotificationType.INVITATION.name) {
+//           navigatorKey.currentState?.push(
+//             MaterialPageRoute(
+//               builder: (context) => MesInvitationsPage(context: navigatorKey.currentContext!),
+//             ),
+//           );
+//           return;
+//         }
+//
+//         // ==================== ARTICLE ====================
+//         if (typeNotif == NotificationType.ARTICLE.name) {
+//           navigatorKey.currentState?.push(
+//             MaterialPageRoute(builder: (context) => MesNotification()),
+//           );
+//           return;
+//         }
+//
+//         // ==================== ACCEPTATION INVITATION ====================
+//         if (typeNotif == NotificationType.ACCEPTINVITATION.name) {
+//           navigatorKey.currentState?.push(
+//             MaterialPageRoute(builder: (context) => Amis()),
+//           );
+//           return;
+//         }
+//
+//         // ==================== POST (VIDEO / IMAGE) ====================
+//         if (typeNotif == NotificationType.POST.name) {
+//           if (postId != null && postId.isNotEmpty) {
+//             navigatorKey.currentState?.push(
+//               MaterialPageRoute(
+//                 builder: (context) => SplashChargement(
+//                   postId: postId,
+//                   postType: postType,
+//                 ),
+//               ),
+//             );
+//           } else {
+//             navigatorKey.currentState?.push(
+//               MaterialPageRoute(builder: (context) => MyHomePage(title: "")),
+//             );
+//           }
+//           return;
+//         }
+//
+//         // ==================== PARRAINAGE ====================
+//         if (typeNotif == NotificationType.PARRAINAGE.name) {
+//           navigatorKey.currentState?.push(
+//             MaterialPageRoute(builder: (context) => MonetisationPage()),
+//           );
+//           return;
+//         }
+//
+//         // ==================== FAVORI ====================
+//         if (typeNotif == NotificationType.FAVORITE.name) {
+//           if (postId != null && postId.isNotEmpty) {
+//             navigatorKey.currentState?.push(
+//               MaterialPageRoute(
+//                 builder: (context) => SplashChargement(
+//                   postId: postId,
+//                   postType: postType,
+//                 ),
+//               ),
+//             );
+//           } else {
+//             navigatorKey.currentState?.push(
+//               MaterialPageRoute(builder: (context) => MyHomePage(title: "")),
+//             );
+//           }
+//           return;
+//         }
+//
+//         // ==================== DEFAULT ====================
+//         navigatorKey.currentState?.push(
+//           MaterialPageRoute(builder: (context) => MyHomePage(title: "")),
+//         );
+//         navigatorKey.currentState?.push(
+//           MaterialPageRoute(builder: (context) => MesNotification()),
+//         );
+//       });
+//     } catch (e) {
+//       printVm("erreur notification:  $e");
+//       navigatorKey.currentState?.pushAndRemoveUntil(
+//         MaterialPageRoute(builder: (context) => MyHomePage(title: "")),
+//             (route) => false,
+//       );
+//     }
+//   }
+//   Future<void> initDeepLinks() async {
+//     printVm("Lien deeplink cliqiable");
+//     _linkSubscription = AppLinks().uriLinkStream.listen((Uri? uri) {
+//       if (uri != null) {
+//         final segments = uri.pathSegments;
+//         // if (segments.length >= 3 && segments[0] == 'share') {
+//         //   final typeStr = segments[1];
+//         //   final id = segments[2];
+//         //   print("Type1: $typeStr");
+//         //   print("ID: $id");
+//         //   _appLinkService.handleNavigation(navigatorKey.currentContext!, id, typeStr);
+//         // }
+//         if (segments.length >= 3 && segments[0] == 'share') {
+//           // Nettoie l'ID en enlevant tout ce qui vient après ? ou #
+//           String rawId = segments[2];
+//
+//           // Supprime les paramètres de requête (tout ce qui suit ? ou #)
+//           final cleanId = rawId.split('?')[0].split('#')[0];
+//
+//           final typeStr = segments[1];
+//           final id = cleanId; // Utilise l'ID nettoyé
+//
+//           print("Type1: $typeStr");
+//           print("ID original: $rawId");
+//           print("ID nettoyé: $id");
+//
+//           _appLinkService.handleNavigation(navigatorKey.currentContext!, id, typeStr);
+//         }
+//       }
+//     }, onError: (err) {
+//       print("Erreur de lien: $err");
+//     });
+//   }
+//   final DynamicLinkService _dynamicLinkService = DynamicLinkService();
+//   @override
+//   void initState() {
+//     super.initState();
+//     // migratePostsCountries();
+//     onClickNotification();
+//     // CryptoInitializer.initializeCryptos();
+//     // Initialiser les deep links
+//     WidgetsBinding.instance.addPostFrameCallback((_) {
+//       // MigrationAncienPostService.migrateOldPostsToCountrySystem();
+//       // MigrationAncienPostService.migrateOldPostsSimple();
+//       initDeepLinks();
+//
+//     });
+//   }
+//
+//   @override
+//   void dispose() {
+//     _appLinkService.dispose();
+//     _linkSubscription?.cancel();
+//     super.dispose();
+//   }
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return MultiProvider(
+//       providers: [
+//         ChangeNotifierProvider(create: (context) => UserShopAuthProvider()),
+//         ChangeNotifierProvider(create: (context) => CategorieProduitProvider()),
+//         ChangeNotifierProvider(create: (context) => UserAuthProvider()),
+//         ChangeNotifierProvider(create: (context) => UserProvider()),
+//         ChangeNotifierProvider(create: (context) => PostProvider()),
+//         ChangeNotifierProvider(create: (context) => ChroniqueProvider()),
+//         ChangeNotifierProvider(create: (_) => LiveProvider()),
+//         ChangeNotifierProvider(create: (_) => ProfileLikeProvider()),
+//         ChangeNotifierProvider(create: (_) => CryptoMarketProvider()),
+//         ChangeNotifierProvider(create: (_) => CryptoAdminProvider()),
+//         ChangeNotifierProvider(create: (_) => CryptoPortfolioProvider()),
+//         ChangeNotifierProvider(create: (_) => MixedFeedServiceProvider()),
+//         ChangeNotifierProvider(create: (_) => PronosticProvider()),
+// // Dans main.dart, modifier l'initialisation de CoinGiftUserProvider
+//         ChangeNotifierProxyProvider<UserAuthProvider, CoinGiftUserProvider>(
+//           create: (context) => CoinGiftUserProvider(
+//             authProvider: context.read<UserAuthProvider>(),
+//           ),
+//           update: (context, authProvider, previous) =>
+//               CoinGiftUserProvider(authProvider: authProvider),
+//         ),        // ChangeNotifierProvider(create: (_) => ChallengeProvider()),
+//         ChangeNotifierProxyProvider<UserAuthProvider, ContentProvider>(
+//           create: (context) => ContentProvider(authProvider: context.read<UserAuthProvider>()),
+//           update: (context, authProvider, previous) => ContentProvider(authProvider: authProvider),
+//
+//         ),
+//
+//         ChangeNotifierProvider(
+//           create: (context) => RecentPostsProvider(),
+//           child: HomeConstPostPage(type: TabBarType.LOOKS.name,),
+//         ),
+//
+//         // NOUVEAUX PROVIDERS
+//         ChangeNotifierProxyProvider<UserAuthProvider, DatingProvider>(
+//           create: (context) => DatingProvider(authProvider: context.read<UserAuthProvider>()),
+//           update: (context, authProvider, previous) =>
+//               DatingProvider(authProvider: authProvider),
+//         ),
+//         ChangeNotifierProxyProvider<UserAuthProvider, CreatorProvider>(
+//           create: (context) => CreatorProvider(authProvider: context.read<UserAuthProvider>()),
+//           update: (context, authProvider, previous) =>
+//               CreatorProvider(authProvider: authProvider),
+//         ),
+//         ChangeNotifierProxyProvider<UserAuthProvider, CoinProvider>(
+//           create: (context) => CoinProvider(authProvider: context.read<UserAuthProvider>()),
+//           update: (context, authProvider, previous) =>
+//               CoinProvider(authProvider: authProvider),
+//         ),
+//       ],
+//       child: MaterialApp(
+//           navigatorKey: navigatorKey,
+//           title: 'Afrolook',
+//           debugShowCheckedModeBanner: false,
+//           theme: ThemeData.light().copyWith(
+//             textTheme: ThemeData.light().textTheme.apply(
+//               fontFamily: 'Nunito',
+//             ),
+//             primaryTextTheme: ThemeData.dark().textTheme.apply(
+//               fontFamily: 'Nunito',
+//             ),
+//           ),
+//           // DIRECTEMENT vers SplahsChargement optimisé - plus besoin de gestion d'état complexe
+//           home: const SplashChargement(postId: '', postType: ''),
+//           onGenerateRoute: (settings) {
+//             switch (settings.name) {
+//               case '/home':
+//                 return PageTransition(child: MyHomePage(title: ""), type: PageTransitionType.fade);
+//               case '/videos':
+//                 // return PageTransition(child: VideoTikTokPage(), type: PageTransitionType.fade);
+//                 // return PageTransition(child: AfroVideoThreads(), type: PageTransitionType.fade);
+//                 return PageTransition(child: HomeConstPostPage(type: '',isVideoPage: true,), type: PageTransitionType.fade);
+//               case '/home_profile_user':
+//                 return PageTransition(child: UserProfil(), type: PageTransitionType.fade);
+//               case '/profile_entreprise':
+//                 return PageTransition(child: EntrepriseProfil(), type: PageTransitionType.fade);
+//               case '/new_entreprise':
+//                 return PageTransition(child: NewEntreprise(), type: PageTransitionType.fade);
+//               case '/bon_a_savoir':
+//                 return PageTransition(child: BonASavoir(), type: PageTransitionType.fade);
+//               case '/introduction':
+//                 return PageTransition(child: IntroductionPage(), type: PageTransitionType.fade);
+//               case '/basic_chat':
+//                 return PageTransition(child: const WelcomeScreen(), type: PageTransitionType.fade);
+//                 case '/list_users_chat':
+//                 return PageTransition(child: const ListUserChatsOptimized(), type: PageTransitionType.fade);
+//               case '/mes_notifications':
+//                 return PageTransition(child: MesNotification(), type: PageTransitionType.fade);
+//               case '/user_posts_form':
+//                 return PageTransition(child: UserPostForm(), type: PageTransitionType.fade);
+//               case '/welcome':
+//                 return PageTransition(child: WelcomeScreen(), type: PageTransitionType.fade);
+//               case '/amis':
+//                 return PageTransition(child: Amis(), type: PageTransitionType.fade);
+//               case '/add_list_amis':
+//                 return PageTransition(child: AddListAmis(), type: PageTransitionType.fade);
+//
+//               case '/create_live':
+//                 return PageTransition(child: CreateLivePage(), type: PageTransitionType.fade);
+//               case '/list_live':
+//                 return PageTransition(child: LiveListPage(), type: PageTransitionType.fade);
+//               case '/app_info':
+//                 return PageTransition(child: AppInfos(), type: PageTransitionType.fade);
+//               case '/contact':
+//                 return PageTransition(child: ContactPage(), type: PageTransitionType.fade);
+//               case '/gagner_point_infos':
+//                 return PageTransition(child: GagnerPointInfo(), type: PageTransitionType.fade);
+//               case '/new_annonce':
+//                 return PageTransition(child: NewAppAnnonce(), type: PageTransitionType.fade);
+//
+//               case '/profil_detail_user2':
+//                 return PageTransition(child: UserProfileDetails(), type: PageTransitionType.fade);
+//               case '/profil_detail_user':
+//                 return PageTransition(child: ProfilePage(), type: PageTransitionType.fade);
+//               case '/classemnent':
+//                 return PageTransition(child: UserClassement(), type: PageTransitionType.fade);
+//               case '/splahs_chargement2':
+//                 return PageTransition(child: SplashVideo(), type: PageTransitionType.fade);
+//               case '/splahs_chargement':
+//                 return PageTransition(
+//                     child: const SplashChargement(postId: '', postType: ''),
+//                     type: PageTransitionType.fade
+//                 );
+//               case '/chargement':
+//                 return PageTransition(child: Chargement(), type: PageTransitionType.fade);
+//               case '/login':
+//                 return PageTransition(child: LoginPageUser(), type: PageTransitionType.fade);
+//
+//
+//             // NOUVELLES ROUTES
+//               case '/dating':
+//                 return PageTransition(child: DatingSwipePage(), type: PageTransitionType.fade);
+//               case '/dating/list':
+//                 return PageTransition(child: DatingProfilesListPage(), type: PageTransitionType.fade);
+//               case '/dating/profile-setup':
+//                 return PageTransition(child: DatingProfileSetupPage(profile: null), type: PageTransitionType.fade);
+//               case '/creator/profile':
+//                 final args = settings.arguments as Map<String, dynamic>;
+//                 return PageTransition(child: CreatorProfilePage(userId: args['userId']), type: PageTransitionType.fade);
+//               case '/dating/connections':
+//                 return PageTransition(child: DatingConnectionsPage(), type: PageTransitionType.fade);
+//               case '/dating/conversations':
+//                 return PageTransition(child: DatingConversationsPage(), type: PageTransitionType.fade);
+//
+//               case '/creator/subscription':
+//                 final args = settings.arguments as Map<String, dynamic>;
+//                 return PageTransition(child: CreatorSubscriptionPage(
+//                   creatorId: args['creatorId'],
+//                   creatorName: args['creatorName'],
+//                 ), type: PageTransitionType.fade);
+//               case '/coins/buy':
+//                 return PageTransition(child: BuyCoinsPage(), type: PageTransitionType.fade);
+//               case '/coins/transactions':
+//                 return PageTransition(child: CoinTransactionsPage(), type: PageTransitionType.fade);
+//               case '/dating/likes-list':
+//                 return PageTransition(
+//                   child: DatingLikesListPage(),
+//                   type: PageTransitionType.fade,
+//                 );
+//               case '/dating/super-likes':
+//                 return PageTransition(
+//                   child: DatingSuperLikesPage(),
+//                   type: PageTransitionType.fade,
+//                 );
+//               case '/dating/notifications':
+//                 return PageTransition(
+//                   child: DatingNotificationsPage(),
+//                   type: PageTransitionType.fade,
+//                 );
+//               default:
+//                 return PageTransition(
+//                     child: const SplashChargement(postId: '', postType: ''),
+//                     type: PageTransitionType.fade
+//                 );
+//             }
+//           }
+//       ),
+//     );
+//   }
+// }
 

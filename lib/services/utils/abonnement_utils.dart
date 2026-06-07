@@ -57,6 +57,13 @@ class AbonnementUtils {
     required bool isVerified,
     double size = 16,
   }) {
+
+
+    if (isVerified) {
+      return Icon(Icons.verified,
+          color: Colors.blue,
+          size: size);
+    }else
     if (abonnement?.estPremium == true) {
       return Container(
         width: size,
@@ -72,12 +79,6 @@ class AbonnementUtils {
             color: Colors.white,
             size: size * 0.6),
       );
-    }
-
-    if (isVerified) {
-      return Icon(Icons.verified,
-          color: Colors.blue,
-          size: size);
     }
 
     return SizedBox();

@@ -14,17 +14,27 @@ class TopDatingProfilesWidget extends StatefulWidget {
 }
 
 class _TopDatingProfilesWidgetState extends State<TopDatingProfilesWidget> {
-  @override
-  void initState() {
-    super.initState();
-    // Déclencher le chargement si nécessaire
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final provider = context.read<UserAuthProvider>();
-      if (provider.topDatingProfiles.isEmpty && !provider.isLoadingDatingProfiles) {
-        provider.loadTopDatingProfiles();
-      }
-    });
-  }
+
+
+
+   @override
+   void initState() {
+     super.initState();
+
+     WidgetsBinding.instance.addPostFrameCallback((_) async {
+       final provider = context.read<UserAuthProvider>();
+
+       final canShow = await provider.canShowDatingWidget();
+
+       if (!canShow) return;
+
+       if (provider.topDatingProfiles.isEmpty &&
+           !provider.isLoadingDatingProfiles) {
+         await provider.loadTopDatingProfiles();
+         await provider.markDatingWidgetShown();
+       }
+     });
+   }
 
   @override
   Widget build(BuildContext context) {

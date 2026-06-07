@@ -1272,7 +1272,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 
       final videoWidth = _controller!.value.size.width;
       final videoHeight = _controller!.value.size.height;
-       aspectRatio = videoWidth / videoHeight;
+      aspectRatio = videoWidth / videoHeight;
       print("📐 Dimensions: ${videoWidth}x${videoHeight} -> ratio ${aspectRatio.toStringAsFixed(2)}, _isAdvertisement :$_isAdvertisement");
 
       // ========== VÉRIFICATION FORMAT (sauf pour les pubs) ==========
@@ -1643,7 +1643,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
         post.isPortrait = aspectRatio < 1.0; // true : Portrait
         post.eventDate = _selectedPostType == 'EVENEMENT' ? _selectedEventDate?.millisecondsSinceEpoch : null;
 
-    post.availableCountries = _selectedCountries.map((c) => c.code).toList();
+        post.availableCountries = _selectedCountries.map((c) => c.code).toList();
 
         if (widget.canal != null) {
           post.canal_id = widget.canal!.id;
@@ -1703,7 +1703,9 @@ class _UserPubVideoState extends State<UserPubVideo> {
               postId: post.id!,
               postType: PostDataType.VIDEO.name,
               chatId: '',
-              smallImage: widget.canal!.urlImage,
+              smallImage:thumbnailUrl!=null?thumbnailUrl: widget.canal!.urlImage,
+              //
+              // smallImage: widget.canal!.urlImage,
               isChannel: true,
               channelTitle: widget.canal!.titre,
               canal: widget.canal!);
@@ -1715,7 +1717,9 @@ class _UserPubVideoState extends State<UserPubVideo> {
             postId: post.id!,
             postType: PostDataType.VIDEO.name,
             chatId: '',
-            smallImage: authProvider.loginUserData.imageUrl,
+            smallImage:thumbnailUrl!=null?thumbnailUrl: authProvider.loginUserData.imageUrl,
+
+            // smallImage: authProvider.loginUserData.imageUrl,
             isChannel: false,
           );
         }

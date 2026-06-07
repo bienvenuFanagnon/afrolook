@@ -70,10 +70,12 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
     PreviewCapsule(index: 1, label: 'Milieu', icon: Icons.timeline, duration: 5, position: 'middle'),
     PreviewCapsule(index: 2, label: 'Fin', icon: Icons.stop, duration: 5, position: 'end'),
   ];
+  late UserAuthProvider _authProvider;
 
   @override
   void initState() {
     super.initState();
+    _authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     _currentEpisode = widget.episode;
     _checkAccessAndInitialize();
     _incrementViews();
@@ -117,8 +119,9 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
         ? _currentEpisode!.videoUrl
         : widget.content.videoUrl ?? '';
     if (videoUrl!.isEmpty) return;
-
-    _videoPlayerController = VideoPlayerController.network(videoUrl);
+    final String optimizedUrl = _authProvider.convertToCdnUrl(videoUrl, _authProvider.appDefaultData);
+    _videoPlayerController = VideoPlayerController.network(optimizedUrl);
+    // _videoPlayerController = VideoPlayerController.network(videoUrl);
     await _videoPlayerController!.initialize();
     _videoDuration = _videoPlayerController!.value.duration.inSeconds.toDouble();
 

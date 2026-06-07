@@ -1,45 +1,51 @@
-import 'package:afrotok/pages/postDetailsVideo.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
-import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-import 'package:afrotok/pages/auth/authTest/Screens/updateUserData.dart';
-import 'package:afrotok/pages/postDetails.dart';
-import 'package:afrotok/providers/afroshop/categorie_produits_provider.dart';
-import 'package:afrotok/providers/postProvider.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
 import 'package:video_player/video_player.dart';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../models/chatmodels/message.dart';
 import '../models/model_data.dart';
 import '../providers/authProvider.dart';
-import '../providers/userProvider.dart';
-
-import 'auth/authTest/Screens/Login/loginPageUser.dart';
-
-import 'dart:async';
-
 import '../providers/chroniqueProvider.dart';
 import '../providers/contenuPayantProvider.dart';
+import '../providers/postProvider.dart';
+import '../providers/userProvider.dart';
+import '../services/nav_cache_service.dart';
+import 'auth/authTest/Screens/Login/loginPageUser.dart';
+import 'auth/authTest/Screens/updateUserData.dart';
+import 'chat/myChat.dart';
+import 'chronique/chroniquedetails.dart';
+import 'chronique/chroniquehome.dart';
 import 'home/homeScreen.dart';
+import 'mes_notifications.dart';
+import 'postDetails.dart';
+import 'postDetailsVideo.dart';
+import 'user/amis/ami.dart';
+import 'user/amis/pageMesInvitations.dart';
+import 'user/monetisation.dart';
 
-
-class SplahsChargement extends StatefulWidget {
-  final String postId;
-  final String postType;
-  const SplahsChargement({super.key, required this.postId, required this.postType});
-
-  @override
-  State<SplahsChargement> createState() => _ChargementState();
+class DestinationData {
+  final String type;
+  final Post? post;
+  final Chat? chat;
+  final String? chroniqueId;
+  final String? chatId;
+  final String? sendUserId;
+  DestinationData({required this.type, this.post, this.chat, this.chroniqueId, this.chatId, this.sendUserId});
 }
 
-class _ChargementState extends State<SplahsChargement> {
+class SplashChargement extends StatefulWidget {
+  const SplashChargement({super.key});
+  @override
+  State<SplashChargement> createState() => _SplashChargementState();
+}
+
+class _SplashChargementState extends State<SplashChargement> {
   late UserAuthProvider authProvider;
   late PostProvider postProvider;
-  late CategorieProduitProvider categorieProduitProvider;
   late UserProvider userProvider;
   late ChroniqueProvider chroniqueProvider;
   late ContentProvider contentProvider;
@@ -48,234 +54,290 @@ class _ChargementState extends State<SplahsChargement> {
   bool isFinished = false;
   bool isLoadingVideo = true;
   bool shouldPlayVideo = false;
-  bool _isAuthCompleted = false;
-  bool _arePostsReady = false;
   bool _hasError = false;
   String _loadingText = "Initialisation...";
   String _errorMessage = "";
 
-  Post? _targetPost;
-  bool _isLoadingTargetPost = false;
+  bool _isAuthCompleted = false;
+  bool _hasNavigated = false;
+  bool _isProcessing = false;
+  bool _authHandled = false;          // éviter multiples appels handleAuthenticatedUser
+  final Completer<void> _cacheReady = Completer<void>(); // attendre chargement cache
 
-  late StreamSubscription<User?> _authSubscription;
-  bool _isFirebaseAuthenticated = false;
-  Completer<void>? _authCompleter;
+  Map<String, dynamic>? _cachedNavigation;
+  DestinationData? _destinationToSend;
+
+  String? _pendingPostId;
+  String? _pendingPostType;
+  String? _pendingChatId;
+  String? _pendingSendUserId;
+  String? _pendingChroniqueId;
+  String? _pendingNavigationType;
+
+  Post? _loadedPost;
+  Chat? _loadedChat;
+  bool _isLoadingTarget = false;
 
   @override
   void initState() {
     super.initState();
-
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     postProvider = Provider.of<PostProvider>(context, listen: false);
-    categorieProduitProvider = Provider.of<CategorieProduitProvider>(context, listen: false);
     userProvider = Provider.of<UserProvider>(context, listen: false);
     chroniqueProvider = Provider.of<ChroniqueProvider>(context, listen: false);
     contentProvider = Provider.of<ContentProvider>(context, listen: false);
 
+    // _loadCachedNavigationOnce();   // démarre le chargement asynchrone du cache
     _startInitFlow();
   }
 
+  Future<void> _loadCachedNavigationOnce() async {
+    print("🔍 [SPLASH] Chargement du cache...");
+    _cachedNavigation = await NavigationCacheService().getAndClearPendingNavigation();
+    if (_cachedNavigation != null) {
+      print("✅ [SPLASH] Cache trouvé : $_cachedNavigation");
+      _pendingNavigationType = _cachedNavigation!['type'];
+      switch (_pendingNavigationType) {
+        case 'post':
+          _pendingPostId = _cachedNavigation!['postId'];
+          _pendingPostType = _cachedNavigation!['postType'] ?? '';
+          break;
+        case 'message':
+          _pendingChatId = _cachedNavigation!['chatId'];
+          _pendingSendUserId = _cachedNavigation!['sendUserId'];
+          break;
+        case 'chronique':
+          _pendingChroniqueId = _cachedNavigation!['chroniqueId'];
+          break;
+        default: break;
+      }
+    } else {
+      print("📦 [SPLASH] Aucune navigation en cache");
+    }
+    // Signaler que le cache est prêt
+    if (!_cacheReady.isCompleted) _cacheReady.complete();
+  }
+
   void _startInitFlow() async {
+    if (_isProcessing) return;
+    _isProcessing = true;
     try {
-      setState(() {
-        isFinished = false;
-        _loadingText = "Initialisation...";
-        _hasError = false;
-      });
-
-      // 1️⃣ Vérifier si c'est la première ouverture
+      setState(() { _loadingText = "Initialisation..."; _hasError = false; });
       final isFirst = await authProvider.getIsFirst();
-
       if (isFirst == null || isFirst == false) {
         await authProvider.storeIsFirst(true);
-        if (mounted) {
+        if (mounted && !_hasNavigated) {
+          _hasNavigated = true;
           Navigator.pushReplacementNamed(context, '/introduction');
         }
         return;
       }
-
-// 2️⃣ Vérifier la vidéo d'intro
       await _checkIfShouldPlayVideo();
-
-// 3️⃣ Vérifier l'expiration des 7 jours et restaurer Firebase Auth
-      setState(() => _loadingText = "Vérification de la session...");
-
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        final lastLogin = prefs.getInt('last_login_time') ?? 0;
-        final now = DateTime.now().millisecondsSinceEpoch;
-
-        // Durée de 7 jours en millisecondes (7 jours * 24h * 60m * 60s * 1000ms)
-        const int septJoursEnMs = 7 * 24 * 60 * 60 * 1000;
-
-        // Si un historique existe ET que le délai est dépassé
-        if (lastLogin > 0 && (now - lastLogin) > septJoursEnMs) {
-          print("⏳ Session expirée localement (7 jours écoulés). Déconnexion forcée...");
-          await FirebaseAuth.instance.signOut();
-          await prefs.remove('last_login_time'); // Nettoyer le stockage local
-          _redirectToLoginAndClearStack();
-          return;
-        }
-
-        // Si le délai n'est pas dépassé, on récupère ou attend l'utilisateur Firebase
-        User? user = FirebaseAuth.instance.currentUser;
-
-        if (user == null) {
-          // Attendre un court instant que Firebase récupère le token local
-          user = await FirebaseAuth.instance.authStateChanges().firstWhere((u) => u != null).timeout(
-            const Duration(seconds: 2),
-            onTimeout: () => null,
-          );
-        }
-
-        if (user == null) {
-          print('⚠️ Firebase non authentifié ou session expirée');
-          _redirectToLoginAndClearStack();
-          return;
-        }
-
-        print('✅ Firebase authentifié : ${user.uid}');
-
-        // 4️⃣ Charger les données de l'application
-        setState(() => _loadingText = "Chargement des données...");
-        await authProvider.getAppData();
-
-        // 5️⃣ Login backend
-        setState(() => _loadingText = "Connexion...");
-        final success = await authProvider.getLoginUser(user.uid);
-
-        if (!success) {
-          _redirectToLoginAndClearStack();
-          return;
-        }
-
-      } catch (e) {
-        print('❌ Erreur lors de la vérification du timestamp ou de la session: $e');
-        _redirectToLoginAndClearStack();
-        return;
-      }
-
-
-
-
-      // 6️⃣ Vérifier les données pays
-      final countryCode = authProvider.loginUserData.countryData?["countryCode"]?.toString();
-      final country = authProvider.loginUserData.countryData?["country"];
-
-      if (countryCode == null || countryCode.isEmpty) {
-        if (mounted) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => UpdateUserData(title: "Mise à jour d'adresse"),
-            ),
-          );
-        }
-        return;
-      }
-
-      // 7️⃣ Si on a un postId à charger, le charger maintenant
-      if (widget.postId.isNotEmpty) {
-        setState(() {
-          _isLoadingTargetPost = true;
-          _loadingText = "Chargement du post...";
-        });
-        await _loadTargetPost(widget.postId);
-        setState(() {
-          _isLoadingTargetPost = false;
-        });
-      }
-
-      // 8️⃣ Marquer l'authentification comme terminée
-      setState(() {
-        _isAuthCompleted = true;
-        _arePostsReady = true;
-      });
-
-      // 9️⃣ Naviguer vers la destination finale
-      _navigateToDestination();
-
     } catch (e) {
-      print('❌ Erreur initialisation: $e');
-      setState(() {
-        _hasError = true;
-        _errorMessage = e.toString();
-      });
+      print("❌ Erreur initialisation : $e");
+      setState(() { _hasError = true; _errorMessage = e.toString(); });
+      _isProcessing = false;
     }
   }
 
-  Future<void> _loadTargetPost(String postId) async {
-    try {
-      final doc = await FirebaseFirestore.instance
-          .collection('Posts')
-          .doc(postId)
-          .get();
+  Future<void> _handleAuthenticatedUser(User user) async {
+    if (_authHandled || _isAuthCompleted || _hasNavigated) return;
+    _authHandled = true;
+    print("🔐 [SPLASH] _handleAuthenticatedUser start for ${user.uid}");
 
+    // // Attendre que le cache soit chargé (nécessaire pour _pendingNavigationType)
+    // await _cacheReady.future;
+    print("✅ [SPLASH] Cache prêt, _pendingNavigationType = $_pendingNavigationType");
+
+    try {
+      setState(() => _loadingText = "Chargement des données...");
+      await authProvider.getAppData();
+
+      setState(() => _loadingText = "Connexion...");
+      final success = await authProvider.getLoginUser(user.uid);
+      if (!success) { _redirectToLogin(); return; }
+
+      final countryCode = authProvider.loginUserData.countryData?["countryCode"]?.toString();
+      if (countryCode == null || countryCode.isEmpty) {
+        if (mounted && !_hasNavigated) {
+          _hasNavigated = true;
+          Navigator.push(context, MaterialPageRoute(builder: (_) => UpdateUserData(title: "Mise à jour d'adresse")));
+        }
+        return;
+      }
+
+      setState(() => _isAuthCompleted = true);
+      await _prepareDestination().then((value) {
+        // _navigateToHomeWithDestination();
+
+      },);
+
+    } catch (e) {
+      print("❌ [AUTH] Erreur : $e");
+      if (mounted) setState(() { _hasError = true; _errorMessage = e.toString(); });
+    }
+  }
+
+  Future<void> _prepareDestination() async {
+
+    print("🔍 [SPLASH] Chargement du cache...");
+   await NavigationCacheService().getAndClearPendingNavigation().then((value) {
+     _cachedNavigation = value;
+      if (_cachedNavigation != null) {
+        print("✅ [SPLASH] Cache trouvé : $_cachedNavigation");
+        _pendingNavigationType = _cachedNavigation!['type'];
+        print("✅ [SPLASH] Cache trouvé _pendingNavigationType : $_pendingNavigationType");
+
+        switch (_pendingNavigationType) {
+          case 'post':
+            _pendingPostId = _cachedNavigation!['postId'];
+            _pendingPostType = _cachedNavigation!['postType'] ?? '';
+            break;
+          case 'message':
+            _pendingChatId = _cachedNavigation!['chatId'];
+            _pendingSendUserId = _cachedNavigation!['sendUserId'];
+            break;
+          case 'chronique':
+            _pendingChroniqueId = _cachedNavigation!['chroniqueId'];
+            break;
+          default: break;
+        }
+      } else {
+        if (_hasNavigated) return;
+        _hasNavigated = true;
+        print("🚀 [SPLASH] Navigation vers Home avec destination ${_destinationToSend?.type}");
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => MyHomePage(title: '', initialDestination: _destinationToSend)),
+        );
+        print("📦 [SPLASH] Aucune navigation en cache");
+      }
+    },);
+
+    // Signaler que le cache est prêt
+    // if (!_cacheReady.isCompleted) _cacheReady.complete();
+    print("📦 2 [SPLASH] _prepareDestination - pendingType = $_pendingNavigationType");
+    if (_pendingNavigationType == null) {
+       _destinationToSend = DestinationData(type: 'home');
+       return;
+    }
+
+    switch (_pendingNavigationType) {
+      case 'post':
+        await _loadPostData();
+        _destinationToSend = (_loadedPost != null) ? DestinationData(type: 'post', post: _loadedPost) : DestinationData(type: 'home');
+        break;
+      case 'message':
+        await _loadChatData();
+        _destinationToSend = (_loadedChat != null) ? DestinationData(type: 'chat', chat: _loadedChat) : DestinationData(type: 'home');
+        break;
+      case 'chronique':
+        _destinationToSend = DestinationData(type: 'chronique', chroniqueId: _pendingChroniqueId);
+        break;
+      case 'chronique_home':
+        _destinationToSend = DestinationData(type: 'chronique_home');
+        break;
+      case 'invitation':
+        _destinationToSend = DestinationData(type: 'invitation');
+        break;
+      case 'acceptInvitation':
+        _destinationToSend = DestinationData(type: 'acceptInvitation');
+        break;
+      case 'parrainage':
+        _destinationToSend = DestinationData(type: 'parrainage');
+        break;
+      case 'article':
+        _destinationToSend = DestinationData(type: 'article');
+        break;
+      default:
+        _destinationToSend = DestinationData(type: 'home');
+    }
+    print("✅ [SPLASH] Destination créée : ${_destinationToSend?.type}");
+
+    if (_hasNavigated) return;
+    _hasNavigated = true;
+    print("🚀 [SPLASH] Navigation vers Home avec destination ${_destinationToSend?.type}");
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => MyHomePage(title: '', initialDestination: _destinationToSend)),
+    );
+  }
+
+  Future<void> _loadPostData() async {
+    if (_pendingPostId == null) return;
+    setState(() { _isLoadingTarget = true; _loadingText = "Chargement du post..."; });
+    try {
+      final doc = await FirebaseFirestore.instance.collection('Posts').doc(_pendingPostId).get();
       if (doc.exists) {
         final post = Post.fromJson(doc.data() as Map<String, dynamic>);
         post.id = doc.id;
-
-        // Charger les données utilisateur
         if (post.user_id != null && post.user_id!.isNotEmpty) {
-          final userDoc = await FirebaseFirestore.instance
-              .collection('Users')
-              .doc(post.user_id)
-              .get();
-          if (userDoc.exists) {
-            post.user = UserData.fromJson(userDoc.data() as Map<String, dynamic>);
-          }
+          final userDoc = await FirebaseFirestore.instance.collection('Users').doc(post.user_id).get();
+          if (userDoc.exists) post.user = UserData.fromJson(userDoc.data() as Map<String, dynamic>);
         }
-
-        // Charger les données canal si nécessaire
-        if (post.canal_id != null && post.canal_id!.isNotEmpty) {
-          final canalDoc = await FirebaseFirestore.instance
-              .collection('Canaux')
-              .doc(post.canal_id)
-              .get();
-          if (canalDoc.exists) {
-            post.canal = Canal.fromJson(canalDoc.data() as Map<String, dynamic>);
-          }
-        }
-
-        _targetPost = post;
-        print('✅ Post chargé: ${post.id}');
-      } else {
-        print('⚠️ Post non trouvé: $postId');
+        _loadedPost = post;
       }
-    } catch (e) {
-      print('❌ Erreur chargement post: $e');
-    }
+    } catch (e) { print("❌ Erreur chargement post : $e"); }
+    finally { if (mounted) setState(() => _isLoadingTarget = false); }
   }
 
+  Future<void> _loadChatData() async {
+    if (_pendingChatId == null || _pendingSendUserId == null) return;
+    setState(() { _isLoadingTarget = true; _loadingText = "Chargement du chat..."; });
+    try {
+      final chatDoc = await FirebaseFirestore.instance.collection('Chats').doc(_pendingChatId).get();
+      if (!chatDoc.exists) return;
+      final chat = Chat.fromJson(chatDoc.data() as Map<String, dynamic>);
+      final userDoc = await FirebaseFirestore.instance.collection('Users').doc(_pendingSendUserId).get();
+      if (userDoc.exists) {
+        chat.chatFriend = UserData.fromJson(userDoc.data() as Map<String, dynamic>);
+        chat.receiver = chat.chatFriend;
+      }
+      final messagesSnapshot = await FirebaseFirestore.instance
+          .collection('Messages')
+          .where('chat_id', isEqualTo: _pendingChatId)
+          .orderBy('createdAt', descending: true)
+          .limit(25)
+          .get();
+      chat.messages = messagesSnapshot.docs.map((d) => Message.fromJson(d.data() as Map<String, dynamic>)).toList();
+      _loadedChat = chat;
+    } catch (e) { print("❌ Erreur chargement chat : $e"); }
+    finally { if (mounted) setState(() => _isLoadingTarget = false); }
+  }
+
+  void _navigateToHomeWithDestination() {
+    if (_hasNavigated) return;
+    _hasNavigated = true;
+    print("🚀 [SPLASH] Navigation vers Home avec destination ${_destinationToSend?.type}");
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => MyHomePage(title: '', initialDestination: _destinationToSend)),
+    );
+  }
+
+  void _redirectToLogin() {
+    if (!mounted) return;
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => LoginPageUser()));
+  }
+
+  // --- Gestion vidéo (inchangée) ---
   Future<void> _checkIfShouldPlayVideo() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final lastPlayedDate = prefs.getString('last_video_date3');
       final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-
       if (lastPlayedDate != today) {
         shouldPlayVideo = true;
         await prefs.setString('last_video_date3', today);
         await _initializeVideo();
       } else {
         shouldPlayVideo = false;
-        if (mounted) {
-          setState(() {
-            isFinished = true;
-            isLoadingVideo = false;
-            _loadingText = "Chargement de l'application...";
-          });
-        }
+        if (mounted) setState(() { isFinished = true; isLoadingVideo = false; });
       }
     } catch (e) {
-      print('❌ Erreur vérification vidéo: $e');
+      print("❌ Erreur vérification vidéo : $e");
       shouldPlayVideo = false;
-      if (mounted) {
-        setState(() {
-          isFinished = true;
-          isLoadingVideo = false;
-        });
-      }
+      if (mounted) setState(() { isFinished = true; isLoadingVideo = false; });
     }
   }
 
@@ -285,98 +347,21 @@ class _ChargementState extends State<SplahsChargement> {
       await _controller!.initialize();
       _controller!.setVolume(0.0);
       _controller!.play();
-
       _controller!.addListener(() {
-        if (_controller!.value.position >= _controller!.value.duration && !isFinished) {
-          if (mounted) {
-            setState(() {
-              isFinished = true;
-              _loadingText = "Finalisation...";
-            });
-          }
+        if (_controller!.value.position >= _controller!.value.duration && !isFinished && mounted) {
+          setState(() => isFinished = true);
         }
       });
-
-      if (mounted) {
-        setState(() => isLoadingVideo = false);
-      }
+      if (mounted) setState(() => isLoadingVideo = false);
     } catch (e) {
-      debugPrint("❌ Erreur d'initialisation vidéo : $e");
-      if (mounted) {
-        setState(() {
-          isFinished = true;
-          isLoadingVideo = false;
-        });
-      }
-    }
-  }
-
-  void _redirectToLoginAndClearStack() {
-    if (!mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => LoginPageUser()),
-          (route) => false,
-    );
-  }
-
-  void _navigateToDestination() {
-    if (!mounted) return;
-
-    // Attendre la fin de la vidéo si elle doit être jouée
-    if (shouldPlayVideo && !isFinished) {
-      return;
-    }
-
-    // Si on a un post cible (notification)
-    if (_targetPost != null) {
-      if (_targetPost!.dataType == PostDataType.VIDEO.name) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => VideoYoutubePageDetails(initialPost: _targetPost!),
-          ),
-        );
-      } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => DetailsPost(post: _targetPost!),
-          ),
-        );
-      }
-    }
-    // Si on a un postId mais pas encore chargé (cas rare)
-    else if (widget.postId.isNotEmpty && _targetPost == null && !_isLoadingTargetPost) {
-      // Essayer de le charger une dernière fois
-      _loadTargetPost(widget.postId).then((_) {
-        if (_targetPost != null) {
-          _navigateToDestination();
-        } else {
-          // Post non trouvé, aller à l'accueil
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => MyHomePage(title: ''),
-            ),
-          );
-        }
-      });
-    }
-    // Sinon aller à l'accueil
-    else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => MyHomePage(title: ''),
-        ),
-      );
+      debugPrint("❌ Erreur vidéo : $e");
+      if (mounted) setState(() { isFinished = true; isLoadingVideo = false; });
     }
   }
 
   @override
   void dispose() {
     _controller?.dispose();
-    _authSubscription.cancel();
     super.dispose();
   }
 
@@ -385,14 +370,10 @@ class _ChargementState extends State<SplahsChargement> {
     final height = MediaQuery.of(context).size.height;
     final width = MediaQuery.of(context).size.width;
 
-    // Vérifier si on peut naviguer
-    if (_isAuthCompleted && !_hasError && (isFinished || !shouldPlayVideo)) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _navigateToDestination();
-      });
-    }
+    // if (_isAuthCompleted && !_hasError && !_hasNavigated && (isFinished || !shouldPlayVideo)) {
+    //   WidgetsBinding.instance.addPostFrameCallback((_) { if (!_hasNavigated) _navigateToHomeWithDestination(); });
+    // }
 
-    // Écran d'erreur
     if (_hasError) {
       return Scaffold(
         backgroundColor: Colors.black,
@@ -402,24 +383,13 @@ class _ChargementState extends State<SplahsChargement> {
             children: [
               const Icon(Icons.error_outline, color: Colors.red, size: 60),
               const SizedBox(height: 16),
-              const Text(
-                'Une erreur est survenue',
-                style: TextStyle(color: Colors.white, fontSize: 16),
-              ),
+              const Text('Une erreur est survenue', style: TextStyle(color: Colors.white, fontSize: 16)),
               const SizedBox(height: 8),
-              Text(
-                _errorMessage,
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
-                textAlign: TextAlign.center,
-              ),
+              Text(_errorMessage, style: const TextStyle(color: Colors.grey, fontSize: 12)),
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/welcome');
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF25D366),
-                ),
+                onPressed: _redirectToLogin,
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF25D366)),
                 child: const Text('Retour à l\'accueil'),
               ),
             ],
@@ -428,18 +398,96 @@ class _ChargementState extends State<SplahsChargement> {
       );
     }
 
-    // Chargement de la vidéo
-    if (isLoadingVideo && shouldPlayVideo) {
-      return _buildLoadingScreen("Chargement de la vidéo...");
-    }
-
-    // Splash screen pendant le chargement
-    if (isFinished || !shouldPlayVideo) {
-      return _buildSplashScreen(height, width);
-    }
-
-    // Lecture vidéo
+    if (isLoadingVideo && shouldPlayVideo) return _buildLoadingScreen("Chargement de la vidéo...");
+    if (isFinished || !shouldPlayVideo) return _buildSplashWithStream(height, width);
     return _buildVideoScreen();
+  }
+
+  Widget _buildSplashWithStream(double height, double width) {
+    return Scaffold(
+      body: Container(
+        height: height, width: width,
+        decoration: const BoxDecoration(image: DecorationImage(image: AssetImage('assets/splash/spc2.jpg'), fit: BoxFit.cover)),
+        child: Padding(
+          padding: const EdgeInsets.only(top: 40.0, bottom: 10),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              SizedBox(height: 100, width: 100, child: Image.asset('assets/logo/afrolook_logo.png')),
+              Expanded(
+                child: StreamBuilder<User?>(
+                  stream: FirebaseAuth.instance.authStateChanges(),
+                  builder: (context, snapshot) {
+                    if (_authHandled || _isAuthCompleted || _hasNavigated) return const SizedBox.shrink();
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const CircularProgressIndicator(color: Color(0xFF25D366)),
+                          const SizedBox(height: 20),
+                          Text("Vérification de la session...", style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                        ],
+                      );
+                    }
+                    if (snapshot.hasData && snapshot.data != null) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (!_authHandled && !_isAuthCompleted && !_hasNavigated) _handleAuthenticatedUser(snapshot.data!);
+                      });
+                      return Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.check_circle, color: Colors.green, size: 40),
+                          const SizedBox(height: 16),
+                          Text(_loadingText, style: const TextStyle(color: Colors.white, fontSize: 14)),
+                          const SizedBox(height: 8),
+                          const LinearProgressIndicator(
+                            backgroundColor: Colors.grey,
+                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF25D366)),
+                          ),
+                        ],
+                      );
+                    }
+                    WidgetsBinding.instance.addPostFrameCallback((_) { if (!_hasNavigated) _redirectToLogin(); });
+                    return Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.lock_outline, color: Colors.orange, size: 40),
+                        const SizedBox(height: 16),
+                        const Text("Session expirée", style: TextStyle(color: Colors.white, fontSize: 14)),
+                        const SizedBox(height: 8),
+                        Text("Redirection vers la connexion...", style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+                      ],
+                    );
+                  },
+                ),
+              ),
+              if (_isLoadingTarget || _loadedPost != null || _loadedChat != null)
+                Padding(padding: const EdgeInsets.only(bottom: 30), child: _buildLoadingStatus()),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingStatus() {
+    if (_isLoadingTarget) {
+      return const Column(children: [
+        Icon(Icons.downloading, color: Colors.orange, size: 30),
+        SizedBox(height: 8),
+        Text("Chargement du contenu...", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+      ]);
+    }
+    if (_loadedPost != null || _loadedChat != null) {
+      return const Column(children: [
+        Icon(Icons.check_circle, color: Colors.green, size: 30),
+        SizedBox(height: 8),
+        Text("Contenu prêt !", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+        SizedBox(height: 4),
+        Text("Redirection...", style: TextStyle(color: Colors.grey, fontSize: 12)),
+      ]);
+    }
+    return const SizedBox.shrink();
   }
 
   Widget _buildLoadingScreen(String text) {
@@ -451,115 +499,10 @@ class _ChargementState extends State<SplahsChargement> {
           children: [
             const CircularProgressIndicator(color: Color(0xFF25D366)),
             const SizedBox(height: 20),
-            Text(
-              text,
-              style: const TextStyle(color: Colors.white, fontSize: 16),
-            ),
+            Text(text, style: const TextStyle(color: Colors.white, fontSize: 16)),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildSplashScreen(double height, double width) {
-    return Scaffold(
-      body: Container(
-        height: height,
-        width: width,
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/splash/spc2.jpg'),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.only(top: 40.0, bottom: 10),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // LOGO
-              SizedBox(
-                height: 100,
-                width: 100,
-                child: Image.asset('assets/logo/afrolook_logo.png'),
-              ),
-
-              // STATUT DE CHARGEMENT
-              Column(
-                children: [
-                  _buildLoadingStatus(),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    width: 100,
-                    child: LinearProgressIndicator(
-                      backgroundColor: Colors.grey[800],
-                      valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF25D366)),
-                      minHeight: 4,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLoadingStatus() {
-    // Chargement du post cible (notification)
-    if (_isLoadingTargetPost) {
-      return Column(
-        children: [
-          const Icon(Icons.downloading, color: Colors.orange, size: 30),
-          const SizedBox(height: 8),
-          const Text(
-            "Chargement du contenu...",
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            _loadingText,
-            style: const TextStyle(color: Colors.grey, fontSize: 12),
-          ),
-        ],
-      );
-    }
-
-    // Si on a un post cible chargé
-    if (_targetPost != null) {
-      return Column(
-        children: [
-          const Icon(Icons.check_circle, color: Colors.green, size: 30),
-          const SizedBox(height: 8),
-          const Text(
-            "Contenu prêt !",
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            "Redirection...",
-            style: TextStyle(color: Colors.grey, fontSize: 12),
-          ),
-        ],
-      );
-    }
-
-    // Chargement normal
-    return Column(
-      children: [
-        const Icon(Icons.security, color: Colors.blue, size: 30),
-        const SizedBox(height: 8),
-        Text(
-          _loadingText,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          "Préparation de l'application...",
-          style: TextStyle(color: Colors.grey, fontSize: 12),
-        ),
-      ],
     );
   }
 
@@ -568,7 +511,6 @@ class _ChargementState extends State<SplahsChargement> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // VIDÉO
           if (_controller != null && _controller!.value.isInitialized)
             SizedBox.expand(
               child: FittedBox(
@@ -582,41 +524,59 @@ class _ChargementState extends State<SplahsChargement> {
             )
           else
             _buildLoadingScreen("Chargement de la vidéo..."),
-
-          // INDICATEUR DE CHARGEMENT
-          Positioned(
-            bottom: 100,
-            left: 0,
-            right: 0,
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  if (_isAuthCompleted && _targetPost != null)
-                    const Text(
-                      "Redirection...",
-                      style: TextStyle(color: Colors.white, fontSize: 14),
-                    ),
-                ],
-              ),
+          if (_isAuthCompleted && (_loadedPost != null || _loadedChat != null))
+            const Positioned(
+              bottom: 100,
+              left: 0,
+              right: 0,
+              child: Text("Redirection...", style: TextStyle(color: Colors.white, fontSize: 14), textAlign: TextAlign.center),
             ),
-          ),
         ],
       ),
     );
   }
 }
 
-// class SplahsChargement extends StatefulWidget {
+
+// import 'package:afrotok/pages/postDetailsVideo.dart';
+// import 'package:cloud_firestore/cloud_firestore.dart';
+// import 'package:firebase_auth/firebase_auth.dart';
+// import 'package:flutter/foundation.dart';
+// import 'package:intl/intl.dart';
+// import 'package:shared_preferences/shared_preferences.dart';
+//
+// import 'package:afrotok/pages/auth/authTest/Screens/updateUserData.dart';
+// import 'package:afrotok/pages/postDetails.dart';
+// import 'package:afrotok/providers/afroshop/categorie_produits_provider.dart';
+// import 'package:afrotok/providers/postProvider.dart';
+// import 'package:flutter/material.dart';
+// import 'package:provider/provider.dart';
+//
+// import 'package:video_player/video_player.dart';
+//
+// import '../models/model_data.dart';
+// import '../providers/authProvider.dart';
+// import '../providers/userProvider.dart';
+//
+// import 'auth/authTest/Screens/Login/loginPageUser.dart';
+//
+// import 'dart:async';
+//
+// import '../providers/chroniqueProvider.dart';
+// import '../providers/contenuPayantProvider.dart';
+// import 'home/homeScreen.dart';
+//
+// class SplashChargement extends StatefulWidget {
 //   final String postId;
 //   final String postType;
-//   const SplahsChargement({super.key, required this.postId, required this.postType});
+//
+//   const SplashChargement({super.key, required this.postId, required this.postType});
 //
 //   @override
-//   State<SplahsChargement> createState() => _ChargementState();
+//   State<SplashChargement> createState() => _ChargementState();
 // }
 //
-// class _ChargementState extends State<SplahsChargement> {
+// class _ChargementState extends State<SplashChargement> {
 //   late UserAuthProvider authProvider;
 //   late PostProvider postProvider;
 //   late CategorieProduitProvider categorieProduitProvider;
@@ -629,135 +589,178 @@ class _ChargementState extends State<SplahsChargement> {
 //   bool isLoadingVideo = true;
 //   bool shouldPlayVideo = false;
 //   bool _isAuthCompleted = false;
-//   bool _areImmediatePostsLoaded = false;
-//   bool _arePostsPrepared = false;
 //   bool _hasError = false;
 //   String _loadingText = "Initialisation...";
+//   String _errorMessage = "";
 //
-//   late StreamSubscription<User?> _authSubscription;
-//   bool _isFirebaseAuthenticated = false;
-//   Completer<void>? _authCompleter;
+//   Post? _targetPost;
+//   bool _isLoadingTargetPost = false;
 //
-//
+//   bool _hasNavigated = false;
+//   bool _isProcessing = false;
 //
 //   @override
 //   void initState() {
 //     super.initState();
 //
-//     // Initialiser les providers
 //     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
 //     postProvider = Provider.of<PostProvider>(context, listen: false);
 //     categorieProduitProvider = Provider.of<CategorieProduitProvider>(context, listen: false);
 //     userProvider = Provider.of<UserProvider>(context, listen: false);
 //     chroniqueProvider = Provider.of<ChroniqueProvider>(context, listen: false);
 //     contentProvider = Provider.of<ContentProvider>(context, listen: false);
-//     _authCompleter = Completer<void>();
-//     // _listenToFirebaseAuth();  // ← écoute les changements d’auth
+//
 //     _startInitFlow();
 //   }
 //
 //   void _startInitFlow() async {
-//     setState(() {
-//       isFinished = false;
-//       _loadingText = "Initialisation...";
-//     });
+//     if (_isProcessing) return;
+//     _isProcessing = true;
 //
-//     // 1️⃣ Vérifier si c'est la première ouverture (PRIORITÉ)
-//     final isFirst = await authProvider.getIsFirst();
+//     try {
+//       setState(() {
+//         isFinished = false;
+//         _loadingText = "Initialisation...";
+//         _hasError = false;
+//       });
 //
-//     if (isFirst == null || isFirst == false) {
-//       await authProvider.storeIsFirst(true);
+//       // 1️⃣ Vérifier si c'est la première ouverture
+//       final isFirst = await authProvider.getIsFirst();
 //
-//       if (mounted) {
-//         Navigator.pushReplacementNamed(context, '/introduction');
-//       }
-//       return;
-//     }
-//
-//     // 2️⃣ Vérifier si on doit jouer la vidéo
-//     await _checkIfShouldPlayVideo();
-//
-//     // 3️⃣ Vérifier Firebase Auth
-//
-//     final user = FirebaseAuth.instance.currentUser;
-//
-//     if (user == null) {
-//       print('⚠️ Firebase aut non authentifié');
-//       _redirectToLoginAndClearStack();
-//       return;
-//     }
-//
-//
-//     print('✅ Firebase aut authentifié : ${user.uid}');
-//
-//     // 4️⃣ Charger données app
-//     setState(() => _loadingText = "Chargement des données...");
-//     await authProvider.getAppData();
-//
-//
-//     // 6️⃣ Login backend
-//     setState(() => _loadingText = "Connexion...");
-//     final success = await authProvider.getLoginUser(user.uid);
-//
-//     if (!success) {
-//       _redirectToLoginAndClearStack();
-//       return;
-//     }
-//
-//     // 7️⃣ Fin
-//     setState(() => _isAuthCompleted = true);
-//
-//     _preparePostsInBackground();
-//     _navigateToDestination();
-//     FirebaseAuth.instance.authStateChanges().first.then((user) async {
-//
-//       // ❌ Pas connecté → LOGIN
-//       if (user == null) {
-//         print('⚠️ Firebase auth non authentifié authStateChanges');
+//       if (isFirst == null || isFirst == false) {
+//         await authProvider.storeIsFirst(true);
+//         if (mounted && !_hasNavigated) {
+//           _hasNavigated = true;
+//           Navigator.pushReplacementNamed(context, '/introduction');
+//         }
+//         return;
 //       }
 //
+//       // 2️⃣ Vérifier la vidéo d'intro
+//       await _checkIfShouldPlayVideo();
 //
-//     });
+//     } catch (e) {
+//       print('❌ Erreur initialisation: $e');
+//       setState(() {
+//         _hasError = true;
+//         _errorMessage = e.toString();
+//       });
+//       _isProcessing = false;
+//     }
 //   }
-// //   void _listenToFirebaseAuth() {
-// //     _authSubscription = FirebaseAuth.instance.authStateChanges().listen((User? user) {
-// //       if (user != null) {
-// //         print('✅ Firebase authentifié : ${user.uid}');
-// //         _isFirebaseAuthenticated = true;
-// //         if (!_authCompleter!.isCompleted) {
-// //           _authCompleter!.complete();
-// //         }
-// //       } else {
-// //         print('⚠️ Firebase non authentifié');
-// //         _isFirebaseAuthenticated = false;
-// //         // Si on était déjà en train de charger, on redirige immédiatement
-// //         if (_authCompleter != null && !_authCompleter!.isCompleted) {
-// //           _authCompleter!.completeError('Non authentifié');
-// //         }
-// //       }
-// //     });
-// //   }
-// //   Future<void> _startInitFlow() async {
-// //     setState(() {
-// //       isFinished = false;
-// //       _loadingText = "Vérification de la vidéo...";
-// //     });
-// // // Appeler la migration après la première connexion
-// // //     final prefs = await SharedPreferences.getInstance();
-// // //     final migrationDone = prefs.getBool('dating_migration_done') ?? false;
-// // //     if (!migrationDone) {
-// // //       print('🔄 Première connexion - Lancement de la migration des profils dating...');
-// // //       await migrateInitialDatingProfiles();
-// // //     await migrateInitialDatingProfilesForMen();
-// // //     await migrateDatingProfilesToLowercase();
-// // //       await prefs.setBool('dating_migration_done', true);
-// // //       print('✅ Migration marquée comme terminée');
-// // //     }
-// //     await _checkIfShouldPlayVideo();
-// //
-// //     // 🔥 LANCER L'AUTHENTIFICATION ET PRÉPARATION DES POSTS
-// //     _initAuthAndPosts();
-// //   }
+//
+//   // Gestion utilisateur authentifié (appelée par StreamBuilder)
+//   Future<void> _handleAuthenticatedUser(User user) async {
+//     if (_isAuthCompleted || _hasNavigated) return;
+//
+//     print("✅ [AUTH] Utilisateur connecté: ${user.uid}");
+//
+//     try {
+//       // Charger les données de l'application
+//       setState(() => _loadingText = "Chargement des données...");
+//       await authProvider.getAppData();
+//
+//       // Login backend
+//       setState(() => _loadingText = "Connexion...");
+//       final success = await authProvider.getLoginUser(user.uid);
+//
+//       if (!success) {
+//         print("❌ [AUTH] Échec du login backend");
+//         if (mounted && !_hasNavigated) {
+//           _hasNavigated = true;
+//           _redirectToLoginAndClearStack();
+//         }
+//         return;
+//       }
+//
+//       // Vérifier les données pays
+//       final countryCode = authProvider.loginUserData.countryData?["countryCode"]?.toString();
+//
+//       if (countryCode == null || countryCode.isEmpty) {
+//         print("📍 [AUTH] Pays manquant, redirection vers mise à jour");
+//         if (mounted && !_hasNavigated) {
+//           _hasNavigated = true;
+//           Navigator.push(
+//             context,
+//             MaterialPageRoute(
+//               builder: (context) => UpdateUserData(title: "Mise à jour d'adresse"),
+//             ),
+//           );
+//         }
+//         return;
+//       }
+//
+//       // Si on a un postId à charger, le charger maintenant
+//       if (widget.postId.isNotEmpty) {
+//         setState(() {
+//           _isLoadingTargetPost = true;
+//           _loadingText = "Chargement du post...";
+//         });
+//         await _loadTargetPost(widget.postId);
+//         setState(() {
+//           _isLoadingTargetPost = false;
+//         });
+//       }
+//
+//       // Marquer l'authentification comme terminée
+//       setState(() {
+//         _isAuthCompleted = true;
+//       });
+//
+//       // Naviguer vers la destination finale
+//       _navigateToDestination();
+//
+//     } catch (e) {
+//       print('❌ [AUTH] Erreur: $e');
+//       setState(() {
+//         _hasError = true;
+//         _errorMessage = e.toString();
+//       });
+//     }
+//   }
+//
+//   Future<void> _loadTargetPost(String postId) async {
+//     try {
+//       final doc = await FirebaseFirestore.instance
+//           .collection('Posts')
+//           .doc(postId)
+//           .get();
+//
+//       if (doc.exists) {
+//         final post = Post.fromJson(doc.data() as Map<String, dynamic>);
+//         post.id = doc.id;
+//
+//         // Charger les données utilisateur
+//         if (post.user_id != null && post.user_id!.isNotEmpty) {
+//           final userDoc = await FirebaseFirestore.instance
+//               .collection('Users')
+//               .doc(post.user_id)
+//               .get();
+//           if (userDoc.exists) {
+//             post.user = UserData.fromJson(userDoc.data() as Map<String, dynamic>);
+//           }
+//         }
+//
+//         // Charger les données canal si nécessaire
+//         if (post.canal_id != null && post.canal_id!.isNotEmpty) {
+//           final canalDoc = await FirebaseFirestore.instance
+//               .collection('Canaux')
+//               .doc(post.canal_id)
+//               .get();
+//           if (canalDoc.exists) {
+//             post.canal = Canal.fromJson(canalDoc.data() as Map<String, dynamic>);
+//           }
+//         }
+//
+//         _targetPost = post;
+//         print('✅ [POST] Post chargé: ${post.id}');
+//       } else {
+//         print('⚠️ [POST] Post non trouvé: $postId');
+//       }
+//     } catch (e) {
+//       print('❌ [POST] Erreur chargement post: $e');
+//     }
+//   }
 //
 //   Future<void> _checkIfShouldPlayVideo() async {
 //     try {
@@ -786,7 +789,6 @@ class _ChargementState extends State<SplahsChargement> {
 //         setState(() {
 //           isFinished = true;
 //           isLoadingVideo = false;
-//           _loadingText = "Chargement de l'application...";
 //         });
 //       }
 //     }
@@ -819,170 +821,72 @@ class _ChargementState extends State<SplahsChargement> {
 //         setState(() {
 //           isFinished = true;
 //           isLoadingVideo = false;
-//           _loadingText = "Chargement de l'application...";
 //         });
 //       }
 //     }
 //   }
 //
-//   // 🔥 AUTHENTIFICATION ET PRÉPARATION DES POSTS
-//   Future<void> _initAuthAndPosts() async {
-//     try {
-//       if (mounted) setState(() => _loadingText = "Vérification de l'authentification...");
-//
-//       // ---------- ÉTAPE 1 : Attendre que Firebase ait un utilisateur ----------
-//       try {
-//         await _authCompleter!.future;
-//         // await _authCompleter!.future.timeout(const Duration(seconds: 5));
-//       } catch (e) {
-//         // Pas d'utilisateur Firebase après 5 secondes → on force la redirection vers login
-//         _redirectToLoginAndClearStack();
-//         return;
-//       }
-//
-//       // ---------- ÉTAPE 2 : Récupérer les données de l'app (votre code existant) ----------
-//       if (mounted) setState(() => _loadingText = "Chargement des données...");
-//       await authProvider.getAppData();
-//
-//       final isFirst = await authProvider.getIsFirst();
-//       if (isFirst == null || isFirst == false) {
-//         authProvider.storeIsFirst(true);
-//         if (mounted) Navigator.pushNamed(context, '/introduction');
-//         return;
-//       }
-//
-//       final token = await authProvider.getToken();
-//       if (token == null || token.isEmpty) {
-//         _redirectToLoginAndClearStack();
-//         return;
-//       }
-//
-//       if (mounted) setState(() => _loadingText = "Connexion...");
-//       final success = await authProvider.getLoginUser(token);
-//
-//       if (!success) {
-//         _redirectToLoginAndClearStack();
-//         return;
-//       }
-//
-//       setState(() => _isAuthCompleted = true);
-//
-//       // ---------- ÉTAPE 3 : Suite normale (préparation des posts, navigation) ----------
-//       _preparePostsInBackground();
-//       _navigateToDestination();
-//
-//     } catch (e) {
-//       print('❌ Erreur initialisation: $e');
-//       _redirectToLoginAndClearStack();
-//     }
-//   }
-//
-//   /// Redirige vers l'écran de connexion et vide toute la pile
 //   void _redirectToLoginAndClearStack() {
 //     if (!mounted) return;
 //     Navigator.of(context).pushAndRemoveUntil(
-//       MaterialPageRoute(builder: (_) =>  LoginPageUser()), // à adapter selon votre nom d'écran
+//       MaterialPageRoute(builder: (_) => LoginPageUser()),
 //           (route) => false,
 //     );
 //   }
-//   // 🔥 NOUVELLE MÉTHODE : CHARGER LES POSTS IMMÉDIATS
-//   Future<void> _loadImmediatePosts() async {
-//     try {
-//       if (authProvider.loginUserData.id == null) return;
 //
-//       if (mounted) {
-//         setState(() => _loadingText = "Chargement des premiers posts...");
-//       }
-//
-//       // 🔥 INITIALISER LE PROVIDER
-//       final mixedFeedProvider = Provider.of<MixedFeedServiceProvider>(context, listen: false);
-//
-//       // Initialiser le service
-//       mixedFeedProvider.initializeService(
-//         authProvider: authProvider,
-//         categorieProvider: categorieProduitProvider,
-//         postProvider: postProvider,
-//         chroniqueProvider: chroniqueProvider,
-//         contentProvider: contentProvider,
-//       );
-//
-//       // 🔥 CHARGER LES 2 POSTS IMMÉDIATS
-//       await mixedFeedProvider.loadImmediatePosts();
-//
-//       if (mounted) {
-//         setState(() => _areImmediatePostsLoaded = mixedFeedProvider.areImmediatePostsLoaded);
-//       }
-//
-//       print('✅ Posts immédiats chargés: ${mixedFeedProvider.immediatePosts.length}');
-//
-//     } catch (e) {
-//       print('❌ Erreur chargement posts immédiats: $e');
-//     }
-//   }
-//
-//
-//   void _preparePostsInBackground() {
-//     WidgetsBinding.instance?.addPostFrameCallback((_) async {
-//       try {
-//         final mixedFeedProvider = Provider.of<MixedFeedServiceProvider>(context, listen: false);
-//
-//         // 🔥 LANCER SANS ATTENDRE (progressif)
-//         mixedFeedProvider.preparePosts();
-//
-//         print('🎯 Préparation progressive lancée en background');
-//
-//         // Vérifier après 1 seconde combien de posts sont disponibles
-//         await Future.delayed(Duration(seconds: 1));
-//
-//         print('📊 Posts disponibles après 1s: ${mixedFeedProvider.preparedPostsCount}');
-//
-//       } catch (e) {
-//         print('❌ Erreur préparation background: $e');
-//       }
-//     });
-//   }
-//   // 🔥 NAVIGATION VERS MY HOMEPAGE
 //   void _navigateToDestination() {
 //     if (!mounted) return;
+//     if (_hasNavigated) return;
 //
+//     // Attendre la fin de la vidéo si elle doit être jouée
 //     if (shouldPlayVideo && !isFinished) {
 //       return;
 //     }
 //
-//     // 🔥 ATTENDRE QUE LES POSTS IMMÉDIATS SOIENT CHARGÉS
-//     // if (!_areImmediatePostsLoaded) {
-//     //   print('⏳ En attente des posts immédiats...');
-//     //   return;
-//     // }
-//     //   print('Deeplink: ${widget.postId}');
-//     // 5. VÉRIFIER LES DONNÉES PAYS
-//     final countryCode =
-//     authProvider.loginUserData.countryData?["countryCode"]?.toString();
+//     _hasNavigated = true;
 //
-//     final country =
-//     authProvider.loginUserData.countryData?["country"];
-//     // printVm("countryCode user:-${authProvider.loginUserData.countryData}-");
-//
-//     if ((countryCode == null || countryCode.isEmpty)) {
-//
-//         Navigator.push(
+//     // Si on a un post cible (notification)
+//     if (_targetPost != null) {
+//       print("🚀 [NAVIGATION] Vers le post cible");
+//       if (_targetPost!.dataType == PostDataType.VIDEO.name) {
+//         Navigator.pushReplacement(
 //           context,
 //           MaterialPageRoute(
-//             builder: (context) => UpdateUserData(title: "Mise à jour d'adresse"),
+//             builder: (context) => VideoYoutubePageDetails(initialPost: _targetPost!),
 //           ),
 //         );
-//
-//     }else
-//     if (widget.postId.isNotEmpty) {
-//       final AppLinkService linkService = AppLinkService();
-//       linkService.handleNavigation(context, widget.postId, widget.postType);
-//     } else {
+//       } else {
+//         Navigator.pushReplacement(
+//           context,
+//           MaterialPageRoute(
+//             builder: (context) => DetailsPost(post: _targetPost!),
+//           ),
+//         );
+//       }
+//     }
+//     // Si on a un postId mais pas encore chargé (cas rare)
+//     else if (widget.postId.isNotEmpty && _targetPost == null && !_isLoadingTargetPost) {
+//       print("🚀 [NAVIGATION] Chargement tardif du post");
+//       _loadTargetPost(widget.postId).then((_) {
+//         if (_targetPost != null) {
+//           _navigateToDestination();
+//         } else {
+//           Navigator.pushReplacement(
+//             context,
+//             MaterialPageRoute(
+//               builder: (context) => MyHomePage(title: ''),
+//             ),
+//           );
+//         }
+//       });
+//     }
+//     // Sinon aller à l'accueil
+//     else {
+//       print("🚀 [NAVIGATION] Vers MyHomePage");
 //       Navigator.pushReplacement(
 //         context,
 //         MaterialPageRoute(
-//           builder: (context) => MyHomePage(
-//             title: '',
-//           ),
+//           builder: (context) => MyHomePage(title: ''),
 //         ),
 //       );
 //     }
@@ -999,48 +903,65 @@ class _ChargementState extends State<SplahsChargement> {
 //     final height = MediaQuery.of(context).size.height;
 //     final width = MediaQuery.of(context).size.width;
 //
-//     // 🔥 VÉRIFIER SI ON PEUT NAVIGUER (auth + posts immédiats + vidéo)
-//     // if (_isAuthCompleted && _areImmediatePostsLoaded && (isFinished || !shouldPlayVideo)) {
-//     if (_isAuthCompleted  && (isFinished || !shouldPlayVideo)) {
+//     // Vérifier si on peut naviguer (auth + vidéo)
+//     if (_isAuthCompleted && !_hasError && !_hasNavigated && (isFinished || !shouldPlayVideo)) {
 //       WidgetsBinding.instance.addPostFrameCallback((_) {
 //         _navigateToDestination();
 //       });
 //     }
 //
-//     // ✅ ÉTAPE 1 : LOADER PENDANT LA PRÉPARATION VIDÉO
+//     // Écran d'erreur
+//     if (_hasError) {
+//       return Scaffold(
+//         backgroundColor: Colors.black,
+//         body: Center(
+//           child: Column(
+//             mainAxisAlignment: MainAxisAlignment.center,
+//             children: [
+//               const Icon(Icons.error_outline, color: Colors.red, size: 60),
+//               const SizedBox(height: 16),
+//               const Text(
+//                 'Une erreur est survenue',
+//                 style: TextStyle(color: Colors.white, fontSize: 16),
+//               ),
+//               const SizedBox(height: 8),
+//               Text(
+//                 _errorMessage,
+//                 style: const TextStyle(color: Colors.grey, fontSize: 12),
+//                 textAlign: TextAlign.center,
+//               ),
+//               const SizedBox(height: 24),
+//               ElevatedButton(
+//                 onPressed: () {
+//                   _redirectToLoginAndClearStack();
+//                 },
+//                 style: ElevatedButton.styleFrom(
+//                   backgroundColor: const Color(0xFF25D366),
+//                 ),
+//                 child: const Text('Retour à l\'accueil'),
+//               ),
+//             ],
+//           ),
+//         ),
+//       );
+//     }
+//
+//     // Chargement de la vidéo
 //     if (isLoadingVideo && shouldPlayVideo) {
 //       return _buildLoadingScreen("Chargement de la vidéo...");
 //     }
 //
-//     // ✅ ÉTAPE 2 : SPLASH APRÈS VIDÉO OU SANS VIDÉO
+//     // Splash screen avec StreamBuilder
 //     if (isFinished || !shouldPlayVideo) {
-//       return _buildSplashScreen(height, width);
+//       return _buildSplashScreenWithStream(height, width);
 //     }
 //
-//     // ✅ ÉTAPE 3 : LECTURE VIDÉO
+//     // Lecture vidéo
 //     return _buildVideoScreen();
 //   }
 //
-//   Widget _buildLoadingScreen(String text) {
-//     return Scaffold(
-//       backgroundColor: Colors.black,
-//       body: Center(
-//         child: Column(
-//           mainAxisAlignment: MainAxisAlignment.center,
-//           children: [
-//             CircularProgressIndicator(color: Colors.green),
-//             SizedBox(height: 20),
-//             Text(
-//               text,
-//               style: TextStyle(color: Colors.white, fontSize: 16),
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-//
-//   Widget _buildSplashScreen(double height, double width) {
+//   // NOUVEAU: Splash screen avec StreamBuilder intégré
+//   Widget _buildSplashScreenWithStream(double height, double width) {
 //     return Scaffold(
 //       body: Container(
 //         height: height,
@@ -1063,29 +984,106 @@ class _ChargementState extends State<SplahsChargement> {
 //                 child: Image.asset('assets/logo/afrolook_logo.png'),
 //               ),
 //
-//               // 🔥 STATUT DE CHARGEMENT DYNAMIQUE
-//               Column(
-//                 children: [
-//                   if (_hasError)
-//                     _buildErrorStatus()
-//                   else if (!_isAuthCompleted)
-//                     _buildAuthStatus()
-//                   else
-//                     _buildPostsStatus(),
+//               // STREAM BUILDER POUR L'AUTHENTIFICATION
+//               Expanded(
+//                 child: StreamBuilder<User?>(
+//                   stream: FirebaseAuth.instance.authStateChanges(),
+//                   builder: (context, snapshot) {
+//                     print("🔥 [STREAM] connectionState: ${snapshot.connectionState}");
+//                     print("🔥 [STREAM] hasData: ${snapshot.hasData}");
 //
-//                   SizedBox(height: 10),
+//                     // Pendant le chargement
+//                     if (snapshot.connectionState == ConnectionState.waiting) {
+//                       return Column(
+//                         mainAxisAlignment: MainAxisAlignment.center,
+//                         children: [
+//                           const CircularProgressIndicator(color: Color(0xFF25D366)),
+//                           const SizedBox(height: 20),
+//                           Text(
+//                             "Vérification de la session...",
+//                             style: const TextStyle(color: Colors.white70, fontSize: 14),
+//                           ),
+//                         ],
+//                       );
+//                     }
 //
-//                   // INDICATEUR DE PROGRESSION
-//                   SizedBox(
-//                     width: 100,
-//                     child: LinearProgressIndicator(
-//                       backgroundColor: Colors.grey[800],
-//                       valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
-//                       minHeight: 4,
-//                     ),
-//                   ),
-//                 ],
+//                     // Utilisateur connecté
+//                     if (snapshot.hasData && snapshot.data != null) {
+//                       // Appeler la gestion utilisateur (une seule fois)
+//                       WidgetsBinding.instance.addPostFrameCallback((_) {
+//                         if (!_isAuthCompleted && !_hasNavigated) {
+//                           _handleAuthenticatedUser(snapshot.data!);
+//                         }
+//                       });
+//
+//                       return Column(
+//                         mainAxisAlignment: MainAxisAlignment.center,
+//                         children: [
+//                           const Icon(Icons.check_circle, color: Colors.green, size: 40),
+//                           const SizedBox(height: 16),
+//                           Text(
+//                             _loadingText,
+//                             style: const TextStyle(color: Colors.white, fontSize: 14),
+//                           ),
+//                           const SizedBox(height: 8),
+//                           const LinearProgressIndicator(
+//                             backgroundColor: Colors.grey,
+//                             valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF25D366)),
+//                           ),
+//                         ],
+//                       );
+//                     }
+//
+//                     // Utilisateur NON connecté
+//                     if (!snapshot.hasData || snapshot.data == null) {
+//                       WidgetsBinding.instance.addPostFrameCallback((_) {
+//                         if (!_hasNavigated) {
+//                           _hasNavigated = true;
+//                           _redirectToLoginAndClearStack();
+//                         }
+//                       });
+//
+//                       return Column(
+//                         mainAxisAlignment: MainAxisAlignment.center,
+//                         children: [
+//                           const Icon(Icons.lock_outline, color: Colors.orange, size: 40),
+//                           const SizedBox(height: 16),
+//                           const Text(
+//                             "Session expirée",
+//                             style: TextStyle(color: Colors.white, fontSize: 14),
+//                           ),
+//                           const SizedBox(height: 8),
+//                           Text(
+//                             "Redirection vers la connexion...",
+//                             style: TextStyle(color: Colors.grey[400], fontSize: 12),
+//                           ),
+//                         ],
+//                       );
+//                     }
+//
+//                     return const SizedBox.shrink();
+//                   },
+//                 ),
 //               ),
+//
+//               // STATUT DE CHARGEMENT (post cible)
+//               if (_isLoadingTargetPost || _targetPost != null)
+//                 Column(
+//                   children: [
+//                     _buildLoadingStatus(),
+//                     const SizedBox(height: 10),
+//                     SizedBox(
+//                       width: 100,
+//                       child: LinearProgressIndicator(
+//                         backgroundColor: Colors.grey[800],
+//                         valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF25D366)),
+//                         minHeight: 4,
+//                       ),
+//                     ),
+//                   ],
+//                 ),
+//
+//               const SizedBox(height: 50),
 //             ],
 //           ),
 //         ),
@@ -1093,88 +1091,65 @@ class _ChargementState extends State<SplahsChargement> {
 //     );
 //   }
 //
-//   Widget _buildErrorStatus() {
-//     return Column(
-//       children: [
-//         Icon(Icons.error_outline, color: Colors.red, size: 30),
-//         SizedBox(height: 8),
-//         Text(
-//           "Erreur de connexion",
-//           style: TextStyle(
-//             color: Colors.white,
-//             fontWeight: FontWeight.w600,
-//             fontSize: 14,
-//           ),
+//   Widget _buildLoadingScreen(String text) {
+//     return Scaffold(
+//       backgroundColor: Colors.black,
+//       body: Center(
+//         child: Column(
+//           mainAxisAlignment: MainAxisAlignment.center,
+//           children: [
+//             const CircularProgressIndicator(color: Color(0xFF25D366)),
+//             const SizedBox(height: 20),
+//             Text(
+//               text,
+//               style: const TextStyle(color: Colors.white, fontSize: 16),
+//             ),
+//           ],
 //         ),
-//         SizedBox(height: 4),
-//         Text(
-//           "Redirection...",
-//           style: TextStyle(
-//             color: Colors.grey[400],
-//             fontSize: 12,
-//           ),
-//         ),
-//       ],
+//       ),
 //     );
 //   }
 //
-//   Widget _buildAuthStatus() {
-//     return Column(
-//       children: [
-//         Icon(Icons.security, color: Colors.blue, size: 30),
-//         SizedBox(height: 8),
-//         Text(
-//           _loadingText,
-//           style: TextStyle(
-//             color: Colors.white,
-//             fontWeight: FontWeight.w600,
-//             fontSize: 14,
+//   Widget _buildLoadingStatus() {
+//     // Chargement du post cible (notification)
+//     if (_isLoadingTargetPost) {
+//       return Column(
+//         children: [
+//           const Icon(Icons.downloading, color: Colors.orange, size: 30),
+//           const SizedBox(height: 8),
+//           const Text(
+//             "Chargement du contenu...",
+//             style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
 //           ),
-//         ),
-//         SizedBox(height: 4),
-//         Text(
-//           "Vérification des identifiants...",
-//           style: TextStyle(
-//             color: Colors.grey[400],
-//             fontSize: 12,
+//           const SizedBox(height: 4),
+//           Text(
+//             _loadingText,
+//             style: const TextStyle(color: Colors.grey, fontSize: 12),
 //           ),
-//         ),
-//       ],
-//     );
-//   }
+//         ],
+//       );
+//     }
 //
-//   Widget _buildPostsStatus() {
-//     final mixedFeedProvider = Provider.of<MixedFeedServiceProvider>(context, listen: false);
-//     final immediateCount = mixedFeedProvider.immediatePosts.length;
+//     // Si on a un post cible chargé
+//     if (_targetPost != null) {
+//       return Column(
+//         children: [
+//           const Icon(Icons.check_circle, color: Colors.green, size: 30),
+//           const SizedBox(height: 8),
+//           const Text(
+//             "Contenu prêt !",
+//             style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+//           ),
+//           const SizedBox(height: 4),
+//           Text(
+//             "Redirection...",
+//             style: TextStyle(color: Colors.grey, fontSize: 12),
+//           ),
+//         ],
+//       );
+//     }
 //
-//     return Column(
-//       children: [
-//         Icon(
-//           _areImmediatePostsLoaded ? Icons.check_circle : Icons.downloading,
-//           color: _areImmediatePostsLoaded ? Colors.green : Colors.orange,
-//           size: 30,
-//         ),
-//         SizedBox(height: 8),
-//         Text(
-//           _areImmediatePostsLoaded ? "Prêt !" : "Chargement des posts...",
-//           style: TextStyle(
-//             color: Colors.white,
-//             fontWeight: FontWeight.w600,
-//             fontSize: 14,
-//           ),
-//         ),
-//         SizedBox(height: 4),
-//         Text(
-//           _areImmediatePostsLoaded
-//               ? "$immediateCount post(s) chargé(s) - Redirection..."
-//               : "Préparation des premiers posts...",
-//           style: TextStyle(
-//             color: Colors.grey[400],
-//             fontSize: 12,
-//           ),
-//         ),
-//       ],
-//     );
+//     return const SizedBox.shrink();
 //   }
 //
 //   Widget _buildVideoScreen() {
@@ -1197,36 +1172,24 @@ class _ChargementState extends State<SplahsChargement> {
 //           else
 //             _buildLoadingScreen("Chargement de la vidéo..."),
 //
-//           // OVERLAY DE CHARGEMENT
-//           if (_isAuthCompleted && _areImmediatePostsLoaded)
-//             Positioned(
-//               bottom: 100,
-//               left: 0,
-//               right: 0,
-//               child: Container(
-//                 padding: EdgeInsets.all(16),
-//                 child: Column(
-//                   children: [
-//                     Text(
-//                       "Posts prêts !",
-//                       style: TextStyle(
-//                         color: Colors.white,
-//                         fontSize: 18,
-//                         fontWeight: FontWeight.bold,
-//                       ),
+//           // INDICATEUR DE CHARGEMENT
+//           Positioned(
+//             bottom: 100,
+//             left: 0,
+//             right: 0,
+//             child: Container(
+//               padding: const EdgeInsets.all(16),
+//               child: Column(
+//                 children: [
+//                   if (_isAuthCompleted && _targetPost != null)
+//                     const Text(
+//                       "Redirection...",
+//                       style: TextStyle(color: Colors.white, fontSize: 14),
 //                     ),
-//                     SizedBox(height: 8),
-//                     Text(
-//                       "Redirection vers l'accueil...",
-//                       style: TextStyle(
-//                         color: Colors.grey[300],
-//                         fontSize: 14,
-//                       ),
-//                     ),
-//                   ],
-//                 ),
+//                 ],
 //               ),
 //             ),
+//           ),
 //         ],
 //       ),
 //     );

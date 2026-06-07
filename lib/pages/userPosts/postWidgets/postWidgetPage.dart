@@ -1571,19 +1571,6 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   ),
                 ),
 
-              if (_isVerified())
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    padding: EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      color: _afroDarkBg,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(Icons.verified, color: Colors.blue, size: 20),
-                  ),
-                ),
             ],
           ),
         ),

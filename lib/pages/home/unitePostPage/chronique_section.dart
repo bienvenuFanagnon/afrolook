@@ -101,6 +101,7 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
     }
 
     final groupedList = widget.groupedChroniques.values.toList();
+
     groupedList.sort((a, b) {
       final latestA = a.isNotEmpty ? a.first.createdAt : Timestamp.now();
       final latestB = b.isNotEmpty ? b.first.createdAt : Timestamp.now();

@@ -1,7 +1,6 @@
 // admin_email_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -10,1121 +9,283 @@ class AdminEmailScreen extends StatefulWidget {
   _AdminEmailScreenState createState() => _AdminEmailScreenState();
 }
 
-class _AdminEmailScreenState extends State<AdminEmailScreen> with SingleTickerProviderStateMixin {
-  final _formKey = GlobalKey<FormState>();
-  final _subjectController = TextEditingController();
-  final _messageController = TextEditingController();
-  final _imageUrlController = TextEditingController();
+class _AdminEmailScreenState extends State<AdminEmailScreen> {
+  // Controllers
   final _searchController = TextEditingController();
+  final _scrollController = ScrollController();
 
-  String _targetType = "all";
+  // États
   bool _isSending = false;
-  List<String> _selectedUsers = [];
+  bool _isLoading = false;
+  bool _hasMore = true;
+  String _searchQuery = '';
+
+  // Données
   List<Map<String, dynamic>> _users = [];
-  List<Map<String, dynamic>> _filteredUsers = [];
-  bool _isLoadingUsers = false;
-  int _estimatedCount = 0;
+  DocumentSnapshot? _lastDocument;
 
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
+  // Pagination
+  final int _pageSize = 10;
 
+  // Couleurs
   final Color africanBlack = Color(0xFF1A1A1A);
   final Color africanRed = Color(0xFFE63946);
   final Color africanGold = Color(0xFFFFD700);
+  final Color africanGreen = Color(0xFF2ECC71);
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: Duration(milliseconds: 800),
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
-    );
-    _slideAnimation = Tween<Offset>(
-      begin: Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeOut));
-
-    _animationController.forward();
     _loadUsers();
-
-    // Ajouter des listeners pour mettre à jour l'aperçu
-    _subjectController.addListener(_updatePreview);
-    _messageController.addListener(_updatePreview);
-    _imageUrlController.addListener(_updatePreview);
-  }
-
-  void _updatePreview() {
-    setState(() {}); // Rafraîchir l'aperçu
+    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
-    _subjectController.removeListener(_updatePreview);
-    _messageController.removeListener(_updatePreview);
-    _imageUrlController.removeListener(_updatePreview);
-    _animationController.dispose();
-    _subjectController.dispose();
-    _messageController.dispose();
-    _imageUrlController.dispose();
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadUsers() async {
-    setState(() => _isLoadingUsers = true);
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      if (!_isLoading && _hasMore) {
+        _loadMoreUsers();
+      }
+    }
+  }
+
+  /// Calcule le nombre de jours d'inactivité en détectant automatiquement le format
+  /// Supporte à la fois les millisecondes et les microsecondes
+  int _calculateDaysInactive(int lastTimeActive) {
+    if (lastTimeActive == 0) return 0;
+
+    final nowMillis = DateTime.now().millisecondsSinceEpoch;
+    int diffMillis;
+
+    // 🔥 DÉTECTION AUTOMATIQUE DU FORMAT
+    // Si la valeur est très grande (> 10^12), c'est probablement en microsecondes
+    // Sinon, c'est probablement en millisecondes
+    if (lastTimeActive > 1000000000000) {
+      // Format microsecondes → convertir en millisecondes
+      final lastTimeActiveMillis = lastTimeActive ~/ 1000;
+      diffMillis = nowMillis - lastTimeActiveMillis;
+    } else {
+      // Format millisecondes
+      diffMillis = nowMillis - lastTimeActive;
+    }
+
+    // Vérifier si le résultat est aberrant (si oui, essayer l'autre format)
+    final daysInactive = (diffMillis / 86400000).floor();
+
+    // Si le résultat est > 500 jours (anormal pour l'application qui n'a pas 2 ans),
+    // réessayer avec l'autre format
+    if (daysInactive > 500 && lastTimeActive > 0) {
+      if (lastTimeActive > 1000000000000) {
+        // On était en μs, essayer en ms
+        final lastTimeActiveMillis = lastTimeActive;
+        diffMillis = nowMillis - lastTimeActiveMillis;
+      } else {
+        // On était en ms, essayer en μs
+        final lastTimeActiveMicros = lastTimeActive * 1000;
+        final lastTimeActiveMillis = lastTimeActiveMicros ~/ 1000;
+        diffMillis = nowMillis - lastTimeActiveMillis;
+      }
+      return (diffMillis / 86400000).floor().clamp(0, 500);
+    }
+
+    return daysInactive < 0 ? 0 : daysInactive.clamp(0, 500);
+  }
+
+  Map<String, dynamic> _processUserData(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    final lastTimeActive = data['last_time_active'] ?? 0;
+    final daysInactive = _calculateDaysInactive(lastTimeActive);
+
+    return {
+      'id': doc.id,
+      'pseudo': data['pseudo'] ?? 'Sans pseudo',
+      'email': data['email'] ?? '',
+      'imageUrl': data['imageUrl'],
+      'giftCoinsBalance': data['giftCoinsBalance'] ?? 0,
+      'soldePrincipal': data['votre_solde_principal'] ?? 0,
+      'totalCoinsEarned': data['totalCoinsEarnedFromLikes'] ?? 0,
+      'totalLikesReceived': data['totalLikesReceived'] ?? 0,
+      'totalFollowers': (data['userAbonnesIds'] as List?)?.length ?? 0,
+      'daysInactive': daysInactive,
+      'isInactive': daysInactive >= 3 && lastTimeActive > 0,
+      'rawTimestamp': lastTimeActive, // Pour débogage (optionnel)
+    };
+  }
+
+  Future<void> _loadUsers({bool reset = true}) async {
+    if (_isLoading) return;
+
+    setState(() {
+      _isLoading = true;
+      if (reset) {
+        _users.clear();
+        _lastDocument = null;
+        _hasMore = true;
+      }
+    });
+
     try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('Users')
-          .where('email', isNotEqualTo: null)
-          .where('email', isNotEqualTo: '')
-          .get();
+      Query query;
 
-      _users = snapshot.docs.map((doc) {
-        final data = doc.data();
-        return {
-          'id': doc.id,
-          'pseudo': data['pseudo'] ?? 'Sans pseudo',
-          'email': data['email'],
-          'imageUrl': data['imageUrl'],
-        };
-      }).toList();
+      if (_searchQuery.isNotEmpty) {
+        final endQuery = _searchQuery + '\uf8ff';
+        query = FirebaseFirestore.instance
+            .collection('Users')
+            .where('pseudo', isGreaterThanOrEqualTo: _searchQuery)
+            .where('pseudo', isLessThanOrEqualTo: endQuery)
+            .limit(_pageSize);
+      } else {
+        query = FirebaseFirestore.instance
+            .collection('Users')
+            .where('email', isNotEqualTo: null)
+            .where('email', isNotEqualTo: '')
+            .orderBy('pseudo')
+            .limit(_pageSize);
 
-      _filteredUsers = List.from(_users);
-      _updateEstimatedCount();
+        if (_lastDocument != null) {
+          query = query.startAfterDocument(_lastDocument!);
+        }
+      }
+
+      final snapshot = await query.get();
+
+      if (snapshot.docs.isEmpty) {
+        setState(() => _hasMore = false);
+      } else {
+        final newUsers = snapshot.docs.map((doc) => _processUserData(doc)).toList();
+
+        setState(() {
+          if (reset) {
+            _users = newUsers;
+          } else {
+            _users.addAll(newUsers);
+          }
+          _lastDocument = snapshot.docs.last;
+          _hasMore = snapshot.docs.length >= _pageSize;
+        });
+      }
     } catch (e) {
-      print('Erreur chargement utilisateurs: $e');
+      print('Erreur chargement: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur lors du chargement des utilisateurs'),
-          backgroundColor: africanRed,
-        ),
+        SnackBar(content: Text('Erreur de chargement: $e'), backgroundColor: africanRed),
       );
     } finally {
-      setState(() => _isLoadingUsers = false);
+      setState(() => _isLoading = false);
     }
   }
 
-  void _updateEstimatedCount() {
-    setState(() {
-      if (_targetType == 'all') {
-        _estimatedCount = _users.length;
-      } else {
-        _estimatedCount = _selectedUsers.length;
-      }
-    });
+  Future<void> _loadMoreUsers() async {
+    if (!_hasMore || _isLoading) return;
+    await _loadUsers(reset: false);
   }
 
-  void _filterUsers(String query) {
+  void _searchUsers(String query) {
     setState(() {
-      if (query.isEmpty) {
-        _filteredUsers = List.from(_users);
-      } else {
-        _filteredUsers = _users.where((user) {
-          final pseudo = user['pseudo'].toString().toLowerCase();
-          final email = user['email'].toString().toLowerCase();
-          final searchLower = query.toLowerCase();
-          return pseudo.contains(searchLower) || email.contains(searchLower);
-        }).toList();
-      }
+      _searchQuery = query.trim();
+      _lastDocument = null;
+      _hasMore = true;
+      _users.clear();
     });
+    _loadUsers(reset: true);
   }
 
-  Future<void> _showUserSelectionDialog() async {
-    // Réinitialiser la recherche
-    _searchController.clear();
-    _filteredUsers = List.from(_users);
+  Future<void> _sendReminderToUser(Map<String, dynamic> user) async {
+    setState(() => _isSending = true);
 
-    final result = await showDialog<List<String>>(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            return Dialog(
-              backgroundColor: Colors.transparent,
-              insetPadding: EdgeInsets.all(16),
-              child: Container(
-                width: double.infinity,
-                height: MediaQuery.of(context).size.height * 0.8,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: africanBlack.withOpacity(0.3),
-                      blurRadius: 20,
-                      offset: Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    // Header
-                    Container(
-                      padding: EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [africanBlack, africanRed],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(20),
-                          topRight: Radius.circular(20),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.people, color: africanGold, size: 28),
-                          SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Sélectionner les destinataires',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Text(
-                                  '${_selectedUsers.length} sélectionné(s)',
-                                  style: TextStyle(
-                                    color: africanGold,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          IconButton(
-                            icon: Icon(Icons.close, color: Colors.white),
-                            onPressed: () => Navigator.pop(context, _selectedUsers),
-                          ),
-                        ],
-                      ),
-                    ),
+    try {
+      // Compter les nouveaux likes (7 derniers jours)
+      final sevenDaysAgo = DateTime.now().subtract(Duration(days: 7)).millisecondsSinceEpoch;
+      final postsSnapshot = await FirebaseFirestore.instance
+          .collection('Posts')
+          .where('user_id', isEqualTo: user['id'])
+          .get();
 
-                    // Search bar
-                    Padding(
-                      padding: EdgeInsets.all(16),
-                      child: TextField(
-                        controller: _searchController,
-                        onChanged: (query) {
-                          setStateDialog(() {
-                            if (query.isEmpty) {
-                              _filteredUsers = List.from(_users);
-                            } else {
-                              _filteredUsers = _users.where((user) {
-                                final pseudo = user['pseudo'].toString().toLowerCase();
-                                final email = user['email'].toString().toLowerCase();
-                                final searchLower = query.toLowerCase();
-                                return pseudo.contains(searchLower) || email.contains(searchLower);
-                              }).toList();
-                            }
-                          });
-                        },
-                        decoration: InputDecoration(
-                          hintText: 'Rechercher un utilisateur...',
-                          prefixIcon: Icon(Icons.search, color: africanGold),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey.shade300),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: africanGold, width: 2),
-                          ),
-                        ),
-                      ),
-                    ),
+      int newLikesCount = 0;
+      for (var postDoc in postsSnapshot.docs) {
+        final post = postDoc.data();
+        int postCreatedAt = post['created_at'] ?? 0;
 
-                    // User list
-                    Expanded(
-                      child: _isLoadingUsers
-                          ? Center(child: CircularProgressIndicator(color: africanGold))
-                          : _filteredUsers.isEmpty
-                          ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.person_off, size: 50, color: Colors.grey),
-                            SizedBox(height: 16),
-                            Text('Aucun utilisateur trouvé'),
-                          ],
-                        ),
-                      )
-                          : ListView.builder(
-                        padding: EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: _filteredUsers.length,
-                        itemBuilder: (context, index) {
-                          final user = _filteredUsers[index];
-                          final isSelected = _selectedUsers.contains(user['id']);
+        // Normaliser le timestamp du post
+        if (postCreatedAt > 1000000000000) {
+          postCreatedAt = postCreatedAt ~/ 1000;
+        }
 
-                          return Card(
-                            margin: EdgeInsets.only(bottom: 8),
-                            elevation: 2,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              side: isSelected
-                                  ? BorderSide(color: africanGold, width: 2)
-                                  : BorderSide.none,
-                            ),
-                            child: ListTile(
-                              onTap: () {
-                                setStateDialog(() {
-                                  if (isSelected) {
-                                    _selectedUsers.remove(user['id']);
-                                  } else {
-                                    _selectedUsers.add(user['id']);
-                                  }
-                                });
-                              },
-                              leading: CircleAvatar(
-                                backgroundImage: user['imageUrl'] != null
-                                    ? NetworkImage(user['imageUrl'])
-                                    : null,
-                                backgroundColor: africanGold.withOpacity(0.2),
-                                child: user['imageUrl'] == null
-                                    ? Icon(Icons.person, color: africanGold)
-                                    : null,
-                              ),
-                              title: Text(
-                                user['pseudo'],
-                                style: TextStyle(
-                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                  color: isSelected ? africanRed : africanBlack,
-                                ),
-                              ),
-                              subtitle: Text(user['email']),
-                              trailing: isSelected
-                                  ? Icon(Icons.check_circle, color: africanGold)
-                                  : Icon(Icons.radio_button_unchecked, color: Colors.grey),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
+        if (postCreatedAt > sevenDaysAgo) {
+          newLikesCount += (post['loves'] as int? ?? 0);
+        }
+      }
 
-                    // Footer buttons
-                    Container(
-                      padding: EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade50,
-                        borderRadius: BorderRadius.only(
-                          bottomLeft: Radius.circular(20),
-                          bottomRight: Radius.circular(20),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () {
-                                _searchController.clear();
-                                setStateDialog(() {
-                                  _filteredUsers = List.from(_users);
-                                  _selectedUsers.clear();
-                                });
-                              },
-                              style: OutlinedButton.styleFrom(
-                                side: BorderSide(color: africanRed),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                padding: EdgeInsets.symmetric(vertical: 16),
-                              ),
-                              child: Text(
-                                'Tout désélectionner',
-                                style: TextStyle(color: africanRed),
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () => Navigator.pop(context, _selectedUsers),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: africanGold,
-                                foregroundColor: africanBlack,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                padding: EdgeInsets.symmetric(vertical: 16),
-                              ),
-                              child: Text(
-                                'Confirmer (${_selectedUsers.length})',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
+      final userEmailData = {
+        'userId': user['id'],
+        'userEmail': user['email'],
+        'userName': user['pseudo'],
+        'pseudo': user['pseudo'],
+        'giftCoinsBalance': user['giftCoinsBalance'],
+        'soldePrincipal': user['soldePrincipal'],
+        'totalCoinsEarned': user['totalCoinsEarned'],
+        'totalLikesReceived': user['totalLikesReceived'],
+        'totalFollowers': user['totalFollowers'],
+        'daysInactive': user['daysInactive'],
+        'newLikesOnMyPosts': newLikesCount,
+        'newCommentsOnMyPosts': 0,
+      };
 
-    if (result != null) {
-      setState(() {
-        _selectedUsers = result;
-        _updateEstimatedCount();
+      final functions = FirebaseFunctions.instance;
+      final result = await functions
+          .httpsCallable('sendInactiveUserReminder')
+          .call({
+        'userId': user['id'],
+        'userData': userEmailData,
       });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.data['success'] == true
+                ? '✅ Email envoyé à ${user['email']}'
+                : '❌ ${result.data['message']}'),
+            backgroundColor: result.data['success'] == true ? Colors.green : africanRed,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ Erreur: $e'), backgroundColor: africanRed),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSending = false);
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      appBar: AppBar(
-        title: Text(
-          'Communication Afrolook',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1,
-          ),
-        ),
-        backgroundColor: africanBlack,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [africanBlack, africanRed],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
-        actions: [
-          Container(
-            margin: EdgeInsets.only(right: 16),
-            child: CircleAvatar(
-              backgroundColor: africanGold,
-              child: Icon(Icons.email, color: africanBlack, size: 20),
-            ),
-          ),
-        ],
-      ),
-      body: _isSending
-          ? Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [africanBlack.withOpacity(0.9), africanRed.withOpacity(0.9)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: Center(
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: africanGold.withOpacity(0.3),
-                        blurRadius: 30,
-                        spreadRadius: 5,
-                      ),
-                    ],
-                  ),
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(africanGold),
-                    strokeWidth: 4,
-                  ),
-                ),
-                SizedBox(height: 30),
-                Text(
-                  'Envoi des emails en cours...',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                SizedBox(height: 10),
-                Text(
-                  'Veuillez patienter',
-                  style: TextStyle(
-                    color: africanGold,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      )
-          : SingleChildScrollView(
-        padding: EdgeInsets.all(20),
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: SlideTransition(
-            position: _slideAnimation,
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Section Destinataires
-                  _buildSectionCard(
-                    icon: Icons.people,
-                    title: 'Destinataires',
-                    child: Column(
-                      children: [
-                        _buildRadioTile(
-                          value: 'all',
-                          title: 'Tous les utilisateurs',
-                          subtitle: 'Envoyer à tous les utilisateurs ayant un email',
-                          icon: Icons.public,
-                        ),
-                        Divider(),
-                        _buildRadioTile(
-                          value: 'specific',
-                          title: 'Utilisateurs spécifiques',
-                          subtitle: 'Choisir manuellement les destinataires',
-                          icon: Icons.person_search,
-                        ),
-                        if (_selectedUsers.isNotEmpty) ...[
-                          SizedBox(height: 12),
-                          Container(
-                            padding: EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: africanGold.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: africanGold.withOpacity(0.3)),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.check_circle, color: africanGold, size: 20),
-                                SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    '${_selectedUsers.length} utilisateur(s) sélectionné(s)',
-                                    style: TextStyle(
-                                      color: africanBlack,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                                TextButton(
-                                  onPressed: _showUserSelectionDialog,
-                                  child: Text(
-                                    'Modifier',
-                                    style: TextStyle(color: africanRed),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
+  Future<void> _sendToInactiveUsers() async {
+    final inactiveUsers = _users.where((u) => u['isInactive'] == true).toList();
 
-                  SizedBox(height: 20),
-
-                  // Section Sujet
-                  _buildSectionCard(
-                    icon: Icons.subject,
-                    title: 'Sujet de l\'email',
-                    child: TextFormField(
-                      controller: _subjectController,
-                      decoration: InputDecoration(
-                        hintText: 'Ex: Nouvelle fonctionnalité sur Afrolook',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: africanGold, width: 2),
-                        ),
-                        prefixIcon: Icon(Icons.email, color: africanGold),
-                        filled: true,
-                        fillColor: Colors.grey.shade50,
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Veuillez entrer un sujet';
-                        }
-                        return null;
-                      },
-                    ),
-                  ),
-
-                  SizedBox(height: 20),
-
-                  // Section Message
-                  _buildSectionCard(
-                    icon: Icons.message,
-                    title: 'Message',
-                    child: Column(
-                      children: [
-                        TextFormField(
-                          controller: _messageController,
-                          maxLines: 8,
-                          decoration: InputDecoration(
-                            hintText: 'Rédigez votre message...\n\nUtilisez {{pseudo}} pour personnaliser',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: africanGold, width: 2),
-                            ),
-                            filled: true,
-                            fillColor: Colors.grey.shade50,
-                            alignLabelWithHint: true,
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Veuillez entrer un message';
-                            }
-                            return null;
-                          },
-                        ),
-                        SizedBox(height: 8),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: Container(
-                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: africanGold.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              '{{pseudo}} sera remplacé par le nom de l\'utilisateur',
-                              style: TextStyle(
-                                color: africanBlack,
-                                fontSize: 12,
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  SizedBox(height: 20),
-
-                  // Section Image
-                  _buildSectionCard(
-                    icon: Icons.image,
-                    title: 'Image (optionnel)',
-                    child: TextFormField(
-                      controller: _imageUrlController,
-                      decoration: InputDecoration(
-                        hintText: 'https://exemple.com/image.jpg',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: africanGold, width: 2),
-                        ),
-                        prefixIcon: Icon(Icons.image_search, color: africanGold),
-                        suffixIcon: _imageUrlController.text.isNotEmpty
-                            ? IconButton(
-                          icon: Icon(Icons.clear, color: Colors.grey),
-                          onPressed: () {
-                            _imageUrlController.clear();
-                          },
-                        )
-                            : null,
-                        filled: true,
-                        fillColor: Colors.grey.shade50,
-                      ),
-                    ),
-                  ),
-
-                  SizedBox(height: 24),
-
-                  // Aperçu
-                  _buildPreviewCard(),
-
-                  SizedBox(height: 24),
-
-                  // Stats et estimation
-                  Container(
-                    padding: EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [africanBlack, africanRed],
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: africanRed.withOpacity(0.3),
-                          blurRadius: 10,
-                          offset: Offset(0, 5),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: africanGold,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(Icons.people_alt, color: africanBlack, size: 24),
-                        ),
-                        SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Nombre de destinataires',
-                                style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              Text(
-                                '$_estimatedCount utilisateur(s)',
-                                style: TextStyle(
-                                  color: africanGold,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  SizedBox(height: 30),
-
-                  // Bouton d'envoi
-                  Container(
-                    width: double.infinity,
-                    height: 60,
-                    child: ElevatedButton(
-                      onPressed: _sendEmails,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: africanGold,
-                        foregroundColor: africanBlack,
-                        elevation: 5,
-                        shadowColor: africanGold.withOpacity(0.5),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.send, size: 20),
-                          SizedBox(width: 10),
-                          Text(
-                            'ENVOYER LES EMAILS',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  SizedBox(height: 16),
-
-                  // Note d'information
-                  Container(
-                    padding: EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: africanGold.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: africanGold.withOpacity(0.3)),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.info_outline, color: africanGold, size: 20),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'L\'envoi peut prendre quelques minutes selon le nombre de destinataires. '
-                                'Les utilisateurs peuvent se désabonner à tout moment.',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: africanBlack,
-                              height: 1.4,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  SizedBox(height: 20),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionCard({
-    required IconData icon,
-    required String title,
-    required Widget child,
-  }) {
-    return Card(
-      elevation: 3,
-      shadowColor: africanBlack.withOpacity(0.2),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: africanGold.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(icon, color: africanRed, size: 20),
-                ),
-                SizedBox(width: 12),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: africanBlack,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 16),
-            child,
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRadioTile({
-    required String value,
-    required String title,
-    required String subtitle,
-    required IconData icon,
-  }) {
-    return InkWell(
-      onTap: () {
-        setState(() {
-          _targetType = value;
-          if (value == 'specific') {
-            _showUserSelectionDialog();
-          } else {
-            _selectedUsers.clear();
-            _updateEstimatedCount();
-          }
-        });
-      },
-      child: Container(
-        padding: EdgeInsets.symmetric(vertical: 8),
-        child: Row(
-          children: [
-            Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: _targetType == value ? africanGold : Colors.grey,
-                  width: 2,
-                ),
-              ),
-              child: _targetType == value
-                  ? Container(
-                margin: EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: africanGold,
-                ),
-              )
-                  : null,
-            ),
-            SizedBox(width: 12),
-            Container(
-              padding: EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: _targetType == value ? africanGold.withOpacity(0.1) : Colors.transparent,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, color: _targetType == value ? africanRed : Colors.grey, size: 20),
-            ),
-            SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontWeight: _targetType == value ? FontWeight.bold : FontWeight.normal,
-                      color: _targetType == value ? africanRed : africanBlack,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPreviewCard() {
-    return Card(
-      elevation: 4,
-      shadowColor: africanGold.withOpacity(0.3),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.white, Colors.grey.shade50],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: africanGold.withOpacity(0.3)),
-        ),
-        child: Column(
-          children: [
-            Container(
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: africanBlack,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.visibility, color: africanGold, size: 20),
-                  SizedBox(width: 8),
-                  Text(
-                    'Aperçu de l\'email',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.1),
-                          blurRadius: 10,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 20,
-                              backgroundColor: africanGold.withOpacity(0.2),
-                              child: Icon(Icons.email, color: africanRed, size: 20),
-                            ),
-                            SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'De: Afrolook Media',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                  Text(
-                                    'À: utilisateur@email.com',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        Divider(height: 24),
-                        Text(
-                          _subjectController.text.isEmpty
-                              ? 'Sujet de l\'email'
-                              : _subjectController.text,
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: africanRed,
-                          ),
-                        ),
-                        SizedBox(height: 16),
-                        if (_imageUrlController.text.isNotEmpty) ...[
-                          Container(
-                            height: 150,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              image: DecorationImage(
-                                image: NetworkImage(_imageUrlController.text),
-                                fit: BoxFit.cover,
-                                onError: (exception, stackTrace) {
-                                  // Gérer l'erreur de chargement d'image
-                                },
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: 16),
-                        ],
-                        Container(
-                          padding: EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade50,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            _messageController.text.isEmpty
-                                ? 'Votre message apparaîtra ici...'
-                                : _messageController.text,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: africanBlack,
-                              height: 1.5,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _sendEmails() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (inactiveUsers.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Aucun utilisateur inactif dans la liste'), backgroundColor: africanRed),
+      );
+      return;
+    }
 
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Icon(Icons.warning_amber, color: africanGold),
-            SizedBox(width: 10),
-            Text('Confirmation'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Vous allez envoyer cet email à :'),
-            SizedBox(height: 10),
-            Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: africanGold.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.people, color: africanRed),
-                  SizedBox(width: 8),
-                  Text(
-                    '$_estimatedCount destinataire(s)',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: 16),
-            Text('Sujet: ${_subjectController.text}'),
-          ],
-        ),
+        title: Text('Envoyer à ${inactiveUsers.length} utilisateurs inactifs ?'),
+        content: Text('Cette action enverra un email personnalisé à tous les utilisateurs inactifs (3+ jours) affichés dans la liste.'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Annuler', style: TextStyle(color: Colors.grey)),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text('Annuler')),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: africanGold,
-              foregroundColor: africanBlack,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: africanRed),
             child: Text('Confirmer'),
           ),
         ],
@@ -1135,48 +296,259 @@ class _AdminEmailScreenState extends State<AdminEmailScreen> with SingleTickerPr
 
     setState(() => _isSending = true);
 
-    try {
-      final functions = FirebaseFunctions.instance;
-      final result = await functions
-          .httpsCallable('sendBulkEmail')
-          .call({
-        'subject': _subjectController.text,
-        'message': _messageController.text,
-        'imageUrl': _imageUrlController.text.isNotEmpty ? _imageUrlController.text : null,
-        'targetType': _targetType,
-        'specificUserIds': _selectedUsers,
-        'senderId': FirebaseAuth.instance.currentUser!.uid,
-        'priority': 'normal',
-      });
+    int success = 0;
+    int failed = 0;
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ ${result.data['message']}'),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
-
-        Navigator.pop(context);
-      }
-
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Erreur: ${e.toString()}'),
-            backgroundColor: africanRed,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isSending = false);
+    for (var user in inactiveUsers) {
+      try {
+        await _sendReminderToUser(user);
+        success++;
+        await Future.delayed(Duration(milliseconds: 500));
+      } catch (e) {
+        failed++;
       }
     }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('✅ $success envoyés, $failed échoués'),
+          backgroundColor: success > 0 ? Colors.green : africanRed,
+        ),
+      );
+      setState(() => _isSending = false);
+    }
+  }
+
+  int get _inactiveCount => _users.where((u) => u['isInactive'] == true).length;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.grey.shade50,
+      appBar: AppBar(
+        title: Text('Envoi de rappels', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: africanBlack,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(colors: [africanBlack, africanRed]),
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.refresh, color: africanGold),
+            onPressed: () => _loadUsers(reset: true),
+            tooltip: 'Recharger',
+          ),
+        ],
+      ),
+      body: _isSending
+          ? Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(colors: [africanBlack.withOpacity(0.9), africanRed.withOpacity(0.9)]),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: EdgeInsets.all(20),
+                decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                child: CircularProgressIndicator(color: africanGold, strokeWidth: 4),
+              ),
+              SizedBox(height: 30),
+              Text('Envoi en cours...', style: TextStyle(color: Colors.white, fontSize: 18)),
+            ],
+          ),
+        ),
+      )
+          : Column(
+        children: [
+          // Barre de recherche
+          Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 4)],
+            ),
+            child: TextField(
+              controller: _searchController,
+              onChanged: _searchUsers,
+              decoration: InputDecoration(
+                hintText: 'Rechercher par pseudo ou email...',
+                prefixIcon: Icon(Icons.search, color: africanGold),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                  icon: Icon(Icons.clear, color: Colors.grey),
+                  onPressed: () {
+                    _searchController.clear();
+                    _searchUsers('');
+                  },
+                )
+                    : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide.none,
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade100,
+              ),
+            ),
+          ),
+
+          // Stats et bouton d'envoi groupé
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: africanRed.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.warning, color: africanRed, size: 16),
+                      SizedBox(width: 4),
+                      Text(
+                        '$_inactiveCount inactifs',
+                        style: TextStyle(color: africanRed, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+                Spacer(),
+                if (_inactiveCount > 0)
+                  ElevatedButton.icon(
+                    onPressed: _sendToInactiveUsers,
+                    icon: Icon(Icons.send, size: 18),
+                    label: Text('Envoyer à tous les inactifs'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: africanRed,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+          // Liste des utilisateurs
+          Expanded(
+            child: _isLoading && _users.isEmpty
+                ? Center(child: CircularProgressIndicator(color: africanGold))
+                : _users.isEmpty
+                ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.person_off, size: 64, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text('Aucun utilisateur trouvé', style: TextStyle(color: Colors.grey)),
+                ],
+              ),
+            )
+                : ListView.builder(
+              controller: _scrollController,
+              padding: EdgeInsets.all(12),
+              itemCount: _users.length + (_hasMore && _searchQuery.isEmpty ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index == _users.length) {
+                  return Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Center(
+                      child: CircularProgressIndicator(color: africanGold, strokeWidth: 2),
+                    ),
+                  );
+                }
+
+                final user = _users[index];
+                final isInactive = user['isInactive'];
+
+                return Card(
+                  margin: EdgeInsets.only(bottom: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: isInactive
+                        ? BorderSide(color: africanRed.withOpacity(0.5), width: 1)
+                        : BorderSide.none,
+                  ),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundImage: user['imageUrl'] != null ? NetworkImage(user['imageUrl']) : null,
+                      backgroundColor: africanGold.withOpacity(0.2),
+                      child: user['imageUrl'] == null ? Icon(Icons.person, color: africanGold) : null,
+                    ),
+                    title: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            user['pseudo'],
+                            style: TextStyle(
+                              fontWeight: isInactive ? FontWeight.bold : FontWeight.normal,
+                              color: isInactive ? africanRed : africanBlack,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (isInactive)
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: africanRed.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '${user['daysInactive']}j',
+                              style: TextStyle(color: africanRed, fontSize: 10, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                      ],
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(user['email'], style: TextStyle(fontSize: 12)),
+                        Row(
+                          children: [
+                            Icon(Icons.monetization_on, size: 12, color: africanGold),
+                            SizedBox(width: 2),
+                            Text(
+                              '${user['giftCoinsBalance']} pièces',
+                              style: TextStyle(fontSize: 10, color: africanGold),
+                            ),
+                            SizedBox(width: 8),
+                            Icon(Icons.account_balance_wallet, size: 12, color: africanGreen),
+                            SizedBox(width: 2),
+                            Text(
+                              '${user['soldePrincipal']} FCFA',
+                              style: TextStyle(fontSize: 10, color: africanGreen),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    trailing: ElevatedButton(
+                      onPressed: () => _sendReminderToUser(user),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: africanGold,
+                        foregroundColor: africanBlack,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      ),
+                      child: Text('Envoyer', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

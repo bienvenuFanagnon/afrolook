@@ -27,6 +27,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:intl/intl.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:popup_menu_plus/popup_menu_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:random_color/random_color.dart';
@@ -39,6 +40,7 @@ import '../../constant/custom_theme.dart';
 import '../../providers/chroniqueProvider.dart';
 import '../../providers/contenuPayantProvider.dart';
 import '../../services/daily_modal_service.dart';
+import '../../services/navigation_service.dart';
 import '../../services/postService/mixed_feed_service.dart';
 import '../../services/utils/abonnement_utils.dart';
 import '../LiveAgora/livesAgora.dart';
@@ -52,6 +54,8 @@ import '../challenge/listChallengePost.dart';
 
 import '../challenge/userlistchallenge.dart';
 import '../challengeMonth/challenge_announce_modal.dart';
+import '../chat/myChat.dart';
+import '../chronique/chroniquedetails.dart';
 import '../chronique/chroniquehome.dart';
 import '../component/showUserDetails.dart';
 import '../../constant/textCustom.dart';
@@ -69,10 +73,16 @@ import '../cryptoMarket/cryptoMarketpage.dart';
 import '../dating/dating_entry_page.dart';
 import '../dating/dating_notifications_page.dart';
 import '../dating/widgets/dating_top_modal.dart';
+import '../mes_notifications.dart';
+import '../postDetails.dart';
+import '../postDetailsVideo.dart';
 import '../pronostics/pronostics_feed_page.dart';
+import '../splashChargement.dart';
 import '../user/amis/addListAmis.dart';
+import '../user/amis/ami.dart';
 import '../user/amis/pageMesInvitations.dart';
 import '../user/inviteAmis.dart';
+import '../user/monetisation.dart';
 import '../userPosts/favorites_posts.dart';
 import '../widgetGlobal.dart';
 import 'HomePostType.dart';
@@ -88,11 +98,14 @@ class MyHomePage extends StatefulWidget {
   final String title;
    bool isOpenLink;
    final MixedFeedService? preloadedFeedService; // 🔥 NOUVEAU
-    MyHomePage({
+  final DestinationData? initialDestination;
+
+  MyHomePage({
      super.key,
      required this.title,
      this.isOpenLink = false,
      this.preloadedFeedService, // 🔥 NOUVEAU
+     this.initialDestination, // 🔥 NOUVEAU
    });
 
   @override
@@ -216,15 +229,6 @@ class _MyHomePageState extends State<MyHomePage>
       });
     }
   }
-  // 🔥 CHARGEMENT DU CONTENU GLOBAL
-
-  // 🔥 DANS VOTRE MÉTHODE DE CONSTRUCTION DE LA TAB "Accueil"
-  Widget _buildDiscoverTab() {
-    return UnifiedHomeOptimized();
-  }
-
-
-
 
   String formaterDateTime(DateTime dateTime) {
     final now = DateTime.now();
@@ -1178,19 +1182,21 @@ class _MyHomePageState extends State<MyHomePage>
   void initState() {
     // _changeColor();
     super.initState();
-     authProvider.loadAdvertisements();
 
-    _listenUnreadNotifications();
+
 
     // 🔥 Lancer la présence automatique dès l'accès à la Home
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _handleInitialDestination();
+      // Gestion des notifications à chaud (app déjà ouverte)
+      authProvider.loadAdvertisements();
+
+      _listenUnreadNotifications();
       final String? uid = authProvider.loginUserData?.id;
       if (uid != null) {
         _presenceService.startHeartbeat(uid);
       }
     });
-
-
     _initializeFeedService();
     // Initialisation du listener de cycle de vie
  userProvider.updateTopUsersPopularity(authProvider.appDefaultData);
@@ -1270,6 +1276,112 @@ class _MyHomePageState extends State<MyHomePage>
     WidgetsBinding.instance.addObserver(this);
 
   }
+
+
+
+  void _handleInitialDestination() {
+    final dest = widget.initialDestination;
+    if (dest == null) return;
+
+    switch (dest.type) {
+      case 'post':
+        if (dest.post != null) {
+          _navigateToPostWidget(dest.post!);
+        }
+        break;
+      case 'chat':
+        if (dest.chat != null) {
+          _navigateToChatWidget(dest.chat!);
+        }
+        break;
+      case 'chronique':
+        if (dest.chroniqueId != null) {
+          _navigateToChroniqueDetail(dest.chroniqueId!);
+        }
+        break;
+      case 'chronique_home':
+        _navigateToChroniqueHome();
+        break;
+      case 'invitation':
+        _navigateToInvitations();
+        break;
+      case 'acceptInvitation':
+        _navigateToFriends();
+        break;
+      case 'parrainage':
+        _navigateToParrainage();
+        break;
+      case 'article':
+        _navigateToNotifications();
+        break;
+    // 'home' : ne rien faire
+    }
+  }
+
+// Implémentations des méthodes de navigation (vous les avez probablement déjà)
+  void _navigateToPostWidget(Post post) {
+    if (post.dataType == PostDataType.VIDEO.name) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => VideoYoutubePageDetails(initialPost: post)),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => DetailsPost(post: post)),
+      );
+    }
+  }
+
+  void _navigateToChatWidget(Chat chat) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => MyChat(title: 'mon chat', chat: chat)),
+    );
+  }
+
+  void _navigateToChroniqueDetail(String chroniqueId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => ChroniqueDetailPage(initialChroniqueId: chroniqueId)),
+    );
+  }
+
+  void _navigateToChroniqueHome() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ChroniqueHomePage()),
+    );
+  }
+
+  void _navigateToInvitations() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => MesInvitationsPage(context: context)),
+    );
+  }
+
+  void _navigateToFriends() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => Amis()),
+    );
+  }
+
+  void _navigateToParrainage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => MonetisationPage()),
+    );
+  }
+
+  void _navigateToNotifications() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => MesNotification()),
+    );
+  }
+
 
   Future<void> _showDailyModal() async {
     const modalKeys = ['remuneration', 'top_dating', 'challenge_month','invite_amis'];

@@ -24,13 +24,13 @@ class _SplashVideoState extends State<SplashVideo> {
     _controller.addListener(() {
       if (_controller.value.position == _controller.value.duration) {
         // Navigator.of(context).pushReplacement(
-        Navigator.of(context).pushReplacement(
-          PageTransition(
-            type: PageTransitionType.fade,
-            duration: Duration(milliseconds: 2000), // Ajuste la durée selon tes besoins
-            child: SplahsChargement(postId: "", postType: '',),
-          ),
-        );
+        // Navigator.of(context).pushReplacement(
+        //   PageTransition(
+        //     type: PageTransitionType.fade,
+        //     duration: Duration(milliseconds: 2000), // Ajuste la durée selon tes besoins
+        //     child: SplahsChargement(postId: "", postType: '',),
+        //   ),
+        // );
         // Navigator.of(context).pushReplacement(
         //   MaterialPageRoute(builder: (context) => SplahsChargement(postId: "")),
         // );

@@ -148,6 +148,11 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   bool _isSupportDialogShowing = false;
   String? _lastPopupDateKey = 'last_support_ad_popup_date';
 
+  List<Post> _oldPostsCache = [];
+  bool _isLoadingOldPosts = false;
+
+  Timer? _oldPostsLoadTimer;
+
   // Animation
   late AnimationController _starController;
   late AnimationController _unlikeController;
@@ -543,6 +548,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
 
     // 3. Réinitialiser et charger les posts initiaux
     _resetPagination();
+    _loadOldPostsInBackground();
     await _loadInitialPosts();
 
     // 4. Démarrer le chargement background
@@ -2468,7 +2474,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
             ),
           ),
           SizedBox(
-            height: height * 0.16,
+            height: height * 0.22,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: _canaux.length,
@@ -2533,7 +2539,324 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   // CONTENU PRINCIPAL
   // ===========================================================================
 
+  Future<void> _loadOldPostsInBackground() async {
+    if (_isLoadingOldPosts) return;
+    _isLoadingOldPosts = true;
+
+    try {
+      final random = Random();
+
+      // ------------------------------------------------------------
+      // 1. Choix de la tranche de mois (pondération)
+      // ------------------------------------------------------------
+      int monthsBack;
+
+      int chance = random.nextInt(100);
+
+      if (chance < 50) {
+        // 50% → 1 à 6 mois
+        monthsBack = random.nextInt(6) + 1;
+      } else if (chance < 80) {
+        // 30% → 6 à 18 mois
+        monthsBack = random.nextInt(12) + 6;
+      } else {
+        // 20% → 18 à 30 mois
+        monthsBack = random.nextInt(12) + 18;
+      }
+
+      final now = DateTime.now();
+
+      final DateTime endDate = DateTime(
+        now.year,
+        now.month - monthsBack,
+        1,
+      );
+
+      final DateTime startDate = DateTime(
+        endDate.year,
+        endDate.month - 1,
+        1,
+      );
+
+      final int startMicros = startDate.microsecondsSinceEpoch;
+      final int endMicros = endDate.microsecondsSinceEpoch;
+
+      print("📜 Chargement anciens posts entre $startDate et $endDate");
+
+      // ------------------------------------------------------------
+      // 2. Query Firestore (intervalle de temps)
+      // ------------------------------------------------------------
+      Query query = _firestore.collection('Posts');
+
+      query = query
+          .where("typeTabbar", isEqualTo: _selectedPostType)
+          .where("created_at", isGreaterThanOrEqualTo: startMicros)
+          .where("created_at", isLessThan: endMicros)
+          .orderBy("created_at")
+          .limit(30); // on prend large pour filtrer ensuite
+
+      final snapshot = await query.get();
+
+      if (snapshot.docs.isEmpty) {
+        print("⚠️ Aucun post trouvé dans cette période");
+        _isLoadingOldPosts = false;
+        return;
+      }
+
+      // ------------------------------------------------------------
+      // 3. Transformation + filtrage
+      // ------------------------------------------------------------
+      List<Post> validOldPosts = [];
+
+      for (final doc in snapshot.docs) {
+        final post = Post.fromJson(doc.data() as Map<String, dynamic>);
+        post.id = doc.id;
+
+        if (_loadedPostIds.contains(post.id)) continue;
+        if (_oldPostsCache.any((p) => p.id == post.id)) continue;
+        if (post.isAdvertisement == true) continue;
+
+        post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
+
+        validOldPosts.add(post);
+
+        if (validOldPosts.length >= 12) break;
+      }
+
+      // ------------------------------------------------------------
+      // 4. Ajout au cache
+      // ------------------------------------------------------------
+      if (validOldPosts.isNotEmpty) {
+        validOldPosts.shuffle();
+
+        _oldPostsCache.addAll(validOldPosts);
+
+        print(
+          "✅ ${validOldPosts.length} anciens posts ajoutés (cache: ${_oldPostsCache.length})",
+        );
+      } else {
+        print("⚠️ Aucun post valide après filtrage");
+      }
+    } catch (e) {
+      print("❌ Erreur chargement anciens posts: $e");
+    } finally {
+      _isLoadingOldPosts = false;
+    }
+  }
+
   Widget _buildContent() {
+    double height = MediaQuery.of(context).size.height;
+    double width = MediaQuery.of(context).size.width;
+
+    if (_isLoadingPosts && _posts.isEmpty) return _buildLoadingShimmer(width, height);
+    if (_hasErrorPosts && _posts.isEmpty) return _buildErrorWidget();
+    if (_posts.isEmpty) return _buildEmptyWidget();
+
+    // ------------------------------------------------------------
+    // 1. Construction du flux alterné (3 normaux → 2 anciens)
+    // ------------------------------------------------------------
+    List<Post> normalPosts = List.from(_posts);
+    List<Post> oldBuffer = List.from(_oldPostsCache);
+
+    List<Post> finalPosts = [];
+
+    const int normalBatchSize = 3;
+    const int oldPerBatch = 2;
+
+    int normalIndex = 0;
+
+    while (normalIndex < normalPosts.length) {
+      int end = normalIndex + normalBatchSize;
+
+      if (end > normalPosts.length) {
+        end = normalPosts.length;
+      }
+
+      finalPosts.addAll(
+        normalPosts.sublist(normalIndex, end),
+      );
+
+      normalIndex = end;
+
+      if (oldBuffer.isNotEmpty) {
+        int take = oldPerBatch;
+
+        if (take > oldBuffer.length) {
+          take = oldBuffer.length;
+        }
+
+        finalPosts.addAll(
+          oldBuffer.sublist(0, take),
+        );
+
+        oldBuffer.removeRange(0, take);
+      }
+    }
+
+    if (oldBuffer.isNotEmpty) {
+      finalPosts.addAll(oldBuffer);
+    }
+
+    // ------------------------------------------------------------
+    // 2. Construction des widgets (filtrés, sections, posts, pub...)
+    // ------------------------------------------------------------
+    List<Widget> contentWidgets = [];
+
+    contentWidgets.add(_buildFilterChips());
+    contentWidgets.add(const SizedBox(height: 8));
+
+    final chroniquesSection = _buildChroniquesSection();
+    if (chroniquesSection is! SizedBox) contentWidgets.add(chroniquesSection);
+
+    final profilesSection = _buildProfilesSection();
+    if (profilesSection is! SizedBox) {
+      contentWidgets.add(profilesSection);
+      // contentWidgets.add(_buildAdMrec(key: 'ad_native_user'));
+      contentWidgets.add(const SizedBox(height: 8));
+    }
+
+    int postIndex = 0;
+    for (int i = 0; i < finalPosts.length; i++) {
+      final post = finalPosts[i];
+
+      if (postIndex == 0) {
+        contentWidgets.add(const PronosticsCarouselWidget());
+      }
+
+      contentWidgets.add(
+        GestureDetector(
+          onTap: () => _navigateToPostDetails(post),
+          child: _buildPostWidget(post, width, height, i),
+        ),
+      );
+      postIndex++;
+
+      if (postIndex == 2) {
+        contentWidgets.add(_buildAdAdvertisement(key: 'ad_after_first'));
+        // contentWidgets.add(const TopDatingProfilesWidget());
+        // contentWidgets.add(const RecentVIPContentWidget());
+      }
+
+      if (postIndex % 3 == 0) {
+        if (postIndex % 6 == 3) {
+          final articlesSection = _buildArticlesSection();
+          if (articlesSection is! SizedBox) contentWidgets.add(articlesSection);
+        } else if (postIndex % 6 == 0) {
+          final canauxSection = _buildCanauxSection();
+          if (canauxSection is! SizedBox) {
+            contentWidgets.add(canauxSection);
+            // contentWidgets.add(const RecentVIPContentWidget());
+            contentWidgets.add(_buildAdAdvertisement(key: 'ad_vert$postIndex'));
+          }
+        }
+      }
+    }
+
+    // Indicateurs de fin / chargement
+    if (_isLoadingMorePosts) {
+      contentWidgets.add(
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: const Center(
+            child: Column(
+              children: [
+                CircularProgressIndicator(color: primaryGreen),
+                SizedBox(height: 10),
+                Text('Chargement de plus de posts...', style: TextStyle(color: Colors.grey, fontSize: 12)),
+              ],
+            ),
+          ),
+        ),
+      );
+    } else if (_isLoadingBackground && _useBackgroundLoading) {
+      contentWidgets.add(
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Center(
+            child: Column(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey[500]),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Préparation de plus de contenu... ($_backgroundPostsLoaded/$_maxBackgroundPosts)',
+                  style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } else if (!_hasMorePosts) {
+      contentWidgets.add(
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 30),
+          child: Center(
+            child: Column(
+              children: [
+                const Icon(Icons.flag, color: Colors.green, size: 36),
+                const SizedBox(height: 10),
+                Text(
+                  _getEndMessage(),
+                  style: const TextStyle(color: Colors.grey, fontSize: 14),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 5),
+                const Text(
+                  'Revenez plus tard pour de nouveaux contenus',
+                  style: TextStyle(color: Colors.grey, fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } else if (!_useBackgroundLoading) {
+      contentWidgets.add(
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Center(
+            child: Column(
+              children: [
+                const Text(
+                  'Chargement automatique terminé',
+                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                ),
+                const SizedBox(height: 10),
+                ElevatedButton(
+                  onPressed: _loadMorePostsManually,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryGreen,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                  ),
+                  child: const Text('Charger 5 posts de plus', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return CustomScrollView(
+      controller: _scrollController,
+      slivers: [
+        SliverList(
+          delegate: SliverChildBuilderDelegate(
+                (context, index) => contentWidgets[index],
+            childCount: contentWidgets.length,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContent2() {
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
 

@@ -287,7 +287,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       } finally {
         setState(() => _isLoadingUser = false);
       }
-    } else if (widget.post.user_id != null) {
+    }
+    if (widget.post.user_id != null) {
       setState(() => _isLoadingUser = true);
       try {
         final userDoc = await _firestore
@@ -331,7 +332,9 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     try {
       await _disposeVideoControllers();
 
-      _videoController = VideoPlayerController.network(widget.post.url_media!);
+      // _videoController = VideoPlayerController.network(widget.post.url_media!);
+      final String optimizedUrl = _authProvider. convertToCdnUrl(widget.post.url_media!, _authProvider.appDefaultData);
+      _videoController = VideoPlayerController.network(optimizedUrl);
       await _videoController!.initialize();
 
       _videoController!.addListener(() {
@@ -870,81 +873,6 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     );
   }
 
-  Widget _buildPostHeader2() {
-    final isCanalPost = _creatorCanal != null;
-
-    if (!isCanalPost && _creatorUser == null) {
-      return _buildPlaceholderHeader();
-    }
-
-    final postOwner = isCanalPost ? _creatorCanal! : _creatorUser!;
-    final isCurrentUser = _authProvider.loginUserData.id == widget.post.user_id;
-    final isAbonne = isCanalPost
-        ? (_creatorCanal?.usersSuiviId?.contains(_authProvider.loginUserData.id) ?? false)
-        : (_creatorUser?.userAbonnesIds?.contains(_authProvider.loginUserData.id) ?? false);
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        GestureDetector(
-          onTap: () {
-            if (isCanalPost && _creatorCanal != null) {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => CanalDetails(canal: _creatorCanal!)));
-            } else if (_creatorUser != null) {
-              showUserDetailsModalDialog(_creatorUser!, MediaQuery.of(context).size.width, MediaQuery.of(context).size.height, context);
-            }
-          },
-          child: CircleAvatar(
-            radius: 23,
-            backgroundColor: const Color(0xFF2E7D32),
-            backgroundImage: (isCanalPost && _creatorCanal?.urlImage != null)
-                ? NetworkImage(_creatorCanal!.urlImage!)
-                : (_creatorUser?.imageUrl != null ? NetworkImage(_creatorUser!.imageUrl!) : null),
-            child: ((isCanalPost && _creatorCanal?.urlImage == null) || (_creatorUser?.imageUrl == null))
-                ? Icon(isCanalPost ? Icons.group : Icons.person, color: Colors.white, size: 20)
-                : null,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Text(
-                          isCanalPost ? '#${_creatorCanal?.titre ?? ''}' : '@${_creatorUser?.pseudo ?? ''}',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
-                        ),
-                        const SizedBox(width: 4),
-                        if ((_creatorUser?.isVerify == true || _creatorCanal?.isVerify == true))
-                          const Icon(Icons.verified, color: Colors.blue, size: 16),
-                        if (_creatorUser?.abonnement != null)
-                          AbonnementUtils.getUserBadge(abonnement: _creatorUser?.abonnement, isVerified: _creatorUser?.isVerify ?? false),
-                      ],
-                    ),
-                  ),
-                  if (!isCurrentUser && !isAbonne) _buildFollowButton(isCanalPost, postOwner),
-                  const SizedBox(width: 5),
-                  _buildCountryBadge(),
-                ],
-              ),
-              const SizedBox(height: 2),
-              Text(
-                isCanalPost
-                    ? '${_creatorCanal?.usersSuiviId?.length ?? 0} abonné(s)'
-                    : '${_creatorUser?.userAbonnesIds?.length ?? 0} abonné(s)',
-                style: const TextStyle(color: Color(0xFF71767B), fontSize: 12),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
   Widget _buildPostHeader() {
     final isCanalPost = _creatorCanal != null;
 
@@ -1011,8 +939,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
                         ),
                         const SizedBox(width: 4),
-                        if ((_creatorUser?.isVerify == true || _creatorCanal?.isVerify == true))
-                          const Icon(Icons.verified, color: Colors.blue, size: 16),
+
                         if (_creatorUser?.abonnement != null)
                           AbonnementUtils.getUserBadge(abonnement: _creatorUser?.abonnement, isVerified: _creatorUser?.isVerify ?? false),
                       ],

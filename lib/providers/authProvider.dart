@@ -26,6 +26,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/dating_data.dart';
+import '../pages/auth/authTest/Screens/Login/loginPageUser.dart';
 import '../pages/component/consoleWidget.dart';
 import '../services/auth/authService.dart';
 import '../services/user/userService.dart';
@@ -38,6 +39,8 @@ class UserAuthProvider extends ChangeNotifier {
   late UserData registerUser = UserData();
   late String registerText = "";
   late String? token = '';
+
+  String _kLastDatingWidgetShown = "last_dating_widget_shown";
 
   // late String? userId = "";
   late int app_version_code = 187;
@@ -220,15 +223,18 @@ class UserAuthProvider extends ChangeNotifier {
 
   Future<void> logout(BuildContext context) async {
     try {
-      // 1️⃣ Déconnexion Firebase (OBLIGATOIRE)
-      await FirebaseAuth.instance.signOut();
-
-      print("✅ Firebase déconnecté");
+      // 1️⃣ Afficher un indicateur de chargement
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
 
       // 2️⃣ Mettre l'utilisateur offline (backend / Firestore)
       if (loginUserData != null) {
         loginUserData!.isConnected = false;
-
         await changeStateUser(
           user: loginUserData,
           state: UserState.OFFLINE.name,
@@ -236,25 +242,55 @@ class UserAuthProvider extends ChangeNotifier {
         );
       }
 
-      // 3️⃣ Supprimer token local (Laravel ou autre)
+      // 3️⃣ Supprimer token local
       await storeToken('');
 
-      // 4️⃣ Nettoyer données locales (optionnel mais recommandé)
-      // await authProvider.clearAll();
+      // 4️⃣ FORCER la déconnexion Firebase (la plus importante)
+      await FirebaseAuth.instance.signOut();
 
-      // 5️⃣ Redirection propre (reset stack)
+      // 5️⃣ Attendre que Firebase termine la déconnexion
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      // 6️⃣ Vérifier que l'utilisateur est bien déconnecté
+      User? currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser != null) {
+        print("⚠️ Utilisateur encore connecté, tentative 2...");
+        await FirebaseAuth.instance.signOut();
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
+
+      print("✅ Déconnexion Firebase réussie");
+
+      // 7️⃣ Fermer le dialogue
       if (context.mounted) {
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          "/login",
+        Navigator.pop(context);
+      }
+
+      // 8️⃣ Nettoyer les providers (vider les données)
+      if (context.mounted) {
+        //vider les providers si nécessaire
+        // Provider.of<UserAuthProvider>(context, listen: false).clearUserData();
+        // Provider.of<UserProvider>(context, listen: false).clearData();
+      }
+
+      // 9️⃣ Redirection propre (reset complet du stack)
+      if (context.mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) =>  LoginPageUser()),
               (route) => false,
         );
       }
 
     } catch (e) {
       print("❌ Erreur lors de la déconnexion: $e");
+      if (context.mounted) {
+        Navigator.pop(context); // Fermer le dialogue en cas d'erreur
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors de la déconnexion: $e')),
+        );
+      }
     }
-  }
-  /// Fonction principale
+  }  /// Fonction principale
    Future<void> checkAndRefreshPostDates(String postId) async {
     try {
       print("✅ Post checkAndRefreshPostDates $postId encours de changement de date");
@@ -1071,18 +1107,6 @@ class UserAuthProvider extends ChangeNotifier {
       // 3. Update ciblé pour ne pas écraser les stories
       await userDoc.reference.update(updateData);
 
-      // 4. Chargement des amis séparément
-      final friendsSnapshot = await FirebaseFirestore.instance
-          .collection('Friends')
-          .where(Filter.or(
-        Filter('current_user_id', isEqualTo: id),
-        Filter('friend_id', isEqualTo: id),
-      ))
-          .get();
-
-      loginUserData!.friends = friendsSnapshot.docs
-          .map((doc) => Friends.fromJson(doc.data()))
-          .toList();
 
       haveData = true;
 
@@ -3217,8 +3241,54 @@ if(actionType == 'comment'){
     });
   }
 
+  Future<bool> canShowDatingWidget() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final lastString = prefs.getString(_kLastDatingWidgetShown);
+
+    if (lastString == null) {
+      return true; // jamais affiché
+    }
+
+    final lastDate = DateTime.parse(lastString);
+    final now = DateTime.now();
+
+    final difference = now.difference(lastDate).inHours;
+
+    return difference >= (3 * 24); // 3 jours
+  }
+
+  Future<void> markDatingWidgetShown() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _kLastDatingWidgetShown,
+      DateTime.now().toIso8601String(),
+    );
+  }
 
 
+  String convertToCdnUrl(String firebaseStorageUrl, AppDefaultData appConfig) {
+    // SÉCURITÉ : On vérifie directement la variable de l'objet passé en paramètre
+    if (appConfig.useCDN == false) {
+      return firebaseStorageUrl;
+    }
+
+    if (firebaseStorageUrl.isEmpty) return firebaseStorageUrl;
+
+    try {
+      if (firebaseStorageUrl.contains('firebasestorage.googleapis.com')) {
+        final parts = firebaseStorageUrl.split('/o/');
+        if (parts.length > 1) {
+          final filePath = parts[1].split('?')[0];
+          return "https://cdn.afrolookmedia.com/$filePath";
+        }
+      }
+    } catch (e) {
+      print('Erreur CDN URL Conversion: $e');
+    }
+
+    return firebaseStorageUrl;
+  }
 }
 
 Future<void> addPointsForAction(UserAction action) async {

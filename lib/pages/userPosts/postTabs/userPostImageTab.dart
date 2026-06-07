@@ -1464,7 +1464,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
               postId: post.id!,
               postType: PostDataType.IMAGE.name,
               chatId: '',
-              smallImage: widget.canal!.urlImage,
+              smallImage:post.images!.first!=null?post.images!.first: widget.canal!.urlImage,
               isChannel: true,
               channelTitle: widget.canal!.titre,
               canal: widget.canal
@@ -1484,7 +1484,8 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
             postId: post.id!,
             postType: PostDataType.IMAGE.name,
             chatId: '',
-            smallImage: authProvider.loginUserData.imageUrl,
+            smallImage:post.images!.first!=null?post.images!.first: authProvider.loginUserData.imageUrl,
+
             isChannel: false,
           );
         }

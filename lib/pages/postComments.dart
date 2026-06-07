@@ -499,22 +499,12 @@ class _PostCommentsState extends State<PostComments> {
                   if(!isCanal)
                     showUserDetailsModalDialog( post.user!, w, h, context);
                 },
-                child: Stack(
-                  children: [
-                    CircleAvatar(
-                      radius: 20,
-                      backgroundColor: Colors.grey.shade300,
-                      backgroundImage: NetworkImage(
-                        isCanal ? post.canal!.urlImage! : post.user!.imageUrl!,
-                      ),
-                    ),
-                    if ((isCanal ? post.canal!.isVerify : post.user!.isVerify) ?? false)
-                      Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: Icon(Icons.verified, color: Colors.blue, size: 14),
-                      ),
-                  ],
+                child: CircleAvatar(
+                  radius: 20,
+                  backgroundColor: Colors.grey.shade300,
+                  backgroundImage: NetworkImage(
+                    isCanal ? post.canal!.urlImage! : post.user!.imageUrl!,
+                  ),
                 ),
               ),
               SizedBox(width: 10),
@@ -522,9 +512,18 @@ class _PostCommentsState extends State<PostComments> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      isCanal ? "#${post.canal!.titre!}" : "@${post.user!.pseudo!}",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    Row(
+                      children: [
+                        Text(
+                          isCanal ? "#${post.canal!.titre!}" : "@${post.user!.pseudo!}",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        ),
+                        const SizedBox(width: 4),
+                        AbonnementUtils.getUserBadge(
+                          abonnement: post.user!.abonnement,
+                          isVerified: post.user!.isVerify ?? false,
+                        ),
+                      ],
                     ),
                     SizedBox(height: 2),
                     Text(

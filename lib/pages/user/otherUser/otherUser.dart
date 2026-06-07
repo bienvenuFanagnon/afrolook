@@ -5,6 +5,7 @@ import 'package:afrotok/models/tiktokModel.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/postDetails.dart';
 import 'package:afrotok/pages/postDetailsVideo.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -20,6 +21,7 @@ import 'package:video_thumbnail/video_thumbnail.dart';
 
 import '../../../providers/userProvider.dart';
 import '../../../services/linkService.dart';
+import '../../home/user_presence_widget.dart';
 import '../../widgetGlobal.dart';
 
 class OtherUserPage extends StatefulWidget {
@@ -47,7 +49,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
 
   // Nouvelle variable pour les likes du profil en temps réel
   int _profileLikes = 0;
-
+  bool _isSendingReminder = false;
   // Subscription pour écouter les changements
   StreamSubscription<DocumentSnapshot>? _userSubscription;
   @override
@@ -58,6 +60,131 @@ class _OtherUserPageState extends State<OtherUserPage> {
     _listenToUserChanges();
     _loadInitialPosts();
     _scrollController.addListener(_scrollListener);
+  }
+
+  Future<void> _sendReminderEmail() async {
+    if (_isSendingReminder) return;
+
+    setState(() => _isSendingReminder = true);
+
+    try {
+      // Récupérer les données utilisateur
+      final userDoc = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(widget.otherUser.id)
+          .get();
+
+      if (!userDoc.exists) {
+        throw Exception('Utilisateur non trouvé');
+      }
+
+      final data = userDoc.data()!;
+      final lastTimeActive = data['last_time_active'] ?? 0;
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final daysInactive = ((now - lastTimeActive) / (24 * 60 * 60 * 1000)).floor();
+
+      // Compter les nouveaux likes (7 derniers jours)
+      final sevenDaysAgo = DateTime.now().subtract(Duration(days: 7)).millisecondsSinceEpoch;
+      final postsSnapshot = await FirebaseFirestore.instance
+          .collection('Posts')
+          .where('user_id', isEqualTo: widget.otherUser.id)
+          .get();
+
+      int newLikesCount = 0;
+      for (var postDoc in postsSnapshot.docs) {
+        final post = postDoc.data();
+        final postCreatedAt = post['created_at'] ?? 0;
+        if (postCreatedAt > sevenDaysAgo) {
+          newLikesCount += (post['loves'] as int ?? 0);
+        }
+      }
+
+      // Préparer les données
+      final userEmailData = {
+        'userId': widget.otherUser.id,
+        'userEmail': data['email'] ?? '',
+        'userName': data['pseudo'] ?? 'Utilisateur',
+        'pseudo': data['pseudo'] ?? 'user',
+        'giftCoinsBalance': data['giftCoinsBalance'] ?? 0,
+        'soldePrincipal': data['votre_solde_principal'] ?? 0,
+        'totalCoinsEarned': data['totalCoinsEarnedFromLikes'] ?? 0,
+        'totalLikesReceived': data['totalLikesReceived'] ?? 0,
+        'totalFollowers': (data['userAbonnesIds'] as List?)?.length ?? 0,
+        'daysInactive': daysInactive < 0 ? 3 : daysInactive,
+        'newLikesOnMyPosts': newLikesCount,
+        'newCommentsOnMyPosts': 0,
+      };
+
+      // Appeler la Cloud Function
+      final result = await FirebaseFunctions.instance
+          .httpsCallable('sendInactiveUserReminder')
+          .call({
+        'userId': widget.otherUser.id,
+        'userData': userEmailData,
+      });
+
+      if (result.data['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ Email envoyé à ${userEmailData['userEmail']}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.data['message'] ?? 'Erreur lors de l\'envoi'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSendingReminder = false);
+      }
+    }
+  }
+
+  void _showConfirmReminderDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: Row(
+          children: [
+            Icon(Icons.email, color: Colors.orange),
+            SizedBox(width: 10),
+            Text('Envoyer un rappel', style: TextStyle(color: Colors.white)),
+          ],
+        ),
+        content: Text(
+          'Envoyer un email personnalisé à @${widget.otherUser.pseudo} ?',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Annuler', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _sendReminderEmail();
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            child: Text('Envoyer'),
+          ),
+        ],
+      ),
+    );
   }
 // Méthode pour écouter les changements de l'utilisateur
   void _listenToUserChanges() {
@@ -253,7 +380,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
     return widget.otherUser.userAbonnesIds?.contains(currentUserId) ?? false;
   }
 
-  Widget _buildFollowButton() {
+  Widget _buildFollowButton2() {
     final isOwnProfile = authProvider.loginUserData.id == widget.otherUser.id;
 
     if (isOwnProfile) return SizedBox(); // Ne pas afficher pour son propre profil
@@ -298,6 +425,97 @@ class _OtherUserPageState extends State<OtherUserPage> {
           ],
         ),
       ),
+    );
+  }
+  Widget _buildFollowButton() {
+    final isOwnProfile = authProvider.loginUserData.id == widget.otherUser.id;
+    final isAdmin = authProvider.loginUserData.role == 'ADM'; // ✅ Vérification locale
+
+    if (isOwnProfile) return SizedBox();
+
+    return Row(
+      children: [
+        // Bouton S'abonner
+        Expanded(
+          flex: isAdmin ? 3 : 4,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _isAbonne ? Colors.grey[800] : Colors.green,
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              side: _isAbonne ? BorderSide(color: Colors.green, width: 1.5) : BorderSide.none,
+            ),
+            onPressed: _abonneTap ? null : _toggleAbonnement,
+            child: _abonneTap
+                ? SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 2,
+              ),
+            )
+                : Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(_isAbonne ? Icons.person_remove : Icons.person_add, size: 20),
+                SizedBox(width: 8),
+                Text(
+                  _isAbonne ? 'SE DÉSABONNER' : "S'ABONNER",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // 🔥 BOUTON ADMIN - visible uniquement si rôle ADM
+        if (isAdmin) ...[
+          SizedBox(width: 8),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.orange.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.orange, width: 1),
+            ),
+            child: IconButton(
+              icon: _isSendingReminder
+                  ? SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(color: Colors.orange, strokeWidth: 2),
+              )
+                  : Icon(Icons.email, color: Colors.orange, size: 24),
+              onPressed: _isSendingReminder ? null : _showConfirmReminderDialog,
+              tooltip: 'Envoyer un email de rappel',
+            ),
+          ),
+        ],
+
+        // Bouton Partager
+        SizedBox(width: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.green.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.green, width: 1),
+          ),
+          child: IconButton(
+            icon: _isSharing
+                ? SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(color: Colors.green, strokeWidth: 2),
+            )
+                : Icon(Icons.share, color: Colors.green, size: 24),
+            onPressed: _isSharing ? null : _shareProfile,
+            tooltip: 'Partager le profil',
+          ),
+        ),
+      ],
     );
   }
 
@@ -618,7 +836,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
                           ),
                         ],
                       ),
-                      SizedBox(height: 16),
+                      SizedBox(height: 8),
 
                       // Nom et badge de vérification
                       Row(
@@ -636,11 +854,14 @@ class _OtherUserPageState extends State<OtherUserPage> {
                           _buildVerificationBadge(),
                         ],
                       ),
-                      SizedBox(height: 8),
+                      SizedBox(height: 4),
+                      UserPresenceWidget(
+                        userId: widget.otherUser!.id!,
+                        showTextStatus: true,
+                        isChatHeader: false,
+                      ),
+                      SizedBox(height: 4),
 
-                      // Code de parrainage
-                      _buildReferralCode(),
-                      SizedBox(height: 16),
                     ],
                   ),
                 ),
@@ -696,7 +917,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
             // Dans votre SliverToBoxAdapter
             SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.all(16),
+                padding: EdgeInsets.all(8),
                 child: Column(
                   children: [
                     // Statistiques
@@ -833,52 +1054,60 @@ class _OtherUserPageState extends State<OtherUserPage> {
 
   Widget _buildReferralCode() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.center,
+      spacing: 5,
       children: [
-        Text(
-          "Code de parrainage",
-          style: TextStyle(
-            color: Colors.grey[400],
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        SizedBox(height: 8),
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.yellow.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.yellow),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                "${widget.otherUser.codeParrainage}",
-                style: TextStyle(
-                  color: Colors.yellow,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
+        Row(
+          spacing: 5,
+          children: [
+            Text(
+              "Code de parrainage: ",
+              style: TextStyle(
+                color: Colors.grey[400],
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
               ),
-              SizedBox(width: 8),
-              GestureDetector(
-                onTap: () {
-                  Clipboard.setData(ClipboardData(
-                      text: "${widget.otherUser.codeParrainage}"));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Code de parrainage copié !'),
-                      backgroundColor: Colors.green,
+            ),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.yellow.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.yellow),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "${widget.otherUser.codeParrainage}",
+                    style: TextStyle(
+                      color: Colors.yellow,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
                     ),
-                  );
-                },
-                child: Icon(Icons.copy, color: Colors.yellow, size: 16),
+                  ),
+                  SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () {
+                      Clipboard.setData(ClipboardData(
+                          text: "${widget.otherUser.codeParrainage}"));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Code de parrainage copié !'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    },
+                    child: Icon(Icons.copy, color: Colors.yellow, size: 16),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+
+          ],
         ),
-        SizedBox(height: 8),
+
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -893,7 +1122,8 @@ class _OtherUserPageState extends State<OtherUserPage> {
               ),
             ),
           ],
-        ),
+        )
+
       ],
     );
   }

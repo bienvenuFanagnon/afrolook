@@ -16,26 +16,11 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../providers/authProvider.dart';
 import '../../providers/contenuPayantProvider.dart';
-import '../../providers/userProvider.dart';
-import 'dart:async';
-import 'dart:io';
 
-import 'package:afrotok/models/model_data.dart';
-import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:path/path.dart' as path;
-import 'package:video_compress/video_compress.dart';
-import 'package:video_thumbnail/video_thumbnail.dart';
-import 'package:path_provider/path_provider.dart';
 
-import '../../providers/authProvider.dart';
-import '../../providers/contenuPayantProvider.dart';
-import '../../providers/userProvider.dart';
+import 'package:path/path.dart' as path;
+
 
 class ContentFormScreen extends StatefulWidget {
   final ContentPaie? content;

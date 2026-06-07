@@ -447,14 +447,10 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
     batch.set(firestore.collection('Users').doc(id), authProvider.registerUser.toJson());
     batch.set(firestore.collection('Pseudo').doc(pseudo.id), pseudo.toJson());
 
-    // Mise à jour des statistiques globales
-    authProvider.appDefaultData.nbr_abonnes = (authProvider.appDefaultData.nbr_abonnes ?? 0) + 1;
-    if (!authProvider.appDefaultData.users_id!.contains(id)) {
-      authProvider.appDefaultData.users_id!.add(id);
-    }
+
     batch.update(firestore.collection('AppData').doc(authProvider.appDefaultData.id!), {
-      'nbr_abonnes': authProvider.appDefaultData.nbr_abonnes,
-      'users_id': authProvider.appDefaultData.users_id,
+      'nbr_abonnes': FieldValue.increment(1),
+      'users_id': FieldValue.arrayUnion([id]),
     });
 
     await batch.commit();
@@ -478,14 +474,10 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
     batch.set(firestore.collection('Users').doc(id), authProvider.registerUser.toJson());
     batch.set(firestore.collection('Pseudo').doc(pseudo.id), pseudo.toJson());
 
-    // Mise à jour des statistiques globales
-    authProvider.appDefaultData.nbr_abonnes = (authProvider.appDefaultData.nbr_abonnes ?? 0) + 1;
-    if (!authProvider.appDefaultData.users_id!.contains(id)) {
-      authProvider.appDefaultData.users_id!.add(id);
-    }
+
     batch.update(firestore.collection('AppData').doc(authProvider.appDefaultData.id!), {
-      'nbr_abonnes': authProvider.appDefaultData.nbr_abonnes,
-      'users_id': authProvider.appDefaultData.users_id,
+      'nbr_abonnes': FieldValue.increment(1),
+      'users_id': FieldValue.arrayUnion([id]),
     });
 
     await batch.commit();

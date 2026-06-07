@@ -286,7 +286,7 @@ class _UpdateUserDataState extends State<UpdateUserData> {
           await Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => SplahsChargement(postId: '', postType: ''),
+              builder: (context) => SplashChargement(),
             ),
           );
         } else {

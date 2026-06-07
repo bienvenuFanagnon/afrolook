@@ -448,11 +448,12 @@ class AppDefaultData {
   int fcfaPerCoin = 10;        // 10 FCFA pour 25 pièces => 0.4 FCFA par pièce
   // Pour l'arrondi, on utilisera des méthodes dédiées.
   double? solde_gain_pieces = 0.0;  // Solde de pièces gagnées par l'application (commission sur les cadeaux)
-
+  bool useCDN = true; // Activé par défaut
   AppDefaultData();
 
   AppDefaultData.fromJson(Map<String, dynamic> json) {
     id = json['id'];
+    useCDN = json['useCDN'] ?? true; // Si le champ n'existe pas encore dans Firestore, il sera 'true' par sécurité
     nbr_comments = json['nbr_comments'];
     nbr_likes = json['nbr_likes'];
     app_link = json['app_link'];
@@ -527,6 +528,8 @@ class AppDefaultData {
       "one_signal_api_key": one_signal_api_key,
       "users_id": users_id,
       "challengeStartDate": challengeStartDate,
+      // 🔥 ÉTAPE 3 : ENREGISTRER DANS FIRESTORE
+      "useCDN": useCDN,
       // 'solde_gain_pieces': solde_gain_pieces,
     };
   }

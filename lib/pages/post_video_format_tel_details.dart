@@ -9,6 +9,7 @@ import 'package:afrotok/pages/pub/banner_ad_widget.dart';
 import 'package:afrotok/pages/pub/native_ad_widget.dart';
 import 'package:afrotok/pages/pub/rewarded_ad_widget.dart';
 import 'package:afrotok/pages/widgetGlobal.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import 'package:video_player/video_player.dart';
@@ -25,6 +26,7 @@ import 'package:afrotok/services/linkService.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
 import '../providers/coin_gift_provider.dart';
+import '../services/utils/abonnement_utils.dart';
 import 'UserServices/deviceService.dart';
 import 'admin/AfrolookPub/ad_post_page_video_widget.dart';
 import 'canaux/detailsCanal.dart';
@@ -72,6 +74,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   List<dynamic> _feedItems = [];
   List<Post> _videoPosts = [];
   final Set<String> _loadedPostIds = {};
+  final Set<String> _loadingRelations = {};
   int _currentPage = 0;
   bool _isLoadingFeed = true;
   bool _isLoadingMore = false;
@@ -87,6 +90,12 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   Timer? _scrollHintTimer;
   bool _maxVideosReached = false;
   final int _maxVideosLimit = 50; // seuil de 50 vidéos
+
+  // Nouveaux membres pour le préchargement
+  final Map<int, VideoPlayerController> _preloadedControllers = {};
+  final int _preloadRadius = 2; // nombre de vidéos avant/après à précharger
+  final Set<int> _preloadingIndices = {};
+
   // Interactions state
   bool _isSharing = false;
   bool _isVoting = false;
@@ -107,14 +116,44 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
   bool get _isLookChallenge => widget.initialPost.type == 'CHALLENGEPARTICIPATION';
 
+
+  // Pour l'animation de like au double clic
+  bool _showLikeAnimation = false;
+  double _likeAnimationTop = 0;
+  double _likeAnimationLeft = 0;
+  Timer? _likeAnimationTimer;
+
+  // Pour le scroll plus sensible
+  double _dragStartY = 0;
+  double _dragDistance = 0;
+
+  // Pour l'animation des 5 coeurs qui se dispersent
+  final List<FlyingHeart> _flyingHearts = [];
+  final Random _random = Random();
+
+  bool _isFavorite = false;
+  int _favoritesCount = 0;
+  bool _isFavoriteProcessing = false;
+
+// Cache et gestion des anciennes vidéos
+  List<Post> _oldVideosCache = [];
+  bool _isLoadingOldVideos = false;
+  Timer? _oldVideosLoadTimer;   // chargement par lot
+  Set<String> _usedOldVideoIds = {};
+
   @override
   void initState() {
     super.initState();
+    _pageController = PageController(
+      initialPage: 0,
+      viewportFraction: 1.0,
+    );
     _initSharedPreferences();
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     authProvider.incrementPostTotalInteractions(postId: widget.initialPost.id!);
     postProvider = Provider.of<PostProvider>(context, listen: false);
-    _pageController = PageController();
+    _checkFavoriteStatus();
+
     _incrementViews();
     _loadSupportModalSeen();
     if (_isLookChallenge && widget.initialPost.challenge_id != null) {
@@ -126,6 +165,407 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       _showFirstScrollModalIfNeeded();
     });
   }
+  Future<void> _lazyLoadPostRelations(Post post) async {
+    if (_loadingRelations.contains(post.id)) return;
+    _loadingRelations.add(post.id!);
+
+    try {
+      await _loadPostRelations(post); // utilise la méthode existante
+      if (mounted) setState(() {});
+    } finally {
+      _loadingRelations.remove(post.id);
+    }
+  }
+  Future<void> _loadOldVideosInBackground() async {
+    if (_isLoadingOldVideos) return;
+    _isLoadingOldVideos = true;
+
+    try {
+      final random = Random();
+
+      // ------------------------------------------------------------
+      // 1. Choix de la tranche de mois (pondération)
+      // ------------------------------------------------------------
+      int monthsBack;
+      int chance = random.nextInt(100);
+
+      if (chance < 50) {
+        // 50% → 1 à 6 mois
+        monthsBack = random.nextInt(6) + 1;
+      } else if (chance < 80) {
+        // 30% → 6 à 18 mois
+        monthsBack = random.nextInt(12) + 6;
+      } else {
+        // 20% → 18 à 30 mois
+        monthsBack = random.nextInt(12) + 18;
+      }
+
+      final now = DateTime.now();
+      final DateTime endDate = DateTime(
+        now.year,
+        now.month - monthsBack,
+        1,
+      );
+      final DateTime startDate = DateTime(
+        endDate.year,
+        endDate.month - 1,
+        1,
+      );
+
+      final int startMicros = startDate.microsecondsSinceEpoch;
+      final int endMicros = endDate.microsecondsSinceEpoch;
+
+
+      print("📜 Chargement anciennes vidéos entre $startDate et $endDate");
+
+      // ------------------------------------------------------------
+      // 2. Query Firestore (intervalle de temps)
+      // ------------------------------------------------------------
+      Query query = _firestore.collection('Posts');
+
+      // 🔥 Adaptation : on filtre uniquement les vidéos
+      query = query.where("dataType", isEqualTo: PostDataType.VIDEO.name);
+
+      query = query
+          .where("created_at", isGreaterThanOrEqualTo: startMicros)
+          .where("created_at", isLessThan: endMicros)
+          .orderBy("created_at")
+          .limit(30); // on prend large pour filtrer ensuite
+
+      final snapshot = await query.get();
+
+      if (snapshot.docs.isEmpty) {
+        print("⚠️ Aucune vidéo trouvée dans cette période");
+        _isLoadingOldVideos = false;
+        return;
+      }
+
+      // ------------------------------------------------------------
+      // 3. Transformation + filtrage
+      // ------------------------------------------------------------
+      List<Post> validOldVideos = [];
+
+      for (final doc in snapshot.docs) {
+        final post = Post.fromJson(doc.data() as Map<String, dynamic>);
+        post.id = doc.id;
+
+        if (_loadedPostIds.contains(post.id)) continue;
+        if (_oldVideosCache.any((p) => p.id == post.id)) continue;
+        if (post.isAdvertisement == true) continue;
+        // 🔥 Adaptation : `_checkIfPostSeen` n'existe pas dans cette classe
+        // On peut soit l'ignorer, soit l'implémenter sommairement.
+        // Ici on garde l'appel mais on le commente car la méthode n'est pas définie.
+        // post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
+
+        validOldVideos.add(post);
+
+        if (validOldVideos.length >= 12) break;
+      }
+
+      // ------------------------------------------------------------
+      // 4. Ajout au cache
+      // ------------------------------------------------------------
+      if (validOldVideos.isNotEmpty) {
+        validOldVideos.shuffle();
+        _oldVideosCache.addAll(validOldVideos);
+        print("✅ ${validOldVideos.length} anciennes vidéos ajoutées (cache: ${_oldVideosCache.length})");
+      } else {
+        print("⚠️ Aucune vidéo valide après filtrage");
+      }
+    } catch (e) {
+      print("❌ Erreur chargement anciennes vidéos: $e");
+    } finally {
+      _isLoadingOldVideos = false;
+    }
+  }
+  // Vérifier si le post est en favori
+  void _checkFavoriteStatus() async {
+    final userId = authProvider.loginUserData.id;
+    if (userId == null) return;
+
+    final postDoc = await _firestore.collection('Posts').doc(widget.initialPost.id).get();
+    if (postDoc.exists) {
+      final data = postDoc.data();
+      final usersFavorite = List<String>.from(data?['users_favorite_id'] ?? []);
+      final favoritesCount = data?['favorites_count'] ?? 0;
+
+      setState(() {
+        _isFavorite = usersFavorite.contains(userId);
+        _favoritesCount = favoritesCount;
+      });
+    }
+  }
+
+// Ajouter/retirer des favoris
+  Future<void> _toggleFavorite() async {
+    if (_isFavoriteProcessing) return;
+    _isFavoriteProcessing = true;
+
+    final userId = authProvider.loginUserData.id;
+    if (userId == null) {
+      _isFavoriteProcessing = false;
+      return;
+    }
+
+    try {
+      if (_isFavorite) {
+        // Retirer des favoris
+        await _firestore.collection('Posts').doc(widget.initialPost.id).update({
+          'users_favorite_id': FieldValue.arrayRemove([userId]),
+          'favorites_count': FieldValue.increment(-1),
+        });
+        setState(() {
+          _isFavorite = false;
+          _favoritesCount--;
+        });
+      } else {
+        // Ajouter aux favoris
+        await _firestore.collection('Posts').doc(widget.initialPost.id).update({
+          'users_favorite_id': FieldValue.arrayUnion([userId]),
+          'favorites_count': FieldValue.increment(1),
+        });
+        setState(() {
+          _isFavorite = true;
+          _favoritesCount++;
+        });
+
+        // Notification
+        if (widget.initialPost.user_id != userId) {
+          await authProvider.sendNotification(
+            userIds: [widget.initialPost.user?.oneIgnalUserid ?? ''],
+            smallImage: authProvider.loginUserData.imageUrl ?? '',
+            send_user_id: userId,
+            recever_user_id: widget.initialPost.user_id!,
+            message: "📌 @${authProvider.loginUserData.pseudo} a ajouté votre vidéo aux favoris",
+            type_notif: NotificationType.FAVORITE.name,
+            post_id: widget.initialPost.id!,
+            post_type: PostDataType.VIDEO.name,
+            chat_id: '',
+          );
+        }
+      }
+    } catch (e) {
+      print("Erreur favori: $e");
+    } finally {
+      _isFavoriteProcessing = false;
+    }
+  }
+
+// Formater le nombre
+  String _formatNumber(int count) {
+    if (count < 1000) return count.toString();
+    if (count < 1000000) return '${(count / 1000).toStringAsFixed(1)}K';
+    return '${(count / 1000000).toStringAsFixed(1)}M';
+  }
+
+  @override
+  void dispose() {
+    _likeAnimationTimer?.cancel();
+
+    // Nettoyer tous les
+    // contrôleurs préchargés
+    for (var controller in _preloadedControllers.values) {
+      controller.dispose();
+    }
+    _preloadedControllers.clear();
+    _suggestionModalTimer?.cancel();
+    _scrollHintTimer?.cancel();
+    _pageController.dispose();
+    _disposeCurrentVideo();
+    _postSubscriptions.forEach((key, subscription) => subscription.cancel());
+    super.dispose();
+  }
+  void _disposeCurrentVideo() {
+    _chewieController?.dispose();
+    _currentVideoController?.dispose();
+    setState(() {
+      _isVideoInitialized = false;
+    });
+  }
+  // ==================== MÉTHODES DE PRÉCHARGEMENT ====================
+
+  Future<void> _preloadVideoAtIndex(int index) async {
+    if (index < 0 || index >= _feedItems.length) return;
+    final item = _feedItems[index];
+    if (item is! Post) return;
+    final post = item;
+
+    if (_preloadedControllers.containsKey(index)) return;
+    if (_preloadingIndices.contains(index)) return;
+
+    _preloadingIndices.add(index);
+
+    try {
+      final optimizedUrl = authProvider.convertToCdnUrl(post.url_media!, authProvider.appDefaultData);
+      final controller = VideoPlayerController.network(optimizedUrl);
+      await controller.initialize();
+      // NE PAS jouer, NE PAS mettre en pause, NE PAS seek
+      // L'initialisation seule suffit à remplir le buffer
+      _preloadedControllers[index] = controller;
+      print("✅ Vidéo préchargée à l'index $index");
+    } catch (e) {
+      print("❌ Erreur préchargement index $index : $e");
+    } finally {
+      _preloadingIndices.remove(index);
+    }
+  }
+
+  void _preloadNeighborhood(int currentIndex) {
+    final start = max(0, currentIndex - _preloadRadius);
+    final end = min(_feedItems.length - 1, currentIndex + _preloadRadius);
+
+    for (int i = start; i <= end; i++) {
+      if (_feedItems[i] is Post) {
+        _preloadVideoAtIndex(i);
+      }
+    }
+  }
+
+  void _cleanupOutOfRangeControllers(int currentIndex) {
+    final minKeep = currentIndex - _preloadRadius;
+    final maxKeep = currentIndex + _preloadRadius;
+    final toRemove = <int>[];
+
+    _preloadedControllers.forEach((index, controller) {
+      if (index < minKeep || index > maxKeep) {
+        controller.dispose();
+        toRemove.add(index);
+      }
+    });
+
+    for (var idx in toRemove) {
+      _preloadedControllers.remove(idx);
+    }
+  }
+
+  // ==================== VIDEO INIT & PLAYBACK (MODIFIÉE) ====================
+
+  Future<void> _initializeVideo(Post post, {int? index}) async {
+    // Si un index est fourni et qu'un contrôleur préchargé existe, on l'utilise
+    if (index != null && _preloadedControllers.containsKey(index)) {
+      final preloadedController = _preloadedControllers[index]!;
+
+      // Nettoyer l'ancien ChewieController sans disposer le contrôleur vidéo
+      if (_chewieController != null) {
+        _chewieController!.dispose();
+        _chewieController = null;
+      }
+
+      _currentVideoController = preloadedController;
+
+      // Créer le nouveau ChewieController avec autoPlay true
+      _chewieController = ChewieController(
+        videoPlayerController: _currentVideoController!,
+        autoPlay: true,
+        looping: true,
+        showControls: true,
+        allowFullScreen: true,
+        allowMuting: true,
+        materialProgressColors: ChewieProgressColors(
+          playedColor: _afroGreen,
+          handleColor: _afroGreen,
+          backgroundColor: _afroLightGrey.withOpacity(0.3),
+          bufferedColor: _afroLightGrey.withOpacity(0.1),
+        ),
+        placeholder: Container(
+          color: _afroBlack,
+          child: const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [CircularProgressIndicator(color: _afroGreen), SizedBox(height: 16), Text('Chargement...', style: TextStyle(color: Colors.white))],
+            ),
+          ),
+        ),
+        autoInitialize: true,
+      );
+
+      setState(() => _isVideoInitialized = true);
+      await _recordPostView(post);
+      _startSuggestionModalTimer();
+      return;
+    }
+
+    // Fallback : comportement normal si pas de préchargement
+    _disposeCurrentVideo();
+    if (post.url_media == null || post.url_media!.isEmpty) return;
+
+    try {
+      final String optimizedUrl = authProvider.convertToCdnUrl(post.url_media!, authProvider.appDefaultData);
+      _currentVideoController = VideoPlayerController.network(optimizedUrl);
+      await _currentVideoController!.initialize();
+      _chewieController = ChewieController(
+        videoPlayerController: _currentVideoController!,
+        autoPlay: true,
+        looping: true,
+        showControls: true,
+        allowFullScreen: true,
+        allowMuting: true,
+        materialProgressColors: ChewieProgressColors(
+          playedColor: _afroGreen,
+          handleColor: _afroGreen,
+          backgroundColor: _afroLightGrey.withOpacity(0.3),
+          bufferedColor: _afroLightGrey.withOpacity(0.1),
+        ),
+        placeholder: Container(
+          color: _afroBlack,
+          child: const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [CircularProgressIndicator(color: _afroGreen), SizedBox(height: 16), Text('Chargement...', style: TextStyle(color: Colors.white))],
+            ),
+          ),
+        ),
+        autoInitialize: true,
+      );
+
+      setState(() => _isVideoInitialized = true);
+      await _recordPostView(post);
+      _startSuggestionModalTimer();
+    } catch (e) {
+      print('❌ Erreur init vidéo: $e');
+      setState(() => _isVideoInitialized = false);
+    }
+  }
+  // ==================== FEED LOADING (MODIFIÉ) ====================
+
+  Future<void> _initializeFeed() async {
+    setState(() => _isLoadingFeed = true);
+
+    _itemsSinceLastLoad = 0;
+    _maxVideosReached = false;
+    _lastDocument = null;
+
+    // RESET sécurité anti doublon old videos
+    _usedOldVideoIds.clear();
+
+    // 1. Charger vidéo initiale
+    if (!_loadedPostIds.contains(widget.initialPost.id)) {
+      _loadedPostIds.add(widget.initialPost.id!);
+      _videoPosts.add(widget.initialPost);
+
+      await _loadPostRelations(widget.initialPost);
+      _subscribeToPostUpdates(widget.initialPost);
+    }
+
+    // 2. Charger vidéos récentes
+    await _loadMoreVideos(isInitial: true);
+
+    // 3. Charger les anciennes vidéos AVANT rebuild
+    await _loadOldVideosInBackground();
+
+    // 4. Construire feed final
+    _rebuildFeedItems();
+
+    setState(() => _isLoadingFeed = false);
+
+    // 5. Init player
+    if (_feedItems.isNotEmpty && _feedItems[0] is Post) {
+      _preloadNeighborhood(0);
+      _initializeVideo(_feedItems[0] as Post, index: 0);
+    }
+  }
+  // ==================== FEED LOADING ====================
+
   Future<void> _incrementViews() async {
     try {
       if (authProvider.loginUserData == null ||
@@ -159,89 +599,82 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     _prefs = await SharedPreferences.getInstance();
   }
 
-  @override
-  void dispose() {
-    _suggestionModalTimer?.cancel();
-    _scrollHintTimer?.cancel();
-    _pageController.dispose();
-    _disposeCurrentVideo();
-    _postSubscriptions.forEach((key, subscription) => subscription.cancel());
-    super.dispose();
-  }
-
-  void _disposeCurrentVideo() {
-    _chewieController?.dispose();
-    _currentVideoController?.dispose();
-    setState(() {
-      _isVideoInitialized = false;
-    });
-  }
-
-  // ==================== FEED LOADING ====================
-
-  Future<void> _initializeFeed() async {
-    setState(() => _isLoadingFeed = true);
-    _itemsSinceLastLoad = 0;
-    _maxVideosReached = false;
-    _lastDocument = null;
-    // 1. Charger les publicités depuis le provider
-
-    // 2. Ajouter la vidéo initiale
-    if (!_loadedPostIds.contains(widget.initialPost.id)) {
-      _loadedPostIds.add(widget.initialPost.id!);
-      _videoPosts.add(widget.initialPost);
-      await _loadPostRelations(widget.initialPost);
-      _subscribeToPostUpdates(widget.initialPost);
-    }
-
-    // 3. Charger plus de vidéos
-    await _loadMoreVideos(isInitial: true);
-
-    // 4. Construire le feed mixte (vidéos + pubs)
-    _rebuildFeedItems();
-
-    setState(() => _isLoadingFeed = false);
-    if (_feedItems.isNotEmpty && _feedItems[0] is Post) {
-      _initializeVideo(_feedItems[0] as Post);
-    }
-  }
-
   void _rebuildFeedItems() {
+    final List<Post> normalPosts = List.from(_videoPosts);
+    final List<Post> oldBuffer = List.from(_oldVideosCache);
+    final List<Post> mixedPosts = [];
+
+    const int normalBatchSize = 3;
+    const int oldPerBatch = 2;
+
+    int normalIndex = 0;
+
+    while (normalIndex < normalPosts.length) {
+      // normales
+      int end = normalIndex + normalBatchSize;
+      if (end > normalPosts.length) end = normalPosts.length;
+
+      mixedPosts.addAll(normalPosts.sublist(normalIndex, end));
+      normalIndex = end;
+
+      // anciennes
+      int added = 0;
+
+      while (oldBuffer.isNotEmpty && added < oldPerBatch) {
+        final oldPost = oldBuffer.removeAt(0);
+
+        if (_usedOldVideoIds.contains(oldPost.id)) {
+          continue;
+        }
+
+        _usedOldVideoIds.add(oldPost.id!);
+        mixedPosts.add(oldPost);
+        added++;
+      }
+    }
+
+    // reste des anciennes
+    while (oldBuffer.isNotEmpty) {
+      final oldPost = oldBuffer.removeAt(0);
+
+      if (_usedOldVideoIds.contains(oldPost.id)) continue;
+
+      _usedOldVideoIds.add(oldPost.id!);
+      mixedPosts.add(oldPost);
+    }
+
+    // insertion ads
+    final ads = authProvider.advertisements;
+    _feedItems.clear();
+
+    int adIdx = 0;
+
+    for (int i = 0; i < mixedPosts.length; i++) {
+      _feedItems.add(mixedPosts[i]);
+
+      if ((i + 1) % 3 == 0 &&
+          i != mixedPosts.length - 1 &&
+          adIdx < ads.length) {
+        _feedItems.add(ads[adIdx]);
+        adIdx++;
+      }
+    }
+  }
+  void _rebuildFeedItems2() {
     _feedItems.clear();
     final ads = authProvider.advertisements;
     if (_videoPosts.isEmpty) return;
 
     int videoIdx = 0;
     int adIdx = 0;
-    bool firstAdInserted = false;
 
     while (videoIdx < _videoPosts.length) {
-      // Première vidéo toujours en premier
-      if (videoIdx == 0) {
-        _feedItems.add(_videoPosts[videoIdx]);
-        videoIdx++;
-        continue;
-      }
+      // Ajouter la vidéo courante
+      _feedItems.add(_videoPosts[videoIdx]);
+      videoIdx++;
 
-      // Après la première vidéo, insérer une pub (si disponible)
-      if (!firstAdInserted && adIdx < ads.length) {
-        _feedItems.add(ads[adIdx]);
-        adIdx++;
-        firstAdInserted = true;
-        continue;
-      }
-
-      // Ensuite, toutes les 3 vidéos, insérer une pub
-      // Compter combien de vidéos on a ajoutées depuis la dernière pub (ou depuis le début)
-      int videosSinceLastAd = 0;
-      // On va parcourir et ajouter jusqu'à 3 vidéos puis une pub
-      for (int i = 0; i < 3 && videoIdx < _videoPosts.length; i++) {
-        _feedItems.add(_videoPosts[videoIdx]);
-        videoIdx++;
-        videosSinceLastAd++;
-      }
-      // Si on a ajouté des vidéos et qu'il reste des pubs, ajouter une pub
-      if (videosSinceLastAd > 0 && adIdx < ads.length && videoIdx < _videoPosts.length) {
+      // Toutes les 3 vidéos (sauf si c'est la dernière), insérer une pub
+      if (videoIdx % 3 == 0 && videoIdx < _videoPosts.length && adIdx < ads.length) {
         _feedItems.add(ads[adIdx]);
         adIdx++;
       }
@@ -263,6 +696,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         }
       } catch (e) { print('Erreur chargement user: $e'); }
     }
+
     if (post.canal_id != null && post.canal_id!.isNotEmpty && post.canal == null) {
       try {
         final canalDoc = await _firestore.collection('Canaux').doc(post.canal_id).get();
@@ -306,6 +740,100 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     }
   }
   Future<List<Post>> _fetchSuggestedVideosBatch({required int limit, required Set<String> excludeIds}) async {
+    List<Post> results = [];
+    Set<String> ids = Set.from(excludeIds);
+    int attempts = 0;
+    const maxAttempts = 5; // Augmenté pour plus de chances
+
+    // Récupérer l'ID du dernier créateur/canal affiché
+    String? lastCreatorId;
+    String? lastCanalId;
+
+    if (_videoPosts.isNotEmpty) {
+      final lastPost = _videoPosts.last;
+      lastCreatorId = lastPost.user_id;
+      lastCanalId = lastPost.canal_id;
+    }
+
+    while (results.length < limit && attempts < maxAttempts) {
+      attempts++;
+      final random = Random();
+      int strategy = random.nextInt(3);
+
+      Future<List<Post>> fetchOrdered(String field, bool descending, int fetchLimit) async {
+        final snap = await _firestore
+            .collection('Posts')
+            .where('dataType', isEqualTo: PostDataType.VIDEO.name)
+            .where('status', isEqualTo: PostStatus.VALIDE.name)
+            .orderBy(field, descending: descending)
+            .limit(fetchLimit)
+            .get();
+        return snap.docs.map((doc) {
+          final p = Post.fromJson(doc.data());
+          p.id = doc.id;
+          return p;
+        }).toList();
+      }
+
+      Future<List<Post>> fetchRandom(int fetchLimit) async {
+        final snap = await _firestore
+            .collection('Posts')
+            .where('dataType', isEqualTo: PostDataType.VIDEO.name)
+            .where('status', isEqualTo: PostStatus.VALIDE.name)
+            .limit(50)
+            .get();
+        List<Post> posts = snap.docs.map((doc) {
+          final p = Post.fromJson(doc.data());
+          p.id = doc.id;
+          return p;
+        }).toList();
+        posts.shuffle();
+        return posts.take(fetchLimit).toList();
+      }
+
+      List<Post> candidates = [];
+      if (attempts == 1) {
+        candidates = await fetchOrdered('created_at', true, limit * 2);
+      } else if (attempts == 2) {
+        if (strategy == 0) candidates = await fetchOrdered('popularity', true, limit * 2);
+        else if (strategy == 1) candidates = await fetchOrdered('popularity', false, limit * 2);
+        else candidates = await fetchRandom(limit * 2);
+      } else {
+        candidates = await fetchOrdered('created_at', true, limit * 3);
+      }
+
+      // Filtrer pour éviter 3 mêmes créateurs/canaux à la suite
+      for (var p in candidates) {
+        if (p.id != null && !ids.contains(p.id)) {
+          // Vérifier la répétition du créateur
+          bool sameCreator = (lastCreatorId != null && p.user_id == lastCreatorId);
+          bool sameCanal = (lastCanalId != null && p.canal_id == lastCanalId && p.canal_id != null && p.canal_id!.isNotEmpty);
+
+          // Compter combien de fois ce créateur apparaît dans les 2 dernières vidéos
+          int creatorCount = 0;
+          int canalCount = 0;
+
+          for (int i = _videoPosts.length - 1; i >= max(0, _videoPosts.length - 2); i--) {
+            if (_videoPosts[i].user_id == p.user_id) creatorCount++;
+            if (_videoPosts[i].canal_id != null && _videoPosts[i].canal_id == p.canal_id) canalCount++;
+          }
+
+          // Autoriser si pas déjà 2 fois de suite le même créateur ou canal
+          if (creatorCount < 2 && canalCount < 2) {
+            ids.add(p.id!);
+            results.add(p);
+            lastCreatorId = p.user_id;
+            lastCanalId = p.canal_id;
+            if (results.length >= limit) break;
+          }
+        }
+      }
+    }
+
+    results.shuffle();
+    return results;
+  }
+  Future<List<Post>> _fetchSuggestedVideosBatch2({required int limit, required Set<String> excludeIds}) async {
     List<Post> results = [];
     Set<String> ids = Set.from(excludeIds);
     int attempts = 0;
@@ -373,6 +901,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     results.shuffle();
     return results;
   }
+
+
   void _subscribeToPostUpdates(Post post) {
     if (post.id == null || _postSubscriptions.containsKey(post.id)) return;
     final subscription = _firestore.collection('Posts').doc(post.id).snapshots().listen((snapshot) {
@@ -393,57 +923,6 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
   // ==================== VIDEO INIT & PLAYBACK ====================
 
-  Future<void> _initializeVideo(Post post) async {
-    _disposeCurrentVideo();
-    if (post.url_media == null || post.url_media!.isEmpty) {
-      return;
-    }
-    try {
-      _currentVideoController = VideoPlayerController.network(post.url_media!);
-      await _currentVideoController!.initialize();
-      _chewieController = ChewieController(
-        videoPlayerController: _currentVideoController!,
-        autoPlay: true,
-        looping: false,
-        showControls: true,
-        allowFullScreen: true,
-        allowMuting: true,
-        materialProgressColors: ChewieProgressColors(
-          playedColor: _afroGreen,
-          handleColor: _afroGreen,
-          backgroundColor: _afroLightGrey.withOpacity(0.3),
-          bufferedColor: _afroLightGrey.withOpacity(0.1),
-        ),
-        placeholder: Container(
-          color: _afroBlack,
-          child: const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [CircularProgressIndicator(color: _afroGreen), SizedBox(height: 16), Text('Chargement...', style: TextStyle(color: Colors.white))],
-            ),
-          ),
-        ),
-        autoInitialize: true,
-      );
-
-      _currentVideoController!.addListener(() {
-        if (_currentVideoController!.value.isCompleted && !_showScrollHint) {
-          setState(() => _showScrollHint = true);
-          _scrollHintTimer?.cancel();
-          _scrollHintTimer = Timer(const Duration(seconds: 4), () {
-            if (mounted) setState(() => _showScrollHint = false);
-          });
-        }
-      });
-
-      setState(() => _isVideoInitialized = true);
-      await _recordPostView(post);
-      _startSuggestionModalTimer();
-    } catch (e) {
-      print('❌ Erreur init vidéo: $e');
-      setState(() => _isVideoInitialized = false);
-    }
-  }
 
   Future<void> _recordPostView(Post post) async {
     if (post.id == null) return;
@@ -484,20 +963,59 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     _hasSeenSuggestionsModal = _prefs.getBool(key) ?? false;
   }
 
-  Future<void> _markSuggestionsModalSeen() async {
-    final userId = authProvider.loginUserData.id;
-    await _prefs.setBool('has_seen_suggestions_modal_video_$userId', true);
-    setState(() => _hasSeenSuggestionsModal = true);
-  }
+
 
   void _startSuggestionModalTimer() {
-    if (_hasSeenSuggestionsModal) return;
-    _suggestionModalTimer?.cancel();
-    _suggestionModalTimer = Timer(const Duration(seconds: 3), () {
-      if (mounted && !_hasSeenSuggestionsModal) {
-        _showFirstScrollModal();
-      }
+    // Vérifier si le modal doit être affiché
+    _shouldShowSuggestionsModal().then((shouldShow) {
+      if (!shouldShow) return;
+
+      _suggestionModalTimer?.cancel();
+      _suggestionModalTimer = Timer(const Duration(seconds: 3), () {
+        if (mounted) {
+          _showFirstScrollModal();
+        }
+      });
     });
+  }
+
+  Future<bool> _shouldShowSuggestionsModal() async {
+    final userId = authProvider.loginUserData.id;
+    if (userId == null) return false;
+
+    final lastShowKey = 'suggestions_modal_last_show_$userId';
+    final lastShowTimestamp = _prefs.getInt(lastShowKey);
+
+    // Si jamais affiché avant, on affiche
+    if (lastShowTimestamp == null) return true;
+
+    // Récupérer la date du dernier affichage
+    final lastShowDate = DateTime.fromMillisecondsSinceEpoch(lastShowTimestamp);
+    final now = DateTime.now();
+
+    // Calculer la différence en jours
+    final difference = now.difference(lastShowDate).inDays;
+
+    // Afficher seulement si 3 jours ou plus sont passés
+    return difference >= 3;
+  }
+
+  Future<void> _markSuggestionsModalSeen() async {
+    final userId = authProvider.loginUserData.id;
+    if (userId == null) return;
+
+    final lastShowKey = 'suggestions_modal_last_show_$userId';
+    final now = DateTime.now().millisecondsSinceEpoch;
+
+    // Sauvegarder la date et l'heure actuelles
+    await _prefs.setInt(lastShowKey, now);
+
+    // Optionnel : garder aussi le booléen pour d'autres usages
+    await _prefs.setBool('has_seen_suggestions_modal_video_$userId', true);
+
+    if (mounted) {
+      setState(() => _hasSeenSuggestionsModal = true);
+    }
   }
 
   void _showFirstScrollModal() {
@@ -508,18 +1026,108 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         backgroundColor: _afroDarkGrey,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Row(
-          children: [Icon(Icons.swipe_vertical, color: _afroYellow), SizedBox(width: 8), Text('Glissez pour découvrir', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))],
+          children: [Icon(Icons.swipe_vertical, color: _afroYellow), SizedBox(width: 8), Text('Astuces Vidéo', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Vous pouvez faire défiler vers le haut ou le bas pour voir d’autres vidéos tendance.', style: TextStyle(color: _twitterTextSecondary)),
-            const SizedBox(height: 16),
-            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Icon(Icons.arrow_upward, color: _afroYellow),
-              const SizedBox(width: 8),
-              Icon(Icons.arrow_downward, color: _afroYellow),
-            ]),
+            // Astuce 1 : Scroll
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: _afroYellow.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.swipe_vertical, color: _afroYellow, size: 28),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Glisser pour découvrir', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        SizedBox(height: 4),
+                        Text('Défiler vers le haut ou le bas pour voir d\'autres vidéos tendance.', style: TextStyle(color: _twitterTextSecondary, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Astuce 2 : Double tap pour liker
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: _afroRed.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.favorite, color: _afroRed, size: 28),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Double tap pour aimer', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        SizedBox(height: 4),
+                        Text('Tapez deux fois rapidement sur la vidéo pour envoyer un like ❤️', style: TextStyle(color: _twitterTextSecondary, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Astuce 3 : Pièces et cadeaux (optionnel)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: _afroGreen.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.card_giftcard, color: _afroGreen, size: 28),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Cadeaux et soutien', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        SizedBox(height: 4),
+                        Text('Envoyez des cadeaux ou soutenez les créateurs avec les boutons à droite.', style: TextStyle(color: _twitterTextSecondary, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
         actions: [
@@ -534,7 +1142,6 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       ),
     );
   }
-
   void _showFirstScrollModalIfNeeded() async {
     final userId = authProvider.loginUserData.id;
     final key = 'first_scroll_modal_shown_$userId';
@@ -547,16 +1154,92 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     }
   }
 
-  // ==================== INTERACTIONS ====================
-  // (Les méthodes _handleLike, _showCommentsModal, _showGiftDialog, _sendGift,
-  // _sharePost, _showPostMenu, _deletePost, etc. sont identiques à celles
-  // fournies précédemment. Je les inclus intégralement pour que le code soit complet.
-  // Pour gagner de la place, je les ai reprises du code fonctionnel original.
-  // Vous pouvez les copier depuis la version précédente, elles n'ont pas changé.)
+  void _showFlyingHearts(double tapX, double tapY) {
+    final screenWidth = MediaQuery.of(context).size.width;
 
+    // Couleurs de cœurs (rouge, rose, orange, jaune)
+    final List<Color> heartColors = [
+      Colors.red,
+      Colors.pink,
+      Colors.deepOrange,
+      Colors.orange,
+      Colors.pinkAccent,
+    ];
+
+    // Créer entre 8 et 12 cœurs à chaque double tap
+    // final heartCount = 8 + _random.nextInt(5);
+    final heartCount = 15;
+
+    for (int i = 0; i < heartCount; i++) {
+      // Position X de départ légèrement aléatoire autour du point de tap
+      final startX = tapX + (_random.nextDouble() - 0.5) * 40;
+      final startY = tapY + (_random.nextDouble() - 0.5) * 30;
+
+      // Direction : plutôt vers le haut avec un peu de côté
+      final angle = (-pi / 2) + (_random.nextDouble() - 0.5) * (pi / 1.5);
+      final distance = 150 + _random.nextDouble() * 150;
+
+      final endX = startX + (cos(angle) * distance);
+      final endY = startY - (80 + _random.nextDouble() * 120); // Monter vers le haut
+
+      // Taille variée
+      final size = 25 + _random.nextDouble() * 35;
+
+      // Rotation aléatoire
+      final rotation = (_random.nextDouble() - 0.5) * pi / 2;
+
+      // Durée de l'animation (entre 0.6 et 1.2 secondes)
+      final duration = Duration(milliseconds: (600 + _random.nextInt(600)).toInt());
+
+      // Couleur aléatoire
+      final color = heartColors[_random.nextInt(heartColors.length)];
+
+      _flyingHearts.add(FlyingHeart(
+        startX: startX.clamp(20, screenWidth - 20),
+        startY: startY,
+        endX: endX.clamp(20, screenWidth - 20),
+        endY: endY,
+        size: size,
+        startTime: DateTime.now(),
+        duration: duration,
+        rotation: rotation,
+        color: color,
+      ));
+    }
+
+    setState(() {});
+
+    // Nettoyage après 1.5 secondes
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (mounted) {
+        setState(() {
+          _flyingHearts.clear();
+        });
+      }
+    });
+  }
+  List<Widget> _buildFlyingHearts() {
+    final widgets = <Widget>[];
+
+    for (int i = 0; i < _flyingHearts.length; i++) {
+      final heart = _flyingHearts[i];
+
+      widgets.add(
+        _AnimatedHeart(
+          key: ValueKey('heart_$i'),
+          heart: heart,
+        ),
+      );
+    }
+
+    return widgets;
+  }
   // Je vais les écrire succinctement mais complètes :
   Future<void> _handleLike(Post post) async {
     final userId = authProvider.loginUserData.id;
+    final screenSize = MediaQuery.of(context).size;
+    _showFlyingHearts(screenSize.width / 2, screenSize.height / 2);
+    // _handleLike(post);
     if (userId == null) return;
 
     // final isLiked = post.users_love_id?.contains(userId) ?? false;
@@ -915,24 +1598,57 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     showModalBottomSheet(
       context: context,
       backgroundColor: _afroDarkGrey,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
       builder: (context) => Container(
         padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Bouton Partager (comme sur TikTok)
+            ListTile(
+              leading: const Icon(Icons.share, color: Colors.white),
+              title: const Text('Partager', style: TextStyle(color: Colors.white)),
+              onTap: () async {
+                Navigator.pop(context);
+                 _sharePost(post);
+              },
+            ),
+
             if (post.user_id != authProvider.loginUserData.id)
-              ListTile(leading: const Icon(Icons.flag, color: Colors.white), title: const Text('Signaler', style: TextStyle(color: Colors.white)), onTap: () async { Navigator.pop(context); await postProvider.updateVuePost(post, context); }),
-            if (post.user_id == authProvider.loginUserData.id || authProvider.loginUserData.role == UserRole.ADM.name)
-              ListTile(leading: const Icon(Icons.delete, color: Colors.red), title: const Text('Supprimer', style: TextStyle(color: Colors.red)), onTap: () async { await _deletePost(post, context); Navigator.pop(context); }),
+              ListTile(
+                leading: const Icon(Icons.flag, color: Colors.white),
+                title: const Text('Signaler', style: TextStyle(color: Colors.white)),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await postProvider.updateVuePost(post, context);
+                },
+              ),
+
+            if (post.user_id == authProvider.loginUserData.id ||
+                authProvider.loginUserData.role == UserRole.ADM.name)
+              ListTile(
+                leading: const Icon(Icons.delete, color: Colors.red),
+                title: const Text('Supprimer', style: TextStyle(color: Colors.red)),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await _deletePost(post, context);
+                },
+              ),
+
             const Divider(color: Colors.grey),
-            ListTile(leading: const Icon(Icons.cancel, color: Colors.white), title: const Text('Annuler', style: TextStyle(color: Colors.white)), onTap: () => Navigator.pop(context)),
+
+            ListTile(
+              leading: const Icon(Icons.cancel, color: Colors.white),
+              title: const Text('Annuler', style: TextStyle(color: Colors.white)),
+              onTap: () => Navigator.pop(context),
+            ),
           ],
         ),
       ),
     );
   }
-
   Future<void> _deletePost(Post post, BuildContext context) async {
     try {
       await _firestore.collection('Posts').doc(post.id).delete();
@@ -1125,81 +1841,455 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   }
 
   Widget _buildUserInfo(Post post) {
+    // Lance le chargement si nécessaire (sans await)
+    if ((post.user == null && post.user_id != null) ||
+        (post.canal == null && post.canal_id != null)) {
+      _lazyLoadPostRelations(post);
+    }
+
     final user = post.user;
     final canal = post.canal;
+
+    final String displayName = canal != null
+        ? '#${canal.titre ?? ''}'
+        : '@${user?.pseudo ?? ''}';
+    final String shortName = displayName.length > 10
+        ? '${displayName.substring(0, 10)}...'
+        : displayName;
     final isOwner = authProvider.loginUserData.id == post.user_id;
+
+    // Affichage temporaire si toujours null
+    if (canal == null && user == null && (post.user_id != null || post.canal_id != null)) {
+      return Positioned(
+        bottom: 120,
+        left: 16,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Chargement...', style: TextStyle(color: Colors.white70)),
+            const SizedBox(height: 4),
+            if (post.description != null)
+              Container(
+                constraints: const BoxConstraints(maxWidth: 250),
+                child: Text(post.description!, style: const TextStyle(color: Colors.white), maxLines: 2),
+              ),
+          ],
+        ),
+      );
+    }
+
+    // Affichage normal (identique à l’original)
     return Positioned(
       bottom: 120,
       left: 16,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (canal != null) ...[
-            GestureDetector(onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => CanalDetails(canal: canal))), child: Text('#${canal.titre}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16))),
-            Text('${canal.usersSuiviId?.length ?? 0} abonnés', style: const TextStyle(color: Colors.white70)),
-          ] else if (user != null) ...[
-            GestureDetector(onTap: () => showUserDetailsModalDialog(user, MediaQuery.of(context).size.width, MediaQuery.of(context).size.height, context), child: Text('@${user.pseudo}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16))),
-            Text('${user.userAbonnesIds?.length ?? 0} abonnés', style: const TextStyle(color: Colors.white70)),
-          ],
-          const SizedBox(height: 4),
-          if (post.description != null) Container(constraints: const BoxConstraints(maxWidth: 250), child: Text(post.description!, style: const TextStyle(color: Colors.white), maxLines: 2, overflow: TextOverflow.ellipsis)),
-          if (!isOwner) Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: GestureDetector(
-              // onTap: _isSupporting ? null : () => _handleSupportAd(post),
-              onTap:() => _handleGift(post),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(color: _afroDarkGrey.withOpacity(0.8), borderRadius: BorderRadius.circular(20), border: Border.all(color: _afroYellow.withOpacity(0.5))),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  _isSupporting ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: _afroYellow)) : const Icon(Icons.volunteer_activism, color: _afroYellow, size: 16),
-                  const SizedBox(width: 6),
-                  const Text('Soutenir le créateur', style: TextStyle(color: Colors.white, fontSize: 12)),
-                ]),
+          if (canal != null)
+            GestureDetector(
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CanalDetails(canal: canal))),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(shortName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                  if (user != null) ...[
+                    const SizedBox(width: 4),
+                    AbonnementUtils.getUserBadge(abonnement: user.abonnement, isVerified: user.isVerify ?? false),
+                  ],
+                ],
+              ),
+            )
+          else if (user != null)
+            GestureDetector(
+              onTap: () => showUserDetailsModalDialog(user, MediaQuery.of(context).size.width, MediaQuery.of(context).size.height, context),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(shortName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(width: 4),
+                  AbonnementUtils.getUserBadge(abonnement: user.abonnement, isVerified: user.isVerify ?? false),
+                ],
               ),
             ),
-          ),
-          PostGiftsList(
-            postId:  post.id!,
-            compactLevel: CompactLevel.light,
-            maxDisplayItems: 10,
-          ),
+          if (canal != null)
+            Text('${canal.usersSuiviId?.length ?? 0} abonnés', style: const TextStyle(color: Colors.white70))
+          else if (user != null)
+            Text('${user.userAbonnesIds?.length ?? 0} abonnés', style: const TextStyle(color: Colors.white70)),
+          const SizedBox(height: 4),
+          if (post.description != null)
+            Container(
+              constraints: const BoxConstraints(maxWidth: 250),
+              child: Text(post.description!, style: const TextStyle(color: Colors.white), maxLines: 2, overflow: TextOverflow.ellipsis),
+            ),
+          if (!isOwner)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: GestureDetector(
+                onTap: () => _handleGift(post),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(color: _afroDarkGrey.withOpacity(0.8), borderRadius: BorderRadius.circular(20), border: Border.all(color: _afroYellow.withOpacity(0.5))),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _isSupporting
+                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: _afroYellow))
+                          : const Icon(Icons.volunteer_activism, color: _afroYellow, size: 16),
+                      const SizedBox(width: 6),
+                      const Text('Soutenir le créateur', style: TextStyle(color: Colors.white, fontSize: 12)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          PostGiftsList(postId: post.id!, compactLevel: CompactLevel.light, maxDisplayItems: 10),
         ],
       ),
     );
   }
 
+  // Widget _buildActionButtons(Post post) {
+  //   final isLiked = post.users_love_id?.contains(authProvider.loginUserData.id) ?? false;
+  //   return Positioned(
+  //     right: 16,
+  //     bottom: 90,
+  //     child: Column(
+  //       children: [
+  //         GestureDetector(
+  //           behavior: HitTestBehavior.opaque,
+  //           onTap: () {
+  //             final user = post.user;
+  //             final canal = post.canal;
+  //
+  //             if (canal != null) {
+  //               Navigator.push(
+  //                 context,
+  //                 MaterialPageRoute(
+  //                   builder: (context) => CanalDetails(canal: canal),
+  //                 ),
+  //               );
+  //             } else if (user != null) {
+  //               showUserDetailsModalDialog(
+  //                 user,
+  //                 MediaQuery.of(context).size.width,
+  //                 MediaQuery.of(context).size.height,
+  //                 context,
+  //               );
+  //             }
+  //           },
+  //           child: Stack(
+  //             clipBehavior: Clip.none,
+  //             children: [
+  //               Container(
+  //                 decoration: BoxDecoration(
+  //                   border: Border.all(color: _afroGreen, width: 2),
+  //                   shape: BoxShape.circle,
+  //                 ),
+  //                 child: CircleAvatar(
+  //                   radius: 25,
+  //                   backgroundImage: NetworkImage(
+  //                     post.canal?.urlImage ??
+  //                         post.user?.imageUrl ??
+  //                         '',
+  //                   ),
+  //                 ),
+  //               ),
+  //               _buildSubscribeIcon(post),
+  //             ],
+  //           ),
+  //         ),
+  //         const SizedBox(height: 20),
+  //         if (_isLookChallenge)
+  //           Column(
+  //             children: [
+  //               GestureDetector(
+  //                 behavior: HitTestBehavior.opaque,
+  //                 onTap: _voteForLook,
+  //                 child: Icon(
+  //                   _hasVoted ? Icons.how_to_vote : Icons.how_to_vote_outlined,
+  //                   color: _hasVoted ? _afroGreen : Colors.white,
+  //                   size: 35,
+  //                 ),
+  //               ),
+  //               Text('${post.votesChallenge ?? 0}', style: const TextStyle(color: Colors.white))
+  //             ],
+  //           ),
+  //         Column(
+  //           children: [
+  //             GestureDetector(
+  //               behavior: HitTestBehavior.opaque,
+  //               onTap: () => _handleLike(post),
+  //               child: const Icon(
+  //                 Icons.favorite_border,
+  //                 color: _afroRed,
+  //                 size: 30,
+  //               ),
+  //             ),
+  //             Text('${post.loves ?? 0}', style: const TextStyle(color: Colors.white))
+  //           ],
+  //         ),
+  //         Column(
+  //           children: [
+  //             GestureDetector(
+  //               behavior: HitTestBehavior.opaque,
+  //               onTap: () => _showCommentsModal(post),
+  //               child: const Icon(
+  //                 Icons.chat_bubble_outline,
+  //                 color: Colors.white,
+  //                 size: 33,
+  //               ),
+  //             ),
+  //             Text('${post.comments ?? 0}', style: const TextStyle(color: Colors.white))
+  //           ],
+  //         ),
+  //         if (post.type != PostType.CHALLENGEPARTICIPATION.name)
+  //           Column(
+  //             children: [
+  //               GestureDetector(
+  //                 behavior: HitTestBehavior.opaque,
+  //                 onTap: () => _showGiftDialog(post),
+  //                 child: const Icon(
+  //                   Icons.card_giftcard,
+  //                   color: _afroYellow,
+  //                   size: 30,
+  //                 ),
+  //               ),
+  //               Text('${post.totalGiftCoinsSentOnThisPost ?? 0}', style: const TextStyle(color: Colors.white))
+  //             ],
+  //           ),
+  //         Column(
+  //           children: [
+  //             GestureDetector(
+  //               behavior: HitTestBehavior.opaque,
+  //               onTap: () {},
+  //               child: const Icon(
+  //                 Icons.bar_chart,
+  //                 color: Colors.blue,
+  //                 size: 35,
+  //               ),
+  //             ),
+  //             Text('${post.totalInteractions ?? 0}', style: const TextStyle(color: Colors.white))
+  //           ],
+  //         ),
+  //         // Au lieu du bouton partage, on met le bouton favoris
+  //         Column(
+  //         children: [
+  //         GestureDetector(
+  //         behavior: HitTestBehavior.opaque,
+  //   onTap: _toggleFavorite,
+  //   child: Icon(
+  //   _isFavorite ? Icons.bookmark : Icons.bookmark_border,
+  //   color: _isFavorite ? _afroYellow : Colors.white,
+  //   size: 30,
+  //   ),
+  //   ),
+  //   Text(
+  //   _formatNumber(_favoritesCount),
+  //   style: const TextStyle(color: Colors.white)
+  //   ),
+  //   ],
+  //   ),
+  //         GestureDetector(
+  //           behavior: HitTestBehavior.opaque,
+  //           onTap: () => _showPostMenu(post),
+  //           child: const Icon(
+  //             Icons.more_vert,
+  //             color: Colors.white,
+  //             size: 30,
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+
   Widget _buildActionButtons(Post post) {
+    // Lance le chargement si nécessaire
+    if ((post.user == null && post.user_id != null) ||
+        (post.canal == null && post.canal_id != null)) {
+      _lazyLoadPostRelations(post);
+    }
+
     final isLiked = post.users_love_id?.contains(authProvider.loginUserData.id) ?? false;
+
     return Positioned(
       right: 16,
       bottom: 90,
       child: Column(
         children: [
           GestureDetector(
+            behavior: HitTestBehavior.opaque,
             onTap: () {
               final user = post.user;
               final canal = post.canal;
-              if (canal != null) Navigator.push(context, MaterialPageRoute(builder: (context) => CanalDetails(canal: canal)));
-              else if (user != null) showUserDetailsModalDialog(user, MediaQuery.of(context).size.width, MediaQuery.of(context).size.height, context);
+              if (canal != null) {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => CanalDetails(canal: canal)));
+              } else if (user != null) {
+                showUserDetailsModalDialog(user, MediaQuery.of(context).size.width, MediaQuery.of(context).size.height, context);
+              }
             },
-            child: Container(decoration: BoxDecoration(border: Border.all(color: _afroGreen, width: 2), shape: BoxShape.circle), child: CircleAvatar(radius: 25, backgroundImage: NetworkImage(post.canal?.urlImage ?? post.user?.imageUrl ?? ''))),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  decoration: BoxDecoration(border: Border.all(color: _afroGreen, width: 2), shape: BoxShape.circle),
+                  child: CircleAvatar(
+                    radius: 25,
+                    backgroundImage: (post.canal?.urlImage != null || post.user?.imageUrl != null)
+                        ? NetworkImage(post.canal?.urlImage ?? post.user?.imageUrl ?? '')
+                        : null,
+                    child: (post.canal == null && post.user == null) ? const CircularProgressIndicator(strokeWidth: 2) : null,
+                  ),
+                ),
+                _buildSubscribeIcon(post),
+              ],
+            ),
           ),
           const SizedBox(height: 20),
-          if (_isLookChallenge) Column(children: [IconButton(icon: Icon(_hasVoted ? Icons.how_to_vote : Icons.how_to_vote_outlined, color: _hasVoted ? _afroGreen : Colors.white, size: 35), onPressed: _voteForLook), Text('${post.votesChallenge ?? 0}', style: const TextStyle(color: Colors.white))]),
-          Column(children: [IconButton(icon: Icon( Icons.favorite_border, color: _afroRed, size: 30), onPressed: () => _handleLike(post)), Text('${post.loves ?? 0}', style: const TextStyle(color: Colors.white))]),
-          // Column(children: [IconButton(icon: Icon(isLiked ? Icons.favorite : Icons.favorite_border, color: isLiked ? _afroRed : Colors.white, size: 30), onPressed: () => _handleLike(post)), Text('${post.loves ?? 0}', style: const TextStyle(color: Colors.white))]),
-          Column(children: [IconButton(icon: const Icon(Icons.chat_bubble_outline, color: Colors.white, size: 33), onPressed: () => _showCommentsModal(post)), Text('${post.comments ?? 0}', style: const TextStyle(color: Colors.white))]),
-          if (post.type != PostType.CHALLENGEPARTICIPATION.name) Column(children: [IconButton(icon: const Icon(Icons.card_giftcard, color: _afroYellow, size: 30), onPressed: () => _showGiftDialog(post)), Text('${post.totalGiftCoinsSentOnThisPost ?? 0}', style: const TextStyle(color: Colors.white))]),
-          // Column(children: [IconButton(icon: const Icon(Icons.remove_red_eye, color: Colors.white, size: 35), onPressed: () {}), Text('${post.vues ?? 0}', style: const TextStyle(color: Colors.white))]),
-          Column(children: [IconButton(icon: const Icon(Icons.bar_chart, color: Colors.blue, size: 35), onPressed: () {}), Text('${post.totalInteractions ?? 0}', style: const TextStyle(color: Colors.white))]),
-          Column(children: [_isSharing ? const SizedBox(width: 40, height: 40, child: CircularProgressIndicator(strokeWidth: 2)) : IconButton(icon: const Icon(Icons.share, color: Colors.white, size: 30), onPressed: () {
-            _sharePost(post);
-          },), Text('${post.partage ?? 0}', style: const TextStyle(color: Colors.white))]),
-          IconButton(icon: const Icon(Icons.more_vert, color: Colors.white, size: 30), onPressed: () => _showPostMenu(post)),
+          if (_isLookChallenge)
+            Column(
+              children: [
+                GestureDetector(
+                  onTap: _voteForLook,
+                  child: Icon(_hasVoted ? Icons.how_to_vote : Icons.how_to_vote_outlined, color: _hasVoted ? _afroGreen : Colors.white, size: 35),
+                ),
+                Text('${post.votesChallenge ?? 0}', style: const TextStyle(color: Colors.white)),
+              ],
+            ),
+          Column(
+            children: [
+              GestureDetector(onTap: () => _handleLike(post), child: const Icon(Icons.favorite_border, color: _afroRed, size: 30)),
+              Text('${post.loves ?? 0}', style: const TextStyle(color: Colors.white)),
+            ],
+          ),
+          Column(
+            children: [
+              GestureDetector(onTap: () => _showCommentsModal(post), child: const Icon(Icons.chat_bubble_outline, color: Colors.white, size: 33)),
+              Text('${post.comments ?? 0}', style: const TextStyle(color: Colors.white)),
+            ],
+          ),
+          if (post.type != PostType.CHALLENGEPARTICIPATION.name)
+            Column(
+              children: [
+                GestureDetector(onTap: () => _showGiftDialog(post), child: const Icon(Icons.card_giftcard, color: _afroYellow, size: 30)),
+                Text('${post.totalGiftCoinsSentOnThisPost ?? 0}', style: const TextStyle(color: Colors.white)),
+              ],
+            ),
+          Column(
+            children: [
+              GestureDetector(onTap: () {}, child: const Icon(Icons.bar_chart, color: Colors.blue, size: 35)),
+              Text('${post.totalInteractions ?? 0}', style: const TextStyle(color: Colors.white)),
+            ],
+          ),
+          Column(
+            children: [
+              GestureDetector(
+                onTap: _toggleFavorite,
+                child: Icon(_isFavorite ? Icons.bookmark : Icons.bookmark_border, color: _isFavorite ? _afroYellow : Colors.white, size: 30),
+              ),
+              Text(_formatNumber(_favoritesCount), style: const TextStyle(color: Colors.white)),
+            ],
+          ),
+          GestureDetector(
+            onTap: () => _showPostMenu(post),
+            child: const Icon(Icons.more_vert, color: Colors.white, size: 30),
+          ),
         ],
       ),
     );
+  }
+
+  // Fonction pour vérifier l'état d'abonnement et retourner l'icône appropriée
+  Widget _buildSubscribeIcon(Post post) {
+    final currentUserId = authProvider.loginUserData.id;
+
+    // Si l'utilisateur n'est pas connecté, afficher l'icône d'abonnement
+    if (currentUserId == null) {
+      return Positioned(
+        bottom: -2,
+        right: -2,
+        child: Container(
+          width: 20,
+          height: 20,
+          decoration: BoxDecoration(
+            color: Colors.red,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Colors.white,
+              width: 2,
+            ),
+          ),
+          child: const Icon(
+            Icons.add,
+            color: Colors.white,
+            size: 12,
+          ),
+        ),
+      );
+    }
+
+    // Vérifier si c'est un post de canal
+    if (post.canal_id != null && post.canal_id!.isNotEmpty) {
+      // C'est un post de canal - vérifier si l'utilisateur est abonné au canal
+      final isSubscribed = post.canal?.usersSuiviId?.contains(currentUserId) ?? false;
+
+      // Si l'utilisateur n'est PAS abonné, afficher l'icône
+      if (!isSubscribed) {
+        return Positioned(
+          bottom: -2,
+          right: -2,
+          child: Container(
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+              color: Colors.red,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.white,
+                width: 2,
+              ),
+            ),
+            child: const Icon(
+              Icons.add,
+              color: Colors.white,
+              size: 12,
+            ),
+          ),
+        );
+      }
+    }
+    else if (post.user_id != null) {
+      // C'est un post d'utilisateur - vérifier si l'utilisateur courant suit ce créateur
+      final isFollowing = post.user?.userAbonnesIds?.contains(currentUserId) ?? false;
+
+      // Si l'utilisateur ne suit PAS le créateur, afficher l'icône
+      if (!isFollowing) {
+        return Positioned(
+          bottom: -2,
+          right: -2,
+          child: Container(
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+              color: Colors.red,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.white,
+                width: 2,
+              ),
+            ),
+            child: const Icon(
+              Icons.add,
+              color: Colors.white,
+              size: 12,
+            ),
+          ),
+        );
+      }
+    }
+
+    // Si l'utilisateur est déjà abonné ou suit déjà le créateur, ne rien afficher
+    return const SizedBox.shrink();
   }
 
   Widget _buildScrollHint() {
@@ -1225,18 +2315,34 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   Widget _buildVideoPage(Post post) {
     return Stack(
       children: [
-        _buildVideoPlayer(post),
+        // Vidéo avec son propre détecteur de double tap
+        Positioned.fill(
+          child: GestureDetector(
+            onDoubleTap: () {
+              // final screenSize = MediaQuery.of(context).size;
+              // _showFlyingHearts(screenSize.width / 2, screenSize.height / 2);
+              _handleLike(post);
+            },
+            child: _buildVideoPlayer(post),
+          ),
+        ),
+
+        // Contenu interactif (boutons, infos) - au-dessus de la vidéo
         _buildUserInfo(post),
         _buildActionButtons(post),
         _buildScrollHint(),
+
+        // Animation des cœurs
+        ..._buildFlyingHearts(),
+
         if (widget.isIn)
           Positioned(
-            top: MediaQuery.of(context).padding.top + 16,
-            left: 16,
+            top:12,
+            left: 10,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(children: [IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.arrow_back, color: Colors.yellow)), const Text('Afrolook', style: TextStyle(color: _afroGreen, fontSize: 24, fontWeight: FontWeight.bold))]),
+                Row(children: [IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.arrow_back, color: Colors.yellow)), const Text('Afrolook Réels', style: TextStyle(color: _afroGreen, fontSize: 20, fontWeight: FontWeight.bold))]),
               ],
             ),
           ),
@@ -1245,7 +2351,6 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       ],
     );
   }
-
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -1259,6 +2364,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
             controller: _pageController,
             scrollDirection: Axis.vertical,
             itemCount: _feedItems.length,
+            physics: const BouncingScrollPhysics(  // Ajoute cette ligne
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
             onPageChanged: (index) async {
               setState(() => _currentPage = index);
               _itemsSinceLastLoad++;
@@ -1266,11 +2374,18 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
                 _itemsSinceLastLoad = 0;
                 await _loadMoreVideos();
               }
+
+              // Nettoyer les contrôleurs hors de la zone visible
+              _cleanupOutOfRangeControllers(index);
+              // Précharger les vidéos autour de l'index courant
+              _preloadNeighborhood(index);
+
               if (index < _feedItems.length && _feedItems[index] is Post) {
                 final post = _feedItems[index] as Post;
-                _initializeVideo(post);
+                _initializeVideo(post, index: index);
               }
-            },            itemBuilder: (context, index) {
+            },
+            itemBuilder: (context, index) {
               final item = _feedItems[index];
               if (item is Post) {
                 return _buildVideoPage(item);
@@ -1309,3 +2424,123 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   }
 }
 
+// Remplacer la classe FlyingHeart par celle-ci
+class FlyingHeart {
+  final double startX;
+  final double startY;
+  final double endX;
+  final double endY;
+  final double size;
+  final DateTime startTime;
+  final Duration duration;
+  final double rotation; // Nouveau : rotation aléatoire
+  final Color color;     // Nouveau : couleur aléatoire
+
+  FlyingHeart({
+    required this.startX,
+    required this.startY,
+    required this.endX,
+    required this.endY,
+    required this.size,
+    required this.startTime,
+    required this.duration,
+    required this.rotation,
+    required this.color,
+  });
+}
+
+
+class _AnimatedHeart extends StatefulWidget {
+  final FlyingHeart heart;
+
+  const _AnimatedHeart({Key? key, required this.heart}) : super(key: key);
+
+  @override
+  State<_AnimatedHeart> createState() => _AnimatedHeartState();
+}
+
+class _AnimatedHeartState extends State<_AnimatedHeart> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _progress;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: widget.heart.duration,
+    );
+    _progress = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOutCubic,
+    );
+    _controller.forward();
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed && mounted) {
+        // Laisser le parent nettoyer
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _progress,
+      builder: (context, child) {
+        final progress = _progress.value;
+
+        // Position
+        final currentX = widget.heart.startX + (widget.heart.endX - widget.heart.startX) * progress;
+        final currentY = widget.heart.startY + (widget.heart.endY - widget.heart.startY) * progress;
+
+        // Opacité
+        double opacity;
+        if (progress < 0.7) {
+          opacity = 1.0;
+        } else {
+          opacity = 1.0 - ((progress - 0.7) / 0.3);
+        }
+        opacity = opacity.clamp(0.0, 1.0);
+
+        // Scale
+        double scale;
+        if (progress < 0.3) {
+          scale = 0.5 + (progress / 0.3) * 0.8;
+        } else if (progress < 0.7) {
+          scale = 1.3;
+        } else {
+          scale = 1.3 - ((progress - 0.7) / 0.3) * 0.8;
+        }
+        scale = scale.clamp(0.3, 1.5);
+
+        // Rotation
+        final rotation = widget.heart.rotation * (progress < 0.5 ? progress * 2 : (1 - progress) * 2);
+
+        return Positioned(
+          left: currentX - widget.heart.size / 2,
+          top: currentY - widget.heart.size / 2,
+          child: Transform.rotate(
+            angle: rotation,
+            child: Opacity(
+              opacity: opacity,
+              child: Transform.scale(
+                scale: scale,
+                child: Icon(
+                  Icons.favorite,
+                  color: widget.heart.color,
+                  size: widget.heart.size,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}

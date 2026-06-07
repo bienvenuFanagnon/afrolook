@@ -1,5 +1,6 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:provider/provider.dart';
 
 import '../models/coin_pack.dart';
@@ -15,6 +16,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../models/model_data.dart';
 import '../providers/authProvider.dart';
+import 'inactiveUserReminderHelperService.dart';
 
 class CoinGiftService {
   static const int coinsPerFcfa = 25;   // pour 10 FCFA
@@ -132,14 +134,15 @@ class CoinGiftService {
 
   /// Envoyer un like avec pièces (1 pièce pour le créateur, 1 pièce pour l'application)
   /// Si l'utilisateur n'a pas assez de pièces, retourne false avec un message
-  static Future<bool> sendLikeWithCoins({
+  static Future<bool> sendLikeWithCoins2({
     required String senderId,
     required String receiverId,
     required FirebaseFirestore firestore,
     required UserAuthProvider authProvider,
     required Post post,
     required BuildContext context,
-  }) async {
+  })
+  async {
     const int coinsToDebit = 2;      // 2 pièces par like
     const int creatorCoins = 1;      // 1 pièce pour le créateur
     const int appCoins = 1;          // 1 pièce pour l'application
@@ -194,6 +197,100 @@ class CoinGiftService {
       });
 
       return true;
+    });
+  }
+
+  // Dans CoinGiftUserProvider
+
+  static Future<bool> sendLikeWithCoins({
+    required String senderId,
+    required String receiverId,
+    required FirebaseFirestore firestore,
+    required UserAuthProvider authProvider,
+    required Post post,
+    required BuildContext context,
+  }) async {
+    const int coinsToDebit = 2;
+    const int creatorCoins = 1;
+    const int appCoins = 1;
+
+    final senderRef = firestore.collection('Users').doc(senderId);
+    final receiverRef = firestore.collection('Users').doc(receiverId);
+    final postRef = firestore.collection('Posts').doc(post.id);
+    final appDataRef = firestore.collection('AppData').doc(authProvider.appDefaultData.id);
+
+    final senderDoc = await senderRef.get();
+    if (!senderDoc.exists) {
+      throw Exception('Utilisateur introuvable');
+    }
+
+    final currentCoins = (senderDoc.data()?['giftCoinsBalance'] ?? 0) as int;
+
+    if (currentCoins < coinsToDebit) {
+      return false;
+    }
+
+    return await firestore.runTransaction((tx) async {
+      tx.update(senderRef, {
+        'giftCoinsBalance': FieldValue.increment(-coinsToDebit),
+        'totalGiftCoinsSpent': FieldValue.increment(coinsToDebit),
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      tx.update(receiverRef, {
+        'giftCoinsBalance': FieldValue.increment(creatorCoins),
+        'totalCoinsEarnedFromLikes': FieldValue.increment(creatorCoins),
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      tx.update(appDataRef, {
+        'solde_gain_pieces': FieldValue.increment(appCoins),
+      });
+
+      tx.update(postRef, {
+        'loves': FieldValue.increment(1),
+        'users_love_id': FieldValue.arrayUnion([senderId]),
+        'popularity': FieldValue.increment(1),
+        'totalGiftCoinsSentOnThisPost': FieldValue.increment(creatorCoins),
+        'totalCoinsFromLikes': FieldValue.increment(creatorCoins),
+      });
+
+      // 🔥 APRÈS LE LIKE : Vérifier si le propriétaire est inactif (en arrière-plan)
+      _checkAndSendReminderIfInactive(receiverId);
+
+      return true;
+    });
+  }
+
+  /// Vérification en arrière-plan (non bloquante)
+  static void _checkAndSendReminderIfInactive(String userId) {
+    // Exécution en arrière-plan sans attendre
+    Future.microtask(() async {
+      try {
+        // 1. Vérifier si l'utilisateur est inactif (depuis Firestore)
+        final isInactive = await InactiveUserReminderHelper.isUserInactive(userId);
+        if (!isInactive) return;
+
+        // 2. Vérifier la limite mensuelle (depuis Firestore)
+        final canReceive = await InactiveUserReminderHelper.canReceiveReminder(userId);
+        if (!canReceive) return;
+
+        // 3. Récupérer les données utilisateur
+        final userData = await InactiveUserReminderHelper.getUserEmailData(userId);
+        if (userData == null) return;
+        if (userData['userEmail'] == null || userData['userEmail'].isEmpty) return;
+
+        // 4. Appeler la Cloud Function
+        final result = await FirebaseFunctions.instance
+            .httpsCallable('sendInactiveUserReminder')
+            .call({'userId': userId, 'userData': userData});
+
+        if (result.data['success'] == true) {
+          print('✅ Email de rappel envoyé à ${userData['userEmail']}');
+        }
+      } catch (e) {
+        print('❌ Erreur _checkAndSendReminderIfInactive: $e');
+      }
     });
   }
 
