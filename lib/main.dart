@@ -99,12 +99,6 @@ import 'firebase_options.dart';
 import 'models/chatmodels/message.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:workmanager/workmanager.dart';
-// Import du service App Links
-
-
-import 'dart:async';
-import 'dart:io';
-import 'package:afrotok/services/navigation_service.dart';
 
 late List<CameraDescription> _cameras;
 bool _shouldRestart = false;
@@ -113,10 +107,10 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialisation AdMob
-  if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-    AdService.setMode(false);
-    await AdService.init();
-  }
+  // if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+  //   AdService.setMode(false);
+  //   await AdService.init();
+  // }
 
   // Initialisation caméras
   try {
