@@ -11,6 +11,7 @@ import 'package:video_thumbnail/video_thumbnail.dart';
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/postProvider.dart';
+import '../../providers/sound_provider.dart';
 import '../../providers/userProvider.dart';
 import '../canaux/detailsCanal.dart';
 import '../coins/post_gifts_list.dart';
@@ -38,13 +39,124 @@ import '../postDetailsVideo.dart';
 import '../../services/utils/abonnement_utils.dart';
 
 
+// class MediaPlaybackManager {
+//   static VideoPlayerController? _currentVideoController;
+//   static ChewieController? _currentChewieController;
+//   static AudioPlayer? _currentAudioPlayer;
+//   static String? _currentMediaId;
+//   static String? _currentMediaType; // 'video' ou 'audio'
+//   static VoidCallback? _onPauseCallback;
+//
+//   static void registerVideo(
+//       String postId,
+//       VideoPlayerController controller,
+//       ChewieController chewieController,
+//       VoidCallback onPause,
+//       ) {
+//     // Si une audio joue, on l'arrête
+//     if (_currentMediaType == 'audio' && _currentAudioPlayer != null) {
+//       _currentAudioPlayer!.stop();
+//       _currentAudioPlayer = null;
+//     }
+//
+//     // Si une autre vidéo joue, on la pause
+//     if (_currentMediaId != null && _currentMediaId != postId) {
+//       _onPauseCallback?.call();
+//       _currentChewieController?.pause();
+//     }
+//
+//     _currentMediaId = postId;
+//     _currentMediaType = 'video';
+//     _currentVideoController = controller;
+//     _currentChewieController = chewieController;
+//     _onPauseCallback = onPause;
+//   }
+//
+//   static void registerAudio(
+//       String postId,
+//       AudioPlayer audioPlayer,
+//       VoidCallback onStop,
+//       ) {
+//     // Si une vidéo joue, on la pause
+//     if (_currentMediaType == 'video' && _currentChewieController != null) {
+//       _onPauseCallback?.call();
+//       _currentChewieController?.pause();
+//     }
+//
+//     // Si un autre audio joue, on l'arrête
+//     if (_currentMediaType == 'audio' && _currentMediaId != postId && _currentAudioPlayer != null) {
+//       _currentAudioPlayer!.stop();
+//     }
+//
+//     _currentMediaId = postId;
+//     _currentMediaType = 'audio';
+//     _currentAudioPlayer = audioPlayer;
+//     _onPauseCallback = onStop;
+//   }
+//
+//   static void unregisterMedia(String postId) {
+//     if (_currentMediaId == postId) {
+//       _currentMediaId = null;
+//       _currentMediaType = null;
+//       _currentVideoController = null;
+//       _currentChewieController = null;
+//       _currentAudioPlayer = null;
+//       _onPauseCallback = null;
+//     }
+//   }
+//
+//   static void pauseCurrentMedia() {
+//     if (_currentMediaType == 'video' && _currentChewieController != null) {
+//       if (_currentChewieController!.isPlaying) {
+//         _currentChewieController!.pause();
+//       }
+//     } else if (_currentMediaType == 'audio' && _currentAudioPlayer != null) {
+//       if (_currentAudioPlayer!.state == PlayerState.playing) {
+//         _currentAudioPlayer!.pause();
+//       }
+//     }
+//   }
+// }
+
+// Ajoutez/modifiez cette classe dans votre fichier existant
 class MediaPlaybackManager {
   static VideoPlayerController? _currentVideoController;
   static ChewieController? _currentChewieController;
   static AudioPlayer? _currentAudioPlayer;
   static String? _currentMediaId;
-  static String? _currentMediaType; // 'video' ou 'audio'
+  static String? _currentMediaType;
   static VoidCallback? _onPauseCallback;
+
+  // Nouveau : Référence au provider de son
+  static SoundProvider? _soundProvider;
+  static VoidCallback? _soundListener;
+
+  // Initialisation avec le provider
+  static void init(SoundProvider soundProvider) {
+    _soundProvider = soundProvider;
+
+    // Écouter les changements de préférence sonore
+    _soundListener = () {
+      _onGlobalSoundChanged();
+    };
+    _soundProvider?.addListener(_soundListener!);
+  }
+
+  // Appliquer le changement de son à toutes les vidéos actives
+  static void _onGlobalSoundChanged() {
+    if (_soundProvider == null) return;
+
+    final volume = _soundProvider!.isMuted ? 0.0 : 1.0;
+
+    // Mettre à jour la vidéo courante
+    if (_currentMediaType == 'video' && _currentChewieController != null) {
+      _currentChewieController!.setVolume(volume);
+    }
+    // Mettre à jour l'audio courant
+    else if (_currentMediaType == 'audio' && _currentAudioPlayer != null) {
+      _currentAudioPlayer!.setVolume(volume);
+    }
+  }
 
   static void registerVideo(
       String postId,
@@ -52,13 +164,13 @@ class MediaPlaybackManager {
       ChewieController chewieController,
       VoidCallback onPause,
       ) {
-    // Si une audio joue, on l'arrête
+    // Arrêter l'audio si nécessaire
     if (_currentMediaType == 'audio' && _currentAudioPlayer != null) {
       _currentAudioPlayer!.stop();
       _currentAudioPlayer = null;
     }
 
-    // Si une autre vidéo joue, on la pause
+    // Pause de l'ancienne vidéo
     if (_currentMediaId != null && _currentMediaId != postId) {
       _onPauseCallback?.call();
       _currentChewieController?.pause();
@@ -69,6 +181,10 @@ class MediaPlaybackManager {
     _currentVideoController = controller;
     _currentChewieController = chewieController;
     _onPauseCallback = onPause;
+
+    // 🔥 Appliquer le volume global immédiatement
+    final isMuted = _soundProvider?.isMuted ?? true;
+    chewieController.setVolume(isMuted ? 0.0 : 1.0);
   }
 
   static void registerAudio(
@@ -76,13 +192,13 @@ class MediaPlaybackManager {
       AudioPlayer audioPlayer,
       VoidCallback onStop,
       ) {
-    // Si une vidéo joue, on la pause
+    // Pause de la vidéo courante
     if (_currentMediaType == 'video' && _currentChewieController != null) {
       _onPauseCallback?.call();
       _currentChewieController?.pause();
     }
 
-    // Si un autre audio joue, on l'arrête
+    // Arrêter l'ancien audio
     if (_currentMediaType == 'audio' && _currentMediaId != postId && _currentAudioPlayer != null) {
       _currentAudioPlayer!.stop();
     }
@@ -91,6 +207,10 @@ class MediaPlaybackManager {
     _currentMediaType = 'audio';
     _currentAudioPlayer = audioPlayer;
     _onPauseCallback = onStop;
+
+    // 🔥 Appliquer le volume global
+    final isMuted = _soundProvider?.isMuted ?? true;
+    audioPlayer.setVolume(isMuted ? 0.0 : 1.0);
   }
 
   static void unregisterMedia(String postId) {
@@ -114,6 +234,15 @@ class MediaPlaybackManager {
         _currentAudioPlayer!.pause();
       }
     }
+  }
+
+  // Nettoyage
+  static void dispose() {
+    if (_soundProvider != null && _soundListener != null) {
+      _soundProvider!.removeListener(_soundListener!);
+    }
+    _soundProvider = null;
+    _soundListener = null;
   }
 }
 
@@ -156,7 +285,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   late UserAuthProvider _authProvider;
   late PostProvider _postProvider;
   late CoinGiftUserProvider _coinProvider;
-
+  // 🔥 Ajoutez cette variable
+  late SoundProvider _soundProvider;
   // Données utilisateur/canal
   UserData? _creatorUser;
   Canal? _creatorCanal;
@@ -203,6 +333,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     _authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     _postProvider = Provider.of<PostProvider>(context, listen: false);
     _coinProvider = Provider.of<CoinGiftUserProvider>(context, listen: false);
+    // 🔥 Récupérez le SoundProvider
+    _soundProvider = Provider.of<SoundProvider>(context, listen: false);
 
     _initSharedPreferences();
     _loadCreatorData();
@@ -352,6 +484,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
 
       // 🔥 MODIFICATION : showControls: false, autoPlay: true
       _chewieController = ChewieController(
+
         videoPlayerController: _videoController!,
         autoPlay: true,           // Lecture automatique
         looping: false,
@@ -369,7 +502,9 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
         ),
         autoInitialize: true,
       );
-
+      // 🔥 CRUCIAL : Appliquer le volume global IMMÉDIATEMENT
+      final isMuted = _soundProvider.isMuted;
+      _chewieController!.setVolume(isMuted ? 0.0 : 1.0);
       MediaPlaybackManager.registerVideo(
         widget.post.id!,
         _videoController!,
@@ -1238,6 +1373,21 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     }
   }
 
+  // 🔥 Nouvelle méthode : Mettre à jour le volume quand la préférence change
+  void _updateVolume() {
+    if (_chewieController != null) {
+      final isMuted = _soundProvider.isMuted;
+      _chewieController!.setVolume(isMuted ? 0.0 : 1.0);
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // S'abonner aux changements du provider
+    _soundProvider.addListener(_updateVolume);
+  }
+
   @override
   void dispose() {
     _visibilityTimer?.cancel();
@@ -1245,6 +1395,9 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     MediaPlaybackManager.unregisterMedia(widget.post.id ?? '');
     _videoController?.removeListener(() {});
     _disposeVideoControllers();
+
+    // 🔥 Nettoyage : retirer l'écouteur
+    _soundProvider.removeListener(_updateVolume);
     super.dispose();
   }
 

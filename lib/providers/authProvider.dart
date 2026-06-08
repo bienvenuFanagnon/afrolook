@@ -244,7 +244,6 @@ class UserAuthProvider extends ChangeNotifier {
 
       // 3️⃣ Supprimer token local
       await storeToken('');
-
       // 4️⃣ FORCER la déconnexion Firebase (la plus importante)
       await FirebaseAuth.instance.signOut();
 

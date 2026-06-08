@@ -50,10 +50,10 @@ const _twitterGreen = Color(0xFF1D9BF0);
 const _twitterRed = Color(0xFFF91880);
 
 class PostDetailsVideoFormatTel extends StatefulWidget {
-  final Post initialPost;
+  final Post? initialPost;
   final bool isIn;
 
-  const PostDetailsVideoFormatTel({Key? key, required this.initialPost, this.isIn = false}) : super(key: key);
+  const PostDetailsVideoFormatTel({Key? key, this.initialPost, this.isIn = false}) : super(key: key);
 
   @override
   _PostDetailsVideoFormatTelState createState() => _PostDetailsVideoFormatTelState();
@@ -114,8 +114,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   Timer? _suggestionModalTimer;
   bool _hasSeenSuggestionsModal = false;
 
-  bool get _isLookChallenge => widget.initialPost.type == 'CHALLENGEPARTICIPATION';
-
+  // bool get _isLookChallenge => widget.initialPost!.type == 'CHALLENGEPARTICIPATION';
+  bool get _isLookChallenge => widget.initialPost != null && widget.initialPost!.type == 'CHALLENGEPARTICIPATION';
 
   // Pour l'animation de like au double clic
   bool _showLikeAnimation = false;
@@ -148,18 +148,23 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       initialPage: 0,
       viewportFraction: 1.0,
     );
+
     _initSharedPreferences();
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    authProvider.incrementPostTotalInteractions(postId: widget.initialPost.id!);
     postProvider = Provider.of<PostProvider>(context, listen: false);
-    _checkFavoriteStatus();
 
-    _incrementViews();
-    _loadSupportModalSeen();
-    if (_isLookChallenge && widget.initialPost.challenge_id != null) {
-      _loadChallengeData();
-      _checkIfUserHasVoted();
+    // 🔥 Vérifier si initialPost existe avant de l'utiliser
+    if (widget.initialPost != null) {
+      authProvider.incrementPostTotalInteractions(postId: widget.initialPost!.id!);
+      _checkFavoriteStatus();
+      _incrementViews();
+      _loadSupportModalSeen();
+      if (_isLookChallenge && widget.initialPost!.challenge_id != null) {
+        _loadChallengeData();
+        _checkIfUserHasVoted();
+      }
     }
+
     _initializeFeed();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _showFirstScrollModalIfNeeded();
@@ -283,7 +288,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     final userId = authProvider.loginUserData.id;
     if (userId == null) return;
 
-    final postDoc = await _firestore.collection('Posts').doc(widget.initialPost.id).get();
+    final postDoc = await _firestore.collection('Posts').doc(widget.initialPost!.id).get();
     if (postDoc.exists) {
       final data = postDoc.data();
       final usersFavorite = List<String>.from(data?['users_favorite_id'] ?? []);
@@ -310,7 +315,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     try {
       if (_isFavorite) {
         // Retirer des favoris
-        await _firestore.collection('Posts').doc(widget.initialPost.id).update({
+        await _firestore.collection('Posts').doc(widget.initialPost!.id).update({
           'users_favorite_id': FieldValue.arrayRemove([userId]),
           'favorites_count': FieldValue.increment(-1),
         });
@@ -320,7 +325,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         });
       } else {
         // Ajouter aux favoris
-        await _firestore.collection('Posts').doc(widget.initialPost.id).update({
+        await _firestore.collection('Posts').doc(widget.initialPost!.id).update({
           'users_favorite_id': FieldValue.arrayUnion([userId]),
           'favorites_count': FieldValue.increment(1),
         });
@@ -330,15 +335,15 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         });
 
         // Notification
-        if (widget.initialPost.user_id != userId) {
+        if (widget.initialPost!.user_id != userId) {
           await authProvider.sendNotification(
-            userIds: [widget.initialPost.user?.oneIgnalUserid ?? ''],
+            userIds: [widget.initialPost!.user?.oneIgnalUserid ?? ''],
             smallImage: authProvider.loginUserData.imageUrl ?? '',
             send_user_id: userId,
-            recever_user_id: widget.initialPost.user_id!,
+            recever_user_id: widget.initialPost!.user_id!,
             message: "📌 @${authProvider.loginUserData.pseudo} a ajouté votre vidéo aux favoris",
             type_notif: NotificationType.FAVORITE.name,
-            post_id: widget.initialPost.id!,
+            post_id: widget.initialPost!.id!,
             post_type: PostDataType.VIDEO.name,
             chat_id: '',
           );
@@ -527,8 +532,40 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     }
   }
   // ==================== FEED LOADING (MODIFIÉ) ====================
-
   Future<void> _initializeFeed() async {
+    setState(() => _isLoadingFeed = true);
+
+    _itemsSinceLastLoad = 0;
+    _maxVideosReached = false;
+    _lastDocument = null;
+    _usedOldVideoIds.clear();
+
+    // 🔥 Charger vidéo initiale SEULEMENT si elle existe
+    if (widget.initialPost != null && !_loadedPostIds.contains(widget.initialPost!.id)) {
+      _loadedPostIds.add(widget.initialPost!.id!);
+      _videoPosts.add(widget.initialPost!);
+      await _loadPostRelations(widget.initialPost!);
+      _subscribeToPostUpdates(widget.initialPost!);
+    }
+
+    // Charger vidéos récentes
+    await _loadMoreVideos(isInitial: true);
+
+    // Charger les anciennes vidéos
+    await _loadOldVideosInBackground();
+
+    // Construire feed final
+    _rebuildFeedItems();
+
+    setState(() => _isLoadingFeed = false);
+
+    // Init player seulement si le feed n'est pas vide
+    if (_feedItems.isNotEmpty && _feedItems[0] is Post) {
+      _preloadNeighborhood(0);
+      _initializeVideo(_feedItems[0] as Post, index: 0);
+    }
+  }
+  Future<void> _initializeFeed2() async {
     setState(() => _isLoadingFeed = true);
 
     _itemsSinceLastLoad = 0;
@@ -539,12 +576,12 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     _usedOldVideoIds.clear();
 
     // 1. Charger vidéo initiale
-    if (!_loadedPostIds.contains(widget.initialPost.id)) {
-      _loadedPostIds.add(widget.initialPost.id!);
-      _videoPosts.add(widget.initialPost);
+    if (!_loadedPostIds.contains(widget.initialPost!.id)) {
+      _loadedPostIds.add(widget.initialPost!.id!);
+      _videoPosts.add(widget.initialPost!);
 
-      await _loadPostRelations(widget.initialPost);
-      _subscribeToPostUpdates(widget.initialPost);
+      await _loadPostRelations(widget.initialPost!);
+      _subscribeToPostUpdates(widget.initialPost!);
     }
 
     // 2. Charger vidéos récentes
@@ -570,26 +607,26 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     try {
       if (authProvider.loginUserData == null ||
           widget.initialPost == null ||
-          widget.initialPost.id == null) return;
+          widget.initialPost!.id == null) return;
       final currentUserId = authProvider.loginUserData.id;
       if (currentUserId == null) return;
-      widget.initialPost.users_vue_id ??= [];
-      if (widget.initialPost.users_vue_id!.contains(currentUserId)) {
+      widget.initialPost!.users_vue_id ??= [];
+      if (widget.initialPost!.users_vue_id!.contains(currentUserId)) {
         print('⏭️ Vue déjà enregistrée pour cet utilisateur');
         return;
       }
-      authProvider. incrementPostTotalInteractions(postId: widget.initialPost.id!);
+      authProvider. incrementPostTotalInteractions(postId: widget.initialPost!.id!);
 
       setState(() {
-        widget.initialPost.vues = (widget.initialPost.vues ?? 0) + 1;
-        widget.initialPost.users_vue_id!.add(currentUserId);
+        widget.initialPost!.vues = (widget.initialPost!.vues ?? 0) + 1;
+        widget.initialPost!.users_vue_id!.add(currentUserId);
       });
-      await _firestore.collection('Posts').doc(widget.initialPost.id).update({
+      await _firestore.collection('Posts').doc(widget.initialPost!.id).update({
         'vues': FieldValue.increment(1),
         'users_vue_id': FieldValue.arrayUnion([currentUserId]),
         'popularity': FieldValue.increment(2),
       });
-      print('✅ Vue unique enregistrée pour ${widget.initialPost.id}');
+      print('✅ Vue unique enregistrée pour ${widget.initialPost!.id}');
     } catch (e) {
       print("Erreur incrémentation vues: $e");
     }
@@ -1587,7 +1624,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         'users_partage_id': FieldValue.arrayUnion([authProvider.loginUserData.id]),
       });
       setState(() {
-        post.partage = (widget.initialPost.partage ?? 0) + 1;
+        post.partage = (widget.initialPost!.partage ?? 0) + 1;
         post.users_partage_id!.add(authProvider.loginUserData.id!);
       });
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Partagé !'), backgroundColor: Colors.green));
@@ -1660,10 +1697,10 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
   // ==================== CHALLENGE & VOTE ====================
   Future<void> _loadChallengeData() async {
-    if (widget.initialPost.challenge_id == null) return;
+    if (widget.initialPost!.challenge_id == null) return;
     setState(() => _loadingChallenge = true);
     try {
-      final doc = await _firestore.collection('Challenges').doc(widget.initialPost.challenge_id).get();
+      final doc = await _firestore.collection('Challenges').doc(widget.initialPost!.challenge_id).get();
       if (doc.exists) setState(() => _challenge = Challenge.fromJson(doc.data()!)..id = doc.id);
     } catch (e) { print('Erreur chargement challenge: $e'); } finally { setState(() => _loadingChallenge = false); }
   }
@@ -1671,7 +1708,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   Future<void> _checkIfUserHasVoted() async {
     final userId = authProvider.loginUserData.id;
     if (userId == null) return;
-    final doc = await _firestore.collection('Posts').doc(widget.initialPost.id).get();
+    final doc = await _firestore.collection('Posts').doc(widget.initialPost!.id).get();
     if (doc.exists) {
       final voters = List<String>.from(doc.data()?['users_votes_ids'] ?? []);
       setState(() => _hasVoted = voters.contains(userId));
@@ -1715,7 +1752,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         if (!_challenge!.voteGratuit!) {
           await _debiterUtilisateur(userId, _challenge!.prixVote!, 'Vote challenge ${_challenge!.titre}');
         }
-        transaction.update(_firestore.collection('Posts').doc(widget.initialPost.id), {
+        transaction.update(_firestore.collection('Posts').doc(widget.initialPost!.id), {
           'votes_challenge': FieldValue.increment(1),
           'users_votes_ids': FieldValue.arrayUnion([userId]),
           'popularity': FieldValue.increment(3),
@@ -2342,7 +2379,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(children: [IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.arrow_back, color: Colors.yellow)), const Text('Afrolook Réels', style: TextStyle(color: _afroGreen, fontSize: 20, fontWeight: FontWeight.bold))]),
+                Row(children: [IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.arrow_back, color: Colors.yellow)), const Text('Vibe vidéos', style: TextStyle(color: _afroGreen, fontSize: 20, fontWeight: FontWeight.bold))]),
               ],
             ),
           ),
@@ -2359,7 +2396,31 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         Scaffold(
           backgroundColor: _afroBlack,
           body: _isLoadingFeed
-              ? const Center(child: CircularProgressIndicator(color: _afroGreen))
+              ? Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const CircularProgressIndicator(color: _afroGreen),
+                const SizedBox(height: 20),
+                Text(
+                  'Chargement des vibes en cours...',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Préparez-vous pour le meilleur contenu 🔥',
+                  style: TextStyle(
+                    color: Colors.white38,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          )
               : PageView.builder(
             controller: _pageController,
             scrollDirection: Axis.vertical,

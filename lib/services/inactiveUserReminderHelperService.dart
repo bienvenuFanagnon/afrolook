@@ -1,6 +1,11 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
 
-class InactiveUserReminderHelper {
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+
+class InactiveUserReminderService {
   static const int DAYS_INACTIVE_THRESHOLD = 3;
   static const int MAX_EMAILS_PER_MONTH = 2;
 
@@ -8,6 +13,57 @@ class InactiveUserReminderHelper {
   static const int ONE_DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000; // 86,400,000 ms
   static const int ONE_DAY_IN_MICROSECONDS = ONE_DAY_IN_MILLISECONDS * 1000; // 86,400,000,000 μs
   static const int MAX_REASONABLE_DAYS = 500; // Si >500 jours, c'est probablement en microsecondes
+
+  static final FirebaseFunctions _functions = FirebaseFunctions.instance;
+  static bool _isProcessing = false;
+  static DateTime? _lastProcessDate;
+
+
+  /// Appelée lors de la connexion de l'utilisateur
+  /// S'exécute en arrière-plan sans bloquer l'UI
+  static Future<void> checkAndNotifyInactiveUsers() async {
+    // Éviter les appels multiples simultanés
+    if (_isProcessing) {
+      debugPrint('📧 Traitement déjà en cours, ignoré');
+      return;
+    }
+
+    // Limiter à une fois par jour maximum
+    final now = DateTime.now();
+    if (_lastProcessDate != null &&
+        now.difference(_lastProcessDate!).inHours < 24) {
+      debugPrint('📧 Dernier traitement il y a moins de 24h, ignoré');
+      return;
+    }
+
+    _isProcessing = true;
+    _lastProcessDate = now;
+
+    try {
+      debugPrint('📧 Début traitement utilisateurs inactifs en arrière-plan');
+
+      // Appel asynchrone sans attendre (fire-and-forget)
+      unawaited(_callCloudFunction());
+    } catch (e) {
+      debugPrint('❌ Erreur lors du lancement: $e');
+      _isProcessing = false;
+    }
+  }
+
+  static Future<void> _callCloudFunction() async {
+    try {
+      final callable = _functions.httpsCallable('processInactiveUsersReminder');
+      final result = await callable.call();
+
+      if (kDebugMode) {
+        debugPrint('📧 Résultat: ${result.data}');
+      }
+    } catch (e) {
+      debugPrint('❌ Erreur Cloud Function: $e');
+    } finally {
+      _isProcessing = false;
+    }
+  }
 
   /// Détecte automatiquement si le timestamp est en millisecondes ou microsecondes
   /// et retourne le nombre de jours d'inactivité

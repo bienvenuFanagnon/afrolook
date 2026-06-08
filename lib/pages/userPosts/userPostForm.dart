@@ -1,4 +1,5 @@
 import 'package:afrotok/pages/userPosts/postPhotoEditor.dart';
+import 'package:afrotok/pages/userPosts/postTabs/UserPubVibeTab.dart';
 import 'package:afrotok/pages/userPosts/postTabs/userPostAudioTab.dart';
 import 'package:afrotok/pages/userPosts/postTabs/userPostImageTab.dart';
 import 'package:afrotok/pages/userPosts/postTabs/userPostTextTab.dart';
@@ -162,7 +163,7 @@ class _UserProfilState extends State<UserPostForm> {
               // Onglets
               Container(
                 width: width,
-                height: height * 0.78,
+                height: height,
                 margin: EdgeInsets.symmetric(horizontal: 8),
                 decoration: BoxDecoration(
                   color: _cardColor,
@@ -182,7 +183,7 @@ class _UserProfilState extends State<UserPostForm> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.audiotrack, size: 20, color: _textColor),
-                          SizedBox(width: 8),
+                          SizedBox(width: 4),
                           Text(
                             "Audio",
                             style: TextStyle(
@@ -198,7 +199,7 @@ class _UserProfilState extends State<UserPostForm> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.text_fields, size: 20, color: _textColor),
-                          SizedBox(width: 8),
+                          SizedBox(width: 4),
                           Text(
                             "Pensée",
                             style: TextStyle(
@@ -214,7 +215,7 @@ class _UserProfilState extends State<UserPostForm> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.photo, size: 20, color: _textColor),
-                          SizedBox(width: 8),
+                          SizedBox(width: 4),
                           Text(
                             "Image",
                             style: TextStyle(
@@ -229,8 +230,24 @@ class _UserProfilState extends State<UserPostForm> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
+                          Icon(Icons.video_collection_outlined, size: 20, color: _textColor),
+                          SizedBox(width: 4),
+                          Text(
+                            "Vibe",
+                            style: TextStyle(
+                              color: _textColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Tab(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
                           Icon(Icons.videocam, size: 20, color: _textColor),
-                          SizedBox(width: 8),
+                          SizedBox(width: 4),
                           Text(
                             "Vidéo",
                             style: TextStyle(
@@ -265,6 +282,7 @@ class _UserProfilState extends State<UserPostForm> {
                     UserPubText(canal: null),
                     UserPostLookImageTab(canal: null,),
                     // UserPubImage(),
+                    UserPubVibe(canal: null),
                     UserPubVideo(canal: null),
                   ],
                   onChange: (index) => printVm(index),

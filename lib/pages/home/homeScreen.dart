@@ -40,8 +40,11 @@ import '../../constant/custom_theme.dart';
 import '../../providers/chroniqueProvider.dart';
 import '../../providers/contenuPayantProvider.dart';
 import '../../services/daily_modal_service.dart';
+import '../../services/inactiveUserReminderHelperService.dart';
 import '../../services/navigation_service.dart';
 import '../../services/postService/mixed_feed_service.dart';
+import '../../services/sessions/session_checker_service.dart';
+import '../../services/sessions/session_service.dart';
 import '../../services/utils/abonnement_utils.dart';
 import '../LiveAgora/livesAgora.dart';
 import '../LiveAgora/mesLives.dart';
@@ -76,6 +79,7 @@ import '../dating/widgets/dating_top_modal.dart';
 import '../mes_notifications.dart';
 import '../postDetails.dart';
 import '../postDetailsVideo.dart';
+import '../post_video_format_tel_details.dart';
 import '../pronostics/pronostics_feed_page.dart';
 import '../splashChargement.dart';
 import '../user/amis/addListAmis.dart';
@@ -84,6 +88,7 @@ import '../user/amis/pageMesInvitations.dart';
 import '../user/inviteAmis.dart';
 import '../user/monetisation.dart';
 import '../userPosts/favorites_posts.dart';
+import '../vibe/vibesPage.dart';
 import '../widgetGlobal.dart';
 import 'HomePostType.dart';
 import 'homeSportPost.dart';
@@ -1182,8 +1187,11 @@ class _MyHomePageState extends State<MyHomePage>
   void initState() {
     // _changeColor();
     super.initState();
+    // Attendre que le widget soit construit
 
-
+    // Future.microtask(() {
+    //   InactiveUserReminderService.checkAndNotifyInactiveUsers();
+    // });
 
     // 🔥 Lancer la présence automatique dès l'accès à la Home
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1259,12 +1267,24 @@ class _MyHomePageState extends State<MyHomePage>
           _tabController!.animateTo(0);
         });
       }
-      if (_tabController!.index == 3) {
+      if (_tabController!.index == 4) {
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) =>
                 DashboardContentScreen(),
+          ),
+        ).then((_) {
+          _tabController!.animateTo(0);
+        });
+      }
+      if (_tabController!.index == 2) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                PostDetailsVideoFormatTel(isIn: true,),
+            // VibesVideoPage(isIn: true,),
           ),
         ).then((_) {
           _tabController!.animateTo(0);
@@ -1591,7 +1611,9 @@ class _MyHomePageState extends State<MyHomePage>
               tabs: [
                 Tab(text: '🏠 Accueil'),
                 Tab(text: '⚽ Sport'),
+                Tab(text: '📱 Vibe vidéos'),
                 Tab(text: '📅 Événements'),
+
                 Tab(text: '🪙 Zone VIP'),
 
                 // Tab(text: '🕒 Looks'),
@@ -1619,6 +1641,7 @@ class _MyHomePageState extends State<MyHomePage>
           // UnifiedHomeOptimized(),
           // UnifiedHomePage(),
           LooksPage(type: TabBarType.LOOKS.name,sortType: 'recent',),
+          SizedBox.shrink(), // Widget invisible pour l'onglet Sport
           SizedBox.shrink(), // Widget invisible pour l'onglet Sport
 
           // LooksPage(type: TabBarType.SPORT.name,sortType: 'popular',),

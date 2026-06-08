@@ -74,6 +74,7 @@ import 'package:afrotok/providers/postProvider.dart';
 import 'package:afrotok/providers/profilLikeProvider.dart';
 import 'package:afrotok/providers/pronostic_provider.dart';
 import 'package:afrotok/providers/recent_posts_provider.dart';
+import 'package:afrotok/providers/sound_provider.dart';
 import 'package:afrotok/providers/userProvider.dart';
 import 'package:afrotok/services/ad_service.dart';
 import 'package:afrotok/services/challengeMonh/challenge_month_service.dart';
@@ -307,6 +308,7 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (_) => CryptoPortfolioProvider()),
         ChangeNotifierProvider(create: (_) => MixedFeedServiceProvider()),
         ChangeNotifierProvider(create: (_) => PronosticProvider()),
+        ChangeNotifierProvider(create: (_) => SoundProvider()),
         ChangeNotifierProxyProvider<UserAuthProvider, CoinGiftUserProvider>(
           create: (context) => CoinGiftUserProvider(
             authProvider: context.read<UserAuthProvider>(),

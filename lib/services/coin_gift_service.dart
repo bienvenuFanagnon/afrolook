@@ -268,15 +268,15 @@ class CoinGiftService {
     Future.microtask(() async {
       try {
         // 1. Vérifier si l'utilisateur est inactif (depuis Firestore)
-        final isInactive = await InactiveUserReminderHelper.isUserInactive(userId);
+        final isInactive = await InactiveUserReminderService.isUserInactive(userId);
         if (!isInactive) return;
 
         // 2. Vérifier la limite mensuelle (depuis Firestore)
-        final canReceive = await InactiveUserReminderHelper.canReceiveReminder(userId);
+        final canReceive = await InactiveUserReminderService.canReceiveReminder(userId);
         if (!canReceive) return;
 
         // 3. Récupérer les données utilisateur
-        final userData = await InactiveUserReminderHelper.getUserEmailData(userId);
+        final userData = await InactiveUserReminderService.getUserEmailData(userId);
         if (userData == null) return;
         if (userData['userEmail'] == null || userData['userEmail'].isEmpty) return;
 

@@ -21,6 +21,7 @@ import 'package:provider/provider.dart';
 
 import 'package:skeletonizer/skeletonizer.dart';
 
+import '../../providers/sound_provider.dart';
 import '../../services/utils/abonnement_utils.dart';
 import '../UserServices/ServiceWidget.dart';
 
@@ -166,9 +167,17 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
   Timer? _oldPostsLoadTimer;
   DocumentSnapshot? _lastOldPostDocument;
+
+  late SoundProvider _soundProvider;
   @override
   void initState() {
     super.initState();
+    _soundProvider = SoundProvider();
+
+    // 🔥 Initialisation du MediaPlaybackManager
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      MediaPlaybackManager.init(_soundProvider);
+    });
     _initSharedPreferences();
     // checkAndRedirectToVideoPage(context);
     // Initialisation des providers
@@ -199,6 +208,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     _starController.dispose();
     _unlikeController.dispose();
     WidgetsBinding.instance.removeObserver(this);
+    MediaPlaybackManager.dispose();
     super.dispose();
   }
 
@@ -3908,6 +3918,20 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                   child: _getFilterIcon(),
                 ),
               ),
+            ),
+            Consumer<SoundProvider>(
+              builder: (context, soundProvider, child) {
+                return IconButton(
+                  icon: Icon(
+                    soundProvider.isMuted ? Icons.volume_off : Icons.volume_up,
+                    color: soundProvider.isMuted ? Colors.grey : primaryGreen,
+                  ),
+                  onPressed: () {
+                    soundProvider.toggleSound();
+                  },
+                  tooltip: soundProvider.isMuted ? 'Activer le son' : 'Couper le son',
+                );
+              },
             ),
             // Bouton rafraîchir
             IconButton(

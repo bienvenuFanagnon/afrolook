@@ -2,6 +2,8 @@
 import 'dart:math';
 
 import 'package:afrotok/pages/contact.dart';
+import 'package:afrotok/pages/splashChargement.dart';
+import 'package:afrotok/services/sessions/session_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
@@ -96,32 +98,12 @@ class _LoginPageUserState extends State<LoginPageUser> {
         _showEmailVerificationModal(user);
         return; // Stopper le reste de la connexion
       }
+      await SessionUserFirebaseService.saveUserSession(user!.uid)
+      .then((value) {
+       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => SplashChargement(),));
 
-      // Si email vérifié, continuer la récupération des données
-      if (await authProvider.getCurrentUser(user!.uid)) {
-        if (authProvider.loginUserData != null &&
-            authProvider.loginUserData.id != null &&
-            authProvider.loginUserData.id!.length > 5) {
+     },);
 
-          await authProvider.getAppData();
-          await userProvider.getAllAnnonces();
-
-          userProvider.changeState(
-              user: authProvider.loginUserData,
-              state: UserState.ONLINE.name
-          );
-          prefs.setString('token', user.uid);
-
-          Navigator.pushReplacementNamed(context, '/home');
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Erreur de chargement', textAlign: TextAlign.center),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
 
       _emailController.clear();
       _passwordController.clear();
