@@ -10,6 +10,7 @@ import 'package:http/http.dart' as http;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 
+import '../../services/sessions/session_checker_service.dart';
 import 'feexpay/feexPayPaymentScreen.dart';
 
 class DepositScreen extends StatefulWidget {
@@ -30,6 +31,13 @@ class _DepositScreenState extends State<DepositScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      SessionCheckerService.checkSessionAndShowModalIfNeeded(
+        context: context,
+        authProvider: Provider.of<UserAuthProvider>(context, listen: false),
+        showModalIfExpired: true,
+      );
+    });
     if (widget.defaultAmount != null) {
       amountController.text = widget.defaultAmount!.toStringAsFixed(0);
     }

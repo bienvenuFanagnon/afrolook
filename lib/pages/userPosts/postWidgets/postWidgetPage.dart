@@ -1738,6 +1738,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   Widget _buildCountryBadge(Post post) {
     final isAllCountries = post.isAvailableInAllCountries == true;
     final countryCodes = post.availableCountries ?? [];
+    final userCountryCode = authProvider.loginUserData?.countryData?['countryCode'] ?? 'TG';
 
     // Déterminer le contenu du badge
     String displayText = '';
@@ -1749,14 +1750,15 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       flagEmoji = '🌍';
     } else if (countryCodes.isNotEmpty) {
       // Prendre le premier pays comme indicateur
-      final firstCountryCode = countryCodes.first.toUpperCase();
+      // final firstCountryCode = countryCodes.first.toUpperCase();
+      final filtercountryCode = userCountryCode.toUpperCase();
 
       // Chercher l'emoji du drapeau
       final country = AfricanCountry.allCountries.firstWhere(
-            (c) => c.code == firstCountryCode,
+            (c) => c.code == filtercountryCode,
         orElse: () => AfricanCountry(
-            code: firstCountryCode,
-            name: firstCountryCode,
+            code: filtercountryCode,
+            name: filtercountryCode,
             flag: '🏳️'
         ),
       );
@@ -1765,7 +1767,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
       // Afficher le code du pays ou "+X" pour multiples
       if (countryCount == 1) {
-        displayText = firstCountryCode;
+        displayText = filtercountryCode;
       } else {
         displayText = '+${countryCount - 1}';
       }

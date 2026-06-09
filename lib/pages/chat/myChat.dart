@@ -23,6 +23,7 @@ import '../../constant/textCustom.dart';
 import '../../models/enums.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/userProvider.dart';
+import '../../services/utils/abonnement_utils.dart';
 import '../home/user_presence_widget.dart';
 import '../user/detailsOtherUser.dart';
 import 'package:path_provider/path_provider.dart';
@@ -90,6 +91,43 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
 
   // Pour éviter les reconstructions inutiles
   final _messageKey = GlobalKey();
+
+  // Dans _MyChatState, ajouter :
+  Timer? _typingTimer;
+  bool _isTyping = false;
+
+  void _updateTypingStatus(bool isTyping) {
+    if (_isTyping == isTyping) return;
+    _isTyping = isTyping;
+
+    final String newStatus = isTyping
+        ? IsSendMessage.SENDING.name
+        : IsSendMessage.NOTSENDING.name;
+
+    final String fieldToUpdate = (widget.chat.senderId == _authProvider.loginUserData.id)
+        ? 'send_sending'
+        : 'receiver_sending';
+
+    _firestore.collection('Chats').doc(widget.chat.id).update({
+      fieldToUpdate: newStatus,
+    });
+  }
+
+  void _onTextChanged(String text) {
+    // Annuler le timer précédent
+    _typingTimer?.cancel();
+
+    if (text.isNotEmpty && !_isTyping) {
+      _updateTypingStatus(true); // Commence à écrire
+    }
+
+    // Timer pour arrêter après 2 secondes d'inactivité
+    _typingTimer = Timer(const Duration(seconds: 2), () {
+      if (_isTyping) {
+        _updateTypingStatus(false);
+      }
+    });
+  }
 
   @override
   void initState() {
@@ -180,6 +218,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _typingTimer?.cancel();
     _audioPlayer.dispose();
     _audioRecorder?.dispose();
     _recordingTimer?.cancel();
@@ -593,6 +632,8 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     } else if (_textController.text.trim().isNotEmpty) {
       _sendTextMessage();
     }
+    _updateTypingStatus(false);
+
   }
 
   void _updateChatCounters(String lastMessage) {
@@ -1144,6 +1185,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
                    canSend = _textController.text.trim().isNotEmpty || _image != null || _isRecording;
 
                 });
+                _onTextChanged(value); // <-- ajouter cette ligne
 
               },
               controller: _textController,
@@ -1275,15 +1317,24 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
                       crossAxisAlignment:
                       CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          "@${user.pseudo ?? ""}",
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        Row(
+                          children: [
+                            Text(
+                              "@${(user.pseudo ?? "").length > 12 ? "${(user.pseudo ?? "").substring(0, 12)}..." : (user.pseudo ?? "")}",
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            AbonnementUtils.getUserBadge(
+                              abonnement: user.abonnement,
+                              isVerified: user.isVerify ?? false,
+                            ),
+                          ],
                         ),
 
                         const SizedBox(height: 2),

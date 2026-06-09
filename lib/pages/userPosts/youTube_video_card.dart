@@ -39,86 +39,6 @@ import '../postDetailsVideo.dart';
 import '../../services/utils/abonnement_utils.dart';
 
 
-// class MediaPlaybackManager {
-//   static VideoPlayerController? _currentVideoController;
-//   static ChewieController? _currentChewieController;
-//   static AudioPlayer? _currentAudioPlayer;
-//   static String? _currentMediaId;
-//   static String? _currentMediaType; // 'video' ou 'audio'
-//   static VoidCallback? _onPauseCallback;
-//
-//   static void registerVideo(
-//       String postId,
-//       VideoPlayerController controller,
-//       ChewieController chewieController,
-//       VoidCallback onPause,
-//       ) {
-//     // Si une audio joue, on l'arrête
-//     if (_currentMediaType == 'audio' && _currentAudioPlayer != null) {
-//       _currentAudioPlayer!.stop();
-//       _currentAudioPlayer = null;
-//     }
-//
-//     // Si une autre vidéo joue, on la pause
-//     if (_currentMediaId != null && _currentMediaId != postId) {
-//       _onPauseCallback?.call();
-//       _currentChewieController?.pause();
-//     }
-//
-//     _currentMediaId = postId;
-//     _currentMediaType = 'video';
-//     _currentVideoController = controller;
-//     _currentChewieController = chewieController;
-//     _onPauseCallback = onPause;
-//   }
-//
-//   static void registerAudio(
-//       String postId,
-//       AudioPlayer audioPlayer,
-//       VoidCallback onStop,
-//       ) {
-//     // Si une vidéo joue, on la pause
-//     if (_currentMediaType == 'video' && _currentChewieController != null) {
-//       _onPauseCallback?.call();
-//       _currentChewieController?.pause();
-//     }
-//
-//     // Si un autre audio joue, on l'arrête
-//     if (_currentMediaType == 'audio' && _currentMediaId != postId && _currentAudioPlayer != null) {
-//       _currentAudioPlayer!.stop();
-//     }
-//
-//     _currentMediaId = postId;
-//     _currentMediaType = 'audio';
-//     _currentAudioPlayer = audioPlayer;
-//     _onPauseCallback = onStop;
-//   }
-//
-//   static void unregisterMedia(String postId) {
-//     if (_currentMediaId == postId) {
-//       _currentMediaId = null;
-//       _currentMediaType = null;
-//       _currentVideoController = null;
-//       _currentChewieController = null;
-//       _currentAudioPlayer = null;
-//       _onPauseCallback = null;
-//     }
-//   }
-//
-//   static void pauseCurrentMedia() {
-//     if (_currentMediaType == 'video' && _currentChewieController != null) {
-//       if (_currentChewieController!.isPlaying) {
-//         _currentChewieController!.pause();
-//       }
-//     } else if (_currentMediaType == 'audio' && _currentAudioPlayer != null) {
-//       if (_currentAudioPlayer!.state == PlayerState.playing) {
-//         _currentAudioPlayer!.pause();
-//       }
-//     }
-//   }
-// }
-
-// Ajoutez/modifiez cette classe dans votre fichier existant
 class MediaPlaybackManager {
   static VideoPlayerController? _currentVideoController;
   static ChewieController? _currentChewieController;
@@ -250,13 +170,16 @@ class YouTubeVideoCard extends StatefulWidget {
   final Post post;
   final int index;
   final VoidCallback onTap;
+  final Function(int)? onNeighborhoodPreload;
 
   const YouTubeVideoCard({
     Key? key,
     required this.post,
     required this.onTap,
     this.index = 0,
+    this.onNeighborhoodPreload,
   }) : super(key: key);
+
 
   @override
   State<YouTubeVideoCard> createState() => _YouTubeVideoCardState();
@@ -336,6 +259,10 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     // 🔥 Récupérez le SoundProvider
     _soundProvider = Provider.of<SoundProvider>(context, listen: false);
 
+    // 🔥 Forcer le son coupé par défaut (si ce n’est pas déjà le cas)
+    if (!_soundProvider.isMuted) {
+      _soundProvider.setMuted(true);
+    }
     _initSharedPreferences();
     _loadCreatorData();
     _checkIfFavorite();
@@ -347,6 +274,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       _thumbnailUrl = widget.post.thumbnail;
     }
   }
+
 
   Future<void> _initSharedPreferences() async {
     _prefs = await SharedPreferences.getInstance();
@@ -438,7 +366,11 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       }
     }
   }
-
+  void _toggleSound() {
+    final newMuteState = !_soundProvider.isMuted;
+    _soundProvider.setMuted(newMuteState);
+    // L’écouteur _updateVolume (déjà présent) appliquera le changement sur la vidéo courante
+  }
   Future<void> _checkIfFavorite() async {
     final userId = _authProvider.loginUserData.id;
     if (userId == null) return;
@@ -530,6 +462,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     }
   }
 
+
+  // Méthode statique pour précharger une vidéo
   Future<void> _recordVideoInteraction() async {
     if (_hasRecordedInteraction || _prefs == null) return;
 
@@ -582,7 +516,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
 
   // ==================== GESTION VISIBILITÉ ====================
 
-  void onVisibilityChanged(double visibleFraction) {
+  void onVisibilityChanged2(double visibleFraction) {
     final isNowVisible = visibleFraction > 0.5;
 
     if (isNowVisible != _isVisible) {
@@ -593,6 +527,32 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       } else {
         _onBecameInvisible();
       }
+    }
+  }
+
+  void onVisibilityChanged(double visibleFraction) {
+    final isNowVisible = visibleFraction > 0.5;
+
+    if (isNowVisible != _isVisible) {
+      _isVisible = isNowVisible;
+
+      if (_isVisible) {
+        _onBecameVisible();
+        // 🔥 Quand la vidéo devient visible, demander le préchargement des suivantes
+        if (widget.onNeighborhoodPreload != null) {
+          widget.onNeighborhoodPreload!(widget.index);
+        }
+      } else {
+        _onBecameInvisible();
+      }
+    }
+  }
+// 🔥 NOUVELLE MÉTHODE: Déclencher le préchargement des vidéos voisines
+  void _triggerNeighborhoodPreload() {
+    // Cette méthode peut être appelée depuis le parent avec la liste des posts
+    // Ou on peut utiliser un callback passé par le parent
+    if (widget.onNeighborhoodPreload != null) {
+      widget.onNeighborhoodPreload!(widget.index);
     }
   }
 
@@ -1218,7 +1178,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     );
   }
 
-  Widget _buildVideoContent() {
+  Widget _buildVideoContent2() {
     final isLocked = _isLockedContent;
     final h = MediaQuery.of(context).size.height;
 
@@ -1290,6 +1250,123 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       ),
     );
   }
+
+  Widget _buildVideoContent() {
+    final isLocked = _isLockedContent;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+// 📺 Mini player pour vidéos portrait
+    final double videoHeight =  (screenWidth * 1.15).clamp(320.0, 500.0);
+
+    return VisibilityDetector(
+      key: Key('video_${widget.post.id}'),
+      onVisibilityChanged: (info) => onVisibilityChanged(info.visibleFraction),
+      child: GestureDetector(
+        onTap: isLocked ? null : _navigateToDetails,
+        child: Stack(
+          children: [
+            // --- Conteneur vidéo agrandi ---
+            ClipRRect(
+              borderRadius: const BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
+              child: _isVideoInitialized && _chewieController != null && !isLocked
+                  ? SizedBox(
+                width: double.infinity,
+                height: videoHeight,
+                child: Chewie(controller: _chewieController!),
+              )
+                  : _isGeneratingThumbnail
+                  ? Container(
+                height: videoHeight,
+                width: double.infinity,
+                color: Colors.grey[900],
+                child: const Center(child: CircularProgressIndicator()),
+              )
+                  : _thumbnailUrl != null
+                  ? Image.network(
+                _thumbnailUrl!,
+                fit: BoxFit.cover,
+                height: videoHeight,
+                width: double.infinity,
+              )
+                  : Container(
+                height: videoHeight,
+                width: double.infinity,
+                color: Colors.grey[900],
+                child: const Icon(Icons.videocam, size: 50, color: Colors.grey),
+              ),
+            ),
+            // --- Indicateur de chargement ---
+            if (_isVideoLoading && !isLocked)
+              Container(
+                height: videoHeight,
+                width: double.infinity,
+                color: Colors.black.withOpacity(0.7),
+                child: const Center(child: CircularProgressIndicator(color: Color(0xFF25D366))),
+              ),
+            // --- Overlay de contenu verrouillé (inchangé) ---
+            if (isLocked)
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.7),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.lock, color: Color(0xFFFFD600), size: 50),
+                        const SizedBox(height: 8),
+                        const Text('Vidéo verrouillée', style: TextStyle(color: Color(0xFFFFD600), fontSize: 16, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 4),
+                        const Text('Abonnez-vous pour voir cette vidéo', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                        const SizedBox(height: 12),
+                        ElevatedButton(
+                          onPressed: () {
+                            if (_creatorCanal != null) {
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => CanalDetails(canal: _creatorCanal!)));
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFD600), foregroundColor: Colors.black),
+                          child: const Text('S\'abonner maintenant'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            // --- 🎵 Bouton de contrôle du son (remplace le badge "VIDÉO") ---
+            if (!isLocked)
+              Positioned(
+                bottom: 8,
+                right: 8,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Consumer<SoundProvider>(
+                    builder: (context, soundProvider, _) {
+                      return IconButton(
+                        icon: Icon(
+                          soundProvider.isMuted ? Icons.volume_off : Icons.volume_up,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        onPressed: _toggleSound,
+                        padding: const EdgeInsets.all(8),
+                        constraints: const BoxConstraints(),
+                      );
+                    },
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildPostActions() {
     final isLiked = widget.post.users_love_id?.contains(_authProvider.loginUserData.id) ?? false;
     final hasAccess = !_isLockedContent;

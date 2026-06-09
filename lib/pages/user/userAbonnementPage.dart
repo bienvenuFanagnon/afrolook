@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import '../../models/model_data.dart';
 import '../../services/abonnement_service.dart';
+import '../../services/sessions/session_checker_service.dart';
 import '../../services/utils/abonnement_utils.dart';
 
 
@@ -30,6 +31,20 @@ class _AbonnementScreenState extends State<AbonnementScreen> {
     {'mois': 6, 'prixBase': 1200, 'reduction': 200, 'economie': 200},
     {'mois': 12, 'prixBase': 2400, 'reduction': 500, 'economie': 500},
   ];
+
+  @override
+  void initState() {
+    // TODO: implement initState
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      SessionCheckerService.checkSessionAndShowModalIfNeeded(
+        context: context,
+        authProvider: Provider.of<UserAuthProvider>(context, listen: false),
+        showModalIfExpired: true,
+      );
+    });
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {

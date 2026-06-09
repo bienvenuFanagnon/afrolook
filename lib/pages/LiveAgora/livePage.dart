@@ -24,6 +24,7 @@ import 'package:video_player/video_player.dart';
 import ' live_widgets.dart';
 import '../../models/model_data.dart';
 import '../../services/linkService.dart';
+import '../../services/sessions/session_checker_service.dart';
 import '../paiement/newDepot.dart';
 import 'livesAgora.dart';
 
@@ -175,7 +176,13 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     print("🎬 Initialisation LivePage - Live ${widget.postLive.isPaidLive ? 'PAYANT' : 'GRATUIT'}");
 
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      SessionCheckerService.checkSessionAndShowModalIfNeeded(
+        context: context,
+        authProvider: Provider.of<UserAuthProvider>(context, listen: false),
+        showModalIfExpired: true,
+      );
+    });
     _likeAnimationController = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: 1500),

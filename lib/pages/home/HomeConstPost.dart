@@ -114,7 +114,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
   // Filtrage par pays
   String? _selectedCountryCode;
-  String _currentFilter = 'MIXED'; // 'ALL', 'COUNTRY', 'MIXED', 'CUSTOM'
+  String _currentFilter = 'COUNTRY'; // 'ALL', 'COUNTRY', 'MIXED', 'CUSTOM'
   // String _currentFilter = 'ALL'; // 'ALL', 'COUNTRY', 'MIXED', 'CUSTOM'
   bool _isFirstLoad = true;
 
@@ -582,7 +582,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       _currentFilter = 'COUNTRY';  // Forcer le pays de l'utilisateur seulement
       print('🎯 Mode EVENEMENT activé - Filtre: COUNTRY (${_selectedCountryCode})');
     } else {
-      _currentFilter = 'MIXED';     // Comportement normal pour les autres types
+       _currentFilter = 'COUNTRY'; // 'ALL', 'COUNTRY', 'MIXED', 'CUSTOM'
     }
 
     _isFirstLoad = true;
@@ -603,30 +603,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     });
   }
 
-  void _initializeData2() async {
-    // 1. Détecter le pays de l'utilisateur
-    _selectedCountryCode = authProvider.loginUserData.countryData?['countryCode']?.toUpperCase();
-    print('Pays utilisateur détecté: ${_selectedCountryCode}');
-
-    // 2. Par défaut: mode "Tous les pays"
-    _currentFilter = 'MIXED';
-    // _currentFilter = 'ALL';
-    _isFirstLoad = true;
-    _useBackgroundLoading = true; // Activer le chargement background initial
-    _backgroundPostsLoaded = 0; // Réinitialiser le compteur
-
-    // 3. Réinitialiser et charger les posts initiaux (3 posts)
-    _resetPagination();
-    await _loadInitialPosts();
-
-    // 4. Démarrer le chargement background (si activé)
-    _startBackgroundLoading();
-
-    // 5. Charger les autres données EN PARALLÈLE (non bloquant)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadAllAdditionalDataInParallel();
-    });
-  }
 
   void _resetPagination() {
     _posts.clear();
@@ -2298,11 +2274,17 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                 : (post.type == PostType.POST.name && post.dataType == PostDataType.VIDEO.name)
                 ? YouTubeVideoCard(
               post: post,
+              onNeighborhoodPreload: (idx) {
+                // 🔥 Appeler le préchargement quand la vidéo devient visible
+                // _preloadNeighborhoodVideos(idx);
+              },
               onTap: () {
+
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => VideoYoutubePageDetails(initialPost: post),
+                    builder: (context) => VideoYoutubePageDetails(initialPost: post,
+                    ),
                   ),
                 );
               },
