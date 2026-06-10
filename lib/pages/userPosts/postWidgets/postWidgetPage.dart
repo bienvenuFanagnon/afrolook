@@ -24,6 +24,7 @@ import 'package:visibility_detector/visibility_detector.dart';
 import '../../../models/model_data.dart';
 
 import '../../../providers/coin_gift_provider.dart';
+import '../../../providers/sound_provider.dart';
 import '../../../services/linkService.dart';
 import '../../../services/utils/abonnement_utils.dart';
 import '../../coins/coin_gift_dialog.dart';
@@ -178,8 +179,43 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       _audioVisibilityTimer?.cancel();
     }
   }
-
   void _onAudioBecameVisible(String postId, String audioUrl) {
+    _isAudioVisible = true;
+
+    // Récupérer l'état du son
+    final soundProvider = Provider.of<SoundProvider>(context, listen: false);
+
+    _initAudioPlayer(postId);
+
+    if (_activePlayers.containsKey(postId)) {
+      final player = _activePlayers[postId]!;
+
+      // Enregistrer dans le manager (arrête les autres médias)
+      MediaPlaybackManager.registerAudio(
+        postId,
+        player,
+            () => _stopAudio(postId),
+      );
+
+      // Appliquer le volume selon l'état global
+      final isMuted = soundProvider.isMuted;
+      player.setVolume(isMuted ? 0.0 : 1.0);
+
+      // Jouer l'audio SEULEMENT si le son est activé
+      if (!isMuted) {
+        _playAudio(postId, audioUrl);
+        _recordAudioInteraction();
+        print('🔊 Son activé : lecture audio');
+      } else {
+        print('🔇 Son coupé globalement : audio en pause');
+        setState(() {
+          _isAudioPlaying = false;
+          _currentlyPlayingAudioId = null;
+        });
+      }
+    }
+  }
+  void _onAudioBecameVisible2(String postId, String audioUrl) {
     _isAudioVisible = true;
 
     // Vérifier si l'audio est déjà initialisé

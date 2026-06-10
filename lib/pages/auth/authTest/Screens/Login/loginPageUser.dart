@@ -99,8 +99,11 @@ class _LoginPageUserState extends State<LoginPageUser> {
         return; // Stopper le reste de la connexion
       }
       await SessionUserFirebaseService.saveUserSession(user!.uid)
-      .then((value) {
-       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => SplashChargement(),));
+
+      .then((value) async {
+        await SessionUserFirebaseService.updateLastActive().then((value) {
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => SplashChargement(),));
+        },);
 
      },);
 
