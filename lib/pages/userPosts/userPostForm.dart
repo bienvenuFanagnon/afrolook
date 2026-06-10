@@ -226,22 +226,22 @@ class _UserProfilState extends State<UserPostForm> {
                         ],
                       ),
                     ),
-                    Tab(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.video_collection_outlined, size: 20, color: _textColor),
-                          SizedBox(width: 4),
-                          Text(
-                            "Vibe",
-                            style: TextStyle(
-                              color: _textColor,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    // Tab(
+                    //   child: Row(
+                    //     mainAxisAlignment: MainAxisAlignment.center,
+                    //     children: [
+                    //       Icon(Icons.video_collection_outlined, size: 20, color: _textColor),
+                    //       SizedBox(width: 4),
+                    //       Text(
+                    //         "Vibe",
+                    //         style: TextStyle(
+                    //           color: _textColor,
+                    //           fontWeight: FontWeight.w600,
+                    //         ),
+                    //       ),
+                    //     ],
+                    //   ),
+                    // ),
                     Tab(
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -282,7 +282,7 @@ class _UserProfilState extends State<UserPostForm> {
                     UserPubText(canal: null),
                     UserPostLookImageTab(canal: null,),
                     // UserPubImage(),
-                    UserPubVibe(canal: null),
+                    // UserPubVibe(canal: null),
                     UserPubVideo(canal: null),
                   ],
                   onChange: (index) => printVm(index),

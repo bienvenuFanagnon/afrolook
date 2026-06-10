@@ -39,15 +39,15 @@ dependencies:
   flutter_inner_drawer: ^1.0.0+1
   phone_form_field: ^10.0.8
   flutter_svg: ^2.0.17
-  page_transition: ^2.1.0
+  page_transition: ^2.2.2
   #  ffmpeg_kit_flutter: ^4.5.1
   rxdart: ^0.27.2
   eva_icons_flutter: ^3.0.2
   image_watermark: ^0.1.0
-  ionicons: ^0.1.2
+#  ionicons: ^0.1.2
   dio:
   equatable: ^2.0.3
-  font_awesome_flutter: ^9.2.0
+#  font_awesome_flutter: ^9.2.0
   avatar_glow: ^2.0.2
   getwidget: ^2.0.4
   fluttertagger: ^2.2.1
@@ -296,11 +296,11 @@ flutter:
     - assets/icon/
     - assets/splash/
     - assets/logo/
-    - assets/menu/
+#    - assets/menu/
     - assets/icons/
     - assets/videos/
-    - assets/userEticket/
-    - assets/frames/
+#    - assets/userEticket/
+#    - assets/frames/
     - assets/fonts/
     - assets/fonts/file.zip
     - shorebird.yaml

@@ -3,7 +3,7 @@
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/user/monetisation.dart';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'mes_gains_post_page.dart';
 import 'mes_gains_publicite_page.dart';
 
@@ -97,7 +97,7 @@ class _RemunerationHomePageState extends State<RemunerationHomePage> {
                         context,
                         title: 'COMPTE PRINCIPAL',
                         subtitle: 'Gérez votre solde principal',
-                        icon: FontAwesomeIcons.wallet,
+                        icon: Icons.wallet,
                         gradient: const LinearGradient(
                           colors: [
                             Color(0xFFFFD700), // Or
@@ -125,7 +125,7 @@ class _RemunerationHomePageState extends State<RemunerationHomePage> {
                         context,
                         title: 'RÉMUNÉRATION POSTS',
                         subtitle: 'Vos gains par publication',
-                        icon: FontAwesomeIcons.instagram,
+                        icon: Entypo.instagram,
                         gradient: const LinearGradient(
                           colors: [
                             Colors.red,
@@ -155,7 +155,7 @@ class _RemunerationHomePageState extends State<RemunerationHomePage> {
                         context,
                         title: 'GAINS PUBLICITAIRES',
                         subtitle: 'Gagnez grâce aux pubs Google',
-                        icon: FontAwesomeIcons.google,
+                        icon: AntDesign.google,
                         gradient: const LinearGradient(
                           colors: [
                             Color(0xFF4285F4), // Bleu Google

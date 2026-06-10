@@ -9,7 +9,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
-import 'package:ionicons/ionicons.dart';
 import 'package:like_button/like_button.dart';
 import 'package:marquee/marquee.dart';
 import 'package:page_transition/page_transition.dart';

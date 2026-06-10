@@ -1,8 +1,8 @@
 // pages/mes_gains_page.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:intl/intl.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/model_data.dart';
@@ -373,7 +373,7 @@ class _MesGainsPageState extends State<MesGainsPage> with SingleTickerProviderSt
       ),
       child: Column(
         children: [
-          Icon(FontAwesomeIcons.dollarSign, color: Color(0xFFFFD700), size: 60),
+          Icon(Feather.dollar_sign, color: Color(0xFFFFD700), size: 60),
           SizedBox(height: 20),
           Text(
             'Calculez vos gains !',
@@ -566,7 +566,7 @@ class _MesGainsPageState extends State<MesGainsPage> with SingleTickerProviderSt
           padding: EdgeInsets.only(left: 8, bottom: 12),
           child: Row(
             children: [
-              Icon(FontAwesomeIcons.fire, color: Color(0xFFFFD700), size: 20),
+              Icon(Fontisto.fire, color: Color(0xFFFFD700), size: 20),
               SizedBox(width: 8),
               Text(
                 'BOOSTE TES GAINS',
@@ -630,7 +630,7 @@ class _MesGainsPageState extends State<MesGainsPage> with SingleTickerProviderSt
           padding: EdgeInsets.only(left: 8, bottom: 12),
           child: Row(
             children: [
-              Icon(FontAwesomeIcons.chartLine, color: Color(0xFFFFD700), size: 20),
+              Icon(Fontisto.bar_chart, color: Color(0xFFFFD700), size: 20),
               SizedBox(width: 8),
               Text(
                 'GAINS PAR PUBLICATION',
@@ -1004,7 +1004,7 @@ class _MesGainsPageState extends State<MesGainsPage> with SingleTickerProviderSt
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(FontAwesomeIcons.gift, color: Color(0xFFFFD700), size: 50),
+              Icon(Icons.card_giftcard, color: Color(0xFFFFD700), size: 50),
               SizedBox(height: 15),
               Text('MON CODE DE PARRAINAGE', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
               SizedBox(height: 20),
@@ -1030,10 +1030,10 @@ class _MesGainsPageState extends State<MesGainsPage> with SingleTickerProviderSt
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _buildShareButton(FontAwesomeIcons.whatsapp, Color(0xFF25D366)),
-                  _buildShareButton(FontAwesomeIcons.facebook, Color(0xFF1877F2)),
-                  _buildShareButton(FontAwesomeIcons.tiktok, Colors.white),
-                  _buildShareButton(FontAwesomeIcons.telegram, Color(0xFF0088CC)),
+                  _buildShareButton(Fontisto.whatsapp, Color(0xFF25D366)),
+                  _buildShareButton(Icons.facebook, Color(0xFF1877F2)),
+                  _buildShareButton(Icons.telegram, Colors.white),
+                  _buildShareButton(Icons.telegram, Color(0xFF0088CC)),
                 ],
               ),
               SizedBox(height: 15),
@@ -1146,7 +1146,7 @@ class _HistoriqueEncaissementsPageState extends State<HistoriqueEncaissementsPag
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(FontAwesomeIcons.clock, color: Colors.grey.shade700, size: 60),
+            Icon(Icons.lock_clock, color: Colors.grey.shade700, size: 60),
             SizedBox(height: 20),
             Text(
               'Aucun encaissement',
