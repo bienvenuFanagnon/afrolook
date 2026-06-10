@@ -1595,17 +1595,6 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                     : null,
               ),
 
-// 🔥 INDICATEUR EN LIGNE (Pour Canal et User : basé sur l'id de l'auteur du post)
-              if (widget.post.user_id != null)
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  child: UserPresenceWidget(
-                    userId: widget.post.user_id!,
-                    size: 11.0, // Taille du point vert adaptable
-                    showTextStatus: false, // On veut juste le point vert sur l'avatar
-                  ),
-                ),
 
             ],
           ),

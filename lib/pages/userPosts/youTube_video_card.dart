@@ -1186,18 +1186,6 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                     ? Icon(isCanalPost ? Icons.group : Icons.person, color: Colors.white, size: 20)
                     : null,
               ),
-
-              // 🔥 INDICATEUR EN LIGNE (Utilise directement l'ID de l'auteur du post)
-              if (widget.post.user_id != null)
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  child: UserPresenceWidget(
-                    userId: widget.post.user_id!,
-                    size: 11.0, // Contrôle de la taille du point vert
-                    showTextStatus: false, // Uniquement le point vert sur l'avatar
-                  ),
-                ),
             ],
           ),
         ),

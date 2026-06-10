@@ -115,6 +115,11 @@ class _DetailsPostState extends State<DetailsPost>
   final FirebaseAuth _auth = FirebaseAuth.instance;
   Challenge? _challenge;
   bool _loadingChallenge = false;
+
+  // 🔥 NOUVELLE VARIABLE POUR LE CAROUSEL AUTO
+  late PageController _carouselController;
+  int _currentImageIndex = 0;
+  Timer? _carouselTimer;
   // Méthode pour vérifier si le post est en favoris
   Future<void> _checkIfFavorite() async {
     try {
@@ -1586,6 +1591,13 @@ class _DetailsPostState extends State<DetailsPost>
 
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     postProvider = Provider.of<PostProvider>(context, listen: false);
+    // 🔥 INITIALISATION DU CAROUSEL
+    _carouselController = PageController();
+
+    // Démarrer le carousel auto si plusieurs images
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startCarouselAutoPlay();
+    });
     _startSuggestionModalTimer();
     if (widget.post!=null&&widget.post.type == PostType.PRONOSTIC.name) {
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PronosticDetailPage(postId: widget.post.id!),));
@@ -1651,6 +1663,32 @@ class _DetailsPostState extends State<DetailsPost>
     _incrementViews();
 
   }
+
+  // 🔥 DÉMARRER LE CAROUSEL AUTO
+  void _startCarouselAutoPlay() {
+    _stopCarouselAutoPlay(); // Arrêter l'existant
+
+    final images = widget.post.images ?? [];
+    if (images.length > 1) {
+      _carouselTimer = Timer.periodic(Duration(seconds: 2), (timer) {
+        if (mounted && _carouselController.hasClients) {
+          final nextPage = (_currentImageIndex + 1) % images.length;
+          _carouselController.animateToPage(
+            nextPage,
+            duration: Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        }
+      });
+    }
+  }
+
+// 🔥 ARRÊTER LE CAROUSEL AUTO
+  void _stopCarouselAutoPlay() {
+    _carouselTimer?.cancel();
+    _carouselTimer = null;
+  }
+
   Widget _buildSupportButton() {
     final hasAccess = _hasAccessToContent();
     final isOwner = authProvider.loginUserData.id == widget.post.user_id;
@@ -1721,6 +1759,10 @@ class _DetailsPostState extends State<DetailsPost>
       player.dispose();
     }
     _activePlayers.clear();
+
+    // 🔥 NETTOYER LE CAROUSEL
+    _stopCarouselAutoPlay();
+    _carouselController.dispose();
     super.dispose();
   }
 
@@ -4322,7 +4364,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
   }
 
   // 🔥 Remplacer la méthode _buildMediaContent existante par cette nouvelle version
-  Widget _buildMediaContent(Post post) {
+  Widget _buildMediaContent3(Post post) {
     final images = post.images!;
     final imageCount = images.length;
     final double screenWidth = MediaQuery.of(context).size.width;
@@ -4358,6 +4400,167 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         child: _buildImageGallery(images, contentHeight),
       ),
     );
+  }
+
+  Widget _buildMediaContent(Post post) {
+    final images = post.images!;
+    final imageCount = images.length;
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double screenHeight = MediaQuery.of(context).size.height;
+
+    // Hauteur plus grande pour un affichage immersif
+    double contentHeight = screenHeight * 0.5; // 50% de l'écran
+    contentHeight = contentHeight.clamp(300.0, 550.0);
+
+    return Container(
+      height: contentHeight,
+      margin: EdgeInsets.symmetric(vertical: 2),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.5),
+            blurRadius: 10,
+            spreadRadius: 2,
+          ),
+        ],
+        border: _isLookChallenge
+            ? Border.all(color: _twitterGreen.withOpacity(0.3))
+            : null,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(15),
+        child: Stack(
+          children: [
+            // 🔥 CAROUSEL D'IMAGES
+            PageView.builder(
+              controller: _carouselController,
+              onPageChanged: (index) {
+                setState(() {
+                  _currentImageIndex = index;
+                });
+                // Réinitialiser le timer quand l'utilisateur change manuellement
+                _resetCarouselTimer();
+              },
+              itemCount: images.length,
+              itemBuilder: (context, index) {
+                return GestureDetector(
+                  onTap: () => _showFullScreenImage(images[index]),
+                  child: Hero(
+                    tag: images[index],
+                    child: CachedNetworkImage(
+                      imageUrl: images[index],
+                      fit: BoxFit.contain,
+                      width: double.infinity,
+                      height: contentHeight,
+                      placeholder: (context, url) => Container(
+                        color: Colors.grey[800],
+                        child: Center(
+                          child: CircularProgressIndicator(color: Colors.yellow),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        color: Colors.grey[800],
+                        child: Center(
+                          child: Icon(Icons.error, color: Colors.red, size: 50),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+
+            // 🔥 INDICATEUR DE PAGE (dots)
+            if (imageCount > 1)
+              Positioned(
+                bottom: 16,
+                left: 0,
+                right: 0,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    imageCount,
+                        (index) => Container(
+                      margin: EdgeInsets.symmetric(horizontal: 4),
+                      width: _currentImageIndex == index ? 24 : 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: _currentImageIndex == index
+                            ? Colors.yellow
+                            : Colors.white.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+            // 🔥 COMPTEUR D'IMAGES (ex: 1/5)
+            if (imageCount > 1)
+              Positioned(
+                top: 16,
+                right: 16,
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${_currentImageIndex + 1}/${imageCount}',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ),
+
+            // 🔥 INDICATEUR DE LECTURE AUTO
+            if (imageCount > 1)
+              Positioned(
+                top: 16,
+                left: 16,
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.play_circle_filled,
+                        color: Colors.yellow,
+                        size: 14,
+                      ),
+                      SizedBox(width: 4),
+                      Text(
+                        'Auto',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+// 🔥 RÉINITIALISER LE TIMER APRÈS INTERACTION MANUELLE
+  void _resetCarouselTimer() {
+    if (widget.post.images != null && widget.post.images!.length > 1) {
+      _stopCarouselAutoPlay();
+      _startCarouselAutoPlay();
+    }
   }
 
 // 🔥 NOUVELLE MÉTHODE POUR CONSTRUIRE LA GALERIE D'IMAGES
@@ -4602,14 +4805,25 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
 
 // 🔥 MÉTHODE POUR AFFICHER L'IMAGE PLEIN ÉCRAN
   void _showFullScreenImage(String imageUrl) {
+    // Mettre en pause le carousel auto quand on ouvre le plein écran
+    _stopCarouselAutoPlay();
+
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => FullScreenImage(singleImageUrl: imageUrl),
+        builder: (_) => FullScreenImage(
+          singleImageUrl: imageUrl,
+          imageUrls: widget.post.images, // Passer toutes les images
+          initialIndex: _currentImageIndex,
+        ),
       ),
-    );
+    ).then((_) {
+      // Redémarrer le carousel auto quand on revient
+      if (widget.post.images != null && widget.post.images!.length > 1) {
+        _startCarouselAutoPlay();
+      }
+    });
   }
-
   // NOUVELLE SECTION POUR LES LOOK CHALLENGES
   Widget _buildLookChallengeSection(Post post) {
     if (!_isLookChallenge) return SizedBox();
@@ -5858,10 +6072,8 @@ class _FullScreenImageState extends State<FullScreenImage> {
   @override
   void initState() {
     super.initState();
-
     _currentIndex = widget.initialIndex;
     _pageController = PageController(initialPage: widget.initialIndex);
-
   }
 
   @override
@@ -5907,15 +6119,10 @@ class _FullScreenImageState extends State<FullScreenImage> {
                         imageUrl: images[index],
                         fit: BoxFit.contain,
                         placeholder: (context, url) => Center(
-                          child:
-                              CircularProgressIndicator(color: Colors.yellow),
+                          child: CircularProgressIndicator(color: Colors.yellow),
                         ),
                         errorWidget: (context, url, error) => Center(
-                          child: Icon(
-                            Icons.error,
-                            color: Colors.red,
-                            size: 60,
-                          ),
+                          child: Icon(Icons.error, color: Colors.red, size: 60),
                         ),
                       ),
                     ),
@@ -5941,7 +6148,7 @@ class _FullScreenImageState extends State<FullScreenImage> {
             ),
           ),
 
-          // Indicateur de position (si plus d'une image)
+          // Indicateur de position
           if (images.length > 1)
             Positioned(
               top: MediaQuery.of(context).padding.top + 16,
@@ -5963,9 +6170,8 @@ class _FullScreenImageState extends State<FullScreenImage> {
               ),
             ),
 
-          // Boutons de navigation (si plus d'une image)
+          // Boutons de navigation
           if (images.length > 1) ...[
-            // Bouton précédent
             if (_currentIndex > 0)
               Positioned(
                 left: 16,
@@ -5976,8 +6182,7 @@ class _FullScreenImageState extends State<FullScreenImage> {
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
-                    icon:
-                        Icon(Icons.chevron_left, color: Colors.white, size: 36),
+                    icon: Icon(Icons.chevron_left, color: Colors.white, size: 36),
                     onPressed: () {
                       _pageController.previousPage(
                         duration: Duration(milliseconds: 300),
@@ -5988,7 +6193,6 @@ class _FullScreenImageState extends State<FullScreenImage> {
                 ),
               ),
 
-            // Bouton suivant
             if (_currentIndex < images.length - 1)
               Positioned(
                 right: 16,
@@ -5999,8 +6203,7 @@ class _FullScreenImageState extends State<FullScreenImage> {
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
-                    icon: Icon(Icons.chevron_right,
-                        color: Colors.white, size: 36),
+                    icon: Icon(Icons.chevron_right, color: Colors.white, size: 36),
                     onPressed: () {
                       _pageController.nextPage(
                         duration: Duration(milliseconds: 300),
