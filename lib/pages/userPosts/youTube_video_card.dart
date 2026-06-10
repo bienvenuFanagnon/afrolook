@@ -79,12 +79,13 @@ class MediaPlaybackManager {
     }
   }
 
-  static void registerVideo(
+  static void registerVideo2(
       String postId,
       VideoPlayerController controller,
       ChewieController chewieController,
       VoidCallback onPause,
-      ) {
+      )
+  {
     // Arrêter l'audio si nécessaire
     if (_currentMediaType == 'audio' && _currentAudioPlayer != null) {
       _currentAudioPlayer!.stop();
@@ -106,6 +107,57 @@ class MediaPlaybackManager {
     // 🔥 Appliquer le volume global immédiatement
     final isMuted = _soundProvider?.isMuted ?? true;
     chewieController.setVolume(isMuted ? 0.0 : 1.0);
+  }
+
+  static void registerVideo(
+      String postId,
+      VideoPlayerController controller,
+      ChewieController chewieController,
+      VoidCallback onPause,
+      ) {
+    print('🎬 MediaPlaybackManager: Enregistrement vidéo $postId');
+
+    // Arrêter l'audio si nécessaire
+    if (_currentMediaType == 'audio' && _currentAudioPlayer != null) {
+      _currentAudioPlayer!.stop();
+      _currentAudioPlayer = null;
+    }
+
+    // Pause de l'ancienne vidéo
+    if (_currentMediaId != null && _currentMediaId != postId) {
+      print('🎬 Arrêt de l\'ancienne vidéo: $_currentMediaId');
+      _onPauseCallback?.call();
+      if (_currentChewieController != null) {
+        _currentChewieController!.pause();
+      }
+    }
+
+    _currentMediaId = postId;
+    _currentMediaType = 'video';
+    _currentVideoController = controller;
+    _currentChewieController = chewieController;
+    _onPauseCallback = onPause;
+
+    // 🔥 APPLIQUER LE VOLUME DE MANIÈRE ROBUSTE
+    final isMuted = _soundProvider?.isMuted ?? true;
+    final volume = isMuted ? 0.0 : 1.0;
+
+    print('🎬 Application du volume: $volume (muted: $isMuted)');
+
+    // Appliquer sur le ChewieController
+    chewieController.setVolume(volume);
+
+    // 🔥 FORCER sur le VideoPlayerController directement
+    controller.setVolume(volume);
+
+    // 🔥 Vérification supplémentaire : s'assurer que le volume persiste après un court délai
+    Future.delayed(Duration(milliseconds: 100), () {
+      if (_currentChewieController == chewieController) {
+        chewieController.setVolume(volume);
+        controller.setVolume(volume);
+        print('🎬 Vérification volume: $volume');
+      }
+    });
   }
 
   static void registerAudio(
@@ -257,13 +309,13 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     _authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     _postProvider = Provider.of<PostProvider>(context, listen: false);
     _coinProvider = Provider.of<CoinGiftUserProvider>(context, listen: false);
-    // 🔥 Récupérez le SoundProvider
     _soundProvider = Provider.of<SoundProvider>(context, listen: false);
 
-    // 🔥 Forcer le son coupé par défaut (si ce n’est pas déjà le cas)
     if (!_soundProvider.isMuted) {
       _soundProvider.setMuted(true);
     }
+    // 🔥 S'abonner aux changements du provider de son (un seul abonnement, retiré dans dispose)
+    _soundProvider.addListener(_updateVolume);
     _initSharedPreferences();
     _loadCreatorData();
     _checkIfFavorite();
@@ -273,6 +325,102 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       _generateAndUploadThumbnail();
     } else {
       _thumbnailUrl = widget.post.thumbnail;
+    }
+
+    // 🔥 NOUVEAU : Initialisation précoce de la vidéo (sans lancer la lecture)
+    // Attendre un court instant pour ne pas bloquer l'UI
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_isLockedContent) {
+        _preInitializeVideo();
+      }
+    });
+  }
+
+  /// 🔥 Nouvelle méthode : Pré-initialisation sans lecture auto
+  Future<void> _preInitializeVideo() async {
+    if (_isLockedContent) {
+      print('🎬 Vidéo verrouillée - pré-initialisation bloquée');
+      return;
+    }
+
+    if (_isVideoInitialized || _isVideoLoading || _isInitializingVideo) return;
+    if (widget.post.url_media == null || widget.post.url_media!.isEmpty) return;
+
+    _isInitializingVideo = true;
+    if (mounted) setState(() => _isVideoLoading = true);
+
+    try {
+      await _disposeVideoControllers();
+
+      final String optimizedUrl = _authProvider.convertToCdnUrl(
+          widget.post.url_media!,
+          _authProvider.appDefaultData
+      );
+      _videoController = VideoPlayerController.network(optimizedUrl);
+
+      // Attendre l'initialisation (chargement des métadonnées)
+      await _videoController!.initialize();
+
+      _videoController!.addListener(() {
+        if (_videoController == null) return;
+        final isEnded = _videoController!.value.position >= _videoController!.value.duration;
+        if (isEnded) {
+          _isVideoCompleted = true;
+        } else {
+          _isVideoCompleted = false;
+        }
+        if (_videoController!.value.isPlaying && _isVisible && !_hasRecordedInteraction) {
+          _recordVideoInteraction();
+        }
+      });
+
+      _chewieController = ChewieController(
+        videoPlayerController: _videoController!,
+        autoPlay: false,  // 🔥 TRÈS IMPORTANT : ne pas jouer automatiquement
+        looping: true,
+        showControls: false,
+        allowFullScreen: false,
+        materialProgressColors: ChewieProgressColors(
+          playedColor: Color(0xFF25D366),
+          handleColor: Color(0xFF25D366),
+          backgroundColor: Colors.grey,
+          bufferedColor: Colors.grey,
+        ),
+        placeholder: Container(
+          color: Colors.black,
+          child: const Center(child: CircularProgressIndicator(color: Color(0xFF25D366))),
+        ),
+        autoInitialize: true,
+      );
+
+      // Appliquer le volume immédiatement
+      final isMuted = _soundProvider.isMuted;
+      _chewieController!.setVolume(isMuted ? 0.0 : 1.0);
+
+      // Enregistrer dans le manager (même si non jouée)
+      MediaPlaybackManager.registerVideo(
+        widget.post.id!,
+        _videoController!,
+        _chewieController!,
+            () => _pauseVideo(),
+      );
+
+      if (mounted) {
+        setState(() {
+          _isVideoInitialized = true;
+          _isVideoLoading = false;
+          _isInitializingVideo = false;
+        });
+        print('✅ Vidéo pré-initialisée : ${widget.post.id}');
+      }
+    } catch (e) {
+      print('Erreur pré-initialisation vidéo: $e');
+      if (mounted) {
+        setState(() {
+          _isVideoLoading = false;
+          _isInitializingVideo = false;
+        });
+      }
     }
   }
 
@@ -333,7 +481,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
 
   Future<void> _loadCreatorData() async {
     if (widget.post.canal_id != null && widget.post.canal_id!.isNotEmpty) {
-      setState(() => _isLoadingUser = true);
+      if (mounted) setState(() => _isLoadingUser = true);
       try {
         final canalDoc = await _firestore
             .collection('Canaux')
@@ -346,11 +494,11 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       } catch (e) {
         print('Erreur chargement canal: $e');
       } finally {
-        setState(() => _isLoadingUser = false);
+        if (mounted) setState(() => _isLoadingUser = false);
       }
     }
     if (widget.post.user_id != null) {
-      setState(() => _isLoadingUser = true);
+      if (mounted) setState(() => _isLoadingUser = true);
       try {
         final userDoc = await _firestore
             .collection('Users')
@@ -363,7 +511,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       } catch (e) {
         print('Erreur chargement utilisateur: $e');
       } finally {
-        setState(() => _isLoadingUser = false);
+        if (mounted) setState(() => _isLoadingUser = false);
       }
     }
   }
@@ -392,7 +540,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     if (widget.post.url_media == null || widget.post.url_media!.isEmpty) return;
 
     _isInitializingVideo = true;
-    setState(() => _isVideoLoading = true);
+    if (mounted) setState(() => _isVideoLoading = true);
 
     try {
       await _disposeVideoControllers();
@@ -492,6 +640,14 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     }
 
     if (_chewieController != null) {
+      // 🔥 FORCER le volume juste avant de jouer
+      final isMuted = _soundProvider.isMuted;
+      final volume = isMuted ? 0.0 : 1.0;
+      _chewieController!.setVolume(volume);
+      _videoController?.setVolume(volume);
+
+      print('🎬 _playVideo: volume forcé à $volume avant lecture');
+
       if (_isVideoCompleted) {
         _videoController?.seekTo(Duration.zero);
         _isVideoCompleted = false;
@@ -563,7 +719,10 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     }
 
     if (_isVideoInitialized && _chewieController != null) {
+      // 🔥 ÉTAPE 1: Mettre en pause les autres médias
       MediaPlaybackManager.pauseCurrentMedia();
+
+      // 🔥 ÉTAPE 2: Enregistrer cette vidéo comme courante
       MediaPlaybackManager.registerVideo(
         widget.post.id!,
         _videoController!,
@@ -571,46 +730,32 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
             () => _pauseVideo(),
       );
 
-      // 🔥 NOUVEAU : Vérifier l'état global du son AVANT de jouer
+      // 🔥 ÉTAPE 3: Vérifier l'état global du son ET APPLIQUER
       final isMuted = _soundProvider.isMuted;
+      final targetVolume = isMuted ? 0.0 : 1.0;
 
-      // Appliquer le volume selon l'état global
-      _chewieController!.setVolume(isMuted ? 0.0 : 1.0);
+      // Appliquer le volume AU CHEWIE CONTROLLER
+      _chewieController!.setVolume(targetVolume);
 
-      // Jouer la vidéo si le son est activé, sinon la laisser en pause
-      if (!isMuted) {
-        _playVideo();
-        print('🔊 Son activé : lecture vidéo');
-      } else {
-        print('🔇 Son coupé globalement : vidéo en pause');
-        // La vidéo reste en pause, l'utilisateur devra activer le son manuellement
-      }
-      return;
-    }
+      // 🔥 ÉTAPE 4: FORCER la synchronisation du volume avec le VideoPlayerController
+      // Certaines versions de Chewie ont un bug où setVolume ne fonctionne pas immédiatement
+      _videoController?.setVolume(targetVolume);
 
-    if (!_isVideoInitialized && !_isVideoLoading && !_isInitializingVideo) {
-      _initializeVideo();
-    }
-  }
+      // 🔥 ÉTAPE 5: Attendre un court instant pour que le volume soit appliqué
+      Future.delayed(Duration(milliseconds: 50), () {
+        if (mounted && _chewieController != null) {
+          // Re-appliquer pour être sûr
+          _chewieController!.setVolume(targetVolume);
 
-  void _onBecameVisible2() {
-    // 🔥 CRITIQUE: Ne rien faire si le contenu est verrouillé
-    if (_isLockedContent) {
-      print('🎬 Vidéo verrouillée - visibilité ignorée');
-      return;
-    }
+          if (!isMuted) {
+            _playVideo();
+            print('🔊 Son activé : lecture vidéo ${widget.post.id} (volume: $targetVolume)');
+          } else {
+            print('🔇 Son coupé globalement : vidéo ${widget.post.id} en pause');
+          }
+        }
+      });
 
-    if (_isVideoInitialized && _chewieController != null) {
-      MediaPlaybackManager.pauseCurrentMedia();
-
-      MediaPlaybackManager.registerVideo(
-        widget.post.id!,
-        _videoController!,
-        _chewieController!,
-            () => _pauseVideo(),
-      );
-
-      _playVideo();
       return;
     }
 
@@ -1234,7 +1379,9 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                   ? Container(height: h * 0.25, width: double.infinity, color: Colors.grey[900],
                   child: const Center(child: CircularProgressIndicator()))
                   : _thumbnailUrl != null
-                  ? Image.network(_thumbnailUrl!, fit: BoxFit.cover, height: h * 0.25, width: double.infinity)
+                  ? Image.network(_thumbnailUrl!, fit: BoxFit.cover, height: h * 0.25, width: double.infinity,
+                  errorBuilder: (context, error, stackTrace) => Container(height: h * 0.25, width: double.infinity, color: Colors.grey[900],
+                      child: const Icon(Icons.videocam, size: 50, color: Colors.grey)))
                   : Container(height: h * 0.25, width: double.infinity, color: Colors.grey[900],
                   child: const Icon(Icons.videocam, size: 50, color: Colors.grey)),
             ),
@@ -1324,6 +1471,12 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                 fit: BoxFit.cover,
                 height: videoHeight,
                 width: double.infinity,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  height: videoHeight,
+                  width: double.infinity,
+                  color: Colors.grey[900],
+                  child: const Icon(Icons.videocam, size: 50, color: Colors.grey),
+                ),
               )
                   : Container(
                 height: videoHeight,
@@ -1491,9 +1644,15 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   void _updateVolume() {
     if (_chewieController != null) {
       final isMuted = _soundProvider.isMuted;
-      _chewieController!.setVolume(isMuted ? 0.0 : 1.0);
+      final volume = isMuted ? 0.0 : 1.0;
 
-      // 🔥 NOUVEAU : Si le son vient d'être activé ET que la vidéo est visible ET en pause -> jouer
+      print('🔊 _updateVolume appelé: muted=$isMuted, volume=$volume');
+
+      // Appliquer sur les deux contrôleurs
+      _chewieController!.setVolume(volume);
+      _videoController?.setVolume(volume);
+
+      // 🔥 Si le son est activé ET la vidéo est visible ET en pause -> jouer
       if (!isMuted && _isVisible && _chewieController != null && !_chewieController!.isPlaying) {
         print('🔊 Son activé pendant la visibilité : reprise de la vidéo');
         _playVideo();
@@ -1507,18 +1666,10 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // S'abonner aux changements du provider
-    _soundProvider.addListener(_updateVolume);
-  }
-
-  @override
   void dispose() {
     _visibilityTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     MediaPlaybackManager.unregisterMedia(widget.post.id ?? '');
-    _videoController?.removeListener(() {});
     _disposeVideoControllers();
 
     // 🔥 Nettoyage : retirer l'écouteur

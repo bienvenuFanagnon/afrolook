@@ -1512,14 +1512,17 @@ class PostProvider extends ChangeNotifier {
     return Color(int.parse(buffer.toString(), radix: 16));
   }
 
-  Future<List<Post>> loadMorePosts(int limit, String type, DocumentSnapshot lastDoc) async {
+  Future<List<Post>> loadMorePosts(int limit, String type, DocumentSnapshot? lastDoc) async {
     try {
       Query query = FirebaseFirestore.instance
           .collection('Posts')
           .where('type', isEqualTo: type)
           .orderBy('createdAt', descending: true)
-          .startAfterDocument(lastDoc)
           .limit(limit);
+
+      if (lastDoc != null) {
+        query = query.startAfterDocument(lastDoc);
+      }
 
       QuerySnapshot snapshot = await query.get();
 

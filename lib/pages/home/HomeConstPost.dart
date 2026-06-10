@@ -3579,6 +3579,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         print(
             '⏭️ Post ${post.id} déjà vu il y a $difference jour(s) par $currentUserId - Vue NON comptée');
 
+        post.users_vue_id ??= [];
         if (!post.users_vue_id!.contains(currentUserId)) {
           setState(() {
             post.users_vue_id!.add(currentUserId);

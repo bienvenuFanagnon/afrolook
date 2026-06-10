@@ -109,16 +109,6 @@ class _SplashChargementState extends State<SplashChargement> {
         return false;
       }
 
-      // 3. Vérifier l'inactivité dans Firestore (last_time_active)
-      final isInactive = await SessionUserFirebaseService.isUserInactive(storedUserId);
-
-      if (isInactive) {
-        print('🔍 Utilisateur inactif (> 3 jours sans connexion app), redirection vers login');
-        await SessionUserFirebaseService.clearSession();
-        _redirectToLogin();
-        return false;
-      }
-
       // 4. Session valide, mettre à jour la date d'activité
       await SessionUserFirebaseService.updateLastActive();
       print('✅ Session valide pour: $storedUserId');

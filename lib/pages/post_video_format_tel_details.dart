@@ -75,6 +75,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   List<Post> _videoPosts = [];
   final Set<String> _loadedPostIds = {};
   final Set<String> _loadingRelations = {};
+  final Set<String> _relationsResolved = {};
   int _currentPage = 0;
   bool _isLoadingFeed = true;
   bool _isLoadingMore = false;
@@ -171,7 +172,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     });
   }
   Future<void> _lazyLoadPostRelations(Post post) async {
+    if (post.id == null) return;
     if (_loadingRelations.contains(post.id)) return;
+    if (_relationsResolved.contains(post.id)) return;
     _loadingRelations.add(post.id!);
 
     try {
@@ -179,6 +182,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       if (mounted) setState(() {});
     } finally {
       _loadingRelations.remove(post.id);
+      // Évite de relancer une requête Firestore à chaque rebuild si la relation reste introuvable
+      _relationsResolved.add(post.id!);
     }
   }
   Future<void> _loadOldVideosInBackground() async {
@@ -454,6 +459,14 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       if (_chewieController != null) {
         _chewieController!.dispose();
         _chewieController = null;
+      }
+
+      // Si l'ancien contrôleur vidéo n'était pas géré par le cache de préchargement
+      // (ex: chargement de secours), il faut le disposer pour éviter une fuite mémoire/réseau.
+      if (_currentVideoController != null &&
+          _currentVideoController != preloadedController &&
+          !_preloadedControllers.values.contains(_currentVideoController)) {
+        _currentVideoController!.dispose();
       }
 
       _currentVideoController = preloadedController;
@@ -2429,11 +2442,13 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
               parent: AlwaysScrollableScrollPhysics(),
             ),
             onPageChanged: (index) async {
+              if (!mounted) return;
               setState(() => _currentPage = index);
               _itemsSinceLastLoad++;
               if (_itemsSinceLastLoad >= 3 && !_maxVideosReached && !_isLoadingMore) {
                 _itemsSinceLastLoad = 0;
                 await _loadMoreVideos();
+                if (!mounted) return;
               }
 
               // Nettoyer les contrôleurs hors de la zone visible
