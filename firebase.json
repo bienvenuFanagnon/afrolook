@@ -1,18 +1,19 @@
 {
   "hosting": {
-    "source": ".",
+    "public": "build/web",
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
     ],
-    "frameworksBackend": {
-      "region": "us-central1"
-    },
     "rewrites": [
       {
         "source": "/share/**",
         "function": "sharePostLink"
+      },
+      {
+        "source": "/media/**",
+        "destination": "https://firebasestorage.googleapis.com/v0/b/afrolooki.appspot.com/o/"
       }
     ]
   },

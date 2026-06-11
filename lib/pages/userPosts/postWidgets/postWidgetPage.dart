@@ -215,29 +215,6 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       }
     }
   }
-  void _onAudioBecameVisible2(String postId, String audioUrl) {
-    _isAudioVisible = true;
-
-    // Vérifier si l'audio est déjà initialisé
-    _initAudioPlayer(postId);
-
-    if (_activePlayers.containsKey(postId)) {
-      final player = _activePlayers[postId]!;
-
-      // 🔥 Enregistrer cet audio dans le MediaPlaybackManager (arrête vidéo/autre audio)
-      MediaPlaybackManager.registerAudio(
-        postId,
-        player,
-            () => _stopAudio(postId),
-      );
-
-      // 🔥 Jouer l'audio automatiquement
-      _playAudio(postId, audioUrl);
-
-      // 🔥 Enregistrer l'interaction (vue unique)
-      _recordAudioInteraction();
-    }
-  }
 
   void _onAudioBecameInvisible(String postId) {
     _isAudioVisible = false;
@@ -448,7 +425,9 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       }
 
       // Télécharger depuis Firebase Storage
-      final storageRef = FirebaseStorage.instance.refFromURL(audioUrl);
+      // 🔥 URL OPTIMISÉE VERS CLOUDFLARE
+      final optimizedUrl = _optimizeUrl(audioUrl);
+      final storageRef = FirebaseStorage.instance.refFromURL(optimizedUrl);
       final maxSize = 10 * 1024 * 1024; // 10 MB
       final data = await storageRef.getData(maxSize);
 
@@ -590,7 +569,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
 
 // Nettoyer les ressources audio quand le widget est détruit
-
+  // 🔥 S'assurer d'avoir authProvider et appDefaultData
+  late AppDefaultData appDefaultData;
   @override
   void initState() {
     super.initState();
@@ -598,13 +578,24 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     postProvider = Provider.of<PostProvider>(context, listen: false);
     userProvider = Provider.of<UserProvider>(context, listen: false);
-
+    appDefaultData = authProvider.appDefaultData;
     _loadUserData();
     _loadCanalData();
     _generateVideoThumbnail();
 
     _checkIfFavorite();
     _loadSupportModalSeen();
+  }
+
+
+  // Méthode utilitaire pour optimiser les URLs d'images
+  String _optimizeUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+
+    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    final appDefaultData = authProvider.appDefaultData;
+
+    return authProvider.convertToCdnUrl(url, appDefaultData);
   }
 
   Future<void> _loadSupportModalSeen() async {
@@ -1963,7 +1954,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
     try {
       final thumbnailPath = await VideoThumbnail.thumbnailFile(
-        video: widget.post.url_media!,
+        video:_optimizeUrl(widget.post.url_media!)  ,
         thumbnailPath: (await getTemporaryDirectory()).path,
         imageFormat: ImageFormat.JPEG,
         maxWidth: 400,
@@ -2238,7 +2229,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     }
   }
 
-  Widget _buildSingleImage(String imageUrl, double height) {
+  Widget _buildSingleImage(String url, double height) {
+    final imageUrl = _optimizeUrl(url);
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -2289,7 +2281,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   bottomLeft: Radius.circular(16),
                 ),
                 child: CachedNetworkImage(
-                  imageUrl: images[0],
+                  imageUrl:_optimizeUrl( images[0])
+               ,
                   fit: BoxFit.cover,
                   height: height,
                   placeholder: (context, url) => Container(
@@ -2314,7 +2307,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   bottomRight: Radius.circular(16),
                 ),
                 child: CachedNetworkImage(
-                  imageUrl: images[1],
+                  imageUrl: _optimizeUrl( images[1]),
                   fit: BoxFit.cover,
                   height: height,
                   placeholder: (context, url) => Container(
@@ -2357,7 +2350,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   bottomLeft: Radius.circular(16),
                 ),
                 child: CachedNetworkImage(
-                  imageUrl: images[0],
+                  imageUrl: _optimizeUrl( images[0]),
                   fit: BoxFit.cover,
                   height: height,
                   placeholder: (context, url) => Container(
@@ -2389,7 +2382,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                           topRight: Radius.circular(16),
                         ),
                         child: CachedNetworkImage(
-                          imageUrl: images[1],
+                          imageUrl: _optimizeUrl( images[0]),
                           fit: BoxFit.cover,
                           width: double.infinity,
                           placeholder: (context, url) => Container(
@@ -2413,7 +2406,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                           bottomRight: Radius.circular(16),
                         ),
                         child: CachedNetworkImage(
-                          imageUrl: images[2],
+                          imageUrl: _optimizeUrl( images[0]),
                           fit: BoxFit.cover,
                           width: double.infinity,
                           placeholder: (context, url) => Container(
@@ -2437,7 +2430,9 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
 
   Widget _buildMultipleImages(List<String> images, double height) {
-    final displayedImages = images.take(4).toList(); // Limite à 4 images pour le preview
+    final displayedImages = images.take(4).toList();
+    final screenWidth = MediaQuery.of(context).size.width;
+    final itemWidth = (screenWidth / 2).toInt();
 
     return GestureDetector(
       onTap: () {
@@ -2449,7 +2444,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         );
       },
       child: Container(
-        height: height, // 🔥 HAUTEUR FIXE POUR LE GRIDVIEW
+        height: height,
         child: GridView.builder(
           physics: NeverScrollableScrollPhysics(),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -2459,6 +2454,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           ),
           itemCount: displayedImages.length,
           itemBuilder: (context, index) {
+            final optimizedUrl = _optimizeUrl(displayedImages[index]);
+
             BorderRadius borderRadius;
             if (displayedImages.length == 4) {
               switch (index) {
@@ -2488,7 +2485,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                 ClipRRect(
                   borderRadius: borderRadius,
                   child: CachedNetworkImage(
-                    imageUrl: displayedImages[index],
+                    imageUrl: optimizedUrl,  // 🔥 URL OPTIMISÉE
                     fit: BoxFit.cover,
                     width: double.infinity,
                     height: double.infinity,
@@ -2501,7 +2498,6 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                     ),
                   ),
                 ),
-
                 if (hasOverlay)
                   Positioned.fill(
                     child: Container(
@@ -2525,7 +2521,6 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       ),
     );
   }
-
   Widget _buildVideoContent(double h, bool isLocked) {
     return Stack(
       children: [
@@ -2914,12 +2909,21 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
 
   // Méthodes utilitaires
+// Dans _getProfileImage()
   ImageProvider? _getProfileImage() {
+    String? imageUrl;
+
     if (currentCanal != null && currentCanal!.urlImage != null) {
-      return NetworkImage(currentCanal!.urlImage!);
+      imageUrl = currentCanal!.urlImage;
     } else if (currentUser != null && currentUser!.imageUrl != null) {
-      return NetworkImage(currentUser!.imageUrl!);
+      imageUrl = currentUser!.imageUrl;
     }
+
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      final optimizedUrl = _optimizeUrl(imageUrl); // 100px suffisant pour un avatar
+      return NetworkImage(optimizedUrl);
+    }
+
     return null;
   }
 

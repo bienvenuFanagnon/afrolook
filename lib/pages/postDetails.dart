@@ -247,7 +247,7 @@ class _DetailsPostState extends State<DetailsPost>
                                 // Miniature (image ou vidéo)
                                 (post.dataType == PostDataType.VIDEO.name && post.thumbnail != null && post.thumbnail!.isNotEmpty)
                                     ? CachedNetworkImage(
-                                  imageUrl: post.thumbnail!,
+                                  imageUrl:_optimizeImageUrl( post.thumbnail!),
                                   fit: BoxFit.cover,
                                   placeholder: (context, url) => Center(
                                     child: CircularProgressIndicator(color: Colors.yellow),
@@ -256,7 +256,7 @@ class _DetailsPostState extends State<DetailsPost>
                                 )
                                     : (post.images != null && post.images!.isNotEmpty)
                                     ? CachedNetworkImage(
-                                  imageUrl: post.images!.first,
+                                  imageUrl: _optimizeImageUrl( post.images!.first),
                                   fit: BoxFit.cover,
                                   placeholder: (context, url) => Center(
                                     child: CircularProgressIndicator(color: Colors.yellow),
@@ -696,9 +696,9 @@ class _DetailsPostState extends State<DetailsPost>
                   height: 60,
                   color: Colors.grey[800],
                   child: post.dataType == PostDataType.VIDEO.name && post.thumbnail != null
-                      ? CachedNetworkImage(imageUrl: post.thumbnail!, fit: BoxFit.cover)
+                      ? CachedNetworkImage(imageUrl:_optimizeImageUrl( post.thumbnail!), fit: BoxFit.cover)
                       : (post.images != null && post.images!.isNotEmpty
-                      ? CachedNetworkImage(imageUrl: post.images!.first, fit: BoxFit.cover)
+                      ? CachedNetworkImage(imageUrl:_optimizeImageUrl( post.images!.first), fit: BoxFit.cover)
                       : Icon(Icons.videocam, color: Colors.grey)),
                 ),
                 if (post.dataType == PostDataType.VIDEO.name)
@@ -947,6 +947,16 @@ class _DetailsPostState extends State<DetailsPost>
         ],
       ),
     );
+  }
+
+  // Méthode utilitaire pour optimiser les URLs
+  String _optimizeImageUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+
+    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    final appDefaultData = authProvider.appDefaultData;
+
+    return authProvider.convertToCdnUrl(url, appDefaultData);
   }
 
 // 6. Modifier la méthode build pour inclure ces nouveaux widgets
@@ -1270,7 +1280,7 @@ class _DetailsPostState extends State<DetailsPost>
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(24),
                   child: Image(
-                    image: CachedNetworkImageProvider(coverImage),
+                    image: CachedNetworkImageProvider(_optimizeImageUrl(coverImage) ),
                     fit: BoxFit.cover,
                   ),
                 ),
@@ -3823,7 +3833,8 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             children: [
               CircleAvatar(
                 backgroundImage: NetworkImage(
-                  canal?.urlImage ?? user?.imageUrl ?? '',
+                  _optimizeImageUrl(canal?.urlImage ?? user?.imageUrl ?? '')
+                  ,
                 ),
                 radius: 25,
               ),
@@ -4344,7 +4355,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                     child: Hero(
                       tag: imageUrl,
                       child: CachedNetworkImage(
-                        imageUrl: imageUrl,
+                        imageUrl:_optimizeImageUrl(imageUrl) ,
                         fit: BoxFit.contain,
                         placeholder: (context, url) => Container(
                           color: Colors.grey[800],
@@ -4449,7 +4460,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                   child: Hero(
                     tag: images[index],
                     child: CachedNetworkImage(
-                      imageUrl: images[index],
+                      imageUrl:_optimizeImageUrl(images[index]) ,
                       fit: BoxFit.contain,
                       width: double.infinity,
                       height: contentHeight,
@@ -4596,7 +4607,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           minScale: 0.8,
           maxScale: 5.0,
           child: CachedNetworkImage(
-            imageUrl: imageUrl,
+            imageUrl:_optimizeImageUrl(imageUrl) ,
             fit: BoxFit.cover,
             width: double.infinity,
             height: height,
@@ -4627,7 +4638,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
               child: Hero(
                 tag: images[0],
                 child: CachedNetworkImage(
-                  imageUrl: images[0],
+                  imageUrl:_optimizeImageUrl( images[0]),
                   fit: BoxFit.cover,
                   height: height,
                   placeholder: (context, url) => Container(
@@ -4652,7 +4663,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
               child: Hero(
                 tag: images[1],
                 child: CachedNetworkImage(
-                  imageUrl: images[1],
+                  imageUrl:_optimizeImageUrl( images[1]),
                   fit: BoxFit.cover,
                   height: height,
                   placeholder: (context, url) => Container(
@@ -4687,7 +4698,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
               child: Hero(
                 tag: images[0],
                 child: CachedNetworkImage(
-                  imageUrl: images[0],
+                  imageUrl:_optimizeImageUrl( images[0]),
                   fit: BoxFit.cover,
                   placeholder: (context, url) => Container(
                     color: Colors.grey[800],
@@ -4716,7 +4727,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                     child: Hero(
                       tag: images[1],
                       child: CachedNetworkImage(
-                        imageUrl: images[1],
+                        imageUrl:_optimizeImageUrl( images[1]),
                         fit: BoxFit.cover,
                         width: double.infinity,
                         placeholder: (context, url) => Container(
@@ -4741,7 +4752,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                     child: Hero(
                       tag: images[2],
                       child: CachedNetworkImage(
-                        imageUrl: images[2],
+                        imageUrl: _optimizeImageUrl( images[2]),
                         fit: BoxFit.cover,
                         width: double.infinity,
                         placeholder: (context, url) => Container(
@@ -4786,7 +4797,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                 child: Hero(
                   tag: imageUrl,
                   child: CachedNetworkImage(
-                    imageUrl: imageUrl,
+                    imageUrl:_optimizeImageUrl(imageUrl) ,
                     fit: BoxFit.cover,
                     placeholder: (context, url) => Container(
                       color: Colors.grey[800],
@@ -5190,8 +5201,8 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                                   child: Column(
                                     children: [
                                       CircleAvatar(
-                                        backgroundImage: NetworkImage(
-                                            userData.imageUrl ?? ''),
+                                        backgroundImage: NetworkImage(_optimizeImageUrl(userData.imageUrl ?? '')
+                                            ),
                                         radius: 15,
                                       ),
                                       SizedBox(height: 2),
@@ -6090,7 +6101,14 @@ class _FullScreenImageState extends State<FullScreenImage> {
     }
     return [];
   }
+  String _optimizeImageUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
 
+    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    final appDefaultData = authProvider.appDefaultData;
+
+    return authProvider.convertToCdnUrl(url, appDefaultData);
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -6116,7 +6134,7 @@ class _FullScreenImageState extends State<FullScreenImage> {
                     child: Hero(
                       tag: images[index],
                       child: CachedNetworkImage(
-                        imageUrl: images[index],
+                        imageUrl:_optimizeImageUrl(images[index]) ,
                         fit: BoxFit.contain,
                         placeholder: (context, url) => Center(
                           child: CircularProgressIndicator(color: Colors.yellow),

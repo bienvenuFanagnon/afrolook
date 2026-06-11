@@ -3266,11 +3266,12 @@ if(actionType == 'comment'){
   }
 
 
+
   String convertToCdnUrl(String firebaseStorageUrl, AppDefaultData appConfig) {
-    // SÉCURITÉ : On vérifie directement la variable de l'objet passé en paramètre
-    if (appConfig.useCDN == false) {
-      return firebaseStorageUrl;
-    }
+    // SÉCURITÉ : On retourne l'URL d'origine si le CDN est désactivé
+    // if (appConfig.useCDN == false) {
+    //   return firebaseStorageUrl;
+    // }
 
     if (firebaseStorageUrl.isEmpty) return firebaseStorageUrl;
 
@@ -3278,8 +3279,14 @@ if(actionType == 'comment'){
       if (firebaseStorageUrl.contains('firebasestorage.googleapis.com')) {
         final parts = firebaseStorageUrl.split('/o/');
         if (parts.length > 1) {
-          final filePath = parts[1].split('?')[0];
-          return "https://cdn.afrolookmedia.com/$filePath";
+          // On récupère tout ce qui vient après le '/o/' (le chemin du fichier + les tokens)
+          final fileWithParams = parts[1];
+          final urfinal = "https://cdn.afrolookmedia.com/media/$fileWithParams";
+
+          printVm("urfinalmedia: ${urfinal}");
+
+          // On construit l'URL finale en passant par ton domaine et le préfixe /media/
+          return urfinal;
         }
       }
     } catch (e) {

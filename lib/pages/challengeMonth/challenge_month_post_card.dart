@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
 import '../../models/model_data.dart';
+import '../../providers/authProvider.dart';
 import '../postDetails.dart';
 import '../postDetailsVideo.dart';
 
@@ -30,6 +32,14 @@ class _ChallengePostCardState extends State<ChallengePostCard> {
   UserData? _user;
   Canal? _canal;
   bool _isLoading = false;
+  String _optimizeUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+
+    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    final appDefaultData = authProvider.appDefaultData;
+
+    return authProvider.convertToCdnUrl(url, appDefaultData);
+  }
 
   @override
   void initState() {
@@ -158,7 +168,7 @@ class _ChallengePostCardState extends State<ChallengePostCard> {
                   ClipRRect(
                     borderRadius: const BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
                     child: CachedNetworkImage(
-                      imageUrl: widget.post.images!.first,
+                      imageUrl:_optimizeUrl(widget.post.images!.first) ,
                       height: 180,
                       width: double.infinity,
                       fit: BoxFit.cover,
