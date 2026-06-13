@@ -154,9 +154,10 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
         ? _currentEpisode!.videoUrl
         : widget.content.videoUrl ?? '';
     if (videoUrl!.isEmpty) return;
+    final String optimizedUrl = _authProvider.convertToCdnUrl(videoUrl, _authProvider.appDefaultData);
 
     // Récupérer la durée de la vidéo (besoin d'un contrôleur temporaire)
-    final tempController = VideoPlayerController.network(videoUrl);
+    final tempController = VideoPlayerController.network(optimizedUrl);
     await tempController.initialize();
     _videoDuration = tempController.value.duration.inSeconds.toDouble();
     await tempController.dispose();
@@ -167,19 +168,19 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
     double endPos = max(0, _videoDuration - _capsuleDuration);
 
     // Charger la capsule début
-    _capsuleStartController = VideoPlayerController.network(videoUrl);
+    _capsuleStartController = VideoPlayerController.network(optimizedUrl);
     await _capsuleStartController!.initialize();
     await _capsuleStartController!.seekTo(Duration(seconds: startPos.toInt()));
     await _capsuleStartController!.pause();
 
     // Charger la capsule milieu
-    _capsuleMiddleController = VideoPlayerController.network(videoUrl);
+    _capsuleMiddleController = VideoPlayerController.network(optimizedUrl);
     await _capsuleMiddleController!.initialize();
     await _capsuleMiddleController!.seekTo(Duration(seconds: middlePos.toInt()));
     await _capsuleMiddleController!.pause();
 
     // Charger la capsule fin
-    _capsuleEndController = VideoPlayerController.network(videoUrl);
+    _capsuleEndController = VideoPlayerController.network(optimizedUrl);
     await _capsuleEndController!.initialize();
     await _capsuleEndController!.seekTo(Duration(seconds: endPos.toInt()));
     await _capsuleEndController!.pause();
@@ -745,7 +746,10 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
     final hasPurchased = contentProvider.userPurchases.any((p) => p.contentId == widget.content.id);
     final isSeries = widget.content.isSeries;
     bool canWatch = (isSeries ? (_currentEpisode?.isFree ?? false) : widget.content.isFree) || hasPurchased || isAdminOrOwner;
-    String thumbnailUrl = isSeries && _currentEpisode != null ? _currentEpisode!.thumbnailUrl! : widget.content.thumbnailUrl ?? '';
+    String thumbnailUrl = _authProvider.convertToCdnUrl(
+      isSeries && _currentEpisode != null ? _currentEpisode!.thumbnailUrl! : widget.content.thumbnailUrl ?? '',
+      _authProvider.appDefaultData,
+    );
 
     return Scaffold(
       backgroundColor: _afroBlack,

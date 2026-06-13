@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:provider/provider.dart';
 import '../../../constant/logo.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../providers/authProvider.dart';
 import '../../../providers/postProvider.dart';
 import '../../../providers/userProvider.dart';
+import '../../../theme/app_colors.dart';
 import '../../admin/AfrolookPub/afrolookAdminPubPage.dart';
 import '../../admin/admin_email_screen.dart';
 import '../../admin/dating/admin_dating_profiles_page.dart';
@@ -26,6 +28,8 @@ class UserProfil extends StatefulWidget {
 }
 
 class _UserProfilState extends State<UserProfil> {
+  late AppColors _colors;
+
   late UserAuthProvider authProvider =
   Provider.of<UserAuthProvider>(context, listen: false);
   late UserProvider userProvider =
@@ -47,18 +51,19 @@ class _UserProfilState extends State<UserProfil> {
 
   @override
   Widget build(BuildContext context) {
+    _colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context);
+
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
 
     // Définition des couleurs du thème
-    const Color primaryBlack = Color(0xFF121212);
-    const Color primaryRed = Color(0xFFE53935);
-    const Color primaryYellow = Color(0xFFFFD600);
-    const Color secondaryBlack = Color(0xFF1E1E1E);
-    const Color accentRed = Color(0xFFFF5252);
-    const Color lightYellow = Color(0xFFFFF176);
-    const Color textWhite = Color(0xFFF5F5F5);
-    const Color textGrey = Color(0xFF9E9E9E);
+    final Color primaryBlack = _colors.background;
+    final Color primaryRed = _colors.danger;
+    final Color primaryYellow = _colors.accent;
+    final Color secondaryBlack = _colors.surface;
+    final Color textWhite = _colors.textPrimary;
+    final Color textGrey = _colors.textSecondary;
 
     return Scaffold(
       backgroundColor: primaryBlack,
@@ -66,7 +71,7 @@ class _UserProfilState extends State<UserProfil> {
         backgroundColor: primaryBlack,
         elevation: 0,
         title: Text(
-          "Mon Profile",
+          l10n.profileTitle,
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
@@ -187,7 +192,7 @@ class _UserProfilState extends State<UserProfil> {
                                       ),
                                     ),
                                     Text(
-                                      "Abonnés",
+                                      l10n.profileFollowers,
                                       style: TextStyle(
                                         fontSize: 12,
                                         color: textGrey,
@@ -198,7 +203,7 @@ class _UserProfilState extends State<UserProfil> {
                                 Container(
                                   height: 30,
                                   width: 1,
-                                  color: Colors.grey[700],
+                                  color: _colors.divider,
                                 ),
                                 Column(
                                   children: [
@@ -211,7 +216,7 @@ class _UserProfilState extends State<UserProfil> {
                                       ),
                                     ),
                                     Text(
-                                      "Likes",
+                                      l10n.profileLikesShort,
                                       style: TextStyle(
                                         fontSize: 12,
                                         color: textGrey,
@@ -266,7 +271,7 @@ class _UserProfilState extends State<UserProfil> {
                           ),
                           SizedBox(width: 10),
                           Text(
-                            "Mes Looks",
+                            l10n.profileMyLooks,
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
@@ -304,7 +309,7 @@ class _UserProfilState extends State<UserProfil> {
                       children: [
                         _buildMenuButton(
                           icon: Icons.person,
-                          label: "Mes Infos",
+                          label: l10n.profileMenuMyInfos,
                           color: Colors.blue,
                           onTap: () {
                             Navigator.pushNamed(context, '/profil_detail_user');
@@ -312,14 +317,14 @@ class _UserProfilState extends State<UserProfil> {
                         ),
                         _buildMenuButton(
                           icon: Icons.store,
-                          label: "Entreprise",
+                          label: l10n.profileMenuEnterprise,
                           color: Color(0xFF2ECC71),
                           onTap: () async {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (_) => Scaffold(
-                                  backgroundColor: Colors.white,
+                                  backgroundColor: _colors.background,
                                   body: Center(
                                     child: CircularProgressIndicator(color: Color(0xFF2ECC71)),
                                   ),
@@ -356,7 +361,7 @@ class _UserProfilState extends State<UserProfil> {
                                           ),
                                           SizedBox(height: 12),
                                           Text(
-                                            "Créez votre entreprise",
+                                            l10n.profileEnterpriseCreateTitle,
                                             style: TextStyle(
                                               fontSize: 18,
                                               fontWeight: FontWeight.bold,
@@ -365,7 +370,7 @@ class _UserProfilState extends State<UserProfil> {
                                           ),
                                           SizedBox(height: 8),
                                           Text(
-                                            "Vendez vos produits et services avec une entreprise unique.",
+                                            l10n.profileEnterpriseCreateDesc,
                                             textAlign: TextAlign.center,
                                             style: TextStyle(fontSize: 14, color: textGrey),
                                           ),
@@ -382,7 +387,7 @@ class _UserProfilState extends State<UserProfil> {
                                               Navigator.pop(context);
                                               Navigator.pushNamed(context, '/new_entreprise');
                                             },
-                                            child: Text("Créer maintenant", style: TextStyle(color: Colors.white)),
+                                            child: Text(l10n.profileEnterpriseCreateBtn, style: TextStyle(color: Colors.white)),
                                           ),
                                         ],
                                       ),
@@ -394,7 +399,7 @@ class _UserProfilState extends State<UserProfil> {
                               Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text("Erreur lors du chargement"),
+                                  content: Text(l10n.profileEnterpriseLoadError),
                                   backgroundColor: primaryRed,
                                 ),
                               );
@@ -403,10 +408,9 @@ class _UserProfilState extends State<UserProfil> {
                         ),
                         _buildMenuButton(
                           icon: Icons.monetization_on,
-                          label: "Monétisations",
+                          label: l10n.profileMenuRemunerationSpace,
                           color: Colors.green,
                           onTap: () {
-                            // Navigator.push(context, MaterialPageRoute(builder: (context) => MonetisationPage()));
                             Navigator.push(context, MaterialPageRoute(builder: (context) => RemunerationHomePage(user: authProvider.loginUserData!,)));
                           },
                         ),
@@ -421,7 +425,7 @@ class _UserProfilState extends State<UserProfil> {
                       children: [
                         _buildMenuButton(
                           icon: Icons.card_membership,
-                          label: "Abonnement",
+                          label: l10n.profileMenuSubscription,
                           color: Colors.blue,
                           onTap: () {
                             Navigator.push(context, MaterialPageRoute(builder: (context) => AbonnementScreen()));
@@ -429,7 +433,7 @@ class _UserProfilState extends State<UserProfil> {
                         ),
                         _buildMenuButton(
                           icon: Icons.bookmark_border,
-                          label: "Favoris",
+                          label: l10n.profileMenuFavorites,
                           color: primaryYellow,
                           onTap: () {
                             Navigator.push(context, MaterialPageRoute(builder: (context) => FavoritePostsPage()));
@@ -437,7 +441,7 @@ class _UserProfilState extends State<UserProfil> {
                         ),
                         _buildMenuButton(
                           icon: FontAwesome.forumbee,
-                          label: "Canaux",
+                          label: l10n.profileMenuChannels,
                           color: Colors.green,
                           onTap: () {
                             Navigator.push(context, MaterialPageRoute(builder: (context) => CanalListPageByUser()));
@@ -453,7 +457,7 @@ class _UserProfilState extends State<UserProfil> {
                       children: [
                         _buildMenuButton(
                           icon: Icons.public,
-                          label: "Publicité",
+                          label: l10n.profileMenuAds,
                           color: Colors.blue,
                           onTap: () {
                             Navigator.push(context, MaterialPageRoute(builder: (context) => UserMyAdvertisementsPage()));
@@ -472,7 +476,7 @@ class _UserProfilState extends State<UserProfil> {
                         children: [
                           _buildMenuButton(
                             icon: Icons.build_circle,
-                            label: "AppData",
+                            label: l10n.profileMenuAppData,
                             color: Colors.blue,
                             onTap: () {
                               Navigator.push(context, MaterialPageRoute(builder: (context) => AdminHubPage()));
@@ -480,7 +484,7 @@ class _UserProfilState extends State<UserProfil> {
                           ),
                           _buildMenuButton(
                             icon: Icons.emoji_events,
-                            label: "Challenge",
+                            label: l10n.profileMenuChallenge,
                             color: primaryYellow,
                             onTap: () {
                               Navigator.push(context, MaterialPageRoute(builder: (context) => ChallengeDashboardPage()));
@@ -488,7 +492,7 @@ class _UserProfilState extends State<UserProfil> {
                           ),
                           _buildMenuButton(
                             icon: Icons.business,
-                            label: "Contacts",
+                            label: l10n.profileMenuContacts,
                             color: Colors.purple,
                             onTap: () {
                               Navigator.pushNamed(context, '/list_conversation_user_entreprise');
@@ -504,14 +508,14 @@ class _UserProfilState extends State<UserProfil> {
                         children: [
                           _buildMenuButton(
                             icon: Icons.add_card_outlined,
-                            label: "Pub",
+                            label: l10n.profileMenuPub,
                             color: Colors.deepPurple,
                             onTap: () {
                               Navigator.push(context, MaterialPageRoute(builder: (context) => AdvertisementManagementPage()));
                             },
                           ),        _buildMenuButton(
                             icon: Icons.email,
-                            label: "Emailing",
+                            label: l10n.profileMenuEmailing,
                             color: Colors.blue,
                             onTap: () {
                               Navigator.push(context, MaterialPageRoute(builder: (context) => AdminEmailScreen()));
@@ -519,7 +523,7 @@ class _UserProfilState extends State<UserProfil> {
                           ),
                           _buildMenuButton(
                             icon: MaterialIcons.sports_soccer,
-                            label: "Pronostique",
+                            label: l10n.profileMenuPronostic,
                             color: Colors.green,
                             onTap: () {
                               Navigator.push(context, MaterialPageRoute(builder: (context) => AdminPronosticsPage()));
@@ -536,7 +540,7 @@ class _UserProfilState extends State<UserProfil> {
                         children: [
                           _buildMenuButton(
                             icon: Fontisto.tinder,
-                            label: "Afrolove",
+                            label: l10n.profileMenuAfrolove,
                             color: Colors.red,
                             onTap: () {
                               Navigator.push(context, MaterialPageRoute(builder: (context) => AdminDatingProfilesPage()));
@@ -573,10 +577,10 @@ class _UserProfilState extends State<UserProfil> {
         width: 100,
         height: 100,
         decoration: BoxDecoration(
-          color: Color(0xFF2A2A2A),
+          color: _colors.surfaceVariant,
           borderRadius: BorderRadius.circular(15),
           border: Border.all(
-            color: Colors.grey[800]!,
+            color: _colors.border,
             width: 1,
           ),
           boxShadow: [
@@ -610,7 +614,7 @@ class _UserProfilState extends State<UserProfil> {
             Text(
               label,
               style: TextStyle(
-                color: Color(0xFFF5F5F5),
+                color: _colors.textPrimary,
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
@@ -622,799 +626,3 @@ class _UserProfilState extends State<UserProfil> {
     );
   }
 }
-// class UserProfil extends StatefulWidget {
-//   const UserProfil({super.key});
-//
-//   @override
-//   State<UserProfil> createState() => _UserProfilState();
-// }
-//
-// class _UserProfilState extends State<UserProfil> {
-//
-//   late UserAuthProvider authProvider =
-//   Provider.of<UserAuthProvider>(context, listen: false);
-//   late UserProvider userProvider =
-//   Provider.of<UserProvider>(context, listen: false);
-//
-//   late PostProvider postProvider =
-//   Provider.of<PostProvider>(context, listen: false);
-//   String formatNumber(int number) {
-//     if (number < 1000) {
-//       return number.toString();
-//     } else if (number < 1000000) {
-//       return "${number / 1000} k";
-//     } else if (number < 1000000000) {
-//       return "${number / 1000000} m";
-//     } else {
-//       return "${number / 1000000000} b";
-//     }
-//   }
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     double height = MediaQuery.of(context).size.height;
-//     double width = MediaQuery.of(context).size.width;
-//     return Scaffold(
-//       backgroundColor: ConstColors.backgroundColor,
-//       appBar: AppBar(
-//         title: TextCustomerPageTitle(
-//           titre: "Mon Profile",
-//           fontSize: SizeText.homeProfileTextSize,
-//           couleur: ConstColors.textColors,
-//           fontWeight: FontWeight.bold,
-//         ),
-//
-//         actions: [
-//           Padding(
-//             padding: const EdgeInsets.only(right: 8.0),
-//             child: Logo(),
-//           )
-//         ],
-//         //title: Text(widget.title),
-//       ),
-//       body: SingleChildScrollView(
-//         scrollDirection: Axis.vertical,
-//         child: Container(
-//           height: height*1.28,
-//
-//           child: Padding(
-//             padding: const EdgeInsets.all(8.0),
-//             child: Column(
-//               mainAxisSize: MainAxisSize.max,
-//               children: [
-//                 Padding(
-//                   padding: const EdgeInsets.only(bottom: 8.0),
-//                   child: Row(
-//                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//                     children: [
-//                       Row(
-//                         children: [
-//                           Padding(
-//                             padding: const EdgeInsets.only(right: 15.0),
-//                             child: CircleAvatar(
-//                               radius: 30,
-//                               backgroundImage: NetworkImage(
-//                                   '${authProvider.loginUserData!.imageUrl!}'),
-//                             ),
-//                           ),
-//                           SizedBox(
-//                             height: 2,
-//                           ),
-//                           Row(
-//                             children: [
-//                               Column(
-//                                 mainAxisAlignment: MainAxisAlignment.start,
-//                                 crossAxisAlignment:CrossAxisAlignment.start ,
-//                                 children: [
-//                                   SizedBox(
-//                                     //width: 100,
-//                                     child: TextCustomerUserTitle(
-//                                       titre: "@${authProvider.loginUserData!.pseudo}",
-//                                       fontSize: SizeText.homeProfileTextSize,
-//                                       couleur: ConstColors.textColors,
-//                                       fontWeight: FontWeight.bold,
-//                                     ),
-//                                   ),
-//                                   TextCustomerUserTitle(
-//                                     titre: "${formatNumber(authProvider.loginUserData!.userAbonnesIds!.length??0)} abonné(s)",
-//                                     fontSize: SizeText.homeProfileTextSize,
-//                                     couleur: ConstColors.textColors,
-//                                     fontWeight: FontWeight.w400,
-//                                   ),
-//                                   TextCustomerUserTitle(
-//                                     titre:
-//                                     "${formatNumber(authProvider.loginUserData!.userlikes!)} like(s)",
-//                                     fontSize: SizeText.homeProfileTextSize,
-//                                     couleur: Colors.green,
-//                                     fontWeight: FontWeight.w700,
-//                                   ),
-//
-//                                 ],
-//                               ),
-//
-//                             ],
-//                           ),
-//                         ],
-//                       ),
-//                       /*
-//                       Padding(
-//                         padding: const EdgeInsets.only(right: 12.0),
-//                         child: Column(
-//                           children: [
-//                             SizedBox(
-//                               //width: 100,
-//                               child: TextCustomerUserTitle(
-//                                 titre: "PubliCach",
-//                                 fontSize: SizeText.homeProfileTextSize,
-//                                 couleur: ConstColors.textColors,
-//                                 fontWeight: FontWeight.bold,
-//                               ),
-//                             ),
-//                             TextCustomerUserTitle(
-//                               titre: "500",
-//                               fontSize: SizeText.homeProfileTextSize,
-//                               couleur: ConstColors.textColors,
-//                               fontWeight: FontWeight.w400,
-//                             ),
-//                             SizedBox(height: 2,),
-//                             AchatPubliCachButton(),
-//
-//                           ],
-//                         ),
-//                       ),
-//
-//                        */
-//                     ],
-//                   ),
-//                 ),
-//                 SizedBox(
-//                   height: 10,
-//
-//                 ),
-//
-//                 // Row(
-//                 //   mainAxisAlignment: MainAxisAlignment.spaceAround,
-//                 //   children: [
-//                 //     Column(
-//                 //       children: [
-//                 //         Container(
-//                 //           child: TextCustomerUserTitle(
-//                 //             titre: "${authProvider.loginUserData!.mesPubs}",
-//                 //             fontSize: SizeText.homeProfileTextSize,
-//                 //             couleur: ConstColors.textColors,
-//                 //             fontWeight: FontWeight.w600,
-//                 //           ),
-//                 //         ),
-//                 //         Container(
-//                 //           child: TextCustomerUserTitle(
-//                 //             titre: "Mes Publications ",
-//                 //             fontSize: SizeText.homeProfileTextSize,
-//                 //             couleur: ConstColors.textColors,
-//                 //             fontWeight: FontWeight.w500,
-//                 //           ),
-//                 //         ),
-//                 //       ],
-//                 //     ),
-//                 //     Column(
-//                 //       children: [
-//                 //         Container(
-//                 //           child: TextCustomerUserTitle(
-//                 //             titre: "${authProvider.loginUserData!.pubEntreprise}",
-//                 //             fontSize: SizeText.homeProfileTextSize,
-//                 //             couleur: ConstColors.textColors,
-//                 //             fontWeight: FontWeight.w600,
-//                 //           ),
-//                 //         ),
-//                 //         Container(
-//                 //           child: TextCustomerUserTitle(
-//                 //             titre: "Publications Entreprises ",
-//                 //             fontSize: SizeText.homeProfileTextSize,
-//                 //             couleur: ConstColors.textColors,
-//                 //             fontWeight: FontWeight.w500,
-//                 //           ),
-//                 //         ),
-//                 //       ],
-//                 //     ),
-//                 //   ],
-//                 // ),
-//                 // SizedBox(
-//                 //   height: 30,
-//                 //
-//                 // ),
-//                 Padding(
-//                   padding: const EdgeInsets.all(8.0),
-//                   child: Row(
-//                    // mainAxisAlignment: MainAxisAlignment.spaceAround,
-//                     crossAxisAlignment: CrossAxisAlignment.start,
-//                     children: [
-//                       Expanded(
-//                         flex: 2,
-//                         child: Column(
-//                           crossAxisAlignment: CrossAxisAlignment.start,
-//                           children: [
-//                             GestureDetector(
-//                               onTap: () {
-//                                 Navigator.pushNamed(context, '/profil_detail_user');
-//                               },
-//                               child: ClipRRect(
-//                                 borderRadius: BorderRadius.only(topRight: Radius.circular(50),bottomRight: Radius.circular(50)),
-//                                 child: Container(
-//                                   color: ConstColors.buttonsColors,
-//                                   // alignment: Alignment.centerLeft,
-//                                   width: 180,
-//                                   child: Padding(
-//                                     padding: const EdgeInsets.all(8.0),
-//                                     child: Row(
-//                                       children: [
-//                                         Padding(
-//                                           padding: const EdgeInsets.only(right: 5.0),
-//                                           child: Container(
-//                                             child: Image.asset(
-//                                               'assets/icon/info.png',
-//                                               height: 20,
-//                                               width: 20,
-//                                             ),
-//                                           ),
-//                                         ),
-//                                         Container(
-//                                           child: TextCustomerMenu(
-//                                             titre: "Mes Informations",
-//                                             fontSize: SizeText.homeProfileTextSize,
-//                                             couleur: ConstColors.textColors,
-//                                             fontWeight: FontWeight.w600,
-//                                           ),
-//                                         )
-//                                       ],
-//
-//                                     ),
-//                                   ),
-//                                 ),
-//                               ),
-//                             ),
-//                             SizedBox(height: 10,),
-//                             GestureDetector(
-//                               onTap: () async {
-//                                   // Affiche une page de chargement temporaire
-//                                   Navigator.push(
-//                                     context,
-//                                     MaterialPageRoute(
-//                                       builder: (_) => Scaffold(
-//                                         backgroundColor: Colors.white,
-//                                         body: Center(
-//                                           child: CircularProgressIndicator(color: Color(0xFF2ECC71)),
-//                                         ),
-//                                       ),
-//                                     ),
-//                                   );
-//
-//                                   try {
-//                                     final value = await userProvider.getUserEntreprise(authProvider.loginUserData.id!);
-//
-//                                     // Ferme la page de chargement
-//                                     Navigator.pop(context);
-//
-//                                     if (value) {
-//                                       Navigator.pushNamed(context, '/profile_entreprise');
-//                                     } else {
-//                                       // Affiche un modal si pas d’entreprise
-//                                       showDialog(
-//                                         context: context,
-//                                         builder: (_) => Dialog(
-//                                           shape: RoundedRectangleBorder(
-//                                             borderRadius: BorderRadius.circular(16),
-//                                           ),
-//                                           child: Padding(
-//                                             padding: const EdgeInsets.all(20),
-//                                             child: Column(
-//                                               mainAxisSize: MainAxisSize.min,
-//                                               children: [
-//                                                 CircleAvatar(
-//                                                   radius: 30,
-//                                                   backgroundColor: Color(0xFF2ECC71).withOpacity(0.1),
-//                                                   child: Icon(Icons.store_mall_directory, color: Color(0xFF2ECC71), size: 32),
-//                                                 ),
-//                                                 SizedBox(height: 12),
-//                                                 Text(
-//                                                   "Créez votre entreprise",
-//                                                   style: TextStyle(
-//                                                     fontSize: 16,
-//                                                     fontWeight: FontWeight.bold,
-//                                                     color: Colors.black87,
-//                                                   ),
-//                                                 ),
-//                                                 SizedBox(height: 8),
-//                                                 Text(
-//                                                   "Pour vendre vos produits et services, créez gratuitement une entreprise avec un nom unique.",
-//                                                   textAlign: TextAlign.center,
-//                                                   style: TextStyle(fontSize: 13, color: Colors.black54),
-//                                                 ),
-//                                                 SizedBox(height: 20),
-//                                                 ElevatedButton(
-//                                                   style: ElevatedButton.styleFrom(
-//                                                     backgroundColor: Color(0xFF2ECC71),
-//                                                     shape: RoundedRectangleBorder(
-//                                                       borderRadius: BorderRadius.circular(8),
-//                                                     ),
-//                                                     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-//                                                   ),
-//                                                   onPressed: () {
-//                                                     Navigator.pop(context); // ferme le modal
-//                                                     Navigator.pushNamed(context, '/new_entreprise');
-//                                                   },
-//                                                   child: Text("Créer maintenant", style: TextStyle(color: Colors.white)),
-//                                                 ),
-//                                               ],
-//                                             ),
-//                                           ),
-//                                         ),
-//                                       );
-//                                     }
-//                                   } catch (e) {
-//                                     Navigator.pop(context); // Ferme le loader si erreur
-//                                     ScaffoldMessenger.of(context).showSnackBar(
-//                                       SnackBar(content: Text("Erreur lors du chargement")),
-//                                     );
-//                                   }
-//
-//                               },
-//                               child: Row(
-//                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//                                 children: [
-//                                   ClipRRect(
-//                                     borderRadius: BorderRadius.only(topRight: Radius.circular(50),bottomRight: Radius.circular(50)),
-//                                     child: Container(
-//                                       color: ConstColors.buttonsColors,
-//                                       // alignment: Alignment.centerLeft,
-//                                       width: 180,
-//                                       child: Padding(
-//                                         padding: const EdgeInsets.all(8.0),
-//                                         child: Row(
-//                                           children: [
-//                                             Padding(
-//                                               padding: const EdgeInsets.only(right: 5.0),
-//                                               child: Container(
-//                                                 child: Image.asset(
-//                                                   'assets/icon/entreprise.png',
-//                                                   height: 20,
-//                                                   width: 20,
-//                                                 ),
-//                                               ),
-//                                             ),
-//                                           Container(
-//                                                 child: TextCustomerMenu(
-//                                                   titre: "Mon Entreprise",
-//                                                   fontSize: SizeText.homeProfileTextSize,
-//                                                   couleur: ConstColors.textColors,
-//                                                   fontWeight: FontWeight.w600,
-//                                                 ),
-//                                               ),
-//
-//                                           ],
-//
-//                                         ),
-//                                       ),
-//                                     ),
-//                                   ),
-//
-//
-//                                   // GestureDetector(
-//                                   //   onTap: () {
-//                                   //
-//                                   //           Navigator.pushNamed(context, '/new_entreprise');
-//                                   //
-//                                   //
-//                                   //   },
-//                                   //   child:authProvider.loginUserData!.hasEntreprise!?Container(): Container(
-//                                   //     child: TextCustomerMenu(
-//                                   //       titre: "Creer",
-//                                   //       fontSize: SizeText.homeProfileTextSize,
-//                                   //       couleur: Colors.red,
-//                                   //       fontWeight: FontWeight.w600,
-//                                   //     ),
-//                                   //   ),
-//                                   // )
-//                                 ],
-//                               ),
-//                             ),
-//                             SizedBox(height: 10,),
-//                             GestureDetector(
-//                               onTap: () {
-//                                 Navigator.push(context, MaterialPageRoute(builder: (context) => MonetisationPage(),));
-//                               },
-//                               child: ClipRRect(
-//                                 borderRadius: BorderRadius.only(topRight: Radius.circular(50),bottomRight: Radius.circular(50)),
-//                                 child: Container(
-//                                   color: ConstColors.buttonsColors,
-//                                   // alignment: Alignment.centerLeft,
-//                                   width: 180,
-//                                   child: Padding(
-//                                     padding: const EdgeInsets.all(8.0),
-//                                     child: Row(
-//                                       children: [
-//                                         Padding(
-//                                           padding: const EdgeInsets.only(right: 5.0),
-//                                           child: Container(
-//                                             child: Image.asset(
-//                                               'assets/icon/monetization.png',
-//                                               height: 20,
-//                                               width: 20,
-//                                             ),
-//                                           ),
-//                                         ),
-//                                         Container(
-//                                           child: TextCustomerMenu(
-//                                             titre: "Monétisation",
-//                                             fontSize: SizeText.homeProfileTextSize,
-//                                             couleur: ConstColors.textColors,
-//                                             fontWeight: FontWeight.w600,
-//                                           ),
-//                                         )
-//                                       ],
-//
-//                                     ),
-//                                   ),
-//                                 ),
-//                               ),
-//                             ),
-//                             SizedBox(height: 10,),
-//                             GestureDetector(
-//                               onTap: () {
-//                                 Navigator.push(context, MaterialPageRoute(builder: (context) => AbonnementScreen(),));
-//                               },
-//                               child: ClipRRect(
-//                                 borderRadius: BorderRadius.only(topRight: Radius.circular(50),bottomRight: Radius.circular(50)),
-//                                 child: Container(
-//                                   color: ConstColors.buttonsColors,
-//                                   // alignment: Alignment.centerLeft,
-//                                   width: 180,
-//                                   child: Padding(
-//                                     padding: const EdgeInsets.all(8.0),
-//                                     child: Row(
-//                                       children: [
-//                                         Padding(
-//                                           padding: const EdgeInsets.only(right: 5.0),
-//                                           child: Container(
-//                                             child: Icon(Icons.card_membership,color: Colors.blue,size: 20,),
-//                                           ),
-//                                         ),
-//                                         Container(
-//                                           child: TextCustomerMenu(
-//                                             titre: "Abonnement",
-//                                             fontSize: SizeText.homeProfileTextSize,
-//                                             couleur: ConstColors.textColors,
-//                                             fontWeight: FontWeight.w600,
-//                                           ),
-//                                         )
-//                                       ],
-//
-//                                     ),
-//                                   ),
-//                                 ),
-//                               ),
-//                             ),
-//                             if(authProvider.loginUserData.role==UserRole.ADM.name)
-//                             SizedBox(height: 10,),
-//                             if(authProvider.loginUserData.role==UserRole.ADM.name)
-//                             GestureDetector(
-//                               onTap: () {
-//                                 Navigator.push(context, MaterialPageRoute(builder: (context) => AppInfoPage(),));
-//                               },
-//                               child: ClipRRect(
-//                                 borderRadius: BorderRadius.only(topRight: Radius.circular(50),bottomRight: Radius.circular(50)),
-//                                 child: Container(
-//                                   color: ConstColors.buttonsColors,
-//                                   // alignment: Alignment.centerLeft,
-//                                   width: 180,
-//                                   child: Padding(
-//                                     padding: const EdgeInsets.all(8.0),
-//                                     child: Row(
-//                                       children: [
-//                                         Padding(
-//                                           padding: const EdgeInsets.only(right: 5.0),
-//                                           child: Container(
-//                                             child: Icon(Icons.build_circle,color: Colors.blue,),
-//                                           ),
-//                                         ),
-//                                         Container(
-//                                           child: TextCustomerMenu(
-//                                             titre: "AppData",
-//                                             fontSize: SizeText.homeProfileTextSize,
-//                                             couleur: ConstColors.textColors,
-//                                             fontWeight: FontWeight.w600,
-//                                           ),
-//                                         )
-//                                       ],
-//
-//                                     ),
-//                                   ),
-//                                 ),
-//                               ),
-//                             ),
-//                             if(authProvider.loginUserData.role==UserRole.ADM.name)
-//                               SizedBox(height: 10,),
-//                             if (authProvider.loginUserData.role == UserRole.ADM.name)
-//                               GestureDetector(
-//                                 onTap: () {
-//                                   Navigator.push(context, MaterialPageRoute(builder: (context) => ChallengeDashboardPage(),));
-//                                 },
-//                                 child: ClipRRect(
-//                                   borderRadius: BorderRadius.only(topRight: Radius.circular(50),bottomRight: Radius.circular(50)),
-//                                   child: Container(
-//                                     color: ConstColors.buttonsColors,
-//                                     // alignment: Alignment.centerLeft,
-//                                     width: 180,
-//                                     child: Padding(
-//                                       padding: const EdgeInsets.all(8.0),
-//                                       child: Row(
-//                                         children: [
-//                                           Padding(
-//                                             padding: const EdgeInsets.only(right: 5.0),
-//                                             child: Container(
-//                                               child: Icon(Icons.emoji_events,color: Colors.yellow,),
-//                                             ),
-//                                           ),
-//                                           Container(
-//                                             child: TextCustomerMenu(
-//                                               titre: "Challenge Accuiel",
-//                                               fontSize: SizeText.homeProfileTextSize,
-//                                               couleur: ConstColors.textColors,
-//                                               fontWeight: FontWeight.w600,
-//                                             ),
-//                                           )
-//                                         ],
-//
-//                                       ),
-//                                     ),
-//                                   ),
-//                                 ),
-//                               ),
-//
-//                             // SizedBox(height: 10,),
-//                             // GestureDetector(
-//                             //   onTap: () {
-//                             //     Navigator.push(context, MaterialPageRoute(builder: (context) => UserVideoFeedTiktokPage(),));
-//                             //   },
-//                             //   child: ClipRRect(
-//                             //     borderRadius: BorderRadius.only(topRight: Radius.circular(50),bottomRight: Radius.circular(50)),
-//                             //     child: Container(
-//                             //       color: ConstColors.buttonsColors,
-//                             //       // alignment: Alignment.centerLeft,
-//                             //       width: 180,
-//                             //       child: Padding(
-//                             //         padding: const EdgeInsets.all(8.0),
-//                             //         child: Row(
-//                             //           children: [
-//                             //             Padding(
-//                             //               padding: const EdgeInsets.only(right: 5.0),
-//                             //               child: Container(
-//                             //                 child: Icon(Icons.tiktok,color: Colors.red,),
-//                             //               ),
-//                             //             ),
-//                             //             Container(
-//                             //               child: TextCustomerMenu(
-//                             //                 titre: "Mon Tiktok",
-//                             //                 fontSize: SizeText.homeProfileTextSize,
-//                             //                 couleur: ConstColors.textColors,
-//                             //                 fontWeight: FontWeight.w600,
-//                             //               ),
-//                             //             )
-//                             //           ],
-//                             //
-//                             //         ),
-//                             //       ),
-//                             //     ),
-//                             //   ),
-//                             // ),
-//                             SizedBox(height: 10,),
-//                             GestureDetector(
-//                               onTap: () {
-//                                 Navigator.push(context, MaterialPageRoute(builder: (context) => FavoritePostsPage(),));
-//                               },
-//                               child: ClipRRect(
-//                                 borderRadius: BorderRadius.only(topRight: Radius.circular(50),bottomRight: Radius.circular(50)),
-//                                 child: Container(
-//                                   color: ConstColors.buttonsColors,
-//                                   // alignment: Alignment.centerLeft,
-//                                   width: 180,
-//                                   child: Padding(
-//                                     padding: const EdgeInsets.all(8.0),
-//                                     child: Row(
-//                                       children: [
-//                                         Padding(
-//                                           padding: const EdgeInsets.only(right: 5.0),
-//                                           child: Container(
-//                                             child: Icon(Icons.bookmark_border,size: 20,color: Colors.yellow,),
-//                                           ),
-//                                         ),
-//                                         Container(
-//                                           child: TextCustomerMenu(
-//                                             titre: "Mes Favoris",
-//                                             fontSize: SizeText.homeProfileTextSize,
-//                                             couleur: ConstColors.textColors,
-//                                             fontWeight: FontWeight.w600,
-//                                           ),
-//                                         )
-//                                       ],
-//
-//                                     ),
-//                                   ),
-//                                 ),
-//                               ),
-//                             ),
-//                             SizedBox(height: 10,),
-//                             GestureDetector(
-//                               onTap: () {
-//                                 Navigator.push(context, MaterialPageRoute(builder: (context) => CanalListPageByUser(),));
-//                               },
-//                               child: ClipRRect(
-//                                 borderRadius: BorderRadius.only(topRight: Radius.circular(50),bottomRight: Radius.circular(50)),
-//                                 child: Container(
-//                                   color: ConstColors.buttonsColors,
-//                                   // alignment: Alignment.centerLeft,
-//                                   width: 180,
-//                                   child: Padding(
-//                                     padding: const EdgeInsets.all(8.0),
-//                                     child: Row(
-//                                       children: [
-//                                         Padding(
-//                                           padding: const EdgeInsets.only(right: 5.0),
-//                                           child: Container(
-//                                             child: Icon(FontAwesome.forumbee,size: 20,color: Colors.green,),
-//                                           ),
-//                                         ),
-//                                         Container(
-//                                           child: TextCustomerMenu(
-//                                             titre: "Mes Canaux",
-//                                             fontSize: SizeText.homeProfileTextSize,
-//                                             couleur: ConstColors.textColors,
-//                                             fontWeight: FontWeight.w600,
-//                                           ),
-//                                         )
-//                                       ],
-//
-//                                     ),
-//                                   ),
-//                                 ),
-//                               ),
-//                             ),
-//                             // SizedBox(height: 10,),
-//                             // GestureDetector(
-//                             //   onTap: () {
-//                             //     Navigator.push(context, MaterialPageRoute(builder: (context) => PostsMonetiserPage(title: '',),));
-//                             //   },
-//                             //   child: ClipRRect(
-//                             //     borderRadius: BorderRadius.only(topRight: Radius.circular(50),bottomRight: Radius.circular(50)),
-//                             //     child: Container(
-//                             //       color: ConstColors.buttonsColors,
-//                             //       // alignment: Alignment.centerLeft,
-//                             //       width: 180,
-//                             //       child: Padding(
-//                             //         padding: const EdgeInsets.all(8.0),
-//                             //         child: Row(
-//                             //           children: [
-//                             //             Padding(
-//                             //               padding: const EdgeInsets.only(right: 5.0),
-//                             //               child: Container(
-//                             //                 child: Icon(FontAwesome.money,size: 20,color: Colors.green,),
-//                             //               ),
-//                             //             ),
-//                             //             Container(
-//                             //               child: TextCustomerMenu(
-//                             //                 titre: "Posts Monetiser",
-//                             //                 fontSize: SizeText.homeProfileTextSize,
-//                             //                 couleur: ConstColors.textColors,
-//                             //                 fontWeight: FontWeight.w600,
-//                             //               ),
-//                             //             )
-//                             //           ],
-//                             //
-//                             //         ),
-//                             //       ),
-//                             //     ),
-//                             //   ),
-//                             // ),
-//                             SizedBox(height: 10,),
-//                             ClipRRect(
-//                               borderRadius: BorderRadius.only(topRight: Radius.circular(50),bottomRight: Radius.circular(50)),
-//                               child: Container(
-//                                 color: ConstColors.buttonsColors,
-//                                 // alignment: Alignment.centerLeft,
-//                                 width: 180,
-//                                 child: Padding(
-//                                   padding: const EdgeInsets.all(8.0),
-//                                   child: Row(
-//                                     children: [
-//                                       Padding(
-//                                         padding: const EdgeInsets.only(right: 5.0),
-//                                         child: Container(
-//                                           child: Image.asset(
-//                                             'assets/icon/entrepriseContact.png',
-//                                             height: 20,
-//                                             width: 20,
-//                                           ),
-//                                         ),
-//                                       ),
-//                                       GestureDetector(
-//                                         onTap: () {
-//                                           Navigator.pushNamed(context, '/list_conversation_user_entreprise');
-//                                         },
-//                                         child: Container(
-//                                           child: TextCustomerMenu(
-//                                             titre: "Entreprise Contacté",
-//                                             fontSize: SizeText.homeProfileTextSize,
-//                                             couleur: ConstColors.textColors,
-//                                             fontWeight: FontWeight.w600,
-//                                           ),
-//                                         ),
-//                                       )
-//                                     ],
-//
-//                                   ),
-//                                 ),
-//                               ),
-//                             ),
-//
-//                           ],
-//                         ),
-//                       ),
-//
-//                     ],
-//                   ),
-//                 ),
-//                 SizedBox(
-//                   height: 10,
-//
-//                 ),
-//                     Flexible(
-//
-//                       child: SizedBox(
-//                         //width: width,
-//                         //height:height*0.86 ,
-//                         child: ContainedTabBarView(
-//                           tabs: [
-//                         Container(
-//                         child: TextCustomerMenu(
-//                         titre: "Mes Postes",
-//                           fontSize: SizeText.homeProfileTextSize,
-//                           couleur: ConstColors.textColors,
-//                           fontWeight: FontWeight.w600,
-//                         ),
-//                         ),
-//                             Container(
-//                         child: TextCustomerMenu(
-//                           titre: "Pubs Entreprises",
-//                           fontSize: SizeText.homeProfileTextSize,
-//                           couleur: ConstColors.textColors,
-//                           fontWeight: FontWeight.w600,
-//                         ),
-//                             ),
-//                           ],
-//                           tabBarProperties: TabBarProperties(
-//                             height: 32.0,
-//                             indicatorColor: ConstColors.menuItemsColors,
-//                             indicatorWeight: 6.0,
-//                             labelColor: Colors.black,
-//                             unselectedLabelColor: Colors.grey[400],
-//                           ),
-//                           views: [
-//                             Padding(
-//                               padding: const EdgeInsets.only(top: 8.0),
-//                               child: UserPublicationView(),
-//                             ),
-//                             Padding(
-//                                 padding: const EdgeInsets.only(top: 8.0),
-//                                 child: EntreprisePublicationView()),
-//                           ],
-//                           onChange: (index) => print(index),
-//                         ),
-//                       ),
-//                     ),
-//
-//               ],
-//             ),
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-// }

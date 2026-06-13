@@ -15,6 +15,13 @@ class ContentOwnerInfo extends StatefulWidget {
 }
 
 class _ContentOwnerInfoState extends State<ContentOwnerInfo> {
+  // Méthode utilitaire pour optimiser les URLs de médias via le CDN
+  String _cdnUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    final userProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    return userProvider.convertToCdnUrl(url, userProvider.appDefaultData);
+  }
+
   bool _isSubscribed = false;
   bool _isLoading = true;
   UserData? _owner;
@@ -94,7 +101,7 @@ class _ContentOwnerInfoState extends State<ContentOwnerInfo> {
             },
             child: CircleAvatar(
               radius: 30,
-              backgroundImage: NetworkImage(_owner!.imageUrl ?? ''),
+              backgroundImage: NetworkImage(_cdnUrl(_owner!.imageUrl)),
               backgroundColor: Colors.grey[800],
             ),
           ),

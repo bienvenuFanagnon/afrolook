@@ -41,7 +41,6 @@ import 'userPosts/postWidgets/translatable_description.dart';
 import '../providers/locale_provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
-
 const _afroBlack = Color(0xFF000000);
 const _afroGreen = Color(0xFF2ECC71);
 const _afroYellow = Color(0xFFF1C40F);

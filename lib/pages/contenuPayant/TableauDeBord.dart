@@ -48,6 +48,16 @@ import 'contentDetailsEbook.dart';
 import 'contentForm.dart';
 import 'contentSerie.dart';
 
+// Méthode utilitaire (hors État) pour optimiser les URLs d'images via le CDN
+String _cdnUrl(BuildContext context, String? url) {
+  if (url == null || url.isEmpty) return '';
+
+  final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+  final appDefaultData = authProvider.appDefaultData;
+
+  return authProvider.convertToCdnUrl(url, appDefaultData);
+}
+
 class DashboardContentScreen extends StatefulWidget {
   @override
   _DashboardContentScreenState createState() => _DashboardContentScreenState();
@@ -125,6 +135,16 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
     return sorted;
   }
 
+  // Méthode utilitaire pour optimiser les URLs d'images via le CDN
+  String _optimizeUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+
+    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    final appDefaultData = authProvider.appDefaultData;
+
+    return authProvider.convertToCdnUrl(url, appDefaultData);
+  }
+
   // Construction de l'image avec badges (inchangée, mais factorisée)
   Widget _buildContentImage(ContentPaie content) { /* ... identique à votre code ... */
     return Stack(
@@ -135,7 +155,7 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
               ? ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: CachedNetworkImage(
-              imageUrl: content.thumbnailUrl!,
+              imageUrl: _optimizeUrl(content.thumbnailUrl),
               fit: BoxFit.cover,
               width: double.infinity,
               placeholder: (_, __) => Container(color: Colors.grey[800], child: Center(child: CircularProgressIndicator(color: Colors.green))),
@@ -297,8 +317,10 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
                           final user = _searchResults[index];
                           return ListTile(
                             leading: CircleAvatar(
-                              backgroundImage: user.imageUrl != null ? NetworkImage(user.imageUrl!) : null,
-                              child: user.imageUrl == null ? Icon(Icons.person) : null,
+                              backgroundImage: user.imageUrl != null && user.imageUrl!.isNotEmpty
+                                  ? NetworkImage(_optimizeUrl(user.imageUrl))
+                                  : null,
+                              child: (user.imageUrl == null || user.imageUrl!.isEmpty) ? Icon(Icons.person) : null,
                             ),
                             title: Text(user.pseudo ?? 'Sans pseudo', style: TextStyle(color: Colors.white)),
                             subtitle: Text('${user.userAbonnesIds?.length ?? 0} abonnés', style: TextStyle(color: Colors.grey)),
@@ -770,7 +792,7 @@ class CategoryContentScreen extends StatelessWidget {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => ContentDetailScreen(content: content)));
                 }
               },
-              child: _buildThumbnail(content),
+              child: _buildThumbnail(context, content),
             );
           },
         ),
@@ -778,7 +800,7 @@ class CategoryContentScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildThumbnail(ContentPaie content) {
+  Widget _buildThumbnail(BuildContext context, ContentPaie content) {
     return Stack(
       children: [
         Container(
@@ -787,7 +809,7 @@ class CategoryContentScreen extends StatelessWidget {
               ? ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: CachedNetworkImage(
-              imageUrl: content.thumbnailUrl!,
+              imageUrl: _cdnUrl(context, content.thumbnailUrl),
               fit: BoxFit.cover,
               width: double.infinity,
               height: double.infinity,
@@ -864,7 +886,7 @@ class ContentSearchDelegate extends SearchDelegate {
                 leading: ClipRRect(
                   borderRadius: BorderRadius.circular(6),
                   child: CachedNetworkImage(
-                    imageUrl: content.thumbnailUrl,
+                    imageUrl: _cdnUrl(context, content.thumbnailUrl),
                     width: 50, height: 50, fit: BoxFit.cover,
                     placeholder: (_, __) => Container(color: Colors.grey[800], child: Center(child: content.isEbook ? Icon(Icons.book, color: Colors.grey[600]) : Icon(Icons.videocam, color: Colors.grey[600]))),
                     errorWidget: (_, __, ___) => Container(color: Colors.grey[800], child: Center(child: content.isEbook ? Icon(Icons.book, color: Colors.grey[600]) : Icon(Icons.videocam, color: Colors.grey[600]))),

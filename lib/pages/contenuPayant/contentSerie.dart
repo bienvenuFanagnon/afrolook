@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../providers/contenuPayantProvider.dart';
+import '../../providers/authProvider.dart';
 import 'contentDetailsEbook.dart';
 
 class SeriesEpisodesScreen extends StatefulWidget {
@@ -18,6 +19,13 @@ class SeriesEpisodesScreen extends StatefulWidget {
 }
 
 class _SeriesEpisodesScreenState extends State<SeriesEpisodesScreen> {
+  // Méthode utilitaire pour optimiser les URLs de médias via le CDN
+  String _cdnUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    final userProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    return userProvider.convertToCdnUrl(url, userProvider.appDefaultData);
+  }
+
   List<Episode> _episodes = [];
   bool _isLoading = true;
   bool _hasError = false;
@@ -143,7 +151,7 @@ class _SeriesEpisodesScreenState extends State<SeriesEpisodesScreen> {
                 children: [
                   episode.thumbnailUrl != null && episode.thumbnailUrl!.isNotEmpty
                       ? CachedNetworkImage(
-                    imageUrl: episode.thumbnailUrl!,
+                    imageUrl: _cdnUrl(episode.thumbnailUrl),
                     width: double.infinity,
                     height: 90,
                     fit: BoxFit.cover,
@@ -338,7 +346,7 @@ class _SeriesEpisodesScreenState extends State<SeriesEpisodesScreen> {
               ? ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: CachedNetworkImage(
-              imageUrl: widget.series.thumbnailUrl!,
+              imageUrl: _cdnUrl(widget.series.thumbnailUrl),
               fit: BoxFit.cover,
               placeholder: (context, url) => Container(
                 color: Colors.grey[800],

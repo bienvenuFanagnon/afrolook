@@ -226,56 +226,6 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
       ),
     );
   }
-  Widget _buildHeader2() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Row(
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: const LinearGradient(
-                colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
-              ),
-              border: Border.all(color: Colors.white, width: 2),
-            ),
-            child: ClipOval(
-              child: widget.receiverAvatar.isNotEmpty
-                  ? Image.network(widget.receiverAvatar, fit: BoxFit.cover)
-                  : const Icon(Icons.person, size: 30, color: Colors.white),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Envoyer un cadeau à',
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  widget.receiverName,
-                  style: const TextStyle(
-                    color: Color(0xFFFFD700),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.close, color: Colors.white70),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildBalanceSection() {
     return Container(
@@ -579,7 +529,7 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
     ).then((_) => _updateBalance());
   }
 
-  void _showSuccessAnimation(CoinPack pack) {
+  void _showSuccessAnimation2(CoinPack pack) {
     // Afficher le dialog
     showDialog(
       context: context,
@@ -694,6 +644,125 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
       }
     });
   }
+
+  void _showSuccessAnimation(CoinPack pack) {
+    // 1. Récupérer l'Overlay d'état actuel
+    final overlay = Overlay.of(context);
+
+    late OverlayEntry overlayEntry;
+
+    // 2. Créer l'entrée de l'Overlay (Le Flash en haut)
+    overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        top: MediaQuery.of(context).padding.top + 12, // Juste en dessous de la barre de statut
+        left: 16,
+        right: 16,
+        child: Material(
+          color: Colors.transparent,
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: -50.0, end: 0.0), // Animation de glissement du haut vers le bas
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutBack,
+            builder: (context, value, child) {
+              return Transform.translate(
+                offset: Offset(0, value),
+                child: child,
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.4),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  // Icône du cadeau avec un petit effet pop
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.6, end: 1.0),
+                    duration: const Duration(milliseconds: 400),
+                    curve: Curves.elasticOut,
+                    builder: (context, scale, child) => Transform.scale(scale: scale, child: child),
+                    child: Text(pack.icon, style: const TextStyle(fontSize: 28)),
+                  ),
+                  const SizedBox(width: 12),
+
+                  // Texte informatif
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Cadeau envoyé ! 🎉',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 1),
+                        Text(
+                          'offert à ${widget.receiverName}',
+                          style: const TextStyle(color: Colors.black87, fontSize: 11),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Badge du montant en pièces
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('🪙', style: TextStyle(fontSize: 12)),
+                        const SizedBox(width: 4),
+                        Text(
+                          _formatNumber(pack.coins),
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // 3. Insérer le flash dans l'overlay de l'application
+    overlay.insert(overlayEntry);
+
+    // 4. Suppression automatique et propre après 1.2 seconde
+    Future.delayed(const Duration(milliseconds: 1200), () {
+      overlayEntry.remove();
+    });
+  }
+
   void _recordLiveGift(String liveId, int coins) async {
     final firestore = FirebaseFirestore.instance;
     await firestore.collection('LiveGifts').add({

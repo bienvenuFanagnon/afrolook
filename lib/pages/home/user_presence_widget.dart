@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
+import '../../theme/app_colors.dart';
+
 class UserPresenceWidget extends StatelessWidget {
   final String userId;
   final double size; // Permet de contrôler la taille du point vert
@@ -113,12 +115,13 @@ class UserPresenceWidget extends StatelessWidget {
         }
 
         if (isChatHeader) {
+          final colors = AppColors.of(context);
           return Text(
             online ? "En ligne" : _formatLastActiveText(lastActive),
             style: TextStyle(
               color: online
                   ? const Color(0xFF25D366)
-                  : Colors.grey[400],
+                  : colors.textSecondary,
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),

@@ -47,6 +47,9 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   List<UserData> _recentFriends = [];
   bool _loadingRecentFriends = true;
   static const int maxRecentFriends = 7;
+  // Un ami n'apparaît dans "Récemment actifs" que s'il s'est connecté au
+  // cours des 7 derniers jours (sinon section non pertinente / vide).
+  static const int _recentActiveThresholdMs = 7 * 24 * 60 * 60 * 1000;
 
   // Pour éviter les setState pendant le build
   bool _hasPendingUpdate = false;
@@ -325,11 +328,18 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
         }
       }
 
+      // Ne garder que les amis réellement actifs récemment (sinon on affiche
+      // des amis inactifs depuis des mois faute d'amis "récents").
+      final int now = DateTime.now().millisecondsSinceEpoch;
+      final recentlyActiveFriends = allFriends
+          .where((f) => (now - (f.last_time_active ?? 0)) < _recentActiveThresholdMs)
+          .toList();
+
       // Trier par last_time_active décroissant (les plus récents d'abord)
-      allFriends.sort((a, b) => (b.last_time_active ?? 0).compareTo(a.last_time_active ?? 0));
+      recentlyActiveFriends.sort((a, b) => (b.last_time_active ?? 0).compareTo(a.last_time_active ?? 0));
 
       // Prendre les 7 plus récents
-      final recentFriends = allFriends.take(maxRecentFriends).toList();
+      final recentFriends = recentlyActiveFriends.take(maxRecentFriends).toList();
 
       if (mounted) {
         setState(() {

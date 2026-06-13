@@ -1008,7 +1008,10 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
     final isSeries = widget.content.isSeries;
     bool canRead = (isSeries ? (_currentEpisode?.isFree ?? false) : widget.content.isFree) || hasPurchased || isAdminOrOwner;
 
-    String thumbnailUrl = isSeries && _currentEpisode != null ? _currentEpisode!.thumbnailUrl! : widget.content.thumbnailUrl ?? '';
+    String thumbnailUrl = userProvider.convertToCdnUrl(
+      isSeries && _currentEpisode != null ? _currentEpisode!.thumbnailUrl! : widget.content.thumbnailUrl ?? '',
+      userProvider.appDefaultData,
+    );
 
     if (_showPdfViewer) {
       return Scaffold(

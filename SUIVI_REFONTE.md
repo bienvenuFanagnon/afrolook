@@ -1048,3 +1048,117 @@ Objectif : que le contenu des messages texte ne soit plus stocké en clair dans 
 **Vérification** : `flutter analyze lib/pages/chat/myChat.dart lib/services/encryption_service.dart lib/models/chatmodels/message.dart` → **0 nouvelle erreur** (96 issues, toutes `prefer_const_constructors`/`use_build_context_synchronously`/`avoid_print`, cohérentes avec le reste du projet). `flutter pub get` exécuté avec succès (nouvelles dépendances résolues).
 
 **Phases 1-2-3 terminées.** Chat désormais : paginé/caché (Phase 1), façon WhatsApp (séparateurs de date, regroupement, coches) (Phase 2), messages texte chiffrés au repos (Phase 3).
+
+---
+
+## Session 26 — Corrections : sélecteur de langue (overflow) + amis "Récemment actifs"
+
+### `lib/pages/home/homeScreen.dart`
+- `_showLanguagePicker` : la liste des 8 langues débordait en bas de l'écran (erreur "bottom overflowed by X pixels"). La feuille modale est maintenant bornée à 70% de la hauteur d'écran (`ConstrainedBox`) avec la liste des langues dans un `Flexible` + `ListView` scrollable.
+
+### `lib/pages/user/conversation/listUserConv.dart`
+- Section "Récemment actifs" (page des conversations) : elle prenait simplement les 7 amis triés par `last_time_active` décroissant, même si ceux-ci n'étaient plus connectés depuis des mois (faute d'amis réellement actifs récemment).
+- Ajout d'un filtre `_recentActiveThresholdMs` (7 jours) : seuls les amis connectés au cours des 7 derniers jours sont éligibles avant le tri/`take(7)`. La section reste masquée si aucun ami n'est récemment actif (`_recentFriends.isEmpty`, comportement déjà existant).
+
+**Vérification** : `flutter analyze` sur les 2 fichiers → 0 nouvelle erreur.
+
+---
+
+## Session 27 — Thème clair/sombre sur la page des commentaires (PostComments)
+
+### `lib/pages/postComments.dart`
+- La page des commentaires d'un post (`PostComments`) utilisait encore de nombreuses couleurs codées en dur (`Colors.white`, `Colors.grey.shade*`, `Colors.blue.shade*`, `Colors.black87`, `Colors.red`...), non adaptées au mode sombre.
+- Remplacement par `AppColors.of(context)` (`_colors`) :
+  - **Champ de saisie** (`_buildCommentInput`) : fond `_colors.surface`, bordure `_colors.divider`, zone de texte `_colors.surfaceVariant` avec texte/placeholder via `_colors.textPrimary`/`_colors.textSecondary`, bandeau "Réponse à ..." et icône d'envoi en `_colors.primary`.
+  - **Affichage des commentaires et réponses** (`_buildCommentItem`, `_buildCommentContent`, `_buildReplyContent`) : fonds (`_colors.surface` / `_colors.surfaceVariant`), avatars de secours, pseudos et dates (`_colors.textPrimary`/`_colors.textSecondary`), liens "Lire tout"/"Voir réponses" en `_colors.primary`, icônes like/répondre en `_colors.textSecondary`, cœur actif et suppression en `_colors.danger`.
+  - **Suggestions de mentions** (`_buildUserSuggestions`) : fond `_colors.surface`, texte `_colors.textPrimary`, lien "Charger plus" en `_colors.primary`.
+
+**Vérification** : `flutter analyze lib/pages/postComments.dart` → **0 nouvelle erreur** (90 issues, toutes pré-existantes : `prefer_const_constructors`/`avoid_print`/`use_build_context_synchronously`/`unnecessary_non_null_assertion`).
+
+---
+
+## Session 28 — En-tête du chat : thème clair + badge de certification
+
+### `lib/pages/chat/myChat.dart`
+- En-tête de conversation (`_buildChatHeader`) : le pseudo était affiché en `Colors.white`, illisible en mode clair. Remplacé par `_colors.textPrimary`.
+- Ajout du badge de certification/abonnement à côté du pseudo via le widget existant `AbonnementUtils.getUserBadge` (réutilisé tel quel, déjà utilisé sur les autres pages).
+
+### `lib/pages/home/user_presence_widget.dart`
+- Mode `isChatHeader` : le texte de statut "Hors ligne / En ligne il y a..." utilisait `Colors.grey[400]`, peu visible en mode clair. Remplacé par `AppColors.of(context).textSecondary` (le statut "En ligne" reste en vert).
+
+**Vérification** : `flutter analyze lib/pages/chat/myChat.dart lib/pages/home/user_presence_widget.dart` → **0 nouvelle erreur** (78 issues, toutes pré-existantes : `prefer_const_constructors`/`deprecated_member_use` (`withOpacity`)).
+
+---
+
+## Session 29 — Défilement vidéo plus sensible (façon TikTok)
+
+### `lib/pages/post_video_format_tel_details.dart`
+- Le `PageView` vertical des vidéos nécessitait un glissement d'environ 50% de l'écran (comportement par défaut de `PageView`) pour passer à la vidéo suivante — trop lourd comparé à TikTok.
+- Ajout d'une physique de défilement personnalisée `_TikTokPageScrollPhysics` (remplace `BouncingScrollPhysics`) :
+  - un **flick** (geste rapide), même très court, fait toujours avancer/reculer d'une vidéo ;
+  - un **glissement lent** valide le changement dès que ~12% de la hauteur d'écran est parcouru (`_commitThreshold = 0.12`), au lieu de 50%.
+
+**Vérification** : `flutter analyze lib/pages/post_video_format_tel_details.dart` → **0 nouvelle erreur** (106 issues, toutes pré-existantes : `prefer_const_constructors`/`deprecated_member_use`/`use_build_context_synchronously`/variables non utilisées).
+
+---
+
+## Session 30 — Page de profil utilisateur (UserProfil) : thème clair/sombre + traductions
+
+### `lib/pages/user/profile/profile.dart`
+- Ajout des imports `AppLocalizations` et `AppColors`, et initialisation de `_colors`/`l10n` dans `build()`.
+- Remplacement des constantes de couleurs codées en dur par leurs équivalents `AppColors.of(context)` : fond principal (`_colors.background`), cartes/boutons de menu (`_colors.surfaceVariant`), bordures (`_colors.border`), séparateurs (`_colors.divider`), texte principal/secondaire (`_colors.textPrimary`/`_colors.textSecondary`).
+- Libellé des boutons de menu (`_buildMenuButton`) : texte passé de `Color(0xFFF5F5F5)` (blanc fixe) à `_colors.textPrimary`.
+- Écran de chargement temporaire affiché lors de la navigation vers "Entreprise" : fond `Colors.white` → `_colors.background`.
+- Traduction de tous les libellés (titre de page, "Abonnés", "Likes", "Mes Looks", boutons de menu : Mes Infos, Entreprise, Monétisations, Abonnement, Favoris, Canaux, Publicité, ainsi que les entrées admin AppData/Challenge/Contacts/Pub/Emailing/Pronostique/Afrolove) et de la boîte de dialogue de création d'entreprise (titre, description, bouton, message d'erreur).
+
+### `lib/l10n/app_localizations.dart`
+- Ajout d'environ 20 nouvelles clés de traduction (fr/en/es/de/ar/pt/zh/sw) : `profileLikesShort`, `profileMyLooks`, `profileMenuMyInfos`, `profileMenuEnterprise`, `profileMenuMonetization`, `profileMenuSubscription`, `profileMenuFavorites`, `profileMenuChannels`, `profileMenuAds`, `profileMenuAppData`, `profileMenuChallenge`, `profileMenuContacts`, `profileMenuPub`, `profileMenuEmailing`, `profileMenuPronostic`, `profileMenuAfrolove`, `profileEnterpriseCreateTitle`, `profileEnterpriseCreateDesc`, `profileEnterpriseCreateBtn`, `profileEnterpriseLoadError`.
+
+**Vérification** : `flutter analyze lib/pages/user/profile/profile.dart lib/l10n/app_localizations.dart` → **0 nouvelle erreur** (69 issues, toutes pré-existantes : `prefer_const_constructors`/`deprecated_member_use`/`use_build_context_synchronously`/`unnecessary_non_null_assertion`/etc.).
+
+---
+
+## Session 31 — Refonte de l'espace rémunération (RemunerationHomePage)
+
+### `lib/pages/user/remuneration_home_page.dart`
+- Ancien design : fond en dégradé fixe noir/rouge/or, textes et icônes en couleurs codées en dur, non adapté aux modes clair/sombre et non traduit.
+- Refonte complète de l'UI pour reprendre la charte graphique de l'application (`AppColors` : fonds `_colors.background`/`_colors.surface`/`_colors.surfaceVariant`, bordures `_colors.border`, textes `_colors.textPrimary`/`_colors.textSecondary`, accent vert `_colors.primary`) :
+  - `AppBar` avec titre et chip de solde adaptés au thème.
+  - Cartes de rémunération (`_buildRemunerationCard`) : design unifié en cartes `_colors.surface` avec icône colorée (vert pour le compte principal, jaune/accent pour les posts, bleu info pour les pubs), remplaçant les anciens dégradés rouge/or/bleu.
+  - Carte "Prochainement" (`_buildFutureCard`) et pied de page (`_buildFooter`) adaptés au thème.
+- Traduction complète des textes (titre, sous-titre, libellés et descriptions des 3 cartes, section "Prochainement", pied de page).
+
+### `lib/l10n/app_localizations.dart`
+- Ajout de 13 nouvelles clés (fr/en/es/de/ar/pt/zh/sw) : `remunerationTitle`, `remunerationSubtitle`, `remunerationBalance`, `remunerationMainAccount`, `remunerationMainAccountDesc`, `remunerationPosts`, `remunerationPostsDesc`, `remunerationAds`, `remunerationAdsDesc`, `remunerationComingSoon`, `remunerationComingSoonDesc`, `remunerationFooter`, `remunerationFooterSub`.
+
+**Vérification** : `flutter analyze lib/pages/user/remuneration_home_page.dart lib/l10n/app_localizations.dart` → **0 nouvelle erreur**.
+
+---
+
+## Session 32 — Annulation de la physique de défilement TikTok (Session 29)
+
+### `lib/pages/post_video_format_tel_details.dart`
+- La physique personnalisée `_TikTokPageScrollPhysics` (Session 29) provoquait une instabilité : les pages se déplaçaient seules / oscillaient sans interaction utilisateur.
+- Retour à la physique d'origine `BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics())` pour le `PageView` vertical des vidéos, et suppression de la classe `_TikTokPageScrollPhysics`.
+
+**Vérification** : `flutter analyze lib/pages/post_video_format_tel_details.dart` → **0 nouvelle erreur**.
+
+---
+
+## Session 33 — CDN : passage systématique des médias par `convertToCdnUrl` (espace VIP, priorité)
+
+Vérification de toutes les pages de `lib/pages/contenuPayant/` (espace VIP) : toute URL de média (image, vidéo, avatar) affichée directement (sans passer par `convertToCdnUrl`) a été corrigée pour utiliser le CDN, via une méthode utilitaire `_cdnUrl(url)` ajoutée dans chaque écran (basée sur `UserAuthProvider.convertToCdnUrl` + `appDefaultData`).
+
+- `TableauDeBord.dart` : ajout de `_optimizeUrl` (état) et `_cdnUrl` (fonction de haut niveau, pour `CategoryContentScreen` et `ContentSearchDelegate`). Appliqué aux miniatures (`_buildContentImage`, `_buildThumbnail`, résultats de recherche de contenu) et à l'avatar des créateurs dans la recherche.
+- `contentDetails.dart` : la bannière (`thumbnailUrl`) et les contrôleurs vidéo des capsules (début/milieu/fin) utilisaient l'URL brute — passés par `convertToCdnUrl`.
+- `contentDetailsEbook.dart` : bannière de l'ebook/série passée par `convertToCdnUrl`.
+- `contentForm.dart` : avatar utilisateur et aperçu de la miniature uploadée passés par `_cdnUrl`.
+- `contentSerie.dart` : miniatures des épisodes et bannière de série passées par `_cdnUrl`.
+- `profileScreenContent.dart` : avatar du profil, miniatures de contenus et de séries passés par `_cdnUrl`.
+- `recent_vip_content_widget.dart` : miniatures des contenus récents passées par `_cdnUrl`.
+- `seriesDetailScreenContenu.dart` : bannière de série et miniatures d'épisodes passées par `_cdnUrl`.
+- `userAbonnerInfos.dart` : avatar du propriétaire du contenu passé par `_cdnUrl`.
+
+**Vérification** : `flutter analyze lib/pages/contenuPayant/` → **0 nouvelle erreur**.
+
+**Reste à faire (hors VIP, scope plus large)** : un audit similaire est nécessaire sur le reste de l'application (home, chat, profils, stories, chroniques, canaux, dating, afroshop, etc.) où `Image.network`/`CachedNetworkImage`/`NetworkImage`/`VideoPlayerController.network` sont utilisés sans `convertToCdnUrl`. À traiter dans une session dédiée tant le périmètre est large.

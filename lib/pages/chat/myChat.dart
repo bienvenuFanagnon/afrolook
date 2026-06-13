@@ -27,6 +27,7 @@ import '../../providers/authProvider.dart';
 import '../../providers/userProvider.dart';
 import '../home/user_presence_widget.dart';
 import '../user/detailsOtherUser.dart';
+import '../../services/utils/abonnement_utils.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:async';
 
@@ -1491,15 +1492,27 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
                       crossAxisAlignment:
                       CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          "@${user.pseudo ?? ""}",
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                "@${user.pseudo ?? ""}",
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: _colors.textPrimary,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            AbonnementUtils.getUserBadge(
+                              abonnement: user.abonnement,
+                              isVerified: user.isVerify ?? false,
+                              size: 14,
+                            ),
+                          ],
                         ),
 
                         const SizedBox(height: 2),

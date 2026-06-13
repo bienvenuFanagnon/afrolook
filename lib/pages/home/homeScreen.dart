@@ -86,6 +86,7 @@ import '../user/amis/ami.dart';
 import '../user/amis/pageMesInvitations.dart';
 import '../user/inviteAmis.dart';
 import '../user/monetisation.dart';
+import '../user/remuneration_home_page.dart';
 import '../userPosts/favorites_posts.dart';
 import '../vibe/vibesPage.dart';
 import '../widgetGlobal.dart';
@@ -599,6 +600,19 @@ class _MyHomePageState extends State<MyHomePage>
                       Navigator.pop(context);
 
                       Navigator.pushNamed(context, '/amis');
+                    },
+                  ),
+                  ListTile(
+                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
+                    leading: Icon(Icons.monetization_on, color: colors.primary, size: 30,),
+                    title: TextCustomerMenu(
+                      titre: l10n.profileMenuRemunerationSpace,
+                      fontSize: SizeText.homeProfileTextSize,
+                      couleur: colors.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    onTap: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => RemunerationHomePage(user: authProvider.loginUserData!,)));
                     },
                   ),
 
@@ -2055,30 +2069,38 @@ class _MyHomePageState extends State<MyHomePage>
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
       builder: (context) {
         return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  l10n.langChoose,
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: colors.textPrimary),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
+            child: Column(
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    l10n.langChoose,
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: colors.textPrimary),
+                  ),
                 ),
-              ),
-              ...kSupportedLocales.entries.map((entry) {
-                final code = entry.key;
-                final label = entry.value;
-                final isSelected = localeProvider.locale.languageCode == code;
-                return ListTile(
-                  title: Text(label, style: TextStyle(color: colors.textPrimary)),
-                  trailing: isSelected ? Icon(Icons.check, color: colors.primary) : null,
-                  onTap: () {
-                    localeProvider.setLocale(Locale(code));
-                    Navigator.pop(context);
-                  },
-                );
-              }),
-            ],
+                Expanded(
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: kSupportedLocales.entries.map((entry) {
+                      final code = entry.key;
+                      final label = entry.value;
+                      final isSelected = localeProvider.locale.languageCode == code;
+                      return ListTile(
+                        title: Text(label, style: TextStyle(color: colors.textPrimary)),
+                        trailing: isSelected ? Icon(Icons.check, color: colors.primary) : null,
+                        onTap: () {
+                          localeProvider.setLocale(Locale(code));
+                          Navigator.pop(context);
+                        },
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

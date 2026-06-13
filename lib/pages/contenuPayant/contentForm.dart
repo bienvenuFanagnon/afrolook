@@ -40,6 +40,13 @@ class ContentFormScreen extends StatefulWidget {
 }
 
 class _ContentFormScreenState extends State<ContentFormScreen> {
+  // Méthode utilitaire pour optimiser les URLs de médias via le CDN
+  String _cdnUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    final userProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    return userProvider.convertToCdnUrl(url, userProvider.appDefaultData);
+  }
+
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -629,7 +636,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
             radius: 25,
             backgroundColor: Colors.red[800],
             backgroundImage: user?.imageUrl != null && user!.imageUrl!.isNotEmpty
-                ? NetworkImage(user.imageUrl!)
+                ? NetworkImage(_cdnUrl(user.imageUrl))
                 : null,
             child: user?.imageUrl == null || user!.imageUrl!.isEmpty
                 ? Icon(Icons.person, color: Colors.white)
@@ -1165,7 +1172,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: Image.network(
-                _thumbnailUrl!,
+                _cdnUrl(_thumbnailUrl),
                 height: 150,
                 width: double.infinity,
                 fit: BoxFit.cover,

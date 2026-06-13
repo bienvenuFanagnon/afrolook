@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/contenuPayantProvider.dart';
+import '../../providers/authProvider.dart';
 import 'contentDetails.dart';
 import 'contentForm.dart';
 
@@ -17,6 +18,13 @@ class SeriesDetailScreen extends StatefulWidget {
 }
 
 class _SeriesDetailScreenState extends State<SeriesDetailScreen> {
+  // Méthode utilitaire pour optimiser les URLs de médias via le CDN
+  String _cdnUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    final userProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    return userProvider.convertToCdnUrl(url, userProvider.appDefaultData);
+  }
+
   List<Episode> _episodes = [];
   bool _isLoading = true;
 
@@ -78,7 +86,7 @@ class _SeriesDetailScreenState extends State<SeriesDetailScreen> {
               height: 200,
               decoration: BoxDecoration(
                 image: DecorationImage(
-                  image: NetworkImage(widget.series.thumbnailUrl),
+                  image: NetworkImage(_cdnUrl(widget.series.thumbnailUrl)),
                   fit: BoxFit.cover,
                 ),
               ),
@@ -171,7 +179,7 @@ class _SeriesDetailScreenState extends State<SeriesDetailScreen> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
                 image: DecorationImage(
-                    image: NetworkImage(episode.thumbnailUrl ?? widget.series.thumbnailUrl),
+                    image: NetworkImage(_cdnUrl(episode.thumbnailUrl ?? widget.series.thumbnailUrl)),
                     fit: BoxFit.cover),
               ),
             ),

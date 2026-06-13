@@ -14,6 +14,7 @@ import 'package:video_thumbnail/video_thumbnail.dart';
 
 import '../../theme/app_colors.dart';
 import '../../l10n/app_localizations.dart';
+import '../../providers/authProvider.dart';
 import 'TableauDeBord.dart';
 
 class RecentVIPContentWidget extends StatefulWidget {
@@ -24,6 +25,13 @@ class RecentVIPContentWidget extends StatefulWidget {
 }
 
 class _RecentVIPContentWidgetState extends State<RecentVIPContentWidget> {
+  // Méthode utilitaire pour optimiser les URLs de médias via le CDN
+  String _cdnUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    final userProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    return userProvider.convertToCdnUrl(url, userProvider.appDefaultData);
+  }
+
   List<ContentPaie> _recentContents = [];
   bool _isLoading = true;
   final Map<String, Uint8List?> _videoThumbnails = {};
@@ -112,7 +120,7 @@ class _RecentVIPContentWidgetState extends State<RecentVIPContentWidget> {
       borderRadius: BorderRadius.circular(12),
       child: content.thumbnailUrl != null && content.thumbnailUrl!.isNotEmpty
           ? CachedNetworkImage(
-              imageUrl: content.thumbnailUrl!,
+              imageUrl: _cdnUrl(content.thumbnailUrl),
               fit: BoxFit.cover,
               width: double.infinity,
               placeholder: (_, __) => Container(color: colors.surfaceVariant),

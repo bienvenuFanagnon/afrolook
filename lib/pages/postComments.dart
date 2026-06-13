@@ -550,7 +550,7 @@ class _PostCommentsState extends State<PostComments> {
     return Container(
       margin: EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _colors.surface,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -575,7 +575,7 @@ class _PostCommentsState extends State<PostComments> {
                   child: Text(
                     showAll ? 'Masquer les réponses' : 'Voir ${repliesCount - 1} réponse(s) supplémentaire(s)',
                     style: TextStyle(
-                      color: Colors.blue.shade600,
+                      color: _colors.primary,
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                     ),
@@ -596,7 +596,7 @@ class _PostCommentsState extends State<PostComments> {
     final textPainter = TextPainter(
       text: TextSpan(
         text: pcm.message ?? '',
-        style: TextStyle(fontSize: 13, color: Colors.black87),
+        style: TextStyle(fontSize: 13, color: _colors.textPrimary),
       ),
       maxLines: 2,
       textDirection: ui.TextDirection.ltr,
@@ -626,7 +626,7 @@ class _PostCommentsState extends State<PostComments> {
                 child: CircleAvatar(
                   radius: 16,
                   backgroundImage: NetworkImage(pcm.user!.imageUrl ?? ''),
-                  backgroundColor: Colors.grey.shade300,
+                  backgroundColor: _colors.surfaceVariant,
                 ),
               ),
               SizedBox(width: 10),
@@ -641,6 +641,7 @@ class _PostCommentsState extends State<PostComments> {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
+                            color: _colors.textPrimary,
                           ),
                         ),
                         SizedBox(width: 6),
@@ -652,7 +653,7 @@ class _PostCommentsState extends State<PostComments> {
                         Text(
                           formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(pcm.createdAt!)),
                           style: TextStyle(
-                            color: Colors.grey.shade600,
+                            color: _colors.textSecondary,
                             fontSize: 11,
                           ),
                         ),
@@ -680,7 +681,7 @@ class _PostCommentsState extends State<PostComments> {
                           child: Text(
                             isExpanded ? 'Fermer' : 'Lire tout',
                             style: TextStyle(
-                              color: Colors.blue.shade600,
+                              color: _colors.primary,
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
                             ),
@@ -701,14 +702,14 @@ class _PostCommentsState extends State<PostComments> {
                   children: [
                     Icon(
                       isLiked ? Icons.favorite : Icons.favorite_border,
-                      color: isLiked ? Colors.red : Colors.grey.shade600,
+                      color: isLiked ? _colors.danger : _colors.textSecondary,
                       size: 16,
                     ),
                     SizedBox(width: 4),
                     Text(
                       formatNumber(likeCount),
                       style: TextStyle(
-                        color: Colors.grey.shade600,
+                        color: _colors.textSecondary,
                         fontSize: 12,
                       ),
                     ),
@@ -729,12 +730,12 @@ class _PostCommentsState extends State<PostComments> {
                 },
                 child: Row(
                   children: [
-                    Icon(Icons.reply, size: 16, color: Colors.grey.shade600),
+                    Icon(Icons.reply, size: 16, color: _colors.textSecondary),
                     SizedBox(width: 4),
                     Text(
                       'Répondre',
                       style: TextStyle(
-                        color: Colors.grey.shade600,
+                        color: _colors.textSecondary,
                         fontSize: 12,
                       ),
                     ),
@@ -743,16 +744,17 @@ class _PostCommentsState extends State<PostComments> {
               ),
               Spacer(),
               PopupMenuButton<String>(
-                icon: Icon(Icons.more_vert, size: 16),
+                icon: Icon(Icons.more_vert, size: 16, color: _colors.textSecondary),
+                color: _colors.surface,
                 itemBuilder: (context) => [
                   if (pcm.user!.id == authProvider.loginUserData.id || authProvider.loginUserData.role == UserRole.ADM.name)
                     PopupMenuItem(
                       value: 'delete',
                       child: Row(
                         children: [
-                          Icon(Icons.delete, color: Colors.red, size: 16),
+                          Icon(Icons.delete, color: _colors.danger, size: 16),
                           SizedBox(width: 8),
-                          Text('Supprimer'),
+                          Text('Supprimer', style: TextStyle(color: _colors.textPrimary)),
                         ],
                       ),
                     ),
@@ -778,7 +780,7 @@ class _PostCommentsState extends State<PostComments> {
     final textPainter = TextPainter(
       text: TextSpan(
         text: rpc.message ?? '',
-        style: TextStyle(fontSize: 13, color: Colors.black87),
+        style: TextStyle(fontSize: 13, color: _colors.textPrimary),
       ),
       maxLines: 2,
       textDirection: ui.TextDirection.ltr,
@@ -794,7 +796,7 @@ class _PostCommentsState extends State<PostComments> {
       margin: EdgeInsets.only(left: 40, top: 4),
       padding: EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: _colors.surfaceVariant,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -814,7 +816,7 @@ class _PostCommentsState extends State<PostComments> {
                 child: CircleAvatar(
                   radius: 14,
                   backgroundImage: NetworkImage(rpc.user_logo_url ?? ''),
-                  backgroundColor: Colors.grey.shade300,
+                  backgroundColor: _colors.surfaceVariant,
                 ),
               ),
               SizedBox(width: 8),
@@ -829,18 +831,19 @@ class _PostCommentsState extends State<PostComments> {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
+                            color: _colors.textPrimary,
                           ),
                         ),
                         SizedBox(width: 4),
                         if (rpc.user_reply_pseudo != null && rpc.user_reply_pseudo!.isNotEmpty)
                           Row(
                             children: [
-                              Icon(Icons.reply, size: 12, color: Colors.grey),
+                              Icon(Icons.reply, size: 12, color: _colors.textSecondary),
                               SizedBox(width: 2),
                               Text(
                                 "@${rpc.user_reply_pseudo}",
                                 style: TextStyle(
-                                  color: Colors.grey.shade600,
+                                  color: _colors.textSecondary,
                                   fontSize: 11,
                                 ),
                               ),
@@ -850,7 +853,7 @@ class _PostCommentsState extends State<PostComments> {
                         Text(
                           formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(rpc.createdAt!)),
                           style: TextStyle(
-                            color: Colors.grey.shade600,
+                            color: _colors.textSecondary,
                             fontSize: 10,
                           ),
                         ),
@@ -878,7 +881,7 @@ class _PostCommentsState extends State<PostComments> {
                           child: Text(
                             isExpanded ? 'Fermer' : 'Lire tout',
                             style: TextStyle(
-                              color: Colors.blue.shade600,
+                              color: _colors.primary,
                               fontSize: 11,
                               fontWeight: FontWeight.w500,
                             ),
@@ -899,14 +902,14 @@ class _PostCommentsState extends State<PostComments> {
                   children: [
                     Icon(
                       isLiked ? Icons.favorite : Icons.favorite_border,
-                      color: isLiked ? Colors.red : Colors.grey.shade600,
+                      color: isLiked ? _colors.danger : _colors.textSecondary,
                       size: 18,
                     ),
                     SizedBox(width: 4),
                     Text(
                       formatNumber(likeCount),
                       style: TextStyle(
-                        color: Colors.grey.shade600,
+                        color: _colors.textSecondary,
                         fontSize: 12,
                       ),
                     ),
@@ -927,12 +930,12 @@ class _PostCommentsState extends State<PostComments> {
                 },
                 child: Row(
                   children: [
-                    Icon(Icons.reply, size: 14, color: Colors.grey.shade600),
+                    Icon(Icons.reply, size: 14, color: _colors.textSecondary),
                     SizedBox(width: 4),
                     Text(
                       'Répondre',
                       style: TextStyle(
-                        color: Colors.grey.shade600,
+                        color: _colors.textSecondary,
                         fontSize: 11,
                       ),
                     ),
@@ -941,16 +944,17 @@ class _PostCommentsState extends State<PostComments> {
               ),
               Spacer(),
               PopupMenuButton<String>(
-                icon: Icon(Icons.more_vert, size: 14),
+                icon: Icon(Icons.more_vert, size: 14, color: _colors.textSecondary),
+                color: _colors.surface,
                 itemBuilder: (context) => [
                   if (rpc.user_id == authProvider.loginUserData.id || authProvider.loginUserData.role == UserRole.ADM.name)
                     PopupMenuItem(
                       value: 'delete',
                       child: Row(
                         children: [
-                          Icon(Icons.delete, color: Colors.red, size: 14),
+                          Icon(Icons.delete, color: _colors.danger, size: 14),
                           SizedBox(width: 8),
-                          Text('Supprimer'),
+                          Text('Supprimer', style: TextStyle(color: _colors.textPrimary)),
                         ],
                       ),
                     ),
@@ -977,11 +981,11 @@ class _PostCommentsState extends State<PostComments> {
     return Container(
       margin: EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _colors.surface,
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
-            color: Colors.black12,
+            color: Colors.black.withOpacity(0.08),
             blurRadius: 4,
             spreadRadius: 1,
           ),
@@ -997,7 +1001,7 @@ class _PostCommentsState extends State<PostComments> {
               title: Center(
                 child: Text(
                   'Charger plus...',
-                  style: TextStyle(color: Colors.blue),
+                  style: TextStyle(color: _colors.primary),
                 ),
               ),
               onTap: _loadMoreUserSuggestions,
@@ -1009,9 +1013,10 @@ class _PostCommentsState extends State<PostComments> {
             dense: true,
             leading: CircleAvatar(
               radius: 16,
+              backgroundColor: _colors.surfaceVariant,
               backgroundImage: NetworkImage(user.imageUrl ?? ''),
             ),
-            title: Text("@${user.pseudo!}", style: TextStyle(fontSize: 13)),
+            title: Text("@${user.pseudo!}", style: TextStyle(fontSize: 13, color: _colors.textPrimary)),
             onTap: () => _selectUser(user),
           );
         },
@@ -1023,8 +1028,8 @@ class _PostCommentsState extends State<PostComments> {
     return Container(
       padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey.shade300)),
+        color: _colors.surface,
+        border: Border(top: BorderSide(color: _colors.divider)),
       ),
       child: Column(
         children: [
@@ -1033,18 +1038,18 @@ class _PostCommentsState extends State<PostComments> {
               padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               margin: EdgeInsets.only(bottom: 8),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
+                color: _colors.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.reply, color: Colors.blue, size: 14),
+                  Icon(Icons.reply, color: _colors.primary, size: 14),
                   SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       "Réponse à $replyingTo",
                       style: TextStyle(
-                        color: Colors.blue.shade800,
+                        color: _colors.primary,
                         fontSize: 12,
                       ),
                     ),
@@ -1056,7 +1061,7 @@ class _PostCommentsState extends State<PostComments> {
                         replyingTo = "";
                       });
                     },
-                    child: Icon(Icons.close, size: 14, color: Colors.blue.shade800),
+                    child: Icon(Icons.close, size: 14, color: _colors.primary),
                   ),
                 ],
               ),
@@ -1067,21 +1072,22 @@ class _PostCommentsState extends State<PostComments> {
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
+                    color: _colors.surfaceVariant,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: TextField(
                     controller: _textController,
                     focusNode: _focusNode,
                     maxLines: null,
+                    style: TextStyle(color: _colors.textPrimary, fontSize: 13),
                     decoration: InputDecoration(
                       hintText: replying ? 'Répondre...' : 'Ajouter un commentaire...',
-                      hintStyle: TextStyle(fontSize: 13),
+                      hintStyle: TextStyle(fontSize: 13, color: _colors.textSecondary),
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                       suffixIcon: _textController.text.isNotEmpty
                           ? IconButton(
-                        icon: Icon(Icons.send, color: Colors.blue, size: 18),
+                        icon: Icon(Icons.send, color: _colors.primary, size: 18),
                         onPressed: _sendComment,
                       )
                           : null,

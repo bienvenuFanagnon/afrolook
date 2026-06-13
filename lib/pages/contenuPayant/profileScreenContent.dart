@@ -45,6 +45,13 @@ class ProfileScreenContenu extends StatefulWidget {
 }
 
 class _ProfileScreenContenuState extends State<ProfileScreenContenu> with SingleTickerProviderStateMixin {
+  // Méthode utilitaire pour optimiser les URLs de médias via le CDN
+  String _cdnUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    final userProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    return userProvider.convertToCdnUrl(url, userProvider.appDefaultData);
+  }
+
   late TabController _tabController;
   bool isLoading = true;
   final ScrollController _scrollController = ScrollController();
@@ -272,7 +279,7 @@ class _ProfileScreenContenuState extends State<ProfileScreenContenu> with Single
                         child: ClipOval(
                           child: user.imageUrl != null && user.imageUrl!.isNotEmpty
                               ? CachedNetworkImage(
-                            imageUrl: user.imageUrl!,
+                            imageUrl: _cdnUrl(user.imageUrl),
                             fit: BoxFit.cover,
                             placeholder: (context, url) => Container(
                               color: Colors.grey.shade800,
@@ -670,7 +677,7 @@ class _ProfileScreenContenuState extends State<ProfileScreenContenu> with Single
                   child: Container(
                     height: 130,
                     child: CachedNetworkImage(
-                      imageUrl: content.thumbnailUrl,
+                      imageUrl: _cdnUrl(content.thumbnailUrl),
                       fit: BoxFit.cover,
                       width: double.infinity,
                       placeholder: (context, url) => Container(
@@ -906,7 +913,7 @@ class _ProfileScreenContenuState extends State<ProfileScreenContenu> with Single
                     height: 140,
                     width: double.infinity,
                     child: CachedNetworkImage(
-                      imageUrl: serie.thumbnailUrl,
+                      imageUrl: _cdnUrl(serie.thumbnailUrl),
                       fit: BoxFit.cover,
                       placeholder: (context, url) => Container(
                         color: Colors.grey.shade200,
