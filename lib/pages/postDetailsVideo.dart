@@ -15,6 +15,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../theme/app_colors.dart';
+import '../providers/locale_provider.dart';
+import 'userPosts/postWidgets/translatable_description.dart';
 
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -78,6 +80,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
   late SharedPreferences _prefs;
   final String _lastViewDatePrefix = 'last_view_date_';
   bool _isDescriptionExpanded = false;
+  final Map<String, String> _translatedDescriptions = {};
   // Données actuelles
   Post _currentPost = Post();
   bool _isLoading = true;
@@ -682,6 +685,20 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
                 ),
               ),
             ),
+          ),
+        if (_currentPost.id != null && (_currentPost.description ?? '').trim().isNotEmpty)
+          TranslatableDescription(
+            postId: _currentPost.id!,
+            text: _currentPost.description!,
+            targetLang: Provider.of<LocaleProvider>(context, listen: false).locale.languageCode,
+            onToggle: (t) => setState(() {
+              if (t == null) {
+                _translatedDescriptions.remove(_currentPost.id);
+              } else {
+                _translatedDescriptions[_currentPost.id!] = t;
+              }
+            }),
+            style: TextStyle(color: colors.textPrimary),
           ),
       ],
     );
@@ -1726,7 +1743,9 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
                 _buildUserHeader(),
                 SizedBox(height: 12),
                 if (_currentPost.description != null && _currentPost.description!.isNotEmpty)
-                  _buildExpandableDescription(_currentPost.description!),
+                  _buildExpandableDescription(
+                    _translatedDescriptions[_currentPost.id] ?? _currentPost.description!,
+                  ),
                 SizedBox(height: 12),
                 _buildStatsRow(),
                 SizedBox(height: 12),

@@ -10,6 +10,8 @@ import 'package:provider/provider.dart';
 
 import '../../../../component/consoleWidget.dart';
 import 'function.dart';
+import '../../../../../theme/app_colors.dart';
+import '../../../../../l10n/app_localizations.dart';
 
 
 class VerificationOtp extends StatefulWidget {
@@ -56,7 +58,7 @@ class _VerificationOtpState extends State<VerificationOtp> {
       if (querySnapshot.docs.isNotEmpty) {
         QueryDocumentSnapshot userDocument = querySnapshot.docs.first;
         // Ici, vous pouvez accéder aux données de l'utilisateur via userDocument.data()
-        showWarningDialog(_scaffoldKey!.currentContext!,"Ce compte existe déjà");
+        showWarningDialog(_scaffoldKey!.currentContext!, AppLocalizations.of(context).otpAccountExists);
         printVm('Utilisateur existe');
         loading = false;
       } else {
@@ -79,7 +81,7 @@ class _VerificationOtpState extends State<VerificationOtp> {
       showCloseIcon: true,
       title: 'Succes',
       desc:
-      'Vérification réussie',
+      AppLocalizations.of(context).otpVerificationSuccess,
       btnOkOnPress: () {
        printVm('OnClcik');
       },
@@ -99,7 +101,7 @@ class _VerificationOtpState extends State<VerificationOtp> {
       showCloseIcon: true,
       title: 'Error',
       desc:
-      'Erreur de verification',
+      AppLocalizations.of(context).otpVerificationError,
       btnCancelOnPress: () {
        printVm('OnClcik');
       },
@@ -193,12 +195,14 @@ class _VerificationOtpState extends State<VerificationOtp> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
           elevation:0
       ),
-      backgroundColor: Colors.white,
+      backgroundColor: colors.background,
       body: WillPopScope(
         onWillPop: () async {
           return true;
@@ -216,21 +220,21 @@ class _VerificationOtpState extends State<VerificationOtp> {
                     )
                 ),
 
-                const Text(
-                  "Verification de Code",
+                Text(
+                  l10n.otpVerificationTitle,
                   style: TextStyle(
                     fontSize: 30,
-                    color: Colors.black,
+                    color: colors.textPrimary,
                   ),
                 ),
                 const SizedBox(
                   height: 10,
                 ),
                 Text(
-                  "Veuillez entrer le code que vous venez de recevoir sur votre numéro de téléphone ${widget.phoneNumber}",
+                  "${l10n.otpVerificationDesc} ${widget.phoneNumber}",
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.black45,
+                    color: colors.textSecondary,
                   ),
                 ),
                 const SizedBox(
@@ -249,7 +253,7 @@ class _VerificationOtpState extends State<VerificationOtp> {
                     onPressed: !resend ? null : onResendSmsCode,
                     child: Text(!resend
                         ? "00:${count.toString().padLeft(2, "0")}"
-                        : "resend code",style: TextStyle(color: Colors.blue),),
+                        : l10n.otpResendCode, style: TextStyle(color: colors.primary),),
                   ),
                 ),
                 Column(
@@ -262,12 +266,12 @@ class _VerificationOtpState extends State<VerificationOtp> {
                           ? null
                           : onVerifySmsCode,
                       child: loading
-                          ? const CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation(Colors.white),
+                          ? CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation(colors.onPrimary),
                       )
-                          : const Text(
-                        'Vérifier',
-                        style: TextStyle(fontSize: 20,color: Colors.blue),
+                          : Text(
+                        l10n.otpVerify,
+                        style: TextStyle(fontSize: 20, color: colors.primary),
                       ),
                     ),
                   ],

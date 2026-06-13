@@ -33,7 +33,11 @@ import 'dart:async';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
 
+import 'package:cryptography/cryptography.dart';
+
 import '../userPosts/postWidgets/postUserWidget.dart';
+import '../../services/chat_cache_service.dart';
+import '../../services/encryption_service.dart';
 
 class MyChat extends StatefulWidget {
   final String title;
@@ -89,8 +93,25 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   // Streams et données
   Stream<List<Message>>? _messagesStream;
   List<Message> _messages = [];
+  /// Derniers messages reçus via le flux Firestore (fenêtre limitée).
+  List<Message> _streamMessages = [];
+  /// Messages plus anciens chargés via pagination (scroll vers le haut).
+  List<Message> _olderMessages = [];
   bool _isLoading = true;
   bool _hasNewMessage = false;
+
+  // Pagination (chargement des messages plus anciens)
+  static const int _pageSize = 30;
+  bool _isLoadingMore = false;
+  bool _hasMoreMessages = true;
+
+  // Marquage "lu" en batch (au lieu d'une écriture par message dans le build)
+  Timer? _readReceiptDebounce;
+
+  /// Clé AES-256 dérivée pour cette conversation (chiffrement au repos des
+  /// messages texte). `null` si l'autre participant n'a pas encore de clé
+  /// publique publiée (messages alors envoyés en clair).
+  SecretKey? _chatKey;
 
   // Pour éviter les reconstructions inutiles
   final _messageKey = GlobalKey();
@@ -106,11 +127,124 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     _audioRecorder = AudioRecorder();
     _initializeChat();
     _setupAudioListener();
-    _loadMessages();
+    _loadCachedMessages();
+    _initEncryptionAndLoad();
+    _scrollController.addListener(_onScroll);
 
     // Scroll vers le bas après initialisation
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom(animated: false);
+    });
+  }
+
+  /// Affiche immédiatement les derniers messages mis en cache localement
+  /// (style WhatsApp : pas d'écran vide pendant la reconnexion à Firestore).
+  Future<void> _loadCachedMessages() async {
+    final cached = await ChatCacheService.loadMessages(widget.chat.docId!);
+    if (cached.isEmpty || !mounted) return;
+
+    setState(() {
+      _messages = cached;
+      _isLoading = false;
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToBottom(animated: false);
+    });
+  }
+
+  /// Charge plus de messages (plus anciens) quand l'utilisateur remonte en
+  /// haut de la conversation.
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    if (_scrollController.position.pixels <= 200) {
+      _loadMoreMessages();
+    }
+  }
+
+  Future<void> _loadMoreMessages() async {
+    if (_isLoadingMore || !_hasMoreMessages || _messages.isEmpty) return;
+
+    setState(() => _isLoadingMore = true);
+
+    try {
+      final oldest = _messages.first;
+      final snapshot = await _firestore
+          .collection('Messages')
+          .where('chat_id', isEqualTo: widget.chat.docId!)
+          .where('is_valide', isEqualTo: true)
+          .orderBy('createdAt', descending: false)
+          .where('createdAt', isLessThan: oldest.createdAt)
+          .limitToLast(_pageSize)
+          .get();
+
+      final older = snapshot.docs.map((doc) => Message.fromJson(doc.data())).toList();
+      await _decryptMessages(older);
+
+      if (older.isEmpty) {
+        _hasMoreMessages = false;
+      } else {
+        final prevMaxExtent = _scrollController.position.maxScrollExtent;
+        final prevPixels = _scrollController.position.pixels;
+
+        _olderMessages = [...older, ..._olderMessages];
+        _hasMoreMessages = older.length == _pageSize;
+
+        setState(() {
+          _messages = _mergeMessages();
+        });
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!_scrollController.hasClients) return;
+          final newMaxExtent = _scrollController.position.maxScrollExtent;
+          _scrollController.jumpTo(prevPixels + (newMaxExtent - prevMaxExtent));
+        });
+      }
+    } catch (e) {
+      print('⚠️ Erreur chargement messages plus anciens: $e');
+    } finally {
+      if (mounted) setState(() => _isLoadingMore = false);
+    }
+  }
+
+  /// Fusionne les messages chargés par pagination avec la fenêtre récente du
+  /// flux Firestore, en dédupliquant par id et en triant chronologiquement.
+  List<Message> _mergeMessages() {
+    final Map<String, Message> byId = {};
+    for (final m in _olderMessages) {
+      byId[m.id] = m;
+    }
+    for (final m in _streamMessages) {
+      byId[m.id] = m;
+    }
+    final merged = byId.values.toList()
+      ..sort((a, b) => a.create_at_time_spam.compareTo(b.create_at_time_spam));
+    return merged;
+  }
+
+  /// Marque en une seule écriture batch tous les messages reçus non encore
+  /// lus (au lieu d'écrire un par un pendant le build de la liste).
+  void _scheduleReadReceipts(List<Message> messages) {
+    final currentUserId = _authProvider.loginUserData.id;
+    final unread = messages.where((m) =>
+        m.sendBy != currentUserId && m.message_state != MessageState.LU.name).toList();
+
+    if (unread.isEmpty) return;
+
+    _readReceiptDebounce?.cancel();
+    _readReceiptDebounce = Timer(const Duration(milliseconds: 500), () async {
+      try {
+        final batch = _firestore.batch();
+        for (final m in unread) {
+          m.message_state = MessageState.LU.name;
+          batch.update(_firestore.collection('Messages').doc(m.id), {
+            'message_state': MessageState.LU.name,
+          });
+        }
+        await batch.commit();
+      } catch (e) {
+        print('⚠️ Erreur marquage messages lus: $e');
+      }
     });
   }
 
@@ -123,15 +257,52 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     _firestore.collection('Chats').doc(widget.chat.id).update(widget.chat.toJson());
   }
 
+  /// Calcule la clé de chiffrement de cette conversation avant de démarrer
+  /// le flux de messages, afin que les messages chiffrés reçus dès la
+  /// première page puissent être déchiffrés.
+  Future<void> _initEncryptionAndLoad() async {
+    final myId = _authProvider.loginUserData.id!;
+    final otherId = widget.chat.senderId == myId
+        ? widget.chat.receiverId!
+        : widget.chat.senderId!;
+
+    _chatKey = await EncryptionService.getChatKey(widget.chat.docId!, myId, otherId);
+
+    _loadMessages();
+  }
+
+  /// Déchiffre en place le champ `message` des messages texte chiffrés.
+  Future<void> _decryptMessages(List<Message> messages) async {
+    final key = _chatKey;
+    if (key == null) return;
+
+    for (final m in messages) {
+      if (m.is_encrypted) {
+        try {
+          m.message = await EncryptionService.decryptText(key, m.message);
+        } catch (e) {
+          print('⚠️ Erreur déchiffrement message ${m.id}: $e');
+        }
+      }
+    }
+  }
+
   void _loadMessages() {
+    // On ne s'abonne qu'aux [_pageSize] derniers messages : on évite ainsi
+    // de retélécharger tout l'historique de la conversation à chaque
+    // ouverture/écriture. Les messages plus anciens sont chargés via
+    // pagination (`_loadMoreMessages`) quand l'utilisateur remonte.
     _messagesStream = _firestore
         .collection('Messages')
         .where('chat_id', isEqualTo: widget.chat.docId!)
         .where('is_valide', isEqualTo: true)
         .orderBy('createdAt', descending: false)
+        .limitToLast(_pageSize)
         .snapshots()
-        .map((snapshot) {
-      return snapshot.docs.map((doc) => Message.fromJson(doc.data())).toList();
+        .asyncMap((snapshot) async {
+      final messages = snapshot.docs.map((doc) => Message.fromJson(doc.data())).toList();
+      await _decryptMessages(messages);
+      return messages;
     });
 
     setState(() {
@@ -187,6 +358,8 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     _audioPlayer.dispose();
     _audioRecorder?.dispose();
     _recordingTimer?.cancel();
+    _readReceiptDebounce?.cancel();
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _focusNode.dispose();
     super.dispose();
@@ -200,20 +373,24 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     return "$twoDigitMinutes:$twoDigitSeconds";
   }
 
-  String _formatDateTime(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
+  /// Heure au format HH:mm (façon WhatsApp), affichée sous chaque message.
+  String _formatMessageTime(DateTime dateTime) {
+    return DateFormat('HH:mm').format(dateTime);
+  }
 
-    if (difference.inDays < 1) {
-      if (difference.inHours < 1) {
-        if (difference.inMinutes < 1) return "À l'instant";
-        return "il y a ${difference.inMinutes} min";
-      }
-      return "il y a ${difference.inHours} h";
-    } else if (difference.inDays < 7) {
-      return "${difference.inDays} j";
-    }
-    return DateFormat('dd/MM/yy').format(dateTime);
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  /// Libellé du séparateur de date (Aujourd'hui / Hier / date complète).
+  String _formatDateSeparator(DateTime dateTime, AppLocalizations l10n) {
+    final now = DateTime.now();
+    if (_isSameDay(dateTime, now)) return l10n.chatToday;
+
+    final yesterday = now.subtract(Duration(days: 1));
+    if (_isSameDay(dateTime, yesterday)) return l10n.chatYesterday;
+
+    return DateFormat('dd/MM/yyyy').format(dateTime);
   }
 
   bool _isImageUrl(String url) {
@@ -578,7 +755,17 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       String msgid = _firestore.collection('Messages').doc().id;
       msg.id = msgid;
 
-      await _firestore.collection('Messages').doc(msgid).set(msg.toJson());
+      // Chiffrement au repos : le texte du message est chiffré (AES-256)
+      // avant d'être stocké dans Firestore, si la clé de la conversation
+      // est disponible (clé publique de l'autre participant connue).
+      final json = msg.toJson();
+      final chatKey = _chatKey;
+      if (chatKey != null) {
+        json['message'] = await EncryptionService.encryptText(chatKey, messageText);
+        json['is_encrypted'] = true;
+      }
+
+      await _firestore.collection('Messages').doc(msgid).set(json);
       await _sendNotification(messageText);
       await _resetAfterMessage();
 
@@ -711,11 +898,11 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   }
 
   // Widgets d'affichage des messages
-  Widget _buildMessageBubble(Message message, bool isLastItem, List<Message> messages) {
+  Widget _buildMessageBubble(Message message, bool isLastItem, bool isFirstInGroup, bool isLastInGroup) {
     final isMe = message.sendBy == _authProvider.loginUserData.id!;
 
     return Container(
-      margin: EdgeInsets.symmetric(vertical: 2),
+      margin: EdgeInsets.only(top: isFirstInGroup ? 8 : 1, bottom: 1),
       child: Column(
         children: [
           if (message.replyMessage.message.isNotEmpty)
@@ -731,7 +918,9 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
                   width: 28,
                   height: 28,
                   margin: EdgeInsets.only(right: 8, bottom: 16),
-                  child: _buildUserAvatar(message.sendBy),
+                  child: isLastInGroup
+                      ? _buildUserAvatar(message.sendBy)
+                      : const SizedBox.shrink(),
                 ),
               Expanded(
                 child: Container(
@@ -747,8 +936,29 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
               ),
             ],
           ),
-          SizedBox(height: isLastItem ? 80 : 4),
+          SizedBox(height: isLastItem ? 80 : 0),
         ],
+      ),
+    );
+  }
+
+  /// Séparateur de date entre deux groupes de messages (façon WhatsApp).
+  Widget _buildDateSeparator(DateTime date) {
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: _colors.surfaceVariant,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            _formatDateSeparator(date, l10n),
+            style: TextStyle(fontSize: 11, color: _colors.textSecondary, fontWeight: FontWeight.w600),
+          ),
+        ),
       ),
     );
   }
@@ -896,24 +1106,26 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   }
 
   Widget _buildMessageStatus(Message message, bool isMe) {
+    final isRead = message.message_state == MessageState.LU.name;
+
     return Padding(
       padding: EdgeInsets.only(top: 2),
       child: Row(
         mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            MaterialCommunityIcons.check_all,
-            size: 12,
-            color: message.message_state == MessageState.LU.name
-                ? _colors.primary
-                : _colors.textSecondary,
-          ),
-          SizedBox(width: 4),
           Text(
-            _formatDateTime(message.createdAt),
+            _formatMessageTime(message.createdAt),
             style: TextStyle(fontSize: 9, color: _colors.textSecondary),
           ),
+          if (isMe) ...[
+            SizedBox(width: 4),
+            Icon(
+              isRead ? MaterialCommunityIcons.check_all : MaterialCommunityIcons.check,
+              size: 12,
+              color: isRead ? _colors.primary : _colors.textSecondary,
+            ),
+          ],
         ],
       ),
     );
@@ -1330,24 +1542,68 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     return false;
   }
 
+  /// Délai max entre deux messages du même expéditeur pour les regrouper
+  /// visuellement (façon WhatsApp), sans bulle/avatar répété.
+  static const int _groupingThresholdMs = 2 * 60 * 1000;
+
   Widget _buildMessageList(List<Message> messages) {
+    // Construit une liste plate [date séparateur | message] en calculant le
+    // regroupement visuel (premier/dernier d'un groupe consécutif du même
+    // expéditeur, rapproché dans le temps).
+    final items = <_ChatListItem>[];
+    for (int i = 0; i < messages.length; i++) {
+      final message = messages[i];
+      final previous = i > 0 ? messages[i - 1] : null;
+      final next = i < messages.length - 1 ? messages[i + 1] : null;
+
+      if (previous == null || !_isSameDay(previous.createdAt, message.createdAt)) {
+        items.add(_ChatListItem.date(message.createdAt));
+      }
+
+      final isFirstInGroup = previous == null ||
+          previous.sendBy != message.sendBy ||
+          !_isSameDay(previous.createdAt, message.createdAt) ||
+          (message.create_at_time_spam - previous.create_at_time_spam) > _groupingThresholdMs;
+
+      final isLastInGroup = next == null ||
+          next.sendBy != message.sendBy ||
+          !_isSameDay(next.createdAt, message.createdAt) ||
+          (next.create_at_time_spam - message.create_at_time_spam) > _groupingThresholdMs;
+
+      items.add(_ChatListItem.message(message, isFirstInGroup: isFirstInGroup, isLastInGroup: isLastInGroup));
+    }
+
+    final itemCount = items.length + (_isLoadingMore ? 1 : 0);
     return ListView.builder(
       key: _messageKey,
       controller: _scrollController,
-      itemCount: messages.length,
+      itemCount: itemCount,
       padding: EdgeInsets.all(8),
       itemBuilder: (context, index) {
-        final message = messages[index];
-        final isLastItem = index == messages.length - 1;
-
-        // Marquer comme lu si nécessaire
-        if (_authProvider.loginUserData.id != message.sendBy &&
-            message.message_state != MessageState.LU.name) {
-          message.message_state = MessageState.LU.name;
-          _firestore.collection('Messages').doc(message.id).update(message.toJson());
+        if (_isLoadingMore && index == 0) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2, color: _colors.primary),
+              ),
+            ),
+          );
         }
 
-        return _buildMessageBubble(message, isLastItem, messages);
+        final itemIndex = _isLoadingMore ? index - 1 : index;
+        final item = items[itemIndex];
+
+        if (item.date != null) {
+          return _buildDateSeparator(item.date!);
+        }
+
+        final message = item.message!;
+        final isLastItem = itemIndex == items.length - 1;
+
+        return _buildMessageBubble(message, isLastItem, item.isFirstInGroup, item.isLastInGroup);
       },
     );
   }
@@ -1370,21 +1626,24 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
                 if (snapshot.hasError) {
                   return Center(
                     child: Text(
-                      "Erreur de chargement",
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  );
-                } else if (snapshot.hasData && snapshot.data!.isEmpty) {
-                  return Center(
-                    child: Text(
-                      "Aucun message",
-                      style: TextStyle(color: Colors.grey),
+                      l10n.convErrorLoading,
+                      style: TextStyle(color: _colors.textPrimary),
                     ),
                   );
                 } else if (snapshot.hasData) {
-                  final messages = snapshot.data!;
+                  _streamMessages = snapshot.data!;
+                  final messages = _mergeMessages();
 
-                  // Scroll vers le bas si nouveaux messages
+                  if (messages.isEmpty) {
+                    return Center(
+                      child: Text(
+                        l10n.convNoMessage,
+                        style: TextStyle(color: _colors.textSecondary),
+                      ),
+                    );
+                  }
+
+                  // Scroll vers le bas si nouveau(x) message(s)
                   if (messages.length > _messages.length) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       _scrollToBottom();
@@ -1393,9 +1652,16 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
 
                   _messages = messages;
 
+                  // Cache local + marquage "lu" en arrière-plan (hors build).
+                  ChatCacheService.saveMessages(widget.chat.docId!, messages);
+                  _scheduleReadReceipts(messages);
+
                   return _buildMessageList(messages);
+                } else if (_messages.isNotEmpty) {
+                  // Affichage des messages en cache pendant la connexion au flux.
+                  return _buildMessageList(_messages);
                 }
-                return Center(child: CircularProgressIndicator(color: Colors.green));
+                return Center(child: CircularProgressIndicator(color: _colors.primary));
               },
             ),
           ),
@@ -1404,5 +1670,21 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       ),
     );
   }
+}
+
+/// Élément de la liste affichée : soit un séparateur de date, soit un
+/// message avec ses informations de regroupement visuel.
+class _ChatListItem {
+  final DateTime? date;
+  final Message? message;
+  final bool isFirstInGroup;
+  final bool isLastInGroup;
+
+  _ChatListItem.date(this.date)
+      : message = null,
+        isFirstInGroup = false,
+        isLastInGroup = false;
+
+  _ChatListItem.message(this.message, {required this.isFirstInGroup, required this.isLastInGroup}) : date = null;
 }
 

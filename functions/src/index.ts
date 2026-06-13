@@ -1,4 +1,5 @@
 import {onCall, HttpsError, onRequest} from "firebase-functions/v2/https";
+export {translatePostDescription} from "./translatePost";
 import {onDocumentCreated} from "firebase-functions/v2/firestore"; // ✅ IMPORT MANQUANT
 import {initializeApp} from "firebase-admin/app";
 import {getFirestore, FieldValue} from "firebase-admin/firestore";

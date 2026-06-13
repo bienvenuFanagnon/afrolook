@@ -9,20 +9,10 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../providers/authProvider.dart';
 import '../providers/userProvider.dart';
-
-import 'package:afrotok/models/model_data.dart';
-import 'package:afrotok/pages/component/showUserDetails.dart';
-import 'package:afrotok/pages/postDetails.dart';
-import 'package:afrotok/providers/postProvider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
-import '../providers/authProvider.dart';
-import '../providers/userProvider.dart';
 import '../services/postService/feed_interaction_service.dart';
 import '../services/utils/abonnement_utils.dart';
+import '../theme/app_colors.dart';
+import '../l10n/app_localizations.dart';
 import 'dart:ui' as ui;
 
 import 'coins/post_gifts_list.dart'; // Add this line
@@ -36,6 +26,7 @@ class PostComments extends StatefulWidget {
 }
 
 class _PostCommentsState extends State<PostComments> {
+  late AppColors _colors;
   late UserAuthProvider authProvider;
   late UserProvider userProvider;
   late PostProvider postProvider;
@@ -446,13 +437,13 @@ class _PostCommentsState extends State<PostComments> {
       if (match.start > lastEnd) {
         spans.add(TextSpan(
           text: text.substring(lastEnd, match.start),
-          style: TextStyle(color: Colors.black87, fontSize: 13),
+          style: TextStyle(color: _colors.textPrimary, fontSize: 13),
         ));
       }
 
       spans.add(TextSpan(
         text: match.group(0),
-        style: TextStyle(color: Colors.green, fontSize: 13, fontWeight: FontWeight.w500),
+        style: TextStyle(color: _colors.success, fontSize: 13, fontWeight: FontWeight.w500),
       ));
 
       lastEnd = match.end;
@@ -461,7 +452,7 @@ class _PostCommentsState extends State<PostComments> {
     if (lastEnd < text.length) {
       spans.add(TextSpan(
         text: text.substring(lastEnd),
-        style: TextStyle(color: Colors.black87, fontSize: 13),
+        style: TextStyle(color: _colors.textPrimary, fontSize: 13),
       ));
     }
 
@@ -482,8 +473,8 @@ class _PostCommentsState extends State<PostComments> {
     return post.user==null?SizedBox.shrink(): Container(
       padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+        color: _colors.surface,
+        border: Border(bottom: BorderSide(color: _colors.divider)),
       ),
       child: Column(
         spacing: 2,
@@ -501,7 +492,7 @@ class _PostCommentsState extends State<PostComments> {
                 },
                 child: CircleAvatar(
                   radius: 20,
-                  backgroundColor: Colors.grey.shade300,
+                  backgroundColor: _colors.surfaceVariant,
                   backgroundImage: NetworkImage(
                     isCanal ? post.canal!.urlImage! : post.user!.imageUrl!,
                   ),
@@ -516,7 +507,7 @@ class _PostCommentsState extends State<PostComments> {
                       children: [
                         Text(
                           isCanal ? "#${post.canal!.titre!}" : "@${post.user!.pseudo!}",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: _colors.textPrimary),
                         ),
                         const SizedBox(width: 4),
                         AbonnementUtils.getUserBadge(
@@ -528,7 +519,7 @@ class _PostCommentsState extends State<PostComments> {
                     SizedBox(height: 2),
                     Text(
                       formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(post.createdAt!)),
-                      style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+                      style: TextStyle(color: _colors.textSecondary, fontSize: 11),
                     ),
                   ],
                 ),
@@ -537,7 +528,7 @@ class _PostCommentsState extends State<PostComments> {
                 Navigator.push(context, MaterialPageRoute(
                   builder: (context) => DetailsPost(post: widget.post),
                 ));
-              }, child: Text('Voir le post',style: TextStyle(color: Colors.blue),))
+              }, child: Text(AppLocalizations.of(context).postCommentViewPost, style: TextStyle(color: _colors.primary),))
             ],
           ),
           PostGiftsList(
@@ -1422,18 +1413,19 @@ if(widget.post.user!=null){
 
   @override
   Widget build(BuildContext context) {
+    _colors = AppColors.of(context);
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: _colors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: _colors.surface,
         elevation: 1,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back, color: _colors.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Commentaires',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          AppLocalizations.of(context).postCommentTitle,
+          style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold),
         ),
       ),
       body: Column(
@@ -1448,17 +1440,17 @@ if(widget.post.user!=null){
                 return false;
               },
               child: _isLoading && comments.isEmpty
-                  ? Center(child: CircularProgressIndicator())
+                  ? Center(child: CircularProgressIndicator(color: _colors.accent))
                   : comments.isEmpty
                   ? Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.comment_outlined, size: 50, color: Colors.grey.shade400),
+                    Icon(Icons.comment_outlined, size: 50, color: _colors.textSecondary),
                     SizedBox(height: 12),
                     Text(
-                      'Aucun commentaire',
-                      style: TextStyle(color: Colors.grey.shade600),
+                      AppLocalizations.of(context).postCommentNoComment,
+                      style: TextStyle(color: _colors.textSecondary),
                     ),
                   ],
                 ),
@@ -1471,7 +1463,7 @@ if(widget.post.user!=null){
                     return _isLoadingMore
                         ? Padding(
                       padding: EdgeInsets.all(16),
-                      child: Center(child: CircularProgressIndicator()),
+                      child: Center(child: CircularProgressIndicator(color: _colors.accent)),
                     )
                         : SizedBox.shrink();
                   }

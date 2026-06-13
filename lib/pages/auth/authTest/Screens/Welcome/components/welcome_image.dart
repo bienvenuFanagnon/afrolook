@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../constants.dart';
+import '../../../../../../theme/app_colors.dart';
+import '../../../../../../l10n/app_localizations.dart';
 
 class WelcomeImage extends StatelessWidget {
   const WelcomeImage({
@@ -10,15 +11,17 @@ class WelcomeImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context);
     return Column(
       children: [
         Container(
-          color: Colors.black54,
+          color: colors.surface.withOpacity(0.6),
           child: Padding(
             padding: const EdgeInsets.all(10.0),
-            child: const Text(
-              "Bienvenue chez Afrolook",
-              style: TextStyle(fontWeight: FontWeight.w900,fontSize: 30,color: Colors.green),
+            child: Text(
+              l10n.welcomeBienvenue,
+              style: const TextStyle(fontWeight: FontWeight.w900,fontSize: 30,color: Colors.green),
             ),
           ),
         ),

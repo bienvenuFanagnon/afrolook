@@ -356,7 +356,7 @@ class _MyAppState extends State<MyApp> {
         darkTheme: AppTheme.dark,
         themeMode: themeProvider.themeMode,
         locale: localeProvider.locale,
-        supportedLocales: const [Locale('fr'), Locale('en')],
+        supportedLocales: kSupportedLocales.keys.map((c) => Locale(c)).toList(),
         localizationsDelegates: const [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,

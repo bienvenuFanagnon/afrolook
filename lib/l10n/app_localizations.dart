@@ -1,5 +1,17 @@
 import 'package:flutter/material.dart';
 
+/// Langues supportées par l'application (code ISO -> nom affiché + drapeau).
+const Map<String, String> kSupportedLocales = {
+  'fr': '🇫🇷 Français',
+  'en': '🇬🇧 English',
+  'es': '🇪🇸 Español',
+  'de': '🇩🇪 Deutsch',
+  'ar': '🇸🇦 العربية',
+  'pt': '🇵🇹 Português',
+  'zh': '🇨🇳 中文',
+  'sw': '🇹🇿 Kiswahili',
+};
+
 /// Point d'entrée : AppLocalizations.of(context).nomDeLaChaîne
 class AppLocalizations {
   final Locale locale;
@@ -11,280 +23,646 @@ class AppLocalizations {
 
   static const delegate = _AppLocalizationsDelegate();
 
-  String get _lang => locale.languageCode;
+  String get _lang => kSupportedLocales.containsKey(locale.languageCode) ? locale.languageCode : 'fr';
+
+  /// Retourne la traduction correspondant à la langue courante, avec
+  /// repli sur le français si la langue n'est pas renseignée pour cette clé.
+  String _t(Map<String, String> translations) => translations[_lang] ?? translations['fr']!;
 
   // ── Navigation ────────────────────────────────────────────────────────────
-  String get navHome        => _lang == 'fr' ? 'Accueil'       : 'Home';
-  String get navVideos      => _lang == 'fr' ? 'Vidéos'        : 'Videos';
-  String get navLives       => 'Lives';
-  String get navMessages    => _lang == 'fr' ? 'Messages'      : 'Messages';
-  String get navCreate      => _lang == 'fr' ? 'Créer'         : 'Create';
-  String get navInvitations => _lang == 'fr' ? 'Invitations'   : 'Invitations';
-  String get navProfile     => _lang == 'fr' ? 'Profil'        : 'Profile';
-  String get navSettings    => _lang == 'fr' ? 'Paramètres'    : 'Settings';
-  String get navNotifications => _lang == 'fr' ? 'Notifications' : 'Notifications';
-  String get navShop        => _lang == 'fr' ? 'Boutique'      : 'Shop';
-  String get navDating      => _lang == 'fr' ? 'Rencontres'    : 'Dating';
+  String get navHome => _t({'fr': 'Accueil', 'en': 'Home', 'es': 'Inicio', 'de': 'Start', 'ar': 'الرئيسية', 'pt': 'Início', 'zh': '首页', 'sw': 'Nyumbani'});
+  String get navVideos => _t({'fr': 'Vidéos', 'en': 'Videos', 'es': 'Vídeos', 'de': 'Videos', 'ar': 'الفيديوهات', 'pt': 'Vídeos', 'zh': '视频', 'sw': 'Video'});
+  String get navLives => 'Lives';
+  String get navMessages => _t({'fr': 'Messages', 'en': 'Messages', 'es': 'Mensajes', 'de': 'Nachrichten', 'ar': 'الرسائل', 'pt': 'Mensagens', 'zh': '消息', 'sw': 'Ujumbe'});
+  String get navCreate => _t({'fr': 'Créer', 'en': 'Create', 'es': 'Crear', 'de': 'Erstellen', 'ar': 'إنشاء', 'pt': 'Criar', 'zh': '创建', 'sw': 'Unda'});
+  String get navInvitations => _t({'fr': 'Invitations', 'en': 'Invitations', 'es': 'Invitaciones', 'de': 'Einladungen', 'ar': 'الدعوات', 'pt': 'Convites', 'zh': '邀请', 'sw': 'Mialiko'});
+  String get navProfile => _t({'fr': 'Profil', 'en': 'Profile', 'es': 'Perfil', 'de': 'Profil', 'ar': 'الملف الشخصي', 'pt': 'Perfil', 'zh': '个人资料', 'sw': 'Wasifu'});
+  String get navSettings => _t({'fr': 'Paramètres', 'en': 'Settings', 'es': 'Configuración', 'de': 'Einstellungen', 'ar': 'الإعدادات', 'pt': 'Configurações', 'zh': '设置', 'sw': 'Mipangilio'});
+  String get navNotifications => _t({'fr': 'Notifications', 'en': 'Notifications', 'es': 'Notificaciones', 'de': 'Benachrichtigungen', 'ar': 'الإشعارات', 'pt': 'Notificações', 'zh': '通知', 'sw': 'Arifa'});
+  String get navShop => _t({'fr': 'Boutique', 'en': 'Shop', 'es': 'Tienda', 'de': 'Shop', 'ar': 'المتجر', 'pt': 'Loja', 'zh': '商店', 'sw': 'Duka'});
+  String get navDating => _t({'fr': 'Rencontres', 'en': 'Dating', 'es': 'Citas', 'de': 'Dating', 'ar': 'المواعدة', 'pt': 'Encontros', 'zh': '交友', 'sw': 'Mahusiano'});
 
   // ── Filtres du feed ───────────────────────────────────────────────────────
-  String get feedAll        => _lang == 'fr' ? 'Tous'          : 'All';
-  String get feedTrending   => _lang == 'fr' ? 'Tendances'     : 'Trending';
-  String get feedFollowing  => _lang == 'fr' ? 'Abonnements'   : 'Following';
-  String get feedPronostics => _lang == 'fr' ? 'Pronostics'    : 'Pronostics';
-  String get feedVip        => 'Zone VIP';
-  String get feedCanal      => _lang == 'fr' ? 'Canaux'        : 'Channels';
-  String get feedSport      => _lang == 'fr' ? 'Sport'         : 'Sport';
-  String get feedLooks      => 'Looks';
-  String get feedSuggestions => _lang == 'fr' ? 'Suggestions'  : 'Suggestions';
+  String get feedAll => _t({'fr': 'Tous', 'en': 'All', 'es': 'Todos', 'de': 'Alle', 'ar': 'الكل', 'pt': 'Todos', 'zh': '全部', 'sw': 'Zote'});
+  String get feedTrending => _t({'fr': 'Tendances', 'en': 'Trending', 'es': 'Tendencias', 'de': 'Trends', 'ar': 'الرائج', 'pt': 'Tendências', 'zh': '趋势', 'sw': 'Mwelekeo'});
+  String get feedFollowing => _t({'fr': 'Abonnements', 'en': 'Following', 'es': 'Siguiendo', 'de': 'Folge ich', 'ar': 'المتابَعون', 'pt': 'Seguindo', 'zh': '关注', 'sw': 'Ninayofuata'});
+  String get feedPronostics => _t({'fr': 'Pronostics', 'en': 'Pronostics', 'es': 'Pronósticos', 'de': 'Prognosen', 'ar': 'التوقعات', 'pt': 'Palpites', 'zh': '预测', 'sw': 'Utabiri'});
+  String get feedVip => 'Zone VIP';
+  String get feedCanal => _t({'fr': 'Canaux', 'en': 'Channels', 'es': 'Canales', 'de': 'Kanäle', 'ar': 'القنوات', 'pt': 'Canais', 'zh': '频道', 'sw': 'Mikondo'});
+  String get feedSport => _t({'fr': 'Sport', 'en': 'Sport', 'es': 'Deportes', 'de': 'Sport', 'ar': 'رياضة', 'pt': 'Esportes', 'zh': '体育', 'sw': 'Michezo'});
+  String get feedLooks => 'Looks';
+  String get feedSuggestions => _t({'fr': 'Suggestions', 'en': 'Suggestions', 'es': 'Sugerencias', 'de': 'Vorschläge', 'ar': 'اقتراحات', 'pt': 'Sugestões', 'zh': '建议', 'sw': 'Mapendekezo'});
 
   // ── Onglets de la page d'accueil ──────────────────────────────────────────
-  String get tabHome        => _lang == 'fr' ? '🏠 Accueil'     : '🏠 Home';
-  String get tabSport       => '⚽ Sport';
-  String get tabVibe        => _lang == 'fr' ? '📱 Vibe vidéos' : '📱 Vibe videos';
-  String get tabEvents      => _lang == 'fr' ? '📅 Événements'  : '📅 Events';
-  String get tabVip         => _lang == 'fr' ? '🪙 Zone VIP'    : '🪙 VIP Zone';
-  String get tabChallenges  => '🏆 Challenges';
-  String get tabChroniques  => _lang == 'fr' ? '🌟 Chroniques'  : '🌟 Chronicles';
-  String get tabPopular     => _lang == 'fr' ? '🔥 Populaires'  : '🔥 Popular';
+  String get tabHome => _t({'fr': '🏠 Accueil', 'en': '🏠 Home', 'es': '🏠 Inicio', 'de': '🏠 Start', 'ar': '🏠 الرئيسية', 'pt': '🏠 Início', 'zh': '🏠 首页', 'sw': '🏠 Nyumbani'});
+  String get tabSport => '⚽ Sport';
+  String get tabVibe => _t({'fr': '📱 Vibe vidéos', 'en': '📱 Vibe videos', 'es': '📱 Vibe vídeos', 'de': '📱 Vibe-Videos', 'ar': '📱 فيديوهات Vibe', 'pt': '📱 Vibe vídeos', 'zh': '📱 Vibe视频', 'sw': '📱 Video za Vibe'});
+  String get tabEvents => _t({'fr': '📅 Événements', 'en': '📅 Events', 'es': '📅 Eventos', 'de': '📅 Veranstaltungen', 'ar': '📅 الفعاليات', 'pt': '📅 Eventos', 'zh': '📅 活动', 'sw': '📅 Matukio'});
+  String get tabVip => _t({'fr': '🪙 Zone VIP', 'en': '🪙 VIP Zone', 'es': '🪙 Zona VIP', 'de': '🪙 VIP-Bereich', 'ar': '🪙 منطقة VIP', 'pt': '🪙 Zona VIP', 'zh': '🪙 VIP专区', 'sw': '🪙 Eneo la VIP'});
+  String get tabChallenges => '🏆 Challenges';
+  String get tabChroniques => _t({'fr': '🌟 Chroniques', 'en': '🌟 Chronicles', 'es': '🌟 Crónicas', 'de': '🌟 Chroniken', 'ar': '🌟 السجلات', 'pt': '🌟 Crônicas', 'zh': '🌟 纪事', 'sw': '🌟 Mambo Mapya'});
+  String get tabPopular => _t({'fr': '🔥 Populaires', 'en': '🔥 Popular', 'es': '🔥 Populares', 'de': '🔥 Beliebt', 'ar': '🔥 الأكثر شعبية', 'pt': '🔥 Populares', 'zh': '🔥 热门', 'sw': '🔥 Maarufu'});
 
   // ── Boutons communs ───────────────────────────────────────────────────────
-  String get btnAccept      => _lang == 'fr' ? 'Accepter'       : 'Accept';
-  String get btnRefuse      => _lang == 'fr' ? 'Refuser'        : 'Decline';
-  String get btnSend        => _lang == 'fr' ? 'Envoyer'        : 'Send';
-  String get btnSave        => _lang == 'fr' ? 'Enregistrer'    : 'Save';
-  String get btnCancel      => _lang == 'fr' ? 'Annuler'        : 'Cancel';
-  String get btnDelete      => _lang == 'fr' ? 'Supprimer'      : 'Delete';
-  String get btnReply       => _lang == 'fr' ? 'Répondre'       : 'Reply';
-  String get btnCreate      => _lang == 'fr' ? 'Créer'          : 'Create';
-  String get btnViewProfile => _lang == 'fr' ? 'Voir mon profil': 'View my profile';
+  String get btnAccept => _t({'fr': 'Accepter', 'en': 'Accept', 'es': 'Aceptar', 'de': 'Akzeptieren', 'ar': 'قبول', 'pt': 'Aceitar', 'zh': '接受', 'sw': 'Kubali'});
+  String get btnRefuse => _t({'fr': 'Refuser', 'en': 'Decline', 'es': 'Rechazar', 'de': 'Ablehnen', 'ar': 'رفض', 'pt': 'Recusar', 'zh': '拒绝', 'sw': 'Kataa'});
+  String get btnSend => _t({'fr': 'Envoyer', 'en': 'Send', 'es': 'Enviar', 'de': 'Senden', 'ar': 'إرسال', 'pt': 'Enviar', 'zh': '发送', 'sw': 'Tuma'});
+  String get btnSave => _t({'fr': 'Enregistrer', 'en': 'Save', 'es': 'Guardar', 'de': 'Speichern', 'ar': 'حفظ', 'pt': 'Salvar', 'zh': '保存', 'sw': 'Hifadhi'});
+  String get btnCancel => _t({'fr': 'Annuler', 'en': 'Cancel', 'es': 'Cancelar', 'de': 'Abbrechen', 'ar': 'إلغاء', 'pt': 'Cancelar', 'zh': '取消', 'sw': 'Ghairi'});
+  String get btnDelete => _t({'fr': 'Supprimer', 'en': 'Delete', 'es': 'Eliminar', 'de': 'Löschen', 'ar': 'حذف', 'pt': 'Excluir', 'zh': '删除', 'sw': 'Futa'});
+  String get btnReply => _t({'fr': 'Répondre', 'en': 'Reply', 'es': 'Responder', 'de': 'Antworten', 'ar': 'رد', 'pt': 'Responder', 'zh': '回复', 'sw': 'Jibu'});
+  String get btnCreate => _t({'fr': 'Créer', 'en': 'Create', 'es': 'Crear', 'de': 'Erstellen', 'ar': 'إنشاء', 'pt': 'Criar', 'zh': '创建', 'sw': 'Unda'});
+  String get btnViewProfile => _t({'fr': 'Voir mon profil', 'en': 'View my profile', 'es': 'Ver mi perfil', 'de': 'Mein Profil ansehen', 'ar': 'عرض ملفي الشخصي', 'pt': 'Ver meu perfil', 'zh': '查看我的资料', 'sw': 'Tazama wasifu wangu'});
 
   // ── Chat ──────────────────────────────────────────────────────────────────
-  String get chatMessage    => _lang == 'fr' ? 'Message...'     : 'Message...';
-  String get chatRecording  => _lang == 'fr' ? 'Enregistrement' : 'Recording';
-  String get chatReplyTo    => _lang == 'fr' ? 'Répondre à:'    : 'Reply to:';
+  String get chatMessage => _t({'fr': 'Message...', 'en': 'Message...', 'es': 'Mensaje...', 'de': 'Nachricht...', 'ar': '...رسالة', 'pt': 'Mensagem...', 'zh': '消息...', 'sw': 'Ujumbe...'});
+  String get chatRecording => _t({'fr': 'Enregistrement', 'en': 'Recording', 'es': 'Grabando', 'de': 'Aufnahme', 'ar': 'تسجيل', 'pt': 'Gravando', 'zh': '录音', 'sw': 'Inarekodi'});
+  String get chatReplyTo => _t({'fr': 'Répondre à:', 'en': 'Reply to:', 'es': 'Responder a:', 'de': 'Antwort an:', 'ar': ':الرد على', 'pt': 'Responder a:', 'zh': '回复给:', 'sw': 'Jibu kwa:'});
 
   // ── Notifications ─────────────────────────────────────────────────────────
-  String get notifTitle     => _lang == 'fr' ? 'Notifications'  : 'Notifications';
-  String get notifMarkRead  => _lang == 'fr' ? 'Tout marquer comme lu' : 'Mark all as read';
+  String get notifTitle => _t({'fr': 'Notifications', 'en': 'Notifications', 'es': 'Notificaciones', 'de': 'Benachrichtigungen', 'ar': 'الإشعارات', 'pt': 'Notificações', 'zh': '通知', 'sw': 'Arifa'});
+  String get notifMarkRead => _t({'fr': 'Tout marquer comme lu', 'en': 'Mark all as read', 'es': 'Marcar todo como leído', 'de': 'Alles als gelesen markieren', 'ar': 'تحديد الكل كمقروء', 'pt': 'Marcar tudo como lido', 'zh': '全部标记为已读', 'sw': 'Weka zote kama zimesomwa'});
 
   // ── Profil ────────────────────────────────────────────────────────────────
-  String get profileTitle       => _lang == 'fr' ? 'Mon Profil'      : 'My Profile';
-  String get amisTabFriends     => _lang == 'fr' ? 'Mes Amis'        : 'My Friends';
-  String get profileInvites     => _lang == 'fr' ? 'Mes Invitations' : 'My Invitations';
-  String get profileSubscribers => _lang == 'fr' ? 'abonné(s)'       : 'subscriber(s)';
+  String get profileTitle => _t({'fr': 'Mon Profil', 'en': 'My Profile', 'es': 'Mi perfil', 'de': 'Mein Profil', 'ar': 'ملفي الشخصي', 'pt': 'Meu perfil', 'zh': '我的资料', 'sw': 'Wasifu wangu'});
+  String get amisTabFriends => _t({'fr': 'Mes Amis', 'en': 'My Friends', 'es': 'Mis amigos', 'de': 'Meine Freunde', 'ar': 'أصدقائي', 'pt': 'Meus amigos', 'zh': '我的朋友', 'sw': 'Marafiki wangu'});
+  String get profileInvites => _t({'fr': 'Mes Invitations', 'en': 'My Invitations', 'es': 'Mis invitaciones', 'de': 'Meine Einladungen', 'ar': 'دعواتي', 'pt': 'Meus convites', 'zh': '我的邀请', 'sw': 'Mialiko yangu'});
+  String get profileSubscribers => _t({'fr': 'abonné(s)', 'en': 'subscriber(s)', 'es': 'suscriptor(es)', 'de': 'Abonnent(en)', 'ar': '(مشترك(ون', 'pt': 'assinante(s)', 'zh': '订阅者', 'sw': 'wafuasi'});
+
+  // ── Auth — Connexion ───────────────────────────────────────────────────────
+  String get authSignIn => _t({'fr': 'Se connecter', 'en': 'Sign in', 'es': 'Iniciar sesión', 'de': 'Anmelden', 'ar': 'تسجيل الدخول', 'pt': 'Entrar', 'zh': '登录', 'sw': 'Ingia'});
+  String get authSignUp => _t({'fr': 'Créer un compte', 'en': 'Create account', 'es': 'Crear cuenta', 'de': 'Konto erstellen', 'ar': 'إنشاء حساب', 'pt': 'Criar conta', 'zh': '创建账户', 'sw': 'Fungua akaunti'});
+  String get authEmail => _t({'fr': 'Adresse email', 'en': 'Email address', 'es': 'Correo electrónico', 'de': 'E-Mail-Adresse', 'ar': 'البريد الإلكتروني', 'pt': 'Endereço de e-mail', 'zh': '电子邮箱', 'sw': 'Barua pepe'});
+  String get authPassword => _t({'fr': 'Mot de passe', 'en': 'Password', 'es': 'Contraseña', 'de': 'Passwort', 'ar': 'كلمة المرور', 'pt': 'Senha', 'zh': '密码', 'sw': 'Nenosiri'});
+  String get authForgotPassword => _t({'fr': 'Mot de passe oublié ?', 'en': 'Forgot password?', 'es': '¿Olvidaste tu contraseña?', 'de': 'Passwort vergessen?', 'ar': '؟نسيت كلمة المرور', 'pt': 'Esqueceu a senha?', 'zh': '忘记密码？', 'sw': 'Umesahau nenosiri?'});
+  String get authSlogan => _t({'fr': 'Votre popularité est à la une', 'en': 'Your popularity in the spotlight', 'es': 'Tu popularidad en el centro de atención', 'de': 'Deine Popularität im Rampenlicht', 'ar': 'شعبيتك في دائرة الأضواء', 'pt': 'Sua popularidade em destaque', 'zh': '您的受欢迎程度成为焦点', 'sw': 'Umaarufu wako kwenye mwanga'});
+  String get authConnecting => _t({'fr': 'Connexion...', 'en': 'Signing in...', 'es': 'Iniciando sesión...', 'de': 'Anmeldung...', 'ar': '...جاري تسجيل الدخول', 'pt': 'Entrando...', 'zh': '登录中...', 'sw': 'Inaingia...'});
+  String get authEmailInvalid => _t({'fr': 'Adresse email invalide', 'en': 'Invalid email address', 'es': 'Correo electrónico no válido', 'de': 'Ungültige E-Mail-Adresse', 'ar': 'البريد الإلكتروني غير صالح', 'pt': 'Endereço de e-mail inválido', 'zh': '无效的电子邮箱地址', 'sw': 'Barua pepe si sahihi'});
+  String get authEmailRequired => _t({'fr': 'Veuillez entrer votre adresse email', 'en': 'Please enter your email', 'es': 'Por favor ingresa tu correo electrónico', 'de': 'Bitte gib deine E-Mail-Adresse ein', 'ar': 'يرجى إدخال بريدك الإلكتروني', 'pt': 'Por favor, insira seu e-mail', 'zh': '请输入您的电子邮箱', 'sw': 'Tafadhali weka barua pepe yako'});
+  String get authPasswordRequired => _t({'fr': 'Veuillez entrer votre mot de passe', 'en': 'Please enter your password', 'es': 'Por favor ingresa tu contraseña', 'de': 'Bitte gib dein Passwort ein', 'ar': 'يرجى إدخال كلمة المرور', 'pt': 'Por favor, insira sua senha', 'zh': '请输入您的密码', 'sw': 'Tafadhali weka nenosiri lako'});
+  String get authPasswordTooShort => _t({'fr': 'Le mot de passe doit contenir au moins 6 caractères', 'en': 'Password must be at least 6 characters', 'es': 'La contraseña debe tener al menos 6 caracteres', 'de': 'Das Passwort muss mindestens 6 Zeichen enthalten', 'ar': 'يجب أن تحتوي كلمة المرور على 6 أحرف على الأقل', 'pt': 'A senha deve ter pelo menos 6 caracteres', 'zh': '密码必须至少包含6个字符', 'sw': 'Nenosiri lazima liwe na herufi 6 angalau'});
+  String get authContact => _t({'fr': 'Nous contacter', 'en': 'Contact us', 'es': 'Contáctanos', 'de': 'Kontaktiere uns', 'ar': 'اتصل بنا', 'pt': 'Contate-nos', 'zh': '联系我们', 'sw': 'Wasiliana nasi'});
+  String get authNeedHelp => _t({'fr': 'Besoin d\'aide ?', 'en': 'Need help?', 'es': '¿Necesitas ayuda?', 'de': 'Brauchst du Hilfe?', 'ar': '؟تحتاج مساعدة', 'pt': 'Precisa de ajuda?', 'zh': '需要帮助？', 'sw': 'Unahitaji msaada?'});
+  String get commonOr => _t({'fr': 'Ou', 'en': 'Or', 'es': 'O', 'de': 'Oder', 'ar': 'أو', 'pt': 'Ou', 'zh': '或', 'sw': 'Au'});
 
   // ── Auth — Inscription ────────────────────────────────────────────────────
-  String get authSignIn         => _lang == 'fr' ? 'Se connecter'           : 'Sign in';
-  String get authSignUp         => _lang == 'fr' ? 'Créer un compte'        : 'Create account';
-  String get authEmail          => _lang == 'fr' ? 'Adresse email'          : 'Email address';
-  String get authPassword       => _lang == 'fr' ? 'Mot de passe'           : 'Password';
-  String get authForgotPassword => _lang == 'fr' ? 'Mot de passe oublié ?'  : 'Forgot password?';
-  String get authSlogan         => _lang == 'fr' ? 'Votre popularité est à la une' : 'Your popularity in the spotlight';
-  String get authConnecting     => _lang == 'fr' ? 'Connexion...'           : 'Signing in...';
-  String get authEmailInvalid   => _lang == 'fr' ? 'Adresse email invalide'  : 'Invalid email address';
-  String get authEmailRequired  => _lang == 'fr' ? 'Veuillez entrer votre adresse email' : 'Please enter your email';
-  String get authPasswordRequired => _lang == 'fr' ? 'Veuillez entrer votre mot de passe' : 'Please enter your password';
-  String get authPasswordTooShort => _lang == 'fr' ? 'Le mot de passe doit contenir au moins 6 caractères' : 'Password must be at least 6 characters';
-  String get authContact        => _lang == 'fr' ? 'Nous contacter'         : 'Contact us';
-  String get authNeedHelp       => _lang == 'fr' ? 'Besoin d\'aide ?'        : 'Need help?';
-  String get commonOr           => _lang == 'fr' ? 'Ou'                      : 'Or';
+  String get signupTitle => _t({'fr': 'Inscription', 'en': 'Sign up', 'es': 'Registro', 'de': 'Registrierung', 'ar': 'التسجيل', 'pt': 'Cadastro', 'zh': '注册', 'sw': 'Jisajili'});
+  String get signupFirstName => _t({'fr': 'Prénom', 'en': 'First name', 'es': 'Nombre', 'de': 'Vorname', 'ar': 'الاسم الأول', 'pt': 'Nome', 'zh': '名字', 'sw': 'Jina la kwanza'});
+  String get signupLastName => _t({'fr': 'Nom', 'en': 'Last name', 'es': 'Apellido', 'de': 'Nachname', 'ar': 'اسم العائلة', 'pt': 'Sobrenome', 'zh': '姓氏', 'sw': 'Jina la familia'});
+  String get signupPseudo => _t({'fr': 'Pseudo', 'en': 'Username', 'es': 'Nombre de usuario', 'de': 'Benutzername', 'ar': 'اسم المستخدم', 'pt': 'Nome de usuário', 'zh': '用户名', 'sw': 'Jina la mtumiaji'});
+  String get signupPhone => _t({'fr': 'Téléphone', 'en': 'Phone', 'es': 'Teléfono', 'de': 'Telefon', 'ar': 'الهاتف', 'pt': 'Telefone', 'zh': '电话', 'sw': 'Simu'});
+  String get signupCountry => _t({'fr': 'Pays', 'en': 'Country', 'es': 'País', 'de': 'Land', 'ar': 'البلد', 'pt': 'País', 'zh': '国家', 'sw': 'Nchi'});
+  String get signupRegister => _t({'fr': 'S\'inscrire', 'en': 'Register', 'es': 'Registrarse', 'de': 'Registrieren', 'ar': 'التسجيل', 'pt': 'Registrar', 'zh': '注册', 'sw': 'Jisajili'});
+  String get signupAlreadyAccount => _t({'fr': 'Déjà un compte ?', 'en': 'Already have an account?', 'es': '¿Ya tienes una cuenta?', 'de': 'Hast du schon ein Konto?', 'ar': '؟هل لديك حساب', 'pt': 'Já tem uma conta?', 'zh': '已经有账户了？', 'sw': 'Una akaunti tayari?'});
 
-  // ── Auth — Inscription ────────────────────────────────────────────────────
-  String get signupTitle        => _lang == 'fr' ? 'Inscription'            : 'Sign up';
-  String get signupFirstName    => _lang == 'fr' ? 'Prénom'                 : 'First name';
-  String get signupLastName     => _lang == 'fr' ? 'Nom'                    : 'Last name';
-  String get signupPseudo       => _lang == 'fr' ? 'Pseudo'                 : 'Username';
-  String get signupPhone        => _lang == 'fr' ? 'Téléphone'              : 'Phone';
-  String get signupCountry      => _lang == 'fr' ? 'Pays'                   : 'Country';
-  String get signupRegister     => _lang == 'fr' ? 'S\'inscrire'            : 'Register';
-  String get signupAlreadyAccount => _lang == 'fr' ? 'Déjà un compte ?'     : 'Already have an account?';
+  // ── Welcome / Signup étendu (Session 21) ────────────────────────────────────
+  String get welcomeTagline => _t({'fr': 'Commencez aujourd\'hui et transformez vos vidéos en revenus !', 'en': 'Start today and turn your videos into income!', 'es': '¡Empieza hoy y convierte tus videos en ingresos!', 'de': 'Starte heute und verwandle deine Videos in Einkommen!', 'ar': 'ابدأ اليوم وحوّل مقاطع فيديو إلى دخل', 'pt': 'Comece hoje e transforme seus vídeos em renda!', 'zh': '今天开始，把您的视频变成收入！', 'sw': 'Anza leo na ubadilishe video zako kuwa kipato!'});
+  String get welcomeIncomeTitle => _t({'fr': 'Gagnez plus de 100 000 FCFA / mois', 'en': 'Earn more than 100,000 FCFA / month', 'es': 'Gana más de 100.000 FCFA al mes', 'de': 'Verdiene mehr als 100.000 FCFA / Monat', 'ar': 'اكسب أكثر من 100,000 فرنك أفريقي شهرياً', 'pt': 'Ganhe mais de 100.000 FCFA / mês', 'zh': '每月赚取超过100,000非洲法郎', 'sw': 'Pata zaidi ya FCFA 100,000 kwa mwezi'});
+  String get welcomeIncomeDesc => _t({'fr': 'Mettez vos vidéos en vente et monétisez votre talent directement sur Afrolook.', 'en': 'Put your videos up for sale and monetize your talent directly on Afrolook.', 'es': 'Pon tus videos en venta y monetiza tu talento directamente en Afrolook.', 'de': 'Biete deine Videos zum Verkauf an und monetarisiere dein Talent direkt auf Afrolook.', 'ar': 'اعرض مقاطع فيديو للبيع واستثمر موهبتك مباشرة على Afrolook', 'pt': 'Coloque seus vídeos à venda e monetize seu talento diretamente na Afrolook.', 'zh': '在Afrolook上直接出售您的视频并将才华变现。', 'sw': 'Weka video zako kwa mauzo na ufaidike na kipaji chako moja kwa moja kwenye Afrolook.'});
+  String get welcomeSupportTitle => _t({'fr': 'Soutien aux artistes, comédiens et créateurs africains', 'en': 'Supporting African artists, comedians and creators', 'es': 'Apoyo a artistas, comediantes y creadores africanos', 'de': 'Unterstützung für afrikanische Künstler, Komiker und Kreative', 'ar': 'دعم الفنانين والكوميديين والمبدعين الأفارقة', 'pt': 'Apoio a artistas, comediantes e criadores africanos', 'zh': '支持非洲艺术家、喜剧演员和创作者', 'sw': 'Msaada kwa wasanii, wachekeshaji na waumbaji wa Afrika'});
+  String get welcomeSupportDesc => _t({'fr': 'Publiez vos vidéos exclusives, engagez votre communauté et développez vos revenus.', 'en': 'Publish your exclusive videos, engage your community and grow your income.', 'es': 'Publica tus videos exclusivos, conecta con tu comunidad y aumenta tus ingresos.', 'de': 'Veröffentliche deine exklusiven Videos, binde deine Community ein und steigere dein Einkommen.', 'ar': 'انشر مقاطع فيديو حصرية، تفاعل مع مجتمعك وزد دخلك', 'pt': 'Publique seus vídeos exclusivos, envolva sua comunidade e aumente sua renda.', 'zh': '发布您的独家视频，吸引社区并增加收入。', 'sw': 'Chapisha video zako za kipekee, shirikisha jamii yako na kuongeza mapato yako.'});
+  String get welcomeBienvenue => _t({'fr': 'Bienvenue chez Afrolook', 'en': 'Welcome to Afrolook', 'es': 'Bienvenido a Afrolook', 'de': 'Willkommen bei Afrolook', 'ar': 'مرحباً بك في Afrolook', 'pt': 'Bem-vindo ao Afrolook', 'zh': '欢迎来到Afrolook', 'sw': 'Karibu Afrolook'});
+  String get signupCreateAccountTitle => _t({'fr': 'Créer un compte', 'en': 'Create an account', 'es': 'Crear una cuenta', 'de': 'Konto erstellen', 'ar': 'إنشاء حساب', 'pt': 'Criar uma conta', 'zh': '创建账户', 'sw': 'Fungua akaunti'});
+  String get signupJoinCommunity => _t({'fr': 'Rejoignez la communauté Afrolook', 'en': 'Join the Afrolook community', 'es': 'Únete a la comunidad Afrolook', 'de': 'Tritt der Afrolook-Community bei', 'ar': 'انضم إلى مجتمع Afrolook', 'pt': 'Junte-se à comunidade Afrolook', 'zh': '加入Afrolook社区', 'sw': 'Jiunge na jamii ya Afrolook'});
+  String get signupPhoneHint => _t({'fr': 'Numéro de téléphone', 'en': 'Phone number', 'es': 'Número de teléfono', 'de': 'Telefonnummer', 'ar': 'رقم الهاتف', 'pt': 'Número de telefone', 'zh': '电话号码', 'sw': 'Nambari ya simu'});
+  String get signupPhoneRequired => _t({'fr': 'Le champ "Téléphone" est obligatoire.', 'en': 'The "Phone" field is required.', 'es': 'El campo "Teléfono" es obligatorio.', 'de': 'Das Feld "Telefon" ist erforderlich.', 'ar': 'حقل "الهاتف" مطلوب', 'pt': 'O campo "Telefone" é obrigatório.', 'zh': '"电话"字段为必填项。', 'sw': 'Sehemu ya "Simu" inahitajika.'});
+  String get signupReferralCodeOptional => _t({'fr': 'Code de parrainage (optionnel)', 'en': 'Referral code (optional)', 'es': 'Código de referencia (opcional)', 'de': 'Empfehlungscode (optional)', 'ar': 'رمز الإحالة (اختياري)', 'pt': 'Código de indicação (opcional)', 'zh': '推荐码（可选）', 'sw': 'Msimbo wa rufaa (si lazima)'});
+  String get signupEmailRequired => _t({'fr': 'Le champ "Email" est obligatoire.', 'en': 'The "Email" field is required.', 'es': 'El campo "Correo electrónico" es obligatorio.', 'de': 'Das Feld "E-Mail" ist erforderlich.', 'ar': 'حقل "البريد الإلكتروني" مطلوب', 'pt': 'O campo "E-mail" é obrigatório.', 'zh': '"电子邮箱"字段为必填项。', 'sw': 'Sehemu ya "Barua pepe" inahitajika.'});
+  String get signupEmailInvalidShort => _t({'fr': 'Email invalide', 'en': 'Invalid email', 'es': 'Correo electrónico no válido', 'de': 'Ungültige E-Mail', 'ar': 'بريد إلكتروني غير صالح', 'pt': 'E-mail inválido', 'zh': '电子邮箱无效', 'sw': 'Barua pepe si sahihi'});
+  String get signupPseudoUnique => _t({'fr': 'Pseudo (unique)', 'en': 'Username (unique)', 'es': 'Nombre de usuario (único)', 'de': 'Benutzername (eindeutig)', 'ar': 'اسم المستخدم (فريد)', 'pt': 'Nome de usuário (único)', 'zh': '用户名（唯一）', 'sw': 'Jina la mtumiaji (la kipekee)'});
+  String get signupPseudoRequired => _t({'fr': 'Le champ "Pseudo" est obligatoire.', 'en': 'The "Username" field is required.', 'es': 'El campo "Nombre de usuario" es obligatorio.', 'de': 'Das Feld "Benutzername" ist erforderlich.', 'ar': 'حقل "اسم المستخدم" مطلوب', 'pt': 'O campo "Nome de usuário" é obrigatório.', 'zh': '"用户名"字段为必填项。', 'sw': 'Sehemu ya "Jina la mtumiaji" inahitajika.'});
+  String get signupPseudoTooShort => _t({'fr': 'Le pseudo doit comporter au moins 3 caractères.', 'en': 'The username must be at least 3 characters.', 'es': 'El nombre de usuario debe tener al menos 3 caracteres.', 'de': 'Der Benutzername muss mindestens 3 Zeichen enthalten.', 'ar': 'يجب أن يحتوي اسم المستخدم على 3 أحرف على الأقل', 'pt': 'O nome de usuário deve ter pelo menos 3 caracteres.', 'zh': '用户名必须至少包含3个字符。', 'sw': 'Jina la mtumiaji lazima liwe na herufi 3 angalau.'});
+  String get signupPseudoExists => _t({'fr': 'Le pseudo existe déjà', 'en': 'This username already exists', 'es': 'Este nombre de usuario ya existe', 'de': 'Dieser Benutzername existiert bereits', 'ar': 'اسم المستخدم موجود مسبقاً', 'pt': 'Este nome de usuário já existe', 'zh': '该用户名已存在', 'sw': 'Jina hili la mtumiaji lipo tayari'});
+  String get signupGenreLabel => _t({'fr': 'Genre', 'en': 'Gender', 'es': 'Género', 'de': 'Geschlecht', 'ar': 'الجنس', 'pt': 'Gênero', 'zh': '性别', 'sw': 'Jinsia'});
+  String get signupGenreMale => _t({'fr': 'Homme', 'en': 'Male', 'es': 'Hombre', 'de': 'Mann', 'ar': 'ذكر', 'pt': 'Masculino', 'zh': '男', 'sw': 'Mwanaume'});
+  String get signupGenreFemale => _t({'fr': 'Femme', 'en': 'Female', 'es': 'Mujer', 'de': 'Frau', 'ar': 'أنثى', 'pt': 'Feminino', 'zh': '女', 'sw': 'Mwanamke'});
+  String get signupGenreRequired => _t({'fr': 'Le champ "genre" est obligatoire.', 'en': 'The "gender" field is required.', 'es': 'El campo "género" es obligatorio.', 'de': 'Das Feld "Geschlecht" ist erforderlich.', 'ar': 'حقل "الجنس" مطلوب', 'pt': 'O campo "gênero" é obrigatório.', 'zh': '"性别"字段为必填项。', 'sw': 'Sehemu ya "jinsia" inahitajika.'});
+  String get signupPasswordHint => _t({'fr': 'Mot de passe', 'en': 'Password', 'es': 'Contraseña', 'de': 'Passwort', 'ar': 'كلمة المرور', 'pt': 'Senha', 'zh': '密码', 'sw': 'Nenosiri'});
+  String get signupConfirmPasswordHint => _t({'fr': 'Confirmer le mot de passe', 'en': 'Confirm password', 'es': 'Confirmar contraseña', 'de': 'Passwort bestätigen', 'ar': 'تأكيد كلمة المرور', 'pt': 'Confirmar senha', 'zh': '确认密码', 'sw': 'Thibitisha nenosiri'});
+  String get signupPasswordRequired => _t({'fr': 'Le champ "Mot de passe" est obligatoire.', 'en': 'The "Password" field is required.', 'es': 'El campo "Contraseña" es obligatorio.', 'de': 'Das Feld "Passwort" ist erforderlich.', 'ar': 'حقل "كلمة المرور" مطلوب', 'pt': 'O campo "Senha" é obrigatório.', 'zh': '"密码"字段为必填项。', 'sw': 'Sehemu ya "Nenosiri" inahitajika.'});
+  String get signupPasswordTooShort => _t({'fr': 'Le mot de passe doit comporter au moins 8 caractères.', 'en': 'The password must be at least 8 characters.', 'es': 'La contraseña debe tener al menos 8 caracteres.', 'de': 'Das Passwort muss mindestens 8 Zeichen enthalten.', 'ar': 'يجب أن تحتوي كلمة المرور على 8 أحرف على الأقل', 'pt': 'A senha deve ter pelo menos 8 caracteres.', 'zh': '密码必须至少包含8个字符。', 'sw': 'Nenosiri lazima liwe na herufi 8 angalau.'});
+  String get signupConfirmPasswordRequired => _t({'fr': 'Le champ "Confirmer Mot de passe" est obligatoire.', 'en': 'The "Confirm Password" field is required.', 'es': 'El campo "Confirmar contraseña" es obligatorio.', 'de': 'Das Feld "Passwort bestätigen" ist erforderlich.', 'ar': 'حقل "تأكيد كلمة المرور" مطلوب', 'pt': 'O campo "Confirmar Senha" é obrigatório.', 'zh': '"确认密码"字段为必填项。', 'sw': 'Sehemu ya "Thibitisha Nenosiri" inahitajika.'});
+  String get signupPasswordsDontMatch => _t({'fr': 'Les mots de passe ne correspondent pas', 'en': 'Passwords do not match', 'es': 'Las contraseñas no coinciden', 'de': 'Die Passwörter stimmen nicht überein', 'ar': 'كلمتا المرور غير متطابقتين', 'pt': 'As senhas não coincidem', 'zh': '密码不匹配', 'sw': 'Manenosiri hayalingani'});
+  String get signupNext => _t({'fr': 'Suivant', 'en': 'Next', 'es': 'Siguiente', 'de': 'Weiter', 'ar': 'التالي', 'pt': 'Próximo', 'zh': '下一步', 'sw': 'Endelea'});
+  String get signupAlreadyHaveAccount => _t({'fr': 'Vous avez déjà un compte? ', 'en': 'Already have an account? ', 'es': '¿Ya tienes una cuenta? ', 'de': 'Hast du schon ein Konto? ', 'ar': 'هل لديك حساب؟ ', 'pt': 'Já tem uma conta? ', 'zh': '已经有账户了？ ', 'sw': 'Una akaunti tayari? '});
+  String get signupLoginLink => _t({'fr': 'Connectez-vous', 'en': 'Log in', 'es': 'Inicia sesión', 'de': 'Anmelden', 'ar': 'تسجيل الدخول', 'pt': 'Entrar', 'zh': '登录', 'sw': 'Ingia'});
+  String get otpVerificationTitle => _t({'fr': 'Vérification de code', 'en': 'Code verification', 'es': 'Verificación de código', 'de': 'Code-Überprüfung', 'ar': 'التحقق من الرمز', 'pt': 'Verificação de código', 'zh': '验证码确认', 'sw': 'Uthibitishaji wa msimbo'});
+  String get otpVerificationDesc => _t({'fr': 'Veuillez entrer le code que vous venez de recevoir sur votre numéro de téléphone', 'en': 'Please enter the code you just received on your phone number', 'es': 'Por favor ingresa el código que acabas de recibir en tu número de teléfono', 'de': 'Bitte gib den Code ein, den du gerade auf deine Telefonnummer erhalten hast', 'ar': 'يرجى إدخال الرمز الذي استلمته على رقم هاتفك', 'pt': 'Por favor, insira o código que você acabou de receber no seu número de telefone', 'zh': '请输入您刚收到的手机验证码', 'sw': 'Tafadhali weka msimbo uliopokea kwenye nambari yako ya simu'});
+  String get otpResendCode => _t({'fr': 'Renvoyer le code', 'en': 'Resend code', 'es': 'Reenviar código', 'de': 'Code erneut senden', 'ar': 'إعادة إرسال الرمز', 'pt': 'Reenviar código', 'zh': '重新发送验证码', 'sw': 'Tuma tena msimbo'});
+  String get otpVerify => _t({'fr': 'Vérifier', 'en': 'Verify', 'es': 'Verificar', 'de': 'Überprüfen', 'ar': 'تحقق', 'pt': 'Verificar', 'zh': '验证', 'sw': 'Thibitisha'});
+  String get otpAccountExists => _t({'fr': 'Ce compte existe déjà', 'en': 'This account already exists', 'es': 'Esta cuenta ya existe', 'de': 'Dieses Konto existiert bereits', 'ar': 'هذا الحساب موجود مسبقاً', 'pt': 'Esta conta já existe', 'zh': '该账户已存在', 'sw': 'Akaunti hii ipo tayari'});
+  String get otpVerificationSuccess => _t({'fr': 'Vérification réussie', 'en': 'Verification successful', 'es': 'Verificación exitosa', 'de': 'Überprüfung erfolgreich', 'ar': 'تم التحقق بنجاح', 'pt': 'Verificação bem-sucedida', 'zh': '验证成功', 'sw': 'Uthibitisho umefanikiwa'});
+  String get otpVerificationError => _t({'fr': 'Erreur de vérification', 'en': 'Verification error', 'es': 'Error de verificación', 'de': 'Überprüfungsfehler', 'ar': 'خطأ في التحقق', 'pt': 'Erro de verificação', 'zh': '验证错误', 'sw': 'Hitilafu ya uthibitisho'});
+  String get otpWrongCode => _t({'fr': 'Le code est erroné', 'en': 'The code is incorrect', 'es': 'El código es incorrecto', 'de': 'Der Code ist falsch', 'ar': 'الرمز غير صحيح', 'pt': 'O código está incorreto', 'zh': '验证码错误', 'sw': 'Msimbo si sahihi'});
 
   // ── Posts ─────────────────────────────────────────────────────────────────
-  String get postLike           => _lang == 'fr' ? 'J\'aime'               : 'Like';
-  String get postComment        => _lang == 'fr' ? 'Commenter'              : 'Comment';
-  String get postShare          => _lang == 'fr' ? 'Partager'               : 'Share';
-  String get postSave           => _lang == 'fr' ? 'Enregistrer'            : 'Save';
-  String get postReport         => _lang == 'fr' ? 'Signaler'               : 'Report';
-  String get postDelete         => _lang == 'fr' ? 'Supprimer'              : 'Delete';
-  String get postEdit           => _lang == 'fr' ? 'Modifier'               : 'Edit';
-  String get postViews          => _lang == 'fr' ? 'vues'                   : 'views';
-  String get postComments       => _lang == 'fr' ? 'commentaires'           : 'comments';
-  String get postLikes          => _lang == 'fr' ? 'j\'aime'                : 'likes';
-  String get postSponsored      => _lang == 'fr' ? 'SPONSORISÉ'             : 'SPONSORED';
-  String get postWriteComment   => _lang == 'fr' ? 'Écrire un commentaire...' : 'Write a comment...';
-  String get postSuggestions    => _lang == 'fr' ? 'Suggestions'            : 'Suggestions';
-  String get postPublish        => _lang == 'fr' ? 'Publier'                : 'Publish';
-  String get postDescription    => _lang == 'fr' ? 'Description...'         : 'Description...';
-  String get postAddMedia       => _lang == 'fr' ? 'Ajouter un média'       : 'Add media';
+  String get postLike => _t({'fr': 'J\'aime', 'en': 'Like', 'es': 'Me gusta', 'de': 'Gefällt mir', 'ar': 'أحببته', 'pt': 'Curtir', 'zh': '赞', 'sw': 'Penda'});
+  String get postComment => _t({'fr': 'Commenter', 'en': 'Comment', 'es': 'Comentar', 'de': 'Kommentieren', 'ar': 'تعليق', 'pt': 'Comentar', 'zh': '评论', 'sw': 'Toa maoni'});
+  String get postShare => _t({'fr': 'Partager', 'en': 'Share', 'es': 'Compartir', 'de': 'Teilen', 'ar': 'مشاركة', 'pt': 'Compartilhar', 'zh': '分享', 'sw': 'Shiriki'});
+  String get postSave => _t({'fr': 'Enregistrer', 'en': 'Save', 'es': 'Guardar', 'de': 'Speichern', 'ar': 'حفظ', 'pt': 'Salvar', 'zh': '保存', 'sw': 'Hifadhi'});
+  String get postReport => _t({'fr': 'Signaler', 'en': 'Report', 'es': 'Reportar', 'de': 'Melden', 'ar': 'الإبلاغ', 'pt': 'Denunciar', 'zh': '举报', 'sw': 'Ripoti'});
+  String get postDelete => _t({'fr': 'Supprimer', 'en': 'Delete', 'es': 'Eliminar', 'de': 'Löschen', 'ar': 'حذف', 'pt': 'Excluir', 'zh': '删除', 'sw': 'Futa'});
+  String get postEdit => _t({'fr': 'Modifier', 'en': 'Edit', 'es': 'Editar', 'de': 'Bearbeiten', 'ar': 'تعديل', 'pt': 'Editar', 'zh': '编辑', 'sw': 'Hariri'});
+  String get postViews => _t({'fr': 'vues', 'en': 'views', 'es': 'vistas', 'de': 'Aufrufe', 'ar': 'مشاهدات', 'pt': 'visualizações', 'zh': '次观看', 'sw': 'maoni'});
+  String get postComments => _t({'fr': 'commentaires', 'en': 'comments', 'es': 'comentarios', 'de': 'Kommentare', 'ar': 'تعليقات', 'pt': 'comentários', 'zh': '评论', 'sw': 'maoni'});
+  String get postLikes => _t({'fr': 'j\'aime', 'en': 'likes', 'es': 'me gusta', 'de': 'Gefällt mir', 'ar': 'إعجابات', 'pt': 'curtidas', 'zh': '赞', 'sw': 'mapendo'});
+  String get postSponsored => _t({'fr': 'SPONSORISÉ', 'en': 'SPONSORED', 'es': 'PATROCINADO', 'de': 'GESPONSERT', 'ar': 'إعلان ممول', 'pt': 'PATROCINADO', 'zh': '赞助内容', 'sw': 'IMEFADHILIWA'});
+  String get postWriteComment => _t({'fr': 'Écrire un commentaire...', 'en': 'Write a comment...', 'es': 'Escribe un comentario...', 'de': 'Schreibe einen Kommentar...', 'ar': '...اكتب تعليقًا', 'pt': 'Escreva um comentário...', 'zh': '写评论...', 'sw': 'Andika maoni...'});
+  String get postSuggestions => feedSuggestions;
+  String get postPublish => _t({'fr': 'Publier', 'en': 'Publish', 'es': 'Publicar', 'de': 'Veröffentlichen', 'ar': 'نشر', 'pt': 'Publicar', 'zh': '发布', 'sw': 'Chapisha'});
+  String get postDescription => _t({'fr': 'Description...', 'en': 'Description...', 'es': 'Descripción...', 'de': 'Beschreibung...', 'ar': '...الوصف', 'pt': 'Descrição...', 'zh': '描述...', 'sw': 'Maelezo...'});
+  String get postAddMedia => _t({'fr': 'Ajouter un média', 'en': 'Add media', 'es': 'Agregar contenido multimedia', 'de': 'Medien hinzufügen', 'ar': 'إضافة وسائط', 'pt': 'Adicionar mídia', 'zh': '添加媒体', 'sw': 'Ongeza media'});
+  String get postSupportCreator => _t({'fr': 'Soutenir le créateur', 'en': 'Support the creator', 'es': 'Apoyar al creador', 'de': 'Ersteller unterstützen', 'ar': 'دعم المنشئ', 'pt': 'Apoiar o criador', 'zh': '支持创作者', 'sw': 'Saidia muumbaji'});
+  String get postSupportLater => _t({'fr': 'Plus tard', 'en': 'Later', 'es': 'Más tarde', 'de': 'Später', 'ar': 'في وقت لاحق', 'pt': 'Mais tarde', 'zh': '稍后', 'sw': 'Baadaye'});
+  String get postSupportWatchAdInfo => _t({'fr': 'En regardant cette publicité, vous offrez des pièces au créateur de ce post.', 'en': 'By watching this ad, you give coins to the creator of this post.', 'es': 'Al ver este anuncio, le ofreces monedas al creador de esta publicación.', 'de': 'Indem du diese Werbung ansiehst, schenkst du dem Ersteller dieses Beitrags Münzen.', 'ar': 'بمشاهدة هذا الإعلان، أنت تقدم عملات لمنشئ هذا المنشور.', 'pt': 'Ao assistir a este anúncio, você oferece moedas ao criador desta publicação.', 'zh': '观看此广告即可向该帖子的创作者赠送金币。', 'sw': 'Kwa kutazama tangazo hili, unampa sarafu muumbaji wa chapisho hili.'});
+  String get postSupportEarnings => _t({'fr': 'Cela l\'encourage à produire plus de contenu et peut lui rapporter jusqu\'à 100€ (environ 65 000 FCFA) par mois !', 'en': 'This encourages them to create more content and can earn them up to €100 (about 65,000 FCFA) per month!', 'es': '¡Esto le anima a crear más contenido y puede generarle hasta 100€ (unos 65 000 FCFA) al mes!', 'de': 'Das motiviert sie, mehr Inhalte zu erstellen, und kann ihnen bis zu 100€ (ca. 65.000 FCFA) pro Monat einbringen!', 'ar': 'هذا يشجعه على إنشاء محتوى أكثر، ويمكن أن يجلب له حتى 100 يورو (حوالي 65,000 فرنك إفريقي) شهرياً!', 'pt': 'Isso o incentiva a criar mais conteúdo e pode gerar até 100€ (cerca de 65.000 FCFA) por mês!', 'zh': '这能鼓励他们创作更多内容，每月最多可获得100欧元（约65,000 FCFA）的收入！', 'sw': 'Hii inamtia moyo kuzalisha maudhui zaidi na inaweza kumpatia hadi euro 100 (kama FCFA 65,000) kwa mwezi!'});
+  String get postSupportCoinsConvert => _t({'fr': '💰 Les pièces récoltées peuvent être converties en argent réel.', 'en': '💰 Earned coins can be converted into real money.', 'es': '💰 Las monedas obtenidas se pueden convertir en dinero real.', 'de': '💰 Gesammelte Münzen können in echtes Geld umgewandelt werden.', 'ar': '💰 يمكن تحويل العملات المكتسبة إلى أموال حقيقية.', 'pt': '💰 As moedas recebidas podem ser convertidas em dinheiro real.', 'zh': '💰 获得的金币可兑换为真实货币。', 'sw': '💰 Sarafu zilizopatikana zinaweza kubadilishwa kuwa fedha halisi.'});
+  String get postSupportWatchAdButton => _t({'fr': 'Regarder la pub', 'en': 'Watch the ad', 'es': 'Ver el anuncio', 'de': 'Werbung ansehen', 'ar': 'مشاهدة الإعلان', 'pt': 'Assistir ao anúncio', 'zh': '观看广告', 'sw': 'Tazama tangazo'});
+  String get postSupportCannotSelf => _t({'fr': 'Vous ne pouvez pas soutenir votre propre post', 'en': 'You cannot support your own post', 'es': 'No puedes apoyar tu propia publicación', 'de': 'Du kannst deinen eigenen Beitrag nicht unterstützen', 'ar': 'لا يمكنك دعم منشورك الخاص', 'pt': 'Você não pode apoiar sua própria publicação', 'zh': '您不能支持自己的帖子', 'sw': 'Hauwezi kusaidia chapisho lako mwenyewe'});
+  String get postSupportAlreadyToday => _t({'fr': 'Vous avez déjà soutenu ce post aujourd\'hui. Revenez demain !', 'en': 'You already supported this post today. Come back tomorrow!', 'es': 'Ya apoyaste esta publicación hoy. ¡Vuelve mañana!', 'de': 'Du hast diesen Beitrag heute bereits unterstützt. Komm morgen wieder!', 'ar': 'لقد دعمت هذا المنشور اليوم بالفعل. عد غداً!', 'pt': 'Você já apoiou esta publicação hoje. Volte amanhã!', 'zh': '您今天已经支持过这个帖子了，明天再来吧！', 'sw': 'Umeshasaidia chapisho hili leo. Rudi kesho!'});
+  String get postSupportThanks => _t({'fr': '🎉 Merci ! Le créateur a reçu des pièces et a été notifié.', 'en': '🎉 Thanks! The creator received coins and was notified.', 'es': '🎉 ¡Gracias! El creador recibió monedas y fue notificado.', 'de': '🎉 Danke! Der Ersteller hat Münzen erhalten und wurde benachrichtigt.', 'ar': '🎉 شكراً! استلم المنشئ العملات وتم إشعاره.', 'pt': '🎉 Obrigado! O criador recebeu moedas e foi notificado.', 'zh': '🎉 谢谢！创作者已收到金币并收到通知。', 'sw': '🎉 Asante! Muumbaji amepokea sarafu na ameuarifiwa.'});
 
   // ── Pronostics ────────────────────────────────────────────────────────────
-  String get pronoTitle         => _lang == 'fr' ? '⚽ Pronostics du moment' : '⚽ Current Predictions';
-  String get pronoPlay          => _lang == 'fr' ? 'Jouer maintenant'       : 'Play now';
-  String get pronoOpen          => _lang == 'fr' ? 'OUVERT'                 : 'OPEN';
-  String get pronoInProgress    => _lang == 'fr' ? 'EN COURS'               : 'IN PROGRESS';
-  String get pronoJackpot       => _lang == 'fr' ? 'FCFA à partager'        : 'FCFA to share';
-  String get pronoLoading       => _lang == 'fr' ? 'Jouez et gagnez jusqu\'à 50 000 FCFA' : 'Play and win up to 50,000 FCFA';
+  String get pronoTitle => _t({'fr': '⚽ Pronostics du moment', 'en': '⚽ Current Predictions', 'es': '⚽ Pronósticos del momento', 'de': '⚽ Aktuelle Prognosen', 'ar': '⚽ التوقعات الحالية', 'pt': '⚽ Palpites do momento', 'zh': '⚽ 当前预测', 'sw': '⚽ Utabiri wa sasa'});
+  String get pronoPlay => _t({'fr': 'Jouer maintenant', 'en': 'Play now', 'es': 'Jugar ahora', 'de': 'Jetzt spielen', 'ar': 'العب الآن', 'pt': 'Jogar agora', 'zh': '立即玩', 'sw': 'Cheza sasa'});
+  String get pronoOpen => _t({'fr': 'OUVERT', 'en': 'OPEN', 'es': 'ABIERTO', 'de': 'OFFEN', 'ar': 'مفتوح', 'pt': 'ABERTO', 'zh': '开放', 'sw': 'WAZI'});
+  String get pronoInProgress => _t({'fr': 'EN COURS', 'en': 'IN PROGRESS', 'es': 'EN CURSO', 'de': 'LÄUFT', 'ar': 'جارٍ', 'pt': 'EM ANDAMENTO', 'zh': '进行中', 'sw': 'INAENDELEA'});
+  String get pronoJackpot => _t({'fr': 'FCFA à partager', 'en': 'FCFA to share', 'es': 'FCFA a compartir', 'de': 'FCFA zu teilen', 'ar': 'FCFA للمشاركة', 'pt': 'FCFA para compartilhar', 'zh': 'FCFA可分享', 'sw': 'FCFA za kugawana'});
+  String get pronoLoading => _t({'fr': 'Jouez et gagnez jusqu\'à 50 000 FCFA', 'en': 'Play and win up to 50,000 FCFA', 'es': 'Juega y gana hasta 50.000 FCFA', 'de': 'Spiele und gewinne bis zu 50.000 FCFA', 'ar': 'العب واربح حتى 50,000 فرنك إفريقي', 'pt': 'Jogue e ganhe até 50.000 FCFA', 'zh': '玩游戏赢取高达50,000 FCFA', 'sw': 'Cheza na ushinde hadi FCFA 50,000'});
 
   // ── Dating ────────────────────────────────────────────────────────────────
-  String get datingTitle        => 'AfroLove';
-  String get datingSubtitle     => _lang == 'fr' ? 'Des profils qui pourraient vous correspondre' : 'Profiles that might match you';
-  String get datingSeeMore      => _lang == 'fr' ? 'Voir plus'              : 'See more';
-  String get datingMeetLove     => _lang == 'fr' ? '✨ Rencontrer l\'amour ✨' : '✨ Find love ✨';
+  String get datingTitle => 'AfroLove';
+  String get datingSubtitle => _t({'fr': 'Des profils qui pourraient vous correspondre', 'en': 'Profiles that might match you', 'es': 'Perfiles que podrían coincidir contigo', 'de': 'Profile, die zu dir passen könnten', 'ar': 'ملفات شخصية قد تناسبك', 'pt': 'Perfis que podem combinar com você', 'zh': '可能匹配你的资料', 'sw': 'Wasifu unaoweza kukufaa'});
+  String get datingSeeMore => commonSeeMore;
+  String get datingMeetLove => _t({'fr': '✨ Rencontrer l\'amour ✨', 'en': '✨ Find love ✨', 'es': '✨ Encuentra el amor ✨', 'de': '✨ Liebe finden ✨', 'ar': '✨ جد الحب ✨', 'pt': '✨ Encontre o amor ✨', 'zh': '✨ 寻找爱情 ✨', 'sw': '✨ Pata mapenzi ✨'});
 
   // ── Zone VIP ──────────────────────────────────────────────────────────────
-  String get vipSeeMore         => _lang == 'fr' ? 'Voir plus'              : 'See more';
-  String get vipNew             => _lang == 'fr' ? 'Nouveautés'             : 'New';
-  String get vipFree            => _lang == 'fr' ? 'Gratuit'                : 'Free';
-  String get vipSeries          => _lang == 'fr' ? 'Série'                  : 'Series';
-  String get vipEbook           => 'Ebook';
-  String get vipVideo           => _lang == 'fr' ? 'Vidéo'                  : 'Video';
+  String get vipSeeMore => commonSeeMore;
+  String get vipNew => _t({'fr': 'Nouveautés', 'en': 'New', 'es': 'Novedades', 'de': 'Neu', 'ar': 'جديد', 'pt': 'Novidades', 'zh': '新内容', 'sw': 'Mpya'});
+  String get vipFree => _t({'fr': 'Gratuit', 'en': 'Free', 'es': 'Gratis', 'de': 'Kostenlos', 'ar': 'مجاني', 'pt': 'Gratuito', 'zh': '免费', 'sw': 'Bure'});
+  String get vipSeries => _t({'fr': 'Série', 'en': 'Series', 'es': 'Serie', 'de': 'Serie', 'ar': 'مسلسل', 'pt': 'Série', 'zh': '系列', 'sw': 'Mfululizo'});
+  String get vipEbook => 'Ebook';
+  String get vipVideo => _t({'fr': 'Vidéo', 'en': 'Video', 'es': 'Vídeo', 'de': 'Video', 'ar': 'فيديو', 'pt': 'Vídeo', 'zh': '视频', 'sw': 'Video'});
 
   // ── Canaux ────────────────────────────────────────────────────────────────
-  String get canalSubscribe     => _lang == 'fr' ? 'S\'abonner'             : 'Subscribe';
-  String get canalSubscribed    => _lang == 'fr' ? 'Abonné'                 : 'Subscribed';
-  String get canalMembers       => _lang == 'fr' ? 'membres'                : 'members';
+  String get canalSubscribe => _t({'fr': 'S\'abonner', 'en': 'Subscribe', 'es': 'Suscribirse', 'de': 'Abonnieren', 'ar': 'الاشتراك', 'pt': 'Inscrever-se', 'zh': '订阅', 'sw': 'Jiunge'});
+  String get canalSubscribed => _t({'fr': 'Abonné', 'en': 'Subscribed', 'es': 'Suscrito', 'de': 'Abonniert', 'ar': 'مشترك', 'pt': 'Inscrito', 'zh': '已订阅', 'sw': 'Umejiunga'});
+  String get canalMembers => _t({'fr': 'membres', 'en': 'members', 'es': 'miembros', 'de': 'Mitglieder', 'ar': 'أعضاء', 'pt': 'membros', 'zh': '成员', 'sw': 'wanachama'});
 
   // ── Sections de la page d'accueil ───────────────────────────────────────
-  String get sectionBoostedProducts  => _lang == 'fr' ? '🔥 Produits Boostés'     : '🔥 Boosted Products';
-  String get sectionDiscoverProfiles => _lang == 'fr' ? '👑 Profils à découvrir'  : '👑 Profiles to discover';
-  String get sectionAfrolookCanal    => _lang == 'fr' ? '📺 Afrolook Canal'       : '📺 Afrolook Channel';
-  String get sectionBoutiques        => _lang == 'fr' ? 'Boutiques'              : 'Shops';
-  String get menuMyChroniques        => _lang == 'fr' ? 'Mes chroniques'         : 'My chronicles';
-  String get menuCanaux              => _lang == 'fr' ? 'Canaux'                 : 'Channels';
+  String get sectionBoostedProducts => _t({'fr': '🔥 Produits Boostés', 'en': '🔥 Boosted Products', 'es': '🔥 Productos Destacados', 'de': '🔥 Beworbene Produkte', 'ar': '🔥 منتجات مميزة', 'pt': '🔥 Produtos Impulsionados', 'zh': '🔥 推广产品', 'sw': '🔥 Bidhaa Zilizoboreshwa'});
+  String get sectionDiscoverProfiles => _t({'fr': '👑 Profils à découvrir', 'en': '👑 Profiles to discover', 'es': '👑 Perfiles para descubrir', 'de': '👑 Profile zum Entdecken', 'ar': '👑 ملفات للاستكشاف', 'pt': '👑 Perfis para descobrir', 'zh': '👑 待发现的资料', 'sw': '👑 Wasifu wa kugundua'});
+  String get sectionAfrolookCanal => _t({'fr': '📺 Afrolook Canal', 'en': '📺 Afrolook Channel', 'es': '📺 Canal Afrolook', 'de': '📺 Afrolook-Kanal', 'ar': '📺 قناة أفرولوك', 'pt': '📺 Canal Afrolook', 'zh': '📺 Afrolook频道', 'sw': '📺 Mkondo wa Afrolook'});
+  String get sectionBoutiques => _t({'fr': 'Boutiques', 'en': 'Shops', 'es': 'Tiendas', 'de': 'Shops', 'ar': 'المتاجر', 'pt': 'Lojas', 'zh': '商店', 'sw': 'Maduka'});
+  String get menuMyChroniques => _t({'fr': 'Mes chroniques', 'en': 'My chronicles', 'es': 'Mis crónicas', 'de': 'Meine Chroniken', 'ar': 'سجلاتي', 'pt': 'Minhas crônicas', 'zh': '我的纪事', 'sw': 'Mambo yangu Mapya'});
+  String get menuCanaux => feedCanal;
 
   // ── Menu latéral (suite) ──────────────────────────────────────────────────
-  String get menuDarkMode            => _lang == 'fr' ? 'Mode sombre'            : 'Dark mode';
-  String get menuLightMode           => _lang == 'fr' ? 'Mode clair'             : 'Light mode';
-  String get menuLanguage            => _lang == 'fr' ? 'Langue'                 : 'Language';
-  String get menuSearchUsers         => _lang == 'fr' ? 'Rechercher un utilisateur' : 'Search users';
-  String get menuProfile             => _lang == 'fr' ? 'Profil'                 : 'Profile';
-  String get menuTopPostsMonth       => _lang == 'fr' ? 'Meilleurs Posts du mois' : 'Top Posts of the Month';
-  String get menuFriends             => _lang == 'fr' ? 'Amis'                   : 'Friends';
-  String get menuMarketing           => _lang == 'fr' ? 'Marketing'              : 'Marketing';
-  String get menuTopStars            => _lang == 'fr' ? 'TOP 10 Afrolooks Stars' : 'TOP 10 Afrolook Stars';
-  String get menuPronosticsBetting   => _lang == 'fr' ? 'Pronostics & Betting'   : 'Predictions & Betting';
-  String get menuFavorites           => _lang == 'fr' ? 'Mes favoris'            : 'My favorites';
-  String get menuServicesJobs        => _lang == 'fr' ? '🛠️Services & Jobs 💼'   : '🛠️Services & Jobs 💼';
-  String get menuServicesJobsSubtitle => _lang == 'fr' ? 'Chercher des gens pour bosser' : 'Find people to work with';
-  String get menuAfroshopMarket      => _lang == 'fr' ? 'Afroshop Market'        : 'Afroshop Market';
-  String get menuAfroCoinMarket      => _lang == 'fr' ? 'AfroCoin Market'        : 'AfroCoin Market';
-  String get menuMyLives             => _lang == 'fr' ? 'Mes lives'              : 'My lives';
-  String get menuMyChallenges        => _lang == 'fr' ? 'Mes challenges'         : 'My challenges';
-  String get menuNewsInfo            => _lang == 'fr' ? 'Actus & Infos AfroLook' : 'AfroLook News & Info';
-  String get menuContacts            => _lang == 'fr' ? 'Nos Contactes'          : 'Our Contacts';
-  String get menuShareApp            => _lang == 'fr' ? 'Partager l\'application' : 'Share the app';
-  String get menuLogout              => _lang == 'fr' ? 'Déconnecter'            : 'Log out';
+  String get menuDarkMode => _t({'fr': 'Mode sombre', 'en': 'Dark mode', 'es': 'Modo oscuro', 'de': 'Dunkler Modus', 'ar': 'الوضع الداكن', 'pt': 'Modo escuro', 'zh': '深色模式', 'sw': 'Hali ya giza'});
+  String get menuLightMode => _t({'fr': 'Mode clair', 'en': 'Light mode', 'es': 'Modo claro', 'de': 'Heller Modus', 'ar': 'الوضع الفاتح', 'pt': 'Modo claro', 'zh': '浅色模式', 'sw': 'Hali ya mwanga'});
+  String get menuLanguage => _t({'fr': 'Langue', 'en': 'Language', 'es': 'Idioma', 'de': 'Sprache', 'ar': 'اللغة', 'pt': 'Idioma', 'zh': '语言', 'sw': 'Lugha'});
+  String get menuSearchUsers => _t({'fr': 'Rechercher un utilisateur', 'en': 'Search users', 'es': 'Buscar usuarios', 'de': 'Benutzer suchen', 'ar': 'البحث عن مستخدم', 'pt': 'Pesquisar usuários', 'zh': '搜索用户', 'sw': 'Tafuta watumiaji'});
+  String get menuProfile => navProfile;
+  String get menuTopPostsMonth => _t({'fr': 'Meilleurs Posts du mois', 'en': 'Top Posts of the Month', 'es': 'Mejores publicaciones del mes', 'de': 'Top-Beiträge des Monats', 'ar': 'أفضل المنشورات هذا الشهر', 'pt': 'Melhores posts do mês', 'zh': '本月热门帖子', 'sw': 'Machapisho Bora ya Mwezi'});
+  String get menuFriends => _t({'fr': 'Amis', 'en': 'Friends', 'es': 'Amigos', 'de': 'Freunde', 'ar': 'الأصدقاء', 'pt': 'Amigos', 'zh': '朋友', 'sw': 'Marafiki'});
+  String get menuMarketing => 'Marketing';
+  String get menuTopStars => _t({'fr': 'TOP 10 Afrolooks Stars', 'en': 'TOP 10 Afrolook Stars', 'es': 'TOP 10 Estrellas Afrolook', 'de': 'TOP 10 Afrolook-Stars', 'ar': 'أفضل 10 نجوم أفروولوك', 'pt': 'TOP 10 Estrelas Afrolook', 'zh': 'Afrolook十大明星', 'sw': 'TOP 10 Nyota za Afrolook'});
+  String get menuPronosticsBetting => _t({'fr': 'Pronostics & Betting', 'en': 'Predictions & Betting', 'es': 'Pronósticos y Apuestas', 'de': 'Prognosen & Wetten', 'ar': 'التوقعات والمراهنات', 'pt': 'Palpites e Apostas', 'zh': '预测与博彩', 'sw': 'Utabiri na Kamari'});
+  String get menuFavorites => _t({'fr': 'Mes favoris', 'en': 'My favorites', 'es': 'Mis favoritos', 'de': 'Meine Favoriten', 'ar': 'المفضلة لدي', 'pt': 'Meus favoritos', 'zh': '我的收藏', 'sw': 'Vipendwa vyangu'});
+  String get menuServicesJobs => '🛠️Services & Jobs 💼';
+  String get menuServicesJobsSubtitle => _t({'fr': 'Chercher des gens pour bosser', 'en': 'Find people to work with', 'es': 'Buscar personas para trabajar', 'de': 'Personen zum Arbeiten finden', 'ar': 'البحث عن أشخاص للعمل معهم', 'pt': 'Encontrar pessoas para trabalhar', 'zh': '寻找合作伙伴', 'sw': 'Tafuta watu wa kufanya kazi nao'});
+  String get menuAfroshopMarket => 'Afroshop Market';
+  String get menuAfroCoinMarket => 'AfroCoin Market';
+  String get menuMyLives => _t({'fr': 'Mes lives', 'en': 'My lives', 'es': 'Mis transmisiones en vivo', 'de': 'Meine Lives', 'ar': 'بثوثي المباشرة', 'pt': 'Minhas lives', 'zh': '我的直播', 'sw': 'Matangazo yangu ya moja kwa moja'});
+  String get menuMyChallenges => _t({'fr': 'Mes challenges', 'en': 'My challenges', 'es': 'Mis desafíos', 'de': 'Meine Challenges', 'ar': 'تحدياتي', 'pt': 'Meus desafios', 'zh': '我的挑战', 'sw': 'Changamoto zangu'});
+  String get menuNewsInfo => _t({'fr': 'Actus & Infos AfroLook', 'en': 'AfroLook News & Info', 'es': 'Noticias e Información AfroLook', 'de': 'AfroLook News & Infos', 'ar': 'أخبار ومعلومات أفروولوك', 'pt': 'Notícias e Informações AfroLook', 'zh': 'AfroLook新闻资讯', 'sw': 'Habari za AfroLook'});
+  String get menuContacts => _t({'fr': 'Nos Contactes', 'en': 'Our Contacts', 'es': 'Nuestros Contactos', 'de': 'Unsere Kontakte', 'ar': 'جهات اتصالنا', 'pt': 'Nossos Contatos', 'zh': '我们的联系方式', 'sw': 'Mawasiliano yetu'});
+  String get menuShareApp => _t({'fr': 'Partager l\'application', 'en': 'Share the app', 'es': 'Compartir la aplicación', 'de': 'App teilen', 'ar': 'مشاركة التطبيق', 'pt': 'Compartilhar o app', 'zh': '分享应用', 'sw': 'Shiriki programu'});
+  String get menuLogout => _t({'fr': 'Déconnecter', 'en': 'Log out', 'es': 'Cerrar sesión', 'de': 'Abmelden', 'ar': 'تسجيل الخروج', 'pt': 'Sair', 'zh': '退出登录', 'sw': 'Toka'});
 
   // ── Profil ────────────────────────────────────────────────────────────────
-  String get profileFollow      => _lang == 'fr' ? 'Suivre'                 : 'Follow';
-  String get profileFollowing   => _lang == 'fr' ? 'Abonné'                 : 'Following';
-  String get profileMessage     => _lang == 'fr' ? 'Message'                : 'Message';
-  String get profilePosts       => _lang == 'fr' ? 'Publications'           : 'Posts';
-  String get profileFollowers   => _lang == 'fr' ? 'Abonnés'               : 'Followers';
-  String get profileFriends     => _lang == 'fr' ? 'Amis'                   : 'Friends';
-  String get profilePopularity  => _lang == 'fr' ? 'Popularité'             : 'Popularity';
-  String get profileReferrals   => _lang == 'fr' ? 'Parrainages'            : 'Referrals';
-  String get profileLikes       => _lang == 'fr' ? 'Likes profil'           : 'Profile likes';
-  String get profileInvite      => _lang == 'fr' ? 'Inviter'                : 'Invite';
-  String get profileInviteSent  => _lang == 'fr' ? 'Invitation envoyée'     : 'Invitation sent';
-  String get profileSubscribe   => _lang == 'fr' ? 'S\'abonner'             : 'Subscribe';
-  String get profileSubscribed  => _lang == 'fr' ? 'Abonné'                 : 'Subscribed';
-  String get profileSeeFullProfile => _lang == 'fr' ? 'Voir le profil complet' : 'See full profile';
-  String get profileLiked       => _lang == 'fr' ? 'Aimé'                   : 'Liked';
-  String get profileLike        => _lang == 'fr' ? 'Like'                   : 'Like';
-  String get profilePleaseWait  => _lang == 'fr' ? 'Patientez...'           : 'Please wait...';
-  String get profileDefaultUser => _lang == 'fr' ? 'Utilisateur'            : 'User';
-  String get profileLikeError   => _lang == 'fr' ? 'Erreur lors du like'    : 'Error while liking';
+  String get profileFollow => _t({'fr': 'Suivre', 'en': 'Follow', 'es': 'Seguir', 'de': 'Folgen', 'ar': 'متابعة', 'pt': 'Seguir', 'zh': '关注', 'sw': 'Fuata'});
+  String get profileFollowing => _t({'fr': 'Abonné', 'en': 'Following', 'es': 'Siguiendo', 'de': 'Gefolgt', 'ar': 'متابَع', 'pt': 'Seguindo', 'zh': '已关注', 'sw': 'Inafuatwa'});
+  String get profileMessage => _t({'fr': 'Message', 'en': 'Message', 'es': 'Mensaje', 'de': 'Nachricht', 'ar': 'رسالة', 'pt': 'Mensagem', 'zh': '消息', 'sw': 'Ujumbe'});
+  String get profilePosts => _t({'fr': 'Publications', 'en': 'Posts', 'es': 'Publicaciones', 'de': 'Beiträge', 'ar': 'المنشورات', 'pt': 'Publicações', 'zh': '帖子', 'sw': 'Machapisho'});
+  String get profileFollowers => _t({'fr': 'Abonnés', 'en': 'Followers', 'es': 'Seguidores', 'de': 'Follower', 'ar': 'المتابعون', 'pt': 'Seguidores', 'zh': '粉丝', 'sw': 'Wafuasi'});
+  String get profileFriends => menuFriends;
+  String get profilePopularity => _t({'fr': 'Popularité', 'en': 'Popularity', 'es': 'Popularidad', 'de': 'Beliebtheit', 'ar': 'الشعبية', 'pt': 'Popularidade', 'zh': '受欢迎程度', 'sw': 'Umaarufu'});
+  String get profileReferrals => _t({'fr': 'Parrainages', 'en': 'Referrals', 'es': 'Referidos', 'de': 'Empfehlungen', 'ar': 'الإحالات', 'pt': 'Indicações', 'zh': '推荐', 'sw': 'Mapendekezo'});
+  String get profileLikes => _t({'fr': 'Likes profil', 'en': 'Profile likes', 'es': 'Me gusta del perfil', 'de': 'Profil-Likes', 'ar': 'إعجابات الملف الشخصي', 'pt': 'Curtidas do perfil', 'zh': '资料点赞', 'sw': 'Mapendo ya wasifu'});
+  String get profileInvite => _t({'fr': 'Inviter', 'en': 'Invite', 'es': 'Invitar', 'de': 'Einladen', 'ar': 'دعوة', 'pt': 'Convidar', 'zh': '邀请', 'sw': 'Karibisha'});
+  String get profileInviteSent => _t({'fr': 'Invitation envoyée', 'en': 'Invitation sent', 'es': 'Invitación enviada', 'de': 'Einladung gesendet', 'ar': 'تم إرسال الدعوة', 'pt': 'Convite enviado', 'zh': '邀请已发送', 'sw': 'Mwaliko umetumwa'});
+  String get profileSubscribe => canalSubscribe;
+  String get profileSubscribed => canalSubscribed;
+  String get profileSeeFullProfile => _t({'fr': 'Voir le profil complet', 'en': 'See full profile', 'es': 'Ver perfil completo', 'de': 'Vollständiges Profil ansehen', 'ar': 'عرض الملف الشخصي الكامل', 'pt': 'Ver perfil completo', 'zh': '查看完整资料', 'sw': 'Tazama wasifu kamili'});
+  String get profileLiked => _t({'fr': 'Aimé', 'en': 'Liked', 'es': 'Te gusta', 'de': 'Gefällt mir', 'ar': 'تم الإعجاب', 'pt': 'Curtido', 'zh': '已点赞', 'sw': 'Imependwa'});
+  String get profileLike => _t({'fr': 'Like', 'en': 'Like', 'es': 'Me gusta', 'de': 'Like', 'ar': 'إعجاب', 'pt': 'Curtir', 'zh': '点赞', 'sw': 'Penda'});
+  String get profilePleaseWait => _t({'fr': 'Patientez...', 'en': 'Please wait...', 'es': 'Espera...', 'de': 'Bitte warten...', 'ar': '...يرجى الانتظار', 'pt': 'Aguarde...', 'zh': '请稍候...', 'sw': 'Tafadhali subiri...'});
+  String get profileDefaultUser => _t({'fr': 'Utilisateur', 'en': 'User', 'es': 'Usuario', 'de': 'Benutzer', 'ar': 'مستخدم', 'pt': 'Usuário', 'zh': '用户', 'sw': 'Mtumiaji'});
+  String get profileLikeError => _t({'fr': 'Erreur lors du like', 'en': 'Error while liking', 'es': 'Error al dar me gusta', 'de': 'Fehler beim Liken', 'ar': 'خطأ في الإعجاب', 'pt': 'Erro ao curtir', 'zh': '点赞时出错', 'sw': 'Hitilafu wakati wa kupenda'});
 
   // ── Splash / Chargement ───────────────────────────────────────────────────
-  String get splashInit         => _lang == 'fr' ? 'Initialisation...'      : 'Initializing...';
-  String get splashLoading      => _lang == 'fr' ? 'Chargement des données...' : 'Loading data...';
-  String get splashConnecting   => _lang == 'fr' ? 'Connexion...'           : 'Connecting...';
-  String get splashError        => _lang == 'fr' ? 'Une erreur est survenue' : 'An error occurred';
-  String get splashGoBack       => _lang == 'fr' ? 'Retour à l\'accueil'    : 'Back to home';
-  String get splashContentReady => _lang == 'fr' ? 'Contenu prêt !'        : 'Content ready!';
-  String get splashRedirecting  => _lang == 'fr' ? 'Redirection...'         : 'Redirecting...';
-  String get splashLoadingContent => _lang == 'fr' ? 'Chargement du contenu...' : 'Loading content...';
+  String get splashInit => _t({'fr': 'Initialisation...', 'en': 'Initializing...', 'es': 'Inicializando...', 'de': 'Initialisierung...', 'ar': '...جارٍ التهيئة', 'pt': 'Inicializando...', 'zh': '初始化...', 'sw': 'Inaanzisha...'});
+  String get splashLoading => _t({'fr': 'Chargement des données...', 'en': 'Loading data...', 'es': 'Cargando datos...', 'de': 'Daten werden geladen...', 'ar': '...جارٍ تحميل البيانات', 'pt': 'Carregando dados...', 'zh': '加载数据...', 'sw': 'Inapakia data...'});
+  String get splashConnecting => _t({'fr': 'Connexion...', 'en': 'Connecting...', 'es': 'Conectando...', 'de': 'Verbindung...', 'ar': '...جارٍ الاتصال', 'pt': 'Conectando...', 'zh': '连接中...', 'sw': 'Inaunganisha...'});
+  String get splashError => commonError;
+  String get splashGoBack => _t({'fr': 'Retour à l\'accueil', 'en': 'Back to home', 'es': 'Volver al inicio', 'de': 'Zurück zur Startseite', 'ar': 'العودة إلى الرئيسية', 'pt': 'Voltar ao início', 'zh': '返回首页', 'sw': 'Rudi nyumbani'});
+  String get splashContentReady => _t({'fr': 'Contenu prêt !', 'en': 'Content ready!', 'es': '¡Contenido listo!', 'de': 'Inhalt bereit!', 'ar': '!المحتوى جاهز', 'pt': 'Conteúdo pronto!', 'zh': '内容已准备好！', 'sw': 'Maudhui yamekamilika!'});
+  String get splashRedirecting => _t({'fr': 'Redirection...', 'en': 'Redirecting...', 'es': 'Redirigiendo...', 'de': 'Weiterleitung...', 'ar': '...جارٍ إعادة التوجيه', 'pt': 'Redirecionando...', 'zh': '重定向中...', 'sw': 'Inaelekeza...'});
+  String get splashLoadingContent => _t({'fr': 'Chargement du contenu...', 'en': 'Loading content...', 'es': 'Cargando contenido...', 'de': 'Inhalt wird geladen...', 'ar': '...جارٍ تحميل المحتوى', 'pt': 'Carregando conteúdo...', 'zh': '加载内容...', 'sw': 'Inapakia maudhui...'});
 
   // ── Commun ────────────────────────────────────────────────────────────────
-  String get commonCancel       => _lang == 'fr' ? 'Annuler'                : 'Cancel';
-  String get commonConfirm      => _lang == 'fr' ? 'Confirmer'              : 'Confirm';
-  String get commonOk           => 'OK';
-  String get commonClose        => _lang == 'fr' ? 'Fermer'                 : 'Close';
-  String get commonSave         => _lang == 'fr' ? 'Enregistrer'            : 'Save';
-  String get commonSend         => _lang == 'fr' ? 'Envoyer'                : 'Send';
-  String get commonSearch       => _lang == 'fr' ? 'Rechercher'             : 'Search';
-  String get commonSeeMore      => _lang == 'fr' ? 'Voir plus'              : 'See more';
-  String get commonSeeLess      => _lang == 'fr' ? 'Voir moins'             : 'See less';
-  String get commonLoading      => _lang == 'fr' ? 'Chargement...'          : 'Loading...';
-  String get commonError        => _lang == 'fr' ? 'Une erreur est survenue' : 'An error occurred';
-  String get commonRetry        => _lang == 'fr' ? 'Réessayer'              : 'Retry';
-  String get commonDelete       => _lang == 'fr' ? 'Supprimer'              : 'Delete';
-  String get commonEdit         => _lang == 'fr' ? 'Modifier'               : 'Edit';
-  String get commonYes          => _lang == 'fr' ? 'Oui'                    : 'Yes';
-  String get commonNo           => _lang == 'fr' ? 'Non'                    : 'No';
-  String get commonNoContent    => _lang == 'fr' ? 'Aucun contenu'          : 'No content';
-  String get commonSeeAll       => _lang == 'fr' ? 'Voir tout'              : 'See all';
-  String get commonRefresh      => _lang == 'fr' ? 'Actualiser'             : 'Refresh';
-  String get commonLoadingError => _lang == 'fr' ? 'Erreur de chargement'   : 'Loading error';
+  String get commonCancel => btnCancel;
+  String get commonConfirm => _t({'fr': 'Confirmer', 'en': 'Confirm', 'es': 'Confirmar', 'de': 'Bestätigen', 'ar': 'تأكيد', 'pt': 'Confirmar', 'zh': '确认', 'sw': 'Thibitisha'});
+  String get commonOk => 'OK';
+  String get commonClose => _t({'fr': 'Fermer', 'en': 'Close', 'es': 'Cerrar', 'de': 'Schließen', 'ar': 'إغلاق', 'pt': 'Fechar', 'zh': '关闭', 'sw': 'Funga'});
+  String get commonSave => btnSave;
+  String get commonSend => btnSend;
+  String get commonSearch => _t({'fr': 'Rechercher', 'en': 'Search', 'es': 'Buscar', 'de': 'Suchen', 'ar': 'البحث', 'pt': 'Pesquisar', 'zh': '搜索', 'sw': 'Tafuta'});
+  String get commonSeeMore => _t({'fr': 'Voir plus', 'en': 'See more', 'es': 'Ver más', 'de': 'Mehr sehen', 'ar': 'عرض المزيد', 'pt': 'Ver mais', 'zh': '查看更多', 'sw': 'Tazama zaidi'});
+  String get commonSeeLess => _t({'fr': 'Voir moins', 'en': 'See less', 'es': 'Ver menos', 'de': 'Weniger sehen', 'ar': 'عرض أقل', 'pt': 'Ver menos', 'zh': '收起', 'sw': 'Tazama kidogo'});
+  String get commonLoading => _t({'fr': 'Chargement...', 'en': 'Loading...', 'es': 'Cargando...', 'de': 'Wird geladen...', 'ar': '...جارٍ التحميل', 'pt': 'Carregando...', 'zh': '加载中...', 'sw': 'Inapakia...'});
+  String get commonError => _t({'fr': 'Une erreur est survenue', 'en': 'An error occurred', 'es': 'Ocurrió un error', 'de': 'Ein Fehler ist aufgetreten', 'ar': 'حدث خطأ', 'pt': 'Ocorreu um erro', 'zh': '发生错误', 'sw': 'Hitilafu imetokea'});
+  String get commonRetry => _t({'fr': 'Réessayer', 'en': 'Retry', 'es': 'Reintentar', 'de': 'Erneut versuchen', 'ar': 'إعادة المحاولة', 'pt': 'Tentar novamente', 'zh': '重试', 'sw': 'Jaribu tena'});
+  String get commonDelete => btnDelete;
+  String get commonEdit => postEdit;
+  String get commonYes => _t({'fr': 'Oui', 'en': 'Yes', 'es': 'Sí', 'de': 'Ja', 'ar': 'نعم', 'pt': 'Sim', 'zh': '是', 'sw': 'Ndiyo'});
+  String get commonNo => _t({'fr': 'Non', 'en': 'No', 'es': 'No', 'de': 'Nein', 'ar': 'لا', 'pt': 'Não', 'zh': '否', 'sw': 'Hapana'});
+  String get commonNoContent => _t({'fr': 'Aucun contenu', 'en': 'No content', 'es': 'Sin contenido', 'de': 'Kein Inhalt', 'ar': 'لا يوجد محتوى', 'pt': 'Sem conteúdo', 'zh': '暂无内容', 'sw': 'Hakuna maudhui'});
+  String get commonSeeAll => _t({'fr': 'Voir tout', 'en': 'See all', 'es': 'Ver todo', 'de': 'Alles ansehen', 'ar': 'عرض الكل', 'pt': 'Ver tudo', 'zh': '查看全部', 'sw': 'Tazama yote'});
+  String get commonRefresh => _t({'fr': 'Actualiser', 'en': 'Refresh', 'es': 'Actualizar', 'de': 'Aktualisieren', 'ar': 'تحديث', 'pt': 'Atualizar', 'zh': '刷新', 'sw': 'Onyesha upya'});
+  String get commonLoadingError => _t({'fr': 'Erreur de chargement', 'en': 'Loading error', 'es': 'Error de carga', 'de': 'Ladefehler', 'ar': 'خطأ في التحميل', 'pt': 'Erro ao carregar', 'zh': '加载错误', 'sw': 'Hitilafu ya kupakia'});
 
   // ── Langue ────────────────────────────────────────────────────────────────
-  String get langFrench         => _lang == 'fr' ? 'Français'               : 'French';
-  String get langEnglish        => _lang == 'fr' ? 'Anglais'                : 'English';
-  String get langChoose         => _lang == 'fr' ? 'Choisir la langue'      : 'Choose language';
+  String get langFrench => _t({'fr': 'Français', 'en': 'French', 'es': 'Francés', 'de': 'Französisch', 'ar': 'الفرنسية', 'pt': 'Francês', 'zh': '法语', 'sw': 'Kifaransa'});
+  String get langEnglish => _t({'fr': 'Anglais', 'en': 'English', 'es': 'Inglés', 'de': 'Englisch', 'ar': 'الإنجليزية', 'pt': 'Inglês', 'zh': '英语', 'sw': 'Kiingereza'});
+  String get langSpanish => _t({'fr': 'Espagnol', 'en': 'Spanish', 'es': 'Español', 'de': 'Spanisch', 'ar': 'الإسبانية', 'pt': 'Espanhol', 'zh': '西班牙语', 'sw': 'Kihispania'});
+  String get langGerman => _t({'fr': 'Allemand', 'en': 'German', 'es': 'Alemán', 'de': 'Deutsch', 'ar': 'الألمانية', 'pt': 'Alemão', 'zh': '德语', 'sw': 'Kijerumani'});
+  String get langArabic => _t({'fr': 'Arabe', 'en': 'Arabic', 'es': 'Árabe', 'de': 'Arabisch', 'ar': 'العربية', 'pt': 'Árabe', 'zh': '阿拉伯语', 'sw': 'Kiarabu'});
+  String get langPortuguese => _t({'fr': 'Portugais', 'en': 'Portuguese', 'es': 'Portugués', 'de': 'Portugiesisch', 'ar': 'البرتغالية', 'pt': 'Português', 'zh': '葡萄牙语', 'sw': 'Kireno'});
+  String get langChinese => _t({'fr': 'Chinois', 'en': 'Chinese', 'es': 'Chino', 'de': 'Chinesisch', 'ar': 'الصينية', 'pt': 'Chinês', 'zh': '中文', 'sw': 'Kichina'});
+  String get langSwahili => _t({'fr': 'Swahili', 'en': 'Swahili', 'es': 'Swahili', 'de': 'Swahili', 'ar': 'السواحيلية', 'pt': 'Swahili', 'zh': '斯瓦希里语', 'sw': 'Kiswahili'});
+  String get langChoose => _t({'fr': 'Choisir la langue', 'en': 'Choose language', 'es': 'Elegir idioma', 'de': 'Sprache wählen', 'ar': 'اختر اللغة', 'pt': 'Escolher idioma', 'zh': '选择语言', 'sw': 'Chagua lugha'});
 
   // ── Thème ─────────────────────────────────────────────────────────────────
-  String get themeDark          => _lang == 'fr' ? 'Mode sombre'            : 'Dark mode';
-  String get themeLight         => _lang == 'fr' ? 'Mode clair'             : 'Light mode';
+  String get themeDark => menuDarkMode;
+  String get themeLight => menuLightMode;
 
   // ── Feed Sport : filtres & soutien ──────────────────────────────────────────
-  String get feedFilterByCountry => _lang == 'fr' ? '🌍 Filtrer par pays'    : '🌍 Filter by country';
-  String get feedSearchCountry   => _lang == 'fr' ? 'Rechercher un pays...' : 'Search for a country...';
-  String get feedAllFilter       => _lang == 'fr' ? 'Tous'                  : 'All';
-  String get feedMyCountry       => _lang == 'fr' ? 'Mon pays'              : 'My country';
-  String get feedMixFilter       => _lang == 'fr' ? 'Mix'                   : 'Mix';
-  String get feedChooseCountry   => _lang == 'fr' ? 'Choisir un pays'       : 'Choose a country';
-  String get feedCountriesSuffix => _lang == 'fr' ? 'pays'                  : 'countries';
-  String get feedNoCountryFound  => _lang == 'fr' ? 'Aucun pays trouvé'     : 'No country found';
-  String get feedTryAnotherSearch => _lang == 'fr' ? 'Essayez une autre recherche' : 'Try another search';
-  String get feedYourCountry     => _lang == 'fr' ? 'Votre pays'            : 'Your country';
-  String get feedChooseType      => _lang == 'fr' ? '📝 Choisir un type'    : '📝 Choose a type';
-  String get feedSearchType      => _lang == 'fr' ? 'Rechercher un type...' : 'Search for a type...';
-  String get feedAvailableTypes  => _lang == 'fr' ? 'Types disponibles'     : 'Available types';
-  String get feedTypesSuffix     => _lang == 'fr' ? 'types'                 : 'types';
-  String get feedFilterLabel     => _lang == 'fr' ? 'Filtre'                : 'Filter';
-  String get feedCountryLabel    => _lang == 'fr' ? 'Pays'                  : 'Country';
-  String get feedOtherFilter     => _lang == 'fr' ? 'Autre'                 : 'Other';
+  String get feedFilterByCountry => _t({'fr': '🌍 Filtrer par pays', 'en': '🌍 Filter by country', 'es': '🌍 Filtrar por país', 'de': '🌍 Nach Land filtern', 'ar': '🌍 تصفية حسب البلد', 'pt': '🌍 Filtrar por país', 'zh': '🌍 按国家筛选', 'sw': '🌍 Chuja kwa nchi'});
+  String get feedSearchCountry => _t({'fr': 'Rechercher un pays...', 'en': 'Search for a country...', 'es': 'Buscar un país...', 'de': 'Land suchen...', 'ar': '...البحث عن بلد', 'pt': 'Pesquisar país...', 'zh': '搜索国家...', 'sw': 'Tafuta nchi...'});
+  String get feedAllFilter => feedAll;
+  String get feedMyCountry => _t({'fr': 'Mon pays', 'en': 'My country', 'es': 'Mi país', 'de': 'Mein Land', 'ar': 'بلدي', 'pt': 'Meu país', 'zh': '我的国家', 'sw': 'Nchi yangu'});
+  String get feedMixFilter => 'Mix';
+  String get feedChooseCountry => _t({'fr': 'Choisir un pays', 'en': 'Choose a country', 'es': 'Elegir un país', 'de': 'Land auswählen', 'ar': 'اختر بلداً', 'pt': 'Escolher um país', 'zh': '选择国家', 'sw': 'Chagua nchi'});
+  String get feedCountriesSuffix => _t({'fr': 'pays', 'en': 'countries', 'es': 'países', 'de': 'Länder', 'ar': 'بلدان', 'pt': 'países', 'zh': '国家', 'sw': 'nchi'});
+  String get feedNoCountryFound => _t({'fr': 'Aucun pays trouvé', 'en': 'No country found', 'es': 'No se encontró ningún país', 'de': 'Kein Land gefunden', 'ar': 'لم يتم العثور على بلد', 'pt': 'Nenhum país encontrado', 'zh': '未找到国家', 'sw': 'Hakuna nchi iliyopatikana'});
+  String get feedTryAnotherSearch => _t({'fr': 'Essayez une autre recherche', 'en': 'Try another search', 'es': 'Intenta otra búsqueda', 'de': 'Versuche eine andere Suche', 'ar': 'جرّب بحثًا آخر', 'pt': 'Tente outra pesquisa', 'zh': '尝试其他搜索', 'sw': 'Jaribu utafutaji mwingine'});
+  String get feedYourCountry => _t({'fr': 'Votre pays', 'en': 'Your country', 'es': 'Tu país', 'de': 'Dein Land', 'ar': 'بلدك', 'pt': 'Seu país', 'zh': '您的国家', 'sw': 'Nchi yako'});
+  String get feedChooseType => _t({'fr': '📝 Choisir un type', 'en': '📝 Choose a type', 'es': '📝 Elegir un tipo', 'de': '📝 Typ auswählen', 'ar': '📝 اختر نوعًا', 'pt': '📝 Escolher um tipo', 'zh': '📝 选择类型', 'sw': '📝 Chagua aina'});
+  String get feedSearchType => _t({'fr': 'Rechercher un type...', 'en': 'Search for a type...', 'es': 'Buscar un tipo...', 'de': 'Typ suchen...', 'ar': '...البحث عن نوع', 'pt': 'Pesquisar tipo...', 'zh': '搜索类型...', 'sw': 'Tafuta aina...'});
+  String get feedAvailableTypes => _t({'fr': 'Types disponibles', 'en': 'Available types', 'es': 'Tipos disponibles', 'de': 'Verfügbare Typen', 'ar': 'الأنواع المتاحة', 'pt': 'Tipos disponíveis', 'zh': '可用类型', 'sw': 'Aina zinazopatikana'});
+  String get feedTypesSuffix => _t({'fr': 'types', 'en': 'types', 'es': 'tipos', 'de': 'Typen', 'ar': 'أنواع', 'pt': 'tipos', 'zh': '类型', 'sw': 'aina'});
+  String get feedFilterLabel => _t({'fr': 'Filtre', 'en': 'Filter', 'es': 'Filtro', 'de': 'Filter', 'ar': 'مرشح', 'pt': 'Filtro', 'zh': '筛选', 'sw': 'Kichujio'});
+  String get feedCountryLabel => signupCountry;
+  String get feedOtherFilter => _t({'fr': 'Autre', 'en': 'Other', 'es': 'Otro', 'de': 'Andere', 'ar': 'آخر', 'pt': 'Outro', 'zh': '其他', 'sw': 'Nyingine'});
 
-  String get supportTitle        => _lang == 'fr' ? 'Soutenez Afrolook !'   : 'Support Afrolook!';
-  String get supportMessage      => _lang == 'fr'
-      ? 'Chers membres, Afrolook grandit grâce à vous ! 🌍\n\n'
-          'Chaque publicité que vous regardez nous rapporte un petit revenu. Cela nous permet de :\n'
-          '• Améliorer l\'application et ajouter de nouvelles fonctionnalités\n'
-          '• Maintenir des serveurs stables pour une expérience fluide\n'
-          '• Continuer à vous offrir du contenu de qualité gratuitement\n'
-          '• Rémunérer les créateurs de contenu que vous aimez !\n\n'
-          'Ce n\'est pas obligatoire, mais votre soutien est précieux. Merci d\'avance ! 🙏'
-      : 'Dear members, Afrolook grows thanks to you! 🌍\n\n'
-          'Every ad you watch earns us a little revenue. This allows us to:\n'
-          '• Improve the app and add new features\n'
-          '• Keep stable servers for a smooth experience\n'
-          '• Keep offering you quality content for free\n'
-          '• Pay the content creators you love!\n\n'
-          'It\'s not mandatory, but your support is precious. Thanks in advance! 🙏';
-  String get supportBecomePremium => _lang == 'fr' ? 'Devenez Premium'      : 'Become Premium';
-  String get supportPremiumPrice  => _lang == 'fr' ? '200 F/mois 😊 • Plus aucune publicité' : '200 F/month 😊 • No more ads';
-  String get supportPremiumDesc   => _lang == 'fr' ? 'Soutenez directement les créateurs de contenu !' : 'Directly support content creators!';
-  String get supportWatchAd       => _lang == 'fr' ? 'Regarder la pub'      : 'Watch the ad';
-  String get supportThankYouAd    => _lang == 'fr' ? 'Merci d\'avoir regardé la publicité ! Votre soutien est précieux.' : 'Thanks for watching the ad! Your support is precious.';
-  String get feedPostButton       => _lang == 'fr' ? 'Poster'               : 'Post';
+  String get supportTitle => _t({'fr': 'Soutenez Afrolook !', 'en': 'Support Afrolook!', 'es': '¡Apoya a Afrolook!', 'de': 'Unterstütze Afrolook!', 'ar': '!ادعم أفروولوك', 'pt': 'Apoie a Afrolook!', 'zh': '支持Afrolook！', 'sw': 'Saidia Afrolook!'});
+  String get supportMessage => _t({
+        'fr': 'Chers membres, Afrolook grandit grâce à vous ! 🌍\n\n'
+            'Chaque publicité que vous regardez nous rapporte un petit revenu. Cela nous permet de :\n'
+            '• Améliorer l\'application et ajouter de nouvelles fonctionnalités\n'
+            '• Maintenir des serveurs stables pour une expérience fluide\n'
+            '• Continuer à vous offrir du contenu de qualité gratuitement\n'
+            '• Rémunérer les créateurs de contenu que vous aimez !\n\n'
+            'Ce n\'est pas obligatoire, mais votre soutien est précieux. Merci d\'avance ! 🙏',
+        'en': 'Dear members, Afrolook grows thanks to you! 🌍\n\n'
+            'Every ad you watch earns us a little revenue. This allows us to:\n'
+            '• Improve the app and add new features\n'
+            '• Keep stable servers for a smooth experience\n'
+            '• Keep offering you quality content for free\n'
+            '• Pay the content creators you love!\n\n'
+            'It\'s not mandatory, but your support is precious. Thanks in advance! 🙏',
+        'es': '¡Queridos miembros, Afrolook crece gracias a ustedes! 🌍\n\n'
+            'Cada anuncio que ven nos genera un pequeño ingreso. Esto nos permite:\n'
+            '• Mejorar la aplicación y agregar nuevas funciones\n'
+            '• Mantener servidores estables para una experiencia fluida\n'
+            '• Seguir ofreciéndoles contenido de calidad de forma gratuita\n'
+            '• ¡Remunerar a los creadores de contenido que aman!\n\n'
+            'No es obligatorio, pero su apoyo es invaluable. ¡Gracias de antemano! 🙏',
+        'de': 'Liebe Mitglieder, Afrolook wächst dank euch! 🌍\n\n'
+            'Jede Werbung, die ihr euch ansieht, bringt uns ein kleines Einkommen. Das ermöglicht uns:\n'
+            '• Die App zu verbessern und neue Funktionen hinzuzufügen\n'
+            '• Stabile Server für ein reibungsloses Erlebnis zu unterhalten\n'
+            '• Euch weiterhin kostenlos hochwertige Inhalte anzubieten\n'
+            '• Die Content-Ersteller, die ihr liebt, zu bezahlen!\n\n'
+            'Es ist nicht obligatorisch, aber eure Unterstützung ist wertvoll. Vielen Dank im Voraus! 🙏',
+        'ar': 'أعزاء الأعضاء، تنمو أفروولوك بفضلكم! 🌍\n\n'
+            'كل إعلان تشاهدونه يجلب لنا دخلاً صغيراً. هذا يسمح لنا بـ:\n'
+            '• تحسين التطبيق وإضافة ميزات جديدة\n'
+            '• الحفاظ على خوادم مستقرة لتجربة سلسة\n'
+            '• الاستمرار في تقديم محتوى عالي الجودة لكم مجاناً\n'
+            '• دفع مستحقات صناع المحتوى الذين تحبونهم!\n\n'
+            'هذا ليس إلزامياً، ولكن دعمكم قيّم جداً. شكراً لكم مسبقاً 🙏',
+        'pt': 'Caros membros, a Afrolook cresce graças a vocês! 🌍\n\n'
+            'Cada anúncio que vocês assistem nos gera uma pequena receita. Isso nos permite:\n'
+            '• Melhorar o aplicativo e adicionar novos recursos\n'
+            '• Manter servidores estáveis para uma experiência fluida\n'
+            '• Continuar oferecendo conteúdo de qualidade gratuitamente\n'
+            '• Remunerar os criadores de conteúdo que vocês adoram!\n\n'
+            'Não é obrigatório, mas o seu apoio é precioso. Agradecemos antecipadamente! 🙏',
+        'zh': '亲爱的会员们，Afrolook因你们而成长！🌍\n\n'
+            '你们观看的每一个广告都会为我们带来一点收入。这使我们能够：\n'
+            '• 改进应用并添加新功能\n'
+            '• 维护稳定的服务器，带来流畅的体验\n'
+            '• 继续免费为你们提供优质内容\n'
+            '• 为你们喜爱的内容创作者提供报酬！\n\n'
+            '这不是强制性的，但你们的支持非常珍贵。提前感谢！🙏',
+        'sw': 'Wanachama wapendwa, Afrolook inakua shukrani kwenu! 🌍\n\n'
+            'Kila tangazo mnaloliangalia hutuletea mapato kidogo. Hii inatuwezesha:\n'
+            '• Kuboresha programu na kuongeza vipengele vipya\n'
+            '• Kudumisha seva zenye uthabiti kwa uzoefu mzuri\n'
+            '• Kuendelea kuwapatia maudhui bora bila malipo\n'
+            '• Kuwalipa waundaji wa maudhui mnaowapenda!\n\n'
+            'Si lazima, lakini msaada wenu ni wa thamani kubwa. Asante mapema! 🙏',
+      });
+  String get supportBecomePremium => _t({'fr': 'Devenez Premium', 'en': 'Become Premium', 'es': 'Hazte Premium', 'de': 'Premium werden', 'ar': 'كن مميزًا', 'pt': 'Torne-se Premium', 'zh': '成为高级会员', 'sw': 'Kuwa Premium'});
+  String get supportPremiumPrice => _t({'fr': '200 F/mois 😊 • Plus aucune publicité', 'en': '200 F/month 😊 • No more ads', 'es': '200 F/mes 😊 • Sin más anuncios', 'de': '200 F/Monat 😊 • Keine Werbung mehr', 'ar': '200 فرنك/شهرياً 😊 • لا مزيد من الإعلانات', 'pt': '200 F/mês 😊 • Sem mais anúncios', 'zh': '200法郎/月 😊 • 无广告', 'sw': '200 F/mwezi 😊 • Hakuna matangazo tena'});
+  String get supportPremiumDesc => _t({'fr': 'Soutenez directement les créateurs de contenu !', 'en': 'Directly support content creators!', 'es': '¡Apoya directamente a los creadores de contenido!', 'de': 'Unterstütze direkt die Content-Ersteller!', 'ar': 'ادعم صناع المحتوى مباشرة!', 'pt': 'Apoie diretamente os criadores de conteúdo!', 'zh': '直接支持内容创作者！', 'sw': 'Saidia moja kwa moja waundaji wa maudhui!'});
+  String get supportWatchAd => _t({'fr': 'Regarder la pub', 'en': 'Watch the ad', 'es': 'Ver el anuncio', 'de': 'Werbung ansehen', 'ar': 'مشاهدة الإعلان', 'pt': 'Assistir ao anúncio', 'zh': '观看广告', 'sw': 'Tazama tangazo'});
+  String get supportThankYouAd => _t({'fr': 'Merci d\'avoir regardé la publicité ! Votre soutien est précieux.', 'en': 'Thanks for watching the ad! Your support is precious.', 'es': '¡Gracias por ver el anuncio! Tu apoyo es valioso.', 'de': 'Danke, dass du die Werbung angesehen hast! Deine Unterstützung ist wertvoll.', 'ar': 'شكرًا لمشاهدتك الإعلان! دعمك قيّم.', 'pt': 'Obrigado por assistir ao anúncio! Seu apoio é precioso.', 'zh': '感谢您观看广告！您的支持非常宝贵。', 'sw': 'Asante kwa kutazama tangazo! Msaada wako ni wa thamani.'});
+  String get feedPostButton => _t({'fr': 'Poster', 'en': 'Post', 'es': 'Publicar', 'de': 'Posten', 'ar': 'نشر', 'pt': 'Publicar', 'zh': '发布', 'sw': 'Chapisha'});
+  String get seeTranslation => _t({'fr': 'Voir la traduction', 'en': 'See translation', 'es': 'Ver traducción', 'de': 'Übersetzung anzeigen', 'ar': 'عرض الترجمة', 'pt': 'Ver tradução', 'zh': '查看翻译', 'sw': 'Tazama tafsiri'});
+  String get seeOriginal => _t({'fr': 'Voir l\'original', 'en': 'See original', 'es': 'Ver original', 'de': 'Original anzeigen', 'ar': 'عرض النص الأصلي', 'pt': 'Ver original', 'zh': '查看原文', 'sw': 'Tazama asili'});
+  String get translating => _t({'fr': 'Traduction...', 'en': 'Translating...', 'es': 'Traduciendo...', 'de': 'Übersetzen...', 'ar': '...جارٍ الترجمة', 'pt': 'Traduzindo...', 'zh': '翻译中...', 'sw': 'Inatafsiri...'});
+
+  // ── Inscription (étape 2) ───────────────────────────────────────────────
+  String get signupStep2Title => _t({'fr': 'Finalisation du profil', 'en': 'Finish your profile', 'es': 'Finalizar el perfil', 'de': 'Profil vervollständigen', 'ar': 'إنهاء الملف الشخصي', 'pt': 'Finalizar perfil', 'zh': '完善个人资料', 'sw': 'Kamilisha wasifu'});
+  String get signupProfilePhoto => _t({'fr': 'Votre photo de profil', 'en': 'Your profile photo', 'es': 'Tu foto de perfil', 'de': 'Dein Profilbild', 'ar': 'صورة ملفك الشخصي', 'pt': 'Sua foto de perfil', 'zh': '您的头像', 'sw': 'Picha yako ya wasifu'});
+  String get signupImageSelected => _t({'fr': 'Image sélectionnée ✓', 'en': 'Image selected ✓', 'es': 'Imagen seleccionada ✓', 'de': 'Bild ausgewählt ✓', 'ar': 'تم اختيار الصورة ✓', 'pt': 'Imagem selecionada ✓', 'zh': '图片已选择 ✓', 'sw': 'Picha imechaguliwa ✓'});
+  String get signupImageSelectedSuccess => _t({'fr': 'Image sélectionnée avec succès !', 'en': 'Image selected successfully!', 'es': '¡Imagen seleccionada con éxito!', 'de': 'Bild erfolgreich ausgewählt!', 'ar': '!تم اختيار الصورة بنجاح', 'pt': 'Imagem selecionada com sucesso!', 'zh': '图片选择成功！', 'sw': 'Picha imechaguliwa kwa mafanikio!'});
+  String get signupImageSelectError => _t({'fr': "Erreur lors de la sélection de l'image", 'en': 'Error while selecting the image', 'es': 'Error al seleccionar la imagen', 'de': 'Fehler bei der Bildauswahl', 'ar': 'حدث خطأ أثناء اختيار الصورة', 'pt': 'Erro ao selecionar a imagem', 'zh': '选择图片时出错', 'sw': 'Hitilafu wakati wa kuchagua picha'});
+  String get signupAddress => _t({'fr': 'Adresse', 'en': 'Address', 'es': 'Dirección', 'de': 'Adresse', 'ar': 'العنوان', 'pt': 'Endereço', 'zh': '地址', 'sw': 'Anwani'});
+  String get signupAddressRequired => _t({'fr': 'Ce champ est obligatoire', 'en': 'This field is required', 'es': 'Este campo es obligatorio', 'de': 'Dieses Feld ist erforderlich', 'ar': 'هذا الحقل مطلوب', 'pt': 'Este campo é obrigatório', 'zh': '此字段为必填项', 'sw': 'Sehemu hii inahitajika'});
+  String get signupAboutYou => _t({'fr': 'À propos de vous', 'en': 'About you', 'es': 'Sobre ti', 'de': 'Über dich', 'ar': 'نبذة عنك', 'pt': 'Sobre você', 'zh': '关于你', 'sw': 'Kukuhusu'});
+  String get signupAboutYouHint => _t({'fr': 'Décrivez-vous en quelques mots...', 'en': 'Describe yourself in a few words...', 'es': 'Descríbete en pocas palabras...', 'de': 'Beschreibe dich in wenigen Worten...', 'ar': '...صف نفسك في كلمات قليلة', 'pt': 'Descreva-se em poucas palavras...', 'zh': '用几句话介绍一下自己……', 'sw': 'Jielezee kwa maneno machache...'});
+  String get signupTermsAcceptance => _t({'fr': 'En créant ce compte, vous acceptez les termes et conditions.', 'en': 'By creating this account, you accept the terms and conditions.', 'es': 'Al crear esta cuenta, aceptas los términos y condiciones.', 'de': 'Mit der Erstellung dieses Kontos akzeptierst du die Allgemeinen Geschäftsbedingungen.', 'ar': 'بإنشاء هذا الحساب، فإنك توافق على الشروط والأحكام.', 'pt': 'Ao criar esta conta, você aceita os termos e condições.', 'zh': '创建此账户即表示您同意条款和条件。', 'sw': 'Kwa kuunda akaunti hii, unakubali masharti na vigezo.'});
+  // String get signupAlreadyHaveAccount => _t({'fr': 'Vous avez déjà un compte? ', 'en': 'Already have an account? ', 'es': '¿Ya tienes una cuenta? ', 'de': 'Hast du schon ein Konto? ', 'ar': '؟هل لديك حساب بالفعل ', 'pt': 'Já tem uma conta? ', 'zh': '已经有账户了？', 'sw': 'Una akaunti tayari? '});
+  String get signupLoginNow => _t({'fr': 'Connectez-vous', 'en': 'Log in', 'es': 'Inicia sesión', 'de': 'Anmelden', 'ar': 'تسجيل الدخول', 'pt': 'Entrar', 'zh': '登录', 'sw': 'Ingia'});
+  String get signupSelectProfilePhoto => _t({'fr': 'Veuillez sélectionner une photo de profil', 'en': 'Please select a profile photo', 'es': 'Por favor selecciona una foto de perfil', 'de': 'Bitte wähle ein Profilbild aus', 'ar': 'يرجى اختيار صورة الملف الشخصي', 'pt': 'Por favor, selecione uma foto de perfil', 'zh': '请选择头像', 'sw': 'Tafadhali chagua picha ya wasifu'});
+  String get signupImageTooLarge => _t({'fr': "L'image est trop volumineuse (max 5MB)", 'en': 'The image is too large (max 5MB)', 'es': 'La imagen es demasiado grande (máx 5MB)', 'de': 'Das Bild ist zu groß (max. 5MB)', 'ar': 'الصورة كبيرة جدًا (الحد الأقصى 5 ميجابايت)', 'pt': 'A imagem é muito grande (máx. 5MB)', 'zh': '图片太大（最大5MB）', 'sw': 'Picha ni kubwa sana (upeo 5MB)'});
+  String get signupCodeParrainInvalid => _t({'fr': 'Le code de parrainage est erroné !', 'en': 'The referral code is incorrect!', 'es': '¡El código de referido es incorrecto!', 'de': 'Der Empfehlungscode ist falsch!', 'ar': '!رمز الإحالة غير صحيح', 'pt': 'O código de indicação está incorreto!', 'zh': '推荐码不正确！', 'sw': 'Msimbo wa rufaa si sahihi!'});
+  String get signupAccountCreatedSuccess => _t({'fr': 'Compte créé avec succès !', 'en': 'Account created successfully!', 'es': '¡Cuenta creada con éxito!', 'de': 'Konto erfolgreich erstellt!', 'ar': '!تم إنشاء الحساب بنجاح', 'pt': 'Conta criada com sucesso!', 'zh': '账户创建成功！', 'sw': 'Akaunti imeundwa kwa mafanikio!'});
+  String get signupOneStepLeft => _t({'fr': 'Il reste une étape : vérification de votre email', 'en': 'One step left: verify your email', 'es': 'Queda un paso: verifica tu correo electrónico', 'de': 'Ein Schritt fehlt noch: Bestätige deine E-Mail-Adresse', 'ar': 'تبقت خطوة واحدة: التحقق من بريدك الإلكتروني', 'pt': 'Falta uma etapa: verifique seu e-mail', 'zh': '还差一步：验证您的电子邮箱', 'sw': 'Hatua moja imebaki: thibitisha barua pepe yako'});
+  String get signupVerificationEmailSentTo => _t({'fr': 'Un email de vérification a été envoyé à :', 'en': 'A verification email has been sent to:', 'es': 'Se ha enviado un correo de verificación a:', 'de': 'Eine Bestätigungs-E-Mail wurde gesendet an:', 'ar': ':تم إرسال بريد إلكتروني للتحقق إلى', 'pt': 'Um e-mail de verificação foi enviado para:', 'zh': '验证邮件已发送至：', 'sw': 'Barua pepe ya uthibitisho imetumwa kwa:'});
+  String get signupCheckSpamFolder => _t({'fr': 'Veuillez vérifier votre adresse email avant de vous connecter.\nSi vous ne voyez pas l\'email dans votre boîte principale, pensez à vérifier votre dossier Spam ou Courrier indésirable.', 'en': 'Please verify your email address before logging in.\nIf you don\'t see the email in your main inbox, check your Spam or Junk folder.', 'es': 'Verifica tu dirección de correo electrónico antes de iniciar sesión.\nSi no ves el correo en tu bandeja principal, revisa tu carpeta de Spam o Correo no deseado.', 'de': 'Bitte bestätige deine E-Mail-Adresse, bevor du dich anmeldest.\nWenn du die E-Mail nicht in deinem Hauptpostfach siehst, überprüfe deinen Spam- oder Junk-Ordner.', 'ar': 'يرجى التحقق من عنوان بريدك الإلكتروني قبل تسجيل الدخول.\nإذا لم تجد البريد في صندوق الوارد الرئيسي، تحقق من مجلد البريد العشوائي أو غير المرغوب فيه.', 'pt': 'Verifique seu endereço de e-mail antes de fazer login.\nSe você não vir o e-mail na sua caixa de entrada principal, verifique sua pasta de Spam ou Lixo eletrônico.', 'zh': '请在登录前验证您的电子邮箱地址。\n如果您在主收件箱中没有看到该邮件，请检查垃圾邮件文件夹。', 'sw': 'Tafadhali thibitisha anwani yako ya barua pepe kabla ya kuingia.\nIkiwa hauoni barua pepe kwenye kikasha kako kikuu, angalia kwenye folda ya Spam au Taka.'});
+  String get signupUnderstood => _t({'fr': "J'ai compris", 'en': 'Got it', 'es': 'Entendido', 'de': 'Verstanden', 'ar': 'فهمت', 'pt': 'Entendi', 'zh': '我知道了', 'sw': 'Nimeelewa'});
+  String get signupNoImageSelected => _t({'fr': 'Aucune image sélectionnée', 'en': 'No image selected', 'es': 'Ninguna imagen seleccionada', 'de': 'Kein Bild ausgewählt', 'ar': 'لم يتم اختيار صورة', 'pt': 'Nenhuma imagem selecionada', 'zh': '未选择图片', 'sw': 'Hakuna picha iliyochaguliwa'});
+  String get signupImageUploadFailed => _t({'fr': "Échec de l'upload de l'image", 'en': 'Image upload failed', 'es': 'Error al subir la imagen', 'de': 'Bild-Upload fehlgeschlagen', 'ar': 'فشل تحميل الصورة', 'pt': 'Falha no upload da imagem', 'zh': '图片上传失败', 'sw': 'Kupakia picha kumeshindwa'});
+  String get signupVerificationEmailSendError => _t({'fr': "Erreur lors de l'envoi de l'email de vérification", 'en': 'Error sending the verification email', 'es': 'Error al enviar el correo de verificación', 'de': 'Fehler beim Senden der Bestätigungs-E-Mail', 'ar': 'حدث خطأ أثناء إرسال بريد التحقق', 'pt': 'Erro ao enviar o e-mail de verificação', 'zh': '发送验证邮件时出错', 'sw': 'Hitilafu wakati wa kutuma barua pepe ya uthibitisho'});
+  String get signupErrorInvalidEmail => _t({'fr': 'Votre email semble être malformé.', 'en': 'Your email appears to be malformed.', 'es': 'Tu correo electrónico parece estar mal formado.', 'de': 'Deine E-Mail-Adresse scheint ungültig zu sein.', 'ar': 'يبدو أن بريدك الإلكتروني غير صحيح.', 'pt': 'Seu e-mail parece estar incorreto.', 'zh': '您的电子邮箱格式似乎不正确。', 'sw': 'Barua pepe yako inaonekana si sahihi.'});
+  String get signupErrorWrongPassword => _t({'fr': 'Votre mot de passe est erroné.', 'en': 'Your password is incorrect.', 'es': 'Tu contraseña es incorrecta.', 'de': 'Dein Passwort ist falsch.', 'ar': 'كلمة المرور غير صحيحة.', 'pt': 'Sua senha está incorreta.', 'zh': '您的密码不正确。', 'sw': 'Nenosiri lako si sahihi.'});
+  String get signupErrorEmailInUse => _t({'fr': "L'email est déjà utilisé par un autre compte.", 'en': 'This email is already used by another account.', 'es': 'Este correo ya está en uso por otra cuenta.', 'de': 'Diese E-Mail wird bereits von einem anderen Konto verwendet.', 'ar': 'هذا البريد الإلكتروني مستخدم من قبل حساب آخر.', 'pt': 'Este e-mail já está em uso por outra conta.', 'zh': '该电子邮箱已被其他账户使用。', 'sw': 'Barua pepe hii inatumika tayari na akaunti nyingine.'});
+  String get signupErrorUserNotFound => _t({'fr': "L'utilisateur avec cet email n'existe pas.", 'en': 'No user exists with this email.', 'es': 'No existe ningún usuario con este correo.', 'de': 'Es existiert kein Benutzer mit dieser E-Mail.', 'ar': 'لا يوجد مستخدم بهذا البريد الإلكتروني.', 'pt': 'Não existe usuário com este e-mail.', 'zh': '没有使用此电子邮箱的用户。', 'sw': 'Hakuna mtumiaji aliye na barua pepe hii.'});
+  String get signupErrorUserDisabled => _t({'fr': "L'utilisateur avec cet email a été désactivé.", 'en': 'The user with this email has been disabled.', 'es': 'El usuario con este correo ha sido deshabilitado.', 'de': 'Der Benutzer mit dieser E-Mail wurde deaktiviert.', 'ar': 'تم تعطيل المستخدم بهذا البريد الإلكتروني.', 'pt': 'O usuário com este e-mail foi desativado.', 'zh': '使用此电子邮箱的用户已被禁用。', 'sw': 'Mtumiaji aliye na barua pepe hii amezimwa.'});
+  String get signupErrorTooManyRequests => _t({'fr': 'Trop de demandes.', 'en': 'Too many requests.', 'es': 'Demasiadas solicitudes.', 'de': 'Zu viele Anfragen.', 'ar': 'طلبات كثيرة جدًا.', 'pt': 'Muitas solicitações.', 'zh': '请求过多。', 'sw': 'Maombi mengi sana.'});
+  String get signupErrorOperationNotAllowed => _t({'fr': "La connexion avec l'email et un mot de passe n'est pas activée.", 'en': 'Email and password sign-in is not enabled.', 'es': 'El inicio de sesión con correo y contraseña no está habilitado.', 'de': 'Die Anmeldung mit E-Mail und Passwort ist nicht aktiviert.', 'ar': 'تسجيل الدخول بالبريد الإلكتروني وكلمة المرور غير مُفعّل.', 'pt': 'O login com e-mail e senha não está habilitado.', 'zh': '未启用电子邮箱和密码登录。', 'sw': 'Kuingia kwa barua pepe na nenosiri hakuwezeshwa.'});
+  String get signupErrorWeakPassword => _t({'fr': 'Le mot de passe est trop faible.', 'en': 'The password is too weak.', 'es': 'La contraseña es demasiado débil.', 'de': 'Das Passwort ist zu schwach.', 'ar': 'كلمة المرور ضعيفة جدًا.', 'pt': 'A senha é muito fraca.', 'zh': '密码强度太弱。', 'sw': 'Nenosiri ni dhaifu sana.'});
+  String get signupErrorUndefined => _t({'fr': "Une erreur indéfinie s'est produite", 'en': 'An undefined error occurred', 'es': 'Se produjo un error indefinido', 'de': 'Ein unbekannter Fehler ist aufgetreten', 'ar': 'حدث خطأ غير محدد', 'pt': 'Ocorreu um erro indefinido', 'zh': '发生未定义的错误', 'sw': 'Hitilafu isiyojulikana imetokea'});
+  String get signupErrorFirebase => _t({'fr': 'Erreur Firebase:', 'en': 'Firebase error:', 'es': 'Error de Firebase:', 'de': 'Firebase-Fehler:', 'ar': ':خطأ في Firebase', 'pt': 'Erro do Firebase:', 'zh': 'Firebase 错误：', 'sw': 'Hitilafu ya Firebase:'});
+  String get signupErrorUnexpected => _t({'fr': 'Erreur inattendue:', 'en': 'Unexpected error:', 'es': 'Error inesperado:', 'de': 'Unerwarteter Fehler:', 'ar': ':خطأ غير متوقع', 'pt': 'Erro inesperado:', 'zh': '意外错误：', 'sw': 'Hitilafu isiyotarajiwa:'});
+
+  // ── HomeConstPost (Batch 1) ──
+  String get homeConstBusinessIntro => _t({'fr': 'Afrolook est bien plus qu\'un réseau social : c\'est votre plateforme business. 🚀\n\nNous vous offrons toutes les fonctionnalités pour monétiser votre audience et gagner votre vie :\n\n💰 Gagnez par nombre de vues sur vos vidéos virales\n🎁 Recevez des cadeaux virtuels (pièces) convertis en revenus\n🔒 Créez des canaux privés payants\n🎥 Organisez des lives privés facturés\n📦 Vendez vos contenus en ligne (photos, vidéos, formations)\n🛍️ Vendez vos propres produits\n🏆 Remportez le challenge du meilleur post du mois\n\n✨ Les meilleurs créateurs ont déjà touché plus de 250 000 F par mois.\nBeaucoup le font déjà. Alors, pourquoi pas vous ?\n\nRejoignez la révolution des créateurs qui gagnent leur vie grâce à leur contenu ! 🌍', 'en': 'Afrolook is much more than a social network: it\'s your business platform. 🚀\n\nWe offer all the features to monetize your audience and earn a living:\n\n💰 Earn from views on your viral videos\n🎁 Receive virtual gifts (coins) converted into revenue\n🔒 Create paid private channels\n🎥 Host paid private lives\n📦 Sell your content online (photos, videos, courses)\n🛍️ Sell your own products\n🏆 Win the best post of the month challenge\n\n✨ Top creators already earn over 250,000 F per month.\nMany already do it. So why not you?\n\nJoin the revolution of creators earning a living from their content! 🌍', 'es': 'Afrolook es mucho más que una red social: es tu plataforma de negocios. 🚀\n\nOfrecemos todas las funciones para monetizar tu audiencia y ganarte la vida:\n\n💰 Gana por las vistas de tus videos virales\n🎁 Recibe regalos virtuales (monedas) convertidos en ingresos\n🔒 Crea canales privados de pago\n🎥 Organiza lives privados de pago\n📦 Vende tu contenido en línea (fotos, videos, cursos)\n🛍️ Vende tus propios productos\n🏆 Gana el desafío de la mejor publicación del mes\n\n✨ Los mejores creadores ya ganan más de 250.000 F al mes.\nMuchos ya lo hacen. ¿Por qué no tú?\n\n¡Únete a la revolución de los creadores que viven de su contenido! 🌍', 'de': 'Afrolook ist viel mehr als ein soziales Netzwerk: Es ist deine Business-Plattform. 🚀\n\nWir bieten alle Funktionen, um dein Publikum zu monetarisieren und deinen Lebensunterhalt zu verdienen:\n\n💰 Verdiene an den Aufrufen deiner viralen Videos\n🎁 Erhalte virtuelle Geschenke (Münzen), die in Einnahmen umgewandelt werden\n🔒 Erstelle bezahlte private Kanäle\n🎥 Veranstalte bezahlte private Lives\n📦 Verkaufe deine Inhalte online (Fotos, Videos, Kurse)\n🛍️ Verkaufe deine eigenen Produkte\n🏆 Gewinne die Challenge für den besten Beitrag des Monats\n\n✨ Top-Creator verdienen bereits über 250.000 F pro Monat.\nViele tun es bereits. Warum nicht du?\n\nSchließe dich der Revolution der Creator an, die mit ihren Inhalten ihren Lebensunterhalt verdienen! 🌍', 'ar': 'أفروولوك أكثر من شبكة اجتماعية: إنها منصتك التجارية. 🚀\n\nنقدم لك كل الميزات لتحقيق الدخل من جمهورك وكسب رزقك:\n\n💰 اكسب من عدد مشاهدات فيديوهاتك الفيروسية\n🎁 احصل على هدايا افتراضية (عملات) تتحول إلى دخل\n🔒 أنشئ قنوات خاصة مدفوعة\n🎥 نظّم بثوثاً مباشرة خاصة مدفوعة\n📦 بِع محتواك عبر الإنترنت (صور، فيديوهات، دورات)\n🛍️ بِع منتجاتك الخاصة\n🏆 اربح تحدي أفضل منشور لهذا الشهر\n\n✨ أفضل المبدعين يحققون أكثر من 250,000 فرنك شهريًا.\nكثيرون يفعلون ذلك بالفعل. فلماذا لا تكون أنت؟\n\nانضم إلى ثورة المبدعين الذين يعيشون من محتواهم! 🌍', 'pt': 'O Afrolook é muito mais que uma rede social: é a sua plataforma de negócios. 🚀\n\nOferecemos todos os recursos para monetizar seu público e ganhar a vida:\n\n💰 Ganhe pelo número de visualizações dos seus vídeos virais\n🎁 Receba presentes virtuais (moedas) convertidos em receita\n🔒 Crie canais privados pagos\n🎥 Organize lives privadas pagas\n📦 Venda seu conteúdo online (fotos, vídeos, cursos)\n🛍️ Venda seus próprios produtos\n🏆 Ganhe o desafio do melhor post do mês\n\n✨ Os melhores criadores já ganham mais de 250.000 F por mês.\nMuitos já fazem isso. Então, por que não você?\n\nJunte-se à revolução dos criadores que vivem do seu conteúdo! 🌍', 'zh': 'Afrolook不仅是社交网络，更是您的商业平台。🚀\n\n我们提供所有功能，帮助您将受众变现并赚取收入：\n\n💰 通过病毒视频的观看次数赚钱\n🎁 收到虚拟礼物（金币）并转化为收入\n🔒 创建付费私密频道\n🎥 举办付费私人直播\n📦 在线销售内容（照片、视频、课程）\n🛍️ 销售您自己的产品\n🏆 赢得本月最佳帖子挑战\n\n✨ 顶尖创作者每月已赚取超过25万法郎。\n许多人已经做到了，为什么不是您？\n\n加入靠内容谋生的创作者革命吧！🌍', 'sw': 'Afrolook ni zaidi ya mtandao wa kijamii: ni jukwaa lako la biashara. 🚀\n\nTunatoa vipengele vyote vya kuingiza mapato kutoka kwa hadhira yako na kujipatia kipato:\n\n💰 Pata pesa kutoka kwa idadi ya watazamaji wa video zako maarufu\n🎁 Pokea zawadi za kidijitali (sarafu) zinazogeuzwa kuwa mapato\n🔒 Unda mikondo ya faragha inayolipiwa\n🎥 Andaa matukio ya moja kwa moja ya faragha yanayolipiwa\n📦 Uza maudhui yako mtandaoni (picha, video, kozi)\n🛍️ Uza bidhaa zako\n🏆 Shinda changamoto ya chapisho bora la mwezi\n\n✨ Waumbaji bora wanapata zaidi ya F 250,000 kwa mwezi.\nWengi wanafanya hivyo. Kwa nini si wewe?\n\nJiunge na mapinduzi ya waumbaji wanaojipatia kipato kutoka kwa maudhui yao! 🌍'});
+  String get homeConstUpgradeTitle => _t({'fr': 'Passez au niveau supérieur', 'en': 'Upgrade to the next level', 'es': 'Sube de nivel', 'de': 'Auf die nächste Stufe gehen', 'ar': 'انتقل إلى المستوى التالي', 'pt': 'Suba de nível', 'zh': '升级到更高级别', 'sw': 'Panda hadi ngazi inayofuata'});
+  String get homeConstPremiumSubtitle => _t({'fr': 'Abonnement Premium • 200 F/mois', 'en': 'Premium subscription • 200 F/month', 'es': 'Suscripción Premium • 200 F/mes', 'de': 'Premium-Abonnement • 200 F/Monat', 'ar': 'الاشتراك المميز • 200 فرنك/شهريًا', 'pt': 'Assinatura Premium • 200 F/mês', 'zh': '高级订阅 • 200法郎/月', 'sw': 'Usajili wa Premium • F 200/mwezi'});
+  String get homeConstPremiumDesc => _t({'fr': 'La version Premium vous donne accès à toutes les fonctionnalités d\'Afrolook, plus de visibilité pour vos posts, et au marketing d\'affiliation !', 'en': 'The Premium version gives you access to all Afrolook features, more visibility for your posts, and affiliate marketing!', 'es': 'La versión Premium te da acceso a todas las funciones de Afrolook, más visibilidad para tus publicaciones y marketing de afiliados.', 'de': 'Die Premium-Version gibt dir Zugang zu allen Afrolook-Funktionen, mehr Sichtbarkeit für deine Beiträge und Affiliate-Marketing!', 'ar': 'تتيح لك النسخة المميزة الوصول إلى جميع ميزات أفروولوك، وزيادة ظهور منشوراتك، والتسويق بالعمولة!', 'pt': 'A versão Premium dá acesso a todos os recursos do Afrolook, mais visibilidade para seus posts e marketing de afiliados!', 'zh': '高级版本可让您使用Afrolook的所有功能，让您的帖子获得更多曝光，并可参与联盟营销！', 'sw': 'Toleo la Premium hukupa ufikiaji wa vipengele vyote vya Afrolook, mwonekano zaidi wa machapisho yako, na uuzaji wa ushirika!'});
+  String get homeConstUpgradeCta => _t({'fr': 'Vous pouvez passer à la version premium dès maintenant 👇', 'en': 'You can upgrade to premium right now 👇', 'es': 'Puedes pasar a la versión premium ahora mismo 👇', 'de': 'Du kannst jetzt auf Premium upgraden 👇', 'ar': 'يمكنك الترقية إلى النسخة المميزة الآن 👇', 'pt': 'Você pode mudar para a versão premium agora mesmo 👇', 'zh': '您现在就可以升级到高级版 👇', 'sw': 'Unaweza kupandisha hadi Premium sasa hivi 👇'});
+  String get homeConstBusinessTitle => _t({'fr': 'Afrolook - Votre Business Social', 'en': 'Afrolook - Your Social Business', 'es': 'Afrolook - Tu negocio social', 'de': 'Afrolook - Dein Social Business', 'ar': 'أفروولوك - عملك الاجتماعي', 'pt': 'Afrolook - Seu Negócio Social', 'zh': 'Afrolook - 您的社交业务', 'sw': 'Afrolook - Biashara Yako ya Kijamii'});
+  String get homeConstSubscribe => _t({'fr': 'S\'abonner', 'en': 'Subscribe', 'es': 'Suscribirse', 'de': 'Abonnieren', 'ar': 'اشترك', 'pt': 'Assinar', 'zh': '订阅', 'sw': 'Jiandikishe'});
+  String get homeConstMix => _t({'fr': 'Mix', 'en': 'Mix', 'es': 'Mix', 'de': 'Mix', 'ar': 'مزيج', 'pt': 'Mix', 'zh': '混合', 'sw': 'Mchanganyiko'});
+  String get homeConstAllShort => _t({'fr': 'Tous', 'en': 'All', 'es': 'Todos', 'de': 'Alle', 'ar': 'الكل', 'pt': 'Todos', 'zh': '全部', 'sw': 'Zote'});
+  String get homeConstYourCountry => _t({'fr': 'Votre pays', 'en': 'Your country', 'es': 'Tu país', 'de': 'Dein Land', 'ar': 'بلدك', 'pt': 'Seu país', 'zh': '您的国家', 'sw': 'Nchi yako'});
+  String get homeConstTryOtherSearch => _t({'fr': 'Essayez une autre recherche', 'en': 'Try another search', 'es': 'Intenta otra búsqueda', 'de': 'Versuche eine andere Suche', 'ar': 'حاول البحث بطريقة أخرى', 'pt': 'Tente outra busca', 'zh': '尝试其他搜索', 'sw': 'Jaribu utafutaji mwingine'});
+  String get homeConstLoadingMorePosts => _t({'fr': 'Chargement de plus de posts...', 'en': 'Loading more posts...', 'es': 'Cargando más publicaciones...', 'de': 'Weitere Beiträge werden geladen...', 'ar': '...جارٍ تحميل المزيد من المنشورات', 'pt': 'Carregando mais posts...', 'zh': '正在加载更多帖子...', 'sw': 'Inapakia machapisho zaidi...'});
+  String get homeConstPreparingMoreContent => _t({'fr': 'Préparation de plus de contenu...', 'en': 'Preparing more content...', 'es': 'Preparando más contenido...', 'de': 'Weitere Inhalte werden vorbereitet...', 'ar': '...تحضير المزيد من المحتوى', 'pt': 'Preparando mais conteúdo...', 'zh': '正在准备更多内容...', 'sw': 'Inatayarisha maudhui zaidi...'});
+  String get homeConstComeBackLater => _t({'fr': 'Revenez plus tard pour de nouveaux contenus', 'en': 'Come back later for new content', 'es': 'Vuelve más tarde para ver contenido nuevo', 'de': 'Komm später für neue Inhalte zurück', 'ar': 'عد لاحقًا للحصول على محتوى جديد', 'pt': 'Volte mais tarde para novos conteúdos', 'zh': '稍后回来查看新内容', 'sw': 'Rudi baadaye kwa maudhui mapya'});
+  String get homeConstAutoLoadingDone => _t({'fr': 'Chargement automatique terminé', 'en': 'Automatic loading complete', 'es': 'Carga automática finalizada', 'de': 'Automatisches Laden abgeschlossen', 'ar': 'انتهى التحميل التلقائي', 'pt': 'Carregamento automático concluído', 'zh': '自动加载已完成', 'sw': 'Upakiaji wa kiotomatiki umekamilika'});
+  String get homeConstLoadMore5Posts => _t({'fr': 'Charger 5 posts de plus', 'en': 'Load 5 more posts', 'es': 'Cargar 5 publicaciones más', 'de': '5 weitere Beiträge laden', 'ar': 'تحميل 5 منشورات أخرى', 'pt': 'Carregar mais 5 posts', 'zh': '加载更多5篇帖子', 'sw': 'Pakia machapisho 5 zaidi'});
+  String get homeConstAllCountriesContent => _t({'fr': 'Vous avez vu tous les contenus disponibles', 'en': 'You have seen all available content', 'es': 'Has visto todo el contenido disponible', 'de': 'Du hast alle verfügbaren Inhalte gesehen', 'ar': 'لقد شاهدت كل المحتوى المتاح', 'pt': 'Você viu todo o conteúdo disponível', 'zh': '您已查看所有可用内容', 'sw': 'Umeona maudhui yote yanayopatikana'});
+  String get homeConstEndContentCountry => _t({'fr': 'Fin des contenus en', 'en': 'End of content for', 'es': 'Fin del contenido en', 'de': 'Ende der Inhalte für', 'ar': 'نهاية المحتوى في', 'pt': 'Fim do conteúdo em', 'zh': '内容结束于', 'sw': 'Mwisho wa maudhui kwa'});
+  String get homeConstEndContentMix => _t({'fr': 'Fin des contenus pour le mix actuel', 'en': 'End of content for the current mix', 'es': 'Fin del contenido para la mezcla actual', 'de': 'Ende der Inhalte für den aktuellen Mix', 'ar': 'نهاية المحتوى للمزيج الحالي', 'pt': 'Fim do conteúdo para a mistura atual', 'zh': '当前混合内容结束', 'sw': 'Mwisho wa maudhui kwa mchanganyiko wa sasa'});
+  String get homeConstEndContentFor => _t({'fr': 'Fin des contenus pour', 'en': 'End of content for', 'es': 'Fin del contenido para', 'de': 'Ende der Inhalte für', 'ar': 'نهاية المحتوى لـ', 'pt': 'Fim do conteúdo para', 'zh': '内容结束', 'sw': 'Mwisho wa maudhui kwa'});
+  String get homeConstEndContent => _t({'fr': 'Fin des contenus', 'en': 'End of content', 'es': 'Fin del contenido', 'de': 'Ende der Inhalte', 'ar': 'نهاية المحتوى', 'pt': 'Fim do conteúdo', 'zh': '内容结束', 'sw': 'Mwisho wa maudhui'});
+  String get homeConstThisCountry => _t({'fr': 'ce pays', 'en': 'this country', 'es': 'este país', 'de': 'dieses Land', 'ar': 'هذا البلد', 'pt': 'este país', 'zh': '该国家', 'sw': 'nchi hii'});
+  String get homeConstNoContentAllCountries => _t({'fr': 'Aucun contenu disponible pour tous les pays', 'en': 'No content available for all countries', 'es': 'No hay contenido disponible para todos los países', 'de': 'Kein Inhalt für alle Länder verfügbar', 'ar': 'لا يوجد محتوى متاح لجميع البلدان', 'pt': 'Nenhum conteúdo disponível para todos os países', 'zh': '所有国家均无可用内容', 'sw': 'Hakuna maudhui yanayopatikana kwa nchi zote'});
+  String get homeConstNoContentCountry => _t({'fr': 'Aucun contenu disponible en', 'en': 'No content available in', 'es': 'No hay contenido disponible en', 'de': 'Kein Inhalt verfügbar in', 'ar': 'لا يوجد محتوى متاح في', 'pt': 'Nenhum conteúdo disponível em', 'zh': '暂无可用内容于', 'sw': 'Hakuna maudhui yanayopatikana katika'});
+  String get homeConstNoContentNow => _t({'fr': 'Aucun contenu disponible pour le moment', 'en': 'No content available at the moment', 'es': 'No hay contenido disponible por el momento', 'de': 'Derzeit kein Inhalt verfügbar', 'ar': 'لا يوجد محتوى متاح في الوقت الحالي', 'pt': 'Nenhum conteúdo disponível no momento', 'zh': '目前没有可用内容', 'sw': 'Hakuna maudhui yanayopatikana kwa sasa'});
+  String get homeConstNoContentFor => _t({'fr': 'Aucun contenu disponible pour', 'en': 'No content available for', 'es': 'No hay contenido disponible para', 'de': 'Kein Inhalt verfügbar für', 'ar': 'لا يوجد محتوى متاح لـ', 'pt': 'Nenhum conteúdo disponível para', 'zh': '没有可用内容', 'sw': 'Hakuna maudhui yanayopatikana kwa'});
+  String get homeConstNoContentAvailable => _t({'fr': 'Aucun contenu disponible', 'en': 'No content available', 'es': 'No hay contenido disponible', 'de': 'Kein Inhalt verfügbar', 'ar': 'لا يوجد محتوى متاح', 'pt': 'Nenhum conteúdo disponível', 'zh': '没有可用内容', 'sw': 'Hakuna maudhui yanayopatikana'});
+  String get homeConstSpecificCountry => _t({'fr': 'Pays spécifique', 'en': 'Specific country', 'es': 'País específico', 'de': 'Bestimmtes Land', 'ar': 'بلد محدد', 'pt': 'País específico', 'zh': '特定国家', 'sw': 'Nchi maalum'});
+
+  // ── Dating (Batch 1) ──
+  String get datingNoProfilesYet => _t({'fr': 'Aucun profil disponible pour le moment. Revenez plus tard !', 'en': 'No profiles available right now. Come back later!', 'es': 'No hay perfiles disponibles por ahora. ¡Vuelve más tarde!', 'de': 'Derzeit sind keine Profile verfügbar. Komm später wieder!', 'ar': 'لا توجد ملفات شخصية متاحة الآن. عد لاحقاً!', 'pt': 'Nenhum perfil disponível agora. Volte mais tarde!', 'zh': '暂无可用资料，请稍后再来！', 'sw': 'Hakuna wasifu unaopatikana sasa. Rudi baadaye!'});
+  String get datingLimitLikesReached => _t({'fr': 'Limite de likes atteinte', 'en': 'Like limit reached', 'es': 'Límite de likes alcanzado', 'de': 'Like-Limit erreicht', 'ar': 'تم الوصول إلى حد الإعجابات', 'pt': 'Limite de curtidas atingido', 'zh': '已达点赞上限', 'sw': 'Kikomo cha mapendo kimefikiwa'});
+  String get datingNoMoreSuperLikes => _t({'fr': 'Plus de super likes', 'en': 'No more super likes', 'es': 'No quedan súper likes', 'de': 'Keine Super-Likes mehr', 'ar': 'لا توجد إعجابات خارقة أخرى', 'pt': 'Sem mais super curtidas', 'zh': '没有更多超级喜欢了', 'sw': 'Hakuna super likes zaidi'});
+  String get datingUsedAllFreeLikes => _t({'fr': 'Vous avez utilisé tous vos likes gratuits du jour.', 'en': 'You have used all your free likes for today.', 'es': 'Has usado todos tus likes gratis de hoy.', 'de': 'Du hast alle deine kostenlosen Likes für heute aufgebraucht.', 'ar': 'لقد استخدمت جميع إعجاباتك المجانية اليوم.', 'pt': 'Você usou todas as suas curtidas grátis de hoje.', 'zh': '您今天的免费点赞已用完。', 'sw': 'Umetumia mapendo yako yote ya bure ya leo.'});
+  String get datingNoMoreFreeSuperLikesToday => _t({'fr': 'Vous n’avez plus de super likes gratuits aujourd’hui.', 'en': 'You have no more free super likes today.', 'es': 'No tienes más súper likes gratis hoy.', 'de': 'Du hast heute keine kostenlosen Super-Likes mehr.', 'ar': 'لم يتبق لديك إعجابات خارقة مجانية اليوم.', 'pt': 'Você não tem mais super curtidas gratuitas hoje.', 'zh': '您今天没有更多免费超级喜欢了。', 'sw': 'Hauna super likes za bure tena leo.'});
+  String get datingSolutionsTitle => _t({'fr': '⚡ Solutions :', 'en': '⚡ Solutions:', 'es': '⚡ Soluciones:', 'de': '⚡ Lösungen:', 'ar': '⚡ الحلول:', 'pt': '⚡ Soluções:', 'zh': '⚡ 解决方案：', 'sw': '⚡ Suluhisho:'});
+  String get datingWatchAdForBonus => _t({'fr': '🎁 Regardez une publicité pour obtenir {bonus} immédiatement !', 'en': '🎁 Watch an ad to get {bonus} right now!', 'es': '🎁 ¡Mira un anuncio para obtener {bonus} ahora mismo!', 'de': '🎁 Sieh dir eine Werbung an, um sofort {bonus} zu erhalten!', 'ar': '🎁 شاهد إعلانًا للحصول على {bonus} فورًا!', 'pt': '🎁 Assista a um anúncio para obter {bonus} agora!', 'zh': '🎁 观看广告立即获得 {bonus}！', 'sw': '🎁 Tazama tangazo upate {bonus} sasa hivi!'});
+  String get datingUpgradeGoldUnlimited => _t({'fr': '✨ Ou passez à AfroLove Gold pour des likes illimités et des super likes quotidiens.', 'en': '✨ Or upgrade to AfroLove Gold for unlimited likes and daily super likes.', 'es': '✨ O actualiza a AfroLove Gold para likes ilimitados y súper likes diarios.', 'de': '✨ Oder hol dir AfroLove Gold für unbegrenzte Likes und tägliche Super-Likes.', 'ar': '✨ أو قم بالترقية إلى AfroLove Gold للحصول على إعجابات غير محدودة وإعجابات خارقة يومية.', 'pt': '✨ Ou faça upgrade para AfroLove Gold para curtidas ilimitadas e super curtidas diárias.', 'zh': '✨ 或升级到 AfroLove Gold 获得无限点赞和每日超级喜欢。', 'sw': '✨ Au pandisha hadi AfroLove Gold kwa mapendo yasiyo na kikomo na super likes za kila siku.'});
+  String get datingWatchAdButton => _t({'fr': 'REGARDER LA PUB ({bonus})', 'en': 'WATCH AD ({bonus})', 'es': 'VER ANUNCIO ({bonus})', 'de': 'WERBUNG ANSEHEN ({bonus})', 'ar': 'مشاهدة الإعلان ({bonus})', 'pt': 'VER ANÚNCIO ({bonus})', 'zh': '观看广告 ({bonus})', 'sw': 'TAZAMA TANGAZO ({bonus})'});
+  String get datingSeeOffers => _t({'fr': 'VOIR LES OFFRES', 'en': 'SEE OFFERS', 'es': 'VER OFERTAS', 'de': 'ANGEBOTE ANSEHEN', 'ar': 'عرض العروض', 'pt': 'VER OFERTAS', 'zh': '查看优惠', 'sw': 'TAZAMA OFA'});
+  String get datingSeeOffersTitleCase => _t({'fr': 'Voir les offres', 'en': 'See offers', 'es': 'Ver ofertas', 'de': 'Angebote ansehen', 'ar': 'عرض العروض', 'pt': 'Ver ofertas', 'zh': '查看优惠', 'sw': 'Tazama ofa'});
+  String get datingInsufficientBalance => _t({'fr': 'Solde insuffisant', 'en': 'Insufficient balance', 'es': 'Saldo insuficiente', 'de': 'Unzureichendes Guthaben', 'ar': 'الرصيد غير كافٍ', 'pt': 'Saldo insuficiente', 'zh': '余额不足', 'sw': 'Salio halitoshi'});
+  String get datingNotEnoughCoinsSuperLike => _t({'fr': 'Vous n\'avez pas assez de pièces pour envoyer un super like.', 'en': 'You don\'t have enough coins to send a super like.', 'es': 'No tienes suficientes monedas para enviar un súper like.', 'de': 'Du hast nicht genug Münzen, um einen Super-Like zu senden.', 'ar': 'لا تملك عملات كافية لإرسال إعجاب خارق.', 'pt': 'Você não tem moedas suficientes para enviar um super curtida.', 'zh': '您的金币不足，无法发送超级喜欢。', 'sw': 'Huna sarafu za kutosha kutuma super like.'});
+  String get datingNotEnoughCoinsCoupDeCoeur => _t({'fr': 'Vous n\'avez pas assez de pièces pour envoyer un Coup de cœur ❤️.', 'en': 'You don\'t have enough coins to send a Crush ❤️.', 'es': 'No tienes suficientes monedas para enviar un Flechazo ❤️.', 'de': 'Du hast nicht genug Münzen, um eine Schwärmerei ❤️ zu senden.', 'ar': 'لا تملك عملات كافية لإرسال إعجاب شديد ❤️.', 'pt': 'Você não tem moedas suficientes para enviar um Crush ❤️.', 'zh': '您的金币不足，无法发送心动 ❤️。', 'sw': 'Huna sarafu za kutosha kutuma Coup de cœur ❤️.'});
+  String get datingCoinsRequired20 => _t({'fr': '20 pièces requis', 'en': '20 coins required', 'es': 'Se requieren 20 monedas', 'de': '20 Münzen erforderlich', 'ar': 'مطلوب 20 عملة', 'pt': 'São necessárias 20 moedas', 'zh': '需要20个金币', 'sw': 'Sarafu 20 zinahitajika'});
+  String get datingBuyCoins => _t({'fr': 'Acheter des pièces', 'en': 'Buy coins', 'es': 'Comprar monedas', 'de': 'Münzen kaufen', 'ar': 'شراء عملات', 'pt': 'Comprar moedas', 'zh': '购买金币', 'sw': 'Nunua sarafu'});
+  String get datingPaidCrushTitle => _t({'fr': '✨ Coup de cœur payant ✨', 'en': '✨ Paid Crush ✨', 'es': '✨ Flechazo de pago ✨', 'de': '✨ Bezahlte Schwärmerei ✨', 'ar': '✨ إعجاب شديد مدفوع ✨', 'pt': '✨ Crush pago ✨', 'zh': '✨ 付费心动 ✨', 'sw': '✨ Coup de cœur ya malipo ✨'});
+  String get datingNoMoreFreeCoupsToday => _t({'fr': 'Vous n\'avez plus de coups de cœur gratuits aujourd\'hui.', 'en': 'You have no more free crushes today.', 'es': 'No tienes más flechazos gratis hoy.', 'de': 'Du hast heute keine kostenlosen Schwärmereien mehr.', 'ar': 'لم يتبق لديك إعجابات شديدة مجانية اليوم.', 'pt': 'Você não tem mais crushes gratuitos hoje.', 'zh': '您今天没有更多免费心动了。', 'sw': 'Hauna coup de cœur za bure tena leo.'});
+  String get datingSendCoupCost => _t({'fr': 'Envoyer un coup de cœur coûte {price} pièces.', 'en': 'Sending a crush costs {price} coins.', 'es': 'Enviar un flechazo cuesta {price} monedas.', 'de': 'Eine Schwärmerei zu senden kostet {price} Münzen.', 'ar': 'إرسال إعجاب شديد يكلف {price} عملة.', 'pt': 'Enviar um crush custa {price} moedas.', 'zh': '发送心动需要 {price} 金币。', 'sw': 'Kutuma coup de cœur kunagharimu sarafu {price}.'});
+  String get datingYourBalance => _t({'fr': 'Votre solde : {balance} pièces', 'en': 'Your balance: {balance} coins', 'es': 'Tu saldo: {balance} monedas', 'de': 'Dein Guthaben: {balance} Münzen', 'ar': 'رصيدك: {balance} عملة', 'pt': 'Seu saldo: {balance} moedas', 'zh': '您的余额：{balance} 金币', 'sw': 'Salio lako: sarafu {balance}'});
+  String get datingCancel => _t({'fr': 'Annuler', 'en': 'Cancel', 'es': 'Cancelar', 'de': 'Abbrechen', 'ar': 'إلغاء', 'pt': 'Cancelar', 'zh': '取消', 'sw': 'Ghairi'});
+  String get datingBuyAndSend => _t({'fr': 'Acheter et envoyer', 'en': 'Buy and send', 'es': 'Comprar y enviar', 'de': 'Kaufen und senden', 'ar': 'شراء وإرسال', 'pt': 'Comprar e enviar', 'zh': '购买并发送', 'sw': 'Nunua na tuma'});
+  String get datingItsAMatch => _t({'fr': 'C\'est un match ! 🎉', 'en': 'It\'s a match! 🎉', 'es': '¡Es un match! 🎉', 'de': 'Es ist ein Match! 🎉', 'ar': 'إنها مطابقة! 🎉', 'pt': 'É um match! 🎉', 'zh': '配对成功！🎉', 'sw': 'Ni mechi! 🎉'});
+  String get datingMutualLikeWith => _t({'fr': 'Vous et {pseudo} vous êtes likés mutuellement.', 'en': 'You and {pseudo} have liked each other.', 'es': 'Tú y {pseudo} se han gustado mutuamente.', 'de': 'Du und {pseudo} habt euch gegenseitig gelikt.', 'ar': 'أنت و{pseudo} أعجب كل منكما بالآخر.', 'pt': 'Você e {pseudo} se curtiram mutuamente.', 'zh': '您和 {pseudo} 互相点了赞。', 'sw': 'Wewe na {pseudo} mmependana.'});
+  String get datingContinue => _t({'fr': 'Continuer', 'en': 'Continue', 'es': 'Continuar', 'de': 'Weiter', 'ar': 'استمرار', 'pt': 'Continuar', 'zh': '继续', 'sw': 'Endelea'});
+  String get datingChatPrivately => _t({'fr': 'Discuter en privé', 'en': 'Chat privately', 'es': 'Chatear en privado', 'de': 'Privat chatten', 'ar': 'الدردشة الخاصة', 'pt': 'Conversar em privado', 'zh': '私聊', 'sw': 'Ongea kibinafsi'});
+  String get datingAlreadyInContactWith => _t({'fr': '💞 Vous êtes déjà en contact avec {pseudo}', 'en': '💞 You are already in contact with {pseudo}', 'es': '💞 Ya estás en contacto con {pseudo}', 'de': '💞 Du stehst bereits mit {pseudo} in Kontakt', 'ar': '💞 أنت بالفعل على تواصل مع {pseudo}', 'pt': '💞 Você já está em contato com {pseudo}', 'zh': '💞 您已经与 {pseudo} 取得联系', 'sw': '💞 Tayari uko mawasiliano na {pseudo}'});
+  String get datingDoesNotMatchCriteria => _t({'fr': '💔 {pseudo} ne correspond pas à vos critères de recherche', 'en': '💔 {pseudo} does not match your search criteria', 'es': '💔 {pseudo} no coincide con tus criterios de búsqueda', 'de': '💔 {pseudo} entspricht nicht deinen Suchkriterien', 'ar': '💔 {pseudo} لا يتطابق مع معايير بحثك', 'pt': '💔 {pseudo} não corresponde aos seus critérios de busca', 'zh': '💔 {pseudo} 不符合您的搜索条件', 'sw': '💔 {pseudo} hailingani na vigezo vyako vya utafutaji'});
+  String get datingYouLiked => _t({'fr': 'Vous avez liké {pseudo}', 'en': 'You liked {pseudo}', 'es': 'Le has dado like a {pseudo}', 'de': 'Du hast {pseudo} gelikt', 'ar': 'لقد أعجبت ب{pseudo}', 'pt': 'Você curtiu {pseudo}', 'zh': '您已点赞 {pseudo}', 'sw': 'Umempenda {pseudo}'});
+  String get datingSuperLikeSentTo => _t({'fr': '✨ Super like envoyé à {pseudo}', 'en': '✨ Super like sent to {pseudo}', 'es': '✨ Súper like enviado a {pseudo}', 'de': '✨ Super-Like an {pseudo} gesendet', 'ar': '✨ تم إرسال إعجاب خارق إلى {pseudo}', 'pt': '✨ Super curtida enviada para {pseudo}', 'zh': '✨ 已向 {pseudo} 发送超级喜欢', 'sw': '✨ Super like imetumwa kwa {pseudo}'});
+  String get datingErrorSending => _t({'fr': 'Erreur lors de l\'envoi', 'en': 'Error sending', 'es': 'Error al enviar', 'de': 'Fehler beim Senden', 'ar': 'خطأ في الإرسال', 'pt': 'Erro ao enviar', 'zh': '发送时出错', 'sw': 'Hitilafu wakati wa kutuma'});
+  String get datingNotSearchingThisGender => _t({'fr': 'Vous ne recherchez pas ce genre de personnes.', 'en': 'You are not looking for this type of person.', 'es': 'No estás buscando este tipo de personas.', 'de': 'Du suchst nicht nach dieser Art von Person.', 'ar': 'أنت لا تبحث عن هذا النوع من الأشخاص.', 'pt': 'Você não está procurando esse tipo de pessoa.', 'zh': '您不是在寻找这种类型的人。', 'sw': 'Hautafuti aina hii ya watu.'});
+  String get datingOtherNotSearchingYourGender => _t({'fr': 'Cette personne ne recherche pas votre genre.', 'en': 'This person is not looking for your gender.', 'es': 'Esta persona no está buscando tu género.', 'de': 'Diese Person sucht nicht nach deinem Geschlecht.', 'ar': 'هذا الشخص لا يبحث عن جنسك.', 'pt': 'Essa pessoa não está procurando seu gênero.', 'zh': '此人不在寻找您的性别。', 'sw': 'Mtu huyu hatafuti jinsia yako.'});
+  String get datingFilters => _t({'fr': 'Filtres', 'en': 'Filters', 'es': 'Filtros', 'de': 'Filter', 'ar': 'الفلاتر', 'pt': 'Filtros', 'zh': '筛选', 'sw': 'Vichujio'});
+  String get datingGender => _t({'fr': 'Genre', 'en': 'Gender', 'es': 'Género', 'de': 'Geschlecht', 'ar': 'الجنس', 'pt': 'Gênero', 'zh': '性别', 'sw': 'Jinsia'});
+  String get datingAll => _t({'fr': 'Tous', 'en': 'All', 'es': 'Todos', 'de': 'Alle', 'ar': 'الجميع', 'pt': 'Todos', 'zh': '全部', 'sw': 'Wote'});
+  String get datingWomen => _t({'fr': 'Femmes', 'en': 'Women', 'es': 'Mujeres', 'de': 'Frauen', 'ar': 'نساء', 'pt': 'Mulheres', 'zh': '女性', 'sw': 'Wanawake'});
+  String get datingMen => _t({'fr': 'Hommes', 'en': 'Men', 'es': 'Hombres', 'de': 'Männer', 'ar': 'رجال', 'pt': 'Homens', 'zh': '男性', 'sw': 'Wanaume'});
+  String get datingPopularity => _t({'fr': 'Popularité', 'en': 'Popularity', 'es': 'Popularidad', 'de': 'Beliebtheit', 'ar': 'الشعبية', 'pt': 'Popularidade', 'zh': '人气', 'sw': 'Umaarufu'});
+  String get datingMostPopular => _t({'fr': 'Les plus populaires', 'en': 'Most popular', 'es': 'Los más populares', 'de': 'Am beliebtesten', 'ar': 'الأكثر شعبية', 'pt': 'Mais populares', 'zh': '最受欢迎', 'sw': 'Maarufu zaidi'});
+  String get datingLeastPopular => _t({'fr': 'Moins populaires', 'en': 'Least popular', 'es': 'Menos populares', 'de': 'Am wenigsten beliebt', 'ar': 'الأقل شعبية', 'pt': 'Menos populares', 'zh': '最不受欢迎', 'sw': 'Kidogo maarufu'});
+  String get datingAgeMin => _t({'fr': 'Âge min', 'en': 'Min age', 'es': 'Edad mín', 'de': 'Min. Alter', 'ar': 'العمر الأدنى', 'pt': 'Idade mín', 'zh': '最小年龄', 'sw': 'Umri mdogo'});
+  String get datingAgeMax => _t({'fr': 'Âge max', 'en': 'Max age', 'es': 'Edad máx', 'de': 'Max. Alter', 'ar': 'العمر الأقصى', 'pt': 'Idade máx', 'zh': '最大年龄', 'sw': 'Umri mkubwa'});
+  String get datingApply => _t({'fr': 'Appliquer', 'en': 'Apply', 'es': 'Aplicar', 'de': 'Anwenden', 'ar': 'تطبيق', 'pt': 'Aplicar', 'zh': '应用', 'sw': 'Tumia'});
+  String get datingLoadingMoreProfiles => _t({'fr': 'Chargement de nouveaux profils...', 'en': 'Loading more profiles...', 'es': 'Cargando más perfiles...', 'de': 'Weitere Profile werden geladen...', 'ar': 'جاري تحميل ملفات شخصية أخرى...', 'pt': 'Carregando mais perfis...', 'zh': '正在加载更多资料...', 'sw': 'Inapakia wasifu zaidi...'});
+  String get datingLike => _t({'fr': 'LIKE', 'en': 'LIKE', 'es': 'LIKE', 'de': 'LIKE', 'ar': 'إعجاب', 'pt': 'LIKE', 'zh': '喜欢', 'sw': 'PENDA'});
+  String get datingPass => _t({'fr': 'PASS', 'en': 'PASS', 'es': 'PASAR', 'de': 'WEITER', 'ar': 'تخطي', 'pt': 'PASSAR', 'zh': '跳过', 'sw': 'PITA'});
+  String get datingNoMoreProfilesNow => _t({'fr': 'Plus de profils pour le moment', 'en': 'No more profiles for now', 'es': 'No hay más perfiles por ahora', 'de': 'Derzeit keine weiteren Profile', 'ar': 'لا توجد ملفات شخصية أخرى الآن', 'pt': 'Sem mais perfis por agora', 'zh': '暂时没有更多资料', 'sw': 'Hakuna wasifu zaidi kwa sasa'});
+  String get datingComeBackLater => _t({'fr': 'Revenez plus tard', 'en': 'Come back later', 'es': 'Vuelve más tarde', 'de': 'Komm später wieder', 'ar': 'عد لاحقاً', 'pt': 'Volte mais tarde', 'zh': '稍后再来', 'sw': 'Rudi baadaye'});
+  String get datingRefresh => _t({'fr': 'Actualiser', 'en': 'Refresh', 'es': 'Actualizar', 'de': 'Aktualisieren', 'ar': 'تحديث', 'pt': 'Atualizar', 'zh': '刷新', 'sw': 'Onyesha upya'});
+  String get datingLoadingProfiles => _t({'fr': 'Chargement des profils...', 'en': 'Loading profiles...', 'es': 'Cargando perfiles...', 'de': 'Profile werden geladen...', 'ar': 'جاري تحميل الملفات الشخصية...', 'pt': 'Carregando perfis...', 'zh': '正在加载资料...', 'sw': 'Inapakia wasifu...'});
+  String get datingPleaseWait => _t({'fr': 'Veuillez patienter', 'en': 'Please wait', 'es': 'Por favor espera', 'de': 'Bitte warten', 'ar': 'يرجى الانتظار', 'pt': 'Por favor, aguarde', 'zh': '请稍候', 'sw': 'Tafadhali subiri'});
+  String get datingMeetings => _t({'fr': 'Rencontres', 'en': 'Meetings', 'es': 'Encuentros', 'de': 'Treffen', 'ar': 'لقاءات', 'pt': 'Encontros', 'zh': '约会', 'sw': 'Mikutano'});
+  String get datingExplore => _t({'fr': 'Explorer', 'en': 'Explore', 'es': 'Explorar', 'de': 'Entdecken', 'ar': 'استكشاف', 'pt': 'Explorar', 'zh': '探索', 'sw': 'Chunguza'});
+  String get datingProfile => _t({'fr': 'Profil', 'en': 'Profile', 'es': 'Perfil', 'de': 'Profil', 'ar': 'الملف الشخصي', 'pt': 'Perfil', 'zh': '个人资料', 'sw': 'Wasifu'});
+  String get datingIncompleteProfile => _t({'fr': 'Profil incomplet', 'en': 'Incomplete profile', 'es': 'Perfil incompleto', 'de': 'Unvollständiges Profil', 'ar': 'ملف شخصي غير مكتمل', 'pt': 'Perfil incompleto', 'zh': '资料不完整', 'sw': 'Wasifu haujakamilika'});
+  String get datingChatPrivatelyPremium => _t({'fr': 'Discuter en privé (Premium)', 'en': 'Chat privately (Premium)', 'es': 'Chatear en privado (Premium)', 'de': 'Privat chatten (Premium)', 'ar': 'الدردشة الخاصة (مميز)', 'pt': 'Conversar em privado (Premium)', 'zh': '私聊（高级版）', 'sw': 'Ongea kibinafsi (Premium)'});
+  String get datingGoldTitle => _t({'fr': 'Afrolove Gold ✨', 'en': 'Afrolove Gold ✨', 'es': 'Afrolove Gold ✨', 'de': 'Afrolove Gold ✨', 'ar': 'Afrolove Gold ✨', 'pt': 'Afrolove Gold ✨', 'zh': 'Afrolove Gold ✨', 'sw': 'Afrolove Gold ✨'});
+  String get datingGoldRemoveAdsMessage => _t({'fr': 'Vous ne profitez pas encore des avantages Gold. Passez au plan Gold pour supprimer les publicités !', 'en': 'You don\'t enjoy Gold benefits yet. Switch to the Gold plan to remove ads!', 'es': 'Aún no disfrutas de los beneficios de Gold. ¡Pasa al plan Gold para quitar los anuncios!', 'de': 'Du genießt die Gold-Vorteile noch nicht. Wechsle zum Gold-Plan, um Werbung zu entfernen!', 'ar': 'أنت لا تستفيد من مزايا Gold حتى الآن. قم بالترقية إلى خطة Gold لإزالة الإعلانات!', 'pt': 'Você ainda não aproveita os benefícios Gold. Mude para o plano Gold para remover anúncios!', 'zh': '您尚未享受Gold会员权益。升级到Gold套餐以移除广告！', 'sw': 'Bado hujafurahia faida za Gold. Pandisha hadi mpango wa Gold ili kuondoa matangazo!'});
+  String get datingViewOffer => _t({'fr': 'VOIR L\'OFFRE', 'en': 'VIEW OFFER', 'es': 'VER OFERTA', 'de': 'ANGEBOT ANSEHEN', 'ar': 'عرض العرض', 'pt': 'VER OFERTA', 'zh': '查看优惠', 'sw': 'TAZAMA OFA'});
+  String get datingLikedProfilesCount => _t({'fr': '❤️ {count} profils likés !', 'en': '❤️ {count} liked profiles!', 'es': '❤️ ¡{count} perfiles que te gustaron!', 'de': '❤️ {count} gelikte Profile!', 'ar': '❤️ تم الإعجاب ب{count} ملفات شخصية!', 'pt': '❤️ {count} perfis curtidos!', 'zh': '❤️ 已点赞 {count} 个资料！', 'sw': '❤️ Wasifu {count} ulizopenda!'});
+  String get datingDiscoverLikedProfiles => _t({'fr': 'Découvrez tous les profils que vous avez likés', 'en': 'Discover all the profiles you have liked', 'es': 'Descubre todos los perfiles que te han gustado', 'de': 'Entdecke alle Profile, die du gelikt hast', 'ar': 'اكتشف جميع الملفات الشخصية التي أعجبتك', 'pt': 'Descubra todos os perfis que você curtiu', 'zh': '查看您点赞过的所有资料', 'sw': 'Gundua wasifu wote uliopenda'});
+  String get datingLikedProfilesPremiumOnly => _t({'fr': 'Voir les profils que vous avez likés est réservé aux membres AfroLove Plus et Gold.', 'en': 'Viewing the profiles you liked is reserved for AfroLove Plus and Gold members.', 'es': 'Ver los perfiles que te gustaron está reservado para los miembros de AfroLove Plus y Gold.', 'de': 'Das Anzeigen der von dir gelikten Profile ist AfroLove Plus- und Gold-Mitgliedern vorbehalten.', 'ar': 'عرض الملفات الشخصية التي أعجبتك متاح فقط لأعضاء AfroLove Plus و Gold.', 'pt': 'Ver os perfis que você curtiu é exclusivo para membros AfroLove Plus e Gold.', 'zh': '查看您点赞的资料仅限AfroLove Plus和Gold会员。', 'sw': 'Kuona wasifu uliopenda ni kwa wanachama wa AfroLove Plus na Gold pekee.'});
+  String get datingViewMyLikes => _t({'fr': 'Voir mes {count} likes', 'en': 'View my {count} likes', 'es': 'Ver mis {count} likes', 'de': 'Meine {count} Likes ansehen', 'ar': 'عرض إعجاباتي {count}', 'pt': 'Ver minhas {count} curtidas', 'zh': '查看我的 {count} 个赞', 'sw': 'Tazama mapendo yangu {count}'});
+  String get datingContinueSwiping => _t({'fr': 'Continuer à swiper', 'en': 'Keep swiping', 'es': 'Seguir deslizando', 'de': 'Weiter wischen', 'ar': 'استمر في التمرير', 'pt': 'Continuar a deslizar', 'zh': '继续滑动', 'sw': 'Endelea kuteleza'});
+  String get datingUnlockPremium => _t({'fr': 'Débloquer Premium', 'en': 'Unlock Premium', 'es': 'Desbloquear Premium', 'de': 'Premium freischalten', 'ar': 'فتح بريميوم', 'pt': 'Desbloquear Premium', 'zh': '解锁高级版', 'sw': 'Fungua Premium'});
+  String get datingMessages => _t({'fr': 'Messages', 'en': 'Messages', 'es': 'Mensajes', 'de': 'Nachrichten', 'ar': 'الرسائل', 'pt': 'Mensagens', 'zh': '消息', 'sw': 'Ujumbe'});
+  String get datingMatches => _t({'fr': 'Matchs', 'en': 'Matches', 'es': 'Coincidencias', 'de': 'Matches', 'ar': 'المطابقات', 'pt': 'Matches', 'zh': '配对', 'sw': 'Mechi'});
+  String get datingMyLikes => _t({'fr': 'Mes likes', 'en': 'My likes', 'es': 'Mis likes', 'de': 'Meine Likes', 'ar': 'إعجاباتي', 'pt': 'Minhas curtidas', 'zh': '我的喜欢', 'sw': 'Mapendo yangu'});
+  String get datingCoupDeCoeurLabel => _t({'fr': 'Coup de cœur ❤️', 'en': 'Crush ❤️', 'es': 'Flechazo ❤️', 'de': 'Schwärmerei ❤️', 'ar': 'إعجاب شديد ❤️', 'pt': 'Crush ❤️', 'zh': '心动 ❤️', 'sw': 'Coup de cœur ❤️'});
+  String get datingNotif => _t({'fr': 'Notif', 'en': 'Notif', 'es': 'Notif', 'de': 'Mitteilung', 'ar': 'إشعار', 'pt': 'Notif', 'zh': '通知', 'sw': 'Arifa'});
+  String get datingMyProfile => _t({'fr': 'Mon profil', 'en': 'My profile', 'es': 'Mi perfil', 'de': 'Mein Profil', 'ar': 'ملفي الشخصي', 'pt': 'Meu perfil', 'zh': '我的资料', 'sw': 'Wasifu wangu'});
+  String get datingReport => _t({'fr': 'Signaler', 'en': 'Report', 'es': 'Reportar', 'de': 'Melden', 'ar': 'تقرير', 'pt': 'Denunciar', 'zh': '举报', 'sw': 'Ripoti'});
+  String get datingBlock => _t({'fr': 'Bloquer', 'en': 'Block', 'es': 'Bloquear', 'de': 'Blockieren', 'ar': 'حظر', 'pt': 'Bloquear', 'zh': '屏蔽', 'sw': 'Zuia'});
+  String get datingVerified => _t({'fr': 'Vérifié', 'en': 'Verified', 'es': 'Verificado', 'de': 'Verifiziert', 'ar': 'موثق', 'pt': 'Verificado', 'zh': '已验证', 'sw': 'Imethibitishwa'});
+  String get datingLikesCount => _t({'fr': 'Likes', 'en': 'Likes', 'es': 'Likes', 'de': 'Likes', 'ar': 'الإعجابات', 'pt': 'Curtidas', 'zh': '点赞', 'sw': 'Mapendo'});
+  String get datingVisits => _t({'fr': 'Visites', 'en': 'Visits', 'es': 'Visitas', 'de': 'Besuche', 'ar': 'الزيارات', 'pt': 'Visitas', 'zh': '访问次数', 'sw': 'Ziara'});
+  String get datingViewCreatorProfile => _t({'fr': 'Voir le profil créateur', 'en': 'View creator profile', 'es': 'Ver perfil del creador', 'de': 'Ersteller-Profil ansehen', 'ar': 'عرض الملف الشخصي للمنشئ', 'pt': 'Ver perfil do criador', 'zh': '查看创作者资料', 'sw': 'Tazama wasifu wa muumbaji'});
+  String get datingGoldSubscriptionActive => _t({'fr': 'Abonnement Gold actif', 'en': 'Gold subscription active', 'es': 'Suscripción Gold activa', 'de': 'Gold-Abonnement aktiv', 'ar': 'اشتراك Gold نشط', 'pt': 'Assinatura Gold ativa', 'zh': 'Gold会员已激活', 'sw': 'Usajili wa Gold unafanya kazi'});
+  String get datingLikedHeart => _t({'fr': 'Liké ❤️', 'en': 'Liked ❤️', 'es': 'Te gustó ❤️', 'de': 'Gelikt ❤️', 'ar': 'تم الإعجاب ❤️', 'pt': 'Curtido ❤️', 'zh': '已喜欢 ❤️', 'sw': 'Imependwa ❤️'});
+  String get datingLikeAction => _t({'fr': 'Liker', 'en': 'Like', 'es': 'Dar like', 'de': 'Liken', 'ar': 'إعجاب', 'pt': 'Curtir', 'zh': '点赞', 'sw': 'Penda'});
+  String get datingRemaining => _t({'fr': '{count} restants', 'en': '{count} remaining', 'es': '{count} restantes', 'de': '{count} verbleibend', 'ar': '{count} متبقي', 'pt': '{count} restantes', 'zh': '剩余 {count}', 'sw': '{count} zilizosalia'});
+  String get datingSentHeart => _t({'fr': 'Envoyé ❤️', 'en': 'Sent ❤️', 'es': 'Enviado ❤️', 'de': 'Gesendet ❤️', 'ar': 'تم الإرسال ❤️', 'pt': 'Enviado ❤️', 'zh': '已发送 ❤️', 'sw': 'Imetumwa ❤️'});
+  String get datingCoupDeCoeurAction => _t({'fr': 'Coup de cœur', 'en': 'Crush', 'es': 'Flechazo', 'de': 'Schwärmerei', 'ar': 'إعجاب شديد', 'pt': 'Crush', 'zh': '心动', 'sw': 'Coup de cœur'});
+  String get datingChatAction => _t({'fr': 'Discuter', 'en': 'Chat', 'es': 'Chatear', 'de': 'Chatten', 'ar': 'دردشة', 'pt': 'Conversar', 'zh': '聊天', 'sw': 'Ongea'});
+  String get datingSubscriptionRequired => _t({'fr': 'Abonnement requis', 'en': 'Subscription required', 'es': 'Suscripción requerida', 'de': 'Abonnement erforderlich', 'ar': 'الاشتراك مطلوب', 'pt': 'Assinatura necessária', 'zh': '需要订阅', 'sw': 'Usajili unahitajika'});
+  String get datingAboutSection => _t({'fr': 'À propos', 'en': 'About', 'es': 'Acerca de', 'de': 'Über', 'ar': 'حول', 'pt': 'Sobre', 'zh': '关于', 'sw': 'Kuhusu'});
+  String get datingInterests => _t({'fr': 'Centres d\'intérêt', 'en': 'Interests', 'es': 'Intereses', 'de': 'Interessen', 'ar': 'الاهتمامات', 'pt': 'Interesses', 'zh': '兴趣', 'sw': 'Mapendezi'});
+  String get datingSearchSection => _t({'fr': 'Recherche', 'en': 'Search', 'es': 'Búsqueda', 'de': 'Suche', 'ar': 'البحث', 'pt': 'Busca', 'zh': '搜索', 'sw': 'Utafutaji'});
+  String get datingSearchAgeRange => _t({'fr': '{gender} de {min} à {max} ans', 'en': '{gender} from {min} to {max} years old', 'es': '{gender} de {min} a {max} años', 'de': '{gender} von {min} bis {max} Jahren', 'ar': '{gender} من {min} إلى {max} سنة', 'pt': '{gender} de {min} a {max} anos', 'zh': '{gender}，{min}至{max}岁', 'sw': '{gender} kuanzia miaka {min} hadi {max}'});
+  String get datingNoPostYet => _t({'fr': 'Aucun post pour le moment', 'en': 'No post yet', 'es': 'Aún no hay publicaciones', 'de': 'Noch keine Beiträge', 'ar': 'لا توجد منشورات حتى الآن', 'pt': 'Nenhuma postagem ainda', 'zh': '暂无帖子', 'sw': 'Hakuna chapisho bado'});
+  String get datingCoinsSuffix => _t({'fr': '{count} coins', 'en': '{count} coins', 'es': '{count} monedas', 'de': '{count} Münzen', 'ar': '{count} عملة', 'pt': '{count} moedas', 'zh': '{count} 金币', 'sw': 'sarafu {count}'});
+  String get datingSubscribeToAccessPaidPosts => _t({'fr': 'Pour accéder aux posts payants de {pseudo}, vous devez vous abonner à son contenu.', 'en': 'To access {pseudo}\'s paid posts, you need to subscribe to their content.', 'es': 'Para acceder a las publicaciones de pago de {pseudo}, debes suscribirte a su contenido.', 'de': 'Um auf die bezahlten Beiträge von {pseudo} zuzugreifen, musst du dessen Inhalt abonnieren.', 'ar': 'للوصول إلى منشورات {pseudo} المدفوعة، يجب أن تشترك في محتواه.', 'pt': 'Para acessar as postagens pagas de {pseudo}, você precisa se inscrever no conteúdo dele.', 'zh': '要访问 {pseudo} 的付费帖子，您需要订阅其内容。', 'sw': 'Kufikia machapisho ya malipo ya {pseudo}, unahitaji kujiandikisha kwa maudhui yake.'});
+  String get datingLaterButton => _t({'fr': 'Plus tard', 'en': 'Later', 'es': 'Más tarde', 'de': 'Später', 'ar': 'لاحقاً', 'pt': 'Mais tarde', 'zh': '稍后', 'sw': 'Baadaye'});
+  String get datingSubscribe => _t({'fr': 'S\'abonner', 'en': 'Subscribe', 'es': 'Suscribirse', 'de': 'Abonnieren', 'ar': 'اشترك', 'pt': 'Inscrever-se', 'zh': '订阅', 'sw': 'Jiunge'});
+  String get datingPrivateMessagingGoldOnly => _t({'fr': 'La messagerie privée est réservée aux membres AfroLove Gold.', 'en': 'Private messaging is reserved for AfroLove Gold members.', 'es': 'La mensajería privada está reservada para los miembros de AfroLove Gold.', 'de': 'Die private Nachrichtenfunktion ist AfroLove Gold-Mitgliedern vorbehalten.', 'ar': 'المراسلة الخاصة متاحة فقط لأعضاء AfroLove Gold.', 'pt': 'As mensagens privadas são exclusivas para membros AfroLove Gold.', 'zh': '私信仅限AfroLove Gold会员使用。', 'sw': 'Ujumbe wa kibinafsi ni kwa wanachama wa AfroLove Gold pekee.'});
+  String get datingUpgradeGoldForChat => _t({'fr': 'Passez à l\'abonnement Gold pour discuter avec vos matchs !', 'en': 'Upgrade to Gold to chat with your matches!', 'es': '¡Actualiza a Gold para chatear con tus coincidencias!', 'de': 'Hol dir Gold, um mit deinen Matches zu chatten!', 'ar': 'قم بالترقية إلى Gold للدردشة مع تطابقاتك!', 'pt': 'Faça upgrade para Gold para conversar com seus matches!', 'zh': '升级到Gold与您的配对聊天！', 'sw': 'Pandisha hadi Gold ili kuongea na mechi zako!'});
+  String get datingReportProfile => _t({'fr': 'Signaler {pseudo}', 'en': 'Report {pseudo}', 'es': 'Reportar a {pseudo}', 'de': '{pseudo} melden', 'ar': 'تقرير عن {pseudo}', 'pt': 'Denunciar {pseudo}', 'zh': '举报 {pseudo}', 'sw': 'Ripoti {pseudo}'});
+  String get datingWhyReporting => _t({'fr': 'Pourquoi signalez-vous ce profil ?', 'en': 'Why are you reporting this profile?', 'es': '¿Por qué estás reportando este perfil?', 'de': 'Warum meldest du dieses Profil?', 'ar': 'لماذا تقوم بالإبلاغ عن هذا الملف الشخصي؟', 'pt': 'Por que você está denunciando este perfil?', 'zh': '您为什么举报此资料？', 'sw': 'Kwa nini unaripoti wasifu huu?'});
+  String get datingReportReasonInappropriate => _t({'fr': 'Comportement inapproprié', 'en': 'Inappropriate behavior', 'es': 'Comportamiento inapropiado', 'de': 'Unangemessenes Verhalten', 'ar': 'سلوك غير لائق', 'pt': 'Comportamento inadequado', 'zh': '不当行为', 'sw': 'Tabia isiyofaa'});
+  String get datingReportReasonFakeProfile => _t({'fr': 'Faux profil', 'en': 'Fake profile', 'es': 'Perfil falso', 'de': 'Falsches Profil', 'ar': 'ملف شخصي مزيف', 'pt': 'Perfil falso', 'zh': '虚假资料', 'sw': 'Wasifu wa uongo'});
+  String get datingReportReasonSpam => _t({'fr': 'Spam', 'en': 'Spam', 'es': 'Spam', 'de': 'Spam', 'ar': 'بريد عشوائي', 'pt': 'Spam', 'zh': '垃圾信息', 'sw': 'Spam'});
+  String get datingReportReasonOffensive => _t({'fr': 'Contenu offensant', 'en': 'Offensive content', 'es': 'Contenido ofensivo', 'de': 'Beleidigender Inhalt', 'ar': 'محتوى مسيء', 'pt': 'Conteúdo ofensivo', 'zh': '冒犯性内容', 'sw': 'Maudhui ya kuudhi'});
+  String get datingReportReasonOther => _t({'fr': 'Autre', 'en': 'Other', 'es': 'Otro', 'de': 'Andere', 'ar': 'آخر', 'pt': 'Outro', 'zh': '其他', 'sw': 'Nyingine'});
+  String get datingReportSent => _t({'fr': 'Signalement envoyé', 'en': 'Report sent', 'es': 'Reporte enviado', 'de': 'Meldung gesendet', 'ar': 'تم إرسال التقرير', 'pt': 'Denúncia enviada', 'zh': '举报已发送', 'sw': 'Ripoti imetumwa'});
+  String get datingBlockProfile => _t({'fr': 'Bloquer {pseudo}', 'en': 'Block {pseudo}', 'es': 'Bloquear a {pseudo}', 'de': '{pseudo} blockieren', 'ar': 'حظر {pseudo}', 'pt': 'Bloquear {pseudo}', 'zh': '屏蔽 {pseudo}', 'sw': 'Zuia {pseudo}'});
+  String get datingBlockConfirm => _t({'fr': 'Êtes-vous sûr de vouloir bloquer cet utilisateur ? Vous ne pourrez plus voir son profil ni recevoir ses messages.', 'en': 'Are you sure you want to block this user? You will no longer see their profile or receive their messages.', 'es': '¿Seguro que quieres bloquear a este usuario? Ya no podrás ver su perfil ni recibir sus mensajes.', 'de': 'Möchtest du diesen Benutzer wirklich blockieren? Du kannst sein Profil nicht mehr sehen und keine Nachrichten mehr empfangen.', 'ar': 'هل أنت متأكد من أنك تريد حظر هذا المستخدم؟ لن تتمكن من رؤية ملفه الشخصي أو تلقي رسائله.', 'pt': 'Tem certeza de que deseja bloquear este usuário? Você não verá mais o perfil dele nem receberá mensagens.', 'zh': '您确定要屏蔽此用户吗？您将无法再看到其资料或收到其消息。', 'sw': 'Una hakika unataka kuzuia mtumiaji huyu? Hutaweza kuona wasifu wake au kupokea ujumbe wake.'});
+  String get datingUserBlocked => _t({'fr': '{pseudo} a été bloqué', 'en': '{pseudo} has been blocked', 'es': '{pseudo} ha sido bloqueado', 'de': '{pseudo} wurde blockiert', 'ar': 'تم حظر {pseudo}', 'pt': '{pseudo} foi bloqueado', 'zh': '{pseudo} 已被屏蔽', 'sw': '{pseudo} amezuiwa'});
+
+  // ── Notifications (Batch 1c) ──
+  String get notifErrorLoadingNotifications => _t({'fr': 'Erreur lors du chargement des notifications', 'en': 'Error loading notifications', 'es': 'Error al cargar las notificaciones', 'de': 'Fehler beim Laden der Benachrichtigungen', 'ar': 'خطأ في تحميل الإشعارات', 'pt': 'Erro ao carregar notificações', 'zh': '加载通知时出错', 'sw': 'Hitilafu wakati wa kupakia arifa'});
+  String get notifJustNow => _t({'fr': 'À l\'instant', 'en': 'Just now', 'es': 'Justo ahora', 'de': 'Gerade jetzt', 'ar': 'الآن', 'pt': 'Agora mesmo', 'zh': '刚刚', 'sw': 'Sasa hivi'});
+  String notifMinutesAgo(int minutes) => _t({'fr': 'Il y a $minutes min', 'en': '$minutes min ago', 'es': 'Hace $minutes min', 'de': 'Vor $minutes Min.', 'ar': 'منذ $minutes دقيقة', 'pt': 'Há $minutes min', 'zh': '$minutes 分钟前', 'sw': 'Dakika $minutes zilizopita'});
+  String notifHoursAgo(int hours) => _t({'fr': 'Il y a $hours h', 'en': '$hours h ago', 'es': 'Hace $hours h', 'de': 'Vor $hours Std.', 'ar': 'منذ $hours ساعة', 'pt': 'Há $hours h', 'zh': '$hours 小时前', 'sw': 'Saa $hours zilizopita'});
+  String notifDaysAgo(int days) => _t({'fr': 'Il y a $days j', 'en': '$days d ago', 'es': 'Hace $days d', 'de': 'Vor $days T.', 'ar': 'منذ $days يوم', 'pt': 'Há $days d', 'zh': '$days 天前', 'sw': 'Siku $days zilizopita'});
+  String get notifChannelNotFound => _t({'fr': 'Canal introuvable', 'en': 'Channel not found', 'es': 'Canal no encontrado', 'de': 'Kanal nicht gefunden', 'ar': 'القناة غير موجودة', 'pt': 'Canal não encontrado', 'zh': '找不到频道', 'sw': 'Kituo hakipatikani'});
+  String get notifErrorOpening => _t({'fr': 'Erreur lors de l\'ouverture', 'en': 'Error opening', 'es': 'Error al abrir', 'de': 'Fehler beim Öffnen', 'ar': 'خطأ في الفتح', 'pt': 'Erro ao abrir', 'zh': '打开时出错', 'sw': 'Hitilafu wakati wa kufungua'});
+  String get notifLoadingEllipsis => _t({'fr': 'Chargement...', 'en': 'Loading...', 'es': 'Cargando...', 'de': 'Wird geladen...', 'ar': 'جار التحميل...', 'pt': 'Carregando...', 'zh': '加载中...', 'sw': 'Inapakia...'});
+  String get notifVideoNotFound => _t({'fr': 'Vidéo introuvable', 'en': 'Video not found', 'es': 'Video no encontrado', 'de': 'Video nicht gefunden', 'ar': 'الفيديو غير موجود', 'pt': 'Vídeo não encontrado', 'zh': '找不到视频', 'sw': 'Video haipatikani'});
+  String get notifPostNotFound => _t({'fr': 'Post introuvable', 'en': 'Post not found', 'es': 'Publicación no encontrada', 'de': 'Beitrag nicht gefunden', 'ar': 'المنشور غير موجود', 'pt': 'Publicação não encontrada', 'zh': '找不到帖子', 'sw': 'Chapisho halipatikani'});
+  String get notifErrorLoading => _t({'fr': 'Erreur de chargement', 'en': 'Loading error', 'es': 'Error de carga', 'de': 'Ladefehler', 'ar': 'خطأ في التحميل', 'pt': 'Erro de carregamento', 'zh': '加载错误', 'sw': 'Hitilafu ya kupakia'});
+  String get notifErrorLoadingPost => _t({'fr': 'Erreur lors du chargement du post', 'en': 'Error loading post', 'es': 'Error al cargar la publicación', 'de': 'Fehler beim Laden des Beitrags', 'ar': 'خطأ في تحميل المنشور', 'pt': 'Erro ao carregar a publicação', 'zh': '加载帖子时出错', 'sw': 'Hitilafu wakati wa kupakia chapisho'});
+  String get notifServiceNotFound => _t({'fr': 'Service introuvable', 'en': 'Service not found', 'es': 'Servicio no encontrado', 'de': 'Dienst nicht gefunden', 'ar': 'الخدمة غير موجودة', 'pt': 'Serviço não encontrado', 'zh': '找不到服务', 'sw': 'Huduma haipatikani'});
+  String get notifErrorLoadingService => _t({'fr': 'Erreur lors du chargement du service', 'en': 'Error loading service', 'es': 'Error al cargar el servicio', 'de': 'Fehler beim Laden des Dienstes', 'ar': 'خطأ في تحميل الخدمة', 'pt': 'Erro ao carregar o serviço', 'zh': '加载服务时出错', 'sw': 'Hitilafu wakati wa kupakia huduma'});
+  String get notifChannelLabel => _t({'fr': 'Canal', 'en': 'Channel', 'es': 'Canal', 'de': 'Kanal', 'ar': 'القناة', 'pt': 'Canal', 'zh': '频道', 'sw': 'Kituo'});
+  String get notifFavoriteLabel => _t({'fr': 'Favori', 'en': 'Favorite', 'es': 'Favorito', 'de': 'Favorit', 'ar': 'مفضل', 'pt': 'Favorito', 'zh': '收藏', 'sw': 'Kipendwa'});
+  String get notifCommentLabel => _t({'fr': 'Commentaire', 'en': 'Comment', 'es': 'Comentario', 'de': 'Kommentar', 'ar': 'تعليق', 'pt': 'Comentário', 'zh': '评论', 'sw': 'Maoni'});
+  String get notifAllMarkedAsRead => _t({'fr': 'Toutes les notifications ont été marquées comme lues', 'en': 'All notifications marked as read', 'es': 'Todas las notificaciones marcadas como leídas', 'de': 'Alle Benachrichtigungen als gelesen markiert', 'ar': 'تم تعليم جميع الإشعارات كمقروءة', 'pt': 'Todas as notificações marcadas como lidas', 'zh': '所有通知已标记为已读', 'sw': 'Arifa zote zimewekwa alama kuwa zimesomwa'});
+  String get notifErrorMarkingAsRead => _t({'fr': 'Erreur lors du marquage comme lu', 'en': 'Error marking as read', 'es': 'Error al marcar como leído', 'de': 'Fehler beim Markieren als gelesen', 'ar': 'خطأ في التعليم كمقروء', 'pt': 'Erro ao marcar como lido', 'zh': '标记为已读时出错', 'sw': 'Hitilafu wakati wa kuweka alama kuwa imesomwa'});
+  String get notifFilterByType => _t({'fr': 'Filtrer par type', 'en': 'Filter by type', 'es': 'Filtrar por tipo', 'de': 'Nach Typ filtern', 'ar': 'تصفية حسب النوع', 'pt': 'Filtrar por tipo', 'zh': '按类型筛选', 'sw': 'Chuja kwa aina'});
+  String get notifAllLabel => _t({'fr': 'Toutes', 'en': 'All', 'es': 'Todas', 'de': 'Alle', 'ar': 'الكل', 'pt': 'Todas', 'zh': '全部', 'sw': 'Zote'});
+  String get notifLoadingNotifications => _t({'fr': 'Chargement des notifications...', 'en': 'Loading notifications...', 'es': 'Cargando notificaciones...', 'de': 'Benachrichtigungen werden geladen...', 'ar': 'جار تحميل الإشعارات...', 'pt': 'Carregando notificações...', 'zh': '正在加载通知...', 'sw': 'Inapakia arifa...'});
+  String get notifNoNotification => _t({'fr': 'Aucune notification', 'en': 'No notification', 'es': 'Sin notificaciones', 'de': 'Keine Benachrichtigung', 'ar': 'لا توجد إشعارات', 'pt': 'Nenhuma notificação', 'zh': '暂无通知', 'sw': 'Hakuna arifa'});
+  String get notifEmptyStateSubtitle => _t({'fr': 'Vous serez notifié ici des nouvelles activités', 'en': 'You will be notified here of new activity', 'es': 'Aquí se le notificará la nueva actividad', 'de': 'Hier wirst du über neue Aktivitäten informiert', 'ar': 'سيتم إشعارك هنا بالأنشطة الجديدة', 'pt': 'Você será notificado aqui sobre novas atividades', 'zh': '新动态将在此处通知您', 'sw': 'Utaarifiwa hapa kuhusu shughuli mpya'});
+  String notifUnreadCount(int count) => _t({'fr': '$count non lues', 'en': '$count unread', 'es': '$count sin leer', 'de': '$count ungelesen', 'ar': '$count غير مقروءة', 'pt': '$count não lidas', 'zh': '$count 条未读', 'sw': '$count hazijasomwa'});
+  String notifFilterLabel(String type) => _t({'fr': 'Filtre : $type', 'en': 'Filter: $type', 'es': 'Filtro: $type', 'de': 'Filter: $type', 'ar': 'الفلتر: $type', 'pt': 'Filtro: $type', 'zh': '筛选：$type', 'sw': 'Kichujio: $type'});
+
+  // ── PostComments (Batch 1a) ──
+  String get postCommentViewPost => _t({'fr': 'Voir le post', 'en': 'View post', 'es': 'Ver publicación', 'de': 'Beitrag ansehen', 'ar': 'عرض المنشور', 'pt': 'Ver publicação', 'zh': '查看帖子', 'sw': 'Tazama chapisho'});
+  String get postCommentTitle => _t({'fr': 'Commentaires', 'en': 'Comments', 'es': 'Comentarios', 'de': 'Kommentare', 'ar': 'التعليقات', 'pt': 'Comentários', 'zh': '评论', 'sw': 'Maoni'});
+  String get postCommentNoComment => _t({'fr': 'Aucun commentaire pour le moment', 'en': 'No comments yet', 'es': 'Aún no hay comentarios', 'de': 'Noch keine Kommentare', 'ar': 'لا توجد تعليقات حتى الآن', 'pt': 'Nenhum comentário ainda', 'zh': '暂无评论', 'sw': 'Hakuna maoni bado'});
+
+  // ── PostDetails (Batch 1a) ──
+  String get postDetailSponsored => _t({'fr': 'Sponsorisé', 'en': 'Sponsored', 'es': 'Patrocinado', 'de': 'Gesponsert', 'ar': 'مُموَّل', 'pt': 'Patrocinado', 'zh': '赞助内容', 'sw': 'Imedhaminiwa'});
+  String get postDetailAudioLocked => _t({'fr': 'Audio verrouillé', 'en': 'Audio locked', 'es': 'Audio bloqueado', 'de': 'Audio gesperrt', 'ar': 'الصوت مقفل', 'pt': 'Áudio bloqueado', 'zh': '音频已锁定', 'sw': 'Sauti imefungwa'});
+  String get postDetailSubscribeToListen => _t({'fr': 'Abonnez-vous pour écouter ce contenu audio', 'en': 'Subscribe to listen to this audio content', 'es': 'Suscríbete para escuchar este contenido de audio', 'de': 'Abonniere, um diesen Audioinhalt zu hören', 'ar': 'اشترك للاستماع إلى هذا المحتوى الصوتي', 'pt': 'Assine para ouvir este conteúdo de áudio', 'zh': '订阅以收听此音频内容', 'sw': 'Jiandikishe ili kusikiliza maudhui haya ya sauti'});
+  String get postDetailClickImageToEnlarge => _t({'fr': 'Cliquez sur l\'image pour l\'agrandir', 'en': 'Click on the image to enlarge', 'es': 'Haz clic en la imagen para ampliarla', 'de': 'Klicke auf das Bild, um es zu vergrößern', 'ar': 'انقر على الصورة لتكبيرها', 'pt': 'Clique na imagem para ampliar', 'zh': '点击图片可放大', 'sw': 'Bofya picha ili kuikuza'});
+  String get postDetailSupportCreatorTitle => _t({'fr': 'Soutenir le créateur', 'en': 'Support the creator', 'es': 'Apoyar al creador', 'de': 'Den Ersteller unterstützen', 'ar': 'دعم المنشئ', 'pt': 'Apoiar o criador', 'zh': '支持创作者', 'sw': 'Msaidie muumbaji'});
+  String get postDetailLikeGivesCoin => _t({'fr': 'Votre like offre une pièce au créateur de ce post.', 'en': 'Your like gives the creator of this post a coin.', 'es': 'Tu like le da una moneda al creador de esta publicación.', 'de': 'Dein Like schenkt dem Ersteller dieses Beitrags eine Münze.', 'ar': 'إعجابك يعطي صاحب هذا المنشور عملة.', 'pt': 'Sua curtida dá uma moeda ao criador desta publicação.', 'zh': '您的点赞会为该帖子的创作者赠送一枚金币。', 'sw': 'Kupenda kwako kunampatia muumbaji wa chapisho hili sarafu.'});
+  String get postDetailLikeCostsCoins => _t({'fr': 'Cette action consomme des pièces de votre solde.', 'en': 'This action uses coins from your balance.', 'es': 'Esta acción consume monedas de tu saldo.', 'de': 'Diese Aktion verbraucht Münzen aus deinem Guthaben.', 'ar': 'هذا الإجراء يستهلك عملات من رصيدك.', 'pt': 'Esta ação consome moedas do seu saldo.', 'zh': '此操作将消耗您余额中的金币。', 'sw': 'Hatua hii inatumia sarafu kutoka salio lako.'});
+  String get postDetailRechargeToSupport => _t({'fr': 'Rechargez votre solde pour continuer à soutenir vos créateurs préférés.', 'en': 'Recharge your balance to keep supporting your favorite creators.', 'es': 'Recarga tu saldo para seguir apoyando a tus creadores favoritos.', 'de': 'Lade dein Guthaben auf, um deine Lieblings-Ersteller weiter zu unterstützen.', 'ar': 'أعد شحن رصيدك لمتابعة دعم منشئي المحتوى المفضلين لديك.', 'pt': 'Recarregue seu saldo para continuar apoiando seus criadores favoritos.', 'zh': '为您的余额充值，继续支持您喜爱的创作者。', 'sw': 'Jaza salio lako ili kuendelea kuwasaidia waumbaji unaowapenda.'});
+  String get postDetailCancel => _t({'fr': 'Annuler', 'en': 'Cancel', 'es': 'Cancelar', 'de': 'Abbrechen', 'ar': 'إلغاء', 'pt': 'Cancelar', 'zh': '取消', 'sw': 'Ghairi'});
+  String get postDetailRecharge => _t({'fr': 'Recharger', 'en': 'Recharge', 'es': 'Recargar', 'de': 'Aufladen', 'ar': 'إعادة الشحن', 'pt': 'Recarregar', 'zh': '充值', 'sw': 'Jaza'});
+  String get postDetailAuto => _t({'fr': 'Auto', 'en': 'Auto', 'es': 'Auto', 'de': 'Auto', 'ar': 'تلقائي', 'pt': 'Automático', 'zh': '自动', 'sw': 'Otomatiki'});
+
+  // Page Amis
+  String get amiSubscribers => _t({'fr': 'abonné(s)', 'en': 'follower(s)', 'es': 'seguidor(es)', 'de': 'Abonnent(en)', 'ar': 'متابع(ون)', 'pt': 'seguidor(es)', 'zh': '关注者', 'sw': 'mfuasi/wafuasi'});
+  String get amiListTitle => _t({'fr': 'Liste d\'amis', 'en': 'Friends list', 'es': 'Lista de amigos', 'de': 'Freundesliste', 'ar': 'قائمة الأصدقاء', 'pt': 'Lista de amigos', 'zh': '好友列表', 'sw': 'Orodha ya marafiki'});
+  String get amiListEmpty => _t({'fr': 'Vide', 'en': 'Empty', 'es': 'Vacío', 'de': 'Leer', 'ar': 'فارغ', 'pt': 'Vazio', 'zh': '空', 'sw': 'Tupu'});
+  String get amiSearchLabel => _t({'fr': 'Amis', 'en': 'Friends', 'es': 'Amigos', 'de': 'Freunde', 'ar': 'الأصدقاء', 'pt': 'Amigos', 'zh': '好友', 'sw': 'Marafiki'});
+  String get amiClose => _t({'fr': 'Fermer', 'en': 'Close', 'es': 'Cerrar', 'de': 'Schließen', 'ar': 'إغلاق', 'pt': 'Fechar', 'zh': '关闭', 'sw': 'Funga'});
+
+  // Page liste des conversations
+  String get convErrorLoading => _t({'fr': 'Erreur de chargement', 'en': 'Loading error', 'es': 'Error de carga', 'de': 'Ladefehler', 'ar': 'خطأ في التحميل', 'pt': 'Erro ao carregar', 'zh': '加载错误', 'sw': 'Hitilafu ya kupakia'});
+  String get convRetry => _t({'fr': 'Réessayer', 'en': 'Retry', 'es': 'Reintentar', 'de': 'Erneut versuchen', 'ar': 'إعادة المحاولة', 'pt': 'Tentar novamente', 'zh': '重试', 'sw': 'Jaribu tena'});
+  String get convErrorOpeningChat => _t({'fr': "Erreur lors de l'ouverture du chat", 'en': 'Error opening chat', 'es': 'Error al abrir el chat', 'de': 'Fehler beim Öffnen des Chats', 'ar': 'خطأ في فتح المحادثة', 'pt': 'Erro ao abrir o chat', 'zh': '打开聊天时出错', 'sw': 'Hitilafu ya kufungua mazungumzo'});
+  String get convSearchHint => _t({'fr': 'Rechercher une conversation...', 'en': 'Search a conversation...', 'es': 'Buscar una conversación...', 'de': 'Unterhaltung suchen...', 'ar': 'البحث عن محادثة...', 'pt': 'Pesquisar uma conversa...', 'zh': '搜索对话...', 'sw': 'Tafuta mazungumzo...'});
+  String get convTitle => _t({'fr': 'Conversations', 'en': 'Conversations', 'es': 'Conversaciones', 'de': 'Unterhaltungen', 'ar': 'المحادثات', 'pt': 'Conversas', 'zh': '对话', 'sw': 'Mazungumzo'});
+  String get convRecentlyActive => _t({'fr': 'RÉCEMMENT ACTIFS', 'en': 'RECENTLY ACTIVE', 'es': 'ACTIVOS RECIENTEMENTE', 'de': 'KÜRZLICH AKTIV', 'ar': 'نشط مؤخرًا', 'pt': 'ATIVOS RECENTEMENTE', 'zh': '最近活跃', 'sw': 'WALIOTUMIA HIVI KARIBUNI'});
+  String get convSeeMoreFriends => _t({'fr': "Voir plus d'amis", 'en': 'See more friends', 'es': 'Ver más amigos', 'de': 'Mehr Freunde anzeigen', 'ar': 'عرض المزيد من الأصدقاء', 'pt': 'Ver mais amigos', 'zh': '查看更多好友', 'sw': 'Tazama marafiki zaidi'});
+  String get convOnline => _t({'fr': 'En ligne', 'en': 'Online', 'es': 'En línea', 'de': 'Online', 'ar': 'متصل', 'pt': 'Online', 'zh': '在线', 'sw': 'Mtandaoni'});
+  String get convJustNow => _t({'fr': "à l'instant", 'en': 'just now', 'es': 'justo ahora', 'de': 'gerade jetzt', 'ar': 'الآن', 'pt': 'agora mesmo', 'zh': '刚刚', 'sw': 'sasa hivi'});
+  String get convJustNowCap => _t({'fr': "À l'instant", 'en': 'Just now', 'es': 'Justo ahora', 'de': 'Gerade jetzt', 'ar': 'الآن', 'pt': 'Agora mesmo', 'zh': '刚刚', 'sw': 'Sasa hivi'});
+  String get convMessagesTitle => _t({'fr': 'MESSAGES', 'en': 'MESSAGES', 'es': 'MENSAJES', 'de': 'NACHRICHTEN', 'ar': 'الرسائل', 'pt': 'MENSAGENS', 'zh': '消息', 'sw': 'UJUMBE'});
+  String get convDefaultUser => _t({'fr': 'Utilisateur', 'en': 'User', 'es': 'Usuario', 'de': 'Benutzer', 'ar': 'مستخدم', 'pt': 'Usuário', 'zh': '用户', 'sw': 'Mtumiaji'});
+  String get convTypeToSearch => _t({'fr': 'Tapez pour rechercher des conversations', 'en': 'Type to search conversations', 'es': 'Escribe para buscar conversaciones', 'de': 'Tippen, um Unterhaltungen zu suchen', 'ar': 'اكتب للبحث في المحادثات', 'pt': 'Digite para pesquisar conversas', 'zh': '输入以搜索对话', 'sw': 'Andika ili kutafuta mazungumzo'});
+  String get convStartConversation => _t({'fr': 'Démarrer une conversation', 'en': 'Start a conversation', 'es': 'Iniciar una conversación', 'de': 'Unterhaltung starten', 'ar': 'بدء محادثة', 'pt': 'Iniciar uma conversa', 'zh': '开始对话', 'sw': 'Anzisha mazungumzo'});
+  String get convNoMessage => _t({'fr': 'Aucun message', 'en': 'No message', 'es': 'Ningún mensaje', 'de': 'Keine Nachricht', 'ar': 'لا توجد رسائل', 'pt': 'Nenhuma mensagem', 'zh': '没有消息', 'sw': 'Hakuna ujumbe'});
+  String get convVoiceMessage => _t({'fr': '🎤 Message audio', 'en': '🎤 Voice message', 'es': '🎤 Mensaje de voz', 'de': '🎤 Sprachnachricht', 'ar': '🎤 رسالة صوتية', 'pt': '🎤 Mensagem de voz', 'zh': '🎤 语音消息', 'sw': '🎤 Ujumbe wa sauti'});
+
+  // Page de chat (myChat)
+  String get chatToday => _t({'fr': "Aujourd'hui", 'en': 'Today', 'es': 'Hoy', 'de': 'Heute', 'ar': 'اليوم', 'pt': 'Hoje', 'zh': '今天', 'sw': 'Leo'});
+  String get chatYesterday => _t({'fr': 'Hier', 'en': 'Yesterday', 'es': 'Ayer', 'de': 'Gestern', 'ar': 'أمس', 'pt': 'Ontem', 'zh': '昨天', 'sw': 'Jana'});
+  String get convEmptyTitle => _t({'fr': 'Aucune conversation', 'en': 'No conversations', 'es': 'Ninguna conversación', 'de': 'Keine Unterhaltungen', 'ar': 'لا توجد محادثات', 'pt': 'Nenhuma conversa', 'zh': '没有对话', 'sw': 'Hakuna mazungumzo'});
+  String get convEmptySubtitle => _t({'fr': 'Commencez une conversation avec vos amis', 'en': 'Start a conversation with your friends', 'es': 'Inicia una conversación con tus amigos', 'de': 'Beginne eine Unterhaltung mit deinen Freunden', 'ar': 'ابدأ محادثة مع أصدقائك', 'pt': 'Inicie uma conversa com seus amigos', 'zh': '与好友开始对话', 'sw': 'Anzisha mazungumzo na marafiki wako'});
+  String get convSeeMyFriends => _t({'fr': 'Voir mes amis', 'en': 'See my friends', 'es': 'Ver mis amigos', 'de': 'Meine Freunde anzeigen', 'ar': 'عرض أصدقائي', 'pt': 'Ver meus amigos', 'zh': '查看我的好友', 'sw': 'Tazama marafiki wangu'});
+  String get convNoResults => _t({'fr': 'Aucun résultat trouvé', 'en': 'No results found', 'es': 'No se encontraron resultados', 'de': 'Keine Ergebnisse gefunden', 'ar': 'لم يتم العثور على نتائج', 'pt': 'Nenhum resultado encontrado', 'zh': '未找到结果', 'sw': 'Hakuna matokeo yaliyopatikana'});
+  String get convTryOtherTerms => _t({'fr': "Essayez avec d'autres termes", 'en': 'Try other terms', 'es': 'Intenta con otros términos', 'de': 'Versuche andere Begriffe', 'ar': 'حاول بكلمات أخرى', 'pt': 'Tente outros termos', 'zh': '尝试其他关键词', 'sw': 'Jaribu maneno mengine'});
+  String convDaysShort(int days) => _t({'fr': '${days}j', 'en': '${days}d', 'es': '${days}d', 'de': '${days}T', 'ar': '$days يوم', 'pt': '${days}d', 'zh': '$days天', 'sw': 'siku $days'});
+  String convHoursShort(int hours) => _t({'fr': '${hours}h', 'en': '${hours}h', 'es': '${hours}h', 'de': '${hours}Std', 'ar': '$hours ساعة', 'pt': '${hours}h', 'zh': '$hours小时', 'sw': 'saa $hours'});
+  String convMinutesShort(int minutes) => _t({'fr': '${minutes}min', 'en': '${minutes}min', 'es': '${minutes}min', 'de': '${minutes}Min', 'ar': '$minutes دقيقة', 'pt': '${minutes}min', 'zh': '$minutes分钟', 'sw': 'dakika $minutes'});
+  String get convYouPrefix => _t({'fr': 'Vous: ', 'en': 'You: ', 'es': 'Tú: ', 'de': 'Du: ', 'ar': 'أنت: ', 'pt': 'Você: ', 'zh': '你：', 'sw': 'Wewe: '});
+  String get convTyping => _t({'fr': 'écrit...', 'en': 'typing...', 'es': 'escribiendo...', 'de': 'schreibt...', 'ar': 'يكتب...', 'pt': 'digitando...', 'zh': '正在输入...', 'sw': 'anaandika...'});
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override
-  bool isSupported(Locale locale) => ['fr', 'en'].contains(locale.languageCode);
+  bool isSupported(Locale locale) => kSupportedLocales.containsKey(locale.languageCode);
 
   @override
   Future<AppLocalizations> load(Locale locale) async => AppLocalizations(locale);

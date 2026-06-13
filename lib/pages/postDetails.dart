@@ -46,6 +46,9 @@ import 'package:skeletonizer/skeletonizer.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../theme/app_colors.dart';
+import '../l10n/app_localizations.dart';
+import '../providers/locale_provider.dart';
+import 'userPosts/postWidgets/translatable_description.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../providers/authProvider.dart';
 import '../providers/coin_gift_provider.dart';
@@ -83,6 +86,7 @@ class _DetailsPostState extends State<DetailsPost>
   int _selectedGiftIndex = 0;
   int _selectedRepostPrice = 25;
   bool _isExpanded = false;
+  String? _translatedDescription;
 
   // Suggestions
   Timer? _suggestionModalTimer;
@@ -850,9 +854,9 @@ class _DetailsPostState extends State<DetailsPost>
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFD600).withOpacity(0.1),
+        color: _colors.accent.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFFD600), width: 1),
+        border: Border.all(color: _colors.accent, width: 1),
       ),
       child: Row(
         // mainAxisSize: MainAxisSize.min,
@@ -862,19 +866,19 @@ class _DetailsPostState extends State<DetailsPost>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFD600),
+              color: _colors.accent,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
 
               children: [
-                const Icon(Icons.verified, color: Colors.black, size: 14),
+                Icon(Icons.verified, color: _colors.onAccent, size: 14),
                 const SizedBox(width: 4),
-                const Text(
-                  'SPONSORISÉ',
+                Text(
+                  AppLocalizations.of(context).postDetailSponsored,
                   style: TextStyle(
-                    color: Colors.black,
+                    color: _colors.onAccent,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
@@ -1307,7 +1311,7 @@ class _DetailsPostState extends State<DetailsPost>
                         Icon(Icons.lock, color: _colors.accent, size: 60),
                         SizedBox(height: 20),
                         Text(
-                          'Audio verrouillé',
+                          AppLocalizations.of(context).postDetailAudioLocked,
                           style: TextStyle(
                             color: _colors.accent,
                             fontSize: 20,
@@ -1318,7 +1322,7 @@ class _DetailsPostState extends State<DetailsPost>
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: 32),
                           child: Text(
-                            'Abonnez-vous au canal pour écouter',
+                            AppLocalizations.of(context).postDetailSubscribeToListen,
                             style: TextStyle(
                               color: Colors.white70,
                               fontSize: 16,
@@ -1364,11 +1368,11 @@ class _DetailsPostState extends State<DetailsPost>
                             padding: EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: Colors.blue.withOpacity(0.9),
+                              color: _colors.accent.withOpacity(0.9),
                               borderRadius: BorderRadius.circular(20),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.blue.withOpacity(0.3),
+                                  color: _colors.accent.withOpacity(0.3),
                                   blurRadius: 8,
                                   spreadRadius: 0,
                                 ),
@@ -1430,11 +1434,11 @@ class _DetailsPostState extends State<DetailsPost>
                               width: 56,
                               height: 56,
                               decoration: BoxDecoration(
-                                color: Colors.blue,
+                                color: _colors.accent,
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.blue.withOpacity(0.4),
+                                    color: _colors.accent.withOpacity(0.4),
                                     blurRadius: 15,
                                     spreadRadius: 2,
                                   ),
@@ -1481,7 +1485,7 @@ class _DetailsPostState extends State<DetailsPost>
                                         : 1.0,
                                     onChanged: (value) =>
                                         _seekAudio(value, postId),
-                                    activeColor: Colors.blue,
+                                    activeColor: _colors.accent,
                                     inactiveColor:
                                         Colors.white.withOpacity(0.3),
                                   ),
@@ -1533,7 +1537,7 @@ class _DetailsPostState extends State<DetailsPost>
                             margin: EdgeInsets.symmetric(horizontal: 2),
                             decoration: BoxDecoration(
                               color: isCurrentlyPlaying && index % 3 == 0
-                                  ? Colors.blue
+                                  ? _colors.accent
                                   : Colors.white.withOpacity(0.5),
                               borderRadius: BorderRadius.circular(2),
                             ),
@@ -1545,7 +1549,7 @@ class _DetailsPostState extends State<DetailsPost>
                       SizedBox(height: 8),
                       Center(
                         child: Text(
-                          '👆 Cliquez sur l\'image pour l\'agrandir',
+                          AppLocalizations.of(context).postDetailClickImageToEnlarge,
                           style: TextStyle(
                             color: Colors.white60,
                             fontSize: 12,
@@ -3200,27 +3204,27 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: _colors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          '💡 Soutenez le créateur !',
-          style: TextStyle(color: Color(0xFFFFD700), fontWeight: FontWeight.bold),
+        title: Text(
+          AppLocalizations.of(context).postDetailSupportCreatorTitle,
+          style: TextStyle(color: _colors.accent, fontWeight: FontWeight.bold),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Chaque like que vous envoyez offre 1 pièce au créateur du post !',
+              AppLocalizations.of(context).postDetailLikeGivesCoin,
               style: TextStyle(color: _colors.textSecondary),
             ),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFD700).withOpacity(0.1),
+                color: _colors.accent.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3)),
+                border: Border.all(color: _colors.accent.withOpacity(0.3)),
               ),
               child: Row(
                 children: [
@@ -3228,7 +3232,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Le like coûte 2 pièces :\n• Pour soutenir le créateur',
+                      AppLocalizations.of(context).postDetailLikeCostsCoins,
                       style: TextStyle(color: _colors.textSecondary, fontSize: 12),
                     ),
                   ),
@@ -3237,7 +3241,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             ),
             const SizedBox(height: 16),
             Text(
-              'Rechargez votre compte pour continuer à soutenir vos créateurs préférés !',
+              AppLocalizations.of(context).postDetailRechargeToSupport,
               style: TextStyle(color: _colors.textSecondary, fontSize: 12),
             ),
           ],
@@ -3245,7 +3249,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Annuler', style: TextStyle(color: _colors.textSecondary)),
+            child: Text(AppLocalizations.of(context).postDetailCancel, style: TextStyle(color: _colors.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -3256,10 +3260,10 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFFD700),
+              backgroundColor: _colors.accent,
               foregroundColor: _colors.onAccent,
             ),
-            child: const Text('Recharger', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: Text(AppLocalizations.of(context).postDetailRecharge, style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -3849,7 +3853,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                     ),
                     child: Icon(
                       Icons.emoji_events,
-                      color: Colors.white,
+                      color: _colors.onPrimary,
                       size: 12,
                     ),
                   ),
@@ -3866,7 +3870,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                     ),
                     child: Icon(
                       Icons.lock,
-                      color: Colors.black,
+                      color: _colors.onAccent,
                       size: 12,
                     ),
                   ),
@@ -4101,7 +4105,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
 
   Widget _buildPostContent(Post post) {
     final isLocked = _isLockedContent();
-    final text = post.description ?? "";
+    final text = _translatedDescription ?? post.description ?? "";
 
     // Pour le contenu verrouillé, limiter l'affichage
     if (isLocked) {
@@ -4165,6 +4169,14 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 5),
             child: _buildTextContent(text),
+          ),
+        if ((post.description ?? '').trim().isNotEmpty)
+          TranslatableDescription(
+            postId: post.id ?? '',
+            text: post.description ?? '',
+            targetLang: Provider.of<LocaleProvider>(context, listen: false).locale.languageCode,
+            onToggle: (t) => setState(() => _translatedDescription = t),
+            style: TextStyle(color: _colors.textPrimary),
           ),
 
         // Affichage selon le type de média
@@ -4532,14 +4544,14 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                     children: [
                       Icon(
                         Icons.play_circle_filled,
-                        color: Colors.yellow,
+                        color: _colors.accent,
                         size: 14,
                       ),
                       SizedBox(width: 4),
                       Text(
-                        'Auto',
+                        AppLocalizations.of(context).postDetailAuto,
                         style: TextStyle(
-                          color: Colors.white,
+                          color: _colors.onPrimary,
                           fontSize: 10,
                         ),
                       ),
@@ -5070,7 +5082,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                                         height: 20,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          color: Colors.white,
+                                          color: _colors.onPrimary,
                                         ),
                                       )
                                     : Row(
@@ -5391,7 +5403,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Colors.white,
+                          color: _colors.onPrimary,
                         ),
                       )
                     : Row(
@@ -5877,7 +5889,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             return Center(
               child: Padding(
                 padding: EdgeInsets.all(20),
-                child: CircularProgressIndicator(color: Color(0xFFFFD600)),
+                child: CircularProgressIndicator(color: _colors.accent),
               ),
             );
           }
@@ -6101,8 +6113,9 @@ class _FullScreenImageState extends State<FullScreenImage> {
   }
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colors.background,
       body: Stack(
         children: [
           // Galerie d'images
@@ -6127,10 +6140,10 @@ class _FullScreenImageState extends State<FullScreenImage> {
                         imageUrl:_optimizeImageUrl(images[index]) ,
                         fit: BoxFit.contain,
                         placeholder: (context, url) => Center(
-                          child: CircularProgressIndicator(color: Colors.yellow),
+                          child: CircularProgressIndicator(color: colors.accent),
                         ),
                         errorWidget: (context, url, error) => Center(
-                          child: Icon(Icons.error, color: Colors.red, size: 60),
+                          child: Icon(Icons.error, color: colors.danger, size: 60),
                         ),
                       ),
                     ),
@@ -6146,11 +6159,11 @@ class _FullScreenImageState extends State<FullScreenImage> {
             left: 16,
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.5),
+                color: colors.background.withOpacity(0.5),
                 shape: BoxShape.circle,
               ),
               child: IconButton(
-                icon: Icon(Icons.close, color: Colors.white, size: 28),
+                icon: Icon(Icons.close, color: colors.textPrimary, size: 28),
                 onPressed: () => Navigator.pop(context),
               ),
             ),
@@ -6164,13 +6177,13 @@ class _FullScreenImageState extends State<FullScreenImage> {
               child: Container(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.5),
+                  color: colors.background.withOpacity(0.5),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   '${_currentIndex + 1}/${images.length}',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: colors.textPrimary,
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
@@ -6186,11 +6199,11 @@ class _FullScreenImageState extends State<FullScreenImage> {
                 top: MediaQuery.of(context).size.height / 2 - 30,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
+                    color: colors.background.withOpacity(0.5),
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
-                    icon: Icon(Icons.chevron_left, color: Colors.white, size: 36),
+                    icon: Icon(Icons.chevron_left, color: colors.textPrimary, size: 36),
                     onPressed: () {
                       _pageController.previousPage(
                         duration: Duration(milliseconds: 300),
@@ -6207,11 +6220,11 @@ class _FullScreenImageState extends State<FullScreenImage> {
                 top: MediaQuery.of(context).size.height / 2 - 30,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
+                    color: colors.background.withOpacity(0.5),
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
-                    icon: Icon(Icons.chevron_right, color: Colors.white, size: 36),
+                    icon: Icon(Icons.chevron_right, color: colors.textPrimary, size: 36),
                     onPressed: () {
                       _pageController.nextPage(
                         duration: Duration(milliseconds: 300),

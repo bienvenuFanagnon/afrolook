@@ -66,6 +66,10 @@ class Message {
   /// Texte sous l'image (pour les messages de type image)
   final String? imageText;
 
+  /// Indique si le champ [message] est chiffré (AES-256, clé dérivée par
+  /// conversation) et doit être déchiffré avant affichage.
+  bool is_encrypted;
+
   /// Status of the message.
   final ValueNotifier<MessageStatus> _status;
 
@@ -89,6 +93,7 @@ class Message {
     required this.messageType,
     this.voiceMessageDuration,
     this.imageText, // Nouveau champ ajouté
+    this.is_encrypted = false,
     MessageStatus status = MessageStatus.pending,
   })  : reaction = reaction ?? Reaction(reactions: [], reactedUserIds: []),
         key = GlobalKey(),
@@ -142,6 +147,7 @@ class Message {
     message_state: json['message_state'],
     receiverBy: json['receiverBy'],
     imageText: json['imageText'], // Nouveau champ ajouté
+    is_encrypted: json['is_encrypted'] == true,
   );
 
   Map<String, dynamic> toJson() => {
@@ -162,6 +168,7 @@ class Message {
     'message_state': message_state,
     'receiverBy': receiverBy,
     'imageText': imageText, // Nouveau champ ajouté
+    'is_encrypted': is_encrypted,
   };
 }
 class ReplyMessage {

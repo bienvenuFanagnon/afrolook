@@ -37,6 +37,8 @@ import 'coins/coin_recharge_screen.dart';
 import 'coins/post_gifts_list.dart';
 
 import '../theme/app_colors.dart';
+import 'userPosts/postWidgets/translatable_description.dart';
+import '../providers/locale_provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 
@@ -66,6 +68,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   @override
   bool get wantKeepAlive => true;
 
+  final Map<String, String> _translatedDescriptions = {};
   late PageController _pageController;
   late UserAuthProvider authProvider;
   late PostProvider postProvider;
@@ -2037,7 +2040,31 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
           if (post.description != null)
             Container(
               constraints: const BoxConstraints(maxWidth: 250),
-              child: Text(post.description!, style: const TextStyle(color: Colors.white), maxLines: 2, overflow: TextOverflow.ellipsis),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _translatedDescriptions[post.id] ?? post.description!,
+                    style: const TextStyle(color: Colors.white),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (post.id != null)
+                    TranslatableDescription(
+                      postId: post.id!,
+                      text: post.description!,
+                      targetLang: Provider.of<LocaleProvider>(context, listen: false).locale.languageCode,
+                      style: const TextStyle(color: Colors.white),
+                      onToggle: (translated) => setState(() {
+                        if (translated == null) {
+                          _translatedDescriptions.remove(post.id);
+                        } else {
+                          _translatedDescriptions[post.id!] = translated;
+                        }
+                      }),
+                    ),
+                ],
+              ),
             ),
           if (!isOwner)
             Padding(

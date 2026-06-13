@@ -19,13 +19,11 @@ import 'dart:async';
 import 'dart:io';
 import '../../../../component/consoleWidget.dart';
 import '../Login/loginPageUser.dart';
-
+import '../../../../../theme/app_colors.dart';
+import '../../../../../l10n/app_localizations.dart';
 
 // Couleurs de base
 const Color primaryGreen = Color(0xFF25D366);
-const Color darkBackground = Color(0xFF121212);
-const Color lightBackground = Color(0xFF1E1E1E);
-const Color textColor = Colors.white;
 
 class SignUpFormEtap3 extends StatefulWidget {
   SignUpFormEtap3({Key? key}) : super(key: key);
@@ -35,6 +33,8 @@ class SignUpFormEtap3 extends StatefulWidget {
 }
 
 class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
+  late AppColors _colors;
+  late AppLocalizations l10n;
   late UserAuthProvider authProvider;
   final TextEditingController adresseController = TextEditingController();
   final TextEditingController aproposController = TextEditingController();
@@ -92,8 +92,8 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
         // Afficher un message de confirmation
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            backgroundColor: Colors.green,
-            content: Text('Image sélectionnée avec succès !', style: TextStyle(color: Colors.white)),
+            backgroundColor: _colors.success,
+            content: Text(l10n.signupImageSelectedSuccess, style: TextStyle(color: _colors.onPrimary)),
             duration: Duration(seconds: 1),
           ),
         );
@@ -102,8 +102,8 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
       print("Erreur lors de la sélection de l'image: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: Colors.red,
-          content: Text("Erreur lors de la sélection de l'image", style: TextStyle(color: Colors.white)),
+          backgroundColor: _colors.danger,
+          content: Text(l10n.signupImageSelectError, style: TextStyle(color: _colors.onPrimary)),
         ),
       );
     }
@@ -128,7 +128,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
       builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.8,
         decoration: BoxDecoration(
-          color: darkBackground,
+          color: _colors.background,
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(25),
             topRight: Radius.circular(25),
@@ -142,40 +142,40 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
               Icon(
                 Icons.check_circle_outline,
                 size: 80,
-                color: Colors.greenAccent,
+                color: _colors.success,
               ),
               SizedBox(height: 20),
               Text(
-                'Compte créé avec succès !',
+                l10n.signupAccountCreatedSuccess,
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.greenAccent,
+                  color: _colors.success,
                 ),
               ),
               SizedBox(height: 15),
               Icon(
                 Icons.mark_email_read_outlined,
                 size: 50,
-                color: Colors.orangeAccent,
+                color: _colors.warning,
               ),
               SizedBox(height: 10),
               Text(
-                'Il reste une étape : vérification de votre email',
+                l10n.signupOneStepLeft,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.orangeAccent,
+                  color: _colors.warning,
                 ),
               ),
               SizedBox(height: 10),
               Text(
-                'Un email de vérification a été envoyé à :',
+                l10n.signupVerificationEmailSentTo,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.grey[400],
+                  color: _colors.textSecondary,
                 ),
               ),
               SizedBox(height: 5),
@@ -185,17 +185,16 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.orangeAccent,
+                  color: _colors.warning,
                 ),
               ),
               SizedBox(height: 20),
               Text(
-                'Veuillez vérifier votre adresse email avant de vous connecter.\n'
-                    'Si vous ne voyez pas l’email dans votre boîte principale, pensez à vérifier votre dossier Spam ou Courrier indésirable.',
+                l10n.signupCheckSpamFolder,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[400],
+                  color: _colors.textSecondary,
                 ),
               ),
               SizedBox(height: 30),
@@ -208,17 +207,17 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
                     Navigator.pushReplacementNamed(context, "/login");
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryGreen,
+                    backgroundColor: _colors.primary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(25),
                     ),
                   ),
                   child: Text(
-                    'J\'ai compris',
+                    l10n.signupUnderstood,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: _colors.onPrimary,
                     ),
                   ),
                 ),
@@ -310,8 +309,8 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
     if (_imageBytes == null && _imageFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: Colors.orange,
-          content: Text('Veuillez sélectionner une photo de profil', style: TextStyle(color: Colors.white)),
+          backgroundColor: _colors.warning,
+          content: Text(l10n.signupSelectProfilePhoto, style: TextStyle(color: _colors.onPrimary)),
         ),
       );
       return;
@@ -322,8 +321,8 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
     if (!isSizeValid) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: Colors.orange,
-          content: Text('L\'image est trop volumineuse (max 5MB)', style: TextStyle(color: Colors.white)),
+          backgroundColor: _colors.warning,
+          content: Text(l10n.signupImageTooLarge, style: TextStyle(color: _colors.onPrimary)),
         ),
       );
       return;
@@ -380,8 +379,8 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
           // Code de parrainage invalide
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              backgroundColor: Colors.red,
-              content: Text('Le code de parrainage est erroné !', style: TextStyle(color: Colors.white)),
+              backgroundColor: _colors.danger,
+              content: Text(l10n.signupCodeParrainInvalid, style: TextStyle(color: _colors.onPrimary)),
             ),
           );
           setState(() => tap = false);
@@ -502,8 +501,8 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
   void _showSuccessAndNavigate() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: Colors.green,
-        content: Text('Compte créé avec succès !', style: TextStyle(color: Colors.white)),
+        backgroundColor: _colors.success,
+        content: Text(l10n.signupAccountCreatedSuccess, style: TextStyle(color: _colors.onPrimary)),
         duration: Duration(seconds: 2),
       ),
     );
@@ -512,22 +511,22 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
   // Gestion des erreurs
   void _handleAuthError(FirebaseAuthException error) {
     final errorMessages = {
-      "invalid-email": "Votre email semble être malformé.",
-      "wrong-password": "Votre mot de passe est erroné.",
-      "email-already-in-use": "L'email est déjà utilisé par un autre compte.",
-      "user-not-found": "L'utilisateur avec cet email n'existe pas.",
-      "user-disabled": "L'utilisateur avec cet email a été désactivé.",
-      "too-many-requests": "Trop de demandes.",
-      "operation-not-allowed": "La connexion avec l'email et un mot de passe n'est pas activée.",
-      "weak-password": "Le mot de passe est trop faible.",
+      "invalid-email": l10n.signupErrorInvalidEmail,
+      "wrong-password": l10n.signupErrorWrongPassword,
+      "email-already-in-use": l10n.signupErrorEmailInUse,
+      "user-not-found": l10n.signupErrorUserNotFound,
+      "user-disabled": l10n.signupErrorUserDisabled,
+      "too-many-requests": l10n.signupErrorTooManyRequests,
+      "operation-not-allowed": l10n.signupErrorOperationNotAllowed,
+      "weak-password": l10n.signupErrorWeakPassword,
     };
 
-    final errorMessage = errorMessages[error.code] ?? "Une erreur indéfinie s'est produite";
+    final errorMessage = errorMessages[error.code] ?? l10n.signupErrorUndefined;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: Colors.red,
-        content: Text(errorMessage, style: TextStyle(color: Colors.white)),
+        backgroundColor: _colors.danger,
+        content: Text(errorMessage, style: TextStyle(color: _colors.onPrimary)),
       ),
     );
   }
@@ -535,8 +534,8 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
   void _handleFirebaseError(FirebaseException error) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: Colors.red,
-        content: Text("Erreur Firebase: ${error.message}", style: TextStyle(color: Colors.white)),
+        backgroundColor: _colors.danger,
+        content: Text("${l10n.signupErrorFirebase} ${error.message}", style: TextStyle(color: _colors.onPrimary)),
       ),
     );
   }
@@ -544,8 +543,8 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
   void _handleGenericError(dynamic error) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: Colors.red,
-        content: Text("Erreur inattendue: ${error.toString()}", style: TextStyle(color: Colors.white)),
+        backgroundColor: _colors.danger,
+        content: Text("${l10n.signupErrorUnexpected} ${error.toString()}", style: TextStyle(color: _colors.onPrimary)),
       ),
     );
   }
@@ -574,8 +573,10 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
 
   @override
   Widget build(BuildContext context) {
+    _colors = AppColors.of(context);
+    l10n = AppLocalizations.of(context);
     return Scaffold(
-      backgroundColor: darkBackground,
+      backgroundColor: _colors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -584,8 +585,8 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          "Finalisation du profil",
-          style: TextStyle(color: textColor, fontSize: 18),
+          l10n.signupStep2Title,
+          style: TextStyle(color: _colors.textPrimary, fontSize: 18),
         ),
       ),
       body: GestureDetector(
@@ -608,11 +609,11 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
                     // Champ adresse
                     _buildTextField(
                       controller: adresseController,
-                      hintText: "Adresse",
+                      hintText: l10n.signupAddress,
                       prefixIcon: Icons.location_on_outlined,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Ce champ est obligatoire';
+                          return l10n.signupAddressRequired;
                         }
                         return null;
                       },
@@ -625,11 +626,11 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
 
                     // Texte conditions
                     Text(
-                      'En créant ce compte, vous acceptez les termes et conditions.',
+                      l10n.signupTermsAcceptance,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey[400],
+                        color: _colors.textSecondary,
                       ),
                     ),
                     SizedBox(height: 30),
@@ -657,11 +658,11 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
     return Column(
       children: [
         Text(
-          "Votre photo de profil",
+          l10n.signupProfilePhoto,
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: textColor,
+            color: _colors.textPrimary,
           ),
         ),
         SizedBox(height: 15),
@@ -687,11 +688,11 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
                 decoration: BoxDecoration(
                   color: primaryGreen,
                   shape: BoxShape.circle,
-                  border: Border.all(color: darkBackground, width: 3),
+                  border: Border.all(color: _colors.background, width: 3),
                 ),
                 child: IconButton(
                   onPressed: getImage,
-                  icon: Icon(Icons.camera_alt, size: 20, color: Colors.white),
+                  icon: Icon(Icons.camera_alt, size: 20, color: _colors.onPrimary),
                   padding: EdgeInsets.zero,
                 ),
               ),
@@ -701,9 +702,9 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
         if (hasImage) ...[
           SizedBox(height: 8),
           Text(
-            "Image sélectionnée ✓",
+            l10n.signupImageSelected,
             style: TextStyle(
-              color: Colors.green,
+              color: _colors.success,
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
@@ -718,26 +719,26 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'À propos de vous',
+          l10n.signupAboutYou,
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: textColor,
+            color: _colors.textPrimary,
           ),
         ),
         SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: lightBackground,
+            color: _colors.surface,
             borderRadius: BorderRadius.circular(15),
           ),
           child: TextFormField(
             controller: aproposController,
             maxLines: 4,
-            style: TextStyle(color: textColor),
+            style: TextStyle(color: _colors.textPrimary),
             decoration: InputDecoration(
-              hintText: 'Décrivez-vous en quelques mots...',
-              hintStyle: TextStyle(color: Colors.grey[500]),
+              hintText: l10n.signupAboutYouHint,
+              hintStyle: TextStyle(color: _colors.textSecondary),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(15),
                 borderSide: BorderSide.none,
@@ -758,12 +759,12 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
   }) {
     return TextFormField(
       controller: controller,
-      style: TextStyle(color: textColor),
+      style: TextStyle(color: _colors.textPrimary),
       decoration: InputDecoration(
         filled: true,
-        fillColor: lightBackground,
+        fillColor: _colors.surface,
         hintText: hintText,
-        hintStyle: TextStyle(color: Colors.grey[500]),
+        hintStyle: TextStyle(color: _colors.textSecondary),
         prefixIcon: Icon(prefixIcon, color: primaryGreen),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(15),
@@ -790,7 +791,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: primaryGreen,
+              backgroundColor: _colors.primary,
               padding: EdgeInsets.symmetric(vertical: 15),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(25),
@@ -798,13 +799,13 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
             ),
             child: tap
                 ? LoadingAnimationWidget.threeRotatingDots(
-              color: Colors.white,
+              color: _colors.onPrimary,
               size: 24,
             )
                 : Text(
-              "S'inscrire",
+              l10n.signupRegister,
               style: TextStyle(
-                color: Colors.white,
+                color: _colors.onPrimary,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
@@ -820,8 +821,8 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
-          "Vous avez déjà un compte? ",
-          style: TextStyle(color: Colors.grey[500]),
+          l10n.signupAlreadyHaveAccount,
+          style: TextStyle(color: _colors.textSecondary),
         ),
         GestureDetector(
           onTap: () {
@@ -831,7 +832,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
             );
           },
           child: Text(
-            "Connectez-vous",
+            l10n.signupLoginNow,
             style: TextStyle(
               color: primaryGreen,
               fontWeight: FontWeight.bold,

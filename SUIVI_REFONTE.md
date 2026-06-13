@@ -774,3 +774,277 @@ Le post #1 continue de s'afficher dès le premier frame (logique Session 15 inch
 **Vérification** : `flutter analyze lib/pages/post_video_format_tel_details.dart` → **104 issues**, identiques à la Session 15 (toutes pré-existantes : `avoid_print`, `deprecated_member_use withOpacity`, `prefer_const_*`, `unused_element`/`unused_local_variable` sur du code mort déjà présent) — **0 nouvelle erreur**.
 
 **Vérification** : `flutter analyze lib/pages/admin/AfrolookPub/advertisement_video_widget.dart lib/pages/coins/coin_gift_dialog.dart` → **0 nouvelle erreur**. Quelques warnings pré-existants inchangés : `unused_import` (`cached_network_image`), `unused_field` (`_isLoadingUser`, `_hasRecordedClick`), `unused_element` (`_calculatePostHeight`, `_buildHeader2`), tous présents avant cette session et non liés aux changements.
+
+---
+
+### Session 19 (13 juin 2026 — "Voir la traduction" façon Facebook pour les descriptions de post)
+
+**Objectif** : ajouter sous la description d'un post un lien "Voir la traduction" qui traduit le texte vers la langue courante de l'app (FR/EN) via une Cloud Function adossée à Google Cloud Translation API, avec mise en cache Firestore pour les lectures suivantes.
+
+**1. Cloud Function** (`functions/src/translatePost.ts`, nouveau fichier) :
+- Export `translatePostDescription` (`onCall`, `firebase-functions/v2/https`, `timeoutSeconds: 30`, région `us-central1`).
+- Entrée : `{ postId, text, targetLang }`.
+- **Cache** (lignes 44-49) : lit `Posts/{postId}`, et si `translations[targetLang]` existe déjà, le retourne directement avec `cached: true` — aucun appel API.
+- Sinon (lignes 51-61) : appelle `@google-cloud/translate` v2 (`new translate.Translate()`, détection auto de la langue source) pour traduire `text` vers `targetLang`.
+- Écrit le résultat dans `Posts/{postId}.translations.{targetLang}` via `update({[\`translations.${targetLang}\`]: translatedText})` (notation pointée, merge-safe, lignes 64-70) pour les prochaines lectures.
+- Retourne `{ translatedText, cached }`. Erreurs API/Firestore gérées via `try/catch` + `HttpsError("internal", ...)` sans crash.
+- Exporté depuis `functions/src/index.ts` (ligne 2) : `export {translatePostDescription} from "./translatePost";`.
+- `functions/package.json` : ajout de la dépendance `"@google-cloud/translate": "^8.5.0"` (ligne 18) — **`npm install` à lancer dans `functions/` avant déploiement** (non exécutable dans cet environnement, pas d'accès réseau npm).
+
+**2. Widget Flutter réutilisable** (`lib/pages/userPosts/postWidgets/translatable_description.dart`, nouveau fichier) :
+- `TranslatableDescription` (StatefulWidget) : `{required postId, required text, required targetLang, required onToggle, TextStyle? style}`.
+- Affiche uniquement le lien "Voir la traduction" / "Voir l'original" (le texte principal reste géré par le parent, qui reçoit la traduction via `onToggle`).
+- Au tap : appelle `FirebaseFunctions.instance.httpsCallable('translatePostDescription')` avec `{postId, text, targetLang}`, affiche un petit loader (`l10n.translating`), puis bascule `onToggle(translatedText)`. Un second tap revient au texte original via `onToggle(null)` (sans nouvel appel réseau, cache local en mémoire via `_translatedText`).
+- Couleur du lien : `colors.textSecondary` (`AppColors.of(context)`), taille 12, gras — cohérent avec le style existant des liens "Voir plus".
+
+**3. Nouvelles clés l10n** (`lib/l10n/app_localizations.dart`, lignes 281-283) : `seeTranslation` ("Voir la traduction" / "See translation"), `seeOriginal` ("Voir l'original" / "See original"), `translating` ("Traduction..." / "Translating...").
+
+**4. Intégration dans les pages de post** :
+- `lib/pages/userPosts/postWidgets/postWidgetPage.dart` : nouvel état `_translatedDescription` (ligne ~117). Dans `_buildPostContent()` (~ligne 1492-1532), `fullText = _translatedDescription ?? text` est utilisé pour le `HashTagText` (affichage normal + "Voir plus"/"Voir moins" inchangés), et `TranslatableDescription` est inséré juste après, avec `targetLang: Provider.of<LocaleProvider>(context, listen: false).locale.languageCode` (import `providers/locale_provider.dart` ajouté ligne 26).
+- `lib/pages/userPosts/youTube_video_card.dart` : même pattern — nouvel état `_translatedDescription` (ligne ~284), `_buildPostContent()` (~ligne 1368-1392) utilise `fullText = _translatedDescription ?? text` pour le `HashTagText`, et `TranslatableDescription` est ajouté juste après (imports ajoutés lignes 42-43).
+- `lib/pages/post_video_format_tel_details.dart` : la description affichée en overlay vidéo (bloc "Affichage normal", ~ligne 2040-2066) est enveloppée dans une `Column` ; le `Text` utilise `_translatedDescriptions[post.id] ?? post.description!` (map `Map<String, String>` ajoutée ligne 70, car cette page affiche un feed de plusieurs posts simultanément — une seule variable ne suffirait pas), et `TranslatableDescription` est ajouté en dessous avec mise à jour de la map via `onToggle`. Imports ajoutés lignes 40-41. Le bloc "Chargement..." (overlay temporaire pendant le chargement user/canal, ~ligne 1989-1996) n'a pas été modifié (hors scope, contenu transitoire).
+- `lib/pages/userPosts/postWidgets/audioPostWidget.dart` et `lib/pages/postDetails.dart` n'ont pas été modifiés : `audioPostWidget.dart` n'affiche pas la description du post (uniquement métadonnées audio), et `postDetails.dart` (recherche `\.description`) n'a pas de rendu de description de post distinct identifiable simplement dans le temps imparti.
+
+**Nouveau champ Firestore optionnel** : `Posts/{postId}.translations` (map `{ [langCode]: string }`), créé/mis à jour uniquement par la Cloud Function — aucune requête existante modifiée.
+
+**Vérification** :
+- `flutter analyze` sur les 5 fichiers touchés/créés → **0 nouvelle erreur** (478 issues au total, toutes pré-existantes : `avoid_print`, `deprecated_member_use withOpacity`/`VideoPlayerController.network`, `prefer_const_*`, `unused_field`/`unused_element`/`unused_local_variable` sur du code mort déjà présent, `dead_null_aware_expression`, `sized_box_for_whitespace`).
+- `npx tsc --noEmit` dans `functions/` : **non exécuté** (accès Bash/PowerShell refusé pour cette commande dans cet environnement) — **à vérifier manuellement avant déploiement**, notamment après `npm install` (le type `@google-cloud/translate` n'est pas encore présent dans `node_modules`).
+
+**Étapes manuelles de déploiement requises** :
+1. Activer l'API **Cloud Translation API** dans la console GCP du projet Firebase (aucune clé API supplémentaire requise — utilise le compte de service par défaut des Cloud Functions).
+2. `cd functions && npm install` (installe `@google-cloud/translate` ajouté au `package.json`).
+3. `npx tsc --noEmit` (ou `npm run build`) pour vérifier la compilation TypeScript avant déploiement.
+4. `firebase deploy --only functions` (ou `firebase deploy --only functions:translatePostDescription` pour cibler uniquement cette fonction).
+
+---
+
+## Session 20 — Déploiement de la traduction des posts + ajout de 6 langues d'interface
+
+**Déploiement Cloud Function** :
+- Correction de `functions/src/translatePost.ts` : suppression de `const db = getFirestore();` au niveau du module (s'exécutait avant `initializeApp()` dans `index.ts`, causant l'erreur `FirebaseAppError: The default Firebase app does not exist`). `getFirestore()` est maintenant appelé à l'intérieur de la fonction (lazy).
+- `npm run build` → OK, `firebase deploy --only functions:translatePostDescription` → **déployé avec succès** sur `us-central1` (projet `afrolooki`).
+- Rappel : l'**API Cloud Translation** doit être activée dans la console GCP pour que la fonction réponde correctement à l'exécution.
+
+**Ajout de 6 langues d'interface (en plus de FR/EN)** : espagnol (es), allemand (de), arabe (ar), portugais (pt), chinois (zh), swahili (sw) — choisies pour couvrir les langues les plus parlées au monde et la diaspora africaine.
+
+- `lib/l10n/app_localizations.dart` : refonte complète — toutes les ~150 chaînes converties du système binaire `_lang == 'fr' ? X : Y` vers une map `_t({'fr':..., 'en':..., 'es':..., 'de':..., 'ar':..., 'pt':..., 'zh':..., 'sw':...})` avec repli sur FR. Ajout de la constante exportée `kSupportedLocales` (code ISO → libellé avec drapeau) et nouvelles clés `langSpanish`/`langGerman`/`langArabic`/`langPortuguese`/`langChinese`/`langSwahili`. `_AppLocalizationsDelegate.isSupported` utilise désormais `kSupportedLocales`.
+- `lib/providers/locale_provider.dart` : `setLocale`/`_loadLocale` valident via `kSupportedLocales` (8 langues au lieu de 2) ; nouvelle méthode `cycleLocale()` pour le sélecteur rapide de la barre du haut.
+- `lib/main.dart` (ligne ~359) : `supportedLocales` généré dynamiquement depuis `kSupportedLocales`.
+- `lib/pages/home/homeScreen.dart` : 
+  - Sélecteur de langue du menu latéral (~ligne 497-534) : remplace le toggle FR/EN par un bottom sheet `_showLanguagePicker()` listant les 8 langues avec coche sur la langue active.
+  - Petit sélecteur "drapeau" de la barre du haut (~ligne 1653-1666) : tap ouvre le même bottom sheet, appui long fait défiler les langues via `cycleLocale()`.
+  - Nouvelle méthode privée `_showLanguagePicker()` (~ligne 2049) ajoutée juste avant `_onTopBarRefreshTap()`.
+
+**Note importante** : la traduction des descriptions de posts (Session 19) utilise déjà `Provider.of<LocaleProvider>(context).locale.languageCode` comme `targetLang` envoyé à `translatePostDescription` — Google Translate supportant ~130 langues, **aucune modification de la Cloud Function n'était nécessaire** pour que la traduction des posts fonctionne dans ces 6 nouvelles langues.
+
+**Vérification** : `flutter analyze` sur les 4 fichiers modifiés → **0 nouvelle erreur** (164 issues, toutes pré-existantes : `unused_field`, `avoid_print`, `prefer_const_constructors`, etc., + 1 warning pré-existant `depend_on_referenced_packages` sur `shared_preferences` déjà présent avant cette session).
+
+---
+
+## Session 21 — Ajout du bouton de traduction dans les pages de détails de post
+
+Complète l'intégration de `TranslatableDescription` (Session 19) dans les pages de détails restantes.
+
+- `lib/pages/postDetails.dart` :
+  - Imports ajoutés (après `import '../theme/app_colors.dart';`) : `providers/locale_provider.dart` et `userPosts/postWidgets/translatable_description.dart`.
+  - Nouvel état `String? _translatedDescription` (déclaré juste après `bool _isExpanded = false;`).
+  - Les usages de `post.description` aux lignes ~292 et ~711 (miniatures de posts suggérés) et ~1409-1411 (en-tête lecteur audio) sont des aperçus/miniatures distincts du post — **non modifiés**, conformément à la consigne (éviter les doublons).
+  - L'affichage principal/complet de la description se fait dans `_buildPostContent()` / `_buildTextContent()` (texte récupéré via `final text = _translatedDescription ?? post.description ?? "";`). Un `TranslatableDescription` est ajouté juste après le `_buildTextContent(text)` dans la branche "contenu déverrouillé", avec `onToggle: (t) => setState(() => _translatedDescription = t)` et `targetLang: Provider.of<LocaleProvider>(context, listen: false).locale.languageCode`.
+
+- `lib/pages/postDetailsVideo.dart` :
+  - Imports ajoutés (après `import '../theme/app_colors.dart';`) : `providers/locale_provider.dart` et `userPosts/postWidgets/translatable_description.dart`.
+  - Nouvel état `final Map<String, String> _translatedDescriptions = {}` (déclaré juste après `bool _isDescriptionExpanded = false;`), indexé par `_currentPost.id` car la page affiche un feed de vidéos avec suggestions/swipe (même pattern que `post_video_format_tel_details.dart`).
+  - Dans `_buildExpandableDescription()` (~ligne 645-700), un `TranslatableDescription` est ajouté en fin de `Column`, avec `postId: _currentPost.id!`, `text: _currentPost.description!`, et `onToggle` qui met à jour/supprime l'entrée de `_translatedDescriptions` pour `_currentPost.id`.
+  - L'appel à `_buildExpandableDescription(_currentPost.description!)` (~ligne 1728-1731) est modifié pour passer `_translatedDescriptions[_currentPost.id] ?? _currentPost.description!`.
+  - Ligne ~1335 (`post.description` dans la liste des vidéos suggérées, miniatures) — **non modifiée**, c'est un aperçu distinct.
+
+**Vérification** : `flutter analyze lib/pages/postDetails.dart lib/pages/postDetailsVideo.dart` → **0 nouvelle erreur** (713 issues au total, toutes pré-existantes : `prefer_const_constructors`, `deprecated_member_use` (`withOpacity`), `avoid_print`, `use_build_context_synchronously`, `unused_element` (`_handleSupportAd`), `sized_box_for_whitespace`, `prefer_const_literals_to_create_immutables`, etc.).
+
+---
+
+## Session 21 (partie 1) — Thème dynamique + traduction des écrans d'accueil / inscription
+
+Application du thème dynamique (`AppColors.of(context)`) et de la traduction (`AppLocalizations.of(context)`) aux écrans Welcome et Signup (étape 1) qui utilisaient des couleurs codées en dur (noir, blanc, gris) et du texte français en dur.
+
+- `lib/pages/auth/authTest/Screens/Welcome/welcome_screen.dart` :
+  - Imports ajoutés : `../../../../../theme/app_colors.dart` et `../../../../../l10n/app_localizations.dart`.
+  - Suppression des constantes `darkBackground` et `textColor` (remplacées par `AppColors.of(context)`).
+  - Fond du `Scaffold` (gradient) → `colors.background` / `colors.surface`.
+  - Bouton "Se connecter" → texte `l10n.authSignIn` ; bouton "Créer un compte" → `l10n.authSignUp`, fond `colors.surface.withOpacity(0.4)`.
+  - Bloc revenus : titre → `l10n.welcomeIncomeTitle`, description → `l10n.welcomeIncomeDesc`, fond `colors.surface.withOpacity(0.4)`, texte → `colors.textPrimary`.
+  - Message de soutien : `l10n.welcomeSupportTitle` / `l10n.welcomeSupportDesc`, couleur secondaire → `colors.textSecondary`.
+  - Texte d'accroche du bas → `l10n.welcomeTagline`, couleur → `colors.textSecondary`.
+  - Suppression de l'import inutilisé `signup_screen.dart`.
+
+- `lib/pages/auth/authTest/Screens/Welcome/components/welcome_image.dart` :
+  - Imports ajoutés (`../../../../../../theme/app_colors.dart`, `../../../../../../l10n/app_localizations.dart`), suppression de l'import inutilisé `flutter_svg`.
+  - `Colors.black54` → `colors.surface.withOpacity(0.6)`.
+  - Texte "Bienvenue chez Afrolook" → `l10n.welcomeBienvenue`.
+
+- `lib/pages/auth/authTest/Screens/Signup/components/signup_form.dart` :
+  - Imports ajoutés (`../../../../../../theme/app_colors.dart`, `../../../../../../l10n/app_localizations.dart`), suppression des constantes `darkBackground`, `lightBackground`, `textColor`.
+  - `backgroundColor` du `Scaffold` → `colors.background`.
+  - Titre "Créer un compte" → `l10n.signupCreateAccountTitle`, sous-titre "Rejoignez la communauté Afrolook" → `l10n.signupJoinCommunity`, couleurs → `colors.textPrimary` / `colors.textSecondary`.
+  - Champ téléphone (`IntlPhoneField`) : fond → `colors.surface`, hint/texte → `l10n.signupPhoneHint` / `colors.textSecondary` / `colors.textPrimary`, message de validation → `l10n.signupPhoneRequired`.
+  - `_buildTextField` et `_buildPasswordField` : ajout du paramètre `context`, couleurs (`fillColor`, `hintStyle`, `style`) basées sur `AppColors.of(context)`.
+  - Champs code parrainage / email / pseudo / mot de passe / confirmation : hints et messages de validation remplacés par `l10n.signupReferralCodeOptional`, `l10n.authEmail`, `l10n.signupEmailRequired`, `l10n.signupEmailInvalidShort`, `l10n.signupPseudoUnique`, `l10n.signupPseudoRequired`, `l10n.signupPseudoTooShort`, `l10n.signupPasswordHint`, `l10n.signupConfirmPasswordHint`, `l10n.signupPasswordRequired`, `l10n.signupPasswordTooShort`, `l10n.signupConfirmPasswordRequired`, `l10n.signupPasswordsDontMatch`.
+  - Sélecteur de genre : fond/texte via `colors.surface`/`colors.textPrimary`/`colors.textSecondary`, libellés "Homme"/"Femme" affichés via `l10n.signupGenreMale`/`l10n.signupGenreFemale` (valeurs internes `genres` inchangées), validation → `l10n.signupGenreRequired`.
+  - SnackBar "Le pseudo existe déjà" → `l10n.signupPseudoExists`.
+  - Bouton "Suivant" → `l10n.signupNext`.
+  - Lien "Vous avez déjà un compte? / Connectez-vous" → `l10n.signupAlreadyHaveAccount` / `l10n.signupLoginLink`, couleur secondaire → `colors.textSecondary`.
+
+- `lib/pages/auth/authTest/Screens/Signup/components/sign_up_top_image.dart` :
+  - Imports ajoutés (`../../../../../../theme/app_colors.dart`, `../../../../../../l10n/app_localizations.dart`).
+  - Texte "S'inscrire" → `l10n.signupRegister.toUpperCase()`, couleur → `colors.textPrimary`.
+
+- `lib/pages/auth/authTest/Screens/Signup/components/socal_sign_up.dart` : fichier entièrement commenté, **aucune modification** (rien à thématiser/traduire dans du code mort).
+
+- `lib/pages/auth/authTest/Screens/Signup/components/or_divider.dart` :
+  - Imports ajoutés (`../../../../../../theme/app_colors.dart`, `../../../../../../l10n/app_localizations.dart`).
+  - Texte "OR" → `l10n.commonOr.toUpperCase()`.
+  - Couleur du `Divider` (`Color(0xFFD9D9D9)`) → `colors.divider`.
+
+- `lib/pages/auth/authTest/Screens/Signup/verificationOtps.dart` :
+  - Imports ajoutés (`../../../../../theme/app_colors.dart`, `../../../../../l10n/app_localizations.dart`).
+  - `backgroundColor: Colors.white` → `colors.background`.
+  - "Verification de Code" → `l10n.otpVerificationTitle`, couleur → `colors.textPrimary`.
+  - Texte d'instruction (avec numéro de téléphone) → `"${l10n.otpVerificationDesc} ${widget.phoneNumber}"`, couleur → `colors.textSecondary`.
+  - "resend code" → `l10n.otpResendCode`, "Vérifier" → `l10n.otpVerify`, couleurs (`Colors.blue`) → `colors.primary`/`colors.onPrimary`.
+  - Dialogues : "Ce compte existe déjà" → `l10n.otpAccountExists`, "Vérification réussie" → `l10n.otpVerificationSuccess`, "Erreur de verification" → `l10n.otpVerificationError`.
+
+- `lib/l10n/app_localizations.dart` : nouvelles clés ajoutées après `signupAlreadyAccount` (section "Welcome / Signup étendu (Session 21)"), traduites en fr/en/es/de/ar/pt/zh/sw :
+  `welcomeTagline`, `welcomeIncomeTitle`, `welcomeIncomeDesc`, `welcomeSupportTitle`, `welcomeSupportDesc`, `welcomeBienvenue`, `signupCreateAccountTitle`, `signupJoinCommunity`, `signupPhoneHint`, `signupPhoneRequired`, `signupReferralCodeOptional`, `signupEmailRequired`, `signupEmailInvalidShort`, `signupPseudoUnique`, `signupPseudoRequired`, `signupPseudoTooShort`, `signupPseudoExists`, `signupGenreLabel`, `signupGenreMale`, `signupGenreFemale`, `signupGenreRequired`, `signupPasswordHint`, `signupConfirmPasswordHint`, `signupPasswordRequired`, `signupPasswordTooShort`, `signupConfirmPasswordRequired`, `signupPasswordsDontMatch`, `signupNext`, `signupAlreadyHaveAccount`, `signupLoginLink`, `otpVerificationTitle`, `otpVerificationDesc`, `otpResendCode`, `otpVerify`, `otpAccountExists`, `otpVerificationSuccess`, `otpVerificationError`, `otpWrongCode`.
+
+**Vérification** : `flutter analyze` sur les 7 fichiers modifiés (+ `app_localizations.dart`) → **0 nouvelle erreur**. Seuls subsistent des warnings/infos pré-existants (`unused_catch_clause` dans `signup_form.dart` ligne 61, `prefer_const_constructors`, `deprecated_member_use` (`withOpacity`, `WillPopScope`), `use_build_context_synchronously`, `non_constant_identifier_names`, `unused_local_variable`, `unnecessary_non_null_assertion`).
+
+---
+
+## Session 21 (partie 2) — Thème dynamique et traduction de l'inscription étape 2
+
+Application du thème adaptatif (`AppColors.of(context)`) et de la traduction (`AppLocalizations.of(context)`) à `lib/pages/auth/authTest/Screens/Signup/signup_up_form_step_2.dart` (formulaire de finalisation de profil après l'inscription : photo de profil, adresse, "à propos", validation et création du compte).
+
+- Imports ajoutés : `import '../../../../../theme/app_colors.dart';` et `import '../../../../../l10n/app_localizations.dart';` (même profondeur relative que `Login/loginPageUser.dart`).
+- Ajout des champs d'état `late AppColors _colors;` et `late AppLocalizations l10n;`, initialisés en tête de `build()`.
+- Suppression des constantes couleur codées en dur devenues inutiles (`darkBackground`, `lightBackground`, `textColor`) ; `primaryGreen` conservé (utilisé pour les accents de la photo de profil et liens).
+- Remplacements de couleurs :
+  - `Scaffold.backgroundColor` et fond du modal de vérification email → `_colors.background`.
+  - Titres et textes principaux (AppBar, "Votre photo de profil", "À propos de vous") → `_colors.textPrimary`.
+  - Champs de formulaire (`_buildTextField`, `_buildAboutSection`) : `fillColor`/`color` du conteneur → `_colors.surface`, `hintStyle` → `_colors.textSecondary`.
+  - Bouton "S'inscrire" et bouton "J'ai compris" du modal → `_colors.primary`, texte/icônes correspondants → `_colors.onPrimary`.
+  - Bordure du bouton caméra (photo de profil) → `_colors.background` (anciennement `darkBackground`).
+  - Icônes/textes de statut : succès → `_colors.success`, avertissement (email à vérifier) → `_colors.warning`, erreurs (SnackBars) → `_colors.danger`.
+  - Textes secondaires (mentions légales, "Vous avez déjà un compte ?", placeholders) → `_colors.textSecondary`.
+- Traduction (FR par défaut, 8 langues) : tous les textes affichés (titre AppBar, libellés de champs, placeholders, messages de validation, SnackBars de succès/erreur, contenu du modal de vérification email, messages d'erreur Firebase Auth) remplacés par `l10n.xxx`.
+
+**Nouvelles clés l10n ajoutées** (section `// ── Inscription (étape 2) ──` à la fin de `lib/l10n/app_localizations.dart`, avant `_AppLocalizationsDelegate`) : `signupStep2Title`, `signupProfilePhoto`, `signupImageSelected`, `signupImageSelectedSuccess`, `signupImageSelectError`, `signupAddress`, `signupAddressRequired`, `signupAboutYou`, `signupAboutYouHint`, `signupTermsAcceptance`, `signupSelectProfilePhoto`, `signupImageTooLarge`, `signupCodeParrainInvalid`, `signupAccountCreatedSuccess`, `signupOneStepLeft`, `signupVerificationEmailSentTo`, `signupCheckSpamFolder`, `signupUnderstood`, `signupNoImageSelected`, `signupImageUploadFailed`, `signupVerificationEmailSendError`, `signupErrorInvalidEmail`, `signupErrorWrongPassword`, `signupErrorEmailInUse`, `signupErrorUserNotFound`, `signupErrorUserDisabled`, `signupErrorTooManyRequests`, `signupErrorOperationNotAllowed`, `signupErrorWeakPassword`, `signupErrorUndefined`, `signupErrorFirebase`, `signupErrorUnexpected`. Réutilisation des clés existantes `signupRegister` ("S'inscrire"), `signupAlreadyHaveAccount` et `signupLoginNow` (ajoutées en partie 1, déjà disponibles ; une définition en double ajoutée par erreur a été automatiquement commentée pour éviter `duplicate_definition`).
+
+**Logique métier** : inchangée (validation de formulaire, navigation, appels Firebase Auth/Firestore/Storage, `setState`, `Provider`).
+
+**Vérification** : `flutter analyze lib/pages/auth/authTest/Screens/Signup/signup_up_form_step_2.dart lib/l10n/app_localizations.dart` → **0 nouvelle erreur** (45 issues, toutes pré-existantes : `avoid_print`, `prefer_const_constructors`, `use_build_context_synchronously`, `unused_field` (`_currentAddress`, `_currentPosition`), `unused_local_variable` (`notif`), `unnecessary_non_null_assertion`, `depend_on_referenced_packages`/`library_prefixes` sur l'import `path`, `sized_box_for_whitespace`).
+
+---
+
+## Session 22 — Optimisation requêtes amis/conversations + présence + thème/traduction
+
+### `lib/pages/user/amis/mesAmis.dart`
+- **Optimisation majeure de `getFriendsData()`** : remplacement de l'ancienne implémentation N+1 (une requête Firestore `Users` par ami, dans une boucle `await for`, ce qui rendait le chargement très lent avec beaucoup d'amis) par :
+  - Une seule écoute du flux `Friends` (current_user_id OU friend_id == utilisateur courant).
+  - Récupération groupée des profils `Users` via des requêtes `whereIn` par lots de 10, exécutées **en parallèle** (`Future.wait`), comme dans `_loadRecentFriends()` de `listUserConv.dart`.
+  - Déduplication par pseudo conservée. Résultat : chargement de la liste d'amis en quelques secondes au lieu de potentiellement plusieurs dizaines de secondes.
+- **Widget `Monami(Friends amigo)` réécrit** :
+  - Remplacement de l'ancien indicateur de présence (StreamBuilder + cercle coloré custom) par `UserPresenceWidget(userId: friendId, size: 14.0, showTextStatus: false)` — même composant que `listUserConv.dart`, pour une présence cohérente dans toute l'app.
+  - Couleurs codées en dur (`Colors.white`, `Colors.grey.shade600`, `Colors.green`) → `AppColors.of(context)` (`textPrimary`, `textSecondary`, `primary`).
+  - Texte "abonné(s)" → `l10n.amiSubscribers`.
+- **`searchListDialogue()`** : `AlertDialog` themé (`colors.surface`), titre "Liste d'amis" → `l10n.amiListTitle`, "vide" → `l10n.amiListEmpty`, label de recherche "Amis" → `l10n.amiSearchLabel`, bordures `Colors.blue`/`fillColor: Colors.white` → `colors.primary`/`colors.surfaceVariant`, "Fermer" → `l10n.amiClose`.
+
+### `lib/pages/user/conversation/listUserConv.dart`
+- Ajout de l'import `AppLocalizations` et du champ `late AppLocalizations _l10n;` (initialisé dans `build()` des deux State : `_ListUserChatsOptimizedState` et `_ConversationListState`).
+- Toutes les chaînes françaises codées en dur traduites en 8 langues (fr/en/es/de/ar/pt/zh/sw) : messages d'erreur/retry, placeholder de recherche, titre "Conversations", section "RÉCEMMENT ACTIFS"/"Voir plus d'amis", statut "En ligne"/temps relatifs (réutilisation de `notifMinutesAgo`/`notifHoursAgo`/`notifDaysAgo`), "MESSAGES", pseudo de repli "Utilisateur", placeholders de recherche, "Aucun message"/"🎤 Message audio", états vides ("Aucune conversation", "Aucun résultat trouvé", etc.), "Vous: "/"écrit...", formats de temps courts (`Xj`/`Xh`/`Xmin`/"À l'instant").
+- Couleurs codées en dur (`Colors.white`, `Colors.red`, `Colors.grey[900]`/`[800]`) → `AppColors.of(context)` (`textPrimary`, `danger`, `surfaceVariant`, `border`).
+
+### `lib/l10n/app_localizations.dart`
+Nouvelles sections de clés ajoutées (toutes traduites fr/en/es/de/ar/pt/zh/sw) :
+- **Page Amis** : `amiSubscribers`, `amiListTitle`, `amiListEmpty`, `amiSearchLabel`, `amiClose`.
+- **Page liste des conversations** : `convErrorLoading`, `convRetry`, `convErrorOpeningChat`, `convSearchHint`, `convTitle`, `convRecentlyActive`, `convSeeMoreFriends`, `convOnline`, `convJustNow`, `convJustNowCap`, `convMessagesTitle`, `convDefaultUser`, `convTypeToSearch`, `convStartConversation`, `convNoMessage`, `convVoiceMessage`, `convEmptyTitle`, `convEmptySubtitle`, `convSeeMyFriends`, `convNoResults`, `convTryOtherTerms`, `convDaysShort`, `convHoursShort`, `convMinutesShort`, `convYouPrefix`, `convTyping`.
+
+**Vérification** : `flutter analyze lib/pages/user/amis/mesAmis.dart lib/pages/user/conversation/listUserConv.dart lib/l10n/app_localizations.dart` → **0 nouvelle erreur** (uniquement warnings/infos pré-existants : imports inutilisés, `prefer_const_constructors`, `unnecessary_non_null_assertion`).
+
+**Reste à faire (hors scope de cette session)** : `lib/pages/user/amis/addListAmis.dart` est une page "Découvrir" avec un thème sombre/doré codé en dur (pas de `AppColors`, pas de `UserPresenceWidget`) — son intégration au thème/traduction/présence représenterait une réécriture séparée plus conséquente.
+
+---
+
+## Session 23 — Chat (myChat.dart) : Phase 1 performance/fluidité (cache local, pagination, lecture en batch)
+
+Objectif : page de chat plus fluide façon WhatsApp, en évitant de retélécharger tout l'historique de la conversation à chaque ouverture/écriture.
+
+### Nouveau service `lib/services/chat_cache_service.dart`
+- `ChatCacheService` (SharedPreferences, même approche que `FeedCacheService`) : sauvegarde/charge les ~60 derniers messages d'une conversation en JSON local (`chat_messages_{chatId}`).
+- Sérialisation "cache-safe" : retire les champs `Duration` non sérialisables (`voice_message_duration`, `reply_message.voiceMessageDuration`) avant `jsonEncode` ; ils sont de toute façon rafraîchis par le flux Firestore.
+
+### `lib/pages/chat/myChat.dart`
+- **Affichage instantané depuis le cache** (`_loadCachedMessages()`) : à l'ouverture du chat, les derniers messages connus sont affichés immédiatement (depuis SharedPreferences) pendant que le flux Firestore se (re)connecte — plus d'écran vide/spinner à chaque ouverture.
+- **Requête Firestore fenêtrée** : `_loadMessages()` utilise désormais `.limitToLast(_pageSize)` (30) au lieu de récupérer tout l'historique. Le flux ne renvoie donc que la fenêtre récente, quel que soit le nombre total de messages de la conversation.
+- **Pagination des messages plus anciens** (`_loadMoreMessages()`) : déclenchée quand l'utilisateur remonte en haut de la liste (`_onScroll`, seuil 200px). Requête ponctuelle (`.get()`, pas de listener) `where('createdAt', isLessThan: <plus ancien message affiché>).limitToLast(_pageSize)`. Position de scroll préservée (calcul du delta de `maxScrollExtent` avant/après insertion) pour éviter le "saut" visuel.
+- **Fusion des sources** (`_mergeMessages()`) : combine les messages paginés (`_olderMessages`) et la fenêtre récente du flux (`_streamMessages`), dédupliqués par `id`, triés par `create_at_time_spam`.
+- **Marquage "lu" en batch** (`_scheduleReadReceipts()`) : suppression de l'écriture Firestore par message *dans `itemBuilder`* (qui pouvait déclencher une écriture à chaque frame/rebuild). Remplacé par une détection des messages non lus après réception du snapshot, puis une seule écriture groupée (`WriteBatch`) après un debounce de 500 ms.
+- **Cache mis à jour automatiquement** : à chaque nouvelle donnée du flux, `ChatCacheService.saveMessages()` est appelé (fire-and-forget) pour garder le cache local synchronisé.
+- Indicateur de chargement discret en haut de la liste pendant la pagination (`_isLoadingMore`).
+- "Erreur de chargement" / "Aucun message" → réutilisation des clés `l10n.convErrorLoading` / `l10n.convNoMessage` (déjà ajoutées en Session 22), couleurs codées en dur (`Colors.white`/`Colors.grey`/`Colors.green`) → `AppColors`.
+
+**Note Firestore** : aucune nouvelle règle d'index requise — `limitToLast` et le filtre `createdAt <` réutilisent l'index composite déjà nécessaire à la requête `orderBy('createdAt')` existante.
+
+**Logique métier inchangée** : envoi de texte/image/audio, réactions, réponses, lecteur audio, notifications — non modifiés. Firestore applique déjà la "latency compensation" (les messages envoyés apparaissent immédiatement via le cache local du SDK avant confirmation serveur), donc pas de gestion manuelle d'état "optimiste" ajoutée pour cette phase.
+
+**Vérification** : `flutter analyze lib/pages/chat/myChat.dart lib/services/chat_cache_service.dart` → **0 nouvelle erreur** (78 issues, toutes pré-existantes ou identiques au pattern de `feed_cache_service.dart` : `depend_on_referenced_packages` (shared_preferences), `avoid_print`, `prefer_const_constructors`, `use_build_context_synchronously`, `deprecated_member_use`).
+
+**Phase 3 (à venir)** : chiffrement des messages "au repos" — Option A retenue (clé AES-256 symétrique par conversation, chiffrée par participant avec sa clé publique, stockage de la clé privée via `flutter_secure_storage`). À traiter dans une session dédiée, après validation de cette base de cache/pagination.
+
+---
+
+## Session 24 — Chat (myChat.dart) : Phase 2 UI façon WhatsApp (séparateurs de date, regroupement, coches de lecture)
+
+### `lib/l10n/app_localizations.dart`
+- Nouvelles clés : `chatToday` ("Aujourd'hui"), `chatYesterday` ("Hier") — pour les séparateurs de date, traduites dans les 8 langues.
+
+### `lib/pages/chat/myChat.dart`
+- **Séparateurs de date** : `_buildDateSeparator()` + `_formatDateSeparator()` insèrent un badge centré ("Aujourd'hui" / "Hier" / `dd/MM/yyyy`) entre les groupes de messages de jours différents.
+- **Regroupement visuel des messages** (`_buildMessageList`) : construit une liste plate `_ChatListItem` (séparateur de date ou message + flags `isFirstInGroup`/`isLastInGroup`). Deux messages consécutifs du même expéditeur, le même jour, à moins de 2 min d'écart (`_groupingThresholdMs`) sont regroupés : marge réduite entre eux, avatar affiché une seule fois (sur le dernier message du groupe) au lieu d'être répété sur chaque message.
+- **Heure des messages** : `_formatMessageTime()` affiche désormais `HH:mm` sous chaque message (au lieu de "il y a X min"), comme WhatsApp. L'ancienne fonction `_formatDateTime` (temps relatif) est supprimée — elle n'était utilisée que pour cet affichage.
+- **Coches de lecture** (`_buildMessageStatus`) : pour les messages envoyés par l'utilisateur, une coche simple (gris) = envoyé/non lu (`NONLU`), coches doubles colorées (`_colors.primary`) = lu (`LU`). Pour les messages reçus, pas de coche (uniquement l'heure), comme sur WhatsApp.
+
+**Logique métier inchangée** : pagination/cache (Phase 1), envoi de messages, réactions, réponses, audio — non modifiés.
+
+**Vérification** : `flutter analyze lib/pages/chat/myChat.dart lib/l10n/app_localizations.dart` → **0 nouvelle erreur** (75 issues, toutes info/warning pré-existantes : `prefer_const_constructors`, `use_build_context_synchronously`, etc.).
+
+**Phase 3 (à venir)** : chiffrement des messages au repos (Option A — clé AES-256 par conversation).
+
+---
+
+## Session 25 — Chat (myChat.dart) : Phase 3 chiffrement des messages texte au repos (Option A simplifiée)
+
+Objectif : que le contenu des messages texte ne soit plus stocké en clair dans Firestore, façon messagerie sécurisée.
+
+### Nouvelles dépendances (`pubspec.yaml`)
+- `cryptography: ^2.7.0` (X25519, AES-256-GCM, HKDF)
+- `flutter_secure_storage: ^9.2.2` (stockage de la clé privée sur l'appareil)
+
+### Nouveau service `lib/services/encryption_service.dart`
+- **Paire de clés par utilisateur** : à la première utilisation, génère une paire X25519 ; la clé privée est stockée dans `flutter_secure_storage` (jamais transmise), la clé publique est publiée dans `UserKeys/{userId}.public_key`.
+- **Clé de conversation dérivée** (`getChatKey`) : pour un chat entre A et B, calcule le secret partagé Diffie-Hellman `ECDH(privA, pubB) == ECDH(privB, pubA)`, puis dérive (HKDF-SHA256, salé par `chatId`) une clé AES-256 propre à cette conversation. Mise en cache mémoire par `chatId`. Retourne `null` si l'autre participant n'a pas encore de clé publique publiée (1ère connexion sur l'app côté destinataire) — dans ce cas les messages restent en clair jusqu'à ce que sa clé soit disponible.
+- **`encryptText`/`decryptText`** : AES-256-GCM, sortie encodée en base64 préfixée `enc:v1:`. Les anciens messages (non préfixés) sont retournés tels quels par `decryptText` — compatibilité rétroactive automatique.
+
+### `lib/models/chatmodels/message.dart`
+- Ajout du champ `is_encrypted` (bool, défaut `false`) à `Message`, lu/écrit dans `toJson`/`fromJson`.
+
+### `lib/pages/chat/myChat.dart`
+- Nouveau champ `_chatKey` (clé de chiffrement de la conversation, calculée une fois via `_initEncryptionAndLoad()` avant de démarrer le flux de messages).
+- **Envoi** (`_sendTextMessage`) : si `_chatKey` est disponible, le texte est chiffré (`EncryptionService.encryptText`) avant l'écriture Firestore, et `is_encrypted: true` est ajouté au document.
+- **Réception** (`_loadMessages`/`_loadMoreMessages`) : `_decryptMessages()` déchiffre en place le champ `message` de tout message marqué `is_encrypted`, avant affichage/mise en cache.
+- **Portée** : seul le **texte des messages** (`messageType == text`) est chiffré dans cette phase. Les URLs d'images/audio (Firebase Storage, déjà protégées par les règles d'accès) et les aperçus de réponse ne sont pas chiffrés — amélioration possible ultérieure si besoin.
+
+**Action de déploiement requise** : ajouter une règle Firestore pour la collection `UserKeys` (lecture authentifiée de n'importe quel document — nécessaire pour résoudre la clé publique de l'autre participant —, écriture limitée à `request.auth.uid == userId`).
+
+**Vérification** : `flutter analyze lib/pages/chat/myChat.dart lib/services/encryption_service.dart lib/models/chatmodels/message.dart` → **0 nouvelle erreur** (96 issues, toutes `prefer_const_constructors`/`use_build_context_synchronously`/`avoid_print`, cohérentes avec le reste du projet). `flutter pub get` exécuté avec succès (nouvelles dépendances résolues).
+
+**Phases 1-2-3 terminées.** Chat désormais : paginé/caché (Phase 1), façon WhatsApp (séparateurs de date, regroupement, coches) (Phase 2), messages texte chiffrés au repos (Phase 3).

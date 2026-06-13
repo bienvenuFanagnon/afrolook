@@ -39,6 +39,8 @@ import '../postDetailsVideo.dart';
 
 import '../../services/utils/abonnement_utils.dart';
 import '../../theme/app_colors.dart';
+import '../../providers/locale_provider.dart';
+import 'postWidgets/translatable_description.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'video_preload_manager.dart';
 
@@ -281,6 +283,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   bool _isProcessingFavorite = false;
   bool _isSharing = false;
   bool _isExpanded = false;
+  String? _translatedDescription;
   bool _isLoading = false;
 
   // Interaction vidéo (une seule fois par jour)
@@ -1365,9 +1368,10 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       );
     }
 
-    final words = text.split(' ');
+    final fullText = _translatedDescription ?? text;
+    final words = fullText.split(' ');
     final isLong = words.length > 50;
-    final displayedText = _isExpanded || !isLong ? text : '${words.take(50).join(' ')}...';
+    final displayedText = _isExpanded || !isLong ? fullText : '${words.take(50).join(' ')}...';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1381,6 +1385,13 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
             onTap: (text) {},
           ),
         ),
+        if (widget.post.id != null)
+          TranslatableDescription(
+            postId: widget.post.id!,
+            text: text,
+            targetLang: Provider.of<LocaleProvider>(context, listen: false).locale.languageCode,
+            onToggle: (translated) => setState(() => _translatedDescription = translated),
+          ),
         if (isLong)
           GestureDetector(
             onTap: () => setState(() => _isExpanded = !_isExpanded),

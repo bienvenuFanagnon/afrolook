@@ -29,6 +29,10 @@ class AppColors {
   Color get onPrimary => isDark ? const Color(0xFF0E0E0E) : const Color(0xFFFFFFFF);
   Color get accent => isDark ? const Color(0xFFFFE14D) : const Color(0xFFFFD400); // jaune
   Color get onAccent => const Color(0xFF121212);
+
+  /// Variante du jaune d'accent garantissant un bon contraste pour du texte/icônes
+  /// sur fond clair ou sombre (le jaune pur `accent` est peu visible sur fond blanc).
+  Color get supportAccent => isDark ? const Color(0xFFFFE14D) : const Color(0xFFB8860B);
   Color get black => const Color(0xFF121212);
 
   // Accents complémentaires

@@ -23,6 +23,9 @@ import '../../auth/authTest/constants.dart';
 import '../../chat/myChat.dart';
 import '../../component/consoleWidget.dart';
 import '../detailsOtherUser.dart';
+import '../../../theme/app_colors.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../home/user_presence_widget.dart';
 
 
 class MesAmis extends StatefulWidget {
@@ -62,6 +65,9 @@ class _MesAmisState extends State<MesAmis> {
   Widget Monami(Friends amigo) {
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
+    final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context);
+    final friendId = authProvider.loginUserData.id == amigo.currentUserId ? amigo.friendId! : amigo.currentUserId!;
     return Container(
       padding: EdgeInsets.only(left: 16,right: 16,top: 10,bottom: 10),
       child: Row(
@@ -69,88 +75,36 @@ class _MesAmisState extends State<MesAmis> {
           Expanded(
             child: Row(
               children: <Widget>[
-                StreamBuilder<UserData>(
-                  stream: userProvider.getStreamUser(authProvider.loginUserData.id== amigo.currentUserId?amigo!.friendId!:amigo.currentUserId!),
-                  builder: (context, snapshot) {
-                    if (snapshot.hasData) {
-                      return      GestureDetector(
-
-
-                        onTap: () {
-                          _showUserDetailsModalDialog(amigo.friend!,width,height);
-                        },
-                        child: Stack(
-
-                          children: [
-
-                            CircleAvatar(
-                              backgroundImage: NetworkImage("${snapshot.data!.imageUrl!}"),
-                              maxRadius: 30,
-                            ),
-                            Positioned(
-                              bottom: 3,
-                              right: 5,
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.all(Radius.circular(200)),
-                                child: Container(
-                                  width: 12,
-                                  height: 12,
-                                  color:snapshot.data!.state==UserState.OFFLINE.name?Colors.blueGrey: Colors.green,
-                                ),
-                              ),
-                            )
-
-                          ],
-                        ),
-                      );
-                    }
-                    return      GestureDetector(
-
-
-                      onTap: () {
-                        _showUserDetailsModalDialog(amigo.friend!,width,height);
-                      },
-                      child: Stack(
-                        children: [
-                          CircleAvatar(
-                            backgroundImage: NetworkImage("${amigo!.friend!.imageUrl!}"),
-                            maxRadius: 30,
-                          ),
-                          Positioned(
-                            bottom: 3,
-                            right: 5,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.all(Radius.circular(200)),
-                              child: Container(
-                                width: 12,
-                                height: 12,
-                                color:Colors.blueGrey,
-                              ),
-                            ),
-                          )
-                        ],
+                GestureDetector(
+                  onTap: () {
+                    _showUserDetailsModalDialog(amigo.friend!,width,height);
+                  },
+                  child: Stack(
+                    children: [
+                      CircleAvatar(
+                        backgroundImage: NetworkImage("${amigo.friend!.imageUrl!}"),
+                        maxRadius: 30,
                       ),
-                    );
-                  }
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: UserPresenceWidget(
+                          userId: friendId,
+                          size: 14.0,
+                          showTextStatus: false,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 SizedBox(width: 16,),
                 Expanded(
                   child:  GestureDetector(
                     onTap: () {
-                      // Navigator.push(context, PageTransition(type: PageTransitionType.fade, child: ChatScreen(currentUserData: authProvider.loginUserData!, secondUser: snapshot.data![index]!.friend!)));
-                      getChatsData(amigo!).then((chat) async {
+                      getChatsData(amigo).then((chat) async {
                         userProvider.chat.messages=chat.messages;
-
                         Navigator.push(context, PageTransition(type: PageTransitionType.fade, child: MyChat(title: 'mon chat', chat: chat,)));
-
-
-
-
-
                       },);
-
-
-                      //  Navigator.pushNamed(context, '/basic_chat');
                     },
                     child: Container(
                       color: Colors.transparent,
@@ -160,17 +114,17 @@ class _MesAmisState extends State<MesAmis> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: <Widget>[
-                              Text("@${amigo!.friend!.pseudo!}", style: TextStyle(fontSize: 16,color: Colors.white),),
+                              Text("@${amigo.friend!.pseudo!}", style: TextStyle(fontSize: 16,color: colors.textPrimary),),
                               SizedBox(height: 6,),
-                              Text('${formatNumber(amigo!.friend!.abonnes!)} abonné(s)',style: TextStyle(fontSize: 13,color: Colors.grey.shade600, fontWeight: FontWeight.normal),),
+                              Text('${formatNumber(amigo.friend!.abonnes!)} ${l10n.amiSubscribers}',style: TextStyle(fontSize: 13,color: colors.textSecondary, fontWeight: FontWeight.normal),),
                             ],
                           ),
                           Visibility(
                             visible: amigo.friend!.isVerify!,
                             child: Card(
-                              child: const Icon(
+                              child: Icon(
                                 Icons.verified,
-                                color: Colors.green,
+                                color: colors.primary,
                                 size: 17,
                               ),
                             ),
@@ -182,27 +136,15 @@ class _MesAmisState extends State<MesAmis> {
                 ),
                 GestureDetector(
                     onTap: () {
-                      // Navigator.push(context, PageTransition(type: PageTransitionType.fade, child: ChatScreen(currentUserData: authProvider.loginUserData!, secondUser: snapshot.data![index]!.friend!)));
-                      getChatsData(amigo!).then((chat) async {
+                      getChatsData(amigo).then((chat) async {
                         userProvider.chat.messages=chat.messages;
-
                         Navigator.push(context, PageTransition(type: PageTransitionType.fade, child: MyChat(title: 'mon chat', chat: chat,)));
-
-
-
-
-
                       },);
-
-
-                      //  Navigator.pushNamed(context, '/basic_chat');
                     },
-                    child: Icon(Icons.message,color: Colors.green,))
+                    child: Icon(Icons.message,color: colors.primary,))
               ],
             ),
           ),
-
-
         ],
       ),
     );
@@ -212,8 +154,11 @@ class _MesAmisState extends State<MesAmis> {
     return showDialog<void>(
       context: context,
       builder: (BuildContext context) {
+        final colors = AppColors.of(context);
+        final l10n = AppLocalizations.of(context);
         return AlertDialog(
-          title: Text('Liste d\'amis'),
+          backgroundColor: colors.surface,
+          title: Text(l10n.amiListTitle, style: TextStyle(color: colors.textPrimary)),
           content: Container(
             height: h, // Ajustez la hauteur selon vos besoins
             width: w, // Ajustez la largeur selon vos besoins
@@ -246,14 +191,15 @@ class _MesAmisState extends State<MesAmis> {
                       //     child: Monami(friend)),
                       filter: (value) => firends.where((element) => element.friend!.pseudo!.toLowerCase().contains(value.toLowerCase()),).toList(),
                       emptyWidget:  Container(
-                        child: Text('vide'),
+                        child: Text(l10n.amiListEmpty, style: TextStyle(color: colors.textSecondary)),
                       ),
                       inputDecoration: InputDecoration(
-                        labelText: "Amis",
-                        fillColor: Colors.white,
+                        labelText: l10n.amiSearchLabel,
+                        labelStyle: TextStyle(color: colors.textSecondary),
+                        fillColor: colors.surfaceVariant,
                         focusedBorder: OutlineInputBorder(
-                          borderSide: const BorderSide(
-                            color: Colors.blue,
+                          borderSide: BorderSide(
+                            color: colors.primary,
                             width: 1.0,
                           ),
                           borderRadius: BorderRadius.circular(10.0),
@@ -288,7 +234,7 @@ class _MesAmisState extends State<MesAmis> {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: Text('Fermer'),
+              child: Text(l10n.amiClose, style: TextStyle(color: colors.primary)),
             ),
           ],
         );
@@ -305,62 +251,60 @@ class _MesAmisState extends State<MesAmis> {
   }
 
   Stream<List<Friends>> getFriendsData() async* {
+    final currentUserId = authProvider.loginUserData.id!;
 
     // Définissez la requête
     var friendsStream = FirebaseFirestore.instance.collection('Friends').where( Filter.or(
-        Filter('current_user_id', isEqualTo:  authProvider.loginUserData.id!),
-        Filter('friend_id', isEqualTo:  authProvider.loginUserData.id!),
+        Filter('current_user_id', isEqualTo:  currentUserId),
+        Filter('friend_id', isEqualTo:  currentUserId),
 
     )).snapshots();
 
-// Obtenez la liste des utilisateurs
-    //List<DocumentSnapshot> users = await usersQuery.sget();
-    List<Friends> friends = [];
-
-
-
     await for (var friendSnapshot in friendsStream) {
-
-      for (var friendDoc in friendSnapshot.docs) {
-
-        CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-        QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id== friendDoc["current_user_id"]?friendDoc["friend_id"]:friendDoc["current_user_id"]!).get();
-        // Afficher la liste
-        List<UserData> userList = querySnapshotUser.docs.map((doc) =>
-            UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-        //userData=userList.first;
-
-        Friends friend;
-        if (userList.first != null) {
-          friend=Friends.fromJson(friendDoc.data());
-          friend.friend=userList.first;
-          friends.add(friend);
-        }
-        listfirends=friends;
-        // Map to store unique user names
-        Map<String, Friends> uniqueUsers = {};
-
-// Iterate through the user list
-        for (Friends user in listfirends) {
-          // Check if the name already exists in the map
-          if (!uniqueUsers.containsKey(user.friend!.pseudo!)) {
-            // Add unique user to the map
-            uniqueUsers[user.friend!.pseudo!] = user;
-          }
-        }
-
-// Access unique users from the map
-        List<Friends> uniqueUserList = uniqueUsers.values.toList();
-
-        printVm('Unique users: $uniqueUserList');
-        friends=uniqueUserList;
-        userProvider.countFriends=friends.length;
-
-
-
-
+      if (friendSnapshot.docs.isEmpty) {
+        listfirends = [];
+        userProvider.countFriends = 0;
+        yield [];
+        continue;
       }
 
+      // Associe chaque ami (Friends doc) à l'id de l'autre utilisateur
+      final Map<String, Friends> friendByUserId = {};
+      for (var friendDoc in friendSnapshot.docs) {
+        final friend = Friends.fromJson(friendDoc.data());
+        final otherUserId = currentUserId == friendDoc["current_user_id"]
+            ? friendDoc["friend_id"] as String
+            : friendDoc["current_user_id"] as String;
+        friendByUserId[otherUserId] = friend;
+      }
+
+      // Récupération groupée des profils (par lots de 10, en parallèle)
+      final ids = friendByUserId.keys.toList();
+      final List<Future<QuerySnapshot>> batchFutures = [];
+      for (int i = 0; i < ids.length; i += 10) {
+        final batch = ids.skip(i).take(10).toList();
+        batchFutures.add(
+          FirebaseFirestore.instance.collection('Users').where('id', whereIn: batch).get(),
+        );
+      }
+      final batchResults = await Future.wait(batchFutures);
+
+      final List<Friends> friends = [];
+      final Set<String> seenPseudos = {};
+      for (var snapshot in batchResults) {
+        for (var doc in snapshot.docs) {
+          final userData = UserData.fromJson(doc.data() as Map<String, dynamic>);
+          final friend = friendByUserId[userData.id];
+          if (friend != null && !seenPseudos.contains(userData.pseudo)) {
+            friend.friend = userData;
+            friends.add(friend);
+            seenPseudos.add(userData.pseudo!);
+          }
+        }
+      }
+
+      listfirends = friends;
+      userProvider.countFriends = friends.length;
       yield friends;
     }
   }

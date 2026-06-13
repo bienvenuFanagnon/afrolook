@@ -11,6 +11,7 @@ import 'package:skeletonizer/skeletonizer.dart';
 import '../../../models/model_data.dart';
 import '../../../providers/authProvider.dart';
 import '../../../theme/app_colors.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../services/chat_service.dart';
 import '../../../pages/chat/myChat.dart';
 import '../../home/user_presence_widget.dart';
@@ -51,6 +52,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   bool _hasPendingUpdate = false;
 
   late AppColors _colors;
+  late AppLocalizations _l10n;
 
   @override
   void initState() {
@@ -410,8 +412,8 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Erreur lors de l'ouverture du chat"),
-            backgroundColor: Colors.red,
+            content: Text(_l10n.convErrorOpeningChat),
+            backgroundColor: _colors.danger,
           ),
         );
       }
@@ -461,6 +463,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   @override
   Widget build(BuildContext context) {
     _colors = AppColors.of(context);
+    _l10n = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: _colors.background,
       appBar: _buildAppBar(),
@@ -483,11 +486,11 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.error_outline, color: Colors.red, size: 48),
+                        Icon(Icons.error_outline, color: _colors.danger, size: 48),
                         SizedBox(height: 16),
                         Text(
-                          "Erreur de chargement",
-                          style: TextStyle(color: Colors.white),
+                          _l10n.convErrorLoading,
+                          style: TextStyle(color: _colors.textPrimary),
                         ),
                         SizedBox(height: 8),
                         TextButton(
@@ -495,7 +498,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
                             _initChatsStream();
                           },
                           child: Text(
-                            "Réessayer",
+                            _l10n.convRetry,
                             style: TextStyle(color: _colors.primary),
                           ),
                         ),
@@ -529,16 +532,16 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
           ? TextField(
         controller: _searchController,
         autofocus: true,
-        style: TextStyle(color: Colors.white),
+        style: TextStyle(color: _colors.textPrimary),
         decoration: InputDecoration(
-          hintText: "Rechercher une conversation...",
+          hintText: _l10n.convSearchHint,
           hintStyle: TextStyle(color: _colors.border),
           border: InputBorder.none,
         ),
         onChanged: _searchChats,
       )
           : Text(
-        "Conversations",
+        _l10n.convTitle,
         style: TextStyle(
           color: _colors.accent,
           fontWeight: FontWeight.bold,
@@ -594,7 +597,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "RÉCEMMENT ACTIFS",
+                  _l10n.convRecentlyActive,
                   style: TextStyle(
                     color: _colors.primary,
                     fontSize: 12,
@@ -613,7 +616,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     child: Text(
-                      "Voir plus d'amis",
+                      _l10n.convSeeMoreFriends,
                       style: TextStyle(
                         color: _colors.primary,
                         fontSize: 15,
@@ -666,7 +669,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
                         Text(
                           '@${user.pseudo ?? ""}',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: _colors.textPrimary,
                             fontSize: 11,
                           ),
                           maxLines: 1,
@@ -674,7 +677,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
                         ),
                         SizedBox(height: 2),
                         Text(
-                          isOnline ? "En ligne" : lastActiveText,
+                          isOnline ? _l10n.convOnline : lastActiveText,
                           style: TextStyle(
                             color: isOnline ? _colors.primary : _colors.border,
                             fontSize: 9,
@@ -700,13 +703,13 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     final Duration difference = now.difference(dateTime);
 
     if (difference.inMinutes < 1) {
-      return "à l'instant";
+      return _l10n.convJustNow;
     } else if (difference.inMinutes < 60) {
-      return "il y a ${difference.inMinutes} min";
+      return _l10n.notifMinutesAgo(difference.inMinutes);
     } else if (difference.inHours < 24) {
-      return "il y a ${difference.inHours} h";
+      return _l10n.notifHoursAgo(difference.inHours);
     } else if (difference.inDays < 7) {
-      return "il y a ${difference.inDays} j";
+      return _l10n.notifDaysAgo(difference.inDays);
     } else {
       return DateFormat('dd/MM').format(dateTime);
     }
@@ -719,7 +722,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            "MESSAGES",
+            _l10n.convMessagesTitle,
             style: TextStyle(
               color: _colors.primary,
               fontSize: 12,
@@ -768,7 +771,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
         return GestureDetector(
           onTap: () => _openChat(chat),
           child: ConversationList(
-            name: "@${chat.chatFriend?.pseudo ?? 'Utilisateur'}",
+            name: "@${chat.chatFriend?.pseudo ?? _l10n.convDefaultUser}",
             messageText: _getMessagePreview(lastMessage),
             imageUrl: chat.chatFriend?.imageUrl ?? '',
             time: _formatTime(chat.updatedAt),
@@ -789,7 +792,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     if (_searchController.text.isEmpty) {
       return Center(
         child: Text(
-          "Tapez pour rechercher des conversations",
+          _l10n.convTypeToSearch,
           style: TextStyle(color: _colors.border),
         ),
       );
@@ -831,8 +834,8 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
         return GestureDetector(
           onTap: () => _openChat(chat),
           child: ConversationList(
-            name: "@${chat.chatFriend?.pseudo ?? 'Utilisateur'}",
-            messageText: isSearchResult ? "Démarrer une conversation" : (chat.lastMessage ?? ''),
+            name: "@${chat.chatFriend?.pseudo ?? _l10n.convDefaultUser}",
+            messageText: isSearchResult ? _l10n.convStartConversation : (chat.lastMessage ?? ''),
             imageUrl: chat.chatFriend?.imageUrl ?? '',
             time: isSearchResult ? "" : _formatTime(chat.updatedAt),
             isMessageRead: unreadCount == 0,
@@ -848,7 +851,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   }
 
   String _getMessagePreview(Message? lastMessage) {
-    if (lastMessage == null) return 'Aucun message';
+    if (lastMessage == null) return _l10n.convNoMessage;
 
     switch (lastMessage.messageType) {
       case 'text':
@@ -856,7 +859,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       case 'image':
         return '📷 Image${lastMessage.imageText != null ? ': ${lastMessage.imageText}' : ''}';
       case 'voice':
-        return '🎤 Message audio';
+        return _l10n.convVoiceMessage;
       default:
         return lastMessage.message;
     }
@@ -936,12 +939,12 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
               Icon(Icons.chat_bubble_outline, color: _colors.accent, size: 48),
               SizedBox(height: 16),
               Text(
-                "Aucune conversation",
-                style: TextStyle(color: Colors.white),
+                _l10n.convEmptyTitle,
+                style: TextStyle(color: _colors.textPrimary),
               ),
               SizedBox(height: 8),
               Text(
-                "Commencez une conversation avec vos amis",
+                _l10n.convEmptySubtitle,
                 style: TextStyle(color: _colors.border, fontSize: 12),
               ),
               SizedBox(height: 16),
@@ -953,7 +956,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
                   backgroundColor: _colors.primary,
                   foregroundColor: _colors.background,
                 ),
-                child: Text("Voir mes amis"),
+                child: Text(_l10n.convSeeMyFriends),
               ),
             ],
           ),
@@ -970,12 +973,12 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
           Icon(Icons.search_off, color: _colors.accent, size: 48),
           SizedBox(height: 16),
           Text(
-            "Aucun résultat trouvé",
-            style: TextStyle(color: Colors.white),
+            _l10n.convNoResults,
+            style: TextStyle(color: _colors.textPrimary),
           ),
           SizedBox(height: 8),
           Text(
-            "Essayez avec d'autres termes",
+            _l10n.convTryOtherTerms,
             style: TextStyle(color: _colors.border, fontSize: 12),
           ),
         ],
@@ -988,9 +991,9 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       key: ValueKey(key),
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.grey[900],
+        color: _colors.surfaceVariant,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[800]!),
+        border: Border.all(color: _colors.border),
       ),
       child: MrecAdWidget(
         onAdLoaded: () {
@@ -1010,13 +1013,13 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     if (difference.inDays > 7) {
       return "${date.day}/${date.month}/${date.year}";
     } else if (difference.inDays > 0) {
-      return "${difference.inDays}j";
+      return _l10n.convDaysShort(difference.inDays);
     } else if (difference.inHours > 0) {
-      return "${difference.inHours}h";
+      return _l10n.convHoursShort(difference.inHours);
     } else if (difference.inMinutes > 0) {
-      return "${difference.inMinutes}min";
+      return _l10n.convMinutesShort(difference.inMinutes);
     } else {
-      return "À l'instant";
+      return _l10n.convJustNowCap;
     }
   }
 }
@@ -1060,10 +1063,12 @@ class ConversationList extends StatefulWidget {
 
 class _ConversationListState extends State<ConversationList> {
   late AppColors _colors;
+  late AppLocalizations _l10n;
 
   @override
   Widget build(BuildContext context) {
     _colors = AppColors.of(context);
+    _l10n = AppLocalizations.of(context);
     return Container(
       decoration: BoxDecoration(
         color: _colors.background,
@@ -1135,7 +1140,7 @@ class _ConversationListState extends State<ConversationList> {
             children: [
               if (widget.isLastMessageFromMe)
                 Text(
-                  "Vous: ",
+                  _l10n.convYouPrefix,
                   style: TextStyle(
                     fontSize: 14,
                     color: _colors.primary,
@@ -1144,7 +1149,7 @@ class _ConversationListState extends State<ConversationList> {
                 ),
               Expanded(
                 child: Text(
-                  widget.isTyping ? "écrit..." : widget.messageText,
+                  widget.isTyping ? _l10n.convTyping : widget.messageText,
                   style: TextStyle(
                     fontSize: 14,
                     color: widget.isTyping

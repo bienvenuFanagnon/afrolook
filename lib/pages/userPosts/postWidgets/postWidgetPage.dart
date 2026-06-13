@@ -23,6 +23,9 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../../models/model_data.dart';
 import '../../../theme/app_colors.dart';
+import '../../../providers/locale_provider.dart';
+import '../../../l10n/app_localizations.dart';
+import 'translatable_description.dart';
 
 import '../../../providers/coin_gift_provider.dart';
 import '../../../providers/sound_provider.dart';
@@ -113,6 +116,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   bool get wantKeepAlive => true;
   bool _isExpanded = false;
   bool _isSharing = false;
+  String? _translatedDescription;
   late UserAuthProvider authProvider;
   late PostProvider postProvider;
   late UserProvider userProvider;
@@ -304,16 +308,18 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
 
   void _showSupportModal() {
+    final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: _afroCardBg,
+        backgroundColor: colors.surface,
         title: Row(
           children: [
-            Icon(Icons.volunteer_activism, color: _afroYellow),
+            Icon(Icons.volunteer_activism, color: colors.supportAccent),
             SizedBox(width: 8),
-            Text('Soutenir le créateur', style: TextStyle(color: _afroTextPrimary)),
+            Text(l10n.postSupportCreator, style: TextStyle(color: colors.textPrimary)),
           ],
         ),
         content: Column(
@@ -321,29 +327,29 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'En regardant cette publicité, vous offrez des pièces au créateur de ce post.',
-              style: TextStyle(color: _afroTextSecondary),
+              l10n.postSupportWatchAdInfo,
+              style: TextStyle(color: colors.textSecondary),
             ),
             SizedBox(height: 12),
             Text(
-              'Cela l’encourage à produire plus de contenu et peut lui rapporter jusqu’à 100€ (environ 65 000 FCFA) par mois !',
-              style: TextStyle(color: _afroTextPrimary),
+              l10n.postSupportEarnings,
+              style: TextStyle(color: colors.textPrimary),
             ),
             SizedBox(height: 12),
             Container(
               padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: _afroGreen.withOpacity(0.2),
+                color: colors.primary.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.monetization_on, color: _afroYellow),
+                  Icon(Icons.monetization_on, color: colors.supportAccent),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      '💰 Les pièces récoltées peuvent être converties en argent réel.',
-                      style: TextStyle(color: _afroTextPrimary, fontSize: 12),
+                      l10n.postSupportCoinsConvert,
+                      style: TextStyle(color: colors.textPrimary, fontSize: 12),
                     ),
                   ),
                 ],
@@ -354,7 +360,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Plus tard', style: TextStyle(color: _afroTextSecondary)),
+            child: Text(l10n.postSupportLater, style: TextStyle(color: colors.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -362,8 +368,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
               await _markSupportModalSeen();
               _startSupportAd();
             },
-            style: ElevatedButton.styleFrom(backgroundColor: _afroYellow),
-            child: Text('Regarder la pub', style: TextStyle(color: Colors.black)),
+            style: ElevatedButton.styleFrom(backgroundColor: colors.supportAccent),
+            child: Text(l10n.postSupportWatchAdButton, style: TextStyle(color: Colors.black)),
           ),
         ],
       ),
@@ -375,7 +381,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     final currentUserId = authProvider.loginUserData.id;
     if (currentUserId == widget.post.user_id) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Vous ne pouvez pas soutenir votre propre post'), backgroundColor: Colors.orange),
+        SnackBar(content: Text(AppLocalizations.of(context).postSupportCannotSelf), backgroundColor: Colors.orange),
       );
       return;
     }
@@ -385,7 +391,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     if (hasSupported) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Vous avez déjà soutenu ce post aujourd\'hui. Revenez demain !'),
+          content: Text(AppLocalizations.of(context).postSupportAlreadyToday),
           backgroundColor: Colors.orange,
           duration: Duration(seconds: 2),
         ),
@@ -450,7 +456,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('🎉 Merci ! Le créateur a reçu des pièces et a été notifié.'),
+        content: Text(AppLocalizations.of(context).postSupportThanks),
         backgroundColor: Colors.green,
         duration: Duration(seconds: 2),
       ),
@@ -473,7 +479,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: hasAccess
-              ? colors.accent.withOpacity(0.5)
+              ? colors.supportAccent.withOpacity(0.5)
               : colors.textSecondary.withOpacity(0.2),
           width: 1,
         ),
@@ -496,7 +502,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                     height: 14,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: colors.accent,
+                      color: colors.supportAccent,
                     ),
                   )
                 else
@@ -504,16 +510,16 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                     Icons.volunteer_activism,
                     size: 14,
                     color: hasAccess
-                        ? colors.accent
+                        ? colors.supportAccent
                         : colors.textSecondary.withOpacity(0.3),
                   ),
                 SizedBox(width: 4),
                 Text(
-                  'Soutenir le créateur',
+                  AppLocalizations.of(context).postSupportCreator,
                   style: TextStyle(
                     fontSize: 12,
                     color: hasAccess
-                        ? colors.accent
+                        ? colors.supportAccent
                         : colors.textSecondary.withOpacity(0.3),
                   ),
                 ),
@@ -522,12 +528,12 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                     decoration: BoxDecoration(
-                      color: colors.accent.withOpacity(0.2),
+                      color: colors.supportAccent.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
                       _formatCount(widget.post.adSupportCount ?? 0),
-                      style: TextStyle(fontSize: 10, color: colors.accent),
+                      style: TextStyle(fontSize: 10, color: colors.supportAccent),
                     ),
                   ),
                 ],
@@ -1489,10 +1495,11 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     }
 
     // Contenu déverrouillé - afficher normalement
-    final words = text.split(' ');
+    final fullText = _translatedDescription ?? text;
+    final words = fullText.split(' ');
     final isLong = words.length > 50;
     final displayedText = _isExpanded || !isLong
-        ? text
+        ? fullText
         : words.take(50).join(' ') + '...';
 
     return Column(
@@ -1524,6 +1531,13 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
             },
           ),
         ),
+        if (widget.post.id != null)
+          TranslatableDescription(
+            postId: widget.post.id!,
+            text: text,
+            targetLang: Provider.of<LocaleProvider>(context, listen: false).locale.languageCode,
+            onToggle: (translated) => setState(() => _translatedDescription = translated),
+          ),
         SizedBox(height: 5,),
         if (isLong)
           Row(
@@ -1855,7 +1869,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                           topRight: Radius.circular(16),
                         ),
                         child: CachedNetworkImage(
-                          imageUrl: _optimizeUrl( images[0]),
+                          imageUrl: _optimizeUrl( images[1]),
                           fit: BoxFit.cover,
                           width: double.infinity,
                           placeholder: (context, url) => Container(
@@ -1879,7 +1893,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                           bottomRight: Radius.circular(16),
                         ),
                         child: CachedNetworkImage(
-                          imageUrl: _optimizeUrl( images[0]),
+                          imageUrl: _optimizeUrl( images[3]),
                           fit: BoxFit.cover,
                           width: double.infinity,
                           placeholder: (context, url) => Container(

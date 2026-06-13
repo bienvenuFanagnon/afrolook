@@ -34,6 +34,7 @@ class MesNotification extends StatefulWidget {
 
 class _MesNotificationState extends State<MesNotification> {
   late AppColors _colors;
+  late AppLocalizations _l10n;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final List<NotificationData> _notifications = [];
   final Map<String, UserData> _userCache = {};
@@ -97,7 +98,7 @@ class _MesNotificationState extends State<MesNotification> {
       await _loadNotificationsBatch();
     } catch (e) {
       print("Erreur chargement notifications: $e");
-      _showErrorSnackBar("Erreur de chargement des notifications");
+      _showErrorSnackBar(_l10n.notifErrorLoadingNotifications);
     } finally {
       setState(() {
         _isLoading = false;
@@ -229,29 +230,29 @@ class _MesNotificationState extends State<MesNotification> {
 
     switch (notification.type) {
       case 'MESSAGE':
-        return _buildIconContainer(Icons.message, Colors.red, iconSize);
+        return _buildIconContainer(Icons.message, _colors.danger, iconSize);
       case 'POST':
       case 'NEWPOST':
-        return _buildIconContainer(Icons.post_add, Colors.red, iconSize);
+        return _buildIconContainer(Icons.post_add, _colors.danger, iconSize);
       case 'INVITATION':
-        return _buildIconContainer(Icons.person_add, Colors.yellow, iconSize);
+        return _buildIconContainer(Icons.person_add, _colors.warning, iconSize);
       case 'ARTICLE':
-        return _buildIconContainer(Icons.shopping_bag, Colors.blue, iconSize);
+        return _buildIconContainer(Icons.shopping_bag, _colors.info, iconSize);
       case 'SERVICE':
-        return _buildIconContainer(Icons.handyman, Colors.green, iconSize);
+        return _buildIconContainer(Icons.handyman, _colors.success, iconSize);
       case 'CHALLENGE':
-        return _buildIconContainer(Icons.emoji_events, Colors.orange, iconSize);
+        return _buildIconContainer(Icons.emoji_events, _colors.warning, iconSize);
       case 'ACCEPTINVITATION':
-        return _buildIconContainer(Icons.people, Colors.purple, iconSize);
+        return _buildIconContainer(Icons.people, _colors.accent, iconSize);
       case 'PARRAINAGE':
-        return _buildIconContainer(Icons.attach_money, Colors.teal, iconSize);
+        return _buildIconContainer(Icons.attach_money, _colors.success, iconSize);
       case 'FAVORITE':
-        return _buildIconContainer(Icons.favorite, Colors.red, iconSize);
+        return _buildIconContainer(Icons.favorite, _colors.danger, iconSize);
       case 'COMMENT':
       case 'COMMENTAIRE':
-        return _buildIconContainer(Icons.comment, Colors.blue, iconSize);
+        return _buildIconContainer(Icons.comment, _colors.info, iconSize);
       default:
-        return _buildIconContainer(Icons.notifications, Colors.grey, iconSize);
+        return _buildIconContainer(Icons.notifications, _colors.textSecondary, iconSize);
     }
   }
 
@@ -273,15 +274,15 @@ class _MesNotificationState extends State<MesNotification> {
     if (difference.inDays < 1) {
       if (difference.inHours < 1) {
         if (difference.inMinutes < 1) {
-          return "À l'instant";
+          return _l10n.notifJustNow;
         } else {
-          return "Il y a ${difference.inMinutes} min";
+          return _l10n.notifMinutesAgo(difference.inMinutes);
         }
       } else {
-        return "Il y a ${difference.inHours} h";
+        return _l10n.notifHoursAgo(difference.inHours);
       }
     } else if (difference.inDays < 7) {
-      return "Il y a ${difference.inDays} j";
+      return _l10n.notifDaysAgo(difference.inDays);
     } else {
       return DateFormat('dd/MM/yy').format(dateTime);
     }
@@ -306,7 +307,7 @@ class _MesNotificationState extends State<MesNotification> {
         ),
       );
     } else {
-      _showErrorSnackBar("Canal non trouvé");
+      _showErrorSnackBar(_l10n.notifChannelNotFound);
     }
   }
 
@@ -339,7 +340,7 @@ class _MesNotificationState extends State<MesNotification> {
 
     } catch (e) {
       print("Erreur traitement notification: $e");
-      _showErrorSnackBar("Erreur lors de l'ouverture");
+      _showErrorSnackBar(_l10n.notifErrorOpening);
       _hideLoadingOverlay();
       setState(() {
         _isHandlingNotification = false;
@@ -371,7 +372,7 @@ class _MesNotificationState extends State<MesNotification> {
                   ),
                   SizedBox(height: 16),
                   Text(
-                    'Chargement...',
+                    _l10n.notifLoadingEllipsis,
                     style: TextStyle(
                       color: _colors.textPrimary,
                       fontSize: 16,
@@ -479,7 +480,7 @@ class _MesNotificationState extends State<MesNotification> {
     } catch (e) {
       _hideLoadingOverlay();
       print("Erreur navigation: $e");
-      _showErrorSnackBar("Erreur lors de l'ouverture");
+      _showErrorSnackBar(_l10n.notifErrorOpening);
       setState(() {
         _isHandlingNotification = false;
       });
@@ -503,7 +504,7 @@ class _MesNotificationState extends State<MesNotification> {
             });
           } else {
             _hideLoadingOverlay();
-            _showErrorSnackBar("Vidéo non trouvée");
+            _showErrorSnackBar(_l10n.notifVideoNotFound);
             setState(() {
               _isHandlingNotification = false;
             });
@@ -523,7 +524,7 @@ class _MesNotificationState extends State<MesNotification> {
             });
           } else {
             _hideLoadingOverlay();
-            _showErrorSnackBar("Publication non trouvée");
+            _showErrorSnackBar(_l10n.notifPostNotFound);
             setState(() {
               _isHandlingNotification = false;
             });
@@ -542,7 +543,7 @@ class _MesNotificationState extends State<MesNotification> {
             });
           } else {
             _hideLoadingOverlay();
-            _showErrorSnackBar("Publication non trouvée");
+            _showErrorSnackBar(_l10n.notifPostNotFound);
             setState(() {
               _isHandlingNotification = false;
             });
@@ -563,14 +564,14 @@ class _MesNotificationState extends State<MesNotification> {
               });
             } else {
               _hideLoadingOverlay();
-              _showErrorSnackBar("Publication non trouvée");
+              _showErrorSnackBar(_l10n.notifPostNotFound);
               setState(() {
                 _isHandlingNotification = false;
               });
             }
           } catch (e) {
             _hideLoadingOverlay();
-            _showErrorSnackBar("Erreur lors du chargement");
+            _showErrorSnackBar(_l10n.notifErrorLoading);
             setState(() {
               _isHandlingNotification = false;
             });
@@ -580,7 +581,7 @@ class _MesNotificationState extends State<MesNotification> {
     } catch (e) {
       _hideLoadingOverlay();
       print("Erreur post notification: $e");
-      _showErrorSnackBar("Erreur lors du chargement du post");
+      _showErrorSnackBar(_l10n.notifErrorLoadingPost);
       setState(() {
         _isHandlingNotification = false;
       });
@@ -610,7 +611,7 @@ class _MesNotificationState extends State<MesNotification> {
         });
       } else {
         _hideLoadingOverlay();
-        _showErrorSnackBar("Service non trouvé");
+        _showErrorSnackBar(_l10n.notifServiceNotFound);
         setState(() {
           _isHandlingNotification = false;
         });
@@ -618,7 +619,7 @@ class _MesNotificationState extends State<MesNotification> {
     } catch (e) {
       _hideLoadingOverlay();
       print("Erreur service notification: $e");
-      _showErrorSnackBar("Erreur lors du chargement du service");
+      _showErrorSnackBar(_l10n.notifErrorLoadingService);
       setState(() {
         _isHandlingNotification = false;
       });
@@ -646,18 +647,18 @@ class _MesNotificationState extends State<MesNotification> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isUnread ? Colors.red : Colors.blue.shade300,
+                  color: isUnread ? _colors.danger : _colors.info,
                   width: isUnread ? 2 : 1,
                 ),
               ),
               child: CircleAvatar(
                 radius: 22,
-                backgroundColor: Colors.blue.shade50,
+                backgroundColor: _colors.info.withOpacity(0.1),
                 backgroundImage: canal?.urlImage != null && canal!.urlImage!.isNotEmpty
                     ? NetworkImage(canal.urlImage!)
                     : null,
                 child: canal?.urlImage == null || canal!.urlImage!.isEmpty
-                    ? Icon(Icons.group, color: Colors.blue)
+                    ? Icon(Icons.group, color: _colors.info)
                     : null,
               ),
             ),
@@ -668,13 +669,13 @@ class _MesNotificationState extends State<MesNotification> {
                 child: Container(
                   padding: EdgeInsets.all(2),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: _colors.surface,
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.blue.shade300),
+                    border: Border.all(color: _colors.info),
                   ),
                   child: Icon(
                     Icons.verified,
-                    color: Colors.blue,
+                    color: _colors.info,
                     size: 14,
                   ),
                 ),
@@ -687,12 +688,12 @@ class _MesNotificationState extends State<MesNotification> {
                 child: Container(
                   padding: EdgeInsets.all(2),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: _colors.surface,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.favorite,
-                    color: Colors.red,
+                    color: _colors.danger,
                     size: 12,
                   ),
                 ),
@@ -718,18 +719,18 @@ class _MesNotificationState extends State<MesNotification> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isUnread ? Colors.red : Colors.grey.shade300,
+                  color: isUnread ? _colors.danger : _colors.border,
                   width: isUnread ? 2 : 1,
                 ),
               ),
               child: CircleAvatar(
                 radius: 22,
-                backgroundColor: Colors.grey.shade300,
+                backgroundColor: _colors.surfaceVariant,
                 backgroundImage: user?.imageUrl != null && user!.imageUrl!.isNotEmpty
                     ? NetworkImage(user.imageUrl!)
                     : null,
                 child: user?.imageUrl == null || user!.imageUrl!.isEmpty
-                    ? Icon(Icons.person, color: Colors.grey)
+                    ? Icon(Icons.person, color: _colors.textSecondary)
                     : null,
               ),
             ),
@@ -740,13 +741,13 @@ class _MesNotificationState extends State<MesNotification> {
                 child: Container(
                   padding: EdgeInsets.all(2),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: _colors.surface,
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.grey.shade300),
+                    border: Border.all(color: _colors.border),
                   ),
                   child: Icon(
                     Icons.verified,
-                    color: Colors.blue,
+                    color: _colors.info,
                     size: 14,
                   ),
                 ),
@@ -759,12 +760,12 @@ class _MesNotificationState extends State<MesNotification> {
                 child: Container(
                   padding: EdgeInsets.all(2),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: _colors.surface,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.favorite,
-                    color: Colors.red,
+                    color: _colors.danger,
                     size: 12,
                   ),
                 ),
@@ -779,11 +780,11 @@ class _MesNotificationState extends State<MesNotification> {
     // Vérifier si c'est une notification d'un canal
     if (notification.canal_id != null && notification.canal_id!.isNotEmpty) {
       final canal = _canalCache[notification.canal_id];
-      return canal?.titre ?? 'Canal';
+      return canal?.titre ?? _l10n.notifChannelLabel;
     } else {
       // C'est une notification d'un utilisateur
       final user = _userCache[notification.user_id];
-      return user?.prenom ?? 'Utilisateur';
+      return user?.prenom ?? _l10n.profileDefaultUser;
     }
   }
 
@@ -798,20 +799,20 @@ class _MesNotificationState extends State<MesNotification> {
 
     // Couleur spécifique selon le type
     Color getUnreadColor() {
-      if (isFavorite) return Colors.red;
-      if (isComment) return Colors.blue;
-      if (isCanalNotification) return Colors.blue;
-      return Colors.red;
+      if (isFavorite) return _colors.danger;
+      if (isComment) return _colors.info;
+      if (isCanalNotification) return _colors.info;
+      return _colors.danger;
     }
 
     return Container(
       decoration: BoxDecoration(
         color: isUnread
             ? (isFavorite
-            ? Colors.red.withOpacity(0.08)
+            ? _colors.danger.withOpacity(0.08)
             : (isCanalNotification
-            ? Colors.blue.withOpacity(0.08)
-            : Colors.red.withOpacity(0.08)))
+            ? _colors.info.withOpacity(0.08)
+            : _colors.danger.withOpacity(0.08)))
             : Colors.transparent,
         border: isUnread
             ? Border.all(
@@ -843,8 +844,8 @@ class _MesNotificationState extends State<MesNotification> {
                           fontWeight: FontWeight.bold,
                           color: isUnread
                               ? (isFavorite
-                              ? Colors.red
-                              : (isCanalNotification ? Colors.blue : Colors.red))
+                              ? _colors.danger
+                              : (isCanalNotification ? _colors.info : _colors.danger))
                               : _colors.textPrimary,
                         ),
                       ),
@@ -870,18 +871,18 @@ class _MesNotificationState extends State<MesNotification> {
                     padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     margin: EdgeInsets.only(right: 6),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
+                      color: _colors.info.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.group, size: 12, color: Colors.blue),
+                        Icon(Icons.group, size: 12, color: _colors.info),
                         SizedBox(width: 2),
                         Text(
-                          'Canal',
+                          _l10n.notifChannelLabel,
                           style: TextStyle(
-                            color: Colors.blue,
+                            color: _colors.info,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
@@ -894,18 +895,18 @@ class _MesNotificationState extends State<MesNotification> {
                     padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     margin: EdgeInsets.only(right: 6),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
+                      color: _colors.danger.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.favorite, size: 12, color: Colors.red),
+                        Icon(Icons.favorite, size: 12, color: _colors.danger),
                         SizedBox(width: 2),
                         Text(
-                          'Favori',
+                          _l10n.notifFavoriteLabel,
                           style: TextStyle(
-                            color: Colors.red,
+                            color: _colors.danger,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
@@ -918,18 +919,18 @@ class _MesNotificationState extends State<MesNotification> {
                     padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     margin: EdgeInsets.only(right: 6),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
+                      color: _colors.info.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.comment, size: 12, color: Colors.blue),
+                        Icon(Icons.comment, size: 12, color: _colors.info),
                         SizedBox(width: 2),
                         Text(
-                          'Commentaire',
+                          _l10n.notifCommentLabel,
                           style: TextStyle(
-                            color: Colors.blue,
+                            color: _colors.info,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
@@ -942,9 +943,9 @@ class _MesNotificationState extends State<MesNotification> {
                   style: TextStyle(
                     color: isUnread
                         ? (isFavorite
-                        ? Colors.red.shade600
-                        : (isCanalNotification ? Colors.blue.shade600 : Colors.red.shade600))
-                        : Colors.grey.shade600,
+                        ? _colors.danger
+                        : (isCanalNotification ? _colors.info : _colors.danger))
+                        : _colors.textSecondary,
                     fontSize: 12,
                     fontWeight: isUnread ? FontWeight.w600 : FontWeight.normal,
                   ),
@@ -983,7 +984,7 @@ class _MesNotificationState extends State<MesNotification> {
         type,
         style: TextStyle(
           fontSize: 12,
-          color: isSelected ? Colors.white : (isDefault ? Colors.red : _colors.textSecondary),
+          color: isSelected ? _colors.onAccent : (isDefault ? _colors.danger : _colors.textSecondary),
           fontWeight: isDefault ? FontWeight.bold : FontWeight.normal,
         ),
       ),
@@ -995,8 +996,8 @@ class _MesNotificationState extends State<MesNotification> {
         });
       },
       backgroundColor: _colors.surface,
-      selectedColor: isDefault ? Colors.red : Colors.blue,
-      checkmarkColor: Colors.white,
+      selectedColor: isDefault ? _colors.danger : _colors.info,
+      checkmarkColor: _colors.onAccent,
       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
       visualDensity: VisualDensity.compact,
@@ -1020,10 +1021,10 @@ class _MesNotificationState extends State<MesNotification> {
         }
       });
 
-      _showSuccessSnackBar("Toutes les notifications sont marquées comme lues");
+      _showSuccessSnackBar(_l10n.notifAllMarkedAsRead);
     } catch (e) {
       print("Erreur marquer tout comme lu: $e");
-      _showErrorSnackBar("Erreur lors du marquage comme lu");
+      _showErrorSnackBar(_l10n.notifErrorMarkingAsRead);
     }
   }
 
@@ -1031,7 +1032,7 @@ class _MesNotificationState extends State<MesNotification> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.red,
+        backgroundColor: _colors.danger,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -1041,7 +1042,7 @@ class _MesNotificationState extends State<MesNotification> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.green,
+        backgroundColor: _colors.success,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -1055,6 +1056,7 @@ class _MesNotificationState extends State<MesNotification> {
   Widget build(BuildContext context) {
     _colors = AppColors.of(context);
     final l10n = AppLocalizations.of(context);
+    _l10n = l10n;
     return Scaffold(
       backgroundColor: _colors.surface,
       appBar: AppBar(
@@ -1078,15 +1080,15 @@ class _MesNotificationState extends State<MesNotification> {
               },
               icon: Icon(
                 _showFilterMenu ? Icons.filter_alt_off : Icons.filter_alt,
-                color: _selectedTypeFilter != null ? Colors.red : _colors.textSecondary,
+                color: _selectedTypeFilter != null ? _colors.danger : _colors.textSecondary,
               ),
-              tooltip: 'Filtrer par type',
+              tooltip: _l10n.notifFilterByType,
             ),
           if (_notifications.any((n) => !n.is_open!))
             IconButton(
               onPressed: _markAllAsRead,
-              icon: Icon(Icons.done_all, color: Colors.red),
-              tooltip: 'Tout marquer comme lu',
+              icon: Icon(Icons.done_all, color: _colors.danger),
+              tooltip: l10n.notifMarkRead,
             ),
         ],
       ),
@@ -1095,7 +1097,7 @@ class _MesNotificationState extends State<MesNotification> {
           if (_showFilterMenu && _availableTypes.isNotEmpty)
             Container(
               height: 50,
-              color: Colors.white,
+              color: _colors.surface,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -1106,10 +1108,10 @@ class _MesNotificationState extends State<MesNotification> {
                       padding: EdgeInsets.only(right: 4),
                       child: FilterChip(
                         label: Text(
-                          'Tous',
+                          _l10n.notifAllLabel,
                           style: TextStyle(
                             fontSize: 12,
-                            color: _selectedTypeFilter == null ? Colors.white : Colors.grey.shade700,
+                            color: _selectedTypeFilter == null ? _colors.onAccent : _colors.textSecondary,
                           ),
                         ),
                         selected: _selectedTypeFilter == null,
@@ -1120,8 +1122,8 @@ class _MesNotificationState extends State<MesNotification> {
                           });
                         },
                         backgroundColor: _colors.surface,
-                        selectedColor: Colors.red,
-                        checkmarkColor: Colors.white,
+                        selectedColor: _colors.danger,
+                        checkmarkColor: _colors.onAccent,
                         padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       ),
                     );
@@ -1140,13 +1142,13 @@ class _MesNotificationState extends State<MesNotification> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                    valueColor: AlwaysStoppedAnimation<Color>(_colors.danger),
                   ),
                   SizedBox(height: 16),
                   Text(
-                    'Chargement des notifications...',
+                    _l10n.notifLoadingNotifications,
                     style: TextStyle(
-                      color: Colors.grey.shade600,
+                      color: _colors.textSecondary,
                     ),
                   ),
                 ],
@@ -1160,21 +1162,21 @@ class _MesNotificationState extends State<MesNotification> {
                   Icon(
                     Icons.notifications_off,
                     size: 80,
-                    color: Colors.grey.shade300,
+                    color: _colors.border,
                   ),
                   SizedBox(height: 16),
                   Text(
-                    'Aucune notification',
+                    _l10n.notifNoNotification,
                     style: TextStyle(
-                      color: Colors.grey.shade600,
+                      color: _colors.textSecondary,
                       fontSize: 16,
                     ),
                   ),
                   SizedBox(height: 8),
                   Text(
-                    'Vous serez notifié des nouvelles activités',
+                    _l10n.notifEmptyStateSubtitle,
                     style: TextStyle(
-                      color: Colors.grey.shade500,
+                      color: _colors.textSecondary,
                       fontSize: 14,
                     ),
                   ),
@@ -1192,13 +1194,13 @@ class _MesNotificationState extends State<MesNotification> {
                 children: [
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    color: Colors.white,
+                    color: _colors.surface,
                     child: Row(
                       children: [
                         Text(
-                          '${_notifications.where((n) => !n.is_open!).length} non lue(s)',
+                          _l10n.notifUnreadCount(_notifications.where((n) => !n.is_open!).length),
                           style: TextStyle(
-                            color: Colors.red,
+                            color: _colors.danger,
                             fontWeight: FontWeight.w600,
                             fontSize: 14,
                           ),
@@ -1208,13 +1210,13 @@ class _MesNotificationState extends State<MesNotification> {
                           Container(
                             padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: Colors.red.withOpacity(0.1),
+                              color: _colors.danger.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
-                              'Filtre: $_selectedTypeFilter',
+                              _l10n.notifFilterLabel(_selectedTypeFilter ?? ''),
                               style: TextStyle(
-                                color: Colors.red,
+                                color: _colors.danger,
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -1237,7 +1239,7 @@ class _MesNotificationState extends State<MesNotification> {
                             padding: EdgeInsets.all(16),
                             child: Center(
                               child: CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                                valueColor: AlwaysStoppedAnimation<Color>(_colors.danger),
                               ),
                             ),
                           )
@@ -1269,13 +1271,13 @@ class _MesNotificationState extends State<MesNotification> {
         child: Container(
           padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           decoration: BoxDecoration(
-            color: _defaultTypes.contains(entry.key) ? Colors.red.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+            color: _defaultTypes.contains(entry.key) ? _colors.danger.withOpacity(0.1) : _colors.textSecondary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Text(
             '${entry.key}: ${entry.value}',
             style: TextStyle(
-              color: _defaultTypes.contains(entry.key) ? Colors.red : Colors.grey,
+              color: _defaultTypes.contains(entry.key) ? _colors.danger : _colors.textSecondary,
               fontSize: 10,
               fontWeight: FontWeight.bold,
             ),
@@ -1328,7 +1330,7 @@ class _MesNotificationState extends State<MesNotification> {
 //       await _loadNotificationsBatch();
 //     } catch (e) {
 //       print("Erreur chargement notifications: $e");
-//       _showErrorSnackBar("Erreur de chargement des notifications");
+//       _showErrorSnackBar(_l10n.notifErrorLoadingNotifications);
 //     } finally {
 //       setState(() {
 //         _isLoading = false;
@@ -1580,7 +1582,7 @@ class _MesNotificationState extends State<MesNotification> {
 //         ),
 //       );
 //     } else {
-//       _showErrorSnackBar("Canal non trouvé");
+//       _showErrorSnackBar(_l10n.notifChannelNotFound);
 //     }
 //   }
 //
@@ -1753,7 +1755,7 @@ class _MesNotificationState extends State<MesNotification> {
 //             });
 //           } else {
 //             _hideLoadingOverlay();
-//             _showErrorSnackBar("Vidéo non trouvée");
+//             _showErrorSnackBar(_l10n.notifVideoNotFound);
 //             setState(() {
 //               _isHandlingNotification = false;
 //             });
@@ -1808,7 +1810,7 @@ class _MesNotificationState extends State<MesNotification> {
 //     } catch (e) {
 //       _hideLoadingOverlay();
 //       print("Erreur post notification: $e");
-//       _showErrorSnackBar("Erreur lors du chargement du post");
+//       _showErrorSnackBar(_l10n.notifErrorLoadingPost);
 //       setState(() {
 //         _isHandlingNotification = false;
 //       });
@@ -1838,7 +1840,7 @@ class _MesNotificationState extends State<MesNotification> {
 //         });
 //       } else {
 //         _hideLoadingOverlay();
-//         _showErrorSnackBar("Service non trouvé");
+//         _showErrorSnackBar(_l10n.notifServiceNotFound);
 //         setState(() {
 //           _isHandlingNotification = false;
 //         });
@@ -1846,7 +1848,7 @@ class _MesNotificationState extends State<MesNotification> {
 //     } catch (e) {
 //       _hideLoadingOverlay();
 //       print("Erreur service notification: $e");
-//       _showErrorSnackBar("Erreur lors du chargement du service");
+//       _showErrorSnackBar(_l10n.notifErrorLoadingService);
 //       setState(() {
 //         _isHandlingNotification = false;
 //       });

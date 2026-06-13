@@ -504,7 +504,7 @@ class _MyHomePageState extends State<MyHomePage>
                         fontWeight: FontWeight.w600,
                       ),
                       trailing: GestureDetector(
-                        onTap: () => localeProvider.toggleLocale(),
+                        onTap: () => _showLanguagePicker(context, localeProvider),
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
@@ -516,7 +516,7 @@ class _MyHomePageState extends State<MyHomePage>
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                localeProvider.isFrench ? '🇫🇷 FR' : '🇬🇧 EN',
+                                kSupportedLocales[localeProvider.locale.languageCode] ?? '🇫🇷 Français',
                                 style: TextStyle(
                                   color: colors.primary,
                                   fontWeight: FontWeight.bold,
@@ -524,12 +524,12 @@ class _MyHomePageState extends State<MyHomePage>
                                 ),
                               ),
                               const SizedBox(width: 4),
-                              Icon(Icons.swap_horiz, color: colors.primary, size: 16),
+                              Icon(Icons.expand_more, color: colors.primary, size: 16),
                             ],
                           ),
                         ),
                       ),
-                      onTap: () => localeProvider.toggleLocale(),
+                      onTap: () => _showLanguagePicker(context, localeProvider),
                     ),
                   ),
                   // NOUVELLE OPTION: RECHERCHER UN UTILISATEUR
@@ -1652,11 +1652,12 @@ class _MyHomePageState extends State<MyHomePage>
                       // Toggle langue
                       Consumer<LocaleProvider>(
                         builder: (context, localeProvider, _) => GestureDetector(
-                          onTap: () => localeProvider.toggleLocale(),
+                          onTap: () => _showLanguagePicker(context, localeProvider),
+                          onLongPress: () => localeProvider.cycleLocale(),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 6),
                             child: Text(
-                              localeProvider.isFrench ? '🇫🇷' : '🇬🇧',
+                              (kSupportedLocales[localeProvider.locale.languageCode] ?? '🇫🇷').substring(0, 2),
                               style: const TextStyle(fontSize: 15),
                             ),
                           ),
@@ -2045,6 +2046,45 @@ class _MyHomePageState extends State<MyHomePage>
   }
 
   // 🔥 Déclenche le rafraîchissement de l'onglet actif depuis la barre du haut
+  void _showLanguagePicker(BuildContext context, LocaleProvider localeProvider) {
+    final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: colors.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  l10n.langChoose,
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: colors.textPrimary),
+                ),
+              ),
+              ...kSupportedLocales.entries.map((entry) {
+                final code = entry.key;
+                final label = entry.value;
+                final isSelected = localeProvider.locale.languageCode == code;
+                return ListTile(
+                  title: Text(label, style: TextStyle(color: colors.textPrimary)),
+                  trailing: isSelected ? Icon(Icons.check, color: colors.primary) : null,
+                  onTap: () {
+                    localeProvider.setLocale(Locale(code));
+                    Navigator.pop(context);
+                  },
+                );
+              }),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void _onTopBarRefreshTap() {
     final state = _activeFeedKey?.currentState;
     if (state != null) {

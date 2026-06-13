@@ -13,12 +13,11 @@ import '../../../../../../providers/authProvider.dart';
 import '../../../../../../providers/userProvider.dart';
 import '../../Login/loginPageUser.dart';
 import '../signup_up_form_step_2.dart';
+import '../../../../../../theme/app_colors.dart';
+import '../../../../../../l10n/app_localizations.dart';
 
 // Couleurs de base
 const Color primaryGreen = Color(0xFF25D366);
-const Color darkBackground = Color(0xFF121212);
-const Color lightBackground = Color(0xFF1E1E1E);
-const Color textColor = Colors.white;
 
 class SignUpScreen extends StatefulWidget {
   SignUpScreen({Key? key}) : super(key: key);
@@ -65,7 +64,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Le pseudo existe déjà", style: TextStyle(color: Colors.red)),
+          content: Text(AppLocalizations.of(context).signupPseudoExists, style: TextStyle(color: Colors.red)),
         ),
       );
       return true;
@@ -90,8 +89,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      backgroundColor: darkBackground,
+      backgroundColor: colors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -111,19 +112,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
               // Titre
               Text(
-                "Créer un compte",
+                l10n.signupCreateAccountTitle,
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: textColor,
+                  color: colors.textPrimary,
                 ),
               ),
               SizedBox(height: 5),
               Text(
-                "Rejoignez la communauté Afrolook",
+                l10n.signupJoinCommunity,
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.grey[400],
+                  color: colors.textSecondary,
                 ),
               ),
               SizedBox(height: 30),
@@ -136,7 +137,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     // Champ téléphone
                     Container(
                       decoration: BoxDecoration(
-                        color: lightBackground,
+                        color: colors.surface,
                         borderRadius: BorderRadius.circular(15),
                       ),
                       child: IntlPhoneField(
@@ -144,8 +145,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           telephoneController.text = phone.completeNumber;
                         },
                         decoration: InputDecoration(
-                          hintText: 'Numéro de téléphone',
-                          hintStyle: TextStyle(color: Colors.grey[500]),
+                          hintText: l10n.signupPhoneHint,
+                          hintStyle: TextStyle(color: colors.textSecondary),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(15),
                             borderSide: BorderSide.none,
@@ -153,11 +154,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           contentPadding: EdgeInsets.symmetric(vertical: 15),
                         ),
                         initialCountryCode: 'TG',
-                        style: TextStyle(color: textColor),
-                        dropdownTextStyle: TextStyle(color: textColor),
+                        style: TextStyle(color: colors.textPrimary),
+                        dropdownTextStyle: TextStyle(color: colors.textPrimary),
                         validator: (value) {
                           if (value == null || value.number.isEmpty) {
-                            return 'Le champ "Téléphone" est obligatoire.';
+                            return l10n.signupPhoneRequired;
                           }
                           return null;
                         },
@@ -167,24 +168,26 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                     // Champ code parrainage
                     _buildTextField(
+                      context: context,
                       controller: code_parrainageController,
-                      hintText: "Code de parrainage (optionnel)",
+                      hintText: l10n.signupReferralCodeOptional,
                       prefixIcon: Icons.person_add_alt_1_outlined,
                     ),
                     SizedBox(height: 15),
 
                     // Champ email
                     _buildTextField(
+                      context: context,
                       controller: emailController,
-                      hintText: "Adresse email",
+                      hintText: l10n.authEmail,
                       keyboardType: TextInputType.emailAddress,
                       prefixIcon: Icons.email_outlined,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Le champ "Email" est obligatoire.';
+                          return l10n.signupEmailRequired;
                         }
                         if (!isValidEmail(value)) {
-                          return 'Email invalide';
+                          return l10n.signupEmailInvalidShort;
                         }
                         return null;
                       },
@@ -193,15 +196,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                     // Champ pseudo
                     _buildTextField(
+                      context: context,
                       controller: pseudoController,
-                      hintText: "Pseudo (unique)",
+                      hintText: l10n.signupPseudoUnique,
                       prefixIcon: Icons.person_outline,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Le champ "Pseudo" est obligatoire.';
+                          return l10n.signupPseudoRequired;
                         }
                         if (value.length < 3) {
-                          return 'Le pseudo doit comporter au moins 3 caractères.';
+                          return l10n.signupPseudoTooShort;
                         }
                         return null;
                       },
@@ -211,24 +215,25 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     // Sélecteur de genre
                     Container(
                       decoration: BoxDecoration(
-                        color: lightBackground,
+                        color: colors.surface,
                         borderRadius: BorderRadius.circular(15),
                       ),
                       padding: EdgeInsets.symmetric(horizontal: 15),
                       child: DropdownButtonFormField<String>(
                         value: selectedGenre,
-                        dropdownColor: lightBackground,
-                        style: TextStyle(color: textColor),
+                        dropdownColor: colors.surface,
+                        style: TextStyle(color: colors.textPrimary),
                         decoration: InputDecoration(
                           border: InputBorder.none,
-                          hintText: 'Genre',
-                          hintStyle: TextStyle(color: Colors.grey[500]),
+                          hintText: l10n.signupGenreLabel,
+                          hintStyle: TextStyle(color: colors.textSecondary),
                           prefixIcon: Icon(Icons.person_outline, color: primaryGreen),
                         ),
                         items: genres.map((genre) {
+                          final label = genre == 'Homme' ? l10n.signupGenreMale : l10n.signupGenreFemale;
                           return DropdownMenuItem(
                             value: genre,
-                            child: Text(genre, style: TextStyle(color: textColor)),
+                            child: Text(label, style: TextStyle(color: colors.textPrimary)),
                           );
                         }).toList(),
                         onChanged: (String? newValue) {
@@ -238,7 +243,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         },
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Le champ "genre" est obligatoire.';
+                            return l10n.signupGenreRequired;
                           }
                           return null;
                         },
@@ -248,8 +253,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                     // Champ mot de passe
                     _buildPasswordField(
+                      context: context,
                       controller: motDePasseController,
-                      hintText: "Mot de passe",
+                      hintText: l10n.signupPasswordHint,
                       obscureText: _obscurePassword,
                       onToggle: () {
                         setState(() {
@@ -258,10 +264,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       },
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Le champ "Mot de passe" est obligatoire.';
+                          return l10n.signupPasswordRequired;
                         }
                         if (value.length < 8) {
-                          return 'Le mot de passe doit comporter au moins 8 caractères.';
+                          return l10n.signupPasswordTooShort;
                         }
                         return null;
                       },
@@ -270,8 +276,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                     // Champ confirmation mot de passe
                     _buildPasswordField(
+                      context: context,
                       controller: TextEditingController(),
-                      hintText: "Confirmer le mot de passe",
+                      hintText: l10n.signupConfirmPasswordHint,
                       obscureText: _obscureConfirmPassword,
                       onToggle: () {
                         setState(() {
@@ -280,13 +287,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       },
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Le champ "Confirmer Mot de passe" est obligatoire.';
+                          return l10n.signupConfirmPasswordRequired;
                         }
                         if (value.length < 8) {
-                          return 'Le mot de passe doit comporter au moins 8 caractères.';
+                          return l10n.signupPasswordTooShort;
                         }
                         if (value != motDePasseController.text) {
-                          return 'Les mots de passe ne correspondent pas';
+                          return l10n.signupPasswordsDontMatch;
                         }
                         return null;
                       },
@@ -334,7 +341,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           size: 24,
                         )
                             : Text(
-                          "Suivant",
+                          l10n.signupNext,
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -350,8 +357,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          "Vous avez déjà un compte? ",
-                          style: TextStyle(color: Colors.grey[500]),
+                          l10n.signupAlreadyHaveAccount,
+                          style: TextStyle(color: colors.textSecondary),
                         ),
                         GestureDetector(
                           onTap: () {
@@ -361,7 +368,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             );
                           },
                           child: Text(
-                            "Connectez-vous",
+                            l10n.signupLoginLink,
                             style: TextStyle(
                               color: primaryGreen,
                               fontWeight: FontWeight.bold,
@@ -382,21 +389,23 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Widget _buildTextField({
+    required BuildContext context,
     required TextEditingController controller,
     required String hintText,
     required IconData prefixIcon,
     TextInputType keyboardType = TextInputType.text,
     String? Function(String?)? validator,
   }) {
+    final colors = AppColors.of(context);
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
-      style: TextStyle(color: textColor),
+      style: TextStyle(color: colors.textPrimary),
       decoration: InputDecoration(
         filled: true,
-        fillColor: lightBackground,
+        fillColor: colors.surface,
         hintText: hintText,
-        hintStyle: TextStyle(color: Colors.grey[500]),
+        hintStyle: TextStyle(color: colors.textSecondary),
         prefixIcon: Icon(prefixIcon, color: primaryGreen),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(15),
@@ -409,21 +418,23 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Widget _buildPasswordField({
+    required BuildContext context,
     required TextEditingController controller,
     required String hintText,
     required bool obscureText,
     required VoidCallback onToggle,
     required String? Function(String?)? validator,
   }) {
+    final colors = AppColors.of(context);
     return TextFormField(
       controller: controller,
       obscureText: obscureText,
-      style: TextStyle(color: textColor),
+      style: TextStyle(color: colors.textPrimary),
       decoration: InputDecoration(
         filled: true,
-        fillColor: lightBackground,
+        fillColor: colors.surface,
         hintText: hintText,
-        hintStyle: TextStyle(color: Colors.grey[500]),
+        hintStyle: TextStyle(color: colors.textSecondary),
         prefixIcon: Icon(Icons.lock_outline, color: primaryGreen),
         suffixIcon: IconButton(
           icon: Icon(

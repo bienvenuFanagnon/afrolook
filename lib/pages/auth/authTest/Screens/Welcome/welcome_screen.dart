@@ -1,27 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:afrotok/pages/auth/authTest/Screens/Login/loginPageUser.dart';
-import 'package:afrotok/pages/auth/authTest/Screens/Signup/signup_screen.dart';
 
 import '../Signup/components/signup_form.dart';
+import '../../../../../theme/app_colors.dart';
+import '../../../../../l10n/app_localizations.dart';
 
 // Couleurs de base Afrolook
 const Color primaryGreen = Color(0xFF25D366);
 const Color accentYellow = Color(0xFFFFD700);
-const Color darkBackground = Color(0xFF121212);
-const Color textColor = Colors.white;
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [darkBackground, Colors.black],
+            colors: [colors.background, colors.surface],
           ),
         ),
         child: SafeArea(
@@ -32,11 +33,11 @@ class WelcomeScreen extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                   child: Column(
                     children: [
-                      _buildHeader(),
+                      _buildHeader(colors),
                       const SizedBox(height: 20),
-                      _buildIncomeHighlight(),
+                      _buildIncomeHighlight(colors, l10n),
                       const SizedBox(height: 30),
-                      _buildSupportMessage(),
+                      _buildSupportMessage(colors, l10n),
                     ],
                   ),
                 ),
@@ -65,9 +66,9 @@ class WelcomeScreen extends StatelessWidget {
                           elevation: 6,
                           shadowColor: primaryGreen.withOpacity(0.5),
                         ),
-                        child: const Text(
-                          "Se connecter",
-                          style: TextStyle(
+                        child: Text(
+                          l10n.authSignIn,
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
@@ -91,11 +92,11 @@ class WelcomeScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(14),
                           ),
                           side: const BorderSide(color: primaryGreen, width: 2),
-                          backgroundColor: Colors.black.withOpacity(0.4),
+                          backgroundColor: colors.surface.withOpacity(0.4),
                         ),
                         child: Text(
-                          "Créer un compte",
-                          style: TextStyle(
+                          l10n.authSignUp,
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: primaryGreen,
@@ -106,10 +107,10 @@ class WelcomeScreen extends StatelessWidget {
 
                     const SizedBox(height: 25),
                     Text(
-                      "🚀 Commencez aujourd’hui et transformez vos vidéos en revenus !",
+                      "🚀 ${l10n.welcomeTagline}",
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Colors.grey[400],
+                        color: colors.textSecondary,
                         fontSize: 14,
                         fontStyle: FontStyle.italic,
                       ),
@@ -125,7 +126,7 @@ class WelcomeScreen extends StatelessWidget {
   }
 
   // Logo et titre
-  Widget _buildHeader() {
+  Widget _buildHeader(AppColors colors) {
     return Column(
       children: [
         Container(
@@ -159,11 +160,11 @@ class WelcomeScreen extends StatelessWidget {
   }
 
   // Bloc qui met en avant les gains
-  Widget _buildIncomeHighlight() {
+  Widget _buildIncomeHighlight(AppColors colors, AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.4),
+        color: colors.surface.withOpacity(0.4),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: accentYellow, width: 1.5),
         boxShadow: [
@@ -177,8 +178,8 @@ class WelcomeScreen extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            "💰 Gagnez plus de 100 000 FCFA / mois",
-            style: TextStyle(
+            "💰 ${l10n.welcomeIncomeTitle}",
+            style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: accentYellow,
@@ -187,10 +188,10 @@ class WelcomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            "Mettez vos vidéos en vente et monétisez votre talent directement sur Afrolook.",
+            l10n.welcomeIncomeDesc,
             style: TextStyle(
               fontSize: 16,
-              color: textColor.withOpacity(0.9),
+              color: colors.textPrimary.withOpacity(0.9),
               height: 1.5,
             ),
             textAlign: TextAlign.center,
@@ -201,13 +202,13 @@ class WelcomeScreen extends StatelessWidget {
   }
 
   // Message de soutien aux créateurs
-  Widget _buildSupportMessage() {
+  Widget _buildSupportMessage(AppColors colors, AppLocalizations l10n) {
     return Column(
       children: [
         const SizedBox(height: 15),
         Text(
-          "🎭 Soutien aux artistes, comédiens et créateurs africains",
-          style: TextStyle(
+          "🎭 ${l10n.welcomeSupportTitle}",
+          style: const TextStyle(
             color: accentYellow,
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -216,9 +217,9 @@ class WelcomeScreen extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         Text(
-          "📲 Publiez vos vidéos exclusives, engagez votre communauté et développez vos revenus.",
+          "📲 ${l10n.welcomeSupportDesc}",
           style: TextStyle(
-            color: Colors.grey[300],
+            color: colors.textSecondary,
             fontSize: 15,
             height: 1.5,
           ),
