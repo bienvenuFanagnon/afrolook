@@ -17,6 +17,7 @@ import 'package:provider/provider.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../../constant/constColors.dart';
+import '../../../../theme/app_colors.dart';
 import '../../../../constant/iconGradient.dart';
 import '../../../../constant/listItemsCarousel.dart';
 import '../../../../constant/sizeText.dart';
@@ -34,6 +35,7 @@ class UserPublicationView extends StatefulWidget {
 }
 
 class _UserPublicationViewState extends State<UserPublicationView> {
+  late AppColors _colors;
   final _formKey = GlobalKey<FormState>();
 
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -154,7 +156,7 @@ class _UserPublicationViewState extends State<UserPublicationView> {
     return Padding(
       padding: const EdgeInsets.all(1.0),
       child: Card(
-        color: Colors.white,
+        color: _colors.surface,
         child: Padding(
           padding: const EdgeInsets.all(4.0),
           child: Column(
@@ -192,7 +194,7 @@ class _UserPublicationViewState extends State<UserPublicationView> {
                     child: TextCustomerPostDescription(
                       titre: "@${user.pseudo}",
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: ConstColors.textColors,
+                      couleur: _colors.textPrimary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -391,6 +393,7 @@ class _UserPublicationViewState extends State<UserPublicationView> {
 
   @override
   Widget build(BuildContext context) {
+    _colors = AppColors.of(context);
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
     return Container(
@@ -403,7 +406,7 @@ class _UserPublicationViewState extends State<UserPublicationView> {
                 child: TextCustomerMenu(
                   titre: "Simple",
                   fontSize: SizeText.homeProfileTextSize,
-                  couleur: ConstColors.textColors,
+                  couleur: _colors.textPrimary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -411,7 +414,7 @@ class _UserPublicationViewState extends State<UserPublicationView> {
                 child: TextCustomerMenu(
                   titre: "Videos",
                   fontSize: SizeText.homeProfileTextSize,
-                  couleur: ConstColors.textColors,
+                  couleur: _colors.textPrimary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -419,14 +422,14 @@ class _UserPublicationViewState extends State<UserPublicationView> {
                 child: TextCustomerMenu(
                   titre: "Services",
                   fontSize: SizeText.homeProfileTextSize,
-                  couleur: ConstColors.textColors,
+                  couleur: _colors.textPrimary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ],
             tabBarProperties: TabBarProperties(
               height: 32.0,
-              indicatorColor: ConstColors.menuItemsColors,
+              indicatorColor: _colors.primary,
               indicatorWeight: 6.0,
               labelColor: Colors.black,
               unselectedLabelColor: Colors.grey[400],
@@ -450,6 +453,7 @@ class EntreprisePublicationView extends StatefulWidget {
 }
 
 class _EntreprisePublicationViewState extends State<EntreprisePublicationView> {
+  late AppColors _colors;
 
   final _formKey = GlobalKey<FormState>();
 
@@ -571,7 +575,7 @@ class _EntreprisePublicationViewState extends State<EntreprisePublicationView> {
     return Padding(
       padding: const EdgeInsets.all(1.0),
       child: Card(
-        color: Colors.white,
+        color: _colors.surface,
         child: Padding(
           padding: const EdgeInsets.all(4.0),
           child: Column(
@@ -609,7 +613,7 @@ class _EntreprisePublicationViewState extends State<EntreprisePublicationView> {
                     child: TextCustomerPostDescription(
                       titre: "@${user.pseudo}",
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: ConstColors.textColors,
+                      couleur: _colors.textPrimary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -808,6 +812,7 @@ class _EntreprisePublicationViewState extends State<EntreprisePublicationView> {
 
   @override
   Widget build(BuildContext context) {
+    _colors = AppColors.of(context);
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
     return Container(
@@ -820,7 +825,7 @@ class _EntreprisePublicationViewState extends State<EntreprisePublicationView> {
               child: TextCustomerMenu(
                 titre: "Simple",
                 fontSize: SizeText.homeProfileTextSize,
-                couleur: ConstColors.textColors,
+                couleur: _colors.textPrimary,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -828,17 +833,17 @@ class _EntreprisePublicationViewState extends State<EntreprisePublicationView> {
               child: TextCustomerMenu(
                 titre: "Videos",
                 fontSize: SizeText.homeProfileTextSize,
-                couleur: ConstColors.textColors,
+                couleur: _colors.textPrimary,
                 fontWeight: FontWeight.w600,
               ),
             ),
           ],
           tabBarProperties: TabBarProperties(
             height: 32.0,
-            indicatorColor: ConstColors.menuItemsColors,
+            indicatorColor: _colors.primary,
             indicatorWeight: 6.0,
-            labelColor: Colors.black,
-            unselectedLabelColor: Colors.grey[400],
+            labelColor: _colors.textPrimary,
+            unselectedLabelColor: _colors.textSecondary,
           ),
           views: [
             ProfileUserEntrepriseImageTab(),

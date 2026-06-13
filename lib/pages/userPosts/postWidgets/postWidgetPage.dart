@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:audioplayers/audioplayers.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
@@ -21,7 +19,10 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
+import 'package:flutter_animate/flutter_animate.dart';
+
 import '../../../models/model_data.dart';
+import '../../../theme/app_colors.dart';
 
 import '../../../providers/coin_gift_provider.dart';
 import '../../../providers/sound_provider.dart';
@@ -50,18 +51,7 @@ import '../../widgetGlobal.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../youTube_video_card.dart';
-
-
-// Couleurs style Twitter Dark Mode
-const _twitterDarkBg = Color(0xFF000000);
-const _twitterCardBg = Color(0xFF16181C);
-const _twitterTextPrimary = Color(0xFFFFFFFF);
-const _twitterTextSecondary = Color(0xFF71767B);
-const _twitterBlue = Color(0xFF1D9BF0);
-const _twitterRed = Color(0xFFF91880);
-const _twitterGreen = Color(0xFF00BA7C);
-const _twitterYellow = Color(0xFFFFD400);
-const _afroBlack = Color(0xFF000000);
+import 'audioPostWidget.dart';
 
 
 // Couleurs style AfroTok
@@ -91,6 +81,9 @@ class HomePostUsersWidget extends StatefulWidget {
   final VoidCallback? onShared;
   final VoidCallback? onLoved;
   final VoidCallback? onViewed;
+  // Session 13 : pays du filtre actif (HomeConstPost._selectedCountryCode), utilisé pour
+  // afficher en priorité ce pays dans le badge pays du post (s'il y figure).
+  final String? currentFilterCountry;
 
   HomePostUsersWidget({
     required this.post,
@@ -107,6 +100,7 @@ class HomePostUsersWidget extends StatefulWidget {
     this.onLoved,
     this.onViewed,
     this.index=0,
+    this.currentFilterCountry,
   }) : super(key: key);
 
   @override
@@ -149,116 +143,6 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
   // CONFIGURATION - Paiement pour abonnés existants
   final bool _requirePaymentForExistingSubscribers = false;
-// ========== GESTION AUDIO ==========
-
-// Cache pour les fichiers audio préchargés
-  final Map<String, File> _cachedAudioFiles = {};
-  final Map<String, AudioPlayer> _activePlayers = {};
-  String? _currentlyPlayingAudioId;
-  bool _isAudioPlaying = false;
-  Duration _currentAudioPosition = Duration.zero;
-  Duration _currentAudioDuration = Duration.zero;
-
-
-  // Variables pour la visibilité audio
-  bool _isAudioVisible = false;
-  Timer? _audioVisibilityTimer;
-
-// Gestion de la visibilité audio (similaire à la vidéo)
-  void _handleAudioVisibilityChanged(VisibilityInfo info, String postId, String audioUrl) {
-    _audioVisibilityTimer?.cancel();
-
-    if (info.visibleFraction > 0.5) {
-      _audioVisibilityTimer = Timer(Duration(milliseconds: 500), () {
-        if (mounted && info.visibleFraction > 0.5) {
-          _onAudioBecameVisible(postId, audioUrl);
-        }
-      });
-    } else {
-      _onAudioBecameInvisible(postId);
-      _audioVisibilityTimer?.cancel();
-    }
-  }
-  void _onAudioBecameVisible(String postId, String audioUrl) {
-    _isAudioVisible = true;
-
-    // Récupérer l'état du son
-    final soundProvider = Provider.of<SoundProvider>(context, listen: false);
-
-    _initAudioPlayer(postId);
-
-    if (_activePlayers.containsKey(postId)) {
-      final player = _activePlayers[postId]!;
-
-      // Enregistrer dans le manager (arrête les autres médias)
-      MediaPlaybackManager.registerAudio(
-        postId,
-        player,
-            () => _stopAudio(postId),
-      );
-
-      // Appliquer le volume selon l'état global
-      final isMuted = soundProvider.isMuted;
-      player.setVolume(isMuted ? 0.0 : 1.0);
-
-      // Jouer l'audio SEULEMENT si le son est activé
-      if (!isMuted) {
-        _playAudio(postId, audioUrl);
-        _recordAudioInteraction();
-        print('🔊 Son activé : lecture audio');
-      } else {
-        print('🔇 Son coupé globalement : audio en pause');
-        setState(() {
-          _isAudioPlaying = false;
-          _currentlyPlayingAudioId = null;
-        });
-      }
-    }
-  }
-
-  void _onAudioBecameInvisible(String postId) {
-    _isAudioVisible = false;
-
-    if (_activePlayers.containsKey(postId) && _currentlyPlayingAudioId == postId) {
-      _pauseAudio();
-    }
-  }
-
-  void _pauseAudio() {
-    if (_currentlyPlayingAudioId != null && _activePlayers.containsKey(_currentlyPlayingAudioId)) {
-      _activePlayers[_currentlyPlayingAudioId]!.pause();
-      setState(() {
-        _isAudioPlaying = false;
-      });
-    }
-  }
-
-  void _stopAudio(String postId) {
-    if (_activePlayers.containsKey(postId)) {
-      _activePlayers[postId]!.stop();
-      if (_currentlyPlayingAudioId == postId) {
-        setState(() {
-          _isAudioPlaying = false;
-          _currentlyPlayingAudioId = null;
-          _currentAudioPosition = Duration.zero;
-        });
-      }
-    }
-  }
-
-// Enregistrer l'interaction audio (vue unique par jour)
-  Future<void> _recordAudioInteraction() async {
-    final prefs = await SharedPreferences.getInstance();
-    final today = DateTime.now().toIso8601String().split('T').first;
-    final key = 'audio_interaction_${widget.post.id}_${authProvider.loginUserData.id}';
-    final lastDate = prefs.getString(key);
-
-    if (lastDate == today) return;
-
-    await prefs.setString(key, today);
-    await authProvider.incrementPostTotalInteractions(postId: widget.post.id!);
-    print('✅ Interaction audio enregistrée pour ${widget.post.id}');
-  }
   // Dans _HomePostUsersWidgetState
   Widget _buildEventBadge(Post post) {
 
@@ -369,203 +253,6 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     } catch (e) {
       print("Erreur enregistrement vue : $e");
     }
-  }
-// Initialiser le lecteur audio
-  void _initAudioPlayer(String postId) {
-    if (!_activePlayers.containsKey(postId)) {
-      final player = AudioPlayer();
-
-      player.onDurationChanged.listen((duration) {
-        if (mounted && _currentlyPlayingAudioId == postId) {
-          setState(() {
-            _currentAudioDuration = duration;
-          });
-        }
-      });
-
-      player.onPositionChanged.listen((position) {
-        if (mounted && _currentlyPlayingAudioId == postId) {
-          setState(() {
-            _currentAudioPosition = position;
-          });
-        }
-      });
-
-      player.onPlayerComplete.listen((event) {
-        if (mounted && _currentlyPlayingAudioId == postId) {
-          setState(() {
-            _isAudioPlaying = false;
-            _currentlyPlayingAudioId = null;
-            _currentAudioPosition = Duration.zero;
-          });
-        }
-      });
-
-      _activePlayers[postId] = player;
-    }
-  }
-
-// Précharger l'audio en cache
-  Future<File?> _precacheAudio(String audioUrl, String postId) async {
-    // Vérifier si déjà en cache
-    if (_cachedAudioFiles.containsKey(postId)) {
-      return _cachedAudioFiles[postId];
-    }
-
-    try {
-      // Télécharger l'audio
-      final tempDir = await getTemporaryDirectory();
-      final fileName = 'audio_$postId.${_getAudioExtension(audioUrl)}';
-      final file = File('${tempDir.path}/$fileName');
-
-      // Si le fichier existe déjà, le retourner
-      if (await file.exists()) {
-        _cachedAudioFiles[postId] = file;
-        return file;
-      }
-
-      // Télécharger depuis Firebase Storage
-      // 🔥 URL OPTIMISÉE VERS CLOUDFLARE
-      final optimizedUrl = _optimizeUrl(audioUrl);
-      final storageRef = FirebaseStorage.instance.refFromURL(optimizedUrl);
-      final maxSize = 10 * 1024 * 1024; // 10 MB
-      final data = await storageRef.getData(maxSize);
-
-      if (data != null) {
-        await file.writeAsBytes(data);
-        _cachedAudioFiles[postId] = file;
-        return file;
-      }
-    } catch (e) {
-      print('Erreur préchargement audio $postId: $e');
-    }
-
-    return null;
-  }
-
-  String _getAudioExtension(String url) {
-    if (url.contains('.mp3')) return 'mp3';
-    if (url.contains('.m4a')) return 'm4a';
-    if (url.contains('.aac')) return 'aac';
-    if (url.contains('.opus')) return 'opus';
-    if (url.contains('.webm')) return 'webm';
-    return 'm4a';
-  }
-
-// Lire l'audio
-  Future<void> _playAudio(String postId, String audioUrl) async {
-    try {
-      _initAudioPlayer(postId);
-      final player = _activePlayers[postId]!;
-
-      if (_currentlyPlayingAudioId == postId && _isAudioPlaying) {
-        // Mettre en pause
-        await player.pause();
-        setState(() {
-          _isAudioPlaying = false;
-        });
-      } else if (_currentlyPlayingAudioId == postId && !_isAudioPlaying) {
-        // Reprendre
-        await player.resume();
-        setState(() {
-          _isAudioPlaying = true;
-        });
-      } else {
-        // 🔥 Enregistrer dans le manager (arrête vidéo/autre audio)
-        MediaPlaybackManager.registerAudio(
-          postId,
-          player,
-              () => _stopAudio(postId),
-        );
-
-        // Arrêter le précédent
-        if (_currentlyPlayingAudioId != null && _activePlayers.containsKey(_currentlyPlayingAudioId)) {
-          await _activePlayers[_currentlyPlayingAudioId]!.stop();
-        }
-
-        // Jouer le nouveau
-        setState(() {
-          _currentlyPlayingAudioId = postId;
-          _currentAudioPosition = Duration.zero;
-          _currentAudioDuration = Duration.zero;
-        });
-
-        if (_cachedAudioFiles.containsKey(postId)) {
-          await player.play(DeviceFileSource(_cachedAudioFiles[postId]!.path));
-        } else {
-          await player.play(UrlSource(audioUrl));
-        }
-
-        setState(() {
-          _isAudioPlaying = true;
-        });
-      }
-
-      _incrementViews();
-
-    } catch (e) {
-      print('Erreur lecture audio: $e');
-      _showAudioError();
-    }
-  }
-
-  Future<void> _incrementViews() async {
-    try {
-      if (authProvider.loginUserData == null ||
-          widget.post == null ||
-          widget.post.id == null) return;
-
-      final currentUserId = authProvider.loginUserData.id;
-      if (currentUserId == null) return;
-
-      widget.post.users_vue_id ??= [];
-
-      // 🔥 Vérifier si l'utilisateur a déjà vu le post
-      if (widget.post.users_vue_id!.contains(currentUserId)) {
-        print('⏭️ Vue déjà enregistrée pour cet utilisateur');
-        return;
-      }
-      authProvider. incrementPostTotalInteractions(postId: widget.post.id!);
-
-      // ✅ Mise à jour locale
-      setState(() {
-        widget.post.vues = (widget.post.vues ?? 0) + 1;
-        widget.post.users_vue_id!.add(currentUserId);
-      });
-
-      // ✅ Mise à jour Firestore
-      await firestore.collection('Posts').doc(widget.post.id).update({
-        'vues': FieldValue.increment(1),
-        'users_vue_id': FieldValue.arrayUnion([currentUserId]),
-        'popularity': FieldValue.increment(2),
-      });
-
-      print('✅ Vue unique enregistrée pour ${widget.post.id}');
-    } catch (e) {
-      print("Erreur incrémentation vues: $e");
-    }
-  }
-
-  void _seekAudio(double value, String postId) {
-    if (_activePlayers.containsKey(postId)) {
-      _activePlayers[postId]!.seek(Duration(seconds: value.toInt()));
-    }
-  }
-
-  void _showAudioError() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Erreur lors de la lecture audio'),
-        backgroundColor: Colors.red,
-      ),
-    );
-  }
-
-  String _formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, "0");
-    String minutes = twoDigits(duration.inMinutes.remainder(60));
-    String seconds = twoDigits(duration.inSeconds.remainder(60));
-    return "$minutes:$seconds";
   }
 
 // Nettoyer les ressources audio quand le widget est détruit
@@ -777,6 +464,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
   }
   Widget _buildSupportButton(bool hasAccess) {
+    final colors = AppColors.of(context);
     final isOwner = authProvider.loginUserData.id == widget.post.user_id;
 
     return Container(
@@ -785,8 +473,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: hasAccess
-              ? _afroYellow.withOpacity(0.5)
-              : _afroTextSecondary.withOpacity(0.2),
+              ? colors.accent.withOpacity(0.5)
+              : colors.textSecondary.withOpacity(0.2),
           width: 1,
         ),
       ),
@@ -808,7 +496,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                     height: 14,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: _afroYellow,
+                      color: colors.accent,
                     ),
                   )
                 else
@@ -816,8 +504,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                     Icons.volunteer_activism,
                     size: 14,
                     color: hasAccess
-                        ? _afroYellow
-                        : _afroTextSecondary.withOpacity(0.3),
+                        ? colors.accent
+                        : colors.textSecondary.withOpacity(0.3),
                   ),
                 SizedBox(width: 4),
                 Text(
@@ -825,8 +513,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   style: TextStyle(
                     fontSize: 12,
                     color: hasAccess
-                        ? _afroYellow
-                        : _afroTextSecondary.withOpacity(0.3),
+                        ? colors.accent
+                        : colors.textSecondary.withOpacity(0.3),
                   ),
                 ),
                 if ((widget.post.adSupportCount ?? 0) > 0) ...[
@@ -834,12 +522,12 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                     decoration: BoxDecoration(
-                      color: _afroYellow.withOpacity(0.2),
+                      color: colors.accent.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
                       _formatCount(widget.post.adSupportCount ?? 0),
-                      style: TextStyle(fontSize: 10, color: _afroYellow),
+                      style: TextStyle(fontSize: 10, color: colors.accent),
                     ),
                   ),
                 ],
@@ -852,258 +540,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
   @override
   void dispose() {
-    _audioVisibilityTimer?.cancel();
-    for (var player in _activePlayers.values) {
-      player.dispose();
-    }
-    _activePlayers.clear();
     MediaPlaybackManager.unregisterMedia(widget.post.id ?? '');
     super.dispose();
-  }
-
-  Widget _buildAudioContent(double h, bool isLocked) {
-    final audioUrl = widget.post.url_media ?? '';
-    final postId = widget.post.id!;
-    final isCurrentlyPlaying = _currentlyPlayingAudioId == postId && _isAudioPlaying;
-    final duration = _currentlyPlayingAudioId == postId ? _currentAudioDuration : Duration.zero;
-    final position = _currentlyPlayingAudioId == postId ? _currentAudioPosition : Duration.zero;
-
-    final coverImage = widget.post.images != null && widget.post.images!.isNotEmpty
-        ? widget.post.images!.first
-        : null;
-
-    // Précharger l'audio en arrière-plan
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _precacheAudio(audioUrl, postId);
-    });
-
-    // 🔥 AJOUT DE VisibilityDetector POUR L'AUDIO
-    return VisibilityDetector(
-      key: Key('audio_${widget.post.id}'),
-      onVisibilityChanged: (info) {
-        _handleAudioVisibilityChanged(info, postId, audioUrl);
-      },
-      child: GestureDetector(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => DetailsPost(post: widget.post),
-            ),
-          );
-        },
-        child: Stack(
-          children: [
-            // Fond avec dégradé
-            Container(
-              width: double.infinity,
-              height: 140,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF2196F3).withOpacity(0.3),
-                    Color(0xFF9C27B0).withOpacity(0.3),
-                  ],
-                ),
-              ),
-            ),
-
-            // Overlay verrouillage
-            if (isLocked)
-              Positioned.fill(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.6),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.lock, color: _afroYellow, size: 40),
-                        SizedBox(height: 8),
-                        Text(
-                          'Audio verrouillé',
-                          style: TextStyle(
-                            color: _afroYellow,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Abonnez-vous pour écouter',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-            // Contenu audio
-            if (!isLocked)
-              Padding(
-                padding: EdgeInsets.all(12),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    if (coverImage != null)
-                      Container(
-                        width: 80,
-                        height: 80,
-                        margin: EdgeInsets.only(right: 12),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          image: DecorationImage(
-                            image: CachedNetworkImageProvider(coverImage),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-
-                    Expanded(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: Color(0xFF2196F3).withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Icon(
-                                  Icons.audiotrack,
-                                  color: Color(0xFF2196F3),
-                                  size: 16,
-                                ),
-                              ),
-                              SizedBox(width: 8),
-                              Text(
-                                'Audio',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              Spacer(),
-                              Container(
-                                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.5),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  _formatDuration(duration),
-                                  style: TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          SizedBox(height: 10),
-
-                          Row(
-                            children: [
-                              GestureDetector(
-                                onTap: () => _playAudio(postId, audioUrl),
-                                child: Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                    color: Color(0xFF2196F3),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    isCurrentlyPlaying ? Icons.pause : Icons.play_arrow,
-                                    color: Colors.white,
-                                    size: 18,
-                                  ),
-                                ),
-                              ),
-
-                              SizedBox(width: 12),
-
-                              Expanded(
-                                child: Column(
-                                  children: [
-                                    Slider(
-                                      value: position.inSeconds.toDouble(),
-                                      min: 0,
-                                      max: duration.inSeconds > 0 ? duration.inSeconds.toDouble() : 1.0,
-                                      onChanged: (value) => _seekAudio(value, postId),
-                                      activeColor: Color(0xFF2196F3),
-                                      inactiveColor: Colors.grey[700],
-                                    ),
-                                    Padding(
-                                      padding: EdgeInsets.symmetric(horizontal: 4),
-                                      child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            _formatDuration(position),
-                                            style: TextStyle(
-                                              color: Colors.white70,
-                                              fontSize: 9,
-                                            ),
-                                          ),
-                                          Text(
-                                            _formatDuration(duration),
-                                            style: TextStyle(
-                                              color: Colors.white70,
-                                              fontSize: 9,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: List.generate(15, (index) {
-                              final barHeight = 3.0 + (index % 4) * 1.5;
-                              return Container(
-                                width: 2,
-                                height: barHeight,
-                                margin: EdgeInsets.symmetric(horizontal: 1),
-                                decoration: BoxDecoration(
-                                  color: isCurrentlyPlaying && index % 2 == 0
-                                      ? Color(0xFF2196F3)
-                                      : Colors.grey[600],
-                                  borderRadius: BorderRadius.circular(1),
-                                ),
-                              );
-                            }),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
   }
 
   void _checkIfFavorite() {
@@ -1373,6 +811,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final colors = AppColors.of(context);
     final h = MediaQuery.of(context).size.height;
     final w = MediaQuery.of(context).size.width;
 
@@ -1384,13 +823,13 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     final hasAccess = _hasAccessToContent();
 
     return Container(
-      color: _afroDarkBg,
+      color: colors.background,
       child: Column(
         children: [
           // Ligne de séparation supérieure
           Container(
             height: 0.5,
-            color: _afroTextSecondary.withOpacity(0.3),
+            color: colors.divider,
           ),
 
           // Contenu du post
@@ -1410,7 +849,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                 // Médias (images/vidéos) - verrouillés si pas d'accès
 
               if (widget.post.dataType == PostDataType.AUDIO.name)
-    _buildAudioContent(h, isLocked),
+    AudioPostCard(post: widget.post, isLocked: isLocked),
         if (widget.post.dataType == PostDataType.AUDIO.name)
 
     SizedBox(height: 12),
@@ -1465,7 +904,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           ),
         ],
       ),
-    );
+    ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.03, end: 0, duration: 300.ms, curve: Curves.easeOut);
   }
   Future<void> _sendSupportNotification(String creatorId, String supporterId, String postId) async {
     final now = DateTime.now().microsecondsSinceEpoch;
@@ -1511,42 +950,44 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     }
   }
   Widget _buildSkeletonLoader() {
+    final colors = AppColors.of(context);
     return Container(
-      color: _afroDarkBg,
+      color: colors.background,
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Column(
         children: [
           Row(
             children: [
-              CircleAvatar(radius: 20, backgroundColor: _afroTextSecondary.withOpacity(0.3)),
+              CircleAvatar(radius: 20, backgroundColor: colors.shimmerBase),
               SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(width: 120, height: 14, color: _afroTextSecondary.withOpacity(0.3)),
+                    Container(width: 120, height: 14, color: colors.shimmerBase),
                     SizedBox(height: 4),
-                    Container(width: 80, height: 12, color: _afroTextSecondary.withOpacity(0.3)),
+                    Container(width: 80, height: 12, color: colors.shimmerBase),
                   ],
                 ),
               ),
             ],
           ),
           SizedBox(height: 12),
-          Container(width: double.infinity, height: 16, color: _afroTextSecondary.withOpacity(0.3)),
+          Container(width: double.infinity, height: 16, color: colors.shimmerBase),
           SizedBox(height: 4),
-          Container(width: double.infinity, height: 16, color: _afroTextSecondary.withOpacity(0.3)),
+          Container(width: double.infinity, height: 16, color: colors.shimmerBase),
           SizedBox(height: 8),
           Container(
             height: 200,
             width: double.infinity,
-            color: _afroTextSecondary.withOpacity(0.3),
+            color: colors.shimmerBase,
           ),
         ],
       ),
     );
   }
   Widget _buildPostHeader(double w, double h) {
+    final colors = AppColors.of(context);
     final currentUserId = authProvider.loginUserData.id;
     final isCanalPost = currentCanal != null;
     final postOwner = isCanalPost ? currentCanal! : currentUser!;
@@ -1571,24 +1012,36 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
               showUserDetailsModalDialog(currentUser!, w, h, context);
             }
           },
-          child: Stack(
-            children: [
-              CircleAvatar(
-                radius: 23,
-                backgroundColor: _afroGreen,
-                backgroundImage: _getProfileImage(),
-                child: _getProfileImage() == null
-                    ? Icon(
-                  isCanalPost ? Icons.group : Icons.person,
-                  color: Colors.white,
-                  size: 20,
+          // 🔥 Bordure verte : ronde pour un utilisateur, carrée pour un canal
+          child: isCanalPost
+              ? Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.rectangle,
+                    borderRadius: BorderRadius.circular(10),
+                    color: colors.primary,
+                    border: Border.all(color: colors.primary, width: 2),
+                    image: _getProfileImage() != null
+                        ? DecorationImage(image: _getProfileImage()!, fit: BoxFit.cover)
+                        : null,
+                  ),
+                  child: _getProfileImage() == null
+                      ? Icon(Icons.group, color: colors.onPrimary, size: 20)
+                      : null,
                 )
-                    : null,
-              ),
-
-
-            ],
-          ),
+              : CircleAvatar(
+                  radius: 25,
+                  backgroundColor: colors.primary,
+                  child: CircleAvatar(
+                    radius: 23,
+                    backgroundColor: colors.primary,
+                    backgroundImage: _getProfileImage(),
+                    child: _getProfileImage() == null
+                        ? Icon(Icons.person, color: colors.onPrimary, size: 20)
+                        : null,
+                  ),
+                ),
         ),
         SizedBox(width: 12),
 
@@ -1605,7 +1058,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                         Text(
                           _getDisplayName(),
                           style: TextStyle(
-                            color: _afroTextPrimary,
+                            color: colors.textPrimary,
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
                           ),
@@ -1630,7 +1083,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
               Text(
                 _getFollowerCount(),
                 style: TextStyle(
-                  color: _afroTextSecondary,
+                  color: colors.textSecondary,
                   fontSize: 12,
                 ),
               ),
@@ -1641,6 +1094,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     );
   }
   Widget _buildPostHeader2(double w, double h) {
+    final colors = AppColors.of(context);
     final currentUserId = authProvider.loginUserData.id;
     final isCanalPost = currentCanal != null;
     final postOwner = isCanalPost ? currentCanal! : currentUser!;
@@ -1669,12 +1123,12 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
             children: [
               CircleAvatar(
                 radius: 23,
-                backgroundColor: _afroGreen,
+                backgroundColor: colors.primary,
                 backgroundImage: _getProfileImage(),
                 child: _getProfileImage() == null
                     ? Icon(
                   isCanalPost ? Icons.group : Icons.person,
-                  color: Colors.white,
+                  color: colors.onPrimary,
                   size: 20,
                 )
                     : null,
@@ -1686,10 +1140,10 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   child: Container(
                     padding: EdgeInsets.all(2),
                     decoration: BoxDecoration(
-                      color: _afroDarkBg,
+                      color: colors.background,
                       shape: BoxShape.circle,
                     ),
-                    child:  Icon(Icons.verified, color: Colors.blue, size: 20),
+                    child:  Icon(Icons.verified, color: colors.info, size: 20),
                   ),
                 ),
             ],
@@ -1710,7 +1164,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                         Text(
                           _getDisplayName(),
                           style: TextStyle(
-                            color: _afroTextPrimary,
+                            color: colors.textPrimary,
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
                           ),
@@ -1741,7 +1195,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
               Text(
                 _getFollowerCount(),
                 style: TextStyle(
-                  color: _afroTextSecondary,
+                  color: colors.textSecondary,
                   fontSize: 12,
                 ),
               ),
@@ -1753,7 +1207,20 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
   Widget _buildCountryBadge(Post post) {
     final isAllCountries = post.isAvailableInAllCountries == true;
-    final countryCodes = post.availableCountries ?? [];
+    var countryCodes = post.availableCountries ?? [];
+
+    // Session 13 : si le pays du filtre actif figure dans la liste, le placer en premier
+    // (sans ajouter/retirer d'éléments) pour que le badge affiche prioritairement ce pays.
+    final filterCountry = widget.currentFilterCountry?.toUpperCase();
+    if (filterCountry != null && countryCodes.length > 1) {
+      final idx = countryCodes.indexWhere((c) => c.toUpperCase() == filterCountry);
+      if (idx > 0) {
+        countryCodes = [
+          countryCodes[idx],
+          ...countryCodes.where((c) => c.toUpperCase() != filterCountry),
+        ];
+      }
+    }
 
     // Déterminer le contenu du badge
     String displayText = '';
@@ -1871,16 +1338,17 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
 
   Widget _buildFollowButton(bool isCanalPost, dynamic postOwner, bool isAbonne) {
+    final colors = AppColors.of(context);
     return Container(
       height: 28,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
           backgroundColor: isCanalPost && (postOwner as Canal).isPrivate == true
-              ? _afroYellow
-              : _afroGreen,
+              ? colors.accent
+              : colors.primary,
           foregroundColor: isCanalPost && (postOwner as Canal).isPrivate == true
-              ? Colors.black
-              : Colors.white,
+              ? colors.onAccent
+              : colors.onPrimary,
           padding: EdgeInsets.symmetric(horizontal: 12, vertical: 0),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -1928,8 +1396,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           child: CircularProgressIndicator(
             strokeWidth: 2,
             color: isCanalPost && (postOwner as Canal).isPrivate == true
-                ? Colors.black
-                : Colors.white,
+                ? colors.onAccent
+                : colors.onPrimary,
           ),
         )
             : Text(
@@ -1977,6 +1445,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
 
   Widget _buildPostContent(bool isLocked) {
+    final colors = AppColors.of(context);
     final text = widget.post.description ?? "";
 
     if (isLocked) {
@@ -1993,7 +1462,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
             limitedText,
             style: TextStyle(
               fontSize: 15,
-              color: _afroTextSecondary, // Texte grisé pour contenu verrouillé
+              color: colors.textSecondary, // Texte grisé pour contenu verrouillé
               fontWeight: FontWeight.w400,
               height: 1.4,
             ),
@@ -2003,12 +1472,12 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           SizedBox(height: 8),
           Row(
             children: [
-              Icon(Icons.lock, color: _afroYellow, size: 16),
+              Icon(Icons.lock, color: colors.accent, size: 16),
               SizedBox(width: 4),
               Text(
                 'Contenu réservé aux abonnés',
                 style: TextStyle(
-                  color: _afroYellow,
+                  color: colors.accent,
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
@@ -2040,13 +1509,13 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
             text: displayedText,
             decoratedStyle: TextStyle(
               fontSize: 15,
-              color: _afroBlue,
+              color: colors.info,
               fontWeight: FontWeight.w400,
               height: 1.4,
             ),
             basicStyle: TextStyle(
               fontSize: 15,
-              color: _afroTextPrimary,
+              color: colors.textPrimary,
               fontWeight: FontWeight.w400,
               height: 1.4,
             ),
@@ -2073,7 +1542,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: _afroBlue,
+                      color: colors.info,
                     ),
                   ),
                 ),
@@ -2108,6 +1577,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
 
   Widget _buildMediaContent(double h, bool isLocked) {
+    final colors = AppColors.of(context);
     final images = widget.post.images!;
     final imageCount = images.length;
 
@@ -2133,7 +1603,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
             height: contentHeight,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              color: Colors.grey[900],
+              color: colors.shimmerBase,
             ),
             child: Opacity(
               opacity: isLocked ? 0.15 : 1.0,
@@ -2153,12 +1623,12 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.lock, color: _afroYellow, size: 50),
+                      Icon(Icons.lock, color: colors.accent, size: 50),
                       SizedBox(height: 8),
                       Text(
                         'Contenu verrouillé',
                         style: TextStyle(
-                          color: _afroYellow,
+                          color: colors.accent,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -2230,6 +1700,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
 
   Widget _buildSingleImage(String url, double height) {
+    final colors = AppColors.of(context);
     final imageUrl = _optimizeUrl(url);
     return GestureDetector(
       onTap: () {
@@ -2248,11 +1719,11 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           width: double.infinity,
           height: height,
           placeholder: (context, url) => Container(
-            color: _afroTextSecondary.withOpacity(0.1),
+            color: colors.shimmerBase,
           ),
           errorWidget: (context, url, error) => Container(
-            color: _afroTextSecondary.withOpacity(0.1),
-            child: Icon(Icons.broken_image, color: _afroTextSecondary),
+            color: colors.shimmerBase,
+            child: Icon(Icons.broken_image, color: colors.textSecondary),
           ),
         ),
       ),
@@ -2260,6 +1731,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
 
   Widget _buildTwoImages(List<String> images, double height) {
+    final colors = AppColors.of(context);
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -2286,11 +1758,11 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   fit: BoxFit.cover,
                   height: height,
                   placeholder: (context, url) => Container(
-                    color: _afroTextSecondary.withOpacity(0.1),
+                    color: colors.shimmerBase,
                   ),
                   errorWidget: (context, url, error) => Container(
-                    color: _afroTextSecondary.withOpacity(0.1),
-                    child: Icon(Icons.broken_image, color: _afroTextSecondary),
+                    color: colors.shimmerBase,
+                    child: Icon(Icons.broken_image, color: colors.textSecondary),
                   ),
                 ),
               ),
@@ -2311,11 +1783,11 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   fit: BoxFit.cover,
                   height: height,
                   placeholder: (context, url) => Container(
-                    color: _afroTextSecondary.withOpacity(0.1),
+                    color: colors.shimmerBase,
                   ),
                   errorWidget: (context, url, error) => Container(
-                    color: _afroTextSecondary.withOpacity(0.1),
-                    child: Icon(Icons.broken_image, color: _afroTextSecondary),
+                    color: colors.shimmerBase,
+                    child: Icon(Icons.broken_image, color: colors.textSecondary),
                   ),
                 ),
               ),
@@ -2327,6 +1799,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
 
   Widget _buildThreeImages(List<String> images, double height) {
+    final colors = AppColors.of(context);
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -2354,11 +1827,11 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   fit: BoxFit.cover,
                   height: height,
                   placeholder: (context, url) => Container(
-                    color: _afroTextSecondary.withOpacity(0.1),
+                    color: colors.shimmerBase,
                   ),
                   errorWidget: (context, url, error) => Container(
-                    color: _afroTextSecondary.withOpacity(0.1),
-                    child: Icon(Icons.broken_image, color: _afroTextSecondary),
+                    color: colors.shimmerBase,
+                    child: Icon(Icons.broken_image, color: colors.textSecondary),
                   ),
                 ),
               ),
@@ -2386,11 +1859,11 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                           fit: BoxFit.cover,
                           width: double.infinity,
                           placeholder: (context, url) => Container(
-                            color: _afroTextSecondary.withOpacity(0.1),
+                            color: colors.shimmerBase,
                           ),
                           errorWidget: (context, url, error) => Container(
-                            color: _afroTextSecondary.withOpacity(0.1),
-                            child: Icon(Icons.broken_image, color: _afroTextSecondary),
+                            color: colors.shimmerBase,
+                            child: Icon(Icons.broken_image, color: colors.textSecondary),
                           ),
                         ),
                       ),
@@ -2410,11 +1883,11 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                           fit: BoxFit.cover,
                           width: double.infinity,
                           placeholder: (context, url) => Container(
-                            color: _afroTextSecondary.withOpacity(0.1),
+                            color: colors.shimmerBase,
                           ),
                           errorWidget: (context, url, error) => Container(
-                            color: _afroTextSecondary.withOpacity(0.1),
-                            child: Icon(Icons.broken_image, color: _afroTextSecondary),
+                            color: colors.shimmerBase,
+                            child: Icon(Icons.broken_image, color: colors.textSecondary),
                           ),
                         ),
                       ),
@@ -2430,6 +1903,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
 
   Widget _buildMultipleImages(List<String> images, double height) {
+    final colors = AppColors.of(context);
     final displayedImages = images.take(4).toList();
     final screenWidth = MediaQuery.of(context).size.width;
     final itemWidth = (screenWidth / 2).toInt();
@@ -2490,11 +1964,11 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                     width: double.infinity,
                     height: double.infinity,
                     placeholder: (context, url) => Container(
-                      color: _afroTextSecondary.withOpacity(0.1),
+                      color: colors.shimmerBase,
                     ),
                     errorWidget: (context, url, error) => Container(
-                      color: _afroTextSecondary.withOpacity(0.1),
-                      child: Icon(Icons.broken_image, color: _afroTextSecondary),
+                      color: colors.shimmerBase,
+                      child: Icon(Icons.broken_image, color: colors.textSecondary),
                     ),
                   ),
                 ),
@@ -2522,6 +1996,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     );
   }
   Widget _buildVideoContent(double h, bool isLocked) {
+    final colors = AppColors.of(context);
     return Stack(
       children: [
         // Thumbnail vidéo ou fallback
@@ -2529,7 +2004,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           borderRadius: BorderRadius.circular(16),
           child: _isGeneratingThumbnail
               ? Center(
-            child: CircularProgressIndicator(color: _afroBlue),
+            child: CircularProgressIndicator(color: colors.info),
           )
               : (_videoThumbnailPath != null &&
               File(_videoThumbnailPath!).existsSync())
@@ -2576,12 +2051,12 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.lock, color: _afroYellow, size: 50),
+                    Icon(Icons.lock, color: colors.accent, size: 50),
                     SizedBox(height: 8),
                     Text(
                       'Vidéo verrouillée',
                       style: TextStyle(
-                        color: _afroYellow,
+                        color: colors.accent,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -2647,6 +2122,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
 
   Widget _buildFallbackThumbnail() {
+    final colors = AppColors.of(context);
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
@@ -2654,8 +2130,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            _afroTextSecondary.withOpacity(0.2),
-            _afroTextSecondary.withOpacity(0.1),
+            colors.shimmerBase,
+            colors.shimmerHighlight,
           ],
         ),
       ),
@@ -2665,14 +2141,14 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           children: [
             Icon(
               Icons.videocam,
-              color: _afroTextSecondary.withOpacity(0.7),
+              color: colors.textSecondary.withOpacity(0.7),
               size: 50,
             ),
             SizedBox(height: 8),
             Text(
               'Vidéo',
               style: TextStyle(
-                color: _afroTextSecondary.withOpacity(0.7),
+                color: colors.textSecondary.withOpacity(0.7),
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
               ),
@@ -2684,6 +2160,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
 
   Widget _buildSubscribeButton() {
+    final colors = AppColors.of(context);
     final isCanalPost = currentCanal != null;
     final isPrivate = currentCanal?.isPrivate == true;
     final subscriptionPrice = currentCanal?.subscriptionPrice ?? 0;
@@ -2693,8 +2170,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       margin: EdgeInsets.only(top: 12),
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: _afroYellow,
-          foregroundColor: Colors.black,
+          backgroundColor: colors.accent,
+          foregroundColor: colors.onAccent,
           padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(25),
@@ -2731,6 +2208,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
 
   Widget _buildPostActions(bool hasAccess) {
+    final colors = AppColors.of(context);
     final isLiked = isIn(widget.post.users_love_id ?? [], authProvider.loginUserData.id!);
 
     return Container(
@@ -2742,7 +2220,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           _buildActionButton(
             icon: FontAwesome.comment_o,
             count: widget.post.comments ?? 0,
-            color: _afroTextSecondary,
+            color: colors.textSecondary,
             onPressed: hasAccess ? () {
               _showCommentsModal(widget.post);
 
@@ -2756,7 +2234,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           _buildActionButton(
             icon:  Icons.bar_chart,
             count: widget.post.totalInteractions ?? 0,
-            color: Colors.blue,
+            color: colors.textSecondary,
             onPressed: hasAccess ? () {
               _handleRepost();
               recordUniquePostView();
@@ -2770,7 +2248,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
             // icon: isLiked ? FontAwesome.heart : FontAwesome.heart_o,
             icon:  FontAwesome.heart_o,
             count: widget.post.loves ?? 0,
-            color: isLiked ? _afroRed : _afroTextSecondary,
+            color: isLiked ? colors.danger : colors.textSecondary,
             onPressed: hasAccess ? () {
               _handleLike();
               recordUniquePostView();
@@ -2785,7 +2263,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           _buildActionButton(
             icon: FontAwesome.gift,
             count: widget.post.totalGiftCoinsSentOnThisPost ?? 0,
-            color: _afroYellow,
+            color: colors.textSecondary,
             onPressed: hasAccess ? () {
               recordUniquePostView();
               _handleGift();
@@ -2795,18 +2273,18 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
           // Partager
           _isSharing
-              ? const SizedBox(
+              ? SizedBox(
             width: 40, // Ajustez selon la taille de vos boutons
             height: 40,
             child: Padding(
-              padding: EdgeInsets.all(8.0),
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.amber), // ou votre couleur _afroTextSecondary
+              padding: const EdgeInsets.all(8.0),
+              child: CircularProgressIndicator(strokeWidth: 2, color: colors.textSecondary),
             ),
           )
               : _buildActionButton(
             icon: Icons.share,
             count: widget.post.partage ?? 0,
-            color: _afroTextSecondary,
+            color: colors.textSecondary,
             onPressed: hasAccess ? () {
               _handleShare();
               recordUniquePostView();
@@ -2818,6 +2296,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     );
   }
   Widget _buildFavoriteButton(bool hasAccess) {
+    final colors = AppColors.of(context);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -2833,7 +2312,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   height: 18,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: _isFavorite ? _afroYellow : _afroTextSecondary.withOpacity(0.3),
+                    color: colors.textSecondary.withOpacity(_isFavorite ? 1.0 : 0.3),
                   ),
                 )
               else
@@ -2841,16 +2320,16 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   _isFavorite ? Icons.bookmark : Icons.bookmark_border,
                   size: 18,
                   color: hasAccess
-                      ? (_isFavorite ? _afroYellow : _afroTextSecondary)
-                      : _afroTextSecondary.withOpacity(0.3),
-                ),
+                      ? colors.textSecondary
+                      : colors.textSecondary.withOpacity(0.3),
+                ).animate(target: _isFavorite ? 1 : 0).scaleXY(begin: 1.0, end: 1.2, duration: 150.ms, curve: Curves.easeOut).then().scaleXY(begin: 1.2, end: 1.0, duration: 150.ms),
               SizedBox(width: 6),
               Text(
                 _formatCount(widget.post.favoritesCount ?? 0),
                 style: TextStyle(
                   color: hasAccess
-                      ? (_isFavorite ? _afroYellow : _afroTextSecondary)
-                      : _afroTextSecondary.withOpacity(0.3),
+                      ? colors.textSecondary
+                      : colors.textSecondary.withOpacity(0.3),
                   fontSize: 13,
                   fontWeight: FontWeight.w400,
                 ),
@@ -2979,6 +2458,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
   // Méthodes de gestion des actions
   void _showCommentsModal(Post post) {
+    final colors = AppColors.of(context);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -2986,7 +2466,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.85,
         decoration: BoxDecoration(
-          color: _afroDarkBg,
+          color: colors.background,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
@@ -2999,13 +2479,13 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   Text(
                     'Commentaires',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: colors.textPrimary,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   IconButton(
-                    icon: Icon(Icons.close, color: Colors.white),
+                    icon: Icon(Icons.close, color: colors.textPrimary),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
@@ -3021,12 +2501,13 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
 
   void _showPostMenu(Post post) {
+    final colors = AppColors.of(context);
     final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     final postProvider = Provider.of<PostProvider>(context, listen: false);
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: _afroCardBg,
+      backgroundColor: colors.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -3039,7 +2520,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
               _buildMenuOption(
                 Icons.flag,
                 "Signaler",
-                _afroTextPrimary,
+                colors.textPrimary,
                     () async {
                   post.status = PostStatus.SIGNALER.name;
                   final value = await postProvider.updateVuePost(post, context);
@@ -3061,7 +2542,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
               _buildMenuOption(
                 Icons.delete,
                 "Supprimer",
-                Colors.red,
+                colors.danger,
                     () async {
                   if (authProvider.loginUserData.role == UserRole.ADM.name) {
                     await _deletePost(post);
@@ -3083,10 +2564,10 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
               ),
 
             SizedBox(height: 8),
-            Container(height: 0.5, color: _afroTextSecondary.withOpacity(0.3)),
+            Container(height: 0.5, color: colors.divider),
             SizedBox(height: 8),
 
-            _buildMenuOption(Icons.cancel, "Annuler", _afroTextSecondary, () {
+            _buildMenuOption(Icons.cancel, "Annuler", colors.textSecondary, () {
               Navigator.pop(context);
             }),
           ],
@@ -3991,29 +3472,30 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     showDialog(
       context: context,
       builder: (context) {
+        final dialogColors = AppColors.of(context);
         return AlertDialog(
-          backgroundColor: _twitterCardBg,
+          backgroundColor: dialogColors.surface,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Text(
             "✨ Republier",
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: _twitterTextPrimary),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: dialogColors.textPrimary),
             textAlign: TextAlign.center,
           ),
           content: Text(
             "🔝 Cette action mettra votre post en première position.\n\n💰 1 PC sera retiré de votre compte principal.",
             textAlign: TextAlign.center,
-            style: TextStyle(color: _twitterTextSecondary, fontSize: 16),
+            style: TextStyle(color: dialogColors.textSecondary, fontSize: 16),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text("❌ Fermer", style: TextStyle(color: _twitterTextSecondary)),
+              child: Text("❌ Fermer", style: TextStyle(color: dialogColors.textSecondary)),
             ),
             TextButton(
               onPressed: () async {
                 // Logique existante
               },
-              child: Text("🚀 Republier", style: TextStyle(color: _twitterBlue)),
+              child: Text("🚀 Republier", style: TextStyle(color: dialogColors.info)),
             ),
           ],
         );
@@ -4034,21 +3516,22 @@ void showInsufficientBalanceDialog(BuildContext context) {
   showDialog(
     context: context,
     builder: (BuildContext context) {
+      final dialogColors = AppColors.of(context);
       return AlertDialog(
-        backgroundColor: _twitterCardBg,
-        title: Text("Solde insuffisant", style: TextStyle(color: _twitterTextPrimary)),
-        content: Text("Votre solde principal est insuffisant.", style: TextStyle(color: _twitterTextSecondary)),
+        backgroundColor: dialogColors.surface,
+        title: Text("Solde insuffisant", style: TextStyle(color: dialogColors.textPrimary)),
+        content: Text("Votre solde principal est insuffisant.", style: TextStyle(color: dialogColors.textSecondary)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text("Fermer", style: TextStyle(color: _twitterTextSecondary)),
+            child: Text("Fermer", style: TextStyle(color: dialogColors.textSecondary)),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               Navigator.push(context, MaterialPageRoute(builder: (context) => MonetisationPage()));
             },
-            child: Text("Recharger", style: TextStyle(color: _twitterBlue)),
+            child: Text("Recharger", style: TextStyle(color: dialogColors.info)),
           ),
         ],
       );

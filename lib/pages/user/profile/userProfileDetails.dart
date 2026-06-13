@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../constant/constColors.dart';
+import '../../../theme/app_colors.dart';
 import '../../../constant/logo.dart';
 import '../../../constant/sizeText.dart';
 import '../../../constant/textCustom.dart';
@@ -15,14 +16,17 @@ class UserProfileDetails extends StatefulWidget {
 }
 
 class _UserProfileDetailsState extends State<UserProfileDetails> {
+  late AppColors _colors;
+
   @override
   Widget build(BuildContext context) {
+    _colors = AppColors.of(context);
     return Scaffold(
       appBar: AppBar(
         title: TextCustomerPageTitle(
           titre: "Mon Profile",
           fontSize: SizeText.homeProfileTextSize,
-          couleur: ConstColors.textColors,
+          couleur: _colors.textPrimary,
           fontWeight: FontWeight.bold,
         ),
 
@@ -62,14 +66,14 @@ class _UserProfileDetailsState extends State<UserProfileDetails> {
                             child: TextCustomerUserTitle(
                               titre: "Loranzo josh",
                               fontSize: SizeText.homeProfileTextSize,
-                              couleur: ConstColors.textColors,
+                              couleur: _colors.textPrimary,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           TextCustomerUserTitle(
                             titre: "850 abonne",
                             fontSize: SizeText.homeProfileTextSize,
-                            couleur: ConstColors.textColors,
+                            couleur: _colors.textPrimary,
                             fontWeight: FontWeight.w400,
                           ),
                         ],

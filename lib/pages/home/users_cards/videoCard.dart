@@ -14,6 +14,7 @@ import '../../../providers/authProvider.dart';
 import '../../../providers/postProvider.dart';
 import '../../../providers/userProvider.dart';
 import '../../socialVideos/afrovideos/SimpleVideoView.dart';
+import '../../../theme/app_colors.dart';
 import 'cardModel.dart';
 
 class VideoCard extends StatefulWidget {
@@ -67,11 +68,12 @@ class _ExampleCardState extends State<VideoCard> {
   Widget build(BuildContext context) {
     double h = MediaQuery.of(context).size.height;
     double w = MediaQuery.of(context).size.width;
+    final colors = AppColors.of(context);
     return Container(
       clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
         borderRadius: const BorderRadius.all(Radius.circular(10)),
-        color: Colors.white,
+        color: colors.surface,
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withOpacity(0.2),

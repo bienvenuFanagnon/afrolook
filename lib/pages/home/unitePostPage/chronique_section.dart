@@ -24,6 +24,8 @@ import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/chronique/chroniquehome.dart';
 import 'package:afrotok/pages/chronique/chroniquedetails.dart';
 import '../../chronique/chroniqueform.dart';
+import '../../../theme/app_colors.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class ChroniqueSectionComponent extends StatefulWidget {
   final Map<String, Uint8List> videoThumbnails;
@@ -121,17 +123,18 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
   }
 
   Widget _buildSectionHeader(BuildContext context) {
+    final colors = AppColors.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
+          Text(
             'Chroniques Actives',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: colors.textPrimary,
             ),
           ),
           Row(
@@ -149,23 +152,23 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFD700).withOpacity(0.1),
+                    color: colors.accent.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(15),
-                    border: Border.all(color: const Color(0xFFFFD700)),
+                    border: Border.all(color: colors.accent),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
                         Icons.add,
-                        color: Color(0xFFFFD700),
+                        color: colors.accent,
                         size: 16,
                       ),
-                      SizedBox(width: 4),
+                      const SizedBox(width: 4),
                       Text(
                         'Ajouter',
                         style: TextStyle(
-                          color: Color(0xFFFFD700),
+                          color: colors.accent,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
@@ -188,25 +191,25 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFD700).withOpacity(0.1),
+                    color: colors.accent.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(15),
-                    border: Border.all(color: const Color(0xFFFFD700)),
+                    border: Border.all(color: colors.accent),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         'Voir tout',
                         style: TextStyle(
-                          color: Color(0xFFFFD700),
+                          color: colors.accent,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      SizedBox(width: 4),
+                      const SizedBox(width: 4),
                       Icon(
                         Icons.arrow_forward,
-                        color: Color(0xFFFFD700),
+                        color: colors.accent,
                         size: 12,
                       ),
                     ],
@@ -217,7 +220,7 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
           ),
         ],
       ),
-    );
+    ).animate().fadeIn(duration: 300.ms).slideX(begin: -0.05, end: 0, duration: 300.ms, curve: Curves.easeOut);
   }
   Widget _buildChroniquesList(List<List<Chronique>> groupedList) {
     return Expanded(
@@ -235,6 +238,7 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
   Widget _buildChroniqueItem(List<Chronique> userChroniques, BuildContext context) {
     if (userChroniques.isEmpty) return const SizedBox();
 
+    final colors = AppColors.of(context);
     final firstChronique = userChroniques.first;
     final chroniqueCount = userChroniques.length;
     final hasMultiple = chroniqueCount > 1;
@@ -264,7 +268,7 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: const Color(0xFFFFD700),
+                      color: colors.accent,
                       width: 2,
                     ),
                     boxShadow: [
@@ -287,7 +291,7 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
                     child: Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: Colors.blue,
+                        color: colors.info,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
@@ -313,7 +317,7 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
                       decoration: BoxDecoration(
                         color: Colors.black.withOpacity(0.9),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFFFFD700)),
+                        border: Border.all(color: colors.accent),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.3),
@@ -324,8 +328,8 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
                       ),
                       child: Text(
                         '+${chroniqueCount - 1}',
-                        style: const TextStyle(
-                          color: Color(0xFFFFD700),
+                        style: TextStyle(
+                          color: colors.accent,
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),
@@ -366,8 +370,8 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
               constraints: const BoxConstraints(maxWidth: 130),
               child: Text(
                 '@${firstChronique.userPseudo}',
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: colors.textPrimary,
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                 ),
@@ -379,10 +383,11 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
           ],
         ),
       ),
-    );
+    ).animate().fadeIn(duration: 350.ms).slideX(begin: 0.08, end: 0, duration: 350.ms, curve: Curves.easeOut);
   }
 
   Widget _buildChroniquePreview(Chronique chronique) {
+    final colors = AppColors.of(context);
     switch (chronique.type) {
       case ChroniqueType.TEXT:
         return Container(
@@ -416,19 +421,19 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
               width: double.infinity,
               height: double.infinity,
               placeholder: (context, url) => Container(
-                color: Colors.grey[800],
-                child: const Center(
+                color: colors.shimmerBase,
+                child: Center(
                   child: CircularProgressIndicator(
-                    color: Color(0xFFFFD700),
+                    color: colors.accent,
                     strokeWidth: 2,
                   ),
                 ),
               ),
               errorWidget: (context, url, error) => Container(
-                color: Colors.grey[800],
-                child: const Icon(
+                color: colors.shimmerBase,
+                child: Icon(
                   Icons.error,
-                  color: Color(0xFFFFD700),
+                  color: colors.accent,
                   size: 30,
                 ),
               ),
@@ -471,35 +476,35 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
               )
             else if (isGenerating)
                 Container(
-                  color: Colors.grey[900],
-                  child: const Center(
+                  color: colors.shimmerBase,
+                  child: Center(
                     child: SizedBox(
                       width: 30,
                       height: 30,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Color(0xFFFFD700),
+                        color: colors.accent,
                       ),
                     ),
                   ),
                 )
               else
                 Container(
-                  color: Colors.grey[900],
-                  child: const Center(
+                  color: colors.shimmerBase,
+                  child: Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
                           Icons.play_circle_filled,
-                          color: Color(0xFFFFD700),
+                          color: colors.accent,
                           size: 30,
                         ),
-                        SizedBox(height: 4),
+                        const SizedBox(height: 4),
                         Text(
                           'Vidéo',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: colors.textPrimary,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
@@ -536,6 +541,7 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
   }
 
   Widget _buildChroniquesShimmer() {
+    final colors = AppColors.of(context);
     return Container(
       height: 180,
       child: Column(
@@ -547,25 +553,25 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Shimmer.fromColors(
-                  baseColor: Colors.grey[800]!,
-                  highlightColor: Colors.grey[700]!,
+                  baseColor: colors.shimmerBase,
+                  highlightColor: colors.shimmerHighlight,
                   child: Container(
                     width: 120,
                     height: 20,
                     decoration: BoxDecoration(
-                      color: Colors.grey[800],
+                      color: colors.shimmerBase,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
                 ),
                 Shimmer.fromColors(
-                  baseColor: Colors.grey[800]!,
-                  highlightColor: Colors.grey[700]!,
+                  baseColor: colors.shimmerBase,
+                  highlightColor: colors.shimmerHighlight,
                   child: Container(
                     width: 60,
                     height: 30,
                     decoration: BoxDecoration(
-                      color: Colors.grey[800],
+                      color: colors.shimmerBase,
                       borderRadius: BorderRadius.circular(15),
                     ),
                   ),
@@ -585,26 +591,26 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
                   child: Column(
                     children: [
                       Shimmer.fromColors(
-                        baseColor: Colors.grey[800]!,
-                        highlightColor: Colors.grey[700]!,
+                        baseColor: colors.shimmerBase,
+                        highlightColor: colors.shimmerHighlight,
                         child: Container(
                           width: 140,
                           height: 160,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
-                            color: Colors.grey[800],
+                            color: colors.shimmerBase,
                           ),
                         ),
                       ),
                       const SizedBox(height: 8),
                       Shimmer.fromColors(
-                        baseColor: Colors.grey[800]!,
-                        highlightColor: Colors.grey[700]!,
+                        baseColor: colors.shimmerBase,
+                        highlightColor: colors.shimmerHighlight,
                         child: Container(
                           width: 100,
                           height: 12,
                           decoration: BoxDecoration(
-                            color: Colors.grey[800],
+                            color: colors.shimmerBase,
                             borderRadius: BorderRadius.circular(4),
                           ),
                         ),

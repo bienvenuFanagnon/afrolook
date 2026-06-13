@@ -10,6 +10,7 @@ import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../models/model_data.dart';
 import '../../../providers/authProvider.dart';
+import '../../../theme/app_colors.dart';
 import '../../../services/chat_service.dart';
 import '../../../pages/chat/myChat.dart';
 import '../../home/user_presence_widget.dart';
@@ -49,12 +50,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   // Pour éviter les setState pendant le build
   bool _hasPendingUpdate = false;
 
-  // Couleurs
-  final Color primaryBlack = Colors.black;
-  final Color primaryGreen = Colors.green;
-  final Color primaryYellow = Colors.yellow;
-  final Color lightGrey = Colors.grey.shade300;
-  final Color darkGrey = Colors.grey.shade700;
+  late AppColors _colors;
 
   @override
   void initState() {
@@ -464,8 +460,9 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
 
   @override
   Widget build(BuildContext context) {
+    _colors = AppColors.of(context);
     return Scaffold(
-      backgroundColor: primaryBlack,
+      backgroundColor: _colors.background,
       appBar: _buildAppBar(),
       body: Column(
         children: [
@@ -473,7 +470,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
           if (!_isSearching && !_loadingRecentFriends && _recentFriends.isNotEmpty)
             _buildRecentFriendsSection(),
           if (!_isSearching && _recentFriends.isNotEmpty)
-            Divider(height: 1, color: darkGrey),
+            Divider(height: 1, color: _colors.textSecondary),
           if (!_isSearching) _buildHeader(),
           Expanded(
             child: _isSearching
@@ -499,7 +496,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
                           },
                           child: Text(
                             "Réessayer",
-                            style: TextStyle(color: primaryGreen),
+                            style: TextStyle(color: _colors.primary),
                           ),
                         ),
                       ],
@@ -526,7 +523,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: primaryBlack,
+      backgroundColor: _colors.background,
       elevation: 0,
       title: _isSearching
           ? TextField(
@@ -535,7 +532,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
         style: TextStyle(color: Colors.white),
         decoration: InputDecoration(
           hintText: "Rechercher une conversation...",
-          hintStyle: TextStyle(color: lightGrey),
+          hintStyle: TextStyle(color: _colors.border),
           border: InputBorder.none,
         ),
         onChanged: _searchChats,
@@ -543,7 +540,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
           : Text(
         "Conversations",
         style: TextStyle(
-          color: primaryYellow,
+          color: _colors.accent,
           fontWeight: FontWeight.bold,
           fontSize: 20,
         ),
@@ -551,7 +548,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       actions: [
         _isSearching
             ? IconButton(
-          icon: Icon(Icons.close, color: primaryYellow),
+          icon: Icon(Icons.close, color: _colors.accent),
           onPressed: () {
             setState(() {
               _isSearching = false;
@@ -563,7 +560,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
             : Row(
           children: [
             IconButton(
-              icon: Icon(Icons.search, color: primaryYellow),
+              icon: Icon(Icons.search, color: _colors.accent),
               onPressed: () {
                 setState(() {
                   _isSearching = true;
@@ -571,7 +568,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
               },
             ),
             IconButton(
-              icon: Icon(Icons.people, color: primaryYellow),
+              icon: Icon(Icons.people, color: _colors.accent),
               onPressed: () {
                 Navigator.pushNamed(context, '/amis');
               },
@@ -599,7 +596,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
                 Text(
                   "RÉCEMMENT ACTIFS",
                   style: TextStyle(
-                    color: primaryGreen,
+                    color: _colors.primary,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 1.2,
@@ -618,7 +615,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
                     child: Text(
                       "Voir plus d'amis",
                       style: TextStyle(
-                        color: primaryGreen,
+                        color: _colors.primary,
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
                       ),
@@ -652,7 +649,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
                               backgroundImage: user.imageUrl != null && user.imageUrl!.isNotEmpty
                                   ? NetworkImage(user.imageUrl!)
                                   : AssetImage('assets/icon/amixilo3.png') as ImageProvider,
-                              backgroundColor: darkGrey,
+                              backgroundColor: _colors.textSecondary,
                             ),
                             Positioned(
                               bottom: 0,
@@ -679,7 +676,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
                         Text(
                           isOnline ? "En ligne" : lastActiveText,
                           style: TextStyle(
-                            color: isOnline ? primaryGreen : lightGrey,
+                            color: isOnline ? _colors.primary : _colors.border,
                             fontSize: 9,
                           ),
                           maxLines: 1,
@@ -724,7 +721,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
           Text(
             "MESSAGES",
             style: TextStyle(
-              color: primaryGreen,
+              color: _colors.primary,
               fontSize: 12,
               fontWeight: FontWeight.w600,
               letterSpacing: 1.2,
@@ -733,7 +730,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
           Text(
             "@${authProvider.loginUserData.pseudo}",
             style: TextStyle(
-              color: lightGrey,
+              color: _colors.border,
               fontSize: 12,
             ),
           ),
@@ -793,7 +790,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       return Center(
         child: Text(
           "Tapez pour rechercher des conversations",
-          style: TextStyle(color: lightGrey),
+          style: TextStyle(color: _colors.border),
         ),
       );
     }
@@ -880,15 +877,15 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.done_all, color: primaryGreen, size: 16),
+            Icon(Icons.done_all, color: _colors.primary, size: 16),
             SizedBox(width: 2),
-            Icon(Icons.done_all, color: primaryGreen, size: 16),
+            Icon(Icons.done_all, color: _colors.primary, size: 16),
           ],
         );
       case 'NONLU':
-        return Icon(Icons.done, color: lightGrey, size: 16);
+        return Icon(Icons.done, color: _colors.border, size: 16);
       default:
-        return Icon(Icons.access_time, color: lightGrey, size: 16);
+        return Icon(Icons.access_time, color: _colors.border, size: 16);
     }
   }
 
@@ -905,15 +902,15 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
           padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
-              CircleAvatar(radius: 24, backgroundColor: darkGrey),
+              CircleAvatar(radius: 24, backgroundColor: _colors.textSecondary),
               SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(width: 100, height: 16, color: darkGrey),
+                    Container(width: 100, height: 16, color: _colors.textSecondary),
                     SizedBox(height: 6),
-                    Container(width: 150, height: 14, color: darkGrey),
+                    Container(width: 150, height: 14, color: _colors.textSecondary),
                   ],
                 ),
               ),
@@ -936,7 +933,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.chat_bubble_outline, color: primaryYellow, size: 48),
+              Icon(Icons.chat_bubble_outline, color: _colors.accent, size: 48),
               SizedBox(height: 16),
               Text(
                 "Aucune conversation",
@@ -945,7 +942,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
               SizedBox(height: 8),
               Text(
                 "Commencez une conversation avec vos amis",
-                style: TextStyle(color: lightGrey, fontSize: 12),
+                style: TextStyle(color: _colors.border, fontSize: 12),
               ),
               SizedBox(height: 16),
               ElevatedButton(
@@ -953,8 +950,8 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
                   Navigator.pushNamed(context, '/amis');
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryGreen,
-                  foregroundColor: primaryBlack,
+                  backgroundColor: _colors.primary,
+                  foregroundColor: _colors.background,
                 ),
                 child: Text("Voir mes amis"),
               ),
@@ -970,7 +967,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.search_off, color: primaryYellow, size: 48),
+          Icon(Icons.search_off, color: _colors.accent, size: 48),
           SizedBox(height: 16),
           Text(
             "Aucun résultat trouvé",
@@ -979,7 +976,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
           SizedBox(height: 8),
           Text(
             "Essayez avec d'autres termes",
-            style: TextStyle(color: lightGrey, fontSize: 12),
+            style: TextStyle(color: _colors.border, fontSize: 12),
           ),
         ],
       ),
@@ -1062,18 +1059,15 @@ class ConversationList extends StatefulWidget {
 }
 
 class _ConversationListState extends State<ConversationList> {
-  final Color primaryBlack = Colors.black;
-  final Color primaryGreen = Colors.green;
-  final Color primaryYellow = Colors.yellow;
-  final Color lightGrey = Colors.grey.shade300;
-  final Color darkGrey = Colors.grey.shade700;
+  late AppColors _colors;
 
   @override
   Widget build(BuildContext context) {
+    _colors = AppColors.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: primaryBlack,
-        border: Border(bottom: BorderSide(color: darkGrey, width: 0.5)),
+        color: _colors.background,
+        border: Border(bottom: BorderSide(color: _colors.divider, width: 0.5)),
       ),
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
@@ -1092,14 +1086,14 @@ class _ConversationListState extends State<ConversationList> {
       children: [
         widget.isLoading
             ? CircleAvatar(
-          backgroundColor: darkGrey,
+          backgroundColor: _colors.textSecondary,
           radius: 24,
         )
             : CircleAvatar(
           backgroundImage: widget.imageUrl.isNotEmpty
               ? NetworkImage(widget.imageUrl)
               : AssetImage('assets/icon/amixilo3.png') as ImageProvider,
-          backgroundColor: darkGrey,
+          backgroundColor: _colors.textSecondary,
           radius: 24,
         ),
         if (!widget.isLoading)
@@ -1126,7 +1120,7 @@ class _ConversationListState extends State<ConversationList> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Colors.white,
+              color: _colors.textPrimary,
             ),
             overflow: TextOverflow.ellipsis,
           ),
@@ -1135,7 +1129,7 @@ class _ConversationListState extends State<ConversationList> {
               ? Container(
             width: 150,
             height: 14,
-            color: darkGrey,
+            color: _colors.textSecondary,
           )
               : Row(
             children: [
@@ -1144,7 +1138,7 @@ class _ConversationListState extends State<ConversationList> {
                   "Vous: ",
                   style: TextStyle(
                     fontSize: 14,
-                    color: primaryGreen,
+                    color: _colors.primary,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -1154,8 +1148,8 @@ class _ConversationListState extends State<ConversationList> {
                   style: TextStyle(
                     fontSize: 14,
                     color: widget.isTyping
-                        ? primaryYellow
-                        : (widget.isMessageRead ? lightGrey : Colors.white),
+                        ? _colors.accent
+                        : (widget.isMessageRead ? _colors.textSecondary : _colors.textPrimary),
                     fontWeight: widget.isMessageRead
                         ? FontWeight.normal
                         : FontWeight.w500,
@@ -1181,7 +1175,7 @@ class _ConversationListState extends State<ConversationList> {
             widget.time,
             style: TextStyle(
               fontSize: 12,
-              color: lightGrey,
+              color: _colors.textSecondary,
               fontWeight: widget.isMessageRead
                   ? FontWeight.normal
                   : FontWeight.bold,
@@ -1192,20 +1186,20 @@ class _ConversationListState extends State<ConversationList> {
           Container(
             padding: EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: primaryGreen,
+              color: _colors.primary,
               shape: BoxShape.circle,
             ),
             child: Text(
               '${widget.unreadCount}',
               style: TextStyle(
                 fontSize: 12,
-                color: primaryBlack,
+                color: _colors.onPrimary,
                 fontWeight: FontWeight.bold,
               ),
             ),
           )
         else if (widget.isSearchResult)
-          Icon(Icons.add_circle_outline, color: primaryGreen, size: 20)
+          Icon(Icons.add_circle_outline, color: _colors.primary, size: 20)
         else if (widget.isLastMessageFromMe)
             widget.messageStatus,
       ],

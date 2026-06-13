@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 
 import '../../models/model_data.dart';
+import '../../theme/app_colors.dart';
 
 class PronosticsCarouselWidget extends StatefulWidget {
   const PronosticsCarouselWidget({Key? key}) : super(key: key);
@@ -24,13 +25,8 @@ class _PronosticsCarouselWidgetState extends State<PronosticsCarouselWidget> {
   int _currentPage = 0;
   final PageController _pageController = PageController();
 
-  // Couleurs
-  final Color _primaryColor = const Color(0xFFE21221); // Rouge
-  final Color _secondaryColor = const Color(0xFFFFD600); // Jaune
-  final Color _backgroundColor = const Color(0xFF121212); // Noir
-  final Color _cardColor = const Color(0xFF1E1E1E);
-  final Color _textColor = Colors.white;
-  final Color _hintColor = Colors.grey[400]!;
+  late AppColors _colors;
+  static const Color _primaryColor = Color(0xFFE21221);
 
   @override
   void initState() {
@@ -108,42 +104,41 @@ class _PronosticsCarouselWidgetState extends State<PronosticsCarouselWidget> {
 
   @override
   Widget build(BuildContext context) {
+    _colors = AppColors.of(context);
+
     if (_isLoading) {
       return Container(
         height: 160,
         margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         decoration: BoxDecoration(
-          color: _cardColor,
+          color: _colors.surfaceVariant,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: _secondaryColor.withOpacity(0.3),
+            color: _colors.accent.withOpacity(0.3),
             width: 1.5,
           ),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              _cardColor,
-              _cardColor.withOpacity(0.8),
+              _colors.surfaceVariant,
+              _colors.surfaceVariant.withOpacity(0.8),
             ],
           ),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Animation de chargement stylisée
             LoadingAnimationWidget.flickr(
               size: 40,
               leftDotColor: _primaryColor,
-              rightDotColor: _secondaryColor,
+              rightDotColor: _colors.accent,
             ),
             const SizedBox(height: 12),
-
-            // Texte accrocheur
             Text(
               '⚽ Pronostics du moment',
               style: TextStyle(
-                color: _secondaryColor,
+                color: _colors.accent,
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
               ),
@@ -152,7 +147,7 @@ class _PronosticsCarouselWidgetState extends State<PronosticsCarouselWidget> {
             Text(
               'Jouez et gagnez jusqu\'à 50 000 FCFA',
               style: TextStyle(
-                color: _hintColor,
+                color: _colors.textSecondary,
                 fontSize: 11,
               ),
             ),
@@ -172,10 +167,10 @@ class _PronosticsCarouselWidgetState extends State<PronosticsCarouselWidget> {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: _colors.surfaceVariant,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: _secondaryColor.withOpacity(0.3),
+          color: _colors.accent.withOpacity(0.3),
           width: 1.5,
         ),
         boxShadow: [
@@ -211,7 +206,7 @@ class _PronosticsCarouselWidgetState extends State<PronosticsCarouselWidget> {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: _secondaryColor,
+                    color: _colors.accent,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Iconsax.chart, color: Colors.black, size: 14),
@@ -233,7 +228,7 @@ class _PronosticsCarouselWidgetState extends State<PronosticsCarouselWidget> {
                         Text(
                           'Jouez et gagnez jusqu\'à ${_formatCagnotte(maxCagnotte)} FCFA',
                           style: TextStyle(
-                            color: _secondaryColor,
+                            color: _colors.accent,
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
                           ),
@@ -253,9 +248,9 @@ class _PronosticsCarouselWidgetState extends State<PronosticsCarouselWidget> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: _secondaryColor.withOpacity(0.2),
+                      color: _colors.accent.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(15),
-                      border: Border.all(color: _secondaryColor),
+                      border: Border.all(color: _colors.accent),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -263,13 +258,13 @@ class _PronosticsCarouselWidgetState extends State<PronosticsCarouselWidget> {
                         Text(
                           'Voir tout',
                           style: TextStyle(
-                            color: _secondaryColor,
+                            color: _colors.accent,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(width: 4),
-                        Icon(Icons.arrow_forward, color: _secondaryColor, size: 10),
+                        Icon(Icons.arrow_forward, color: _colors.accent, size: 10),
                       ],
                     ),
                   ),
@@ -310,8 +305,8 @@ class _PronosticsCarouselWidgetState extends State<PronosticsCarouselWidget> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: _currentPage == index
-                        ? _secondaryColor
-                        : _secondaryColor.withOpacity(0.3),
+                        ? _colors.accent
+                        : _colors.accent.withOpacity(0.3),
                   ),
                 ),
               ),
@@ -339,9 +334,9 @@ class _PronosticsCarouselWidgetState extends State<PronosticsCarouselWidget> {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         decoration: BoxDecoration(
-          color: _backgroundColor,
+          color: _colors.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: _secondaryColor.withOpacity(0.2)),
+          border: Border.all(color: _colors.accent.withOpacity(0.2)),
         ),
         child: Padding(
           padding: const EdgeInsets.all(10),
@@ -424,8 +419,8 @@ class _PronosticsCarouselWidgetState extends State<PronosticsCarouselWidget> {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            _secondaryColor,
-                            _secondaryColor.withOpacity(0.7),
+                            _colors.accent,
+                            _colors.accent.withOpacity(0.7),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(15),
@@ -484,11 +479,11 @@ class _PronosticsCarouselWidgetState extends State<PronosticsCarouselWidget> {
                   if (post != null) ...[
                     Row(
                       children: [
-                        Icon(Iconsax.eye, color: _hintColor, size: 10),
+                        Icon(Iconsax.eye, color: _colors.textSecondary, size: 10),
                         const SizedBox(width: 2),
                         Text(
                           formatNumber(post.vues ?? 0),
-                          style: TextStyle(color: _hintColor, fontSize: 9),
+                          style: TextStyle(color: _colors.textSecondary, fontSize: 9),
                         ),
                       ],
                     ),
@@ -499,7 +494,7 @@ class _PronosticsCarouselWidgetState extends State<PronosticsCarouselWidget> {
                         const SizedBox(width: 2),
                         Text(
                           formatNumber(post.loves ?? 0),
-                          style: TextStyle(color: _hintColor, fontSize: 9),
+                          style: TextStyle(color: _colors.textSecondary, fontSize: 9),
                         ),
                       ],
                     ),
@@ -510,7 +505,7 @@ class _PronosticsCarouselWidgetState extends State<PronosticsCarouselWidget> {
                         const SizedBox(width: 2),
                         Text(
                           formatNumber(post.comments ?? 0),
-                          style: TextStyle(color: _hintColor, fontSize: 9),
+                          style: TextStyle(color: _colors.textSecondary, fontSize: 9),
                         ),
                       ],
                     ),
@@ -601,7 +596,7 @@ class _PronosticsCarouselWidgetState extends State<PronosticsCarouselWidget> {
       decoration: BoxDecoration(
         color: Colors.grey[900],
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: _secondaryColor.withOpacity(0.3), width: 0.5),
+        border: Border.all(color: _colors.accent.withOpacity(0.3), width: 0.5),
       ),
       child: url.isNotEmpty && url != 'https://via.placeholder.com/150'
           ? ClipRRect(
@@ -610,11 +605,11 @@ class _PronosticsCarouselWidgetState extends State<PronosticsCarouselWidget> {
           url,
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
-            return Icon(MaterialIcons.sports_soccer, color: _hintColor, size: 12);
+            return Icon(MaterialIcons.sports_soccer, color: _colors.textSecondary, size: 12);
           },
         ),
       )
-          : Icon(MaterialIcons.sports_soccer, color: _hintColor, size: 12),
+          : Icon(MaterialIcons.sports_soccer, color: _colors.textSecondary, size: 12),
     );
   }
 }

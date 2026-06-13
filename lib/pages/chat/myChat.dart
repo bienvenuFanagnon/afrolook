@@ -18,6 +18,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../constant/constColors.dart';
+import '../../theme/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 import '../../constant/sizeText.dart';
 import '../../constant/textCustom.dart';
 import '../../models/enums.dart';
@@ -44,6 +46,8 @@ class MyChat extends StatefulWidget {
 }
 
 class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
+  late AppColors _colors;
+
   // Variables d'état
   bool _replying = false;
   Message? _replyingToMessage;
@@ -249,7 +253,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         constraints: BoxConstraints(maxWidth: 180),
         padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isMe ? Colors.green[800] : Colors.grey[300],
+          color: isMe ? _colors.primary : _colors.surface,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
@@ -265,12 +269,12 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: isMe ? Colors.white : Colors.black,
+                    color: isMe ? Colors.white : _colors.textPrimary,
                   ),
                 )
                     : Icon(
                   isPlaying ? Icons.pause : Icons.play_arrow,
-                  color: isMe ? Colors.white : Colors.black,
+                  color: isMe ? Colors.white : _colors.textPrimary,
                   size: 16,
                 ),
               ),
@@ -287,8 +291,8 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
                     onChanged: isCurrentPlaying ? (value) {
                       _seekAudio(value);
                     } : null,
-                    activeColor: isMe ? Colors.white : Colors.green,
-                    inactiveColor: isMe ? Colors.white54 : Colors.grey,
+                    activeColor: isMe ? Colors.white : _colors.primary,
+                    inactiveColor: isMe ? Colors.white54 : _colors.textSecondary,
                   ),
                 ],
               ),
@@ -297,7 +301,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
             Text(
               _formatTime(position),
               style: TextStyle(
-                color: isMe ? Colors.white : Colors.black,
+                color: isMe ? Colors.white : _colors.textPrimary,
                 fontSize: 10,
               ),
             ),
@@ -669,7 +673,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          backgroundColor: Colors.black,
+          backgroundColor: _colors.background,
           insetPadding: EdgeInsets.all(20),
           child: Stack(
             children: [
@@ -767,7 +771,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         ),
       );
     } else if (reply.messageType == MessageType.voice.name) {
-      replyContent = Icon(Icons.audiotrack, size: 16, color: Colors.green);
+      replyContent = Icon(Icons.audiotrack, size: 16, color: _colors.primary);
     } else {
       replyContent = Text(
         reply.message.length > 25
@@ -786,14 +790,14 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       margin: EdgeInsets.only(bottom: 4),
       padding: EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: Colors.grey[800]!.withOpacity(0.5),
+        color: _colors.surfaceVariant.withOpacity(0.5),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: Colors.grey[600]!),
+        border: Border.all(color: _colors.border),
       ),
       constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.6),
       child: Row(
         children: [
-          Icon(Icons.reply, color: Colors.green, size: 14),
+          Icon(Icons.reply, color: _colors.primary, size: 14),
           SizedBox(width: 6),
           Expanded(child: replyContent),
         ],
@@ -837,10 +841,10 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       child: BubbleSpecialOne(
         text: message.message,
         isSender: isMe,
-        color: isMe ? Colors.green[800]! : Colors.grey[300]!,
+        color: isMe ? _colors.primary : _colors.surface,
         textStyle: TextStyle(
           fontSize: 14,
-          color: isMe ? Colors.white : Colors.black,
+          color: isMe ? Colors.white : _colors.textPrimary,
         ),
       ),
     );
@@ -864,12 +868,12 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
                   imageUrl: message.message,
                   fit: BoxFit.cover,
                   placeholder: (context, url) => Container(
-                    color: Colors.grey[800],
-                    child: Center(child: CircularProgressIndicator(color: Colors.green)),
+                    color: _colors.surfaceVariant,
+                    child: Center(child: CircularProgressIndicator(color: _colors.primary)),
                   ),
                   errorWidget: (context, url, error) => Container(
-                    color: Colors.grey[800],
-                    child: Icon(Icons.error, color: Colors.white),
+                    color: _colors.surfaceVariant,
+                    child: Icon(Icons.error, color: _colors.textSecondary),
                   ),
                 ),
               ),
@@ -902,13 +906,13 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
             MaterialCommunityIcons.check_all,
             size: 12,
             color: message.message_state == MessageState.LU.name
-                ? Colors.green
-                : Colors.grey,
+                ? _colors.primary
+                : _colors.textSecondary,
           ),
           SizedBox(width: 4),
           Text(
             _formatDateTime(message.createdAt),
-            style: TextStyle(fontSize: 9, color: Colors.grey),
+            style: TextStyle(fontSize: 9, color: _colors.textSecondary),
           ),
         ],
       ),
@@ -921,7 +925,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       builder: (BuildContext context) {
         return Container(
           decoration: BoxDecoration(
-            color: Colors.grey[900],
+            color: _colors.surfaceVariant,
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(15),
               topRight: Radius.circular(15),
@@ -934,7 +938,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
                 if (message.sendBy == _authProvider.loginUserData.id!)
                   ListTile(
                     leading: Icon(Icons.delete, color: Colors.red),
-                    title: Text('Supprimer', style: TextStyle(color: Colors.white)),
+                    title: Text(AppLocalizations.of(context).btnDelete, style: TextStyle(color: _colors.textPrimary)),
                     onTap: () {
                       Navigator.pop(context);
                       _deleteMessage(message);
@@ -942,7 +946,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
                   ),
                 ListTile(
                   leading: Icon(Icons.reply, color: Colors.blue),
-                  title: Text('Répondre', style: TextStyle(color: Colors.white)),
+                  title: Text(AppLocalizations.of(context).btnReply, style: TextStyle(color: _colors.textPrimary)),
                   onTap: () {
                     Navigator.pop(context);
                     setState(() {
@@ -984,7 +988,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   // Barre d'envoi de message
   Widget _buildMessageInput() {
     return Container(
-      color: Colors.grey[900],
+      color: _colors.surfaceVariant,
       padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       child: Column(
         children: [
@@ -1006,27 +1010,27 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     return Container(
       padding: EdgeInsets.symmetric(vertical: 6, horizontal: 10),
       decoration: BoxDecoration(
-        color: Colors.grey[800],
+        color: _colors.border,
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
         children: [
-          Icon(Icons.reply, color: Colors.green, size: 16),
+          Icon(Icons.reply, color: _colors.primary, size: 16),
           SizedBox(width: 6),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Répondre à:',
-                  style: TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.bold),
+                  AppLocalizations.of(context).chatReplyTo,
+                  style: TextStyle(color: _colors.primary, fontSize: 11, fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 1),
                 Text(
                   _getReplyMessageText(_replyingToMessage!).length > 35
                       ? '${_getReplyMessageText(_replyingToMessage!).substring(0, 35)}...'
                       : _getReplyMessageText(_replyingToMessage!),
-                  style: TextStyle(color: Colors.white70, fontSize: 11),
+                  style: TextStyle(color: _colors.textSecondary, fontSize: 11),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -1105,14 +1109,14 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     return Row(
       children: [
         IconButton(
-          icon: Icon(Icons.camera_alt, color: Colors.green, size: 22),
+          icon: Icon(Icons.camera_alt, color: _colors.primary, size: 22),
           onPressed: _getImage,
           padding: EdgeInsets.zero,
         ),
         IconButton(
           icon: Icon(
             _isRecording ? Icons.stop : Icons.mic,
-            color: _isRecording ? Colors.red : Colors.green,
+            color: _isRecording ? Colors.red : _colors.primary,
             size: 22,
           ),
           onPressed: () {
@@ -1132,7 +1136,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
-        color: Colors.grey[800],
+        color: _colors.surfaceVariant,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -1149,10 +1153,10 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
               controller: _textController,
               focusNode: _focusNode,
               maxLines: null,
-              style: TextStyle(color: Colors.white, fontSize: 14),
+              style: TextStyle(color: _colors.textPrimary, fontSize: 14),
               decoration: InputDecoration(
-                hintText: _isRecording ? "Enregistrement... ($_recordingDuration s)" : "Message...",
-                hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+                hintText: _isRecording ? "${AppLocalizations.of(context).chatRecording}... ($_recordingDuration s)" : AppLocalizations.of(context).chatMessage,
+                hintStyle: TextStyle(color: _colors.textSecondary, fontSize: 14),
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               ),
@@ -1170,7 +1174,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         child: SizedBox(
           width: 16,
           height: 16,
-          child: CircularProgressIndicator(color: Colors.green, strokeWidth: 2),
+          child: CircularProgressIndicator(color: _colors.primary, strokeWidth: 2),
         ),
       );
     }
@@ -1180,7 +1184,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     return IconButton(
       icon: Icon(
         Icons.send,
-        color: canSend ? Colors.green : Colors.grey,
+        color: canSend ? _colors.primary : _colors.textSecondary,
         size: 20,
       ),
       onPressed: canSend ? _sendMessage : null,
@@ -1191,7 +1195,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   // AppBar
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: Colors.black,
+      backgroundColor: _colors.background,
       elevation: 0,
       leading: IconButton(
         icon: const Icon(
@@ -1350,14 +1354,16 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    _colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: _colors.background,
       appBar: _buildAppBar(),
       body: Column(
         children: [
           Expanded(
             child: _isLoading
-                ? Center(child: CircularProgressIndicator(color: Colors.green))
+                ? Center(child: CircularProgressIndicator(color: _colors.primary))
                 : StreamBuilder<List<Message>>(
               stream: _messagesStream,
               builder: (context, snapshot) {

@@ -7,6 +7,7 @@ import 'package:video_player/video_player.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/chatmodels/message.dart';
+import '../theme/app_colors.dart';
 import '../models/model_data.dart';
 import '../providers/authProvider.dart';
 import '../providers/chroniqueProvider.dart';
@@ -38,6 +39,7 @@ class SplashChargement extends StatefulWidget {
 }
 
 class _SplashChargementState extends State<SplashChargement> {
+  late AppColors _colors;
   late UserAuthProvider authProvider;
   late PostProvider postProvider;
   late UserProvider userProvider;
@@ -261,25 +263,26 @@ class _SplashChargementState extends State<SplashChargement> {
 
   @override
   Widget build(BuildContext context) {
+    _colors = AppColors.of(context);
     final height = MediaQuery.of(context).size.height;
     final width = MediaQuery.of(context).size.width;
 
     if (_hasError) {
       return Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: _colors.background,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, color: Colors.red, size: 60),
+              Icon(Icons.error_outline, color: _colors.danger, size: 60),
               const SizedBox(height: 16),
-              const Text('Une erreur est survenue', style: TextStyle(color: Colors.white, fontSize: 16)),
+              Text('Une erreur est survenue', style: TextStyle(color: _colors.textPrimary, fontSize: 16)),
               const SizedBox(height: 8),
-              Text(_errorMessage, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+              Text(_errorMessage, style: TextStyle(color: _colors.textSecondary, fontSize: 12)),
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _redirectToLogin,
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF25D366)),
+                style: ElevatedButton.styleFrom(backgroundColor: _colors.primary),
                 child: const Text('Retour à l\'accueil'),
               ),
             ],
@@ -294,35 +297,43 @@ class _SplashChargementState extends State<SplashChargement> {
   }
 
   // Splash screen sans StreamBuilder
+  // Session 13 : logo conservé en haut, texte de chargement déplacé en bas de l'écran.
   Widget _buildSplashScreen(double height, double width) {
     return Scaffold(
       body: Container(
         height: height, width: width,
         decoration: const BoxDecoration(image: DecorationImage(image: AssetImage('assets/splash/spc2.jpg'), fit: BoxFit.cover)),
-        child: Padding(
-          padding: const EdgeInsets.only(top: 40.0, bottom: 10),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              SizedBox(height: 100, width: 100, child: Image.asset('assets/logo/afrolook_logo.png')),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0).copyWith(top: 40.0, bottom: 24.0),
+            child: Column(
+              children: [
+                SizedBox(height: 100, width: 100, child: Image.asset('assets/logo/afrolook_logo.png')),
+                const Spacer(),
+                // Bloc de chargement déplacé en bas de l'écran
+                Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const CircularProgressIndicator(color: Color(0xFF25D366)),
+                    CircularProgressIndicator(color: _colors.primary),
                     const SizedBox(height: 20),
-                    Text(_loadingText, style: const TextStyle(color: Colors.white70, fontSize: 14)),
-                    const SizedBox(height: 8),
-                    const LinearProgressIndicator(
-                      backgroundColor: Colors.grey,
-                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF25D366)),
+                    Text(
+                      _loadingText,
+                      style: TextStyle(color: _colors.textSecondary, fontSize: 14),
+                      textAlign: TextAlign.center,
                     ),
+                    const SizedBox(height: 8),
+                    LinearProgressIndicator(
+                      backgroundColor: _colors.border,
+                      valueColor: AlwaysStoppedAnimation<Color>(_colors.primary),
+                    ),
+                    if (_isLoadingTarget || _loadedPost != null || _loadedChat != null) ...[
+                      const SizedBox(height: 20),
+                      _buildLoadingStatus(),
+                    ],
                   ],
                 ),
-              ),
-              if (_isLoadingTarget || _loadedPost != null || _loadedChat != null)
-                Padding(padding: const EdgeInsets.only(bottom: 30), child: _buildLoadingStatus()),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -465,19 +476,19 @@ class _SplashChargementState extends State<SplashChargement> {
 
   Widget _buildLoadingStatus() {
     if (_isLoadingTarget) {
-      return const Column(children: [
-        Icon(Icons.downloading, color: Colors.orange, size: 30),
-        SizedBox(height: 8),
-        Text("Chargement du contenu...", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+      return Column(children: [
+        const Icon(Icons.downloading, color: Colors.orange, size: 30),
+        const SizedBox(height: 8),
+        Text("Chargement du contenu...", style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w600, fontSize: 14)),
       ]);
     }
     if (_loadedPost != null || _loadedChat != null) {
-      return const Column(children: [
-        Icon(Icons.check_circle, color: Colors.green, size: 30),
-        SizedBox(height: 8),
-        Text("Contenu prêt !", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
-        SizedBox(height: 4),
-        Text("Redirection...", style: TextStyle(color: Colors.grey, fontSize: 12)),
+      return Column(children: [
+        Icon(Icons.check_circle, color: _colors.primary, size: 30),
+        const SizedBox(height: 8),
+        Text("Contenu prêt !", style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w600, fontSize: 14)),
+        const SizedBox(height: 4),
+        Text("Redirection...", style: TextStyle(color: _colors.textSecondary, fontSize: 12)),
       ]);
     }
     return const SizedBox.shrink();
@@ -485,14 +496,14 @@ class _SplashChargementState extends State<SplashChargement> {
 
   Widget _buildLoadingScreen(String text) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: _colors.background,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const CircularProgressIndicator(color: Color(0xFF25D366)),
+            CircularProgressIndicator(color: _colors.primary),
             const SizedBox(height: 20),
-            Text(text, style: const TextStyle(color: Colors.white, fontSize: 16)),
+            Text(text, style: TextStyle(color: _colors.textPrimary, fontSize: 16)),
           ],
         ),
       ),

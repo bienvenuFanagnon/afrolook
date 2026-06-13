@@ -51,6 +51,12 @@ import '../../../providers/mixed_feed_service_provider.dart';
 import 'dart:typed_data';
 
 import '../userPosts/youTube_video_card.dart';
+import '../userPosts/video_preload_manager.dart';
+import 'feed_cache_service.dart';
+import '../../theme/app_colors.dart';
+import '../../l10n/app_localizations.dart';
+import '../../theme/theme_provider.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 
 // Constantes de couleur
@@ -91,6 +97,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
   // Variables d'état pour les posts
   List<Post> _posts = [];
+
+  // 🔥 Liste des posts effectivement rendus dans le feed (avec anciens posts
+  // mélangés), utilisée par le préchargement vidéo Facebook-style pour
+  // retrouver les voisins d'un index donné.
+  List<Post> _renderedFeedPosts = [];
   bool _isLoadingPosts = true;
   bool _hasErrorPosts = false;
   bool _isLoadingMorePosts = false;
@@ -165,6 +176,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   List<Post> _oldPostsCache = [];
   bool _isLoadingOldPosts = false;
 
+  // Cache des fenêtres mensuelles déjà testées et trouvées vides (clé = startDate du mois)
+  final Set<DateTime> _emptyOldPostsWindows = {};
+
   Timer? _oldPostsLoadTimer;
   DocumentSnapshot? _lastOldPostDocument;
 
@@ -172,10 +186,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   @override
   void initState() {
     super.initState();
-    _soundProvider = SoundProvider();
-
-    // 🔥 Initialisation du MediaPlaybackManager
+    // 🔥 Initialisation du MediaPlaybackManager avec l'instance globale
+    // (celle fournie par le ChangeNotifierProvider dans main.dart, la même
+    // utilisée par l'icône son de l'AppBar, AudioPostCard et YouTubeVideoCard)
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _soundProvider = Provider.of<SoundProvider>(context, listen: false);
       MediaPlaybackManager.init(_soundProvider);
     });
     _initSharedPreferences();
@@ -226,18 +241,13 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     }
   }
 
-  Future<void> _loadOldPostsInBackground() async {
-    if (_isLoadingOldPosts) return;
-    _isLoadingOldPosts = true;
+  /// Choisit une fenêtre mensuelle aléatoire (pondérée) en évitant si possible
+  /// les fenêtres déjà connues comme vides.
+  DateTime _pickRandomOldPostsWindowStart(Random random) {
+    DateTime? candidate;
 
-    try {
-      final random = Random();
-
-      // ------------------------------------------------------------
-      // 1. Choix de la tranche de mois (pondération)
-      // ------------------------------------------------------------
+    for (int attempt = 0; attempt < 5; attempt++) {
       int monthsBack;
-
       int chance = random.nextInt(100);
 
       if (chance < 50) {
@@ -252,73 +262,102 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       }
 
       final now = DateTime.now();
+      final DateTime endDate = DateTime(now.year, now.month - monthsBack, 1);
+      final DateTime startDate = DateTime(endDate.year, endDate.month - 1, 1);
 
-      final DateTime endDate = DateTime(
-        now.year,
-        now.month - monthsBack,
-        1,
-      );
-
-      final DateTime startDate = DateTime(
-        endDate.year,
-        endDate.month - 1,
-        1,
-      );
-
-      final int startMicros = startDate.microsecondsSinceEpoch;
-      final int endMicros = endDate.microsecondsSinceEpoch;
-
-      print("📜 Chargement anciens posts entre $startDate et $endDate");
-
-      // ------------------------------------------------------------
-      // 2. Query Firestore (intervalle de temps)
-      // ------------------------------------------------------------
-      Query query = _firestore.collection('Posts');
-
-      if (widget.isVideoPage) {
-        query = query.where(
-          "dataType",
-          isEqualTo: PostDataType.VIDEO.name,
-        );
+      if (!_emptyOldPostsWindows.contains(startDate)) {
+        return startDate;
       }
+      candidate = startDate;
+    }
 
-      query = query
-          .where("created_at", isGreaterThanOrEqualTo: startMicros)
-          .where("created_at", isLessThan: endMicros)
-          .orderBy("created_at")
-          .limit(30); // on prend large pour filtrer ensuite
+    // Toutes les tentatives sont tombées sur des fenêtres déjà vides :
+    // on retente quand même avec la dernière, le cache pourra avoir été
+    // rafraîchi entre-temps (nouveaux posts publiés).
+    return candidate!;
+  }
 
-      final snapshot = await query.get();
+  /// Exécute la requête Firestore pour une fenêtre mensuelle donnée et
+  /// retourne les posts valides trouvés (sans les ajouter au cache).
+  Future<List<Post>> _fetchOldPostsForWindow(DateTime startDate) async {
+    final DateTime endDate = DateTime(startDate.year, startDate.month + 1, 1);
 
-      if (snapshot.docs.isEmpty) {
-        print("⚠️ Aucun post trouvé dans cette période");
-        _isLoadingOldPosts = false;
-        return;
-      }
+    final int startMicros = startDate.microsecondsSinceEpoch;
+    final int endMicros = endDate.microsecondsSinceEpoch;
 
-      // ------------------------------------------------------------
-      // 3. Transformation + filtrage
-      // ------------------------------------------------------------
+    print("📜 Chargement anciens posts entre $startDate et $endDate");
+
+    Query query = _firestore.collection('Posts');
+
+    if (widget.isVideoPage) {
+      query = query.where(
+        "dataType",
+        isEqualTo: PostDataType.VIDEO.name,
+      );
+    }
+
+    query = query
+        .where("created_at", isGreaterThanOrEqualTo: startMicros)
+        .where("created_at", isLessThan: endMicros)
+        .orderBy("created_at")
+        .limit(30); // on prend large pour filtrer ensuite
+
+    final snapshot = await query.get();
+
+    if (snapshot.docs.isEmpty) {
+      print("⚠️ Aucun post trouvé dans cette période");
+      return [];
+    }
+
+    List<Post> validOldPosts = [];
+
+    for (final doc in snapshot.docs) {
+      final post = Post.fromJson(doc.data() as Map<String, dynamic>);
+      post.id = doc.id;
+
+      if (_loadedPostIds.contains(post.id)) continue;
+      if (_oldPostsCache.any((p) => p.id == post.id)) continue;
+      if (post.isAdvertisement == true) continue;
+
+      post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
+
+      validOldPosts.add(post);
+
+      if (validOldPosts.length >= 12) break;
+    }
+
+    return validOldPosts;
+  }
+
+  Future<void> _loadOldPostsInBackground() async {
+    if (_isLoadingOldPosts) return;
+    _isLoadingOldPosts = true;
+
+    try {
+      final random = Random();
+
+      // Jusqu'à 3 fenêtres tentées dans cette même passe : la fenêtre
+      // initiale + jusqu'à 2 fallbacks si vide/quasi-vide (<3 posts).
+      const int maxFallbacks = 2;
       List<Post> validOldPosts = [];
 
-      for (final doc in snapshot.docs) {
-        final post = Post.fromJson(doc.data() as Map<String, dynamic>);
-        post.id = doc.id;
+      for (int attempt = 0; attempt <= maxFallbacks; attempt++) {
+        final startDate = _pickRandomOldPostsWindowStart(random);
 
-        if (_loadedPostIds.contains(post.id)) continue;
-        if (_oldPostsCache.any((p) => p.id == post.id)) continue;
-        if (post.isAdvertisement == true) continue;
+        final found = await _fetchOldPostsForWindow(startDate);
 
-        post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
+        if (found.length < 3) {
+          _emptyOldPostsWindows.add(startDate);
+        }
 
-        validOldPosts.add(post);
+        if (found.isNotEmpty) {
+          validOldPosts = found;
+          break;
+        }
 
-        if (validOldPosts.length >= 12) break;
+        print("↩️ Fenêtre vide, tentative de repli (${attempt + 1}/${maxFallbacks + 1})");
       }
 
-      // ------------------------------------------------------------
-      // 4. Ajout au cache
-      // ------------------------------------------------------------
       if (validOldPosts.isNotEmpty) {
         validOldPosts.shuffle();
 
@@ -328,7 +367,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           "✅ ${validOldPosts.length} anciens posts ajoutés (cache: ${_oldPostsCache.length})",
         );
       } else {
-        print("⚠️ Aucun post valide après filtrage");
+        print("⚠️ Aucun post valide après filtrage (toutes les tentatives vides)");
       }
     } catch (e) {
       print("❌ Erreur chargement anciens posts: $e");
@@ -340,7 +379,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
   void _startOldPostsLoading() {
     _oldPostsLoadTimer?.cancel();
-    _oldPostsLoadTimer = Timer.periodic(Duration(seconds: 15), (timer) {
+    // Intervalle augmenté de 15s à 22s : réduit le nombre de round trips
+    // Firestore tout en restant suffisamment réactif pour réalimenter le
+    // cache d'anciens posts (cf. SUIVI_REFONTE.md - Session 9).
+    _oldPostsLoadTimer = Timer.periodic(Duration(seconds: 22), (timer) {
       if (_oldPostsCache.length < 4 && !_isLoadingOldPosts) {
         _loadOldPostsInBackground();
       }
@@ -581,26 +623,280 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     if (widget.type == TabBarType.EVENEMENT.name) {
       _currentFilter = 'COUNTRY';  // Forcer le pays de l'utilisateur seulement
       print('🎯 Mode EVENEMENT activé - Filtre: COUNTRY (${_selectedCountryCode})');
+    } else if (_selectedCountryCode != null) {
+      // 🔥 Par défaut: filtre sur le pays de l'utilisateur (au lieu de "Tous")
+      // L'utilisateur peut toujours changer via la modale de filtre (_showCountryFilterModal).
+      _currentFilter = 'COUNTRY';
+      print('🌍 Filtre par défaut: COUNTRY (pays utilisateur: ${_selectedCountryCode})');
     } else {
-      _currentFilter = 'MIXED';     // Comportement normal pour les autres types
+      _currentFilter = 'MIXED';     // Fallback si pays utilisateur inconnu
     }
 
     _isFirstLoad = true;
     _useBackgroundLoading = true;
     _backgroundPostsLoaded = 0;
 
-    // 3. Réinitialiser et charger les posts initiaux
-    _resetPagination();
+    // 0. 🔥 Affichage instantané depuis le cache local (Facebook-style) avant
+    // même que le réseau ait répondu - skip si rien en cache.
+    final bool hasCachedPosts = await _loadFromCacheAndDisplay();
+
+    // 3. Réinitialiser la pagination. Si le cache a déjà rempli `_posts`,
+    // on NE LES EFFACE PAS (sinon le skeleton revient le temps du réseau) :
+    // `_loadInitialPosts()` remplacera/complètera ces posts dès que la
+    // réponse réseau arrive, sans repasser par un état "vide".
+    _resetPagination(clearPosts: !hasCachedPosts);
     _startOldPostsLoading();
-    await _loadInitialPosts();
 
-    // 4. Démarrer le chargement background
-    _startBackgroundLoading();
+    if (hasCachedPosts) {
+      // 🔥 Affichage déjà assuré par le cache : on lance le réseau en
+      // arrière-plan SANS bloquer le premier paint. `_loadInitialPosts()`
+      // mettra à jour `_posts` (et désactivera le skeleton si besoin) une
+      // fois la réponse reçue.
+      _loadInitialPosts();
 
-    // 5. Charger les autres données EN PARALLÈLE
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadAllAdditionalDataInParallel();
-    });
+      // Démarrer immédiatement le chargement background et les données
+      // additionnelles : elles ne dépendent pas de `_loadInitialPosts()`.
+      _startBackgroundLoading();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadAllAdditionalDataInParallel();
+      });
+    } else {
+      // Pas de cache : comportement historique, on attend les premiers
+      // posts avant de démarrer le chargement background et les données
+      // additionnelles.
+      await _loadInitialPosts();
+
+      // 4. Démarrer le chargement background
+      _startBackgroundLoading();
+
+      // 5. Charger les autres données EN PARALLÈLE
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadAllAdditionalDataInParallel();
+      });
+    }
+  }
+
+  // ===========================================================================
+  // CACHE LOCAL DU FEED (affichage instantané "Facebook-style")
+  // ===========================================================================
+
+  /// Clé de cache unique par type de feed + tri (Home récents/populaires,
+  /// Sport, etc.) pour éviter toute collision entre onglets.
+  /// La clé de cache intègre le filtre pays courant (COUNTRY/MIXED/ALL +
+  /// code pays) pour éviter qu'un changement de filtre via la modale
+  /// n'écrase le cache du filtre par défaut (pays utilisateur) avec un
+  /// contenu provenant d'un autre filtre.
+  String get _feedCacheKey => FeedCacheService.buildKey(
+      widget.type, '${widget.sortType ?? 'default'}_${_currentFilter}_${_selectedCountryCode ?? 'none'}');
+
+  static const Duration _adsCacheMaxAge = Duration(hours: 1);
+  static const Duration _vipCacheMaxAge = Duration(hours: 6);
+
+  /// Charge les données mises en cache (posts, chroniques, profils suggérés,
+  /// canaux, produits boostés) et les affiche immédiatement, sans attendre
+  /// le réseau. Le chargement réseau classique se poursuit normalement après
+  /// cet appel et remplacera/complètera ces données.
+  Future<bool> _loadFromCacheAndDisplay() async {
+    try {
+      final cached = await FeedCacheService.loadFeedData(_feedCacheKey);
+      if (cached == null) return false;
+
+      final data = cached['data'] as Map<String, dynamic>;
+
+      // --- Posts initiaux ---
+      final cachedPostsJson = data['posts'] as List<dynamic>?;
+      List<Post> cachedPosts = [];
+      if (cachedPostsJson != null) {
+        for (final p in cachedPostsJson) {
+          try {
+            final json = Map<String, dynamic>.from(p as Map);
+            final post = Post.fromJson(json);
+            post.id = json['id'] as String?;
+            post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
+            cachedPosts.add(post);
+          } catch (e) {
+            print('⚠️ Cache: erreur parsing post: $e');
+          }
+        }
+      }
+
+      // --- Chroniques ---
+      final cachedChroniquesJson = data['chroniques'] as List<dynamic>?;
+      List<Chronique> cachedChroniques = [];
+      if (cachedChroniquesJson != null) {
+        for (final c in cachedChroniquesJson) {
+          try {
+            final json = Map<String, dynamic>.from(c as Map);
+            final id = json['id'] as String?;
+            // Reconvertir les dates ISO -> Timestamp pour Chronique.fromMap
+            final map = Map<String, dynamic>.from(json);
+            if (map['createdAt'] is String) {
+              map['createdAt'] = Timestamp.fromDate(DateTime.parse(map['createdAt'] as String));
+            }
+            if (map['expiresAt'] is String) {
+              map['expiresAt'] = Timestamp.fromDate(DateTime.parse(map['expiresAt'] as String));
+            }
+            final chronique = Chronique.fromMap(map, id ?? '');
+            if (!chronique.isExpired) {
+              cachedChroniques.add(chronique);
+            }
+          } catch (e) {
+            print('⚠️ Cache: erreur parsing chronique: $e');
+          }
+        }
+      }
+
+      // --- Auteurs des chroniques (profils résolus) ---
+      final cachedChroniqueAuthors = data['chroniqueAuthors'] as Map<String, dynamic>?;
+      if (cachedChroniqueAuthors != null) {
+        cachedChroniqueAuthors.forEach((userId, userJson) {
+          try {
+            final userData = UserData.fromJson(Map<String, dynamic>.from(userJson as Map));
+            _userDataCache[userId] = userData;
+            _userVerificationStatus[userId] = userData.isVerify ?? false;
+          } catch (e) {
+            print('⚠️ Cache: erreur parsing auteur chronique: $e');
+          }
+        });
+      }
+
+      // --- Profils suggérés ---
+      final cachedSuggestedJson = data['suggestedUsers'] as List<dynamic>?;
+      List<UserData> cachedSuggestedUsers = [];
+      if (cachedSuggestedJson != null) {
+        for (final u in cachedSuggestedJson) {
+          try {
+            cachedSuggestedUsers.add(UserData.fromJson(Map<String, dynamic>.from(u as Map)));
+          } catch (e) {
+            print('⚠️ Cache: erreur parsing profil suggéré: $e');
+          }
+        }
+      }
+
+      // --- Canaux ---
+      final cachedCanauxJson = data['canaux'] as List<dynamic>?;
+      List<Canal> cachedCanaux = [];
+      if (cachedCanauxJson != null) {
+        for (final c in cachedCanauxJson) {
+          try {
+            cachedCanaux.add(Canal.fromJson(Map<String, dynamic>.from(c as Map)));
+          } catch (e) {
+            print('⚠️ Cache: erreur parsing canal: $e');
+          }
+        }
+      }
+
+      // --- Produits boostés / articles (Zone VIP) ---
+      final cachedArticlesJson = data['articles'] as List<dynamic>?;
+      List<ArticleData> cachedArticles = [];
+      if (cachedArticlesJson != null) {
+        for (final a in cachedArticlesJson) {
+          try {
+            cachedArticles.add(ArticleData.fromJson(Map<String, dynamic>.from(a as Map)));
+          } catch (e) {
+            print('⚠️ Cache: erreur parsing article boosté: $e');
+          }
+        }
+      }
+
+      if (!mounted) return cachedPosts.isNotEmpty;
+
+      setState(() {
+        if (cachedPosts.isNotEmpty) {
+          _posts = cachedPosts;
+          _loadedPostIds.addAll(cachedPosts.map((p) => p.id ?? '').where((id) => id.isNotEmpty));
+          _totalPostsLoaded = cachedPosts.length;
+          _isFirstLoad = false;
+          _isLoadingPosts = false; // skip le skeleton, affichage instantané
+        }
+        if (cachedChroniques.isNotEmpty) {
+          _chroniques = cachedChroniques;
+        }
+        if (cachedSuggestedUsers.isNotEmpty) {
+          _suggestedUsers = cachedSuggestedUsers;
+        }
+        if (cachedCanaux.isNotEmpty) {
+          _canaux = cachedCanaux;
+        }
+        if (cachedArticles.isNotEmpty) {
+          _articles = cachedArticles;
+        }
+      });
+
+      print('⚡ Feed affiché instantanément depuis le cache local ($_feedCacheKey)');
+      return cachedPosts.isNotEmpty;
+    } catch (e) {
+      print('⚠️ Erreur _loadFromCacheAndDisplay: $e');
+      return false;
+    }
+  }
+
+  /// Sauvegarde l'état courant du feed dans le cache local pour le prochain
+  /// affichage instantané. Appelé après chaque chargement réseau réussi
+  /// (posts initiaux, chroniques, profils suggérés, canaux, articles boostés).
+  Future<void> _saveFeedToCache() async {
+    try {
+      final data = <String, dynamic>{};
+
+      if (_posts.isNotEmpty) {
+        data['posts'] = _posts.map((p) {
+          final json = p.toJson();
+          json['id'] = p.id;
+          return json;
+        }).toList();
+      }
+
+      if (_chroniques.isNotEmpty) {
+        data['chroniques'] = _chroniques.map((c) {
+          final map = Map<String, dynamic>.from(c.toMap());
+          map['id'] = c.id;
+          // Timestamp -> ISO string pour sérialisation JSON
+          if (map['createdAt'] is Timestamp) {
+            map['createdAt'] = (map['createdAt'] as Timestamp).toDate().toIso8601String();
+          }
+          if (map['expiresAt'] is Timestamp) {
+            map['expiresAt'] = (map['expiresAt'] as Timestamp).toDate().toIso8601String();
+          }
+          return map;
+        }).toList();
+
+        // Auteurs résolus des chroniques affichées
+        final authors = <String, dynamic>{};
+        for (final c in _chroniques) {
+          final userData = _userDataCache[c.userId];
+          if (userData != null) {
+            final json = userData.toJson();
+            json['isVerify'] = userData.isVerify ?? false;
+            authors[c.userId] = json;
+          }
+        }
+        if (authors.isNotEmpty) {
+          data['chroniqueAuthors'] = authors;
+        }
+      }
+
+      if (_suggestedUsers.isNotEmpty) {
+        data['suggestedUsers'] = _suggestedUsers.map((u) {
+          final json = u.toJson();
+          json['isVerify'] = u.isVerify ?? false;
+          return json;
+        }).toList();
+      }
+
+      if (_canaux.isNotEmpty) {
+        data['canaux'] = _canaux.map((c) => c.toJson()).toList();
+      }
+
+      if (_articles.isNotEmpty) {
+        data['articles'] = _articles.map((a) => a.toJson()).toList();
+      }
+
+      if (data.isEmpty) return;
+
+      await FeedCacheService.saveFeedData(_feedCacheKey, data);
+    } catch (e) {
+      print('⚠️ Erreur _saveFeedToCache: $e');
+    }
   }
 
   void _initializeData2() async {
@@ -628,9 +924,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     });
   }
 
-  void _resetPagination() {
-    _posts.clear();
-    _loadedPostIds.clear();
+  void _resetPagination({bool clearPosts = true}) {
+    if (clearPosts) {
+      _posts.clear();
+      _loadedPostIds.clear();
+    }
     _lastCountryDocument = null;
     _lastAllDocument = null;
     _lastOtherDocument = null;
@@ -1237,7 +1535,12 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       }
 
       setState(() {
-        _isLoadingPosts = true;
+        // 🔥 Ne réafficher le skeleton que si on n'a rien à montrer (pas de
+        // posts issus du cache local) : sinon le contenu déjà affiché reste
+        // visible pendant le rafraîchissement réseau (Facebook-style).
+        if (_posts.isEmpty) {
+          _isLoadingPosts = true;
+        }
         _hasErrorPosts = false;
       });
 
@@ -1304,6 +1607,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       });
 
       print('✅ ${newPosts.length} posts chargés avec filtre: $_currentFilter');
+
+      // 🔥 Mettre à jour le cache local pour le prochain affichage instantané
+      if (newPosts.isNotEmpty) {
+        _saveFeedToCache();
+      }
 
     } catch (e) {
       print('❌ Erreur chargement posts: $e');
@@ -1440,7 +1748,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         query = query.startAfterDocument(_lastCountryDocument!);
       }
 
-      query = query.limit(limit * 2);
+      // 1.5x au lieu de 2x : la déduplication/filtrage client (pubs, doublons)
+      // ne réduit que rarement le set de plus de moitié.
+      query = query.limit((limit * 1.5).ceil());
 
       final snapshot = await query.get();
 
@@ -1572,7 +1882,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         query = query.startAfterDocument(_lastCountryDocument!);
       }
 
-      query = query.limit(limit * 2);
+      // 1.5x au lieu de 2x : la déduplication/filtrage client (pubs, doublons)
+      // ne réduit que rarement le set de plus de moitié.
+      query = query.limit((limit * 1.5).ceil());
 
       final snapshot = await query.get();
 
@@ -1687,7 +1999,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         query = query.startAfterDocument(_lastAllDocument!);
       }
 
-      query = query.limit(limit * 2);
+      // 1.5x au lieu de 2x : la déduplication/filtrage client (pubs, doublons)
+      // ne réduit que rarement le set de plus de moitié.
+      query = query.limit((limit * 1.5).ceil());
 
       final snapshot = await query.get();
 
@@ -2132,6 +2446,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       setState(() {
         _suggestedUsers = users..shuffle();
       });
+      _saveFeedToCache();
     } catch (e) {
       print('Error loading suggested users: $e');
     } finally {
@@ -2156,6 +2471,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       setState(() {
         _articles = articleResults;
       });
+      _saveFeedToCache();
     } catch (e) {
       print('Error loading articles: $e');
     } finally {
@@ -2178,6 +2494,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       setState(() {
         _canaux = canalResults..shuffle();
       });
+      _saveFeedToCache();
     } catch (e) {
       print('Error loading canaux: $e');
     } finally {
@@ -2220,8 +2537,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
       // Charger les données utilisateurs en arrière-plan
       if (validChroniques.isNotEmpty) {
-        _loadChroniqueUserDataInBackground(validChroniques);
+        await _loadChroniqueUserDataInBackground(validChroniques);
       }
+
+      // 🔥 Mettre à jour le cache local (chroniques + auteurs résolus)
+      _saveFeedToCache();
 
     } catch (e) {
       print('❌ Erreur chargement chroniques: $e');
@@ -2234,16 +2554,31 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
   Future<void> _loadChroniqueUserDataInBackground(List<Chronique> chroniques) async {
     try {
-      final userIds = chroniques.map((c) => c.userId).toSet();
+      final userIds = chroniques
+          .map((c) => c.userId)
+          .toSet()
+          .where((id) => !_userDataCache.containsKey(id))
+          .toList();
 
-      for (final userId in userIds) {
-        if (!_userDataCache.containsKey(userId)) {
-          final userDoc = await _firestore.collection('Users').doc(userId).get();
-          if (userDoc.exists) {
-            final userData = UserData.fromJson(userDoc.data()!);
-            _userDataCache[userId] = userData;
-            _userVerificationStatus[userId] = userData.isVerify ?? false;
-          }
+      if (userIds.isEmpty) return;
+
+      // Firestore whereIn supporte au maximum 30 ids par requête -> on chunk
+      const chunkSize = 30;
+      for (var i = 0; i < userIds.length; i += chunkSize) {
+        final chunk = userIds.sublist(
+          i,
+          (i + chunkSize > userIds.length) ? userIds.length : i + chunkSize,
+        );
+
+        final snapshot = await _firestore
+            .collection('Users')
+            .where(FieldPath.documentId, whereIn: chunk)
+            .get();
+
+        for (final doc in snapshot.docs) {
+          final userData = UserData.fromJson(doc.data());
+          _userDataCache[doc.id] = userData;
+          _userVerificationStatus[doc.id] = userData.isVerify ?? false;
         }
       }
 
@@ -2298,6 +2633,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                 : (post.type == PostType.POST.name && post.dataType == PostDataType.VIDEO.name)
                 ? YouTubeVideoCard(
               post: post,
+              index: index,
+              onNeighborhoodPreload: _preloadVideoNeighborhood,
+              currentFilterCountry: _currentFilter == 'ALL' || _currentFilter == 'MIXED' ? null : _selectedCountryCode,
               onTap: () {
                 Navigator.push(
                   context,
@@ -2314,6 +2652,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
               height: height * 0.6,
               width: width,
               isDegrade: true,
+              currentFilterCountry: _currentFilter == 'ALL' || _currentFilter == 'MIXED' ? null : _selectedCountryCode,
             ),
 
           ],
@@ -2479,8 +2818,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   // ===========================================================================
 
   Widget _buildProfilesSection() {
+    final l10n = AppLocalizations.of(context);
     if (_isLoadingSuggestedUsers) {
-      return _buildLoadingSection('👑 Profils à découvrir');
+      return _buildLoadingSection(l10n.sectionDiscoverProfiles);
     }
 
     if (_suggestedUsers.isEmpty) {
@@ -2499,11 +2839,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
             children: [
               Expanded(
                 child: Text(
-                  '👑 Profils à découvrir',
+                  l10n.sectionDiscoverProfiles,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: textColor,
+                    color: AppColors.of(context).textPrimary,
                   ),
                 ),
               ),
@@ -2529,7 +2869,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('Voir tout', style: TextStyle(color: Colors.white, fontSize: 11)),
+                      Text(l10n.commonSeeAll, style: TextStyle(color: Colors.white, fontSize: 11)),
                       SizedBox(width: 4),
                       Icon(Icons.arrow_forward, color: Colors.white, size: 12),
                     ],
@@ -2556,11 +2896,12 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   }
 
   Widget _buildProfileCard(UserData user, double width, double height) {
+    final colors = AppColors.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: darkBackground.withOpacity(0.8),
+        color: colors.surfaceVariant,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: primaryGreen.withOpacity(0.3)),
+        border: Border.all(color: colors.primary.withOpacity(0.25)),
       ),
       child: Column(
         children: [
@@ -2581,12 +2922,12 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                       fit: BoxFit.cover,
                       imageUrl: user.imageUrl ?? '',
                       placeholder: (context, url) => Container(
-                        color: Colors.grey[800],
-                        child: Center(child: CircularProgressIndicator(color: primaryGreen)),
+                        color: colors.surfaceVariant,
+                        child: Center(child: CircularProgressIndicator(color: colors.primary)),
                       ),
                       errorWidget: (context, url, error) => Container(
-                        color: Colors.grey[800],
-                        child: Icon(Icons.person, color: Colors.grey[400]),
+                        color: colors.surfaceVariant,
+                        child: Icon(Icons.person, color: colors.textSecondary),
                       ),
                     ),
                   ),
@@ -2610,7 +2951,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                             child: Text(
                               '@${user.pseudo?.replaceAll("@", "") ?? "user"}',
                               style: TextStyle(
-                                color: textColor,
+                                color: Colors.white,
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                                 overflow: TextOverflow.ellipsis,
@@ -2618,7 +2959,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                             ),
                           ),
                           if (user.isVerify ?? false)
-                            Icon(Icons.verified, color: primaryGreen, size: 12),
+                            Icon(Icons.verified, color: colors.primary, size: 12),
                         ],
                       ),
                       SizedBox(height: 2),
@@ -2627,12 +2968,12 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.group, size: 9, color: accentYellow),
+                              Icon(Icons.group, size: 9, color: colors.accent),
                               SizedBox(width: 2),
                               Text(
                                 _formatNumber(user.userAbonnesIds?.length ?? 0),
                                 style: TextStyle(
-                                  color: accentYellow,
+                                  color: colors.accent,
                                   fontSize: 9,
                                 ),
                               ),
@@ -2686,8 +3027,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   // ===========================================================================
 
   Widget _buildArticlesSection() {
+    final l10n = AppLocalizations.of(context);
     if (_isLoadingArticles) {
-      return _buildLoadingSection('🔥 Produits Boostés');
+      return _buildLoadingSection(l10n.sectionBoostedProducts);
     }
 
     if (_articles.isEmpty) {
@@ -2697,10 +3039,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
 
+    final colors = AppColors.of(context);
     return Container(
       margin: EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.black,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -2710,14 +3053,14 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('🔥 Produits Boostés',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                Text(l10n.sectionBoostedProducts,
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: colors.textPrimary)),
                 GestureDetector(
                   onTap: () => Navigator.push(context,
                       MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: ''))),
                   child: Row(
                     children: [
-                      Text('Boutiques', style: TextStyle(color: primaryGreen, fontWeight: FontWeight.bold, fontSize: 12)),
+                      Text(l10n.sectionBoutiques, style: TextStyle(color: primaryGreen, fontWeight: FontWeight.bold, fontSize: 12)),
                       SizedBox(width: 4),
                       Icon(Icons.arrow_forward, color: primaryGreen, size: 14),
                     ],
@@ -2753,8 +3096,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   // ===========================================================================
 
   Widget _buildCanauxSection() {
+    final l10n = AppLocalizations.of(context);
     if (_isLoadingCanaux) {
-      return _buildLoadingSection('📺 Afrolook Canal');
+      return _buildLoadingSection(l10n.sectionAfrolookCanal);
     }
 
     if (_canaux.isEmpty) {
@@ -2764,10 +3108,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
 
+    final colors = AppColors.of(context);
     return Container(
       margin: EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.black,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -2777,14 +3122,14 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('📺 Afrolook Canal',
+                Text(l10n.sectionAfrolookCanal,
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green)),
                 GestureDetector(
                   onTap: () => Navigator.push(context,
                       MaterialPageRoute(builder: (context) => CanalListPage(isUserCanals: false))),
                   child: Row(
                     children: [
-                      Text('Voir plus', style: TextStyle(color: primaryGreen, fontWeight: FontWeight.bold, fontSize: 12)),
+                      Text(l10n.vipSeeMore, style: TextStyle(color: primaryGreen, fontWeight: FontWeight.bold, fontSize: 12)),
                       SizedBox(width: 4),
                       Icon(Icons.arrow_forward, color: primaryGreen, size: 14),
                     ],
@@ -2964,6 +3309,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       }
     }
     // 5. Indicateurs de chargement/fin
+    final colors = AppColors.of(context);
     if (_isLoadingMorePosts) {
       contentWidgets.add(
         Container(
@@ -2971,9 +3317,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           child: Center(
             child: Column(
               children: [
-                CircularProgressIndicator(color: primaryGreen),
+                CircularProgressIndicator(color: colors.primary),
                 SizedBox(height: 10),
-                Text('Chargement de plus de posts...', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                Text('Chargement de plus de posts...', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
               ],
             ),
           ),
@@ -2991,13 +3337,13 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: Colors.grey[500],
+                    color: colors.textSecondary,
                   ),
                 ),
                 SizedBox(height: 8),
                 Text(
                   'Préparation de plus de contenu... ($_backgroundPostsLoaded/$_maxBackgroundPosts)',
-                  style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                  style: TextStyle(color: colors.textSecondary, fontSize: 11),
                 ),
               ],
             ),
@@ -3011,17 +3357,17 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           child: Center(
             child: Column(
               children: [
-                Icon(Icons.flag, color: Colors.green, size: 36),
+                Icon(Icons.flag, color: colors.primary, size: 36),
                 SizedBox(height: 10),
                 Text(
                   _getEndMessage(),
-                  style: TextStyle(color: Colors.grey, fontSize: 14),
+                  style: TextStyle(color: colors.textSecondary, fontSize: 14),
                   textAlign: TextAlign.center,
                 ),
                 SizedBox(height: 5),
                 Text(
                   'Revenez plus tard pour de nouveaux contenus',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 11),
+                  style: TextStyle(color: colors.textSecondary, fontSize: 11),
                 ),
               ],
             ),
@@ -3130,6 +3476,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     if (oldBuffer.isNotEmpty) {
       finalPosts.addAll(oldBuffer);
     }
+
+    // 🔥 Mémoriser la liste rendue pour le préchargement vidéo (index -> post)
+    _renderedFeedPosts = finalPosts;
 
     // ------------------------------------------------------------
     // 2. Construction des widgets (filtrés, sections, posts, pub...)
@@ -3497,10 +3846,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     }
   }
 
-  Widget _getFilterIcon() {
+  Widget _getFilterIcon(AppColors colors) {
     switch (_currentFilter) {
       case 'ALL':
-        return Icon(Icons.public, color: Colors.white, size: 18);
+        return Icon(Icons.public, color: colors.textPrimary, size: 18);
       case 'COUNTRY':
       case 'CUSTOM':
         return Text(
@@ -3508,9 +3857,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           style: TextStyle(fontSize: 16),
         );
       case 'MIXED':
-        return Icon(Icons.blender, color: Colors.white, size: 18);
+        return Icon(Icons.blender, color: colors.textPrimary, size: 18);
       default:
-        return Icon(Icons.filter_alt, color: Colors.white, size: 18);
+        return Icon(Icons.filter_alt, color: colors.textPrimary, size: 18);
     }
   }
 
@@ -3535,6 +3884,32 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     }
 
     return false;
+  }
+
+  /// 🔥 Préchargement Facebook-style : appelé par `YouTubeVideoCard` quand
+  /// elle devient visible. Précharge (initialise sans jouer) les vidéos
+  /// voisines (±[VideoPreloadManager.preloadRadius]) et nettoie les
+  /// contrôleurs préchargés devenus hors-champ.
+  void _preloadVideoNeighborhood(int index) {
+    if (_renderedFeedPosts.isEmpty) return;
+    final length = _renderedFeedPosts.length;
+
+    String? idAt(int i) {
+      if (i < 0 || i >= length) return null;
+      final p = _renderedFeedPosts[i];
+      if (p.dataType != PostDataType.VIDEO.name) return null;
+      return p.id;
+    }
+
+    String? urlAt(int i) {
+      if (i < 0 || i >= length) return null;
+      final p = _renderedFeedPosts[i];
+      if (p.dataType != PostDataType.VIDEO.name) return null;
+      return p.url_media;
+    }
+
+    VideoPreloadManager.preloadNeighborhood(index, length, idAt, urlAt);
+    VideoPreloadManager.cleanupOutOfRange(index, length, idAt);
   }
 
   void _handleVisibilityChanged(Post post, VisibilityInfo info) {
@@ -3862,91 +4237,73 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   // ===========================================================================
   final GlobalKey<InterstitialAdWidgetState> _interstitialAdKey = GlobalKey();
 
+  // ── Méthodes publiques exposées pour la barre supérieure de homeScreen ──
+  // Permettent de déclencher le filtre pays et le rafraîchissement depuis
+  // l'AppBar combiné de la page d'accueil (l'AppBar "Découvrir" propre à
+  // cette page a été supprimée pour libérer de la place).
+  void showCountryFilter() => _showCountryFilterModal();
+  Future<void> refreshFeed() => _refreshData();
+
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return RefreshIndicator(
       onRefresh: _refreshData,
       child: Scaffold(
         key: _scaffoldKey,
-        backgroundColor: darkBackground,
-
-        appBar: AppBar(
-          automaticallyImplyLeading: widget.isVideoPage,
-          iconTheme: IconThemeData(color: Colors.amber),
-          backgroundColor: Colors.black,
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                widget.isVideoPage ? 'Afrolook vidéos' : 'Découvrir',
-                style: TextStyle(
-                  fontSize: 18,
-                  color: widget.isVideoPage ? primaryGreen : Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              if (!widget.isVideoPage)
-                SizedBox(height: 2),
-              if (!widget.isVideoPage)
-                Text(
-                  _getFilterDescription(),
+        backgroundColor: colors.background,
+        appBar: widget.isVideoPage
+            ? AppBar(
+                automaticallyImplyLeading: true,
+                iconTheme: IconThemeData(color: colors.accent),
+                backgroundColor: colors.surface,
+                title: Text(
+                  'Afrolook vidéos',
                   style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey[400],
+                    fontSize: 18,
+                    color: colors.primary,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-            ],
-          ),
-          elevation: 0,
-          actions: [
-            // Bouton filtre avec icône personnalisée
-            InkWell(
-              onTap: _showCountryFilterModal,
-              borderRadius: BorderRadius.circular(20),
-              child: Container(
-                width: 36,
-                height: 36,
-                margin: EdgeInsets.only(right: 8),
-                decoration: BoxDecoration(
-                  color: Colors.grey[800],
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: _getFilterBorderColor(),
-                    width: 1.5,
+                elevation: 0,
+                actions: [
+                  Consumer<SoundProvider>(
+                    builder: (context, soundProvider, child) {
+                      return IconButton(
+                        icon: Icon(
+                          soundProvider.isMuted ? Icons.volume_off : Icons.volume_up,
+                          color: soundProvider.isMuted ? colors.textSecondary : colors.primary,
+                        ),
+                        onPressed: () {
+                          soundProvider.toggleSound();
+                        },
+                        tooltip: soundProvider.isMuted ? 'Activer le son' : 'Couper le son',
+                      );
+                    },
                   ),
-                ),
-                child: Center(
-                  child: _getFilterIcon(),
-                ),
-              ),
-            ),
-            Consumer<SoundProvider>(
-              builder: (context, soundProvider, child) {
-                return IconButton(
-                  icon: Icon(
-                    soundProvider.isMuted ? Icons.volume_off : Icons.volume_up,
-                    color: soundProvider.isMuted ? Colors.grey : primaryGreen,
+                  IconButton(
+                    icon: Icon(Icons.refresh, color: colors.textPrimary, size: 22),
+                    onPressed: _refreshData,
+                    padding: EdgeInsets.zero,
+                    constraints: BoxConstraints(),
                   ),
-                  onPressed: () {
-                    soundProvider.toggleSound();
-                  },
-                  tooltip: soundProvider.isMuted ? 'Activer le son' : 'Couper le son',
-                );
-              },
-            ),
-            // Bouton rafraîchir
-            IconButton(
-              icon: Icon(Icons.refresh, color: Colors.white, size: 22),
-              onPressed: _refreshData,
-              padding: EdgeInsets.zero,
-              constraints: BoxConstraints(),
-            ),
-            SizedBox(width: 8),
-          ],
-        ),
+                  IconButton(
+                    icon: Icon(
+                      colors.isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                      color: colors.textPrimary,
+                    ),
+                    tooltip: 'Changer de thème',
+                    onPressed: () {
+                      Provider.of<ThemeProvider>(context, listen: false).toggleTheme();
+                    },
+                  ),
+                  SizedBox(width: 8),
+                ],
+              )
+            : null,
         body: SafeArea(
           child: Container(
-            color: Colors.black,
+            color: colors.background,
             child: Stack(
               children: [
                 _buildContent(),
@@ -3956,11 +4313,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                     // Show a thank‑you message after the ad is dismissed
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: const Text(
+                        content: Text(
                           'Merci d\'avoir regardé la publicité ! Votre soutien est précieux.',
-                          style: TextStyle(color: Colors.green),
+                          style: TextStyle(color: colors.success),
                         ),
-                        backgroundColor: darkBackground,
+                        backgroundColor: colors.surface,
                         behavior: SnackBarBehavior.floating,
                       ),
                     );

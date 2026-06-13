@@ -5,9 +5,12 @@ import 'package:flutter/material.dart';
 
 
 class LooksPage extends StatefulWidget {
-  const LooksPage({super.key, required this.type,this.sortType});
+  const LooksPage({super.key, required this.type,this.sortType, this.feedKey});
   final String type;
   final String? sortType; // 'recent', 'popular', ou null pour l'algorithme par défaut
+  // Clé exposée pour permettre à homeScreen de déclencher le filtre pays
+  // et le rafraîchissement depuis sa barre supérieure combinée.
+  final GlobalKey<State<HomeConstPostPage>>? feedKey;
 
 
   @override
@@ -17,7 +20,7 @@ class LooksPage extends StatefulWidget {
 class _LooksPageState extends State<LooksPage> {
   @override
   Widget build(BuildContext context) {
-    return HomeConstPostPage(type: widget.type,sortType: widget.sortType,);
+    return HomeConstPostPage(key: widget.feedKey, type: widget.type,sortType: widget.sortType,);
   }
 }
 

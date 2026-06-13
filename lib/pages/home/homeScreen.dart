@@ -10,7 +10,6 @@ import 'package:afrotok/pages/classements/userClassement.dart';
 import 'package:afrotok/pages/home/homeLooks.dart';
 
 import 'package:afrotok/pages/home/listTopModal.dart';
-import 'package:afrotok/pages/home/unitePostPage/unified_home_page.dart';
 
 import 'package:animated_icon/animated_icon.dart';
 import 'package:flutter/foundation.dart';
@@ -92,11 +91,13 @@ import '../vibe/vibesPage.dart';
 import '../widgetGlobal.dart';
 import 'HomePostType.dart';
 import 'homeSportPost.dart';
-
-const Color primaryGreen = Color(0xFF25D366);
-const Color accentYellow = Color(0xFFFFD700);
-const Color darkBackground = Colors.black;
-const Color textColor = Colors.white;
+import 'package:flutter_animate/flutter_animate.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/theme_provider.dart';
+import '../../providers/locale_provider.dart';
+import '../../providers/sound_provider.dart';
+import 'HomeConstPost.dart';
+import '../../l10n/app_localizations.dart';
 
 class MyHomePage extends StatefulWidget {
 
@@ -351,6 +352,8 @@ class _MyHomePageState extends State<MyHomePage>
 
   Widget menu(BuildContext context, double w, h) {
     bool onTap = false;
+    final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context);
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -358,12 +361,12 @@ class _MyHomePageState extends State<MyHomePage>
       },
       child: Drawer(
         width: MediaQuery.of(context).size.width * 0.9,
-        backgroundColor: Colors.black, // Fond noir
+        backgroundColor: colors.background,
         child: Column(
           children: <Widget>[
             DrawerHeader(
               decoration: BoxDecoration(
-                color: Colors.black, // Fond noir pour l'en-tête
+                color: colors.background,
               ),
               child: ListView(
                 children: [
@@ -407,14 +410,14 @@ class _MyHomePageState extends State<MyHomePage>
                                           child: TextCustomerUserTitle(
                                             titre: "@${authProvider.loginUserData.pseudo}",
                                             fontSize: SizeText.homeProfileTextSize,
-                                            couleur: Colors.white,
+                                            couleur: colors.textPrimary,
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
                                         TextCustomerUserTitle(
-                                          titre: "${formatNumber(authProvider.loginUserData.userAbonnesIds!.length!)} abonné(s)",
+                                          titre: "${formatNumber(authProvider.loginUserData.userAbonnesIds!.length!)} ${l10n.profileSubscribers}",
                                           fontSize: SizeText.homeProfileTextSize,
-                                          couleur: Colors.white,
+                                          couleur: colors.textPrimary,
                                           fontWeight: FontWeight.w400,
                                         ),
                                       ],
@@ -435,9 +438,9 @@ class _MyHomePageState extends State<MyHomePage>
                                     Navigator.pushNamed(context, '/home_profile_user');
                                   },
                                   child: Text(
-                                    "Voir mon profil",
+                                    l10n.btnViewProfile,
                                     style: TextStyle(
-                                      color: Colors.blue,
+                                      color: colors.primary,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -452,7 +455,7 @@ class _MyHomePageState extends State<MyHomePage>
                               TextCustomerUserTitle(
                                 titre: "".toUpperCase(),
                                 fontSize: SizeText.homeProfileTextSize,
-                                couleur: Colors.white, // Texte blanc
+                                couleur: colors.textPrimary,
                                 fontWeight: FontWeight.w400,
                               ),
                             ],
@@ -467,14 +470,76 @@ class _MyHomePageState extends State<MyHomePage>
             Expanded(
               child: ListView(
                 children: [
+                  // BASCULE THEME CLAIR / SOMBRE
+                  Consumer<ThemeProvider>(
+                    builder: (context, themeProvider, _) => ListTile(
+                      leading: Icon(
+                        colors.isDark ? Icons.dark_mode : Icons.light_mode,
+                        color: colors.accent,
+                      ),
+                      title: TextCustomerMenu(
+                        titre: colors.isDark ? l10n.menuDarkMode : l10n.menuLightMode,
+                        fontSize: SizeText.homeProfileTextSize,
+                        couleur: colors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      trailing: Switch(
+                        value: themeProvider.themeMode == ThemeMode.dark,
+                        activeColor: colors.primary,
+                        onChanged: (value) {
+                          themeProvider.setThemeMode(value ? ThemeMode.dark : ThemeMode.light);
+                        },
+                      ),
+                      onTap: () => themeProvider.toggleTheme(),
+                    ),
+                  ),
+                  // SÉLECTEUR DE LANGUE
+                  Consumer<LocaleProvider>(
+                    builder: (context, localeProvider, _) => ListTile(
+                      leading: Icon(Icons.language, color: colors.primary),
+                      title: TextCustomerMenu(
+                        titre: l10n.menuLanguage,
+                        fontSize: SizeText.homeProfileTextSize,
+                        couleur: colors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      trailing: GestureDetector(
+                        onTap: () => localeProvider.toggleLocale(),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: colors.surfaceVariant,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: colors.primary, width: 1),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                localeProvider.isFrench ? '🇫🇷 FR' : '🇬🇧 EN',
+                                style: TextStyle(
+                                  color: colors.primary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(Icons.swap_horiz, color: colors.primary, size: 16),
+                            ],
+                          ),
+                        ),
+                      ),
+                      onTap: () => localeProvider.toggleLocale(),
+                    ),
+                  ),
                   // NOUVELLE OPTION: RECHERCHER UN UTILISATEUR
                   ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Icon(Icons.search, color: Colors.yellow), // Icône jaune
+                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
+                    leading: Icon(Icons.search, color: colors.primary), // Icône jaune
                     title: TextCustomerMenu(
-                      titre: "Rechercher un utilisateur",
+                      titre: l10n.menuSearchUsers,
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: Colors.white, // Texte blanc
+                      couleur: colors.textPrimary, // Texte adapté au thème
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () {
@@ -485,13 +550,13 @@ class _MyHomePageState extends State<MyHomePage>
                     },
                   ),
                   ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Icon(Icons.supervised_user_circle,size: 30,                      color: Colors.yellow, // Icône jaune
+                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
+                    leading: Icon(Icons.supervised_user_circle,size: 30,                      color: colors.primary, // Icône jaune
                     ),
                     title: TextCustomerMenu(
-                      titre: "Profile",
+                      titre: l10n.menuProfile,
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: Colors.white, // Texte blanc
+                      couleur: colors.textPrimary, // Texte adapté au thème
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () {
@@ -501,12 +566,12 @@ class _MyHomePageState extends State<MyHomePage>
                     },
                   ),
                   ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Icon(Icons.emoji_events, color: Colors.yellow,size: 30,), // Trophée jaune
+                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
+                    leading: Icon(Icons.emoji_events, color: colors.primary,size: 30,), // Trophée jaune
                     title: TextCustomerMenu(
-                      titre: "Meilleurs Posts du mois",
+                      titre: l10n.menuTopPostsMonth,
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: Colors.white,
+                      couleur: colors.textPrimary,
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () {
@@ -520,14 +585,14 @@ class _MyHomePageState extends State<MyHomePage>
                     },
                   ),
                   ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
                     leading: Icon(Icons.group,size: 30,
-                      color: Colors.yellow, // Icône jaune
+                      color: colors.primary, // Icône jaune
                     ),
                     title: TextCustomerMenu(
-                      titre: "Amis",
+                      titre: l10n.menuFriends,
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: Colors.white, // Texte blanc
+                      couleur: colors.textPrimary, // Texte adapté au thème
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () {
@@ -539,12 +604,12 @@ class _MyHomePageState extends State<MyHomePage>
 
                   if(authProvider.loginUserData.role == UserRole.ADM.name)
                   ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Icon(Icons.connect_without_contact, size: 30, color: Colors.red), // Icône jaune
+                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
+                    leading: Icon(Icons.connect_without_contact, size: 30, color: colors.primary), // Icône jaune
                     title: TextCustomerMenu(
-                      titre: "Marketing",
+                      titre: l10n.menuMarketing,
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: Colors.white, // Texte blanc
+                      couleur: colors.textPrimary, // Texte adapté au thème
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () async {
@@ -556,12 +621,12 @@ class _MyHomePageState extends State<MyHomePage>
                     },
                   ),
                   ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Icon(Entypo.trophy, size: 30, color: Colors.red), // Icône jaune
+                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
+                    leading: Icon(Entypo.trophy, size: 30, color: colors.primary), // Icône jaune
                     title: TextCustomerMenu(
-                      titre: "TOP 10 Afrolooks Stars",
+                      titre: l10n.menuTopStars,
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: Colors.white, // Texte blanc
+                      couleur: colors.textPrimary, // Texte adapté au thème
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () async {
@@ -573,12 +638,12 @@ class _MyHomePageState extends State<MyHomePage>
                     },
                   ),
                   ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Icon(Fontisto.tinder, size: 30, color: Colors.red), // Icône jaune
+                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
+                    leading: Icon(Fontisto.tinder, size: 30, color: colors.primary), // Icône jaune
                     title: TextCustomerMenu(
                       titre: "AfroLove",
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: Colors.white, // Texte blanc
+                      couleur: colors.textPrimary, // Texte adapté au thème
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () async {
@@ -590,12 +655,12 @@ class _MyHomePageState extends State<MyHomePage>
                     },
                   ),
                   ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Icon(MaterialIcons.sports_soccer, size: 30, color: Colors.red), // Icône jaune
+                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
+                    leading: Icon(MaterialIcons.sports_soccer, size: 30, color: colors.primary), // Icône jaune
                     title: TextCustomerMenu(
-                      titre: "Pronostics & Betting",
+                      titre: l10n.menuPronosticsBetting,
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: Colors.white, // Texte blanc
+                      couleur: colors.textPrimary, // Texte adapté au thème
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () async {
@@ -627,13 +692,13 @@ class _MyHomePageState extends State<MyHomePage>
                   //   title: TextCustomerMenu(
                   //     titre: "Xilo",
                   //     fontSize: SizeText.homeProfileTextSize,
-                  //     couleur: Colors.white, // Texte blanc
+                  //     couleur: colors.textPrimary, // Texte adapté au thème
                   //     fontWeight: FontWeight.w600,
                   //   ),
                   //   subtitle: TextCustomerMenu(
                   //     titre: "Votre ami(e)",
                   //     fontSize: 9,
-                  //     couleur: Colors.white, // Texte blanc
+                  //     couleur: colors.textPrimary, // Texte adapté au thème
                   //     fontWeight: FontWeight.w600,
                   //   ),
                   //   onTap: () async {
@@ -678,12 +743,12 @@ class _MyHomePageState extends State<MyHomePage>
                   //   },
                   // ),
                   ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Icon(Icons.bookmark_outlined, color: Colors.yellow,size: 30,), // Icône jaune
+                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
+                    leading: Icon(Icons.bookmark_outlined, color: colors.primary,size: 30,), // Icône jaune
                     title: TextCustomerMenu(
-                      titre: "Mes favoris",
+                      titre: l10n.menuFavorites,
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: Colors.white, // Texte blanc
+                      couleur: colors.textPrimary, // Texte adapté au thème
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () async {
@@ -693,7 +758,7 @@ class _MyHomePageState extends State<MyHomePage>
                     },
                   ),
                   ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
                     leading: AnimateIcon(
                       key: UniqueKey(),
                       onTap: () {
@@ -706,19 +771,19 @@ class _MyHomePageState extends State<MyHomePage>
                       iconType: IconType.continueAnimation,
                       height: 30,
                       width: 30,
-                      color: Colors.yellow, // Icône jaune
+                      color: colors.primary, // Icône jaune
                       animateIcon: AnimateIcons.settings,
                     ),
                     title: TextCustomerMenu(
-                      titre: "🛠️Services & Jobs 💼",
+                      titre: l10n.menuServicesJobs,
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: Colors.white, // Texte blanc
+                      couleur: colors.textPrimary, // Texte adapté au thème
                       fontWeight: FontWeight.w600,
                     ),
                     subtitle: TextCustomerMenu(
-                      titre: "Chercher des gens pour bosser",
+                      titre: l10n.menuServicesJobsSubtitle,
                       fontSize: 9,
-                      couleur: Colors.white, // Texte blanc
+                      couleur: colors.textPrimary, // Texte adapté au thème
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () async {
@@ -729,12 +794,12 @@ class _MyHomePageState extends State<MyHomePage>
                   ),
 
                   ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Icon(Icons.store_mall_directory, color: Colors.yellow,size: 35,), // Icône jaune
+                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
+                    leading: Icon(Icons.store_mall_directory, color: colors.primary,size: 35,), // Icône jaune
                     title: TextCustomerMenu(
-                      titre: "Afroshop Market",
+                      titre: l10n.menuAfroshopMarket,
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: Colors.white, // Texte blanc
+                      couleur: colors.textPrimary, // Texte adapté au thème
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () async {
@@ -749,25 +814,25 @@ class _MyHomePageState extends State<MyHomePage>
                   ListTile(
                     trailing: Icon(
                       Icons.arrow_right_outlined,
-                      color: Colors.greenAccent,
+                      color: colors.primary,
                     ),
                     leading: Container(
                       padding: EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.yellow.withOpacity(0.15),
+                        color: colors.primary.withOpacity(0.15),
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.yellow, width: 2),
+                        border: Border.all(color: colors.primary, width: 2),
                       ),
                       child: Icon(
                         AntDesign.linechart, // Icône crypto native Flutter
-                        color: Colors.yellow,
+                        color: colors.primary,
                         size: 18,
                       ),
                     ),
                     title: TextCustomerMenu(
-                      titre: "AfroCoin Market",
+                      titre: l10n.menuAfroCoinMarket,
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: Colors.white,
+                      couleur: colors.textPrimary,
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () {
@@ -781,12 +846,12 @@ class _MyHomePageState extends State<MyHomePage>
                   ),
 
                   ListTile(
-                    trailing: Icon(Icons.live_tv, color: Colors.red),
-                    leading: Icon(FontAwesome.tv, size: 30, color: Colors.yellow), // Icône jaune
+                    trailing: Icon(Icons.live_tv, color: colors.primary),
+                    leading: Icon(FontAwesome.tv, size: 30, color: colors.primary), // Icône jaune
                     title: TextCustomerMenu(
-                      titre: "Mes lives",
+                      titre: l10n.menuMyLives,
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: Colors.white, // Texte blanc
+                      couleur: colors.textPrimary, // Texte adapté au thème
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () async {
@@ -798,12 +863,12 @@ class _MyHomePageState extends State<MyHomePage>
                     },
                   ),
                   ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Icon(Icons.emoji_events, size: 30, color: Colors.yellow), // Icône jaune
+                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
+                    leading: Icon(Icons.emoji_events, size: 30, color: colors.primary), // Icône jaune
                     title: TextCustomerMenu(
-                      titre: "Mes challenges",
+                      titre: l10n.menuMyChallenges,
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: Colors.white, // Texte blanc
+                      couleur: colors.textPrimary, // Texte adapté au thème
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () async {
@@ -815,13 +880,13 @@ class _MyHomePageState extends State<MyHomePage>
                     },
                   ),
                   ListTile(
-                    trailing: Icon(Icons.info, color: Colors.red),
+                    trailing: Icon(Icons.info, color: colors.primary),
                     leading: Icon(Icons.info,size: 20,
-                      color: Colors.yellow, // Icône jaune
+                      color: colors.primary, // Icône jaune
                     ),                    title: TextCustomerMenu(
-                      titre: "Actus & Infos AfroLook",
+                      titre: l10n.menuNewsInfo,
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: Colors.white, // Texte blanc
+                      couleur: colors.textPrimary, // Texte adapté au thème
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () async {
@@ -832,12 +897,12 @@ class _MyHomePageState extends State<MyHomePage>
                     },
                   ),
                   ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Icon(FontAwesome.forumbee, size: 30, color: Colors.yellow), // Icône jaune
+                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
+                    leading: Icon(FontAwesome.forumbee, size: 30, color: colors.primary), // Icône jaune
                     title: TextCustomerMenu(
-                      titre: "Canaux",
+                      titre: l10n.menuCanaux,
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: Colors.white, // Texte blanc
+                      couleur: colors.textPrimary, // Texte adapté au thème
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () async {
@@ -849,12 +914,12 @@ class _MyHomePageState extends State<MyHomePage>
 
 
                   ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Icon(Icons.history_toggle_off_sharp, size: 30, color: Colors.yellow), // Icône jaune
+                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
+                    leading: Icon(Icons.history_toggle_off_sharp, size: 30, color: colors.primary), // Icône jaune
                     title: TextCustomerMenu(
-                      titre: "Mes chroniques",
+                      titre: l10n.menuMyChroniques,
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: Colors.white, // Texte blanc
+                      couleur: colors.textPrimary, // Texte adapté au thème
                       fontWeight: FontWeight.w900,
                     ),
                     onTap: () async {
@@ -870,17 +935,17 @@ class _MyHomePageState extends State<MyHomePage>
 
 
                   // ListTile(
-                  //   trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
+                  //   trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
                   //   leading: Image.asset(
                   //     'assets/menu/6.png',
                   //     height: 20,
                   //     width: 20,
-                  //     color: Colors.yellow, // Icône jaune
+                  //     color: colors.primary, // Icône jaune
                   //   ),
                   //   title: TextCustomerMenu(
                   //     titre: "Challenges Disponibles 🔥🎁  Gagnez un Prix 🏆",
                   //     fontSize: SizeText.homeProfileTextSize,
-                  //     couleur: Colors.white, // Texte blanc
+                  //     couleur: colors.textPrimary, // Texte adapté au thème
                   //     fontWeight: FontWeight.w600,
                   //   ),
                   //   onTap: () async {
@@ -891,17 +956,17 @@ class _MyHomePageState extends State<MyHomePage>
                   // ),
 
                   // ListTile(
-                  //   trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
+                  //   trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
                   //   leading: Image.asset(
                   //     'assets/menu/6.png',
                   //     height: 20,
                   //     width: 20,
-                  //     color: Colors.yellow, // Icône jaune
+                  //     color: colors.primary, // Icône jaune
                   //   ),
                   //   title: TextCustomerMenu(
                   //     titre: "Mes Looks Challenges 🔥🎁🏆",
                   //     fontSize: SizeText.homeProfileTextSize,
-                  //     couleur: Colors.white, // Texte blanc
+                  //     couleur: colors.textPrimary, // Texte adapté au thème
                   //     fontWeight: FontWeight.w600,
                   //   ),
                   //   onTap: () async {
@@ -914,12 +979,12 @@ class _MyHomePageState extends State<MyHomePage>
 
 
                   ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Icon(Icons.contact_mail, color: Colors.yellow), // Icône jaune
+                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
+                    leading: Icon(Icons.contact_mail, color: colors.primary), // Icône jaune
                     title: TextCustomerMenu(
-                      titre: "Nos Contactes",
+                      titre: l10n.menuContacts,
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: Colors.white, // Texte blanc
+                      couleur: colors.textPrimary, // Texte adapté au thème
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () async {
@@ -931,12 +996,12 @@ class _MyHomePageState extends State<MyHomePage>
                   ),
 
                   ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Icon(Icons.smartphone, color: Colors.yellow), // Icône jaune
+                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
+                    leading: Icon(Icons.smartphone, color: colors.primary), // Icône jaune
                     title: TextCustomerMenu(
-                      titre: "Partager l'application",
+                      titre: l10n.menuShareApp,
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: Colors.white, // Texte blanc
+                      couleur: colors.textPrimary, // Texte adapté au thème
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () async {
@@ -961,7 +1026,7 @@ class _MyHomePageState extends State<MyHomePage>
               'Version: 1.2.76 sbd.11.ph.1 (${authProvider.appDefaultData.app_version_code!})',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Colors.white, // Texte blanc
+                color: colors.textSecondary,
               ),
             ),
 
@@ -970,16 +1035,16 @@ class _MyHomePageState extends State<MyHomePage>
                 alignment: FractionalOffset.bottomCenter,
                 child: Column(
                   children: <Widget>[
-                    Divider(color: Colors.green), // Séparateur vert
+                    Divider(color: colors.primary), // Séparateur vert
                     ListTile(
                       leading: Icon(
                         Icons.exit_to_app,
-                        color: Colors.yellow, // Icône jaune
+                        color: colors.primary,
                       ),
                       title: TextCustomerMenu(
-                        titre: "Déconnecter",
+                        titre: l10n.menuLogout,
                         fontSize: 15,
-                        couleur: Colors.yellow, // Texte jaune
+                        couleur: colors.textPrimary,
                         fontWeight: FontWeight.w600,
                       ),
                       onTap: () async {
@@ -1462,173 +1527,294 @@ class _MyHomePageState extends State<MyHomePage>
 
   int _currentIndex = 0;
   final PageController _pageController = PageController();
+  // 🔥 Clé permettant d'appeler les actions (filtre, son, actualiser) de
+  // l'onglet "Découvrir" depuis la barre supérieure combinée de homeScreen.
+  final GlobalKey<State<HomeConstPostTypePage>> _discoverKey = GlobalKey();
+  // 🔥 Clés pour les onglets "Looks" (récents/populaires) — même principe :
+  // permettent de déclencher le filtre pays et le rafraîchissement de leur
+  // AppBar "Découvrir" (supprimée) depuis la barre supérieure combinée.
+  final GlobalKey<State<HomeConstPostPage>> _looksRecentKey = GlobalKey();
+  final GlobalKey<State<HomeConstPostPage>> _looksPopularKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
     double width = MediaQuery.of(context).size.width;
     double iconSize = width * 0.065;
+    final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context);
+
+    // Icônes réduites et centrées
+    const double navIconSize = 24;
+    const double actionIconSize = 18;
 
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: darkBackground, // Fond noir uniforme
-      appBar: AppBar(
-        backgroundColor: darkBackground,
-        automaticallyImplyLeading: false,
-        titleSpacing: 10,
-
-        title: Row(
-          children: [
-            GestureDetector(
-              onTap: () {
-                _scaffoldKey.currentState!.openDrawer();
-              },
-              child: Container(
-                padding: EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  // color: primaryGreen,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.menu, color: Colors.white, size: 24),
-              ),
-            ),
-            SizedBox(width: 10),
-            Text(
-              'Afrolook',
-              style: TextStyle(
-                fontSize: iconSize * 0.8,
-                fontWeight: FontWeight.w900,
-                color: primaryGreen,
-                letterSpacing: 1.2,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          GestureDetector(
-            onTap: () => Navigator.pushNamed(context, "/mes_notifications"),
-            child: StreamBuilder<List<NotificationData>>(
-              stream: authProvider.getListNotificationAuth(authProvider.loginUserData.id!),
-              builder: (context, snapshot) {
-                int notificationCount = snapshot.hasData ? snapshot.data!.length : 0;
-                return badges.Badge(
-                  showBadge: notificationCount > 0,
-                  badgeStyle: badges.BadgeStyle(badgeColor: accentYellow),
-                  badgeContent: Text(
-                    notificationCount > 9 ? '9+' : '$notificationCount',
-                    style: TextStyle(fontSize: 10, color: darkBackground),
+      backgroundColor: colors.background,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(150),
+        child: Container(
+          color: colors.surface,
+          child: SafeArea(
+            bottom: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // ── Ligne 1 : "Afrolook" + Actions droite ──
+                SizedBox(
+                  height: 44,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Menu drawer
+                      GestureDetector(
+                        onTap: () => _scaffoldKey.currentState!.openDrawer(),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: Icon(Icons.menu, color: colors.textPrimary, size: 22),
+                        ),
+                      ),
+                      // Nom de l'application (réduit pour laisser plus de place aux icônes)
+                      Text(
+                        'Afrolook',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                          color: colors.primary,
+                          letterSpacing: 1.0,
+                        ),
+                      ).animate().fadeIn(duration: 400.ms).slideX(begin: -0.1, end: 0, duration: 400.ms, curve: Curves.easeOut),
+                      const Spacer(),
+                      // Notifications
+                      GestureDetector(
+                        onTap: () => Navigator.pushNamed(context, "/mes_notifications"),
+                        child: StreamBuilder<List<NotificationData>>(
+                          stream: authProvider.getListNotificationAuth(authProvider.loginUserData.id!),
+                          builder: (context, snap) {
+                            int n = snap.hasData ? snap.data!.length : 0;
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 6),
+                              child: badges.Badge(
+                                showBadge: n > 0,
+                                badgeStyle: badges.BadgeStyle(badgeColor: colors.accent),
+                                badgeContent: Text(n > 9 ? '9+' : '$n', style: TextStyle(fontSize: 8, color: colors.onAccent)),
+                                child: Icon(Icons.notifications_none_rounded, color: colors.textPrimary, size: actionIconSize),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      // Dating / Tinder
+                      GestureDetector(
+                        onTap: () async {
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const DatingSwipePage()));
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const DatingNotificationsPage()));
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          child: badges.Badge(
+                            showBadge: _unreadNotificationsCount > 0,
+                            badgeStyle: badges.BadgeStyle(badgeColor: colors.accent),
+                            badgeContent: Text(_unreadNotificationsCount > 9 ? '9+' : '$_unreadNotificationsCount', style: TextStyle(fontSize: 8, color: colors.onAccent)),
+                            child: Icon(Fontisto.tinder, color: colors.danger, size: actionIconSize),
+                          ),
+                        ),
+                      ),
+                      // Filtre (issu de la section "Découvrir")
+                      GestureDetector(
+                        onTap: _onTopBarFilterTap,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          child: Icon(Icons.filter_alt_outlined, color: colors.primary, size: actionIconSize),
+                        ),
+                      ),
+                      // Son (issu de la section "Découvrir")
+                      Consumer<SoundProvider>(
+                        builder: (context, soundProvider, _) => GestureDetector(
+                          onTap: () => soundProvider.toggleSound(),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 6),
+                            child: Icon(
+                              soundProvider.isMuted ? Icons.volume_off : Icons.volume_up,
+                              color: colors.primary,
+                              size: actionIconSize,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Actualiser (issu de la section "Découvrir")
+                      GestureDetector(
+                        onTap: _onTopBarRefreshTap,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          child: Icon(Icons.refresh, color: colors.primary, size: actionIconSize),
+                        ),
+                      ),
+                      // Toggle langue
+                      Consumer<LocaleProvider>(
+                        builder: (context, localeProvider, _) => GestureDetector(
+                          onTap: () => localeProvider.toggleLocale(),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 6),
+                            child: Text(
+                              localeProvider.isFrench ? '🇫🇷' : '🇬🇧',
+                              style: const TextStyle(fontSize: 15),
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Toggle thème
+                      GestureDetector(
+                        onTap: () => Provider.of<ThemeProvider>(context, listen: false).toggleTheme(),
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 6, right: 10),
+                          child: Icon(
+                            colors.isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                            color: colors.primary,
+                            size: actionIconSize,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  child: Icon(Icons.notifications_none_rounded, color: textColor, size: iconSize),
-                );
-              },
-            ),
-          ),
-          // SizedBox(width: 10),
-          // GestureDetector(
-          //   onTap: _showChatXiloDialog,
-          //   child: Container(
-          //     width: 34,
-          //     height: 34,
-          //     decoration: BoxDecoration(color: primaryGreen, shape: BoxShape.circle),
-          //     child: Center(
-          //       child: Text('X', style: TextStyle(color: darkBackground, fontWeight: FontWeight.bold, fontSize: 16)),
-          //     ),
-          //   ),
-          // ),
-          SizedBox(width: 20),
-          // GestureDetector(
-          //   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CryptoMarketPage())),
-          //   child: Container(
-          //     padding: EdgeInsets.all(8),
-          //     decoration: BoxDecoration(
-          //       color: Colors.red.withOpacity(0.15),
-          //       shape: BoxShape.circle,
-          //       border: Border.all(color: Colors.red, width: 2),
-          //     ),
-          //     child: Icon(
-          //       AntDesign.linechart, // Icône crypto native Flutter
-          //       color: Colors.red,
-          //       size: 12,
-          //     ),
-          //   ),
-          // ),
-    GestureDetector(
-      onTap: () async {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const DatingSwipePage(),
-          ),
-        );
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const DatingNotificationsPage(),
-          ),
-        );
-      },
-      child: badges.Badge(
-      showBadge: _unreadNotificationsCount > 0,
-      badgeStyle: badges.BadgeStyle(badgeColor: accentYellow),
-      badgeContent: Text(
-        _unreadNotificationsCount > 9 ? '9+' : '$_unreadNotificationsCount',
-      style: TextStyle(fontSize: 10, color: Colors.red),
-      ),
-      child: Icon(Fontisto.tinder, color: Colors.red, size: iconSize),
-      ),
-    ),
-          // GestureDetector(
-          //   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserServiceListPage())),
-          //   child: Icon(Icons.settings_outlined, color: textColor, size: iconSize),
-          // ),
-          SizedBox(width: 20),
-          GestureDetector(
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => HomeAfroshopPage(title: ''))),
-            child: Icon(Icons.storefront, color: textColor, size: iconSize),
-          ),
-          SizedBox(width: 10),
-          // GestureDetector(
-          //   onTap: () {
-          //     if (_scrollController.hasClients) {
-          //       _scrollController.animateTo(0.0, duration: Duration(milliseconds: 1000), curve: Curves.ease);
-          //     }
-          //     setState(() {
-          //       listConstposts.clear();
-          //     });
-          //   },
-          //   child: Icon(Icons.refresh_rounded, color: textColor, size: iconSize),
-          // ),
-        ],
-        bottom: PreferredSize(
-          preferredSize: Size.fromHeight(48),
-          child: Container(
-            color: darkBackground,
-            child: TabBar(
-              controller: _tabController,
-              isScrollable: true,
-              indicatorColor: primaryGreen,
-              labelColor: accentYellow,
-              unselectedLabelColor: Colors.grey[400],
-              tabs: [
-                Tab(text: '🏠 Accueil'),
-                Tab(text: '⚽ Sport'),
-                Tab(text: '📱 Vibe vidéos'),
-                Tab(text: '📅 Événements'),
-
-                Tab(text: '🪙 Zone VIP'),
-
-                // Tab(text: '🕒 Looks'),
-
-                Tab(text: '🏆 Challenges'),
-                Tab(text: '🌟 Chroniques'),
-                // Tab(text: '🎥 Vidéos virales'),
-
-                // Tab(text: '🌟 Looks'),
-                // Tab(text: '🎵 TikTok'),
-                Tab(text: '🔥 Populaires'),
-
-                // Tab(text: '💼 Offres'),
+                ),
+                // ── Ligne 2 : Navigation principale — toute la largeur ──
+                Container(
+                  height: 52,
+                  decoration: BoxDecoration(
+                    border: Border(top: BorderSide(color: colors.border, width: 0.5)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      // Invitations
+                      GestureDetector(
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MesInvitationsPage(context: context))),
+                        child: StreamBuilder<int>(
+                          stream: getNbrInvitation(),
+                          builder: (context, snap) {
+                            int n = snap.hasData ? snap.data! : 0;
+                            return _navItemWithLabel(
+                              icon: Icons.group_outlined,
+                              activeIcon: Icons.group,
+                              label: l10n.navInvitations,
+                              badge: n,
+                              colors: colors,
+                              size: navIconSize,
+                            );
+                          },
+                        ),
+                      ),
+                      // Messages
+                      GestureDetector(
+                        onTap: () => Navigator.pushNamed(context, '/list_users_chat'),
+                        child: StreamBuilder<int>(
+                          stream: getNbrMessageNonLu(),
+                          builder: (context, snap) {
+                            int n = snap.hasData ? snap.data! : 0;
+                            return _navItemWithLabel(
+                              icon: Icons.chat_bubble_outline,
+                              activeIcon: Icons.chat_bubble,
+                              label: l10n.navMessages,
+                              badge: n,
+                              colors: colors,
+                              size: navIconSize,
+                              activeColor: colors.info,
+                            );
+                          },
+                        ),
+                      ),
+                      // Créer post — bouton central
+                      GestureDetector(
+                        onTap: () => authProvider.checkAppVersionAndProceed(context, () async {
+                          Navigator.pushNamed(context, '/user_posts_form');
+                        }),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: 30,
+                              height: 30,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [colors.primary, colors.accent],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(color: colors.primary.withOpacity(0.35), blurRadius: 8, spreadRadius: 1),
+                                ],
+                              ),
+                              child: Icon(Icons.add, color: colors.onPrimary, size: navIconSize - 6),
+                            ).animate(onPlay: (c) => c.repeat(reverse: true))
+                                .scaleXY(begin: 1.0, end: 1.07, duration: 1200.ms, curve: Curves.easeInOut),
+                            const SizedBox(height: 2),
+                            Text(l10n.navCreate, style: TextStyle(fontSize: 9, color: colors.textSecondary, fontWeight: FontWeight.w500)),
+                          ],
+                        ),
+                      ),
+                      // Vidéos
+                      GestureDetector(
+                        onTap: () => Navigator.pushNamed(context, '/videos'),
+                        child: _navItemWithLabel(
+                          icon: Icons.video_library_outlined,
+                          activeIcon: Icons.video_library,
+                          label: l10n.navVideos,
+                          badge: 0,
+                          colors: colors,
+                          size: navIconSize,
+                        ),
+                      ),
+                      // Lives
+                      GestureDetector(
+                        onTap: () => Navigator.pushNamed(context, '/list_live'),
+                        child: StreamBuilder<int>(
+                          stream: Provider.of<LiveProvider>(context, listen: false).getActiveLivesCountStream(),
+                          builder: (context, snap) {
+                            int n = snap.hasData ? snap.data! : 0;
+                            return _navItemWithLabel(
+                              icon: Icons.live_tv_outlined,
+                              activeIcon: Icons.live_tv,
+                              label: l10n.navLives,
+                              badge: n,
+                              colors: colors,
+                              size: navIconSize,
+                              activeColor: colors.danger,
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // ── Ligne 3 : Onglets de filtres ──
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border(top: BorderSide(color: colors.border, width: 0.5)),
+                  ),
+                  child: TabBar(
+                    controller: _tabController,
+                    isScrollable: true,
+                    indicatorColor: colors.primary,
+                    indicatorWeight: 2.5,
+                    labelColor: colors.accent,
+                    unselectedLabelColor: colors.textSecondary,
+                    labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                    unselectedLabelStyle: const TextStyle(fontSize: 11),
+                    tabAlignment: TabAlignment.start,
+                    tabs: [
+                      Tab(text: l10n.tabHome),
+                      Tab(text: l10n.tabSport),
+                      Tab(text: l10n.tabVibe),
+                      Tab(text: l10n.tabEvents),
+                      Tab(text: l10n.tabVip),
+                      Tab(text: l10n.tabChallenges),
+                      Tab(text: l10n.tabChroniques),
+                      Tab(text: l10n.tabPopular),
+                    ],
+                  ),
+                ),
               ],
-
             ),
           ),
         ),
@@ -1638,9 +1824,7 @@ class _MyHomePageState extends State<MyHomePage>
 
         controller: _tabController,
         children: [
-          // UnifiedHomeOptimized(),
-          // UnifiedHomePage(),
-          LooksPage(type: TabBarType.LOOKS.name,sortType: 'recent',),
+          LooksPage(type: TabBarType.LOOKS.name,sortType: 'recent', feedKey: _looksRecentKey,),
           SizedBox.shrink(), // Widget invisible pour l'onglet Sport
           SizedBox.shrink(), // Widget invisible pour l'onglet Sport
 
@@ -1648,11 +1832,11 @@ class _MyHomePageState extends State<MyHomePage>
           // SportPage(type: TabBarType.SPORT.name),
           // HomeConstPostTypePage(type: TabBarType.SPORT.name),
           // HomeSportPostPage(type: TabBarType.SPORT.name),
-          HomeConstPostTypePage(type: TabBarType.EVENEMENT.name,sortType: 'recent',),
+          HomeConstPostTypePage(key: _discoverKey, type: TabBarType.EVENEMENT.name,sortType: 'recent',),
           SizedBox.shrink(), // Widget invisible pour l'onglet Sport
           ChallengesListPage(),
           ChroniqueHomePage(),
-          LooksPage(type: TabBarType.LOOKS.name,sortType: 'popular',),
+          LooksPage(type: TabBarType.LOOKS.name,sortType: 'popular', feedKey: _looksPopularKey,),
 
           // _buildDiscoverTab(),
 
@@ -1672,10 +1856,13 @@ class _MyHomePageState extends State<MyHomePage>
         ],
       ),
 
-      bottomNavigationBar: Container(
+      // bottomNavigationBar supprimé — navigation déplacée en haut (style Facebook)
+      bottomNavigationBar: SizedBox.shrink(),
+      // ancien code conservé en commentaire ci-dessous pour référence
+      /*bottomNavigationBar: Container(
         height: 70,
         decoration: BoxDecoration(
-          color: darkBackground,
+          color: colors.surface,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.5),
@@ -1690,17 +1877,7 @@ class _MyHomePageState extends State<MyHomePage>
             // Bouton Communauté
             GestureDetector(
               onTap: () async {
-                // Navigator.push(context, MaterialPageRoute(builder: (_) => UserCards()));
                 Navigator.push(context, MaterialPageRoute(builder: (_) => MesInvitationsPage(context: context)));
-
-                // authProvider.checkAppVersionAndProceed(context, () async {
-                //   await userProvider
-                //       .getProfileUsers(authProvider.loginUserData!.id!, context, limiteUsers)
-                //       .then((value) {
-                //     Navigator.push(context, MaterialPageRoute(builder: (_) => UserCards()));
-                //   });
-                // });
-
               },
               child: StreamBuilder<int>(
                 stream: getNbrInvitation(),
@@ -1712,16 +1889,16 @@ class _MyHomePageState extends State<MyHomePage>
                       badges.Badge(
                         showBadge: invitationCount > 0,
                         badgeStyle: badges.BadgeStyle(
-                          badgeColor: accentYellow,
+                          badgeColor: colors.accent,
                         ),
                         badgeContent: Text(
                           invitationCount > 9 ? '9+' : '$invitationCount',
-                          style: TextStyle(fontSize: 9, color: darkBackground),
+                          style: TextStyle(fontSize: 9, color: colors.onAccent),
                         ),
-                        child: Icon(Icons.group, color: textColor, size: 26),
+                        child: Icon(Icons.group, color: colors.textPrimary, size: 26),
                       ),
                       SizedBox(height: 4),
-                      Text('Invitations', style: TextStyle(color: textColor, fontSize: 10)),
+                      Text('Invitations', style: TextStyle(color: colors.textPrimary, fontSize: 10)),
                     ],
                   );
                 },
@@ -1739,15 +1916,15 @@ class _MyHomePageState extends State<MyHomePage>
                     children: [
                       badges.Badge(
                         showBadge: messageCount > 0,
-                        badgeStyle: badges.BadgeStyle(badgeColor: accentYellow),
+                        badgeStyle: badges.BadgeStyle(badgeColor: colors.accent),
                         badgeContent: Text(
                           messageCount > 9 ? '9+' : '$messageCount',
-                          style: TextStyle(fontSize: 9, color: darkBackground),
+                          style: TextStyle(fontSize: 9, color: colors.onAccent),
                         ),
-                        child: Icon(Icons.chat_bubble_outline, color: textColor, size: 26),
+                        child: Icon(Icons.chat_bubble_outline, color: colors.info, size: 26),
                       ),
                       SizedBox(height: 4),
-                      Text('Messages', style: TextStyle(color: textColor, fontSize: 10)),
+                      Text('Messages', style: TextStyle(color: colors.textPrimary, fontSize: 10)),
                     ],
                   );
                 },
@@ -1767,17 +1944,22 @@ class _MyHomePageState extends State<MyHomePage>
                 height: 40,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [primaryGreen, accentYellow],
+                    colors: [colors.primary, colors.accent],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   shape: BoxShape.circle,
                   boxShadow: [
-                    BoxShadow(color: primaryGreen.withOpacity(0.4), blurRadius: 10, spreadRadius: 2, offset: Offset(0, 3)),
+                    BoxShadow(color: colors.primary.withOpacity(0.4), blurRadius: 10, spreadRadius: 2, offset: Offset(0, 3)),
                   ],
                 ),
-                child: Icon(Icons.add, color: darkBackground, size: 30),
-              ),
+                child: Icon(Icons.add, color: colors.onPrimary, size: 30),
+              ).animate(onPlay: (controller) => controller.repeat(reverse: true)).scaleXY(
+                    begin: 1.0,
+                    end: 1.08,
+                    duration: 1200.ms,
+                    curve: Curves.easeInOut,
+                  ),
             ),
             // Bouton Vidéos
             GestureDetector(
@@ -1795,12 +1977,12 @@ class _MyHomePageState extends State<MyHomePage>
                 children: [
                   badges.Badge(
                     showBadge: false,
-                    badgeStyle: badges.BadgeStyle(badgeColor: accentYellow),
-                    badgeContent: Text('9+', style: TextStyle(fontSize: 8, color: darkBackground)),
-                    child: Icon(Icons.video_library, color: textColor, size: 26),
+                    badgeStyle: badges.BadgeStyle(badgeColor: colors.accent),
+                    badgeContent: Text('9+', style: TextStyle(fontSize: 8, color: colors.onAccent)),
+                    child: Icon(Icons.video_library, color: colors.textPrimary, size: 26),
                   ),
                   SizedBox(height: 4),
-                  Text('Vidéos', style: TextStyle(color: textColor, fontSize: 10)),
+                  Text('Vidéos', style: TextStyle(color: colors.textPrimary, fontSize: 10)),
                 ],
               ),
             ),
@@ -1820,15 +2002,15 @@ class _MyHomePageState extends State<MyHomePage>
                     children: [
                       badges.Badge(
                         showBadge: liveCount > 0,
-                        badgeStyle: badges.BadgeStyle(badgeColor: accentYellow),
+                        badgeStyle: badges.BadgeStyle(badgeColor: colors.accent),
                         badgeContent: Text(
                           liveCount > 9 ? '9+' : '$liveCount',
-                          style: TextStyle(fontSize: 9, color: darkBackground),
+                          style: TextStyle(fontSize: 9, color: colors.onAccent),
                         ),
                         child: Icon(Icons.live_tv, color: Colors.red, size: 26),
                       ),
                       SizedBox(height: 4),
-                      Text('Lives', style: TextStyle(color: textColor, fontSize: 10)),
+                      Text('Lives', style: TextStyle(color: colors.textPrimary, fontSize: 10)),
                     ],
                   );
                 },
@@ -1836,10 +2018,69 @@ class _MyHomePageState extends State<MyHomePage>
             ),
           ],
         ),
-      ),
+      ),*/
     );
   }
 
+  // 🔥 Renvoie la clé d'état du feed correspondant à l'onglet actuellement
+  // affiché (Looks récents / Découvrir / Looks populaires), ou null si
+  // l'onglet courant n'a pas de feed avec actions filtre/actualiser.
+  GlobalKey? get _activeFeedKey {
+    switch (_tabController?.index ?? 0) {
+      case 0:
+        return _looksRecentKey;
+      case 3:
+        return _discoverKey;
+      case 7:
+        return _looksPopularKey;
+      default:
+        return null;
+    }
+  }
 
+  // 🔥 Déclenche le filtre pays de l'onglet actif depuis la barre du haut
+  void _onTopBarFilterTap() {
+    final state = _activeFeedKey?.currentState;
+    if (state != null) (state as dynamic).showCountryFilter();
+  }
 
+  // 🔥 Déclenche le rafraîchissement de l'onglet actif depuis la barre du haut
+  void _onTopBarRefreshTap() {
+    final state = _activeFeedKey?.currentState;
+    if (state != null) {
+      (state as dynamic).refreshFeed();
+    } else {
+      _initializeFeedService();
+    }
+  }
+
+  // ── Widget helper : icône de navigation avec label et badge (barre nav principale) ──
+  Widget _navItemWithLabel({
+    required IconData icon,
+    required IconData activeIcon,
+    required String label,
+    required int badge,
+    required AppColors colors,
+    required double size,
+    Color? activeColor,
+  }) {
+    final color = activeColor ?? colors.textSecondary;
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        badges.Badge(
+          showBadge: badge > 0,
+          badgeStyle: badges.BadgeStyle(badgeColor: colors.accent, padding: const EdgeInsets.all(3)),
+          badgeContent: Text(badge > 9 ? '9+' : '$badge', style: TextStyle(fontSize: 8, color: colors.onAccent)),
+          child: Icon(badge > 0 ? activeIcon : icon, color: color, size: size),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: TextStyle(fontSize: 9, color: colors.textSecondary, fontWeight: FontWeight.w500),
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    );
+  }
 }

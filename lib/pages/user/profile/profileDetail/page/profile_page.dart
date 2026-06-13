@@ -11,6 +11,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 import '../../../../../constant/constColors.dart';
+import '../../../../../theme/app_colors.dart';
 import '../../../../../constant/logo.dart';
 import '../../../../../providers/authProvider.dart';
 import '../widget/numbers_widget.dart';
@@ -36,15 +37,9 @@ class _ProfilePageState extends State<ProfilePage> {
   TextEditingController _phoneController = TextEditingController();
   TextEditingController _aproposController = TextEditingController();
 
-  // Définition des couleurs du thème
-  final Color primaryBlack = Color(0xFF121212);
-  final Color primaryRed = Color(0xFFE53935);
-  final Color primaryYellow = Color(0xFFFFD600);
-  final Color secondaryBlack = Color(0xFF1E1E1E);
-  final Color accentRed = Color(0xFFFF5252);
-  final Color textWhite = Color(0xFFF5F5F5);
-  final Color textGrey = Color(0xFF9E9E9E);
-  final Color cardColor = Color(0xFF2A2A2A);
+  late AppColors _colors;
+  static const Color primaryRed = Color(0xFFE53935);
+  static const Color accentRed = Color(0xFFFF5252);
   Future<void> _createProfileUpdatePost(String newImageUrl) async {
     try {
       print('📝 Création d\'un post de mise à jour de profil');
@@ -317,7 +312,7 @@ class _ProfilePageState extends State<ProfilePage> {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: LinearGradient(
-              colors: [primaryRed, primaryYellow],
+              colors: [primaryRed, _colors.accent],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -333,7 +328,7 @@ class _ProfilePageState extends State<ProfilePage> {
             padding: const EdgeInsets.all(4.0),
             child: CircleAvatar(
               radius: 66,
-              backgroundColor: secondaryBlack,
+              backgroundColor: _colors.surfaceVariant,
               child: ClipOval(
                 child: hasSelectedImage
                     ? _buildSelectedImage()
@@ -351,9 +346,9 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Container(
                 padding: EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: primaryBlack,
+                  color: _colors.background,
                   shape: BoxShape.circle,
-                  border: Border.all(color: primaryYellow, width: 2),
+                  border: Border.all(color: _colors.accent, width: 2),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.3),
@@ -363,7 +358,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 child: Icon(
                   Icons.camera_alt,
-                  color: primaryYellow,
+                  color: _colors.accent,
                   size: 20,
                 ),
               ),
@@ -409,7 +404,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ? loadingProgress.cumulativeBytesLoaded /
                   loadingProgress.expectedTotalBytes!
                   : null,
-              color: primaryYellow,
+              color: _colors.accent,
             ),
           );
         },
@@ -425,7 +420,7 @@ class _ProfilePageState extends State<ProfilePage> {
     return Icon(
       Icons.person,
       size: 60,
-      color: textGrey,
+      color: _colors.textSecondary,
     );
   }
 
@@ -434,7 +429,7 @@ class _ProfilePageState extends State<ProfilePage> {
       margin: EdgeInsets.symmetric(vertical: 6),
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: cardColor,
+        color: _colors.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey[800]!, width: 1),
       ),
@@ -443,13 +438,13 @@ class _ProfilePageState extends State<ProfilePage> {
           Container(
             padding: EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: primaryBlack,
+              color: _colors.background,
               shape: BoxShape.circle,
-              border: Border.all(color: primaryYellow.withOpacity(0.3)),
+              border: Border.all(color: _colors.accent.withOpacity(0.3)),
             ),
             child: Icon(
               icon,
-              color: primaryYellow,
+              color: _colors.accent,
               size: 20,
             ),
           ),
@@ -461,7 +456,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 Text(
                   title,
                   style: TextStyle(
-                    color: textGrey,
+                    color: _colors.textSecondary,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -474,7 +469,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     title == 'Email' ? _emailController :
                     title == 'Téléphone' ? _phoneController : _aproposController,
                     style: TextStyle(
-                      color: textWhite,
+                      color: _colors.textPrimary,
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
@@ -488,7 +483,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   Text(
                     value.isNotEmpty ? value : 'Non renseigné',
                     style: TextStyle(
-                      color: value.isNotEmpty ? textWhite : textGrey,
+                      color: value.isNotEmpty ? _colors.textPrimary : _colors.textSecondary,
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
@@ -508,15 +503,15 @@ class _ProfilePageState extends State<ProfilePage> {
       margin: EdgeInsets.symmetric(vertical: 8),
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: cardColor,
+        color: _colors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: primaryYellow.withOpacity(0.3), width: 1),
+        border: Border.all(color: _colors.accent.withOpacity(0.3), width: 1),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            primaryBlack.withOpacity(0.8),
-            primaryBlack.withOpacity(0.9),
+            _colors.background.withOpacity(0.8),
+            _colors.background.withOpacity(0.9),
           ],
         ),
       ),
@@ -527,14 +522,14 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
               Icon(
                 Icons.share,
-                color: primaryYellow,
+                color: _colors.accent,
                 size: 20,
               ),
               SizedBox(width: 10),
               Text(
                 "Parrainage",
                 style: TextStyle(
-                  color: textWhite,
+                  color: _colors.textPrimary,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -545,7 +540,7 @@ class _ProfilePageState extends State<ProfilePage> {
           Container(
             padding: EdgeInsets.all(15),
             decoration: BoxDecoration(
-              color: primaryBlack,
+              color: _colors.background,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: primaryRed.withOpacity(0.3)),
             ),
@@ -558,7 +553,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     Text(
                       "Votre code",
                       style: TextStyle(
-                        color: textGrey,
+                        color: _colors.textSecondary,
                         fontSize: 12,
                       ),
                     ),
@@ -566,7 +561,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     Text(
                       "${authProvider.loginUserData.codeParrainage}",
                       style: TextStyle(
-                        color: primaryYellow,
+                        color: _colors.accent,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.5,
@@ -622,7 +617,7 @@ class _ProfilePageState extends State<ProfilePage> {
           Text(
             "Partagez ce code avec vos amis pour gagner des récompenses !",
             style: TextStyle(
-              color: textGrey,
+              color: _colors.textSecondary,
               fontSize: 12,
               fontStyle: FontStyle.italic,
             ),
@@ -634,17 +629,18 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    _colors = AppColors.of(context);
     final hasSelectedImage = _imageBytes != null || _imageFile != null;
 
     return Scaffold(
-      backgroundColor: primaryBlack,
+      backgroundColor: _colors.background,
       appBar: AppBar(
-        backgroundColor: primaryBlack,
+        backgroundColor: _colors.background,
         elevation: 0,
         title: Text(
           "Mes Informations",
           style: TextStyle(
-            color: textWhite,
+            color: _colors.textPrimary,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -656,18 +652,18 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Container(
               padding: EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: cardColor,
+                color: _colors.surface,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Logo(),
             ),
           ),
         ],
-        iconTheme: IconThemeData(color: textWhite),
+        iconTheme: IconThemeData(color: _colors.textPrimary),
       ),
       body: RefreshIndicator(
         color: primaryRed,
-        backgroundColor: primaryBlack,
+        backgroundColor: _colors.background,
         onRefresh: () async {
           setState(() {});
           return Future.delayed(Duration(milliseconds: 500));
@@ -690,7 +686,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           margin: EdgeInsets.only(bottom: 10),
                           child: change_profil_loading
                               ? CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(primaryYellow),
+                            valueColor: AlwaysStoppedAnimation<Color>(_colors.accent),
                           )
                               : ElevatedButton(
                             onPressed: _uploadProfileImage,
@@ -723,9 +719,9 @@ class _ProfilePageState extends State<ProfilePage> {
               Container(
                 padding: EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: cardColor,
+                  color: _colors.surface,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: primaryYellow.withOpacity(0.3)),
+                  border: Border.all(color: _colors.accent.withOpacity(0.3)),
                 ),
                 child: Center(
                   child: Column(
@@ -733,7 +729,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       Text(
                         "Pseudo",
                         style: TextStyle(
-                          color: textGrey,
+                          color: _colors.textSecondary,
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
                         ),
@@ -742,7 +738,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       Text(
                         "@${authProvider.loginUserData.pseudo ?? ''}",
                         style: TextStyle(
-                          color: primaryYellow,
+                          color: _colors.accent,
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.0,
@@ -751,7 +747,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       Text(
                         "(Non modifiable)",
                         style: TextStyle(
-                          color: textGrey,
+                          color: _colors.textSecondary,
                           fontSize: 10,
                           fontStyle: FontStyle.italic,
                         ),
@@ -767,7 +763,7 @@ class _ProfilePageState extends State<ProfilePage> {
               Container(
                 padding: EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: cardColor,
+                  color: _colors.surface,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: primaryRed.withOpacity(0.3)),
                 ),
@@ -776,7 +772,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     Text(
                       "Statistiques",
                       style: TextStyle(
-                        color: textWhite,
+                        color: _colors.textPrimary,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -791,7 +787,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     Container(
                       padding: EdgeInsets.all(15),
                       decoration: BoxDecoration(
-                        color: primaryBlack,
+                        color: _colors.background,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.green.withOpacity(0.3)),
                       ),
@@ -824,7 +820,7 @@ class _ProfilePageState extends State<ProfilePage> {
               Container(
                 padding: EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: cardColor,
+                  color: _colors.surface,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
@@ -843,7 +839,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         Text(
                           "Informations",
                           style: TextStyle(
-                            color: textWhite,
+                            color: _colors.textPrimary,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),

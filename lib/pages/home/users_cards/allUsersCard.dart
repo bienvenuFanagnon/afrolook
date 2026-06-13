@@ -15,6 +15,7 @@ import '../../../providers/authProvider.dart';
 import '../../../providers/postProvider.dart';
 import '../../../providers/userProvider.dart';
 import '../../user/amis/pageMesInvitations.dart';
+import '../../../theme/app_colors.dart';
 import 'cardModel.dart';
 import 'card_exemple.dart';
 
@@ -90,8 +91,9 @@ class _ExamplePageState extends State<UserCards> {
   Widget build(BuildContext context) {
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
+    final colors = AppColors.of(context);
     return Scaffold(
-      backgroundColor: Colors.white12,
+      backgroundColor: colors.background,
       appBar: AppBar(
         title: Text("Profiles"),
         actions: [
@@ -122,7 +124,7 @@ class _ExamplePageState extends State<UserCards> {
                               Entypo.message,
                               //AntDesign.message1,
                               size: 30,
-                              color: ConstColors.blackIconColors,
+                              color: colors.textPrimary,
                             ),
                           );
                         }else
@@ -133,11 +135,11 @@ class _ExamplePageState extends State<UserCards> {
                             return badges.Badge(
 
 
-                              badgeContent: snapshot.data!>10?Text('9+',style: TextStyle(fontSize:10,color: Colors.white ),):Text('${snapshot.data!}',style: TextStyle(fontSize:10,color: Colors.white ),),
+                              badgeContent: snapshot.data!>10?Text('9+',style: TextStyle(fontSize:10,color: colors.onAccent ),):Text('${snapshot.data!}',style: TextStyle(fontSize:10,color: colors.onAccent ),),
                               child: Icon(
                                 MaterialCommunityIcons.account_group,
                                 //AntDesign.message1,
-                                color: ConstColors.blackIconColors,
+                                color: colors.textPrimary,
 
                               ),
                             );
@@ -151,7 +153,7 @@ class _ExamplePageState extends State<UserCards> {
                                 //AntDesign.message1,
                                 size: 30,
 
-                                color: ConstColors.blackIconColors,
+                                color: colors.textPrimary,
                               ),
                             );
                           }
@@ -166,7 +168,7 @@ class _ExamplePageState extends State<UserCards> {
                               MaterialCommunityIcons.account_group,
                               //AntDesign.message1,
                               size: 30,
-                              color: ConstColors.blackIconColors,
+                              color: colors.textPrimary,
                             ),
                           );
                         }

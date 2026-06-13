@@ -36,6 +36,9 @@ import 'coins/coin_gift_dialog.dart';
 import 'coins/coin_recharge_screen.dart';
 import 'coins/post_gifts_list.dart';
 
+import '../theme/app_colors.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+
 
 const _afroBlack = Color(0xFF000000);
 const _afroGreen = Color(0xFF2ECC71);
@@ -166,9 +169,28 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       }
     }
 
+    // 🚀 Affichage instantané : on place immédiatement le post initial dans
+    // le feed pour que le premier frame puisse l'afficher (sans attendre
+    // la requête réseau de la liste complète).
+    if (widget.initialPost != null && !_loadedPostIds.contains(widget.initialPost!.id)) {
+      _loadedPostIds.add(widget.initialPost!.id!);
+      _videoPosts.add(widget.initialPost!);
+      _rebuildFeedItems();
+      _isLoadingFeed = false;
+      _subscribeToPostUpdates(widget.initialPost!);
+      // Charger les relations (user/canal) en arrière-plan sans bloquer l'affichage
+      _lazyLoadPostRelations(widget.initialPost!);
+    }
+
     _initializeFeed();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _showFirstScrollModalIfNeeded();
+      // Démarrer la vidéo initiale dès le premier frame, sans attendre le
+      // chargement de la liste complète.
+      if (_feedItems.isNotEmpty && _feedItems[0] is Post && !_isVideoInitialized) {
+        _preloadNeighborhood(0);
+        _initializeVideo(_feedItems[0] as Post, index: 0);
+      }
     });
   }
   Future<void> _lazyLoadPostRelations(Post post) async {
@@ -545,37 +567,66 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     }
   }
   // ==================== FEED LOADING (MODIFIÉ) ====================
+  /// 🚀 Le post initial est déjà affiché (placé dans `_feedItems` dès
+  /// `initState`). Cette méthode ne fait que compléter le feed EN
+  /// ARRIÈRE-PLAN : chargement des vidéos suggérées + anciennes vidéos,
+  /// puis ajout au feed sans perturber la lecture en cours (pas de reset
+  /// du `PageController`, pas de remise à `_isLoadingFeed = true`).
   Future<void> _initializeFeed() async {
-    setState(() => _isLoadingFeed = true);
-
     _itemsSinceLastLoad = 0;
     _maxVideosReached = false;
     _lastDocument = null;
     _usedOldVideoIds.clear();
 
-    // 🔥 Charger vidéo initiale SEULEMENT si elle existe
+    // Si le post initial n'a pas encore été ajouté (cas où widget.initialPost
+    // est null lors du initState), on le garde géré ici en fallback.
     if (widget.initialPost != null && !_loadedPostIds.contains(widget.initialPost!.id)) {
       _loadedPostIds.add(widget.initialPost!.id!);
       _videoPosts.add(widget.initialPost!);
       await _loadPostRelations(widget.initialPost!);
       _subscribeToPostUpdates(widget.initialPost!);
+      _rebuildFeedItems();
+      if (mounted) setState(() {});
     }
 
-    // Charger vidéos récentes
-    await _loadMoreVideos(isInitial: true);
+    // 🚀 Priorité haute : charger un petit lot (3 posts) en premier pour
+    // garantir que les posts #2 et #3 soient disponibles très rapidement,
+    // avant le post #1 ne soit même terminé de s'afficher/jouer.
+    await _loadMoreVideos(isInitial: true, limit: 3);
+
+    if (mounted) {
+      setState(() {
+        _rebuildFeedItems();
+      });
+    }
+
+    // Précharger immédiatement les voisins (posts #2/#3) pour que leurs
+    // VideoPlayerController soient prêts pendant la lecture du post #1.
+    _preloadNeighborhood(0);
+
+    // Charger le reste du lot suggéré + les anciennes vidéos en arrière-plan,
+    // sans bloquer/retarder l'affichage déjà effectué ci-dessus.
+    await _loadMoreVideos(isInitial: true, limit: _batchSize - 3);
 
     // Charger les anciennes vidéos
     await _loadOldVideosInBackground();
 
-    // Construire feed final
-    _rebuildFeedItems();
+    // Reconstruire le feed avec les nouvelles vidéos ajoutées, sans toucher
+    // à la position de lecture courante (_rebuildFeedItems reconstruit la
+    // liste mais le PageController garde son index courant).
+    if (mounted) {
+      setState(() {
+        _rebuildFeedItems();
+        _isLoadingFeed = false;
+      });
+    }
 
-    setState(() => _isLoadingFeed = false);
-
-    // Init player seulement si le feed n'est pas vide
-    if (_feedItems.isNotEmpty && _feedItems[0] is Post) {
+    // Précharger les voisins du post actuellement affiché si pas déjà fait
+    if (_feedItems.isNotEmpty && _feedItems[0] is Post && !_isVideoInitialized) {
       _preloadNeighborhood(0);
       _initializeVideo(_feedItems[0] as Post, index: 0);
+    } else {
+      _preloadNeighborhood(_currentPage);
     }
   }
   Future<void> _initializeFeed2() async {
@@ -758,13 +809,13 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     if (mounted) setState(() {});
   }
 
-  Future<void> _loadMoreVideos({bool isInitial = false}) async {
+  Future<void> _loadMoreVideos({bool isInitial = false, int? limit}) async {
     if (_isLoadingMore) return;
     if (_maxVideosReached) return; // déjà atteint 50 vidéos
 
     setState(() => _isLoadingMore = true);
     try {
-      final newPosts = await _fetchSuggestedVideosBatch(limit: _batchSize, excludeIds: _loadedPostIds);
+      final newPosts = await _fetchSuggestedVideosBatch(limit: limit ?? _batchSize, excludeIds: _loadedPostIds);
       if (newPosts.isEmpty) {
         // Aucune nouvelle vidéo trouvée, on s'arrête
         _maxVideosReached = true;
@@ -1069,14 +1120,15 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   }
 
   void _showFirstScrollModal() {
+    final colors = AppColors.of(context);
     showDialog(
       context: context,
       barrierDismissible: true,
       builder: (context) => AlertDialog(
-        backgroundColor: _afroDarkGrey,
+        backgroundColor: colors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [Icon(Icons.swipe_vertical, color: _afroYellow), SizedBox(width: 8), Text('Astuces Vidéo', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))],
+        title: Row(
+          children: [Icon(Icons.swipe_vertical, color: colors.accent), const SizedBox(width: 8), Text('Astuces Vidéo', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold))],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1085,7 +1137,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: colors.surfaceVariant,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -1093,32 +1145,32 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: _afroYellow.withOpacity(0.2),
+                      color: colors.accent.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.swipe_vertical, color: _afroYellow, size: 28),
+                    child: Icon(Icons.swipe_vertical, color: colors.accent, size: 28),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Glisser pour découvrir', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                        SizedBox(height: 4),
-                        Text('Défiler vers le haut ou le bas pour voir d\'autres vidéos tendance.', style: TextStyle(color: _twitterTextSecondary, fontSize: 12)),
+                        Text('Glisser pour découvrir', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 4),
+                        Text('Défiler vers le haut ou le bas pour voir d\'autres vidéos tendance.', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
                       ],
                     ),
                   ),
                 ],
               ),
-            ),
+            ).animate().fadeIn(duration: 300.ms).slideX(begin: -0.05, end: 0, duration: 300.ms, curve: Curves.easeOut),
             const SizedBox(height: 12),
 
             // Astuce 2 : Double tap pour liker
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: colors.surfaceVariant,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -1126,32 +1178,32 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: _afroRed.withOpacity(0.2),
+                      color: colors.danger.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.favorite, color: _afroRed, size: 28),
+                    child: Icon(Icons.favorite, color: colors.danger, size: 28),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Double tap pour aimer', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                        SizedBox(height: 4),
-                        Text('Tapez deux fois rapidement sur la vidéo pour envoyer un like ❤️', style: TextStyle(color: _twitterTextSecondary, fontSize: 12)),
+                        Text('Double tap pour aimer', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 4),
+                        Text('Tapez deux fois rapidement sur la vidéo pour envoyer un like ❤️', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
                       ],
                     ),
                   ),
                 ],
               ),
-            ),
+            ).animate().fadeIn(duration: 300.ms, delay: 80.ms).slideX(begin: -0.05, end: 0, duration: 300.ms, curve: Curves.easeOut),
             const SizedBox(height: 12),
 
             // Astuce 3 : Pièces et cadeaux (optionnel)
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: colors.surfaceVariant,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -1159,25 +1211,25 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: _afroGreen.withOpacity(0.2),
+                      color: colors.primary.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.card_giftcard, color: _afroGreen, size: 28),
+                    child: Icon(Icons.card_giftcard, color: colors.primary, size: 28),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Cadeaux et soutien', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                        SizedBox(height: 4),
-                        Text('Envoyez des cadeaux ou soutenez les créateurs avec les boutons à droite.', style: TextStyle(color: _twitterTextSecondary, fontSize: 12)),
+                        Text('Cadeaux et soutien', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 4),
+                        Text('Envoyez des cadeaux ou soutenez les créateurs avec les boutons à droite.', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
                       ],
                     ),
                   ),
                 ],
               ),
-            ),
+            ).animate().fadeIn(duration: 300.ms, delay: 160.ms).slideX(begin: -0.05, end: 0, duration: 300.ms, curve: Curves.easeOut),
           ],
         ),
         actions: [
@@ -1186,7 +1238,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
               Navigator.pop(context);
               _markSuggestionsModalSeen();
             },
-            child: const Text('Compris !', style: TextStyle(color: _afroGreen)),
+            child: Text('Compris !', style: TextStyle(color: colors.primary)),
           ),
         ],
       ),
@@ -1356,55 +1408,56 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
 // Dialog pour solde insuffisant (à ajouter dans la classe)
   void _showInsufficientCoinsForLikeDialog() {
+    final colors = AppColors.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: colors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
+        title: Text(
           '💡 Soutenez le créateur !',
-          style: TextStyle(color: Color(0xFFFFD700), fontWeight: FontWeight.bold),
+          style: TextStyle(color: colors.accent, fontWeight: FontWeight.bold),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Chaque like que vous envoyez offre 1 pièce au créateur du post !',
-              style: TextStyle(color: Colors.white70),
+              style: TextStyle(color: colors.textSecondary),
             ),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFD700).withOpacity(0.1),
+                color: colors.accent.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3)),
+                border: Border.all(color: colors.accent.withOpacity(0.3)),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Text('🪙', style: TextStyle(fontSize: 20)),
-                  SizedBox(width: 8),
+                  const Text('🪙', style: TextStyle(fontSize: 20)),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Le like coûte 2 pièces :\n• Pour soutenir le créateur',
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                      style: TextStyle(color: colors.textSecondary, fontSize: 12),
                     ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Rechargez votre compte pour continuer à soutenir vos créateurs préférés !',
-              style: TextStyle(color: Colors.white54, fontSize: 12),
+              style: TextStyle(color: colors.textSecondary, fontSize: 12),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Annuler', style: TextStyle(color: Colors.white70)),
+            child: Text('Annuler', style: TextStyle(color: colors.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -1415,8 +1468,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFFD700),
-              foregroundColor: Colors.black,
+              backgroundColor: colors.accent,
+              foregroundColor: colors.onAccent,
             ),
             child: const Text('Recharger', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
@@ -1463,20 +1516,21 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
   void _showCommentsModal(Post post) {
     authProvider.incrementPostTotalInteractions(postId: post.id!);
+    final colors = AppColors.of(context);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.85,
-        decoration: const BoxDecoration(color: _afroBlack, borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+        decoration: BoxDecoration(color: colors.surface, borderRadius: const BorderRadius.vertical(top: Radius.circular(20))),
         child: Column(
           children: [
-            Container(padding: const EdgeInsets.all(16), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('Commentaires', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)), IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: () => Navigator.pop(context))])),
+            Container(padding: const EdgeInsets.all(16), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text('Commentaires', style: TextStyle(color: colors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)), IconButton(icon: Icon(Icons.close, color: colors.textPrimary), onPressed: () => Navigator.pop(context))])),
             Expanded(child: PostComments(post: post)),
           ],
         ),
-      ),
+      ).animate().slideY(begin: 0.05, end: 0, duration: 250.ms, curve: Curves.easeOut).fadeIn(duration: 250.ms),
     );
   }
   void _showGiftDialog(Post post) {
@@ -1519,21 +1573,22 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     );
   }
   void _showGiftDialog2(Post post) {
+    final colors = AppColors.of(context);
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (context, setStateDialog) => Dialog(
-            backgroundColor: Colors.black,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: Colors.yellow, width: 2)),
+            backgroundColor: colors.surface,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: colors.accent, width: 2)),
             child: Container(
               height: MediaQuery.of(context).size.height * 0.6,
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  const Text('Envoyer un Cadeau', style: TextStyle(color: Colors.yellow, fontWeight: FontWeight.bold, fontSize: 20)),
+                  Text('Envoyer un Cadeau', style: TextStyle(color: colors.accent, fontWeight: FontWeight.bold, fontSize: 20)),
                   const SizedBox(height: 12),
-                  const Text('Choisissez le montant en FCFA', style: TextStyle(color: Colors.white)),
+                  Text('Choisissez le montant en FCFA', style: TextStyle(color: colors.textPrimary)),
                   const SizedBox(height: 12),
                   Expanded(
                     child: GridView.builder(
@@ -1543,21 +1598,21 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
                         onTap: () => setStateDialog(() => _selectedGiftIndex = index),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: _selectedGiftIndex == index ? Colors.green : Colors.grey[800],
+                            color: _selectedGiftIndex == index ? colors.primary : colors.surfaceVariant,
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: _selectedGiftIndex == index ? Colors.yellow : Colors.transparent),
+                            border: Border.all(color: _selectedGiftIndex == index ? colors.accent : Colors.transparent),
                           ),
-                          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Text(giftIcons[index], style: const TextStyle(fontSize: 24)), const SizedBox(height: 5), Text('${giftPrices[index].toInt()} FCFA', style: const TextStyle(color: Colors.white))]),
-                        ),
+                          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Text(giftIcons[index], style: const TextStyle(fontSize: 24)), const SizedBox(height: 5), Text('${giftPrices[index].toInt()} FCFA', style: TextStyle(color: colors.textPrimary))]),
+                        ).animate().fadeIn(duration: 250.ms).scale(begin: const Offset(0.9, 0.9), end: const Offset(1, 1), duration: 250.ms, curve: Curves.easeOut),
                       ),
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Text('Solde: ${authProvider.loginUserData.votre_solde_principal?.toInt() ?? 0} FCFA', style: const TextStyle(color: Colors.yellow)),
+                  Text('Solde: ${authProvider.loginUserData.votre_solde_principal?.toInt() ?? 0} FCFA', style: TextStyle(color: colors.accent)),
                   const SizedBox(height: 12),
                   Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                    TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annuler', style: TextStyle(color: Colors.white))),
-                    ElevatedButton(onPressed: () { Navigator.pop(context); _sendGift(giftPrices[_selectedGiftIndex], post); }, style: ElevatedButton.styleFrom(backgroundColor: Colors.green), child: const Text('Envoyer', style: TextStyle(color: Colors.black))),
+                    TextButton(onPressed: () => Navigator.pop(context), child: Text('Annuler', style: TextStyle(color: colors.textPrimary))),
+                    ElevatedButton(onPressed: () { Navigator.pop(context); _sendGift(giftPrices[_selectedGiftIndex], post); }, style: ElevatedButton.styleFrom(backgroundColor: colors.primary), child: Text('Envoyer', style: TextStyle(color: colors.onPrimary))),
                   ]),
                 ],
               ),
@@ -1596,15 +1651,16 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   }
 
   void _showInsufficientBalanceDialog() {
+    final colors = AppColors.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.black,
-        title: const Text('Solde insuffisant', style: TextStyle(color: Colors.yellow)),
-        content: const Text('Rechargez votre compte pour envoyer un cadeau.', style: TextStyle(color: Colors.white)),
+        backgroundColor: colors.surface,
+        title: Text('Solde insuffisant', style: TextStyle(color: colors.accent)),
+        content: Text('Rechargez votre compte pour envoyer un cadeau.', style: TextStyle(color: colors.textPrimary)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annuler', style: TextStyle(color: Colors.white))),
-          ElevatedButton(onPressed: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (context) => DepositScreen())); }, style: ElevatedButton.styleFrom(backgroundColor: Colors.green), child: const Text('Recharger')),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('Annuler', style: TextStyle(color: colors.textPrimary))),
+          ElevatedButton(onPressed: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (context) => DepositScreen())); }, style: ElevatedButton.styleFrom(backgroundColor: colors.primary), child: Text('Recharger', style: TextStyle(color: colors.onPrimary))),
         ],
       ),
     );
@@ -1645,9 +1701,10 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   }
 
   void _showPostMenu(Post post) {
+    final colors = AppColors.of(context);
     showModalBottomSheet(
       context: context,
-      backgroundColor: _afroDarkGrey,
+      backgroundColor: colors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -1658,40 +1715,40 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
           children: [
             // Bouton Partager (comme sur TikTok)
             ListTile(
-              leading: const Icon(Icons.share, color: Colors.white),
-              title: const Text('Partager', style: TextStyle(color: Colors.white)),
+              leading: Icon(Icons.share, color: colors.info),
+              title: Text('Partager', style: TextStyle(color: colors.textPrimary)),
               onTap: () async {
                 Navigator.pop(context);
                  _sharePost(post);
               },
-            ),
+            ).animate().fadeIn(duration: 200.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
 
             if (post.user_id != authProvider.loginUserData.id)
               ListTile(
-                leading: const Icon(Icons.flag, color: Colors.white),
-                title: const Text('Signaler', style: TextStyle(color: Colors.white)),
+                leading: Icon(Icons.flag, color: colors.textPrimary),
+                title: Text('Signaler', style: TextStyle(color: colors.textPrimary)),
                 onTap: () async {
                   Navigator.pop(context);
                   await postProvider.updateVuePost(post, context);
                 },
-              ),
+              ).animate().fadeIn(duration: 200.ms, delay: 40.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
 
             if (post.user_id == authProvider.loginUserData.id ||
                 authProvider.loginUserData.role == UserRole.ADM.name)
               ListTile(
-                leading: const Icon(Icons.delete, color: Colors.red),
-                title: const Text('Supprimer', style: TextStyle(color: Colors.red)),
+                leading: Icon(Icons.delete, color: colors.danger),
+                title: Text('Supprimer', style: TextStyle(color: colors.danger)),
                 onTap: () async {
                   Navigator.pop(context);
                   await _deletePost(post, context);
                 },
-              ),
+              ).animate().fadeIn(duration: 200.ms, delay: 80.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
 
-            const Divider(color: Colors.grey),
+            Divider(color: colors.divider),
 
             ListTile(
-              leading: const Icon(Icons.cancel, color: Colors.white),
-              title: const Text('Annuler', style: TextStyle(color: Colors.white)),
+              leading: Icon(Icons.cancel, color: colors.textPrimary),
+              title: Text('Annuler', style: TextStyle(color: colors.textPrimary)),
               onTap: () => Navigator.pop(context),
             ),
           ],
@@ -1738,15 +1795,16 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       final solde = await _getSoldeUtilisateur(user.uid);
       if (solde < _challenge!.prixVote!) { _showSoldeInsuffisant(_challenge!.prixVote! - solde.toInt()); return; }
     }
+    final colors = AppColors.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: _afroDarkGrey,
-        title: const Text('Confirmer votre vote', style: TextStyle(color: Colors.white)),
-        content: Text(!_challenge!.voteGratuit! ? 'Ce vote coûtera ${_challenge!.prixVote} FCFA.' : 'Votre vote est gratuit et définitif.', style: const TextStyle(color: Colors.white70)),
+        backgroundColor: colors.surface,
+        title: Text('Confirmer votre vote', style: TextStyle(color: colors.textPrimary)),
+        content: Text(!_challenge!.voteGratuit! ? 'Ce vote coûtera ${_challenge!.prixVote} FCFA.' : 'Votre vote est gratuit et définitif.', style: TextStyle(color: colors.textSecondary)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annuler', style: TextStyle(color: Colors.grey))),
-          ElevatedButton(onPressed: () async { Navigator.pop(context); await _processVoteWithChallenge(user.uid); }, style: ElevatedButton.styleFrom(backgroundColor: _afroGreen), child: const Text('Voter')),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('Annuler', style: TextStyle(color: colors.textSecondary))),
+          ElevatedButton(onPressed: () async { Navigator.pop(context); await _processVoteWithChallenge(user.uid); }, style: ElevatedButton.styleFrom(backgroundColor: colors.primary), child: Text('Voter', style: TextStyle(color: colors.onPrimary))),
         ],
       ),
     );
@@ -1791,20 +1849,29 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     await _createTransaction(TypeTransaction.DEPENSE.name, montant.toDouble(), raison, userId);
   }
 
-  void _showError(String msg) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
-  void _showSuccess(String msg) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.green));
-  void _showSoldeInsuffisant(int manquant) => showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      backgroundColor: _afroDarkGrey,
-      title: const Text('Solde insuffisant', style: TextStyle(color: Colors.yellow)),
-      content: Text('Il manque $manquant FCFA pour voter. Rechargez votre compte.', style: const TextStyle(color: Colors.white)),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Plus tard')),
-        ElevatedButton(onPressed: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (context) => DepositScreen())); }, child: const Text('Recharger')),
-      ],
-    ),
-  );
+  void _showError(String msg) {
+    final colors = AppColors.of(context);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: colors.danger));
+  }
+  void _showSuccess(String msg) {
+    final colors = AppColors.of(context);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: colors.success));
+  }
+  void _showSoldeInsuffisant(int manquant) {
+    final colors = AppColors.of(context);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: colors.surface,
+        title: Text('Solde insuffisant', style: TextStyle(color: colors.accent)),
+        content: Text('Il manque $manquant FCFA pour voter. Rechargez votre compte.', style: TextStyle(color: colors.textPrimary)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('Plus tard', style: TextStyle(color: colors.textSecondary))),
+          ElevatedButton(onPressed: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (context) => DepositScreen())); }, style: ElevatedButton.styleFrom(backgroundColor: colors.primary), child: Text('Recharger', style: TextStyle(color: colors.onPrimary))),
+        ],
+      ),
+    );
+  }
 
   // ==================== SUPPORT AD ====================
   Future<void> _loadSupportModalSeen() async {
@@ -1834,20 +1901,21 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   }
 
   void _showSupportModal(Post post) {
+    final colors = AppColors.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: _afroDarkGrey,
-        title: const Row(children: [Icon(Icons.volunteer_activism, color: _afroYellow), SizedBox(width: 8), Text('Soutenir le créateur', style: TextStyle(color: Colors.white))]),
+        backgroundColor: colors.surface,
+        title: Row(children: [Icon(Icons.volunteer_activism, color: colors.accent), const SizedBox(width: 8), Text('Soutenir le créateur', style: TextStyle(color: colors.textPrimary))]),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Text('Regardez cette publicité pour offrir 10 pièces au créateur.', style: TextStyle(color: Colors.white70)),
+          Text('Regardez cette publicité pour offrir 10 pièces au créateur.', style: TextStyle(color: colors.textSecondary)),
           const SizedBox(height: 12),
-          Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.green.withOpacity(0.2), borderRadius: BorderRadius.circular(12)), child: const Row(children: [Icon(Icons.monetization_on, color: _afroYellow), SizedBox(width: 8), Expanded(child: Text('Les pièces peuvent être converties en argent réel.', style: TextStyle(color: Colors.white)))])),
+          Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: colors.primary.withOpacity(0.2), borderRadius: BorderRadius.circular(12)), child: Row(children: [Icon(Icons.monetization_on, color: colors.accent), const SizedBox(width: 8), Expanded(child: Text('Les pièces peuvent être converties en argent réel.', style: TextStyle(color: colors.textPrimary)))])),
         ]),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Plus tard', style: TextStyle(color: Colors.white70))),
-          ElevatedButton(onPressed: () async { Navigator.pop(context); await _markSupportModalSeen(); _startSupportAd(post); }, style: ElevatedButton.styleFrom(backgroundColor: _afroYellow), child: const Text('Regarder la pub', style: TextStyle(color: Colors.black))),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('Plus tard', style: TextStyle(color: colors.textSecondary))),
+          ElevatedButton(onPressed: () async { Navigator.pop(context); await _markSupportModalSeen(); _startSupportAd(post); }, style: ElevatedButton.styleFrom(backgroundColor: colors.accent), child: Text('Regarder la pub', style: TextStyle(color: colors.onAccent))),
         ],
       ),
     );
@@ -1994,7 +2062,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
             ),
           PostGiftsList(postId: post.id!, compactLevel: CompactLevel.light, maxDisplayItems: 10),
         ],
-      ),
+      ).animate().fadeIn(duration: 400.ms).slideX(begin: -0.08, end: 0, duration: 400.ms, curve: Curves.easeOut),
     );
   }
 
@@ -2245,7 +2313,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
             child: const Icon(Icons.more_vert, color: Colors.white, size: 30),
           ),
         ],
-      ),
+      ).animate().fadeIn(duration: 400.ms).slideX(begin: 0.08, end: 0, duration: 400.ms, curve: Curves.easeOut),
     );
   }
 
@@ -2404,6 +2472,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final colors = AppColors.of(context);
     return Stack(
       children: [
         Scaffold(
@@ -2413,7 +2482,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const CircularProgressIndicator(color: _afroGreen),
+                CircularProgressIndicator(color: colors.primary),
                 const SizedBox(height: 20),
                 Text(
                   'Chargement des vibes en cours...',
@@ -2422,7 +2491,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
-                ),
+                ).animate().fadeIn(duration: 300.ms),
                 const SizedBox(height: 8),
                 Text(
                   'Préparez-vous pour le meilleur contenu 🔥',
@@ -2430,7 +2499,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
                     color: Colors.white38,
                     fontSize: 12,
                   ),
-                ),
+                ).animate().fadeIn(duration: 300.ms, delay: 100.ms),
               ],
             ),
           )

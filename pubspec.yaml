@@ -32,6 +32,8 @@ dependencies:
 
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   badges: ^3.1.2
   flutter_cache_manager: ^3.3.1
   collection: ^1.18.0
@@ -107,6 +109,7 @@ dependencies:
   flutter_launcher_icons: ^0.13.1
   provider: ^6.1.1
   loading_animation_widget: ^1.2.0+4
+  flutter_animate: ^4.5.0
 
   #  cloud_firestore: ^4.14.0
   cloud_firestore: ^5.4.3

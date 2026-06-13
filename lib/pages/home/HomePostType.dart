@@ -34,6 +34,8 @@ import '../userPosts/postWidgets/postWidgetPage.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import '../../../providers/mixed_feed_service_provider.dart';
 import 'dart:typed_data';
+import '../../theme/app_colors.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 
 // Constantes de couleur
@@ -362,6 +364,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
+        final colors = AppColors.of(context);
         final TextEditingController searchController = TextEditingController();
         String searchQuery = '';
 
@@ -383,7 +386,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
             return Container(
               height: MediaQuery.of(context).size.height * 0.85,
               decoration: BoxDecoration(
-                color: darkBackground,
+                color: colors.surface,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(20),
                   topRight: Radius.circular(20),
@@ -396,7 +399,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                     width: 40,
                     margin: EdgeInsets.only(top: 8),
                     decoration: BoxDecoration(
-                      color: Colors.grey[600],
+                      color: colors.border,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -410,14 +413,14 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                           child: Text(
                             '🌍 Filtrer par pays',
                             style: TextStyle(
-                              color: textColor,
+                              color: colors.textPrimary,
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
                         IconButton(
-                          icon: Icon(Icons.close, color: Colors.grey[400], size: 24),
+                          icon: Icon(Icons.close, color: colors.textSecondary, size: 24),
                           onPressed: () => Navigator.pop(context),
                         ),
                       ],
@@ -429,24 +432,24 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                     child: Container(
                       height: 48,
                       decoration: BoxDecoration(
-                        color: Colors.grey[900],
+                        color: colors.surfaceVariant,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey[700]!),
+                        border: Border.all(color: colors.border),
                       ),
                       child: Row(
                         children: [
                           Padding(
                             padding: EdgeInsets.only(left: 16),
-                            child: Icon(Icons.search, color: Colors.grey[500], size: 20),
+                            child: Icon(Icons.search, color: colors.textSecondary, size: 20),
                           ),
                           Expanded(
                             child: TextField(
                               controller: searchController,
                               onChanged: updateSearch,
-                              style: TextStyle(color: Colors.white, fontSize: 15),
+                              style: TextStyle(color: colors.textPrimary, fontSize: 15),
                               decoration: InputDecoration(
                                 hintText: 'Rechercher un pays...',
-                                hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
+                                hintStyle: TextStyle(color: colors.textSecondary, fontSize: 14),
                                 border: InputBorder.none,
                                 contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                               ),
@@ -454,7 +457,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                           ),
                           if (searchController.text.isNotEmpty)
                             IconButton(
-                              icon: Icon(Icons.clear, size: 18, color: Colors.grey[500]),
+                              icon: Icon(Icons.clear, size: 18, color: colors.textSecondary),
                               onPressed: () {
                                 searchController.clear();
                                 updateSearch('');
@@ -475,7 +478,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                             icon: Icons.public,
                             label: 'Tous',
                             isSelected: _currentFilter == 'ALL',
-                            color: primaryGreen,
+                            color: colors.primary,
                             onTap: () async {
                               Navigator.pop(context);
                               await _applyFilter(filterType: 'ALL', countryCode: null);
@@ -489,7 +492,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                               label: 'Mon pays',
                               flag: _getCountryFlag(_selectedCountryCode!),
                               isSelected: _currentFilter == 'COUNTRY',
-                              color: Colors.blue,
+                              color: colors.info,
                               onTap: () async {
                                 Navigator.pop(context);
                                 await _applyFilter(filterType: 'COUNTRY', countryCode: _selectedCountryCode);
@@ -503,7 +506,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                               icon: Icons.blender,
                               label: 'Mix',
                               isSelected: _currentFilter == 'MIXED',
-                              color: Colors.purple,
+                              color: colors.accent,
                               onTap: () async {
                                 Navigator.pop(context);
                                 await _applyFilter(filterType: 'MIXED', countryCode: _selectedCountryCode);
@@ -516,7 +519,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
 
                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: Divider(color: Colors.grey[800], thickness: 1),
+                    child: Divider(color: colors.divider, thickness: 1),
                   ),
 
                   Padding(
@@ -526,7 +529,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                         Text(
                           'Choisir un pays',
                           style: TextStyle(
-                            color: Colors.grey[400],
+                            color: colors.textSecondary,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
@@ -535,7 +538,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                         Text(
                           '${filteredCountries.length} pays',
                           style: TextStyle(
-                            color: Colors.grey[500],
+                            color: colors.textSecondary,
                             fontSize: 12,
                           ),
                         ),
@@ -556,8 +559,8 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                       child: ElevatedButton(
                         onPressed: () => Navigator.pop(context),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey[800],
-                          foregroundColor: Colors.white,
+                          backgroundColor: colors.surfaceVariant,
+                          foregroundColor: colors.textPrimary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -590,15 +593,16 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
     required Color color,
     required VoidCallback onTap,
   }) {
+    final colors = AppColors.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? color : Colors.grey[900],
+          color: isSelected ? color : colors.surfaceVariant,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? Colors.white : Colors.transparent,
+            color: isSelected ? colors.textPrimary : Colors.transparent,
             width: 1.5,
           ),
         ),
@@ -608,19 +612,19 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
             if (flag != null)
               Text(flag, style: TextStyle(fontSize: 16))
             else if (icon != null)
-              Icon(icon, size: 16, color: isSelected ? Colors.white : Colors.grey[400]),
+              Icon(icon, size: 16, color: isSelected ? colors.textPrimary : colors.textSecondary),
             SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? Colors.white : Colors.grey[300],
+                color: isSelected ? colors.textPrimary : colors.textSecondary,
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
             ),
             if (isSelected) SizedBox(width: 4),
             if (isSelected)
-              Icon(Icons.check, size: 14, color: Colors.white),
+              Icon(Icons.check, size: 14, color: colors.textPrimary),
           ],
         ),
       ),
@@ -628,17 +632,18 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
   }
 
   Widget _buildCountryList(List<AfricanCountry> countries, String searchQuery) {
+    final colors = AppColors.of(context);
     if (countries.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.search_off, color: Colors.grey[600], size: 48),
+            Icon(Icons.search_off, color: colors.textSecondary, size: 48),
             SizedBox(height: 12),
             Text(
               searchQuery.isEmpty ? 'Chargement...' : 'Aucun pays trouvé',
               style: TextStyle(
-                color: Colors.grey[500],
+                color: colors.textSecondary,
                 fontSize: 16,
               ),
             ),
@@ -648,7 +653,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                 child: Text(
                   'Essayez une autre recherche',
                   style: TextStyle(
-                    color: Colors.grey[600],
+                    color: colors.textSecondary,
                     fontSize: 14,
                   ),
                 ),
@@ -683,10 +688,10 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
               child: Container(
                 padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: isSelected ? Colors.orange.withOpacity(0.2) : Colors.grey[900],
+                  color: isSelected ? colors.warning.withOpacity(0.2) : colors.surfaceVariant,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: isSelected ? Colors.orange : Colors.transparent,
+                    color: isSelected ? colors.warning : Colors.transparent,
                     width: 2,
                   ),
                 ),
@@ -717,7 +722,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                                 child: Text(
                                   country.name,
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color: colors.textPrimary,
                                     fontSize: 15,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -729,13 +734,13 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                                 Container(
                                   padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: Colors.green.withOpacity(0.2),
+                                    color: colors.success.withOpacity(0.2),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
                                     'Votre pays',
                                     style: TextStyle(
-                                      color: Colors.green,
+                                      color: colors.success,
                                       fontSize: 10,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -747,7 +752,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                           Text(
                             country.code.toUpperCase(),
                             style: TextStyle(
-                              color: Colors.grey[400],
+                              color: colors.textSecondary,
                               fontSize: 12,
                             ),
                           ),
@@ -755,7 +760,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                       ),
                     ),
                     if (isSelected)
-                      Icon(Icons.check_circle, color: Colors.orange, size: 22),
+                      Icon(Icons.check_circle, color: colors.warning, size: 22),
                   ],
                 ),
               ),
@@ -817,6 +822,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
+        final colors = AppColors.of(context);
         return StatefulBuilder(
           builder: (context, setModalState) {
             final TextEditingController searchController = TextEditingController();
@@ -836,7 +842,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
             return Container(
               height: MediaQuery.of(context).size.height * 0.7,
               decoration: BoxDecoration(
-                color: darkBackground,
+                color: colors.surface,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(20),
                   topRight: Radius.circular(20),
@@ -850,7 +856,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                     width: 40,
                     margin: EdgeInsets.only(top: 8),
                     decoration: BoxDecoration(
-                      color: Colors.grey[600],
+                      color: colors.border,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -865,14 +871,14 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                           child: Text(
                             '📝 Choisir un type',
                             style: TextStyle(
-                              color: textColor,
+                              color: colors.textPrimary,
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
                         IconButton(
-                          icon: Icon(Icons.close, color: Colors.grey[400], size: 24),
+                          icon: Icon(Icons.close, color: colors.textSecondary, size: 24),
                           onPressed: () => Navigator.pop(context),
                         ),
                       ],
@@ -885,24 +891,24 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                     child: Container(
                       height: 48,
                       decoration: BoxDecoration(
-                        color: Colors.grey[900],
+                        color: colors.surfaceVariant,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey[700]!),
+                        border: Border.all(color: colors.border),
                       ),
                       child: Row(
                         children: [
                           Padding(
                             padding: EdgeInsets.only(left: 16),
-                            child: Icon(Icons.search, color: Colors.grey[500], size: 20),
+                            child: Icon(Icons.search, color: colors.textSecondary, size: 20),
                           ),
                           Expanded(
                             child: TextField(
                               controller: searchController,
                               onChanged: updateSearch,
-                              style: TextStyle(color: Colors.white, fontSize: 15),
+                              style: TextStyle(color: colors.textPrimary, fontSize: 15),
                               decoration: InputDecoration(
                                 hintText: 'Rechercher un type...',
-                                hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
+                                hintStyle: TextStyle(color: colors.textSecondary, fontSize: 14),
                                 border: InputBorder.none,
                                 contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                               ),
@@ -910,7 +916,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                           ),
                           if (searchController.text.isNotEmpty)
                             IconButton(
-                              icon: Icon(Icons.clear, size: 18, color: Colors.grey[500]),
+                              icon: Icon(Icons.clear, size: 18, color: colors.textSecondary),
                               onPressed: () {
                                 searchController.clear();
                                 updateSearch('');
@@ -929,7 +935,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                         Text(
                           'Types disponibles',
                           style: TextStyle(
-                            color: Colors.grey[400],
+                            color: colors.textSecondary,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
@@ -938,7 +944,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                         Text(
                           '${filteredTypes.length} types',
                           style: TextStyle(
-                            color: Colors.grey[500],
+                            color: colors.textSecondary,
                             fontSize: 12,
                           ),
                         ),
@@ -974,8 +980,8 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                       child: ElevatedButton(
                         onPressed: () => Navigator.pop(context),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey[800],
-                          foregroundColor: Colors.white,
+                          backgroundColor: colors.surfaceVariant,
+                          foregroundColor: colors.textPrimary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -1033,6 +1039,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
     required bool isSelected,
     required VoidCallback onTap,
   }) {
+    final colors = AppColors.of(context);
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
       child: Material(
@@ -1046,10 +1053,10 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: isSelected ? Colors.purple.withOpacity(0.2) : Colors.grey[900],
+              color: isSelected ? colors.info.withOpacity(0.2) : colors.surfaceVariant,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: isSelected ? Colors.purple : Colors.transparent,
+                color: isSelected ? colors.info : Colors.transparent,
                 width: 2,
               ),
             ),
@@ -1065,7 +1072,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                   child: Center(
                     child: Icon(
                       _getTypeIcon(type),
-                      color: isSelected ? Colors.purple : Colors.grey[400],
+                      color: isSelected ? colors.info : colors.textSecondary,
                       size: 22,
                     ),
                   ),
@@ -1078,7 +1085,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                       Text(
                         type,
                         style: TextStyle(
-                          color: isSelected ? Colors.white : Colors.grey[300],
+                          color: isSelected ? colors.textPrimary : colors.textSecondary,
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
                         ),
@@ -1087,7 +1094,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                       Text(
                         _getTypeDescription(type),
                         style: TextStyle(
-                          color: isSelected ? Colors.grey[300] : Colors.grey[500],
+                          color: colors.textSecondary,
                           fontSize: 12,
                         ),
                       ),
@@ -1095,7 +1102,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                   ),
                 ),
                 if (isSelected)
-                  Icon(Icons.check_circle, color: Colors.purple, size: 22),
+                  Icon(Icons.check_circle, color: colors.info, size: 22),
               ],
             ),
           ),
@@ -1578,6 +1585,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
   // ===========================================================================
 
   Widget _buildPostWidget(Post post, double width, double height) {
+    final colors = AppColors.of(context);
     return VisibilityDetector(
       key: Key('post-${post.id}'),
       onVisibilityChanged: (VisibilityInfo info) {
@@ -1586,7 +1594,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
       child: Container(
         margin: EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: darkBackground.withOpacity(0.7),
+          color: colors.surface.withOpacity(0.7),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
@@ -1616,23 +1624,24 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
           ],
         ),
       ),
-    );
+    ).animate().fadeIn(duration: 350.ms).slideY(begin: 0.05, end: 0, duration: 350.ms, curve: Curves.easeOut);
   }
 
   Widget _buildAvailabilityBadge(Post post) {
+    final colors = AppColors.of(context);
     String badgeText = '';
-    Color badgeColor = Colors.grey;
+    Color badgeColor = colors.textSecondary;
 
     if (post.availableCountries.contains('ALL')) {
       badgeText = '🌍 ALL';
-      badgeColor = Colors.green;
+      badgeColor = colors.success;
     } else if (_selectedCountryCode != null &&
         post.availableCountries.contains(_selectedCountryCode!)) {
       badgeText = '📍 ${_selectedCountryCode}';
-      badgeColor = Colors.blue;
+      badgeColor = colors.info;
     } else {
       badgeText = '🌐 MULTI';
-      badgeColor = Colors.orange;
+      badgeColor = colors.warning;
     }
 
     return Container(
@@ -1665,6 +1674,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
   }
 
   Widget _buildFilterChips() {
+    final colors = AppColors.of(context);
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: SingleChildScrollView(
@@ -1674,7 +1684,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
             _buildFilterChip(
               label: '🌍 Tous',
               isSelected: _currentFilter == 'ALL',
-              color: primaryGreen,
+              color: colors.primary,
               onTap: () => _applyFilter(filterType: 'ALL', countryCode: null),
             ),
             SizedBox(width: 8),
@@ -1682,7 +1692,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
               _buildFilterChip(
                 label: '📍Mon pays ${_selectedCountryCode}',
                 isSelected: _currentFilter == 'COUNTRY',
-                color: Colors.blue,
+                color: colors.info,
                 onTap: () => _applyFilter(filterType: 'COUNTRY', countryCode: _selectedCountryCode),
               ),
             if (_selectedCountryCode != null) SizedBox(width: 8),
@@ -1690,14 +1700,14 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
               _buildFilterChip(
                 label: '🔄 Mix',
                 isSelected: _currentFilter == 'MIXED',
-                color: Colors.purple,
+                color: colors.accent,
                 onTap: () => _applyFilter(filterType: 'MIXED', countryCode: _selectedCountryCode),
               ),
             SizedBox(width: 8),
             _buildFilterChip(
               label: '⚙️ Autre',
               isSelected: _currentFilter == 'CUSTOM',
-              color: Colors.orange,
+              color: colors.warning,
               onTap: _showCountryFilterModal,
             ),
           ],
@@ -1712,22 +1722,23 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
     required Color color,
     required VoidCallback onTap,
   }) {
+    final colors = AppColors.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? color : Colors.grey[800],
+          color: isSelected ? color : colors.surfaceVariant,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? Colors.white : Colors.transparent,
+            color: isSelected ? colors.textPrimary : Colors.transparent,
             width: 1,
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.grey[300],
+            color: isSelected ? colors.onPrimary : colors.textSecondary,
             fontWeight: FontWeight.w500,
             fontSize: 11,
           ),
@@ -1775,6 +1786,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
       return SizedBox.shrink();
     }
 
+    final colors = AppColors.of(context);
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
 
@@ -1791,7 +1803,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: textColor,
+                    color: colors.textPrimary,
                   ),
                 ),
               ),
@@ -1844,11 +1856,12 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
   }
 
   Widget _buildProfileCard(UserData user, double width, double height) {
+    final colors = AppColors.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: darkBackground.withOpacity(0.8),
+        color: colors.surface.withOpacity(0.8),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: primaryGreen.withOpacity(0.3)),
+        border: Border.all(color: colors.primary.withOpacity(0.3)),
       ),
       child: Column(
         children: [
@@ -1869,12 +1882,12 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                       fit: BoxFit.cover,
                       imageUrl: user.imageUrl ?? '',
                       placeholder: (context, url) => Container(
-                        color: Colors.grey[800],
-                        child: Center(child: CircularProgressIndicator(color: primaryGreen)),
+                        color: colors.shimmerBase,
+                        child: Center(child: CircularProgressIndicator(color: colors.primary)),
                       ),
                       errorWidget: (context, url, error) => Container(
-                        color: Colors.grey[800],
-                        child: Icon(Icons.person, color: Colors.grey[400]),
+                        color: colors.shimmerBase,
+                        child: Icon(Icons.person, color: colors.textSecondary),
                       ),
                     ),
                   ),
@@ -1898,7 +1911,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                             child: Text(
                               '@${user.pseudo?.replaceAll("@", "") ?? "user"}',
                               style: TextStyle(
-                                color: textColor,
+                                color: Colors.white,
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                                 overflow: TextOverflow.ellipsis,
@@ -1906,7 +1919,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                             ),
                           ),
                           if (user.isVerify ?? false)
-                            Icon(Icons.verified, color: primaryGreen, size: 12),
+                            Icon(Icons.verified, color: colors.primary, size: 12),
                         ],
                       ),
                       SizedBox(height: 2),
@@ -1915,12 +1928,12 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.group, size: 9, color: accentYellow),
+                              Icon(Icons.group, size: 9, color: colors.warning),
                               SizedBox(width: 2),
                               Text(
                                 _formatNumber(user.userAbonnesIds?.length ?? 0),
                                 style: TextStyle(
-                                  color: accentYellow,
+                                  color: colors.warning,
                                   fontSize: 9,
                                 ),
                               ),
@@ -1941,8 +1954,8 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
             child: ElevatedButton(
               onPressed: () => _showUserDetails(user),
               style: ElevatedButton.styleFrom(
-                backgroundColor: primaryGreen,
-                foregroundColor: darkBackground,
+                backgroundColor: colors.primary,
+                foregroundColor: colors.onPrimary,
                 padding: EdgeInsets.symmetric(vertical: 4),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -1956,7 +1969,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
           ),
         ],
       ),
-    );
+    ).animate().fadeIn(duration: 300.ms).slideX(begin: 0.08, end: 0, duration: 300.ms, curve: Curves.easeOut);
   }
 
   void _showUserDetails(UserData user) async {
@@ -1977,13 +1990,14 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
       return SizedBox.shrink();
     }
 
+    final colors = AppColors.of(context);
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
 
     return Container(
       margin: EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.black,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -1994,15 +2008,15 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('🔥 Produits Boostés',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: colors.textPrimary)),
                 GestureDetector(
                   onTap: () => Navigator.push(context,
                       MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: ''))),
                   child: Row(
                     children: [
-                      Text('Boutiques', style: TextStyle(color: primaryGreen, fontWeight: FontWeight.bold, fontSize: 12)),
+                      Text('Boutiques', style: TextStyle(color: colors.primary, fontWeight: FontWeight.bold, fontSize: 12)),
                       SizedBox(width: 4),
-                      Icon(Icons.arrow_forward, color: primaryGreen, size: 14),
+                      Icon(Icons.arrow_forward, color: colors.primary, size: 14),
                     ],
                   ),
                 ),
@@ -2040,13 +2054,14 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
       return SizedBox.shrink();
     }
 
+    final colors = AppColors.of(context);
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
 
     return Container(
       margin: EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.black,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -2057,15 +2072,15 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('📺 Afrolook Canal',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green)),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: colors.success)),
                 GestureDetector(
                   onTap: () => Navigator.push(context,
                       MaterialPageRoute(builder: (context) => CanalListPage(isUserCanals: false))),
                   child: Row(
                     children: [
-                      Text('Voir plus', style: TextStyle(color: primaryGreen, fontWeight: FontWeight.bold, fontSize: 12)),
+                      Text('Voir plus', style: TextStyle(color: colors.primary, fontWeight: FontWeight.bold, fontSize: 12)),
                       SizedBox(width: 4),
-                      Icon(Icons.arrow_forward, color: primaryGreen, size: 14),
+                      Icon(Icons.arrow_forward, color: colors.primary, size: 14),
                     ],
                   ),
                 ),
@@ -2095,10 +2110,11 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
   }
 
   Widget _buildLoadingSection(String title) {
+    final colors = AppColors.of(context);
     return Container(
       margin: EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        color: darkBackground,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -2112,7 +2128,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                 Text(
                   title,
                   style: TextStyle(
-                    color: textColor,
+                    color: colors.textPrimary,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -2122,7 +2138,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                   height: 18,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: primaryGreen,
+                    color: colors.primary,
                   ),
                 ),
               ],
@@ -2139,6 +2155,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
   // ===========================================================================
 
   Widget _buildContent() {
+    final colors = AppColors.of(context);
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
 
@@ -2205,9 +2222,9 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
           child: Center(
             child: Column(
               children: [
-                CircularProgressIndicator(color: primaryGreen),
+                CircularProgressIndicator(color: colors.primary),
                 SizedBox(height: 10),
-                Text('Chargement de plus de posts...', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                Text('Chargement de plus de posts...', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
               ],
             ),
           ),
@@ -2225,13 +2242,13 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: Colors.grey[500],
+                    color: colors.textSecondary,
                   ),
                 ),
                 SizedBox(height: 8),
                 Text(
                   'Préparation de plus de contenu... ($_backgroundPostsLoaded/$_maxBackgroundPosts)',
-                  style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                  style: TextStyle(color: colors.textSecondary, fontSize: 11),
                 ),
               ],
             ),
@@ -2245,17 +2262,17 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
           child: Center(
             child: Column(
               children: [
-                Icon(Icons.flag, color: Colors.green, size: 36),
+                Icon(Icons.flag, color: colors.success, size: 36),
                 SizedBox(height: 10),
                 Text(
                   _getEndMessage(),
-                  style: TextStyle(color: Colors.grey, fontSize: 14),
+                  style: TextStyle(color: colors.textSecondary, fontSize: 14),
                   textAlign: TextAlign.center,
                 ),
                 SizedBox(height: 5),
                 Text(
                   'Revenez plus tard pour de nouveaux contenus',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 11),
+                  style: TextStyle(color: colors.textSecondary, fontSize: 11),
                 ),
               ],
             ),
@@ -2271,14 +2288,14 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
               children: [
                 Text(
                   'Chargement automatique terminé',
-                  style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                  style: TextStyle(color: colors.textSecondary, fontSize: 12),
                 ),
                 SizedBox(height: 10),
                 ElevatedButton(
                   onPressed: _loadMorePostsManually,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryGreen,
-                    foregroundColor: Colors.white,
+                    backgroundColor: colors.primary,
+                    foregroundColor: colors.onPrimary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -2314,6 +2331,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
   // ===========================================================================
 
   Widget _buildLoadingShimmer(double width, double height) {
+    final colors = AppColors.of(context);
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(
@@ -2328,11 +2346,11 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                   width: width * 0.2,
                   margin: EdgeInsets.all(4),
                   child: Shimmer.fromColors(
-                    baseColor: Colors.grey[800]!,
-                    highlightColor: Colors.grey[700]!,
+                    baseColor: colors.shimmerBase,
+                    highlightColor: colors.shimmerHighlight,
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.grey[800],
+                        color: colors.shimmerBase,
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
@@ -2348,12 +2366,12 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
               return Container(
                 margin: EdgeInsets.all(8),
                 child: Shimmer.fromColors(
-                  baseColor: Colors.grey[800]!,
-                  highlightColor: Colors.grey[700]!,
+                  baseColor: colors.shimmerBase,
+                  highlightColor: colors.shimmerHighlight,
                   child: Container(
                     height: 350,
                     decoration: BoxDecoration(
-                      color: Colors.grey[800],
+                      color: colors.shimmerBase,
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
@@ -2368,13 +2386,14 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
   }
 
   Widget _buildErrorWidget() {
+    final colors = AppColors.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error_outline, color: Colors.red, size: 40),
+          Icon(Icons.error_outline, color: colors.danger, size: 40),
           SizedBox(height: 12),
-          Text('Erreur de chargement', style: TextStyle(color: Colors.white, fontSize: 14)),
+          Text('Erreur de chargement', style: TextStyle(color: colors.textPrimary, fontSize: 14)),
           SizedBox(height: 8),
           ElevatedButton(
             onPressed: _refreshData,
@@ -2382,19 +2401,20 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
           ),
         ],
       ),
-    );
+    ).animate().fadeIn(duration: 300.ms);
   }
 
   Widget _buildEmptyWidget() {
+    final colors = AppColors.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.feed, color: Colors.grey, size: 40),
+          Icon(Icons.feed, color: colors.textSecondary, size: 40),
           SizedBox(height: 12),
           Text(
             _getEmptyMessage(),
-            style: TextStyle(color: Colors.grey, fontSize: 14),
+            style: TextStyle(color: colors.textSecondary, fontSize: 14),
             textAlign: TextAlign.center,
           ),
           SizedBox(height: 8),
@@ -2404,7 +2424,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
           ),
         ],
       ),
-    );
+    ).animate().fadeIn(duration: 300.ms);
   }
 
   String _getEmptyMessage() {
@@ -2465,9 +2485,10 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
     return '$countryDesc • $typeDesc';
   }
   Widget _getFilterIcon() {
+    final colors = AppColors.of(context);
     switch (_currentFilter) {
       case 'ALL':
-        return Icon(Icons.public, color: Colors.white, size: 18);
+        return Icon(Icons.public, color: colors.textPrimary, size: 18);
       case 'COUNTRY':
       case 'CUSTOM':
         return Text(
@@ -2475,9 +2496,9 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
           style: TextStyle(fontSize: 16),
         );
       case 'MIXED':
-        return Icon(Icons.blender, color: Colors.white, size: 18);
+        return Icon(Icons.blender, color: colors.textPrimary, size: 18);
       default:
-        return Icon(Icons.filter_alt, color: Colors.white, size: 18);
+        return Icon(Icons.filter_alt, color: colors.textPrimary, size: 18);
     }
   }
 
@@ -2648,17 +2669,18 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
   }
 
   Color _getFilterBorderColor() {
+    final colors = AppColors.of(context);
     switch (_currentFilter) {
       case 'ALL':
-        return primaryGreen;
+        return colors.primary;
       case 'COUNTRY':
-        return Colors.blue;
+        return colors.info;
       case 'MIXED':
-        return Colors.purple;
+        return colors.accent;
       case 'CUSTOM':
-        return Colors.orange;
+        return colors.warning;
       default:
-        return Colors.grey;
+        return colors.textSecondary;
     }
   }
 
@@ -2666,117 +2688,25 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
   // BUILD
   // ===========================================================================
 
+  // ── Méthodes publiques exposées pour la barre supérieure de homeScreen ──
+  // Permettent de déclencher le filtre type, le filtre pays et le
+  // rafraîchissement depuis l'AppBar combiné de la page d'accueil
+  // (la section "Découvrir" avec sa propre AppBar a été supprimée).
+  void showTypeFilter() => _showTypeFilterModal();
+  void showCountryFilter() => _showCountryFilterModal();
+  Future<void> refreshFeed() => _refreshData();
+
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return RefreshIndicator(
       onRefresh: _refreshData,
       child: Scaffold(
         key: _scaffoldKey,
-        backgroundColor: darkBackground,
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          backgroundColor: Colors.black,
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                _selectedPostType,
-                style: TextStyle(
-                  fontSize: 18,
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(height: 2),
-              Text(
-                _getFilterDescription(),
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey[400],
-                ),
-              ),
-            ],
-          ),
-          elevation: 0,
-          actions: [
-            // Dans l'AppBar, modifiez le bouton type
-            InkWell(
-              onTap: _showTypeFilterModal,
-              borderRadius: BorderRadius.circular(20),
-              child: Container(
-                width: 36,
-                height: 36,
-                margin: EdgeInsets.only(right: 8),
-                decoration: BoxDecoration(
-                  color: Colors.grey[800],
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: Colors.purple,
-                    width: 1.5,
-                  ),
-                ),
-                child: Stack(
-                  children: [
-                    Center(
-                      child: Icon(
-                        _getTypeIcon(_selectedPostType),
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                    ),
-                    // Petit badge pour indiquer que c'est sélectionnable
-                    Positioned(
-                      top: 2,
-                      right: 2,
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: Colors.purple,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // Bouton filtre par pays
-            InkWell(
-              onTap: _showCountryFilterModal,
-              borderRadius: BorderRadius.circular(20),
-              child: Container(
-                width: 36,
-                height: 36,
-                margin: EdgeInsets.only(right: 8),
-                decoration: BoxDecoration(
-                  color: Colors.grey[800],
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: _getFilterBorderColor(),
-                    width: 1.5,
-                  ),
-                ),
-                child: Center(
-                  child: _getFilterIcon(),
-                ),
-              ),
-            ),
-
-            // Bouton rafraîchir
-            IconButton(
-              icon: Icon(Icons.refresh, color: Colors.white, size: 22),
-              onPressed: _refreshData,
-              padding: EdgeInsets.zero,
-              constraints: BoxConstraints(),
-            ),
-            SizedBox(width: 8),
-          ],
-        ),
+        backgroundColor: colors.background,
         body: SafeArea(
           child: Container(
-            color: Colors.black,
+            color: colors.background,
             child: _buildContent(),
           ),
         ),

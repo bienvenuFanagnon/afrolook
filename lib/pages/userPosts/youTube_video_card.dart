@@ -38,6 +38,9 @@ import '../postComments.dart';
 import '../postDetailsVideo.dart';
 
 import '../../services/utils/abonnement_utils.dart';
+import '../../theme/app_colors.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'video_preload_manager.dart';
 
 
 class MediaPlaybackManager {
@@ -224,6 +227,9 @@ class YouTubeVideoCard extends StatefulWidget {
   final int index;
   final VoidCallback onTap;
   final Function(int)? onNeighborhoodPreload;
+  // Session 13 : pays du filtre actif (HomeConstPost._selectedCountryCode), utilisé pour
+  // afficher en priorité ce pays dans le badge pays du post (s'il y figure).
+  final String? currentFilterCountry;
 
   const YouTubeVideoCard({
     Key? key,
@@ -231,6 +237,7 @@ class YouTubeVideoCard extends StatefulWidget {
     required this.onTap,
     this.index = 0,
     this.onNeighborhoodPreload,
+    this.currentFilterCountry,
   }) : super(key: key);
 
 
@@ -327,6 +334,11 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       _thumbnailUrl = widget.post.thumbnail;
     }
 
+    // 🔥 Préchargement Facebook-style : permettre au gestionnaire global de
+    // résoudre les URLs CDN (utilisé par VideoPreloadManager.preload)
+    VideoPreloadManager.urlResolver ??= (rawUrl) =>
+        _authProvider.convertToCdnUrl(rawUrl, _authProvider.appDefaultData);
+
     // 🔥 NOUVEAU : Initialisation précoce de la vidéo (sans lancer la lecture)
     // Attendre un court instant pour ne pas bloquer l'UI
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -337,6 +349,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   }
 
   /// 🔥 Nouvelle méthode : Pré-initialisation sans lecture auto
+  /// Réutilise un contrôleur déjà préchargé par [VideoPreloadManager] si
+  /// disponible (préchargement Facebook-style des voisins).
   Future<void> _preInitializeVideo() async {
     if (_isLockedContent) {
       print('🎬 Vidéo verrouillée - pré-initialisation bloquée');
@@ -352,14 +366,20 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     try {
       await _disposeVideoControllers();
 
-      final String optimizedUrl = _authProvider.convertToCdnUrl(
-          widget.post.url_media!,
-          _authProvider.appDefaultData
-      );
-      _videoController = VideoPlayerController.network(optimizedUrl);
+      // 🔥 Réutiliser le contrôleur préchargé par le gestionnaire global s'il existe
+      final preloaded = VideoPreloadManager.claimController(widget.post.id ?? '');
+      if (preloaded != null) {
+        _videoController = preloaded;
+      } else {
+        final String optimizedUrl = _authProvider.convertToCdnUrl(
+            widget.post.url_media!,
+            _authProvider.appDefaultData
+        );
+        _videoController = VideoPlayerController.network(optimizedUrl);
 
-      // Attendre l'initialisation (chargement des métadonnées)
-      await _videoController!.initialize();
+        // Attendre l'initialisation (chargement des métadonnées)
+        await _videoController!.initialize();
+      }
 
       _videoController!.addListener(() {
         if (_videoController == null) return;
@@ -374,6 +394,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
         }
       });
 
+      final colors = AppColors.of(context);
       _chewieController = ChewieController(
         videoPlayerController: _videoController!,
         autoPlay: false,  // 🔥 TRÈS IMPORTANT : ne pas jouer automatiquement
@@ -381,14 +402,14 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
         showControls: false,
         allowFullScreen: false,
         materialProgressColors: ChewieProgressColors(
-          playedColor: Color(0xFF25D366),
-          handleColor: Color(0xFF25D366),
+          playedColor: colors.primary,
+          handleColor: colors.primary,
           backgroundColor: Colors.grey,
           bufferedColor: Colors.grey,
         ),
         placeholder: Container(
           color: Colors.black,
-          child: const Center(child: CircularProgressIndicator(color: Color(0xFF25D366))),
+          child: Center(child: CircularProgressIndicator(color: colors.primary)),
         ),
         autoInitialize: true,
       );
@@ -545,10 +566,16 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     try {
       await _disposeVideoControllers();
 
-      // _videoController = VideoPlayerController.network(widget.post.url_media!);
-      final String optimizedUrl = _authProvider. convertToCdnUrl(widget.post.url_media!, _authProvider.appDefaultData);
-      _videoController = VideoPlayerController.network(optimizedUrl);
-      await _videoController!.initialize();
+      // 🔥 Réutiliser le contrôleur préchargé par le gestionnaire global s'il existe
+      final preloaded = VideoPreloadManager.claimController(widget.post.id ?? '');
+      if (preloaded != null) {
+        _videoController = preloaded;
+      } else {
+        // _videoController = VideoPlayerController.network(widget.post.url_media!);
+        final String optimizedUrl = _authProvider. convertToCdnUrl(widget.post.url_media!, _authProvider.appDefaultData);
+        _videoController = VideoPlayerController.network(optimizedUrl);
+        await _videoController!.initialize();
+      }
 
       _videoController!.addListener(() {
         if (_videoController == null) return;
@@ -563,6 +590,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
         }
       });
 
+      final colors = AppColors.of(context);
       _chewieController = ChewieController(
 
         videoPlayerController: _videoController!,
@@ -571,14 +599,14 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
         showControls: false,      // 🔥 PAS DE CONTRÔLES AFFICHÉS
         allowFullScreen: false,   // Désactiver le plein écran (sinon les contrôles réapparaissent)
         materialProgressColors: ChewieProgressColors(
-          playedColor: Color(0xFF25D366),
-          handleColor: Color(0xFF25D366),
+          playedColor: colors.primary,
+          handleColor: colors.primary,
           backgroundColor: Colors.grey,
           bufferedColor: Colors.grey,
         ),
         placeholder: Container(
           color: Colors.black,
-          child: const Center(child: CircularProgressIndicator(color: Color(0xFF25D366))),
+          child: Center(child: CircularProgressIndicator(color: colors.primary)),
         ),
         autoInitialize: true,
       );
@@ -805,55 +833,56 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   }
 
   void _showInsufficientCoinsDialog() {
+    final colors = AppColors.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: colors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
+        title: Text(
           '💡 Soutenez le créateur !',
-          style: TextStyle(color: Color(0xFFFFD700), fontWeight: FontWeight.bold),
+          style: TextStyle(color: colors.accent, fontWeight: FontWeight.bold),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Chaque like que vous envoyez offre 1 pièce au créateur du post !',
-              style: TextStyle(color: Colors.white70),
+              style: TextStyle(color: colors.textSecondary),
             ),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFD700).withOpacity(0.1),
+                color: colors.accent.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3)),
+                border: Border.all(color: colors.accent.withOpacity(0.3)),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Text('🪙', style: TextStyle(fontSize: 20)),
-                  SizedBox(width: 8),
+                  const Text('🪙', style: TextStyle(fontSize: 20)),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Le like coûte 2 pièces :\n• 1 pour soutenir le créateur\n• 1 pour le système',
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                      style: TextStyle(color: colors.textSecondary, fontSize: 12),
                     ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Rechargez votre compte pour continuer à soutenir vos créateurs préférés !',
-              style: TextStyle(color: Colors.white54, fontSize: 12),
+              style: TextStyle(color: colors.textSecondary, fontSize: 12),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Annuler', style: TextStyle(color: Colors.white70)),
+            child: Text('Annuler', style: TextStyle(color: colors.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -864,8 +893,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFFD700),
-              foregroundColor: Colors.black,
+              backgroundColor: colors.accent,
+              foregroundColor: colors.onAccent,
             ),
             child: const Text('Recharger', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
@@ -1026,15 +1055,16 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   }
 
   void _showCommentsModal() {
+    final colors = AppColors.of(context);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.85,
-        decoration: const BoxDecoration(
-          color: Color(0xFF000000),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           children: [
@@ -1043,8 +1073,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Commentaires', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                  IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: () => Navigator.pop(context)),
+                  Text('Commentaires', style: TextStyle(color: colors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
+                  IconButton(icon: Icon(Icons.close, color: colors.textPrimary), onPressed: () => Navigator.pop(context)),
                 ],
               ),
             ),
@@ -1107,7 +1137,20 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
 
   Widget _buildCountryBadge() {
     final isAllCountries = widget.post.isAvailableInAllCountries == true;
-    final countryCodes = widget.post.availableCountries ?? [];
+    var countryCodes = widget.post.availableCountries ?? [];
+
+    // Session 13 : si le pays du filtre actif figure dans la liste, le placer en premier
+    // (sans ajouter/retirer d'éléments) pour que le badge affiche prioritairement ce pays.
+    final filterCountry = widget.currentFilterCountry?.toUpperCase();
+    if (filterCountry != null && countryCodes.length > 1) {
+      final idx = countryCodes.indexWhere((c) => c.toUpperCase() == filterCountry);
+      if (idx > 0) {
+        countryCodes = [
+          countryCodes[idx],
+          ...countryCodes.where((c) => c.toUpperCase() != filterCountry),
+        ];
+      }
+    }
 
     String displayText = '';
     String flagEmoji = '🌍';
@@ -1151,6 +1194,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   }
 
   Widget _buildPostHeader() {
+    final colors = AppColors.of(context);
     final isCanalPost = _creatorCanal != null;
 
     if (!isCanalPost && _creatorUser == null) {
@@ -1178,7 +1222,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
             children: [
               CircleAvatar(
                 radius: 23,
-                backgroundColor: const Color(0xFF2E7D32),
+                backgroundColor: colors.primary,
                 backgroundImage: (isCanalPost && _creatorCanal?.urlImage != null)
                     ? NetworkImage(_creatorCanal!.urlImage!)
                     : (_creatorUser?.imageUrl != null ? NetworkImage(_creatorUser!.imageUrl!) : null),
@@ -1201,7 +1245,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                       children: [
                         Text(
                           isCanalPost ? '#${_creatorCanal?.titre ?? ''}' : '@${_creatorUser?.pseudo ?? ''}',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                          style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 15),
                         ),
                         const SizedBox(width: 4),
 
@@ -1220,7 +1264,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                 isCanalPost
                     ? '${_creatorCanal?.usersSuiviId?.length ?? 0} abonné(s)'
                     : '${_creatorUser?.userAbonnesIds?.length ?? 0} abonné(s)',
-                style: const TextStyle(color: Color(0xFF71767B), fontSize: 12),
+                style: TextStyle(color: colors.textSecondary, fontSize: 12),
               ),
             ],
           ),
@@ -1229,13 +1273,14 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     );
   }
   Widget _buildPlaceholderHeader() {
+    final colors = AppColors.of(context);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const CircleAvatar(
+        CircleAvatar(
           radius: 23,
-          backgroundColor: Color(0xFF2E7D32),
-          child: Icon(Icons.person, color: Colors.white, size: 20),
+          backgroundColor: colors.primary,
+          child: const Icon(Icons.person, color: Colors.white, size: 20),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -1247,15 +1292,15 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                   Expanded(
                     child: Text(
                       '@${widget.post.user?.pseudo ?? 'utilisateur'}',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                      style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 15),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 2),
-              const Text(
+              Text(
                 '0 abonné(s)',
-                style: TextStyle(color: Color(0xFF71767B), fontSize: 12),
+                style: TextStyle(color: colors.textSecondary, fontSize: 12),
               ),
             ],
           ),
@@ -1265,12 +1310,13 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   }
 
   Widget _buildFollowButton(bool isCanalPost, dynamic postOwner) {
+    final colors = AppColors.of(context);
     return Container(
       height: 28,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: isCanalPost && (postOwner as Canal).isPrivate == true ? const Color(0xFFFFD600) : const Color(0xFF2E7D32),
-          foregroundColor: isCanalPost && (postOwner as Canal).isPrivate == true ? Colors.black : Colors.white,
+          backgroundColor: isCanalPost && (postOwner as Canal).isPrivate == true ? colors.accent : colors.primary,
+          foregroundColor: isCanalPost && (postOwner as Canal).isPrivate == true ? colors.onAccent : colors.onPrimary,
           padding: const EdgeInsets.symmetric(horizontal: 12),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
@@ -1299,6 +1345,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   }
 
   Widget _buildPostContent() {
+    final colors = AppColors.of(context);
     final text = widget.post.description ?? "";
     final isLocked = _isLockedContent;
 
@@ -1307,12 +1354,12 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(text.length > 100 ? '${text.substring(0, 100)}...' : text,
-              style: const TextStyle(fontSize: 15, color: Color(0xFF71767B), height: 1.4), maxLines: 2),
+              style: TextStyle(fontSize: 15, color: colors.textSecondary, height: 1.4), maxLines: 2),
           const SizedBox(height: 8),
           Row(children: [
-            const Icon(Icons.lock, color: Color(0xFFFFD600), size: 16),
+            Icon(Icons.lock, color: colors.accent, size: 16),
             const SizedBox(width: 4),
-            const Text('Contenu réservé aux abonnés', style: TextStyle(color: Color(0xFFFFD600), fontSize: 12, fontWeight: FontWeight.w500)),
+            Text('Contenu réservé aux abonnés', style: TextStyle(color: colors.accent, fontSize: 12, fontWeight: FontWeight.w500)),
           ]),
         ],
       );
@@ -1329,8 +1376,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
           onTap: _navigateToDetails,
           child: HashTagText(
             text: displayedText,
-            decoratedStyle: const TextStyle(fontSize: 15, color: Color(0xFF1D9BF0), height: 1.4),
-            basicStyle: const TextStyle(fontSize: 15, color: Colors.white, height: 1.4),
+            decoratedStyle: TextStyle(fontSize: 15, color: colors.info, height: 1.4),
+            basicStyle: TextStyle(fontSize: 15, color: colors.textPrimary, height: 1.4),
             onTap: (text) {},
           ),
         ),
@@ -1340,7 +1387,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
             child: Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(_isExpanded ? "Voir moins" : "Voir plus",
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1D9BF0))),
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: colors.info)),
             ),
           ),
         _buildEventBadge(),
@@ -1349,6 +1396,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   }
 
   Widget _buildVideoContent2() {
+    final colors = AppColors.of(context);
     final isLocked = _isLockedContent;
     final h = MediaQuery.of(context).size.height;
 
@@ -1364,18 +1412,18 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
               child: _isVideoInitialized && _chewieController != null && !isLocked
                   ? AspectRatio(aspectRatio: 16 / 9, child: Chewie(controller: _chewieController!))
                   : _isGeneratingThumbnail
-                  ? Container(height: h * 0.25, width: double.infinity, color: Colors.grey[900],
+                  ? Container(height: h * 0.25, width: double.infinity, color: colors.shimmerBase,
                   child: const Center(child: CircularProgressIndicator()))
                   : _thumbnailUrl != null
                   ? Image.network(_thumbnailUrl!, fit: BoxFit.cover, height: h * 0.25, width: double.infinity,
-                  errorBuilder: (context, error, stackTrace) => Container(height: h * 0.25, width: double.infinity, color: Colors.grey[900],
-                      child: const Icon(Icons.videocam, size: 50, color: Colors.grey)))
-                  : Container(height: h * 0.25, width: double.infinity, color: Colors.grey[900],
-                  child: const Icon(Icons.videocam, size: 50, color: Colors.grey)),
+                  errorBuilder: (context, error, stackTrace) => Container(height: h * 0.25, width: double.infinity, color: colors.shimmerBase,
+                      child: Icon(Icons.videocam, size: 50, color: colors.textSecondary)))
+                  : Container(height: h * 0.25, width: double.infinity, color: colors.shimmerBase,
+                  child: Icon(Icons.videocam, size: 50, color: colors.textSecondary)),
             ),
             if (_isVideoLoading && !isLocked)
               Container(height: h * 0.25, width: double.infinity, color: Colors.black.withOpacity(0.7),
-                  child: const Center(child: CircularProgressIndicator(color: Color(0xFF25D366)))),
+                  child: Center(child: CircularProgressIndicator(color: colors.primary))),
             // 🔥 Supprimer l'icône play superflue – on garde juste la vidéo sans contrôle
             // Overlay de verrouillage
             if (isLocked)
@@ -1389,9 +1437,9 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.lock, color: Color(0xFFFFD600), size: 50),
+                        Icon(Icons.lock, color: colors.accent, size: 50),
                         const SizedBox(height: 8),
-                        const Text('Vidéo verrouillée', style: TextStyle(color: Color(0xFFFFD600), fontSize: 16, fontWeight: FontWeight.bold)),
+                        Text('Vidéo verrouillée', style: TextStyle(color: colors.accent, fontSize: 16, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 4),
                         const Text('Abonnez-vous pour voir cette vidéo', style: TextStyle(color: Colors.white70, fontSize: 12)),
                         const SizedBox(height: 12),
@@ -1401,7 +1449,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                               Navigator.push(context, MaterialPageRoute(builder: (context) => CanalDetails(canal: _creatorCanal!)));
                             }
                           },
-                          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFD600), foregroundColor: Colors.black),
+                          style: ElevatedButton.styleFrom(backgroundColor: colors.accent, foregroundColor: colors.onAccent),
                           child: const Text('S\'abonner maintenant'),
                         ),
                       ],
@@ -1424,6 +1472,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   }
 
   Widget _buildVideoContent() {
+    final colors = AppColors.of(context);
     final isLocked = _isLockedContent;
     final screenWidth = MediaQuery.of(context).size.width;
 
@@ -1450,7 +1499,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                   ? Container(
                 height: videoHeight,
                 width: double.infinity,
-                color: Colors.grey[900],
+                color: colors.shimmerBase,
                 child: const Center(child: CircularProgressIndicator()),
               )
                   : _thumbnailUrl != null
@@ -1462,15 +1511,15 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                 errorBuilder: (context, error, stackTrace) => Container(
                   height: videoHeight,
                   width: double.infinity,
-                  color: Colors.grey[900],
-                  child: const Icon(Icons.videocam, size: 50, color: Colors.grey),
+                  color: colors.shimmerBase,
+                  child: Icon(Icons.videocam, size: 50, color: colors.textSecondary),
                 ),
               )
                   : Container(
                 height: videoHeight,
                 width: double.infinity,
-                color: Colors.grey[900],
-                child: const Icon(Icons.videocam, size: 50, color: Colors.grey),
+                color: colors.shimmerBase,
+                child: Icon(Icons.videocam, size: 50, color: colors.textSecondary),
               ),
             ),
             // --- Indicateur de chargement ---
@@ -1479,7 +1528,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                 height: videoHeight,
                 width: double.infinity,
                 color: Colors.black.withOpacity(0.7),
-                child: const Center(child: CircularProgressIndicator(color: Color(0xFF25D366))),
+                child: Center(child: CircularProgressIndicator(color: colors.primary)),
               ),
             // --- Overlay de contenu verrouillé (inchangé) ---
             if (isLocked)
@@ -1493,9 +1542,9 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.lock, color: Color(0xFFFFD600), size: 50),
+                        Icon(Icons.lock, color: colors.accent, size: 50),
                         const SizedBox(height: 8),
-                        const Text('Vidéo verrouillée', style: TextStyle(color: Color(0xFFFFD600), fontSize: 16, fontWeight: FontWeight.bold)),
+                        Text('Vidéo verrouillée', style: TextStyle(color: colors.accent, fontSize: 16, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 4),
                         const Text('Abonnez-vous pour voir cette vidéo', style: TextStyle(color: Colors.white70, fontSize: 12)),
                         const SizedBox(height: 12),
@@ -1505,7 +1554,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                               Navigator.push(context, MaterialPageRoute(builder: (context) => CanalDetails(canal: _creatorCanal!)));
                             }
                           },
-                          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFD600), foregroundColor: Colors.black),
+                          style: ElevatedButton.styleFrom(backgroundColor: colors.accent, foregroundColor: colors.onAccent),
                           child: const Text('S\'abonner maintenant'),
                         ),
                       ],
@@ -1546,6 +1595,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   }
 
   Widget _buildPostActions() {
+    final colors = AppColors.of(context);
     final isLiked = widget.post.users_love_id?.contains(_authProvider.loginUserData.id) ?? false;
     final hasAccess = !_isLockedContent;
 
@@ -1554,20 +1604,21 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _buildActionButton(icon: FontAwesome.comment_o, count: widget.post.comments ?? 0, onPressed: hasAccess ? _showCommentsModal : null),
-          _buildActionButton(icon: Icons.bar_chart, count: widget.post.totalInteractions ?? 0, color: Colors.blue, onPressed: hasAccess ? _navigateToDetails : null),
-          _buildActionButton(icon: FontAwesome.heart_o, count: widget.post.loves ?? 0, color: isLiked ? const Color(0xFFF91880) : null, onPressed: hasAccess ? _handleLike : null),
+          _buildActionButton(icon: FontAwesome.comment_o, count: widget.post.comments ?? 0, color: colors.textSecondary, onPressed: hasAccess ? _showCommentsModal : null),
+          _buildActionButton(icon: Icons.bar_chart, count: widget.post.totalInteractions ?? 0, color: colors.textSecondary, onPressed: hasAccess ? _navigateToDetails : null),
+          _buildActionButton(icon: FontAwesome.heart_o, count: widget.post.loves ?? 0, color: isLiked ? colors.danger : colors.textSecondary, onPressed: hasAccess ? _handleLike : null),
           _buildFavoriteButton(hasAccess),
-          _buildActionButton(icon: FontAwesome.gift, count: widget.post.totalGiftCoinsSentOnThisPost ?? 0, color: const Color(0xFFFFD600), onPressed: hasAccess ? _handleGift : null),
+          _buildActionButton(icon: FontAwesome.gift, count: widget.post.totalGiftCoinsSentOnThisPost ?? 0, color: colors.textSecondary, onPressed: hasAccess ? _handleGift : null),
           _isSharing
               ? const SizedBox(width: 40, height: 40, child: Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator(strokeWidth: 2)))
-              : _buildActionButton(icon: Icons.share, count: widget.post.partage ?? 0, onPressed: hasAccess ? _handleShare : null),
+              : _buildActionButton(icon: Icons.share, count: widget.post.partage ?? 0, color: colors.textSecondary, onPressed: hasAccess ? _handleShare : null),
         ],
       ),
     );
   }
 
   Widget _buildActionButton({required IconData icon, required int count, Color? color, VoidCallback? onPressed}) {
+    final colors = AppColors.of(context);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -1577,9 +1628,9 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Column(
             children: [
-              Icon(icon, size: 18, color: onPressed != null ? (color ?? const Color(0xFF71767B)) : const Color(0xFF71767B).withOpacity(0.3)),
+              Icon(icon, size: 18, color: onPressed != null ? (color ?? colors.textSecondary) : colors.textSecondary.withOpacity(0.3)),
               const SizedBox(width: 6),
-              Text(_formatCount(count), style: TextStyle(color: onPressed != null ? (color ?? const Color(0xFF71767B)) : const Color(0xFF71767B).withOpacity(0.3), fontSize: 13)),
+              Text(_formatCount(count), style: TextStyle(color: onPressed != null ? (color ?? colors.textSecondary) : colors.textSecondary.withOpacity(0.3), fontSize: 13)),
             ],
           ),
         ),
@@ -1588,6 +1639,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   }
 
   Widget _buildFavoriteButton(bool hasAccess) {
+    final colors = AppColors.of(context);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -1600,10 +1652,10 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
               _isProcessingFavorite
                   ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
                   : Icon(_isFavorite ? Icons.bookmark : Icons.bookmark_border, size: 18,
-                  color: hasAccess ? (_isFavorite ? const Color(0xFFFFD600) : const Color(0xFF71767B)) : const Color(0xFF71767B).withOpacity(0.3)),
+                  color: hasAccess ? colors.textSecondary : colors.textSecondary.withOpacity(0.3)),
               const SizedBox(width: 6),
               Text(_formatCount(widget.post.favoritesCount ?? 0),
-                  style: TextStyle(color: hasAccess ? (_isFavorite ? const Color(0xFFFFD600) : const Color(0xFF71767B)) : const Color(0xFF71767B).withOpacity(0.3), fontSize: 13)),
+                  style: TextStyle(color: hasAccess ? colors.textSecondary : colors.textSecondary.withOpacity(0.3), fontSize: 13)),
             ],
           ),
         ),
@@ -1668,14 +1720,15 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final colors = AppColors.of(context);
     final h = MediaQuery.of(context).size.height;
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF000000),
+        color: colors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF71767B).withOpacity(0.3), width: 0.5),
+        border: Border.all(color: colors.border, width: 0.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1708,6 +1761,9 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
           ),
         ],
       ),
-    );
+    )
+        .animate()
+        .fadeIn(duration: 350.ms)
+        .slideY(begin: 0.04, end: 0, duration: 350.ms, curve: Curves.easeOut);
   }
 }

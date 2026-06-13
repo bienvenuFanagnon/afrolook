@@ -97,6 +97,11 @@ import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'firebase_options.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'theme/app_theme.dart';
+import 'theme/theme_provider.dart';
+import 'providers/locale_provider.dart';
+import 'l10n/app_localizations.dart';
 import 'models/chatmodels/message.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:workmanager/workmanager.dart';
@@ -295,6 +300,8 @@ class _MyAppState extends State<MyApp> {
     return MultiProvider(
       providers: [
         // ... tous tes providers
+        ChangeNotifierProvider(create: (context) => ThemeProvider()),
+        ChangeNotifierProvider(create: (context) => LocaleProvider()),
         ChangeNotifierProvider(create: (context) => UserShopAuthProvider()),
         ChangeNotifierProvider(create: (context) => CategorieProduitProvider()),
         ChangeNotifierProvider(create: (context) => UserAuthProvider()),
@@ -340,18 +347,22 @@ class _MyAppState extends State<MyApp> {
               CoinProvider(authProvider: authProvider),
         ),
       ],
-      child: MaterialApp(
+      child: Consumer2<ThemeProvider, LocaleProvider>(
+        builder: (context, themeProvider, localeProvider, _) => MaterialApp(
         navigatorKey: NavigationCacheService().navigatorKey,
         title: 'Afrolook',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData.light().copyWith(
-          textTheme: ThemeData.light().textTheme.apply(
-            fontFamily: 'Nunito',
-          ),
-          primaryTextTheme: ThemeData.dark().textTheme.apply(
-            fontFamily: 'Nunito',
-          ),
-        ),
+        theme: AppTheme.light,
+        darkTheme: AppTheme.dark,
+        themeMode: themeProvider.themeMode,
+        locale: localeProvider.locale,
+        supportedLocales: const [Locale('fr'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
         home: const SplashChargement(),
         onGenerateRoute: (settings) {
           switch (settings.name) {
@@ -437,6 +448,7 @@ class _MyAppState extends State<MyApp> {
               );
           }
         },
+        ),
       ),
     );
   }

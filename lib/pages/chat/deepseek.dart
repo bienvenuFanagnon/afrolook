@@ -30,6 +30,7 @@ class DeepSeepChatState extends State<DeepSeepChat> {
     setState(() {});
     final nonStream =
     await DeepSeekClient.sendMessage(messages: _messages, model: model);
+    if (!mounted) return;
     _response = nonStream.choices?.first.message?.content;
     _messages.add(Message(content: _response!, role: "assistant"));
     isLoading = false;
@@ -43,6 +44,12 @@ class DeepSeepChatState extends State<DeepSeepChat> {
     _messages = [
       Message(content: "${widget.instruction}", role: "system")
     ];
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override

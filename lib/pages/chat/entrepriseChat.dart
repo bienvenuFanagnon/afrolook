@@ -126,6 +126,16 @@ class _EntrepriseMyChatState extends State<EntrepriseMyChat> {
 
 
   }
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    _controller.dispose();
+    fluttercontroller.dispose();
+    audioPlayer.dispose();
+    super.dispose();
+  }
+
   int imageIndex=0;
 
   late UserAuthProvider authProvider =

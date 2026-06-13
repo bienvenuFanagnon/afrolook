@@ -270,11 +270,10 @@ class _CanalListPageByUserState extends State<CanalListPageByUser> {
                         children: [
                           Expanded(
                             child: Text(
-                              "#${canal.titre ?? 'Sans nom'}",
+                              "#${(canal.titre != null && canal.titre!.length > 12) ? '${canal.titre!.substring(0, 12)}...' : canal.titre ?? 'Sans nom'}",
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.black,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,

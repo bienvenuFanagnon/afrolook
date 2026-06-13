@@ -46,6 +46,11 @@ import 'dart:typed_data';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../userPosts/youTube_video_card.dart';
+import '../userPosts/video_preload_manager.dart';
+import '../../providers/sound_provider.dart';
+import 'feed_cache_service.dart';
+import '../../theme/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 
 
 // Constantes de couleur
@@ -151,6 +156,14 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   List<Post> _oldPostsCache = [];
   bool _isLoadingOldPosts = false;
 
+  // Cache des fenêtres mensuelles déjà testées et trouvées vides (Session 9/14)
+  final Set<DateTime> _emptyOldPostsWindows = {};
+
+  // Liste des posts rendus (mix posts + anciens) pour le préchargement vidéo (Session 14)
+  List<Post> _renderedFeedPosts = [];
+
+  late SoundProvider _soundProvider;
+
   Timer? _oldPostsLoadTimer;
 
   // Animation
@@ -186,6 +199,12 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   @override
   void initState() {
     super.initState();
+    // 🔥 Initialisation du MediaPlaybackManager avec l'instance globale
+    // (même instance que l'AppBar / YouTubeVideoCard / AudioPostCard, Session 8)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _soundProvider = Provider.of<SoundProvider>(context, listen: false);
+      MediaPlaybackManager.init(_soundProvider);
+    });
     _initSharedPreferences();
 
     _startTitleAnimation();
@@ -285,9 +304,11 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     _scrollController.dispose();
     _visibilityTimers.forEach((key, timer) => timer.cancel());
     _backgroundLoadTimer?.cancel();
+    _oldPostsLoadTimer?.cancel();
     _starController.dispose();
     _unlikeController.dispose();
     WidgetsBinding.instance.removeObserver(this);
+    MediaPlaybackManager.dispose();
     super.dispose();
   }
 
@@ -396,18 +417,20 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   }
   void _showSupportDialog() {
     _isSupportDialogShowing = true;
+    final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: darkBackground,
+        backgroundColor: colors.surface,
         titlePadding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
         title: Row(
           children: [
             Icon(Icons.volunteer_activism, color: primaryGreen, size: 24),
             const SizedBox(width: 8),
-            const Text('Soutenez Afrolook !', style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 18)),
+            Text(l10n.supportTitle, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 18)),
           ],
         ),
         contentPadding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
@@ -415,21 +438,15 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Chers membres, Afrolook grandit grâce à vous ! 🌍\n\n'
-                  'Chaque publicité que vous regardez nous rapporte un petit revenu. Cela nous permet de :\n'
-                  '• Améliorer l\'application et ajouter de nouvelles fonctionnalités\n'
-                  '• Maintenir des serveurs stables pour une expérience fluide\n'
-                  '• Continuer à vous offrir du contenu de qualité gratuitement\n'
-                  '• Rémunérer les créateurs de contenu que vous aimez !\n\n'
-                  'Ce n\'est pas obligatoire, mais votre soutien est précieux. Merci d\'avance ! 🙏',
-              style: TextStyle(color: textColor, fontSize: 13),
+            Text(
+              l10n.supportMessage,
+              style: TextStyle(color: colors.textPrimary, fontSize: 13),
             ),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
               decoration: BoxDecoration(
-                color: lightBackground,
+                color: colors.surfaceVariant,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: accentYellow),
               ),
@@ -442,17 +459,17 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Text(
-                          'Devenez Premium',
-                          style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 14),
+                        Text(
+                          l10n.supportBecomePremium,
+                          style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14),
                         ),
                         Text(
-                          '200 F/mois 😊 • Plus aucune publicité',
+                          l10n.supportPremiumPrice,
                           style: TextStyle(color: accentYellow, fontSize: 12, fontWeight: FontWeight.bold),
                         ),
-                        const Text(
-                          'Soutenez directement les créateurs de contenu !',
-                          style: TextStyle(color: Colors.grey, fontSize: 11),
+                        Text(
+                          l10n.supportPremiumDesc,
+                          style: TextStyle(color: colors.textSecondary, fontSize: 11),
                         ),
                       ],
                     ),
@@ -469,7 +486,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
               Navigator.pop(context);
               _isSupportDialogShowing = false;
             },
-            child: const Text('Fermer', style: TextStyle(color: Colors.grey)),
+            child: Text(l10n.commonClose, style: TextStyle(color: colors.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -482,10 +499,10 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: accentYellow,
-              foregroundColor: Colors.black,
+              foregroundColor: colors.onAccent,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             ),
-            child: const Text('S\'abonner', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: Text(l10n.profileSubscribe, style: TextStyle(fontWeight: FontWeight.bold)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -495,10 +512,10 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: primaryGreen,
-              foregroundColor: Colors.white,
+              foregroundColor: colors.onPrimary,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             ),
-            child: const Text('Regarder la pub', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: Text(l10n.supportWatchAd, style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -539,30 +556,47 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     print('Pays utilisateur détecté: ${_selectedCountryCode}');
     print('Type de post sélectionné: $_selectedPostType');
 
-    // 2. Par défaut: mode "Mix" pour variété
-    // _currentFilter = 'MIXED';
-    _currentFilter = 'ALL';
+    // 2. Par défaut: filtre sur le pays de l'utilisateur (Session 11/14),
+    // fallback sur "Tous" si pays inconnu.
+    if (_selectedCountryCode != null) {
+      _currentFilter = 'COUNTRY';
+    } else {
+      _currentFilter = 'ALL';
+    }
     _isFirstLoad = true;
     _useBackgroundLoading = true;
     _backgroundPostsLoaded = 0;
 
-    // 3. Réinitialiser et charger les posts initiaux
-    _resetPagination();
-    _loadOldPostsInBackground();
-    await _loadInitialPosts();
+    // 0. 🔥 Affichage instantané depuis le cache local (Facebook-style)
+    final bool hasCachedPosts = await _loadFromCacheAndDisplay();
 
-    // 4. Démarrer le chargement background
-    _startBackgroundLoading();
+    // 3. Réinitialiser la pagination sans effacer les posts déjà affichés
+    // depuis le cache (Session 12 fix).
+    _resetPagination(clearPosts: !hasCachedPosts);
+    _startOldPostsLoading();
 
-    // 5. Charger les autres données EN PARALLÈLE
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadAllAdditionalDataInParallel();
-    });
+    if (hasCachedPosts) {
+      // Affichage déjà assuré par le cache : réseau en arrière-plan sans
+      // bloquer le premier paint.
+      _loadInitialPosts();
+      _startBackgroundLoading();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadAllAdditionalDataInParallel();
+      });
+    } else {
+      await _loadInitialPosts();
+      _startBackgroundLoading();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadAllAdditionalDataInParallel();
+      });
+    }
   }
 
-  void _resetPagination() {
-    _posts.clear();
-    _loadedPostIds.clear();
+  void _resetPagination({bool clearPosts = true}) {
+    if (clearPosts) {
+      _posts.clear();
+      _loadedPostIds.clear();
+    }
     _lastCountryDocument = null;
     _lastAllDocument = null;
     _lastOtherDocument = null;
@@ -571,6 +605,212 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     _hasMorePosts = true;
     _isLoadingMorePosts = false;
     _isLoadingBackground = false;
+  }
+
+  // ===========================================================================
+  // CACHE LOCAL DU FEED (affichage instantané "Facebook-style") - Session 14
+  // ===========================================================================
+
+  /// Clé de cache unique pour le feed Sport : type + sortType + filtre +
+  /// code pays, pour éviter toute collision avec HomeConstPost.dart.
+  String get _feedCacheKey => FeedCacheService.buildKey(
+      widget.type, '${widget.sortType ?? 'default'}_${_currentFilter}_${_selectedCountryCode ?? 'none'}');
+
+  Future<bool> _loadFromCacheAndDisplay() async {
+    try {
+      final cached = await FeedCacheService.loadFeedData(_feedCacheKey);
+      if (cached == null) return false;
+
+      final data = cached['data'] as Map<String, dynamic>;
+
+      // --- Posts initiaux ---
+      final cachedPostsJson = data['posts'] as List<dynamic>?;
+      List<Post> cachedPosts = [];
+      if (cachedPostsJson != null) {
+        for (final p in cachedPostsJson) {
+          try {
+            final json = Map<String, dynamic>.from(p as Map);
+            final post = Post.fromJson(json);
+            post.id = json['id'] as String?;
+            post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
+            cachedPosts.add(post);
+          } catch (e) {
+            print('⚠️ Cache: erreur parsing post: $e');
+          }
+        }
+      }
+
+      // --- Chroniques ---
+      final cachedChroniquesJson = data['chroniques'] as List<dynamic>?;
+      List<Chronique> cachedChroniques = [];
+      if (cachedChroniquesJson != null) {
+        for (final c in cachedChroniquesJson) {
+          try {
+            final json = Map<String, dynamic>.from(c as Map);
+            final id = json['id'] as String?;
+            final map = Map<String, dynamic>.from(json);
+            if (map['createdAt'] is String) {
+              map['createdAt'] = Timestamp.fromDate(DateTime.parse(map['createdAt'] as String));
+            }
+            if (map['expiresAt'] is String) {
+              map['expiresAt'] = Timestamp.fromDate(DateTime.parse(map['expiresAt'] as String));
+            }
+            final chronique = Chronique.fromMap(map, id ?? '');
+            if (!chronique.isExpired) {
+              cachedChroniques.add(chronique);
+            }
+          } catch (e) {
+            print('⚠️ Cache: erreur parsing chronique: $e');
+          }
+        }
+      }
+
+      // --- Auteurs des chroniques (profils résolus) ---
+      final cachedChroniqueAuthors = data['chroniqueAuthors'] as Map<String, dynamic>?;
+      if (cachedChroniqueAuthors != null) {
+        cachedChroniqueAuthors.forEach((userId, userJson) {
+          try {
+            final userData = UserData.fromJson(Map<String, dynamic>.from(userJson as Map));
+            _userDataCache[userId] = userData;
+            _userVerificationStatus[userId] = userData.isVerify ?? false;
+          } catch (e) {
+            print('⚠️ Cache: erreur parsing auteur chronique: $e');
+          }
+        });
+      }
+
+      // --- Profils suggérés ---
+      final cachedSuggestedJson = data['suggestedUsers'] as List<dynamic>?;
+      List<UserData> cachedSuggestedUsers = [];
+      if (cachedSuggestedJson != null) {
+        for (final u in cachedSuggestedJson) {
+          try {
+            cachedSuggestedUsers.add(UserData.fromJson(Map<String, dynamic>.from(u as Map)));
+          } catch (e) {
+            print('⚠️ Cache: erreur parsing profil suggéré: $e');
+          }
+        }
+      }
+
+      // --- Canaux ---
+      final cachedCanauxJson = data['canaux'] as List<dynamic>?;
+      List<Canal> cachedCanaux = [];
+      if (cachedCanauxJson != null) {
+        for (final c in cachedCanauxJson) {
+          try {
+            cachedCanaux.add(Canal.fromJson(Map<String, dynamic>.from(c as Map)));
+          } catch (e) {
+            print('⚠️ Cache: erreur parsing canal: $e');
+          }
+        }
+      }
+
+      // --- Produits boostés / articles ---
+      final cachedArticlesJson = data['articles'] as List<dynamic>?;
+      List<ArticleData> cachedArticles = [];
+      if (cachedArticlesJson != null) {
+        for (final a in cachedArticlesJson) {
+          try {
+            cachedArticles.add(ArticleData.fromJson(Map<String, dynamic>.from(a as Map)));
+          } catch (e) {
+            print('⚠️ Cache: erreur parsing article boosté: $e');
+          }
+        }
+      }
+
+      if (!mounted) return cachedPosts.isNotEmpty;
+
+      setState(() {
+        if (cachedPosts.isNotEmpty) {
+          _posts = cachedPosts;
+          _loadedPostIds.addAll(cachedPosts.map((p) => p.id ?? '').where((id) => id.isNotEmpty));
+          _totalPostsLoaded = cachedPosts.length;
+          _isFirstLoad = false;
+          _isLoadingPosts = false;
+        }
+        if (cachedChroniques.isNotEmpty) {
+          _chroniques = cachedChroniques;
+        }
+        if (cachedSuggestedUsers.isNotEmpty) {
+          _suggestedUsers = cachedSuggestedUsers;
+        }
+        if (cachedCanaux.isNotEmpty) {
+          _canaux = cachedCanaux;
+        }
+        if (cachedArticles.isNotEmpty) {
+          _articles = cachedArticles;
+        }
+      });
+
+      print('⚡ Feed Sport affiché instantanément depuis le cache local ($_feedCacheKey)');
+      return cachedPosts.isNotEmpty;
+    } catch (e) {
+      print('⚠️ Erreur _loadFromCacheAndDisplay (Sport): $e');
+      return false;
+    }
+  }
+
+  Future<void> _saveFeedToCache() async {
+    try {
+      final data = <String, dynamic>{};
+
+      if (_posts.isNotEmpty) {
+        data['posts'] = _posts.map((p) {
+          final json = p.toJson();
+          json['id'] = p.id;
+          return json;
+        }).toList();
+      }
+
+      if (_chroniques.isNotEmpty) {
+        data['chroniques'] = _chroniques.map((c) {
+          final map = Map<String, dynamic>.from(c.toMap());
+          map['id'] = c.id;
+          if (map['createdAt'] is Timestamp) {
+            map['createdAt'] = (map['createdAt'] as Timestamp).toDate().toIso8601String();
+          }
+          if (map['expiresAt'] is Timestamp) {
+            map['expiresAt'] = (map['expiresAt'] as Timestamp).toDate().toIso8601String();
+          }
+          return map;
+        }).toList();
+
+        final authors = <String, dynamic>{};
+        for (final c in _chroniques) {
+          final userData = _userDataCache[c.userId];
+          if (userData != null) {
+            final json = userData.toJson();
+            json['isVerify'] = userData.isVerify ?? false;
+            authors[c.userId] = json;
+          }
+        }
+        if (authors.isNotEmpty) {
+          data['chroniqueAuthors'] = authors;
+        }
+      }
+
+      if (_suggestedUsers.isNotEmpty) {
+        data['suggestedUsers'] = _suggestedUsers.map((u) {
+          final json = u.toJson();
+          json['isVerify'] = u.isVerify ?? false;
+          return json;
+        }).toList();
+      }
+
+      if (_canaux.isNotEmpty) {
+        data['canaux'] = _canaux.map((c) => c.toJson()).toList();
+      }
+
+      if (_articles.isNotEmpty) {
+        data['articles'] = _articles.map((a) => a.toJson()).toList();
+      }
+
+      if (data.isEmpty) return;
+
+      await FeedCacheService.saveFeedData(_feedCacheKey, data);
+    } catch (e) {
+      print('⚠️ Erreur _saveFeedToCache (Sport): $e');
+    }
   }
 
   // ===========================================================================
@@ -670,6 +910,8 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   // ===========================================================================
 
   void _showCountryFilterModal() {
+    final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -696,7 +938,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
             return Container(
               height: MediaQuery.of(context).size.height * 0.85,
               decoration: BoxDecoration(
-                color: darkBackground,
+                color: colors.surface,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(20),
                   topRight: Radius.circular(20),
@@ -709,7 +951,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                     width: 40,
                     margin: EdgeInsets.only(top: 8),
                     decoration: BoxDecoration(
-                      color: Colors.grey[600],
+                      color: colors.border,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -721,16 +963,16 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                       children: [
                         Expanded(
                           child: Text(
-                            '🌍 Filtrer par pays',
+                            l10n.feedFilterByCountry,
                             style: TextStyle(
-                              color: textColor,
+                              color: colors.textPrimary,
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
                         IconButton(
-                          icon: Icon(Icons.close, color: Colors.grey[400], size: 24),
+                          icon: Icon(Icons.close, color: colors.textSecondary, size: 24),
                           onPressed: () => Navigator.pop(context),
                         ),
                       ],
@@ -742,24 +984,24 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                     child: Container(
                       height: 48,
                       decoration: BoxDecoration(
-                        color: Colors.grey[900],
+                        color: colors.surfaceVariant,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey[700]!),
+                        border: Border.all(color: colors.border),
                       ),
                       child: Row(
                         children: [
                           Padding(
                             padding: EdgeInsets.only(left: 16),
-                            child: Icon(Icons.search, color: Colors.grey[500], size: 20),
+                            child: Icon(Icons.search, color: colors.textSecondary, size: 20),
                           ),
                           Expanded(
                             child: TextField(
                               controller: searchController,
                               onChanged: updateSearch,
-                              style: TextStyle(color: Colors.white, fontSize: 15),
+                              style: TextStyle(color: colors.textPrimary, fontSize: 15),
                               decoration: InputDecoration(
-                                hintText: 'Rechercher un pays...',
-                                hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
+                                hintText: l10n.feedSearchCountry,
+                                hintStyle: TextStyle(color: colors.textSecondary, fontSize: 14),
                                 border: InputBorder.none,
                                 contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                               ),
@@ -767,7 +1009,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                           ),
                           if (searchController.text.isNotEmpty)
                             IconButton(
-                              icon: Icon(Icons.clear, size: 18, color: Colors.grey[500]),
+                              icon: Icon(Icons.clear, size: 18, color: colors.textSecondary),
                               onPressed: () {
                                 searchController.clear();
                                 updateSearch('');
@@ -786,7 +1028,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                         children: [
                           _buildQuickFilterOption(
                             icon: Icons.public,
-                            label: 'Tous',
+                            label: l10n.feedAllFilter,
                             isSelected: _currentFilter == 'ALL',
                             color: primaryGreen,
                             onTap: () async {
@@ -799,7 +1041,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                           if (_selectedCountryCode != null)
                             _buildQuickFilterOption(
                               icon: null,
-                              label: 'Mon pays',
+                              label: l10n.feedMyCountry,
                               flag: _getCountryFlag(_selectedCountryCode!),
                               isSelected: _currentFilter == 'COUNTRY',
                               color: Colors.blue,
@@ -814,7 +1056,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                           if (_selectedCountryCode != null)
                             _buildQuickFilterOption(
                               icon: Icons.blender,
-                              label: 'Mix',
+                              label: l10n.feedMixFilter,
                               isSelected: _currentFilter == 'MIXED',
                               color: Colors.purple,
                               onTap: () async {
@@ -829,7 +1071,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
 
                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: Divider(color: Colors.grey[800], thickness: 1),
+                    child: Divider(color: colors.border, thickness: 1),
                   ),
 
                   Padding(
@@ -837,18 +1079,18 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                     child: Row(
                       children: [
                         Text(
-                          'Choisir un pays',
+                          l10n.feedChooseCountry,
                           style: TextStyle(
-                            color: Colors.grey[400],
+                            color: colors.textSecondary,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                         Spacer(),
                         Text(
-                          '${filteredCountries.length} pays',
+                          '${filteredCountries.length} ${l10n.feedCountriesSuffix}',
                           style: TextStyle(
-                            color: Colors.grey[500],
+                            color: colors.textSecondary,
                             fontSize: 12,
                           ),
                         ),
@@ -869,15 +1111,15 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                       child: ElevatedButton(
                         onPressed: () => Navigator.pop(context),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey[800],
-                          foregroundColor: Colors.white,
+                          backgroundColor: colors.surfaceVariant,
+                          foregroundColor: colors.textPrimary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                           elevation: 0,
                         ),
                         child: Text(
-                          'Fermer',
+                          l10n.commonClose,
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -903,15 +1145,16 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     required Color color,
     required VoidCallback onTap,
   }) {
+    final colors = AppColors.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? color : Colors.grey[900],
+          color: isSelected ? color : colors.surfaceVariant,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? Colors.white : Colors.transparent,
+            color: isSelected ? colors.onPrimary : Colors.transparent,
             width: 1.5,
           ),
         ),
@@ -921,19 +1164,19 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
             if (flag != null)
               Text(flag, style: TextStyle(fontSize: 16))
             else if (icon != null)
-              Icon(icon, size: 16, color: isSelected ? Colors.white : Colors.grey[400]),
+              Icon(icon, size: 16, color: isSelected ? colors.onPrimary : colors.textSecondary),
             SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? Colors.white : Colors.grey[300],
+                color: isSelected ? colors.onPrimary : colors.textPrimary,
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
             ),
             if (isSelected) SizedBox(width: 4),
             if (isSelected)
-              Icon(Icons.check, size: 14, color: Colors.white),
+              Icon(Icons.check, size: 14, color: colors.onPrimary),
           ],
         ),
       ),
@@ -941,17 +1184,19 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   }
 
   Widget _buildCountryList(List<AfricanCountry> countries, String searchQuery) {
+    final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context);
     if (countries.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.search_off, color: Colors.grey[600], size: 48),
+            Icon(Icons.search_off, color: colors.textSecondary, size: 48),
             SizedBox(height: 12),
             Text(
-              searchQuery.isEmpty ? 'Chargement...' : 'Aucun pays trouvé',
+              searchQuery.isEmpty ? l10n.commonLoading : l10n.feedNoCountryFound,
               style: TextStyle(
-                color: Colors.grey[500],
+                color: colors.textSecondary,
                 fontSize: 16,
               ),
             ),
@@ -959,9 +1204,9 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
               Padding(
                 padding: EdgeInsets.only(top: 8),
                 child: Text(
-                  'Essayez une autre recherche',
+                  l10n.feedTryAnotherSearch,
                   style: TextStyle(
-                    color: Colors.grey[600],
+                    color: colors.textSecondary,
                     fontSize: 14,
                   ),
                 ),
@@ -996,7 +1241,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
               child: Container(
                 padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: isSelected ? Colors.orange.withOpacity(0.2) : Colors.grey[900],
+                  color: isSelected ? Colors.orange.withOpacity(0.2) : colors.surfaceVariant,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: isSelected ? Colors.orange : Colors.transparent,
@@ -1009,7 +1254,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.3),
+                        color: colors.surface.withOpacity(0.5),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Center(
@@ -1030,7 +1275,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                                 child: Text(
                                   country.name,
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color: colors.textPrimary,
                                     fontSize: 15,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -1046,7 +1291,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
-                                    'Votre pays',
+                                    l10n.feedYourCountry,
                                     style: TextStyle(
                                       color: Colors.green,
                                       fontSize: 10,
@@ -1060,7 +1305,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                           Text(
                             country.code.toUpperCase(),
                             style: TextStyle(
-                              color: Colors.grey[400],
+                              color: colors.textSecondary,
                               fontSize: 12,
                             ),
                           ),
@@ -1125,6 +1370,8 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     print('✅ Filtre appliqué: $_currentFilter - Pays: $_selectedCountryCode - Type: $_selectedPostType');
   }
   void _showTypeFilterModal() {
+    final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1149,7 +1396,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
             return Container(
               height: MediaQuery.of(context).size.height * 0.7,
               decoration: BoxDecoration(
-                color: darkBackground,
+                color: colors.surface,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(20),
                   topRight: Radius.circular(20),
@@ -1163,7 +1410,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                     width: 40,
                     margin: EdgeInsets.only(top: 8),
                     decoration: BoxDecoration(
-                      color: Colors.grey[600],
+                      color: colors.border,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -1176,16 +1423,16 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                       children: [
                         Expanded(
                           child: Text(
-                            '📝 Choisir un type',
+                            l10n.feedChooseType,
                             style: TextStyle(
-                              color: textColor,
+                              color: colors.textPrimary,
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
                         IconButton(
-                          icon: Icon(Icons.close, color: Colors.grey[400], size: 24),
+                          icon: Icon(Icons.close, color: colors.textSecondary, size: 24),
                           onPressed: () => Navigator.pop(context),
                         ),
                       ],
@@ -1198,24 +1445,24 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                     child: Container(
                       height: 48,
                       decoration: BoxDecoration(
-                        color: Colors.grey[900],
+                        color: colors.surfaceVariant,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey[700]!),
+                        border: Border.all(color: colors.border),
                       ),
                       child: Row(
                         children: [
                           Padding(
                             padding: EdgeInsets.only(left: 16),
-                            child: Icon(Icons.search, color: Colors.grey[500], size: 20),
+                            child: Icon(Icons.search, color: colors.textSecondary, size: 20),
                           ),
                           Expanded(
                             child: TextField(
                               controller: searchController,
                               onChanged: updateSearch,
-                              style: TextStyle(color: Colors.white, fontSize: 15),
+                              style: TextStyle(color: colors.textPrimary, fontSize: 15),
                               decoration: InputDecoration(
-                                hintText: 'Rechercher un type...',
-                                hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
+                                hintText: l10n.feedSearchType,
+                                hintStyle: TextStyle(color: colors.textSecondary, fontSize: 14),
                                 border: InputBorder.none,
                                 contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                               ),
@@ -1223,7 +1470,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                           ),
                           if (searchController.text.isNotEmpty)
                             IconButton(
-                              icon: Icon(Icons.clear, size: 18, color: Colors.grey[500]),
+                              icon: Icon(Icons.clear, size: 18, color: colors.textSecondary),
                               onPressed: () {
                                 searchController.clear();
                                 updateSearch('');
@@ -1240,18 +1487,18 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                     child: Row(
                       children: [
                         Text(
-                          'Types disponibles',
+                          l10n.feedAvailableTypes,
                           style: TextStyle(
-                            color: Colors.grey[400],
+                            color: colors.textSecondary,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                         Spacer(),
                         Text(
-                          '${filteredTypes.length} types',
+                          '${filteredTypes.length} ${l10n.feedTypesSuffix}',
                           style: TextStyle(
-                            color: Colors.grey[500],
+                            color: colors.textSecondary,
                             fontSize: 12,
                           ),
                         ),
@@ -1287,15 +1534,15 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                       child: ElevatedButton(
                         onPressed: () => Navigator.pop(context),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey[800],
-                          foregroundColor: Colors.white,
+                          backgroundColor: colors.surfaceVariant,
+                          foregroundColor: colors.textPrimary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                           elevation: 0,
                         ),
                         child: Text(
-                          'Fermer',
+                          l10n.commonClose,
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -1346,6 +1593,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     required bool isSelected,
     required VoidCallback onTap,
   }) {
+    final colors = AppColors.of(context);
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
       child: Material(
@@ -1359,7 +1607,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: isSelected ? Colors.purple.withOpacity(0.2) : Colors.grey[900],
+              color: isSelected ? Colors.purple.withOpacity(0.2) : colors.surfaceVariant,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: isSelected ? Colors.purple : Colors.transparent,
@@ -1372,13 +1620,13 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.3),
+                    color: colors.surface.withOpacity(0.5),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Center(
                     child: Icon(
                       _getTypeIcon(type),
-                      color: isSelected ? Colors.purple : Colors.grey[400],
+                      color: isSelected ? Colors.purple : colors.textSecondary,
                       size: 22,
                     ),
                   ),
@@ -1391,7 +1639,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                       Text(
                         type,
                         style: TextStyle(
-                          color: isSelected ? Colors.white : Colors.grey[300],
+                          color: isSelected ? colors.textPrimary : colors.textSecondary,
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
                         ),
@@ -1400,7 +1648,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                       Text(
                         _getTypeDescription(type),
                         style: TextStyle(
-                          color: isSelected ? Colors.grey[300] : Colors.grey[500],
+                          color: colors.textSecondary,
                           fontSize: 12,
                         ),
                       ),
@@ -1441,10 +1689,19 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
 
   Future<void> _loadInitialPosts() async {
     try {
-      setState(() {
-        _isLoadingPosts = true;
-        _hasErrorPosts = false;
-      });
+      // Session 12 fix : ne remettre _isLoadingPosts à true que si on n'a
+      // encore aucun post affiché (cache ou précédent) - sinon le skeleton
+      // ne doit pas réapparaître pendant le rafraîchissement réseau.
+      if (_posts.isEmpty) {
+        setState(() {
+          _isLoadingPosts = true;
+          _hasErrorPosts = false;
+        });
+      } else {
+        setState(() {
+          _hasErrorPosts = false;
+        });
+      }
 
       Set<String> loadedIds = Set();
       List<Post> newPosts = [];
@@ -1473,6 +1730,17 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
               isInitialLoad: true,
               limit: limit,
             );
+            // Compléter avec les autres pays si pas assez de posts (Session 11)
+            if (newPosts.length < limit) {
+              await _loadPostsWithTypeAndCountry(
+                loadedIds,
+                newPosts,
+                postType: _selectedPostType,
+                countryCode: null,
+                isInitialLoad: true,
+                limit: limit - newPosts.length,
+              );
+            }
           }
           break;
 
@@ -1502,6 +1770,10 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         _totalPostsLoaded = newPosts.length;
         _isFirstLoad = false;
       });
+
+      if (newPosts.isNotEmpty) {
+        _saveFeedToCache();
+      }
 
       print('✅ ${newPosts.length} posts chargés avec filtre: $_currentFilter - Type: $_selectedPostType');
 
@@ -1554,7 +1826,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         query = query.startAfterDocument(_lastCountryDocument!);
       }
 
-      query = query.limit(limit * 2);
+      query = query.limit((limit * 1.5).ceil());
 
       final snapshot = await query.get();
       print('snapshot.docs.length: ${snapshot.docs.length}');
@@ -1851,6 +2123,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       setState(() {
         _suggestedUsers = users..shuffle();
       });
+      _saveFeedToCache();
     } catch (e) {
       print('Error loading suggested users: $e');
     } finally {
@@ -1875,6 +2148,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       setState(() {
         _articles = articleResults;
       });
+      _saveFeedToCache();
     } catch (e) {
       print('Error loading articles: $e');
     } finally {
@@ -1897,6 +2171,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       setState(() {
         _canaux = canalResults..shuffle();
       });
+      _saveFeedToCache();
     } catch (e) {
       print('Error loading canaux: $e');
     } finally {
@@ -1937,8 +2212,10 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       });
 
       if (validChroniques.isNotEmpty) {
-        _loadChroniqueUserDataInBackground(validChroniques);
+        await _loadChroniqueUserDataInBackground(validChroniques);
       }
+
+      _saveFeedToCache();
 
     } catch (e) {
       print('❌ Erreur chargement chroniques: $e');
@@ -1951,16 +2228,31 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
 
   Future<void> _loadChroniqueUserDataInBackground(List<Chronique> chroniques) async {
     try {
-      final userIds = chroniques.map((c) => c.userId).toSet();
+      final userIds = chroniques
+          .map((c) => c.userId)
+          .toSet()
+          .where((id) => !_userDataCache.containsKey(id))
+          .toList();
 
-      for (final userId in userIds) {
-        if (!_userDataCache.containsKey(userId)) {
-          final userDoc = await _firestore.collection('Users').doc(userId).get();
-          if (userDoc.exists) {
-            final userData = UserData.fromJson(userDoc.data()!);
-            _userDataCache[userId] = userData;
-            _userVerificationStatus[userId] = userData.isVerify ?? false;
-          }
+      if (userIds.isEmpty) return;
+
+      // Firestore whereIn supporte au maximum 30 ids par requête -> on chunk
+      const chunkSize = 30;
+      for (var i = 0; i < userIds.length; i += chunkSize) {
+        final chunk = userIds.sublist(
+          i,
+          (i + chunkSize > userIds.length) ? userIds.length : i + chunkSize,
+        );
+
+        final snapshot = await _firestore
+            .collection('Users')
+            .where(FieldPath.documentId, whereIn: chunk)
+            .get();
+
+        for (final doc in snapshot.docs) {
+          final userData = UserData.fromJson(doc.data());
+          _userDataCache[doc.id] = userData;
+          _userVerificationStatus[doc.id] = userData.isVerify ?? false;
         }
       }
 
@@ -1996,6 +2288,9 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                 : (post.type == PostType.POST.name && post.dataType == PostDataType.VIDEO.name)
                 ? YouTubeVideoCard(
               post: post,
+              index: index,
+              onNeighborhoodPreload: _preloadVideoNeighborhood,
+              currentFilterCountry: _currentFilter == 'ALL' || _currentFilter == 'MIXED' ? null : _selectedCountryCode,
               onTap: () {
                 Navigator.push(
                   context,
@@ -2012,6 +2307,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
               height: height * 0.6,
               width: width,
               isDegrade: true,
+              currentFilterCountry: _currentFilter == 'ALL' || _currentFilter == 'MIXED' ? null : _selectedCountryCode,
             ),
 
           ],
@@ -2066,6 +2362,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   }
 
   Widget _buildFilterChips() {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: SingleChildScrollView(
@@ -2073,7 +2370,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         child: Row(
           children: [
             _buildFilterChip(
-              label: '🌍 Tous',
+              label: '🌍 ${l10n.feedAllFilter}',
               isSelected: _currentFilter == 'ALL',
               color: primaryGreen,
               onTap: () => _applyFilter(filterType: 'ALL', countryCode: null),
@@ -2081,7 +2378,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
             SizedBox(width: 8),
             if (_selectedCountryCode != null)
               _buildFilterChip(
-                label: '📍Mon pays ${_selectedCountryCode}',
+                label: '📍${l10n.feedMyCountry} ${_selectedCountryCode}',
                 isSelected: _currentFilter == 'COUNTRY',
                 color: Colors.blue,
                 onTap: () => _applyFilter(filterType: 'COUNTRY', countryCode: _selectedCountryCode),
@@ -2089,14 +2386,14 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
             if (_selectedCountryCode != null) SizedBox(width: 8),
             if (_selectedCountryCode != null)
               _buildFilterChip(
-                label: '🔄 Mix',
+                label: '🔄 ${l10n.feedMixFilter}',
                 isSelected: _currentFilter == 'MIXED',
                 color: Colors.purple,
                 onTap: () => _applyFilter(filterType: 'MIXED', countryCode: _selectedCountryCode),
               ),
             SizedBox(width: 8),
             _buildFilterChip(
-              label: '⚙️ Autre',
+              label: '⚙️ ${l10n.feedOtherFilter}',
               isSelected: _currentFilter == 'CUSTOM',
               color: Colors.orange,
               onTap: _showCountryFilterModal,
@@ -2178,6 +2475,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
 
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
+    final colors = AppColors.of(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2192,7 +2490,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: textColor,
+                    color: colors.textPrimary,
                   ),
                 ),
               ),
@@ -2245,9 +2543,10 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   }
 
   Widget _buildProfileCard(UserData user, double width, double height) {
+    final colors = AppColors.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: darkBackground.withOpacity(0.8),
+        color: colors.surfaceVariant,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: primaryGreen.withOpacity(0.3)),
       ),
@@ -2270,12 +2569,12 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                       fit: BoxFit.cover,
                       imageUrl: user.imageUrl ?? '',
                       placeholder: (context, url) => Container(
-                        color: Colors.grey[800],
+                        color: colors.surfaceVariant,
                         child: Center(child: CircularProgressIndicator(color: primaryGreen)),
                       ),
                       errorWidget: (context, url, error) => Container(
-                        color: Colors.grey[800],
-                        child: Icon(Icons.person, color: Colors.grey[400]),
+                        color: colors.surfaceVariant,
+                        child: Icon(Icons.person, color: colors.textSecondary),
                       ),
                     ),
                   ),
@@ -2343,14 +2642,14 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
               onPressed: () => _showUserDetails(user),
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryGreen,
-                foregroundColor: darkBackground,
+                foregroundColor: colors.onPrimary,
                 padding: EdgeInsets.symmetric(vertical: 4),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
               child: Text(
-                'S\'abonner',
+                AppLocalizations.of(context).profileSubscribe,
                 style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
               ),
             ),
@@ -2380,11 +2679,12 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
 
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
+    final colors = AppColors.of(context);
 
     return Container(
       margin: EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.black,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -2395,7 +2695,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('🔥 Produits Boostés',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: colors.textPrimary)),
                 GestureDetector(
                   onTap: () => Navigator.push(context,
                       MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: ''))),
@@ -2443,11 +2743,12 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
 
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
+    final colors = AppColors.of(context);
 
     return Container(
       margin: EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.black,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -2496,10 +2797,11 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   }
 
   Widget _buildLoadingSection(String title) {
+    final colors = AppColors.of(context);
     return Container(
       margin: EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        color: darkBackground,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -2513,7 +2815,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                 Text(
                   title,
                   style: TextStyle(
-                    color: textColor,
+                    color: colors.textPrimary,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -2539,18 +2841,13 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   // CONTENU PRINCIPAL
   // ===========================================================================
 
-  Future<void> _loadOldPostsInBackground() async {
-    if (_isLoadingOldPosts) return;
-    _isLoadingOldPosts = true;
+  /// Choisit une fenêtre mensuelle aléatoire (pondérée) en évitant si possible
+  /// les fenêtres déjà connues comme vides (Session 9/14).
+  DateTime _pickRandomOldPostsWindowStart(Random random) {
+    DateTime? candidate;
 
-    try {
-      final random = Random();
-
-      // ------------------------------------------------------------
-      // 1. Choix de la tranche de mois (pondération)
-      // ------------------------------------------------------------
+    for (int attempt = 0; attempt < 5; attempt++) {
       int monthsBack;
-
       int chance = random.nextInt(100);
 
       if (chance < 50) {
@@ -2565,67 +2862,93 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       }
 
       final now = DateTime.now();
+      final DateTime endDate = DateTime(now.year, now.month - monthsBack, 1);
+      final DateTime startDate = DateTime(endDate.year, endDate.month - 1, 1);
 
-      final DateTime endDate = DateTime(
-        now.year,
-        now.month - monthsBack,
-        1,
-      );
-
-      final DateTime startDate = DateTime(
-        endDate.year,
-        endDate.month - 1,
-        1,
-      );
-
-      final int startMicros = startDate.microsecondsSinceEpoch;
-      final int endMicros = endDate.microsecondsSinceEpoch;
-
-      print("📜 Chargement anciens posts entre $startDate et $endDate");
-
-      // ------------------------------------------------------------
-      // 2. Query Firestore (intervalle de temps)
-      // ------------------------------------------------------------
-      Query query = _firestore.collection('Posts');
-
-      query = query
-          .where("typeTabbar", isEqualTo: _selectedPostType)
-          .where("created_at", isGreaterThanOrEqualTo: startMicros)
-          .where("created_at", isLessThan: endMicros)
-          .orderBy("created_at")
-          .limit(30); // on prend large pour filtrer ensuite
-
-      final snapshot = await query.get();
-
-      if (snapshot.docs.isEmpty) {
-        print("⚠️ Aucun post trouvé dans cette période");
-        _isLoadingOldPosts = false;
-        return;
+      if (!_emptyOldPostsWindows.contains(startDate)) {
+        return startDate;
       }
+      candidate = startDate;
+    }
 
-      // ------------------------------------------------------------
-      // 3. Transformation + filtrage
-      // ------------------------------------------------------------
+    return candidate!;
+  }
+
+  /// Exécute la requête Firestore pour une fenêtre mensuelle donnée et
+  /// retourne les posts valides trouvés (sans les ajouter au cache).
+  Future<List<Post>> _fetchOldPostsForWindow(DateTime startDate) async {
+    final DateTime endDate = DateTime(startDate.year, startDate.month + 1, 1);
+
+    final int startMicros = startDate.microsecondsSinceEpoch;
+    final int endMicros = endDate.microsecondsSinceEpoch;
+
+    print("📜 Chargement anciens posts entre $startDate et $endDate");
+
+    Query query = _firestore.collection('Posts');
+
+    query = query
+        .where("typeTabbar", isEqualTo: _selectedPostType)
+        .where("created_at", isGreaterThanOrEqualTo: startMicros)
+        .where("created_at", isLessThan: endMicros)
+        .orderBy("created_at")
+        .limit(30); // on prend large pour filtrer ensuite
+
+    final snapshot = await query.get();
+
+    if (snapshot.docs.isEmpty) {
+      print("⚠️ Aucun post trouvé dans cette période");
+      return [];
+    }
+
+    List<Post> validOldPosts = [];
+
+    for (final doc in snapshot.docs) {
+      final post = Post.fromJson(doc.data() as Map<String, dynamic>);
+      post.id = doc.id;
+
+      if (_loadedPostIds.contains(post.id)) continue;
+      if (_oldPostsCache.any((p) => p.id == post.id)) continue;
+      if (post.isAdvertisement == true) continue;
+
+      post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
+
+      validOldPosts.add(post);
+
+      if (validOldPosts.length >= 12) break;
+    }
+
+    return validOldPosts;
+  }
+
+  Future<void> _loadOldPostsInBackground() async {
+    if (_isLoadingOldPosts) return;
+    _isLoadingOldPosts = true;
+
+    try {
+      final random = Random();
+
+      // Jusqu'à 3 fenêtres tentées dans cette même passe : la fenêtre
+      // initiale + jusqu'à 2 fallbacks si vide/quasi-vide (<3 posts).
+      const int maxFallbacks = 2;
       List<Post> validOldPosts = [];
 
-      for (final doc in snapshot.docs) {
-        final post = Post.fromJson(doc.data() as Map<String, dynamic>);
-        post.id = doc.id;
+      for (int attempt = 0; attempt <= maxFallbacks; attempt++) {
+        final startDate = _pickRandomOldPostsWindowStart(random);
 
-        if (_loadedPostIds.contains(post.id)) continue;
-        if (_oldPostsCache.any((p) => p.id == post.id)) continue;
-        if (post.isAdvertisement == true) continue;
+        final found = await _fetchOldPostsForWindow(startDate);
 
-        post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
+        if (found.length < 3) {
+          _emptyOldPostsWindows.add(startDate);
+        }
 
-        validOldPosts.add(post);
+        if (found.isNotEmpty) {
+          validOldPosts = found;
+          break;
+        }
 
-        if (validOldPosts.length >= 12) break;
+        print("↩️ Fenêtre vide, tentative de repli (${attempt + 1}/${maxFallbacks + 1})");
       }
 
-      // ------------------------------------------------------------
-      // 4. Ajout au cache
-      // ------------------------------------------------------------
       if (validOldPosts.isNotEmpty) {
         validOldPosts.shuffle();
 
@@ -2635,13 +2958,49 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
           "✅ ${validOldPosts.length} anciens posts ajoutés (cache: ${_oldPostsCache.length})",
         );
       } else {
-        print("⚠️ Aucun post valide après filtrage");
+        print("⚠️ Aucun post valide après filtrage (toutes les tentatives vides)");
       }
     } catch (e) {
       print("❌ Erreur chargement anciens posts: $e");
     } finally {
       _isLoadingOldPosts = false;
     }
+  }
+
+  void _startOldPostsLoading() {
+    _oldPostsLoadTimer?.cancel();
+    _oldPostsLoadTimer = Timer.periodic(Duration(seconds: 22), (timer) {
+      if (_oldPostsCache.length < 4 && !_isLoadingOldPosts) {
+        _loadOldPostsInBackground();
+      }
+    });
+    // Premier chargement immédiat
+    _loadOldPostsInBackground();
+  }
+
+  /// 🔥 Préchargement Facebook-style (Session 6/14) : appelé par
+  /// `YouTubeVideoCard` quand elle devient visible. Précharge les vidéos
+  /// voisines et nettoie les contrôleurs hors-champ.
+  void _preloadVideoNeighborhood(int index) {
+    if (_renderedFeedPosts.isEmpty) return;
+    final length = _renderedFeedPosts.length;
+
+    String? idAt(int i) {
+      if (i < 0 || i >= length) return null;
+      final p = _renderedFeedPosts[i];
+      if (p.dataType != PostDataType.VIDEO.name) return null;
+      return p.id;
+    }
+
+    String? urlAt(int i) {
+      if (i < 0 || i >= length) return null;
+      final p = _renderedFeedPosts[i];
+      if (p.dataType != PostDataType.VIDEO.name) return null;
+      return p.url_media;
+    }
+
+    VideoPreloadManager.preloadNeighborhood(index, length, idAt, urlAt);
+    VideoPreloadManager.cleanupOutOfRange(index, length, idAt);
   }
 
   Widget _buildContent() {
@@ -2696,6 +3055,9 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     if (oldBuffer.isNotEmpty) {
       finalPosts.addAll(oldBuffer);
     }
+
+    // 🔥 Mise à jour de la liste rendue pour le préchargement vidéo (Session 6/14)
+    _renderedFeedPosts = finalPosts;
 
     // ------------------------------------------------------------
     // 2. Construction des widgets (filtrés, sections, posts, pub...)
@@ -3117,17 +3479,19 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   }
 
   Widget _buildErrorWidget() {
+    final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.error_outline, color: Colors.red, size: 40),
           SizedBox(height: 12),
-          Text('Erreur de chargement', style: TextStyle(color: Colors.white, fontSize: 14)),
+          Text(l10n.commonLoadingError, style: TextStyle(color: colors.textPrimary, fontSize: 14)),
           SizedBox(height: 8),
           ElevatedButton(
             onPressed: _refreshData,
-            child: Text('Réessayer', style: TextStyle(fontSize: 12)),
+            child: Text(l10n.commonRetry, style: TextStyle(fontSize: 12)),
           ),
         ],
       ),
@@ -3135,6 +3499,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   }
 
   Widget _buildEmptyWidget() {
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -3149,7 +3514,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
           SizedBox(height: 8),
           ElevatedButton(
             onPressed: _refreshData,
-            child: Text('Actualiser', style: TextStyle(fontSize: 12)),
+            child: Text(l10n.commonRefresh, style: TextStyle(fontSize: 12)),
           ),
         ],
       ),
@@ -3613,17 +3978,18 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     }
   }
   String _getFilterLabel() {
+    final l10n = AppLocalizations.of(context);
     switch (_currentFilter) {
       case 'ALL':
-        return 'Tous';
+        return l10n.feedAllFilter;
       case 'COUNTRY':
-        return 'Mon pays';
+        return l10n.feedMyCountry;
       case 'MIXED':
-        return 'Mix';
+        return l10n.feedMixFilter;
       case 'CUSTOM':
-        return _selectedCountryCode ?? 'Pays';
+        return _selectedCountryCode ?? l10n.feedCountryLabel;
       default:
-        return 'Filtre';
+        return l10n.feedFilterLabel;
     }
   }
   // ===========================================================================
@@ -3631,11 +3997,12 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   // ===========================================================================
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return RefreshIndicator(
       onRefresh: _refreshData,
       child: Scaffold(
         key: _scaffoldKey,
-        backgroundColor: darkBackground,
+        backgroundColor: colors.surface,
         body: SafeArea(
           child: Column(
             children: [
@@ -3644,7 +4011,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
               // ============================================================
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                color: Colors.black,
+                color: colors.surface,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -3656,10 +4023,10 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                       child: Container(
                         padding: EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: Colors.grey[800],
+                          color: colors.surfaceVariant,
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(Icons.arrow_back, color: Colors.white, size: 18),
+                        child: Icon(Icons.arrow_back, color: colors.textPrimary, size: 18),
                       ),
                     ),
                     SizedBox(width: 10,),
@@ -3673,7 +4040,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                         _selectedPostType,
                         style: TextStyle(
                           fontSize: 18,
-                          color: Colors.white,
+                          color: colors.textPrimary,
                           fontWeight: FontWeight.bold,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -3688,14 +4055,14 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
               // ============================================================
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                color: Colors.black,
+                color: colors.surface,
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
                       // Bouton Poster compact
                       _buildCompactButton(
-                        label: 'Poster',
+                        label: AppLocalizations.of(context).feedPostButton,
                         icon: Icons.add,
                         color: Colors.green,
                         onTap: () => Navigator.pushNamed(context, '/user_posts_form'),
@@ -3730,10 +4097,10 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                         child: Container(
                           padding: EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: Colors.grey[800],
+                            color: colors.surfaceVariant,
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          child: Icon(Icons.refresh, color: Colors.white, size: 14),
+                          child: Icon(Icons.refresh, color: colors.textPrimary, size: 14),
                         ),
                       ),
 
@@ -3759,11 +4126,11 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                   // Show a thank‑you message after the ad is dismissed
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: const Text(
-                        'Merci d\'avoir regardé la publicité ! Votre soutien est précieux.',
+                      content: Text(
+                        AppLocalizations.of(context).supportThankYouAd,
                         style: TextStyle(color: Colors.green),
                       ),
-                      backgroundColor: darkBackground,
+                      backgroundColor: colors.surface,
                       behavior: SnackBarBehavior.floating,
                     ),
                   );
@@ -3783,7 +4150,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     if (_selectedPostType != 'SPORT') {
       return Text(
         _selectedPostType,
-        style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+        style: TextStyle(fontSize: 18, color: AppColors.of(context).textPrimary, fontWeight: FontWeight.bold),
       );
     }
 
@@ -3822,13 +4189,14 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     required Color color,
     required VoidCallback onTap,
   }) {
+    final colors = AppColors.of(context);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.grey[800],
+          color: colors.surfaceVariant,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: color, width: 1),
         ),
@@ -3836,7 +4204,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null)
-              Icon(icon, color: Colors.white, size: 12)
+              Icon(icon, color: colors.textPrimary, size: 12)
             else if (iconDataWidget != null)
               Container(width: 16, height: 16, child: Center(child: iconDataWidget)),
 
@@ -3844,7 +4212,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
               SizedBox(width: 4),
               Text(
                 label.length > 6 ? '${label.substring(0, 4)}..' : label,
-                style: TextStyle(color: Colors.white, fontSize: 10),
+                style: TextStyle(color: colors.textPrimary, fontSize: 10),
               ),
             ],
           ],

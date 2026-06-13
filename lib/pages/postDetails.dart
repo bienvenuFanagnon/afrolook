@@ -41,9 +41,12 @@ import 'package:path_provider/path_provider.dart';
 
 import 'package:provider/provider.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../theme/app_colors.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../../providers/authProvider.dart';
 import '../providers/coin_gift_provider.dart';
 import '../services/linkService.dart';
@@ -52,29 +55,11 @@ import '../services/utils/abonnement_utils.dart';
 import 'UserServices/deviceService.dart';
 import 'canaux/detailsCanal.dart';
 
-import 'package:flutter/material.dart';
-import 'package:badges/badges.dart' as badges;
-import 'package:shared_preferences/shared_preferences.dart';
-
 import 'coins/coin_gift_dialog.dart';
 import 'coins/coin_recharge_screen.dart';
 import 'coins/post_gifts_list.dart';
 
-const _twitterDarkBg = Color(0xFF000000);
-const _twitterCardBg = Color(0xFF16181C);
-const _twitterTextPrimary = Color(0xFFFFFFFF);
-const _twitterTextSecondary = Color(0xFF71767B);
-const _twitterBlue = Color(0xFF1D9BF0);
-const _twitterRed = Color(0xFFF91880);
-const _twitterGreen = Color(0xFF00BA7C);
-const _twitterYellow = Color(0xFFFFD400);
-const _afroBlack = Color(0xFF000000);
-
-const _afroGreen = Color(0xFF2ECC71);
-const _afroYellow = Color(0xFFF1C40F);
-const _afroRed = Color(0xFFE74C3C);
-const _afroDarkGrey = Color(0xFF16181C);
-const _afroLightGrey = Color(0xFF71767B);
+// Couleurs migrées vers AppColors (_colors.*) dans _DetailsPostState
 
 class DetailsPost extends StatefulWidget {
   final Post post;
@@ -87,6 +72,7 @@ class DetailsPost extends StatefulWidget {
 
 class _DetailsPostState extends State<DetailsPost>
     with SingleTickerProviderStateMixin {
+  late AppColors _colors;
   late UserAuthProvider authProvider;
   late PostProvider postProvider;
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -190,7 +176,7 @@ class _DetailsPostState extends State<DetailsPost>
       return Center(
         child: Padding(
           padding: EdgeInsets.all(20),
-          child: CircularProgressIndicator(color: Colors.yellow),
+          child: CircularProgressIndicator(color: _colors.accent),
         ),
       );
     }
@@ -207,7 +193,7 @@ class _DetailsPostState extends State<DetailsPost>
           child: Text(
             'Suggestions',
             style: TextStyle(
-              color: Colors.white,
+              color: _colors.textPrimary,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -237,7 +223,7 @@ class _DetailsPostState extends State<DetailsPost>
                           height: 80,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
-                            color: Colors.grey[800],
+                            color: _colors.surfaceVariant,
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(12),
@@ -250,20 +236,20 @@ class _DetailsPostState extends State<DetailsPost>
                                   imageUrl:_optimizeImageUrl( post.thumbnail!),
                                   fit: BoxFit.cover,
                                   placeholder: (context, url) => Center(
-                                    child: CircularProgressIndicator(color: Colors.yellow),
+                                    child: CircularProgressIndicator(color: _colors.accent),
                                   ),
-                                  errorWidget: (context, url, error) => Icon(Icons.video_library, color: Colors.grey, size: 40),
+                                  errorWidget: (context, url, error) => Icon(Icons.video_library, color: _colors.textSecondary, size: 40),
                                 )
                                     : (post.images != null && post.images!.isNotEmpty)
                                     ? CachedNetworkImage(
                                   imageUrl: _optimizeImageUrl( post.images!.first),
                                   fit: BoxFit.cover,
                                   placeholder: (context, url) => Center(
-                                    child: CircularProgressIndicator(color: Colors.yellow),
+                                    child: CircularProgressIndicator(color: _colors.accent),
                                   ),
-                                  errorWidget: (context, url, error) => Icon(Icons.image, color: Colors.grey, size: 40),
+                                  errorWidget: (context, url, error) => Icon(Icons.image, color: _colors.textSecondary, size: 40),
                                 )
-                                    : Icon(Icons.image, color: Colors.grey, size: 40),
+                                    : Icon(Icons.image, color: _colors.textSecondary, size: 40),
 
                                 // Badge vidéo (seulement si c'est une vidéo)
                                 if (post.dataType == PostDataType.VIDEO.name)
@@ -306,17 +292,17 @@ class _DetailsPostState extends State<DetailsPost>
                                 post.description ?? '',
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(color: Colors.white, fontSize: 14),
+                                style: TextStyle(color: _colors.textPrimary, fontSize: 14),
                               ),
 
                               SizedBox(height: 2),
                               Row(
                                 children: [
-                                  Icon(Icons.bar_chart, size: 12, color: Colors.blue),
+                                  Icon(Icons.bar_chart, size: 12, color: _colors.info),
                                   SizedBox(width: 4),
                                   Text(
                                     '${post.totalInteractions ?? 0}',
-                                    style: TextStyle(color: Colors.grey[400], fontSize: 11),
+                                    style: TextStyle(color: _colors.textSecondary, fontSize: 11),
                                   ),
                                 ],
                               ),
@@ -327,9 +313,9 @@ class _DetailsPostState extends State<DetailsPost>
                     ),
                   ),
                 ),
-                if (!isLastItem) Divider(color: Colors.grey[800]),
+                if (!isLastItem) Divider(color: _colors.divider),
               ],
-            );
+            ).animate().fadeIn(duration: 300.ms, delay: (50 * index).ms).slideX(begin: 0.05, end: 0);
           },
         ),
       ],
@@ -389,7 +375,7 @@ class _DetailsPostState extends State<DetailsPost>
     final currentUserId = authProvider.loginUserData.id;
     if (currentUserId == widget.post.user_id) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Vous ne pouvez pas soutenir votre propre post'), backgroundColor: Colors.orange),
+        SnackBar(content: Text('Vous ne pouvez pas soutenir votre propre post'), backgroundColor: _colors.warning),
       );
       return;
     }
@@ -400,7 +386,7 @@ class _DetailsPostState extends State<DetailsPost>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Vous avez déjà soutenu ce post aujourd\'hui. Revenez demain !'),
-          backgroundColor: Colors.orange,
+          backgroundColor: _colors.warning,
           duration: Duration(seconds: 2),
         ),
       );
@@ -451,12 +437,12 @@ class _DetailsPostState extends State<DetailsPost>
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: _twitterCardBg,
+        backgroundColor: _colors.surfaceVariant,
         title: Row(
           children: [
-            Icon(Icons.volunteer_activism, color: _twitterYellow),
+            Icon(Icons.volunteer_activism, color: _colors.accent),
             SizedBox(width: 8),
-            Text('Soutenir le créateur', style: TextStyle(color: _twitterTextPrimary)),
+            Text('Soutenir le créateur', style: TextStyle(color: _colors.textPrimary)),
           ],
         ),
         content: Column(
@@ -465,28 +451,28 @@ class _DetailsPostState extends State<DetailsPost>
           children: [
             Text(
               'En regardant cette publicité, vous offrez pièces au créateur de ce post.',
-              style: TextStyle(color: _twitterTextSecondary),
+              style: TextStyle(color: _colors.textSecondary),
             ),
             SizedBox(height: 12),
             Text(
               'Cela l’encourage à produire plus de contenu et peut lui rapporter jusqu’à 100€ (environ 65 000 FCFA) par mois !',
-              style: TextStyle(color: _twitterTextPrimary),
+              style: TextStyle(color: _colors.textPrimary),
             ),
             SizedBox(height: 12),
             Container(
               padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.2),
+                color: _colors.success.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.monetization_on, color: _twitterYellow),
+                  Icon(Icons.monetization_on, color: _colors.accent),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       '💰 Les pièces récoltées peuvent être converties en argent réel.',
-                      style: TextStyle(color: _twitterTextPrimary, fontSize: 12),
+                      style: TextStyle(color: _colors.textPrimary, fontSize: 12),
                     ),
                   ),
                 ],
@@ -497,7 +483,7 @@ class _DetailsPostState extends State<DetailsPost>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Plus tard', style: TextStyle(color: _twitterTextSecondary)),
+            child: Text('Plus tard', style: TextStyle(color: _colors.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -505,8 +491,8 @@ class _DetailsPostState extends State<DetailsPost>
               await _markSupportModalSeen();
               _startSupportAd();
             },
-            style: ElevatedButton.styleFrom(backgroundColor: _twitterYellow),
-            child: Text('Regarder la pub', style: TextStyle(color: Colors.black)),
+            style: ElevatedButton.styleFrom(backgroundColor: _colors.accent),
+            child: Text('Regarder la pub', style: TextStyle(color: _colors.onAccent)),
           ),
         ],
       ),
@@ -544,7 +530,7 @@ class _DetailsPostState extends State<DetailsPost>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('🎉 Merci ! Le créateur a reçu des pièces.'),
-        backgroundColor: Colors.green,
+        backgroundColor: _colors.success,
         duration: Duration(seconds: 2),
       ),
     );
@@ -615,15 +601,15 @@ class _DetailsPostState extends State<DetailsPost>
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        backgroundColor: _afroDarkGrey,
+        backgroundColor: _colors.surfaceVariant,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            Icon(Icons.lightbulb, color: _afroYellow),
+            Icon(Icons.lightbulb, color: _colors.accent),
             SizedBox(width: 8),
             Text(
               'Découvrez d’autres posts',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold,fontSize: 13),
+              style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold,fontSize: 13),
             ),
           ],
         ),
@@ -635,12 +621,12 @@ class _DetailsPostState extends State<DetailsPost>
             children: [
               Text(
                 'Vous pouvez faire défiler vers le bas pour voir d’autres vidéos tendance du moment !',
-                style: TextStyle(color: _twitterTextSecondary),
+                style: TextStyle(color: _colors.textSecondary),
               ),
               SizedBox(height: 16),
               Text(
                 'Suggestions pour vous :',
-                style: TextStyle(color: _afroYellow, fontWeight: FontWeight.bold),
+                style: TextStyle(color: _colors.accent, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 12),
               Flexible(
@@ -666,15 +652,15 @@ class _DetailsPostState extends State<DetailsPost>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Fermer', style: TextStyle(color: _twitterTextSecondary)),
+            child: Text('Fermer', style: TextStyle(color: _colors.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               _markSuggestionsModalSeen();
             },
-            style: ElevatedButton.styleFrom(backgroundColor: _afroGreen),
-            child: Text('J’ai compris', style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(backgroundColor: _colors.primary),
+            child: Text('J’ai compris', style: TextStyle(color: _colors.onPrimary)),
           ),
         ],
       ),
@@ -694,12 +680,12 @@ class _DetailsPostState extends State<DetailsPost>
                 Container(
                   width: 60,
                   height: 60,
-                  color: Colors.grey[800],
+                  color: _colors.surfaceVariant,
                   child: post.dataType == PostDataType.VIDEO.name && post.thumbnail != null
                       ? CachedNetworkImage(imageUrl:_optimizeImageUrl( post.thumbnail!), fit: BoxFit.cover)
                       : (post.images != null && post.images!.isNotEmpty
                       ? CachedNetworkImage(imageUrl:_optimizeImageUrl( post.images!.first), fit: BoxFit.cover)
-                      : Icon(Icons.videocam, color: Colors.grey)),
+                      : Icon(Icons.videocam, color: _colors.textSecondary)),
                 ),
                 if (post.dataType == PostDataType.VIDEO.name)
                   Positioned.fill(
@@ -725,22 +711,22 @@ class _DetailsPostState extends State<DetailsPost>
                   post.description ?? '',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: Colors.white),
+                  style: TextStyle(color: _colors.textPrimary),
                 ),
                 Row(
                   children: [
-                    Icon(Icons.bar_chart, size: 12, color: _twitterTextSecondary),
+                    Icon(Icons.bar_chart, size: 12, color: _colors.textSecondary),
                     SizedBox(width: 2),
                     Text(
                       _formatCount(post.totalInteractions ?? 0),
-                      style: TextStyle(color: _twitterTextSecondary, fontSize: 12),
+                      style: TextStyle(color: _colors.textSecondary, fontSize: 12),
                     ),
                     SizedBox(width: 8),
-                    Icon(Icons.favorite, size: 12, color: _twitterRed),
+                    Icon(Icons.favorite, size: 12, color: _colors.danger),
                     SizedBox(width: 2),
                     Text(
                       _formatCount(post.loves ?? 0),
-                      style: TextStyle(color: _twitterTextSecondary, fontSize: 12),
+                      style: TextStyle(color: _colors.textSecondary, fontSize: 12),
                     ),
                   ],
                 ),
@@ -1269,7 +1255,7 @@ class _DetailsPostState extends State<DetailsPost>
             ),
           ],
           border: _isLookChallenge
-              ? Border.all(color: _twitterGreen.withOpacity(0.5), width: 2)
+              ? Border.all(color: _colors.primary.withOpacity(0.5), width: 2)
               : null,
         ),
         child: Stack(
@@ -1318,12 +1304,12 @@ class _DetailsPostState extends State<DetailsPost>
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.lock, color: _twitterYellow, size: 60),
+                        Icon(Icons.lock, color: _colors.accent, size: 60),
                         SizedBox(height: 20),
                         Text(
                           'Audio verrouillé',
                           style: TextStyle(
-                            color: _twitterYellow,
+                            color: _colors.accent,
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                           ),
@@ -1581,7 +1567,7 @@ class _DetailsPostState extends State<DetailsPost>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Erreur lors de la lecture audio'),
-        backgroundColor: Colors.red,
+        backgroundColor: _colors.danger,
       ),
     );
   }
@@ -1712,9 +1698,9 @@ class _DetailsPostState extends State<DetailsPost>
         child: Container(
           padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: _twitterCardBg,
+            color: _colors.surfaceVariant,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: _twitterYellow.withOpacity(0.5)),
+            border: Border.all(color: _colors.accent.withOpacity(0.5)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -1723,15 +1709,15 @@ class _DetailsPostState extends State<DetailsPost>
                 SizedBox(
                   width: 16,
                   height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: _twitterYellow),
+                  child: CircularProgressIndicator(strokeWidth: 2, color: _colors.accent),
                 )
               else
-                Icon(Icons.volunteer_activism, color: _twitterYellow, size: 18),
+                Icon(Icons.volunteer_activism, color: _colors.accent, size: 18),
               SizedBox(width: 6),
               Text(
                 'Soutenir le créateur',
                 style: TextStyle(
-                  color: _twitterTextPrimary,
+                  color: _colors.textPrimary,
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
@@ -1741,13 +1727,13 @@ class _DetailsPostState extends State<DetailsPost>
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: _twitterYellow.withOpacity(0.2),
+                    color: _colors.accent.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     '$count',
                     style: TextStyle(
-                      color: _twitterYellow,
+                      color: _colors.accent,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),
@@ -1824,9 +1810,9 @@ class _DetailsPostState extends State<DetailsPost>
             _isFavorite
                 ? '✅ Post ajouté aux favoris'
                 : '🗑️ Post retiré des favoris',
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: _colors.onPrimary),
           ),
-          backgroundColor: _isFavorite ? _twitterGreen : Colors.grey,
+          backgroundColor: _isFavorite ? _colors.primary : _colors.textSecondary,
           duration: Duration(seconds: 2),
         ),
       );
@@ -1836,9 +1822,9 @@ class _DetailsPostState extends State<DetailsPost>
         SnackBar(
           content: Text(
             '❌ Erreur lors de la modification',
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: _colors.onPrimary),
           ),
-          backgroundColor: Colors.red,
+          backgroundColor: _colors.danger,
         ),
       );
     } finally {
@@ -2180,14 +2166,14 @@ class _DetailsPostState extends State<DetailsPost>
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            backgroundColor: Colors.grey[900],
+            backgroundColor: _colors.surfaceVariant,
             title: Text('Confirmer votre vote',
-                style: TextStyle(color: Colors.white)),
+                style: TextStyle(color: _colors.textPrimary)),
             content: Text(
               !_challenge!.voteGratuit!
                   ? 'Êtes-vous sûr de vouloir voter pour ce look ?\n\nCe vote vous coûtera ${_challenge!.prixVote} FCFA.'
                   : 'Voulez-vous vraiment voter pour ce look ?\n\nVotre vote est gratuit et ne peut être changé.',
-              style: TextStyle(color: Colors.grey[300]),
+              style: TextStyle(color: _colors.textSecondary),
             ),
             actions: [
               TextButton(
@@ -2197,16 +2183,16 @@ class _DetailsPostState extends State<DetailsPost>
                     _isVoting = false;
                   });
                 },
-                child: Text('ANNULER', style: TextStyle(color: Colors.grey)),
+                child: Text('ANNULER', style: TextStyle(color: _colors.textSecondary)),
               ),
               ElevatedButton(
                 onPressed: () async {
                   Navigator.pop(context);
                   await _processVoteWithChallenge(user.uid);
                 },
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                style: ElevatedButton.styleFrom(backgroundColor: _colors.success),
                 child: Text('CONFIRMER MON VOTE',
-                    style: TextStyle(color: Colors.white)),
+                    style: TextStyle(color: _colors.onPrimary)),
               ),
             ],
           ),
@@ -2593,8 +2579,8 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.red,
+        content: Text(message, style: TextStyle(color: _colors.onPrimary)),
+        backgroundColor: _colors.danger,
         duration: Duration(seconds: 4),
       ),
     );
@@ -2603,8 +2589,8 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
   void _showSuccess(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.green,
+        content: Text(message, style: TextStyle(color: _colors.onPrimary)),
+        backgroundColor: _colors.success,
         duration: Duration(seconds: 4),
       ),
     );
@@ -2614,18 +2600,18 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
+        backgroundColor: _colors.surfaceVariant,
         title:
-            Text('SOLDE INSUFFISANT', style: TextStyle(color: Colors.yellow)),
+            Text('SOLDE INSUFFISANT', style: TextStyle(color: _colors.accent)),
         content: Text(
           'Il vous manque $montantManquant FCFA pour pouvoir voter.\n\n'
           'Rechargez votre compte pour soutenir votre look préféré !',
-          style: TextStyle(color: Colors.grey[300]),
+          style: TextStyle(color: _colors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('PLUS TARD', style: TextStyle(color: Colors.grey)),
+            child: Text('PLUS TARD', style: TextStyle(color: _colors.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -2633,9 +2619,9 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
               Navigator.push(context,
                   MaterialPageRoute(builder: (context) => DepositScreen()));
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            style: ElevatedButton.styleFrom(backgroundColor: _colors.success),
             child: Text('RECHARGER MAINTENANT',
-                style: TextStyle(color: Colors.white)),
+                style: TextStyle(color: _colors.onPrimary)),
           ),
         ],
       ),
@@ -2650,15 +2636,15 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            backgroundColor: _twitterCardBg,
+            backgroundColor: _colors.surfaceVariant,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
-              side: BorderSide(color: _twitterGreen, width: 2),
+              side: BorderSide(color: _colors.primary, width: 2),
             ),
             title: Text(
               '🎉 Voter pour ce Look',
               style: TextStyle(
-                color: _twitterGreen,
+                color: _colors.primary,
                 fontWeight: FontWeight.bold,
               ),
               textAlign: TextAlign.center,
@@ -2666,14 +2652,14 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             content: Text(
               'Ce vote vous coûtera ${_challenge!.prixVote} FCFA.\n\n'
               'Voulez-vous continuer ?',
-              style: TextStyle(color: _twitterTextPrimary),
+              style: TextStyle(color: _colors.textPrimary),
               textAlign: TextAlign.center,
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: Text('Annuler',
-                    style: TextStyle(color: _twitterTextSecondary)),
+                    style: TextStyle(color: _colors.textSecondary)),
               ),
               ElevatedButton(
                 onPressed: () {
@@ -2681,10 +2667,10 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                   _voteForLook();
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _twitterGreen,
+                  backgroundColor: _colors.primary,
                 ),
                 child: Text('Voter ${_challenge!.prixVote} FCFA',
-                    style: TextStyle(color: Colors.white)),
+                    style: TextStyle(color: _colors.onPrimary)),
               ),
             ],
           );
@@ -2695,29 +2681,29 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            backgroundColor: _twitterCardBg,
+            backgroundColor: _colors.surfaceVariant,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
-              side: BorderSide(color: _twitterGreen, width: 2),
+              side: BorderSide(color: _colors.primary, width: 2),
             ),
             title: Text(
               '🎉 Voter pour ce Look',
               style: TextStyle(
-                color: _twitterGreen,
+                color: _colors.primary,
                 fontWeight: FontWeight.bold,
               ),
               textAlign: TextAlign.center,
             ),
             content: Text(
               'Vous allez voter pour ce look${_isLookChallenge ? ' challenge' : ''}. Cette action est irréversible${_isLookChallenge && _challenge != null ? ' et vous rapportera 3 points' : ''}!',
-              style: TextStyle(color: _twitterTextPrimary),
+              style: TextStyle(color: _colors.textPrimary),
               textAlign: TextAlign.center,
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: Text('Annuler',
-                    style: TextStyle(color: _twitterTextSecondary)),
+                    style: TextStyle(color: _colors.textSecondary)),
               ),
               ElevatedButton(
                 onPressed: () {
@@ -2725,9 +2711,9 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                   _voteForLook();
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _twitterGreen,
+                  backgroundColor: _colors.primary,
                 ),
-                child: Text('Voter', style: TextStyle(color: Colors.white)),
+                child: Text('Voter', style: TextStyle(color: _colors.onPrimary)),
               ),
             ],
           );
@@ -2840,7 +2826,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('+ de points ajoutés à votre compte'),
-          backgroundColor: Colors.green,
+          backgroundColor: _colors.success,
         ),
       );
     } catch (e) {
@@ -2855,7 +2841,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(errorMessage),
-          backgroundColor: Colors.red,
+          backgroundColor: _colors.danger,
         ),
       );
     } finally {
@@ -2905,7 +2891,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             content: Text(
               '+ de points ajoutés à votre compte',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.green),
+              style: TextStyle(color: _colors.success),
             ),
           ),
         );
@@ -3037,9 +3023,9 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('+ de points ajoutés à votre compte', textAlign: TextAlign.center),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: const Text('+ de points ajoutés à votre compte', textAlign: TextAlign.center),
+          backgroundColor: _colors.success,
         ),
       );
     } catch (e) {
@@ -3224,9 +3210,9 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Chaque like que vous envoyez offre 1 pièce au créateur du post !',
-              style: TextStyle(color: Colors.white70),
+              style: TextStyle(color: _colors.textSecondary),
             ),
             const SizedBox(height: 12),
             Container(
@@ -3236,30 +3222,30 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3)),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Text('🪙', style: TextStyle(fontSize: 20)),
-                  SizedBox(width: 8),
+                  const Text('🪙', style: TextStyle(fontSize: 20)),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Le like coûte 2 pièces :\n• Pour soutenir le créateur',
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                      style: TextStyle(color: _colors.textSecondary, fontSize: 12),
                     ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Rechargez votre compte pour continuer à soutenir vos créateurs préférés !',
-              style: TextStyle(color: Colors.white54, fontSize: 12),
+              style: TextStyle(color: _colors.textSecondary, fontSize: 12),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Annuler', style: TextStyle(color: Colors.white70)),
+            child: Text('Annuler', style: TextStyle(color: _colors.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -3271,7 +3257,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFFFD700),
-              foregroundColor: Colors.black,
+              foregroundColor: _colors.onAccent,
             ),
             child: const Text('Recharger', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
@@ -3398,10 +3384,10 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            backgroundColor: Colors.green,
+            backgroundColor: _colors.success,
             content: Text(
               '🎁 Cadeau de ${amount.toInt()} FCFA envoyé avec succès!',
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: _colors.onPrimary),
             ),
           ),
         );
@@ -3423,10 +3409,10 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       print("Erreur envoi cadeau: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: Colors.red,
+          backgroundColor: _colors.danger,
           content: Text(
             'Erreur lors de l\'envoi du cadeau',
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: _colors.onPrimary),
           ),
         ),
       );
@@ -3460,10 +3446,10 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
 
           // Afficher un snackbar de confirmation
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('🎁 Cadeau envoyé avec succès !'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
+            SnackBar(
+              content: const Text('🎁 Cadeau envoyé avec succès !'),
+              backgroundColor: _colors.success,
+              duration: const Duration(seconds: 2),
             ),
           );
 
@@ -3482,10 +3468,10 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         return StatefulBuilder(
           builder: (context, setState) {
             return Dialog(
-              backgroundColor: Colors.black,
+              backgroundColor: _colors.surface,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
-                side: BorderSide(color: Colors.yellow, width: 2),
+                side: BorderSide(color: _colors.accent, width: 2),
               ),
               child: Container(
                 height: height,
@@ -3495,7 +3481,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                     Text(
                       'Envoyer un Cadeau',
                       style: TextStyle(
-                        color: Colors.yellow,
+                        color: _colors.accent,
                         fontWeight: FontWeight.bold,
                         fontSize: 20,
                       ),
@@ -3504,7 +3490,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                     SizedBox(height: 12),
                     Text(
                       'Choisissez le montant en FCFA',
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: _colors.textPrimary),
                     ),
                     SizedBox(height: 12),
                     Expanded(
@@ -3525,12 +3511,12 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                               padding: EdgeInsets.all(10),
                               decoration: BoxDecoration(
                                 color: _selectedGiftIndex == index
-                                    ? Colors.green
-                                    : Colors.grey[800],
+                                    ? _colors.success
+                                    : _colors.surfaceVariant,
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
                                   color: _selectedGiftIndex == index
-                                      ? Colors.yellow
+                                      ? _colors.accent
                                       : Colors.transparent,
                                   width: 1,
                                 ),
@@ -3547,7 +3533,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                                     '${giftPrices[index].toInt()} FCFA',
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: Colors.white,
+                                      color: _colors.textPrimary,
                                       fontWeight: FontWeight.bold,
                                     ),
                                     textAlign: TextAlign.center,
@@ -3563,7 +3549,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                     Text(
                       'Votre solde: ${authProvider.loginUserData.votre_solde_principal?.toInt() ?? 0} FCFA',
                       style: TextStyle(
-                        color: Colors.yellow,
+                        color: _colors.accent,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -3574,7 +3560,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                         TextButton(
                           onPressed: () => Navigator.pop(context),
                           child: Text('Annuler',
-                              style: TextStyle(color: Colors.white)),
+                              style: TextStyle(color: _colors.textPrimary)),
                         ),
                         ElevatedButton(
                           onPressed: () {
@@ -3582,14 +3568,14 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                             _sendGift(giftPrices[_selectedGiftIndex]);
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
+                            backgroundColor: _colors.success,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
                           child: Text(
                             'Envoyer',
-                            style: TextStyle(color: Colors.black),
+                            style: TextStyle(color: _colors.onPrimary),
                           ),
                         ),
                       ],
@@ -3697,10 +3683,10 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            backgroundColor: Colors.green,
+            backgroundColor: _colors.success,
             content: Text(
               '🔝 Post republié pour $_selectedRepostPrice FCFA!',
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(color: _colors.onPrimary),
             ),
           ),
         );
@@ -3710,11 +3696,11 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
     } catch (e) {
       print("Erreur republication: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: Colors.red,
+        SnackBar(
+          backgroundColor: _colors.danger,
           content: Text(
             'Erreur lors de la republication',
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: _colors.onPrimary),
           ),
         ),
       );
@@ -3728,26 +3714,26 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: Colors.black,
+          backgroundColor: _colors.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: Colors.yellow, width: 2),
+            side: BorderSide(color: _colors.accent, width: 2),
           ),
           title: Text(
             'Solde Insuffisant',
             style: TextStyle(
-              color: Colors.yellow,
+              color: _colors.accent,
               fontWeight: FontWeight.bold,
             ),
           ),
           content: Text(
             'Votre solde est insuffisant pour effectuer cette action. Veuillez recharger votre compte.',
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: _colors.textPrimary),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Annuler', style: TextStyle(color: Colors.white)),
+              child: Text('Annuler', style: TextStyle(color: _colors.textPrimary)),
             ),
             ElevatedButton(
               onPressed: () {
@@ -3756,9 +3742,9 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                     MaterialPageRoute(builder: (context) => DepositScreen()));
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
+                backgroundColor: _colors.success,
               ),
-              child: Text('Recharger', style: TextStyle(color: Colors.black)),
+              child: Text('Recharger', style: TextStyle(color: _colors.onPrimary)),
             ),
           ],
         );
@@ -3771,26 +3757,26 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: Colors.black,
+          backgroundColor: _colors.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: Colors.yellow, width: 2),
+            side: BorderSide(color: _colors.accent, width: 2),
           ),
           title: Text(
             'Republier le Post',
             style: TextStyle(
-              color: Colors.yellow,
+              color: _colors.accent,
               fontWeight: FontWeight.bold,
             ),
           ),
           content: Text(
             'Republier ce post le mettra en avant dans le fil d\'actualité. Coût: 25 FCFA.',
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: _colors.textPrimary),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Annuler', style: TextStyle(color: Colors.white)),
+              child: Text('Annuler', style: TextStyle(color: _colors.textPrimary)),
             ),
             ElevatedButton(
               onPressed: () {
@@ -3798,9 +3784,9 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                 _repostForCash();
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
+                backgroundColor: _colors.success,
               ),
-              child: Text('Republier', style: TextStyle(color: Colors.black)),
+              child: Text('Republier', style: TextStyle(color: _colors.onPrimary)),
             ),
           ],
         );
@@ -3845,10 +3831,10 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                   child: Container(
                     padding: EdgeInsets.all(2),
                     decoration: BoxDecoration(
-                      color: _twitterDarkBg,
+                      color: _colors.background,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.verified, color: Colors.blue, size: 14),
+                    child: Icon(Icons.verified, color: _colors.info, size: 14),
                   ),
                 ),
               if (_isLookChallenge)
@@ -3858,7 +3844,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                   child: Container(
                     padding: EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: _twitterGreen,
+                      color: _colors.primary,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -3875,7 +3861,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                   child: Container(
                     padding: EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: _twitterYellow,
+                      color: _colors.accent,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -3896,24 +3882,24 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                   Row(
                     children: [
                       Text(
-                        '#${canal.titre ?? ''}',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        '#${(canal.titre != null && canal.titre!.length > 12) ? '${canal.titre!.substring(0, 12)}...' : canal.titre ?? ''}',
+                        style: TextStyle(
+                          color: _colors.textPrimary,
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
                       ),
                       SizedBox(width: 4),
                       if (canal.isVerify ?? false)
-                        Icon(Icons.verified, color: _twitterBlue, size: 16),
+                        Icon(Icons.verified, color: _colors.info, size: 16),
                       if (isLocked)
-                        Icon(Icons.lock, color: _twitterYellow, size: 16),
+                        Icon(Icons.lock, color: _colors.accent, size: 16),
                     ],
                   ),
                   Text(
                     '${canal.usersSuiviId!.length ?? 0} abonnés',
                     style: TextStyle(
-                      color: Colors.grey[400],
+                      color: _colors.textSecondary,
                       fontSize: 12,
                     ),
                   ),
@@ -3922,8 +3908,8 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                     children: [
                       Text(
                         '@${user.pseudo ?? ''}',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: _colors.textPrimary,
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
@@ -3942,21 +3928,21 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                           padding:
                               EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.blue.withOpacity(0.2),
+                            color: _colors.info.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(4),
                             border:
-                                Border.all(color: Colors.blue.withOpacity(0.5)),
+                                Border.all(color: _colors.info.withOpacity(0.5)),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(Icons.audiotrack,
-                                  color: Colors.blue, size: 10),
+                                  color: _colors.info, size: 10),
                               SizedBox(width: 2),
                               Text(
                                 'AUDIO',
                                 style: TextStyle(
-                                  color: Colors.blue,
+                                  color: _colors.info,
                                   fontSize: 8,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -3970,14 +3956,14 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                           padding:
                               EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: _twitterGreen.withOpacity(0.2),
+                            color: _colors.primary.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: _twitterGreen),
+                            border: Border.all(color: _colors.primary),
                           ),
                           child: Text(
                             'LOOK',
                             style: TextStyle(
-                              color: _twitterGreen,
+                              color: _colors.primary,
                               fontSize: 8,
                               fontWeight: FontWeight.bold,
                             ),
@@ -3988,7 +3974,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                   Text(
                     '${user.userAbonnesIds!.length ?? 0} abonnés${_isLookChallenge ? ' • ${post.votesChallenge ?? 0} votes' : ''}',
                     style: TextStyle(
-                      color: Colors.grey[400],
+                      color: _colors.textSecondary,
                       fontSize: 12,
                     ),
                   ),
@@ -3997,7 +3983,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                       DateTime.fromMicrosecondsSinceEpoch(post.createdAt ?? 0),
                     ),
                     style: TextStyle(
-                      color: Colors.grey[400],
+                      color: _colors.textSecondary,
                       fontSize: 12,
                     ),
                   ),
@@ -4009,7 +3995,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             onTap: () => _showPostMenu(widget.post),
             child: Icon(
               Icons.more_horiz,
-              color: Colors.white,
+              color: _colors.textPrimary,
               size: 20,
             ),
           ),
@@ -4024,7 +4010,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: _twitterCardBg,
+      backgroundColor: _colors.surfaceVariant,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -4037,7 +4023,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
               _buildMenuOption(
                 Icons.flag,
                 "Signaler",
-                _twitterTextPrimary,
+                _colors.textPrimary,
                 () async {
                   post.status = PostStatus.SIGNALER.name;
                   final value = await postProvider.updateVuePost(post, context);
@@ -4048,7 +4034,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                       value ? 'Post signalé !' : 'Échec du signalement !',
                       textAlign: TextAlign.center,
                       style:
-                          TextStyle(color: value ? Colors.green : Colors.red),
+                          TextStyle(color: value ? _colors.success : _colors.danger),
                     ),
                   );
                   ScaffoldMessenger.of(context).showSnackBar(snackBar);
@@ -4059,7 +4045,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
               _buildMenuOption(
                 Icons.delete,
                 "Supprimer",
-                Colors.red,
+                _colors.danger,
                 () async {
                   if (authProvider.loginUserData.role == UserRole.ADM.name) {
                     await deletePost(post, context);
@@ -4073,7 +4059,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                     content: Text(
                       'Post supprimé !',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.green),
+                      style: TextStyle(color: _colors.success),
                     ),
                   );
                   ScaffoldMessenger.of(context).showSnackBar(snackBar);
@@ -4081,9 +4067,9 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
               ),
             SizedBox(height: 8),
             Container(
-                height: 0.5, color: _twitterTextSecondary.withOpacity(0.3)),
+                height: 0.5, color: _colors.textSecondary.withOpacity(0.3)),
             SizedBox(height: 8),
-            _buildMenuOption(Icons.cancel, "Annuler", _twitterTextSecondary,
+            _buildMenuOption(Icons.cancel, "Annuler", _colors.textSecondary,
                 () {
               Navigator.pop(context);
             }),
@@ -4137,19 +4123,19 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                   Container(
                     padding: EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: _twitterYellow.withOpacity(0.1),
+                      color: _colors.accent.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: _twitterYellow),
+                      border: Border.all(color: _colors.accent),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.lock, color: _twitterYellow, size: 16),
+                        Icon(Icons.lock, color: _colors.accent, size: 16),
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             'Contenu réservé aux abonnés du canal',
                             style: TextStyle(
-                              color: _twitterYellow,
+                              color: _colors.accent,
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
                             ),
@@ -4209,12 +4195,12 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           },
           text: displayedText,
           style: TextStyle(
-            color: isLocked ? _twitterTextSecondary : _twitterTextPrimary,
+            color: isLocked ? _colors.textSecondary : _colors.textPrimary,
             fontSize: 14,
             height: 1.4,
           ),
           linkStyle: TextStyle(
-            color: _twitterBlue,
+            color: _colors.info,
             fontWeight: FontWeight.w500,
           ),
           options: LinkifyOptions(humanize: false),
@@ -4236,7 +4222,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: _twitterBlue,
+                      color: _colors.info,
                     ),
                   ),
                 ),
@@ -4273,25 +4259,25 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       margin: EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(15),
-        color: _twitterCardBg,
+        color: _colors.surfaceVariant,
       ),
       child: Stack(
         children: [
           Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(15),
-              color: _twitterTextSecondary.withOpacity(0.1),
+              color: _colors.textSecondary.withOpacity(0.1),
             ),
             child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.lock, color: _twitterYellow, size: 50),
+                  Icon(Icons.lock, color: _colors.accent, size: 50),
                   SizedBox(height: 16),
                   Text(
                     'Contenu verrouillé',
                     style: TextStyle(
-                      color: _twitterYellow,
+                      color: _colors.accent,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -4300,7 +4286,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                   Text(
                     'Abonnez-vous au canal pour voir ce contenu',
                     style: TextStyle(
-                      color: _twitterTextSecondary,
+                      color: _colors.textSecondary,
                       fontSize: 14,
                     ),
                     textAlign: TextAlign.center,
@@ -4328,15 +4314,15 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           ),
         ],
         border: _isLookChallenge
-            ? Border.all(color: _twitterGreen.withOpacity(0.3))
+            ? Border.all(color: _colors.primary.withOpacity(0.3))
             : null,
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(15),
         child: ImageSlideshow(
           initialPage: 0,
-          indicatorColor: _isLookChallenge ? _twitterGreen : Colors.yellow,
-          indicatorBackgroundColor: Colors.grey,
+          indicatorColor: _isLookChallenge ? _colors.primary : _colors.accent,
+          indicatorBackgroundColor: _colors.textSecondary,
           onPageChanged: (value) {
             print('Page changed: $value');
           },
@@ -4358,13 +4344,13 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                         imageUrl:_optimizeImageUrl(imageUrl) ,
                         fit: BoxFit.contain,
                         placeholder: (context, url) => Container(
-                          color: Colors.grey[800],
+                          color: _colors.surfaceVariant,
                           child: Center(
                               child: CircularProgressIndicator(
-                                  color: Colors.yellow)),
+                                  color: _colors.accent)),
                         ),
                         errorWidget: (context, url, error) =>
-                            Icon(Icons.error, color: Colors.red),
+                            Icon(Icons.error, color: _colors.danger),
                       ),
                     ),
                   ))
@@ -4403,7 +4389,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           ),
         ],
         border: _isLookChallenge
-            ? Border.all(color: _twitterGreen.withOpacity(0.3))
+            ? Border.all(color: _colors.primary.withOpacity(0.3))
             : null,
       ),
       child: ClipRRect(
@@ -4427,16 +4413,17 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       height: contentHeight,
       margin: EdgeInsets.symmetric(vertical: 2),
       decoration: BoxDecoration(
+        color: _colors.surfaceVariant,
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.5),
+            color: Colors.black.withOpacity(_colors.isDark ? 0.5 : 0.12),
             blurRadius: 10,
             spreadRadius: 2,
           ),
         ],
         border: _isLookChallenge
-            ? Border.all(color: _twitterGreen.withOpacity(0.3))
+            ? Border.all(color: _colors.primary.withOpacity(0.3))
             : null,
       ),
       child: ClipRRect(
@@ -4465,15 +4452,15 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                       width: double.infinity,
                       height: contentHeight,
                       placeholder: (context, url) => Container(
-                        color: Colors.grey[800],
+                        color: _colors.surfaceVariant,
                         child: Center(
-                          child: CircularProgressIndicator(color: Colors.yellow),
+                          child: CircularProgressIndicator(color: _colors.accent),
                         ),
                       ),
                       errorWidget: (context, url, error) => Container(
-                        color: Colors.grey[800],
+                        color: _colors.surfaceVariant,
                         child: Center(
-                          child: Icon(Icons.error, color: Colors.red, size: 50),
+                          child: Icon(Icons.error, color: _colors.danger, size: 50),
                         ),
                       ),
                     ),
@@ -4498,7 +4485,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                       height: 8,
                       decoration: BoxDecoration(
                         color: _currentImageIndex == index
-                            ? Colors.yellow
+                            ? _colors.accent
                             : Colors.white.withOpacity(0.5),
                         borderRadius: BorderRadius.circular(4),
                       ),
@@ -4612,13 +4599,13 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             width: double.infinity,
             height: height,
             placeholder: (context, url) => Container(
-              color: Colors.grey[800],
+              color: _colors.surfaceVariant,
               child: Center(
-                child: CircularProgressIndicator(color: Colors.yellow),
+                child: CircularProgressIndicator(color: _colors.accent),
               ),
             ),
             errorWidget: (context, url, error) =>
-                Icon(Icons.error, color: Colors.red, size: 50),
+                Icon(Icons.error, color: _colors.danger, size: 50),
           ),
         ),
       ),
@@ -4642,11 +4629,11 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                   fit: BoxFit.cover,
                   height: height,
                   placeholder: (context, url) => Container(
-                    color: Colors.grey[800],
+                    color: _colors.surfaceVariant,
                   ),
                   errorWidget: (context, url, error) => Container(
-                    color: Colors.grey[800],
-                    child: Icon(Icons.error, color: Colors.red),
+                    color: _colors.surfaceVariant,
+                    child: Icon(Icons.error, color: _colors.danger),
                   ),
                 ),
               ),
@@ -4667,11 +4654,11 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                   fit: BoxFit.cover,
                   height: height,
                   placeholder: (context, url) => Container(
-                    color: Colors.grey[800],
+                    color: _colors.surfaceVariant,
                   ),
                   errorWidget: (context, url, error) => Container(
-                    color: Colors.grey[800],
-                    child: Icon(Icons.error, color: Colors.red),
+                    color: _colors.surfaceVariant,
+                    child: Icon(Icons.error, color: _colors.danger),
                   ),
                 ),
               ),
@@ -4701,11 +4688,11 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                   imageUrl:_optimizeImageUrl( images[0]),
                   fit: BoxFit.cover,
                   placeholder: (context, url) => Container(
-                    color: Colors.grey[800],
+                    color: _colors.surfaceVariant,
                   ),
                   errorWidget: (context, url, error) => Container(
-                    color: Colors.grey[800],
-                    child: Icon(Icons.error, color: Colors.red),
+                    color: _colors.surfaceVariant,
+                    child: Icon(Icons.error, color: _colors.danger),
                   ),
                 ),
               ),
@@ -4731,11 +4718,11 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                         fit: BoxFit.cover,
                         width: double.infinity,
                         placeholder: (context, url) => Container(
-                          color: Colors.grey[800],
+                          color: _colors.surfaceVariant,
                         ),
                         errorWidget: (context, url, error) => Container(
-                          color: Colors.grey[800],
-                          child: Icon(Icons.error, color: Colors.red),
+                          color: _colors.surfaceVariant,
+                          child: Icon(Icons.error, color: _colors.danger),
                         ),
                       ),
                     ),
@@ -4756,11 +4743,11 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                         fit: BoxFit.cover,
                         width: double.infinity,
                         placeholder: (context, url) => Container(
-                          color: Colors.grey[800],
+                          color: _colors.surfaceVariant,
                         ),
                         errorWidget: (context, url, error) => Container(
-                          color: Colors.grey[800],
-                          child: Icon(Icons.error, color: Colors.red),
+                          color: _colors.surfaceVariant,
+                          child: Icon(Icons.error, color: _colors.danger),
                         ),
                       ),
                     ),
@@ -4778,8 +4765,8 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
   Widget _buildImageSlideshow(List<String> images, double height) {
     return ImageSlideshow(
       initialPage: 0,
-      indicatorColor: _isLookChallenge ? _twitterGreen : Colors.yellow,
-      indicatorBackgroundColor: Colors.grey,
+      indicatorColor: _isLookChallenge ? _colors.primary : _colors.accent,
+      indicatorBackgroundColor: _colors.textSecondary,
       onPageChanged: (value) {
         print('Page changed: $value');
       },
@@ -4800,13 +4787,13 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                     imageUrl:_optimizeImageUrl(imageUrl) ,
                     fit: BoxFit.cover,
                     placeholder: (context, url) => Container(
-                      color: Colors.grey[800],
+                      color: _colors.surfaceVariant,
                       child: Center(
                           child:
-                              CircularProgressIndicator(color: Colors.yellow)),
+                              CircularProgressIndicator(color: _colors.accent)),
                     ),
                     errorWidget: (context, url, error) =>
-                        Icon(Icons.error, color: Colors.red),
+                        Icon(Icons.error, color: _colors.danger),
                   ),
                 ),
               ))
@@ -4852,12 +4839,12 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             margin: EdgeInsets.symmetric(vertical: 15),
             padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: _twitterCardBg,
+              color: _colors.surfaceVariant,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: _twitterGreen.withOpacity(0.3)),
+              border: Border.all(color: _colors.primary.withOpacity(0.3)),
             ),
             child: Center(
-              child: CircularProgressIndicator(color: _twitterGreen),
+              child: CircularProgressIndicator(color: _colors.primary),
             ),
           );
         }
@@ -4895,16 +4882,16 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
               margin: EdgeInsets.symmetric(vertical: 15),
               padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: _twitterCardBg,
+                color: _colors.surfaceVariant,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: _twitterGreen.withOpacity(0.3)),
+                border: Border.all(color: _colors.primary.withOpacity(0.3)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.emoji_events, color: _twitterGreen, size: 24),
+                      Icon(Icons.emoji_events, color: _colors.primary, size: 24),
                       SizedBox(width: 8),
                       Expanded(
                         child: Column(
@@ -4913,7 +4900,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                             Text(
                               'LOOK CHALLENGE',
                               style: TextStyle(
-                                color: _twitterGreen,
+                                color: _colors.primary,
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -4923,7 +4910,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                               Text(
                                 challenge.titre!,
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: _colors.textPrimary,
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -4945,25 +4932,25 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                         icon: Icons.how_to_vote,
                         value: '${post.votesChallenge ?? 0}',
                         label: 'Votes',
-                        color: _twitterGreen,
+                        color: _colors.primary,
                       ),
                       _buildChallengeStatItem(
                         icon: Icons.people,
                         value: '${challenge.usersInscritsIds!.length ?? 0}',
                         label: 'Participants',
-                        color: _twitterBlue,
+                        color: _colors.info,
                       ),
                       _buildChallengeStatItem(
                         icon: Icons.favorite,
                         value: '${post.loves ?? 0}',
                         label: 'Likes',
-                        color: _twitterRed,
+                        color: _colors.danger,
                       ),
                       _buildChallengeStatItem(
                         icon: Icons.trending_up,
                         value: '${post.popularity ?? 0}',
                         label: 'Popularité',
-                        color: _twitterYellow,
+                        color: _colors.accent,
                       ),
                     ],
                   ),
@@ -4973,7 +4960,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                     Container(
                       padding: EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.3),
+                        color: _colors.background.withOpacity(0.3),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Column(
@@ -4982,7 +4969,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                           Text(
                             '📝 À propos du challenge',
                             style: TextStyle(
-                              color: _twitterGreen,
+                              color: _colors.primary,
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                             ),
@@ -4991,7 +4978,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                           Text(
                             challenge.description!,
                             style: TextStyle(
-                              color: _twitterTextSecondary,
+                              color: _colors.textSecondary,
                               fontSize: 12,
                             ),
                             maxLines: 3,
@@ -5007,7 +4994,9 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                         Container(
                           padding: EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.3),
+                            color: _colors.isDark
+                                ? Colors.black.withOpacity(0.3)
+                                : _colors.surfaceVariant,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Column(
@@ -5015,7 +5004,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                               Text(
                                 '🎯 VOTER POUR CE LOOK',
                                 style: TextStyle(
-                                  color: _twitterGreen,
+                                  color: _colors.primary,
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -5025,7 +5014,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                               Text(
                                 'Votre vote aide ce participant à gagner le challenge !',
                                 style: TextStyle(
-                                  color: _twitterTextSecondary,
+                                  color: _colors.textSecondary,
                                   fontSize: 14,
                                 ),
                                 textAlign: TextAlign.center,
@@ -5034,7 +5023,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                                 Text(
                                   'Coût du vote: ${challenge.prixVote} FCFA',
                                   style: TextStyle(
-                                    color: _twitterYellow,
+                                    color: _colors.accent,
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -5047,13 +5036,13 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                         Container(
                           padding: EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.2),
+                            color: _colors.danger.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             '⏰ CE CHALLENGE EST TERMINÉ',
                             style: TextStyle(
-                              color: Colors.red,
+                              color: _colors.danger,
                               fontWeight: FontWeight.bold,
                             ),
                             textAlign: TextAlign.center,
@@ -5069,7 +5058,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                                     ? null
                                     : _showVoteConfirmationDialog,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: _twitterGreen,
+                                  backgroundColor: _colors.primary,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(20),
                                   ),
@@ -5106,22 +5095,22 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                               child: Container(
                                 padding: EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: _twitterGreen.withOpacity(0.1),
+                                  color: _colors.primary.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: _twitterGreen),
+                                  border: Border.all(color: _colors.primary),
                                 ),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Icon(Icons.check_circle,
-                                        color: _twitterGreen, size: 16),
+                                        color: _colors.primary, size: 16),
                                     SizedBox(width: 6),
                                     Text(
                                       _hasVoted
                                           ? 'DÉJÀ VOTÉ'
                                           : 'NON DISPONIBLE',
                                       style: TextStyle(
-                                        color: _twitterGreen,
+                                        color: _colors.primary,
                                         fontSize: 12,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -5144,7 +5133,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                               }
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: _twitterBlue,
+                              backgroundColor: _colors.info,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(20),
                               ),
@@ -5175,7 +5164,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                     Text(
                       'Derniers votants',
                       style: TextStyle(
-                        color: _twitterTextPrimary,
+                        color: _colors.textPrimary,
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                       ),
@@ -5236,7 +5225,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       margin: EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _twitterGreen.withOpacity(0.5)),
+        border: Border.all(color: _colors.primary.withOpacity(0.5)),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
@@ -5260,7 +5249,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                     height: 60,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(8),
-                      color: _twitterTextSecondary.withOpacity(0.1),
+                      color: _colors.textSecondary.withOpacity(0.1),
                     ),
                     child: _buildChallengePreviewThumbnail(postChallenge),
                   ),
@@ -5272,7 +5261,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                         Text(
                           'Post du Challenge',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: _colors.textPrimary,
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                           ),
@@ -5281,7 +5270,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                         Text(
                           challenge.titre ?? 'Challenge',
                           style: TextStyle(
-                            color: _twitterTextSecondary,
+                            color: _colors.textSecondary,
                             fontSize: 12,
                           ),
                           maxLines: 2,
@@ -5291,7 +5280,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                         Text(
                           'Tap pour voir →',
                           style: TextStyle(
-                            color: _twitterGreen,
+                            color: _colors.primary,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
@@ -5318,17 +5307,17 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           imageUrl: post.images!.first,
           fit: BoxFit.cover,
           placeholder: (context, url) => Container(
-            color: _twitterTextSecondary.withOpacity(0.2),
-            child: Icon(Icons.photo, color: _twitterTextSecondary, size: 20),
+            color: _colors.textSecondary.withOpacity(0.2),
+            child: Icon(Icons.photo, color: _colors.textSecondary, size: 20),
           ),
           errorWidget: (context, url, error) =>
-              Icon(Icons.error, color: Colors.red, size: 20),
+              Icon(Icons.error, color: _colors.danger, size: 20),
         ),
       );
     } else {
       return Container(
-        color: _twitterTextSecondary.withOpacity(0.2),
-        child: Icon(Icons.article, color: _twitterTextSecondary, size: 20),
+        color: _colors.textSecondary.withOpacity(0.2),
+        child: Icon(Icons.article, color: _colors.textSecondary, size: 20),
       );
     }
   }
@@ -5338,21 +5327,21 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       margin: EdgeInsets.symmetric(vertical: 15),
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _twitterCardBg,
+        color: _colors.surfaceVariant,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _twitterGreen.withOpacity(0.3)),
+        border: Border.all(color: _colors.primary.withOpacity(0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.emoji_events, color: _twitterGreen, size: 24),
+              Icon(Icons.emoji_events, color: _colors.primary, size: 24),
               SizedBox(width: 8),
               Text(
                 'LOOK CHALLENGE',
                 style: TextStyle(
-                  color: _twitterGreen,
+                  color: _colors.primary,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -5367,19 +5356,19 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                 icon: Icons.how_to_vote,
                 value: '${post.votesChallenge ?? 0}',
                 label: 'Votes',
-                color: _twitterGreen,
+                color: _colors.primary,
               ),
               _buildChallengeStatItem(
                 icon: Icons.bar_chart,
                 value: '${post.totalInteractions ?? 0}',
                 label: 'Interactions',
-                color: Colors.blue,
+                color: _colors.info,
               ),
               _buildChallengeStatItem(
                 icon: Icons.favorite,
                 value: '${post.loves ?? 0}',
                 label: 'Likes',
-                color: _twitterRed,
+                color: _colors.danger,
               ),
             ],
           ),
@@ -5390,7 +5379,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
               child: ElevatedButton(
                 onPressed: _isVoting ? null : _showVoteConfirmationDialog,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _twitterGreen,
+                  backgroundColor: _colors.primary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
@@ -5425,19 +5414,19 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             Container(
               padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: _twitterGreen.withOpacity(0.1),
+                color: _colors.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _twitterGreen),
+                border: Border.all(color: _colors.primary),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.check_circle, color: _twitterGreen, size: 20),
+                  Icon(Icons.check_circle, color: _colors.primary, size: 20),
                   SizedBox(width: 8),
                   Text(
                     'Vous avez déjà voté pour ce look',
                     style: TextStyle(
-                      color: _twitterGreen,
+                      color: _colors.primary,
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
@@ -5462,7 +5451,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         Text(
           value,
           style: TextStyle(
-            color: Colors.white,
+            color: _colors.textPrimary,
             fontWeight: FontWeight.bold,
             fontSize: 14,
           ),
@@ -5470,7 +5459,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         Text(
           label,
           style: TextStyle(
-            color: _twitterTextSecondary,
+            color: _colors.textSecondary,
             fontSize: 10,
           ),
         ),
@@ -5539,7 +5528,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             content: Text(
               '+ de points ajoutés à votre compte',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.green),
+              style: TextStyle(color: _colors.success),
             ),
           ),
         );
@@ -5632,12 +5621,12 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           ),
         ),
         _isSharing
-            ? const SizedBox(
+            ? SizedBox(
           width: 40, // Ajustez selon la taille de vos boutons
           height: 40,
           child: Padding(
-            padding: EdgeInsets.all(8.0),
-            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.amber), // ou votre couleur _afroTextSecondary
+            padding: const EdgeInsets.all(8.0),
+            child: CircularProgressIndicator(strokeWidth: 2, color: _colors.accent), // ou votre couleur _afroTextSecondary
           ),
         )
             :GestureDetector(
@@ -5671,15 +5660,15 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
     // Gestion spéciale pour l'icône bookmark
     if (icon == Icons.bookmark || icon == Icons.bookmark_border) {
       iconColor = isLocked
-          ? _twitterTextSecondary.withOpacity(0.3)
-          : (isLiked ? _twitterYellow : Colors.yellow);
+          ? _colors.textSecondary.withOpacity(0.3)
+          : (isLiked ? _colors.accent : _colors.warning);
     } else if (icon == Icons.favorite || icon == Icons.favorite_border) {
       iconColor = isLocked
-          ? _twitterTextSecondary.withOpacity(0.3)
-          : (isLiked ? Colors.red : Colors.yellow);
+          ? _colors.textSecondary.withOpacity(0.3)
+          : (isLiked ? _colors.danger : _colors.warning);
     } else {
       iconColor =
-          isLocked ? _twitterTextSecondary.withOpacity(0.3) : Colors.yellow;
+          isLocked ? _colors.textSecondary.withOpacity(0.3) : _colors.warning;
     }
 
     return Column(
@@ -5694,8 +5683,8 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           formatNumber(count),
           style: TextStyle(
             color: isLocked
-                ? _twitterTextSecondary.withOpacity(0.3)
-                : Colors.white,
+                ? _colors.textSecondary.withOpacity(0.3)
+                : _colors.textPrimary,
             fontWeight: FontWeight.bold,
             fontSize: 12,
           ),
@@ -5704,8 +5693,8 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           label,
           style: TextStyle(
             color: isLocked
-                ? _twitterTextSecondary.withOpacity(0.3)
-                : Colors.grey[400],
+                ? _colors.textSecondary.withOpacity(0.3)
+                : _colors.textSecondary,
             fontSize: 10,
           ),
         ),
@@ -5729,7 +5718,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             child: IconButton(
               icon: Icon(
                 Icons.favorite_border,
-                color: Colors.red,
+                color: _colors.danger,
                 size: 30,
               ),
 
@@ -5738,7 +5727,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
               //       ? Icons.favorite
               //       : Icons.favorite_border,
               //   color: !hasAccess
-              //       ? _twitterTextSecondary.withOpacity(0.3)
+              //       ? _colors.textSecondary.withOpacity(0.3)
               //       : (isIn(post.users_love_id!, authProvider.loginUserData.id!)
               //           ? Colors.red
               //           : Colors.white),
@@ -5752,8 +5741,8 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           IconButton(
             icon: Icon(Icons.chat_bubble_outline,
                 color: !hasAccess
-                    ? _twitterTextSecondary.withOpacity(0.3)
-                    : Colors.white,
+                    ? _colors.textSecondary.withOpacity(0.3)
+                    : _colors.textPrimary,
                 size: 30),
             onPressed: hasAccess
                 ? () async {
@@ -5777,8 +5766,8 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           IconButton(
             icon: Icon(_isFavorite ? Icons.bookmark : Icons.bookmark_border,
                 color: !hasAccess
-                    ? _twitterTextSecondary.withOpacity(0.3)
-                    : (_isFavorite ? _twitterYellow : Colors.white),
+                    ? _colors.textSecondary.withOpacity(0.3)
+                    : (_isFavorite ? _colors.accent : _colors.textPrimary),
                 size: 30),
             onPressed:
                 hasAccess && !_isProcessingFavorite ? _toggleFavorite : null,
@@ -5788,8 +5777,8 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           IconButton(
             icon: Icon(Icons.card_giftcard,
                 color: !hasAccess
-                    ? _twitterTextSecondary.withOpacity(0.3)
-                    : Colors.yellow,
+                    ? _colors.textSecondary.withOpacity(0.3)
+                    : _colors.warning,
                 size: 30),
             onPressed: hasAccess ? _showGiftDialog : null,
           ),
@@ -5798,7 +5787,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           // IconButton(
           //   icon: Icon(Icons.repeat,
           //       color: !hasAccess
-          //           ? _twitterTextSecondary.withOpacity(0.3)
+          //           ? _colors.textSecondary.withOpacity(0.3)
           //           : Colors.green,
           //       size: 30),
           //   onPressed: hasAccess ? _showRepostDialog : null,
@@ -5806,19 +5795,19 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
 
           // Bouton Partager
           _isSharing
-              ? const SizedBox(
+              ? SizedBox(
             width: 40, // Ajustez selon la taille de vos boutons
             height: 40,
             child: Padding(
-              padding: EdgeInsets.all(8.0),
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.amber), // ou votre couleur _afroTextSecondary
-            ),
+              padding: const EdgeInsets.all(8.0),
+              child: CircularProgressIndicator(strokeWidth: 2, color: _colors.accent), // ou votre couleur _afroTextSecondary
+),
           )
               :IconButton(
             icon: Icon(Icons.share,
                 color: !hasAccess
-                    ? _twitterTextSecondary.withOpacity(0.3)
-                    : Colors.white,
+                    ? _colors.textSecondary.withOpacity(0.3)
+                    : _colors.textPrimary,
                 size: 30),
             onPressed: hasAccess
                 ? () async {
@@ -5834,27 +5823,28 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
 
   @override
   Widget build(BuildContext context) {
+    _colors = AppColors.of(context);
     final isLocked = _isLockedContent();
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: _colors.background,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: _colors.background,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.yellow),
+          icon: Icon(Icons.arrow_back, color: _colors.accent),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           _isLookChallenge ? 'Look Challenge' : 'Post',
           style: TextStyle(
-              color: Colors.yellow, fontWeight: FontWeight.bold, fontSize: 18),
+              color: _colors.accent, fontWeight: FontWeight.bold, fontSize: 18),
         ),
         actions: [
           Text(
             'Afrolook',
             style: TextStyle(
-                color: Colors.green, fontWeight: FontWeight.bold, fontSize: 20),
+                color: _colors.success, fontWeight: FontWeight.bold, fontSize: 20),
           )
         ],
         centerTitle: true,
@@ -5865,18 +5855,18 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           if (snapshot.hasError) {
             return Center(
                 child: Text('Erreur de chargement',
-                    style: TextStyle(color: Colors.white)));
+                    style: TextStyle(color: _colors.textPrimary)));
           }
 
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(
-                child: CircularProgressIndicator(color: Colors.yellow));
+                child: CircularProgressIndicator(color: _colors.accent));
           }
 
           if (!snapshot.hasData || !snapshot.data!.exists) {
             return Center(
                 child: Text('Post non trouvé',
-                    style: TextStyle(color: Colors.white)));
+                    style: TextStyle(color: _colors.textPrimary)));
           }
 
           final updatedPost =
@@ -5892,7 +5882,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             );
           }
           return _isLoading
-              ? Center(child: CircularProgressIndicator(color: Colors.yellow))
+              ? Center(child: CircularProgressIndicator(color: _colors.accent))
               : SingleChildScrollView(
                   padding: EdgeInsets.all(16),
                   child: Column(
@@ -5911,9 +5901,9 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                       if (isLocked) _buildSubscribeButton(),
 
                       SizedBox(height: 20),
-                      Divider(color: Colors.grey[700]),
+                      Divider(color: _colors.divider),
                       _buildStatsRow(updatedPost),
-                      Divider(color: Colors.grey[700]),
+                      Divider(color: _colors.divider),
                       _buildActionButtons(updatedPost),
                       // _buildAdMrec(key: 'ad_details_post'),
 
@@ -6022,8 +6012,8 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       margin: EdgeInsets.symmetric(vertical: 12),
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: _twitterYellow,
-          foregroundColor: Colors.black,
+          backgroundColor: _colors.accent,
+          foregroundColor: _colors.onAccent,
           padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(25),

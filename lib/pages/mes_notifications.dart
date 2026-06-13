@@ -22,7 +22,8 @@ import 'UserServices/detailsUserService.dart';
 import 'afroshop/marketPlace/acceuil/produit_details.dart';
 import 'chronique/chroniquedetails.dart';
 import 'component/showUserDetails.dart';
-
+import '../theme/app_colors.dart';
+import '../l10n/app_localizations.dart';
 
 class MesNotification extends StatefulWidget {
   const MesNotification({super.key});
@@ -32,6 +33,7 @@ class MesNotification extends StatefulWidget {
 }
 
 class _MesNotificationState extends State<MesNotification> {
+  late AppColors _colors;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final List<NotificationData> _notifications = [];
   final Map<String, UserData> _userCache = {};
@@ -358,20 +360,20 @@ class _MesNotificationState extends State<MesNotification> {
             child: Container(
               padding: EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.8),
+                color: _colors.background.withOpacity(0.9),
                 borderRadius: BorderRadius.circular(15),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                    valueColor: AlwaysStoppedAnimation<Color>(_colors.primary),
                   ),
                   SizedBox(height: 16),
                   Text(
                     'Chargement...',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: _colors.textPrimary,
                       fontSize: 16,
                     ),
                   ),
@@ -830,7 +832,7 @@ class _MesNotificationState extends State<MesNotification> {
                 child: RichText(
                   text: TextSpan(
                     style: TextStyle(
-                      color: Colors.black,
+                      color: _colors.textPrimary,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
@@ -843,13 +845,13 @@ class _MesNotificationState extends State<MesNotification> {
                               ? (isFavorite
                               ? Colors.red
                               : (isCanalNotification ? Colors.blue : Colors.red))
-                              : Colors.black,
+                              : _colors.textPrimary,
                         ),
                       ),
                       TextSpan(
                         text: ' ${notification.description ?? ""}',
                         style: TextStyle(
-                          color: isUnread ? Colors.black87 : Colors.black54,
+                          color: isUnread ? _colors.textPrimary : _colors.textSecondary,
                         ),
                       ),
                     ],
@@ -981,7 +983,7 @@ class _MesNotificationState extends State<MesNotification> {
         type,
         style: TextStyle(
           fontSize: 12,
-          color: isSelected ? Colors.white : (isDefault ? Colors.red : Colors.grey.shade700),
+          color: isSelected ? Colors.white : (isDefault ? Colors.red : _colors.textSecondary),
           fontWeight: isDefault ? FontWeight.bold : FontWeight.normal,
         ),
       ),
@@ -992,7 +994,7 @@ class _MesNotificationState extends State<MesNotification> {
           _loadInitialNotifications();
         });
       },
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: _colors.surface,
       selectedColor: isDefault ? Colors.red : Colors.blue,
       checkmarkColor: Colors.white,
       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -1051,15 +1053,17 @@ class _MesNotificationState extends State<MesNotification> {
 
   @override
   Widget build(BuildContext context) {
+    _colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: _colors.surface,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: _colors.surfaceVariant,
         elevation: 1,
         title: Text(
-          'Notifications',
+          l10n.notifTitle,
           style: TextStyle(
-            color: Colors.black,
+            color: _colors.textPrimary,
             fontWeight: FontWeight.bold,
             fontSize: 20,
           ),
@@ -1074,7 +1078,7 @@ class _MesNotificationState extends State<MesNotification> {
               },
               icon: Icon(
                 _showFilterMenu ? Icons.filter_alt_off : Icons.filter_alt,
-                color: _selectedTypeFilter != null ? Colors.red : Colors.grey,
+                color: _selectedTypeFilter != null ? Colors.red : _colors.textSecondary,
               ),
               tooltip: 'Filtrer par type',
             ),
@@ -1115,7 +1119,7 @@ class _MesNotificationState extends State<MesNotification> {
                             _loadInitialNotifications();
                           });
                         },
-                        backgroundColor: Colors.grey.shade100,
+                        backgroundColor: _colors.surface,
                         selectedColor: Colors.red,
                         checkmarkColor: Colors.white,
                         padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),

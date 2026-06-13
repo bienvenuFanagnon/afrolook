@@ -20,6 +20,7 @@ import '../../../providers/userProvider.dart';
 import '../../chat/myChat.dart';
 import '../../component/consoleWidget.dart';
 import '../../user/operation.dart';
+import '../../../theme/app_colors.dart';
 import 'cardModel.dart';
 
 class ExampleCard extends StatefulWidget {
@@ -188,11 +189,12 @@ class _ExampleCardState extends State<ExampleCard> {
   Widget build(BuildContext context) {
     double h = MediaQuery.of(context).size.height;
     double w = MediaQuery.of(context).size.width;
+    final colors = AppColors.of(context);
     return Container(
       clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
         borderRadius: const BorderRadius.all(Radius.circular(10)),
-        color: Colors.white,
+        color: colors.surface,
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withOpacity(0.2),
@@ -333,8 +335,8 @@ class _ExampleCardState extends State<ExampleCard> {
                 children: [
                   Text(
                     "@${widget.cardUser.pseudo}",
-                    style: const TextStyle(
-                      color: Colors.black,
+                    style: TextStyle(
+                      color: colors.textPrimary,
                       fontWeight: FontWeight.bold,
                       fontSize: 20,
                     ),
@@ -342,8 +344,8 @@ class _ExampleCardState extends State<ExampleCard> {
                   const SizedBox(height: 5),
                   Text(
                     "${widget.cardUser.abonnes} abonné(s)",
-                    style: const TextStyle(
-                      color: Colors.grey,
+                    style: TextStyle(
+                      color: colors.textSecondary,
                       fontSize: 15,
                     ),
                   ),
@@ -387,7 +389,7 @@ class _ExampleCardState extends State<ExampleCard> {
                                           }, child:  Container(child: TextCustomerUserTitle(
                                         titre: "envoyer un message",
                                         fontSize: 10,
-                                        couleur: Colors.black,
+                                        couleur: colors.textPrimary,
                                         fontWeight: FontWeight.w600,
                                       ),)),
                                     )
@@ -508,7 +510,7 @@ class _ExampleCardState extends State<ExampleCard> {
                                           child:TextCustomerUserTitle(
                                             titre: "invitation déjà envoyée",
                                             fontSize: 10,
-                                            couleur: Colors.black38,
+                                            couleur: colors.textSecondary,
                                             fontWeight: FontWeight.w600,
                                           ),),
                                       ),
@@ -758,14 +760,14 @@ class _ExampleCardState extends State<ExampleCard> {
                               likeBuilder: (bool isLiked) {
                                 return Icon(
                                   !isLiked ?AntDesign.heart:AntDesign.heart,
-                                  color: !isLiked ? Colors.black38 : Colors.red,
+                                  color: !isLiked ? colors.textSecondary : colors.danger,
                                   size: 20,
                                 );
                               },
                               likeCount: widget.cardUser.userlikes ==null?0:widget.cardUser.userlikes,
 
                               countBuilder: (int? count, bool isLiked, String text) {
-                                var color = isLiked ? Colors.black : Colors.black;
+                                var color = isLiked ? colors.textPrimary : colors.textPrimary;
                                 Widget result;
                                 if (count == 0) {
                                   result = Text(
@@ -783,8 +785,8 @@ class _ExampleCardState extends State<ExampleCard> {
                             ),
                             Text(
                               "Taper deux fois pour liker",
-                              style: const TextStyle(
-                                color: Colors.black,
+                              style: TextStyle(
+                                color: colors.textPrimary,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 10,
                               ),

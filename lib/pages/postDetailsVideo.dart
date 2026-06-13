@@ -13,6 +13,8 @@ import 'package:afrotok/pages/pub/rewarded_ad_widget.dart';
 import 'package:afrotok/pages/widgetGlobal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import '../theme/app_colors.dart';
 
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -210,19 +212,20 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
 
     if (suggestions.isEmpty) return;
 
+    final colors = AppColors.of(context);
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        backgroundColor: _afroDarkGrey,
+        backgroundColor: colors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            Icon(Icons.lightbulb, color: _afroYellow),
+            Icon(Icons.lightbulb, color: colors.accent),
             SizedBox(width: 8),
             Text(
               'Découvrez d’autres posts',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold,fontSize: 13),
+              style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold,fontSize: 13),
             ),
           ],
         ),
@@ -234,12 +237,12 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
             children: [
               Text(
                 'Vous pouvez faire défiler vers le bas pour voir d’autres vidéos tendance du moment !',
-                style: TextStyle(color: _twitterTextSecondary),
+                style: TextStyle(color: colors.textSecondary),
               ),
               SizedBox(height: 16),
               Text(
                 'Suggestions pour vous :',
-                style: TextStyle(color: _afroYellow, fontWeight: FontWeight.bold),
+                style: TextStyle(color: colors.accent, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 12),
               Flexible(
@@ -251,7 +254,10 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
                           children: [
                             // if (i == 3) // 4ème élément (index 3)
                             // _buildAdMrec(key: 'ad_suggestion_modal'),
-                            _buildSuggestionItem(suggestions[i]),
+                            _buildSuggestionItem(suggestions[i])
+                                .animate()
+                                .fadeIn(duration: 300.ms, delay: (i * 60).ms)
+                                .slideX(begin: 0.05, end: 0, duration: 300.ms, curve: Curves.easeOut),
                             if (i != suggestions.length - 1) SizedBox(height: 12),
                           ],
                         ),
@@ -265,21 +271,22 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Fermer', style: TextStyle(color: _twitterTextSecondary)),
+            child: Text('Fermer', style: TextStyle(color: colors.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               _markSuggestionsModalSeen();
             },
-            style: ElevatedButton.styleFrom(backgroundColor: _afroGreen),
-            child: Text('J’ai compris', style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(backgroundColor: colors.primary),
+            child: Text('J’ai compris', style: TextStyle(color: colors.onPrimary)),
           ),
         ],
       ),
     );
   }
   Widget _buildSuggestionItem(Post post) {
+    final colors = AppColors.of(context);
     return GestureDetector(
       onTap: () {
         _onSuggestedPostSelected(post);
@@ -293,12 +300,12 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
                 Container(
                   width: 60,
                   height: 60,
-                  color: Colors.grey[800],
+                  color: colors.shimmerBase,
                   child: post.dataType == PostDataType.VIDEO.name && post.thumbnail != null
                       ? CachedNetworkImage(imageUrl: post.thumbnail!, fit: BoxFit.cover)
                       : (post.images != null && post.images!.isNotEmpty
                       ? CachedNetworkImage(imageUrl: post.images!.first, fit: BoxFit.cover)
-                      : Icon(Icons.videocam, color: Colors.grey)),
+                      : Icon(Icons.videocam, color: colors.textSecondary)),
                 ),
                 if (post.dataType == PostDataType.VIDEO.name)
                   Positioned.fill(
@@ -324,22 +331,22 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
                   post.description ?? '',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: Colors.white),
+                  style: TextStyle(color: colors.textPrimary),
                 ),
                 Row(
                   children: [
-                    Icon(Icons.bar_chart, size: 12, color: _twitterTextSecondary),
+                    Icon(Icons.bar_chart, size: 12, color: colors.textSecondary),
                     SizedBox(width: 2),
                     Text(
                       _formatCount(post.totalInteractions ?? 0),
-                      style: TextStyle(color: _twitterTextSecondary, fontSize: 12),
+                      style: TextStyle(color: colors.textSecondary, fontSize: 12),
                     ),
                     SizedBox(width: 8),
-                    Icon(Icons.favorite, size: 12, color: _twitterRed),
+                    Icon(Icons.favorite, size: 12, color: colors.danger),
                     SizedBox(width: 2),
                     Text(
                       _formatCount(post.loves ?? 0),
-                      style: TextStyle(color: _twitterTextSecondary, fontSize: 12),
+                      style: TextStyle(color: colors.textSecondary, fontSize: 12),
                     ),
                   ],
                 ),
@@ -636,6 +643,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     }
   }
   Widget _buildExpandableDescription(String text) {
+    final colors = AppColors.of(context);
     const int maxWords = 10;
     final words = text.split(' ');
     final bool isLong = words.length > maxWords;
@@ -653,8 +661,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
             }
           },
           text: displayedText,
-          style: TextStyle(color: Colors.white, fontSize: 15, height: 1.4),
-          linkStyle: TextStyle(color: Colors.blue),
+          style: TextStyle(color: colors.textPrimary, fontSize: 15, height: 1.4),
+          linkStyle: TextStyle(color: colors.info),
         ),
         if (isLong)
           GestureDetector(

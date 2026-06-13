@@ -10,6 +10,7 @@ import 'package:contained_tab_bar_view_with_custom_page_navigator/contained_tab_
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../theme/app_colors.dart';
 import '../../../constant/buttons.dart';
 import '../../../constant/constColors.dart';
 import '../../../constant/iconGradient.dart';
@@ -37,28 +38,24 @@ class _UserProfilState extends State<UserPostForm> {
   Provider.of<UserProvider>(context, listen: false);
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-  // Couleurs personnalisées
-  final Color _primaryColor = Color(0xFFE21221); // Rouge
-  final Color _secondaryColor = Color(0xFFFFD600); // Jaune
-  final Color _backgroundColor = Color(0xFF121212); // Noir
-  final Color _cardColor = Color(0xFF1E1E1E);
-  final Color _textColor = Colors.white;
-  final Color _hintColor = Colors.grey[400]!;
+  late AppColors _colors;
+  static const Color _primaryColor = Color(0xFFE21221);
 
   @override
   Widget build(BuildContext context) {
+    _colors = AppColors.of(context);
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      backgroundColor: _backgroundColor,
+      backgroundColor: _colors.background,
       appBar: AppBar(
-        backgroundColor: _cardColor,
+        backgroundColor: _colors.surfaceVariant,
         elevation: 0,
         title: Text(
           "Créer une publication",
           style: TextStyle(
-            color: _textColor,
+            color: _colors.textPrimary,
             fontWeight: FontWeight.bold,
             fontSize: 20,
           ),
@@ -70,7 +67,7 @@ class _UserProfilState extends State<UserPostForm> {
             child: Logo(),
           )
         ],
-        iconTheme: IconThemeData(color: _textColor),
+        iconTheme: IconThemeData(color: _colors.textPrimary),
       ),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
@@ -82,7 +79,7 @@ class _UserProfilState extends State<UserPostForm> {
                 padding: EdgeInsets.all(16),
                 margin: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 decoration: BoxDecoration(
-                  color: _cardColor,
+                  color: _colors.surfaceVariant,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
@@ -115,7 +112,7 @@ class _UserProfilState extends State<UserPostForm> {
                           Text(
                             "@${authProvider.loginUserData!.pseudo}",
                             style: TextStyle(
-                              color: _textColor,
+                              color: _colors.textPrimary,
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
@@ -124,12 +121,12 @@ class _UserProfilState extends State<UserPostForm> {
                           SizedBox(height: 4),
                           Row(
                             children: [
-                              Icon(Icons.people, color: _secondaryColor, size: 16),
+                              Icon(Icons.people, color: _colors.accent, size: 16),
                               SizedBox(width: 4),
                               Text(
                                 "${authProvider.loginUserData!.userAbonnesIds!.length} abonné(s)",
                                 style: TextStyle(
-                                  color: _hintColor,
+                                  color: _colors.textSecondary,
                                   fontSize: 14,
                                 ),
                               ),
@@ -166,7 +163,7 @@ class _UserProfilState extends State<UserPostForm> {
                 height: height,
                 margin: EdgeInsets.symmetric(horizontal: 8),
                 decoration: BoxDecoration(
-                  color: _cardColor,
+                  color: _colors.surfaceVariant,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
@@ -182,12 +179,12 @@ class _UserProfilState extends State<UserPostForm> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.audiotrack, size: 20, color: _textColor),
+                          Icon(Icons.audiotrack, size: 20, color: _colors.textPrimary),
                           SizedBox(width: 4),
                           Text(
                             "Audio",
                             style: TextStyle(
-                              color: _textColor,
+                              color: _colors.textPrimary,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -198,12 +195,12 @@ class _UserProfilState extends State<UserPostForm> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.text_fields, size: 20, color: _textColor),
+                          Icon(Icons.text_fields, size: 20, color: _colors.textPrimary),
                           SizedBox(width: 4),
                           Text(
                             "Pensée",
                             style: TextStyle(
-                              color: _textColor,
+                              color: _colors.textPrimary,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -214,12 +211,12 @@ class _UserProfilState extends State<UserPostForm> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.photo, size: 20, color: _textColor),
+                          Icon(Icons.photo, size: 20, color: _colors.textPrimary),
                           SizedBox(width: 4),
                           Text(
                             "Image",
                             style: TextStyle(
-                              color: _textColor,
+                              color: _colors.textPrimary,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -230,12 +227,12 @@ class _UserProfilState extends State<UserPostForm> {
                     //   child: Row(
                     //     mainAxisAlignment: MainAxisAlignment.center,
                     //     children: [
-                    //       Icon(Icons.video_collection_outlined, size: 20, color: _textColor),
+                    //       Icon(Icons.video_collection_outlined, size: 20, color: _colors.textPrimary),
                     //       SizedBox(width: 4),
                     //       Text(
                     //         "Vibe",
                     //         style: TextStyle(
-                    //           color: _textColor,
+                    //           color: _colors.textPrimary,
                     //           fontWeight: FontWeight.w600,
                     //         ),
                     //       ),
@@ -246,12 +243,12 @@ class _UserProfilState extends State<UserPostForm> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.videocam, size: 20, color: _textColor),
+                          Icon(Icons.videocam, size: 20, color: _colors.textPrimary),
                           SizedBox(width: 4),
                           Text(
                             "Vidéo",
                             style: TextStyle(
-                              color: _textColor,
+                              color: _colors.textPrimary,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -264,11 +261,11 @@ class _UserProfilState extends State<UserPostForm> {
                     height: 50.0,
                     indicatorColor: _primaryColor,
                     indicatorWeight: 3.0,
-                    labelColor: _textColor,
-                    unselectedLabelColor: _hintColor,
+                    labelColor: _colors.textPrimary,
+                    unselectedLabelColor: _colors.textSecondary,
                     background: Container(
                       decoration: BoxDecoration(
-                        color: _cardColor,
+                        color: _colors.surfaceVariant,
                         borderRadius: BorderRadius.only(
                           topLeft: Radius.circular(20),
                           topRight: Radius.circular(20),

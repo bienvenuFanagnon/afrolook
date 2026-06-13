@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 
 import '../../providers/authProvider.dart';
 import '../../providers/postProvider.dart';
+import '../../theme/app_colors.dart';
 import '../canaux/detailsCanal.dart';
 import '../canaux/listCanal.dart';
 import 'detailsUserService.dart';
@@ -139,7 +140,8 @@ Widget userServiceWidget(UserServiceData data,double height,width,BuildContext c
 Widget channelWidget(Canal data, double height, double width, BuildContext context) {
   final afroGreen = Color(0xFF2ECC71);
   final afroYellow = Color(0xFFF1C40F);
-  final afroBlack = Color(0xFF000000); // Noir pour le fond
+  final colors = AppColors.of(context);
+  final afroBlack = colors.surfaceVariant; // Fond adapté au thème (clair en light mode)
 
   return GestureDetector(
     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CanalDetails(canal: data))),
@@ -148,7 +150,7 @@ Widget channelWidget(Canal data, double height, double width, BuildContext conte
       height: height,
       margin: EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: afroBlack.withOpacity(0.8), // Fond noir semi-transparent
+        color: afroBlack, // Fond adapté au thème
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: afroGreen.withOpacity(0.3), width: 1),
         boxShadow: [
@@ -218,7 +220,7 @@ Widget channelWidget(Canal data, double height, double width, BuildContext conte
 
             SizedBox(height: 6),
 
-            // Titre en blanc
+            // Titre
             Text(
               '#${data.titre ?? 'Sans titre'}',
               maxLines: 1,
@@ -227,7 +229,7 @@ Widget channelWidget(Canal data, double height, double width, BuildContext conte
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
-                color: Colors.white, // Texte blanc
+                color: colors.textPrimary,
               ),
             ),
 

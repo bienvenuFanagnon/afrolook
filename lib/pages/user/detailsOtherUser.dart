@@ -16,6 +16,7 @@ import 'package:tiktok_double_tap_like/double_tap_like_widget.dart';
 
 import '../../constant/constColors.dart';
 import '../../constant/textCustom.dart';
+import '../../l10n/app_localizations.dart';
 
 
 import 'dart:async';
@@ -1120,6 +1121,7 @@ class _UserProfileModalState extends State<UserProfileModal> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     double taux = widget.user.popularite!;
     bool isFriend = isMyFriend(widget.user, authProvider.loginUserData);
     bool isInvited = isInvite(widget.user, authProvider.loginUserData);
@@ -1245,7 +1247,7 @@ class _UserProfileModalState extends State<UserProfileModal> {
                             maxWidth: widget.w * 0.7,
                           ),
                           child: Text(
-                            '@${widget.user.pseudo ?? "Utilisateur"}',
+                            '@${widget.user.pseudo ?? l10n.profileDefaultUser}',
                             style: const TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.bold,
@@ -1287,17 +1289,17 @@ class _UserProfileModalState extends State<UserProfileModal> {
                         children: [
                           _buildStatItem(
                             formatNumber(widget.user.userAbonnesIds!.length),
-                            'Abonnés',
+                            l10n.profileFollowers,
                             const Color(0xFFFFD700),
                           ),
                           _buildStatItem(
                             '${taux.toStringAsFixed(1)}%',
-                            'Popularité',
+                            l10n.profilePopularity,
                             const Color(0xFF8B0000),
                           ),
                           _buildStatItem(
                             widget.user.usersParrainer!.length.toString(),
-                            'Parrainages',
+                            l10n.profileReferrals,
                             Colors.lightBlue,
                           ),
                         ],
@@ -1317,10 +1319,10 @@ class _UserProfileModalState extends State<UserProfileModal> {
                           /// MESSAGE / INVITATION
                           _buildActionButton(
                             text: isFriend
-                                ? 'Message'
+                                ? l10n.profileMessage
                                 : (isInvited
-                                ? 'Invitation envoyée'
-                                : 'Inviter'),
+                                ? l10n.profileInviteSent
+                                : l10n.profileInvite),
                             color: isFriend
                                 ? Colors.green
                                 : (isInvited
@@ -1368,8 +1370,8 @@ class _UserProfileModalState extends State<UserProfileModal> {
                           /// ABONNEMENT
                           _buildActionButton(
                             text: isAbonne
-                                ? 'Abonné'
-                                : "S'abonner",
+                                ? l10n.profileSubscribed
+                                : l10n.profileSubscribe,
                             color: isAbonne
                                 ? Colors.green
                                 : Colors.red,
@@ -1419,16 +1421,16 @@ class _UserProfileModalState extends State<UserProfileModal> {
                             ),
                           );
                         },
-                        child: const Row(
+                        child: Row(
                           mainAxisAlignment:
                           MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.remove_red_eye,
+                            const Icon(Icons.remove_red_eye,
                                 color: Colors.white, size: 20),
-                            SizedBox(width: 8),
+                            const SizedBox(width: 8),
                             Text(
-                              'Voir le profil complet',
-                              style: TextStyle(
+                              l10n.profileSeeFullProfile,
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 16,
@@ -1764,6 +1766,7 @@ class _UserProfileModalState extends State<UserProfileModal> {
   }
   // Dans le UserProfileModal, ajoutez cette section après les statistiques existantes
   Widget _buildProfileLikesSection() {
+    final l10n = AppLocalizations.of(context);
     final profileLikeProvider = Provider.of<ProfileLikeProvider>(context);
 
     return StreamBuilder<int>(
@@ -1790,7 +1793,7 @@ class _UserProfileModalState extends State<UserProfileModal> {
               ),
               SizedBox(width: 4),
               Text(
-                'Likes profil',
+                l10n.profileLikes,
                 style: TextStyle(
                   color: Colors.grey[400],
                   fontSize: 14,
@@ -1807,6 +1810,7 @@ class _UserProfileModalState extends State<UserProfileModal> {
     );
   }
   Widget _buildProfileLikeButton() {
+    final l10n = AppLocalizations.of(context);
     final authProvider = Provider.of<UserAuthProvider>(context);
     final profileLikeProvider = Provider.of<ProfileLikeProvider>(context);
 
@@ -1867,7 +1871,7 @@ class _UserProfileModalState extends State<UserProfileModal> {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Erreur lors du like'),
+                        content: Text(l10n.profileLikeError),
                         backgroundColor: Colors.red,
                         duration: Duration(seconds: 2),
                       ),
@@ -1910,8 +1914,8 @@ class _UserProfileModalState extends State<UserProfileModal> {
                     SizedBox(width: 6),
                     Text(
                       _isLiking
-                          ? 'Patientez...'
-                          : (hasLiked ? 'Liked' : 'Like'),
+                          ? l10n.profilePleaseWait
+                          : (hasLiked ? l10n.profileLiked : l10n.profileLike),
                       style: TextStyle(
                         color: hasLiked ? Colors.white : Colors.grey[400],
                         fontWeight: FontWeight.w600,

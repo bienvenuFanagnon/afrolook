@@ -12,6 +12,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
+import '../../theme/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 import 'TableauDeBord.dart';
 
 class RecentVIPContentWidget extends StatefulWidget {
@@ -93,8 +95,7 @@ class _RecentVIPContentWidgetState extends State<RecentVIPContentWidget> {
     }
   }
 
-  Widget _buildContentThumbnail(ContentPaie content) {
-    // Si c'est une vidéo et qu'on a une miniature générée localement
+  Widget _buildContentThumbnail(ContentPaie content, AppColors colors) {
     if (content.isVideo && _videoThumbnails[content.id] != null) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(12),
@@ -107,7 +108,6 @@ class _RecentVIPContentWidgetState extends State<RecentVIPContentWidget> {
       );
     }
 
-    // Sinon utiliser thumbnailUrl ou placeholder
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
       child: content.thumbnailUrl != null && content.thumbnailUrl!.isNotEmpty
@@ -115,20 +115,20 @@ class _RecentVIPContentWidgetState extends State<RecentVIPContentWidget> {
               imageUrl: content.thumbnailUrl!,
               fit: BoxFit.cover,
               width: double.infinity,
-              placeholder: (_, __) => Container(color: Colors.grey[800]),
-              errorWidget: (_, __, ___) => _buildPlaceholder(content),
+              placeholder: (_, __) => Container(color: colors.surfaceVariant),
+              errorWidget: (_, __, ___) => _buildPlaceholder(content, colors),
             )
-          : _buildPlaceholder(content),
+          : _buildPlaceholder(content, colors),
     );
   }
 
-  Widget _buildPlaceholder(ContentPaie content) {
+  Widget _buildPlaceholder(ContentPaie content, AppColors colors) {
     return Container(
-      color: Colors.grey[850],
+      color: colors.surfaceVariant,
       child: Center(
         child: Icon(
           content.isEbook ? Icons.book : Icons.videocam,
-          color: Colors.grey[600],
+          color: colors.textSecondary,
           size: 40,
         ),
       ),
@@ -137,22 +137,25 @@ class _RecentVIPContentWidgetState extends State<RecentVIPContentWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context);
+
     if (_isLoading) {
       return Container(
         height: 220,
         margin: const EdgeInsets.symmetric(vertical: 8),
-        child: const Center(child: CircularProgressIndicator(color: Colors.red)),
+        child: Center(child: CircularProgressIndicator(color: colors.primary)),
       );
     }
 
     if (_recentContents.isEmpty) {
-      return const SizedBox.shrink(); // Rien si aucun contenu
+      return const SizedBox.shrink();
     }
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.black,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -169,11 +172,11 @@ class _RecentVIPContentWidgetState extends State<RecentVIPContentWidget> {
                     const Text('🔥', style: TextStyle(fontSize: 22)),
                     const SizedBox(width: 6),
                     Text(
-                      'Zone VIP',
-                      style: const TextStyle(
+                      l10n.feedVip,
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: colors.textPrimary,
                         letterSpacing: 0.5,
                       ),
                     ),
@@ -185,9 +188,9 @@ class _RecentVIPContentWidgetState extends State<RecentVIPContentWidget> {
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: Colors.red, width: 0.5),
                       ),
-                      child: const Text(
-                        'Nouveautés',
-                        style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold),
+                      child: Text(
+                        l10n.vipNew,
+                        style: const TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ],
@@ -202,7 +205,7 @@ class _RecentVIPContentWidgetState extends State<RecentVIPContentWidget> {
                   child: Row(
                     children: [
                       Text(
-                        'Voir plus',
+                        l10n.vipSeeMore,
                         style: TextStyle(
                           color: Colors.yellow[700],
                           fontWeight: FontWeight.bold,
@@ -238,7 +241,7 @@ class _RecentVIPContentWidgetState extends State<RecentVIPContentWidget> {
                         Expanded(
                           child: Stack(
                             children: [
-                              _buildContentThumbnail(content),
+                              _buildContentThumbnail(content, colors),
                               // Badge prix (si payant)
                               if (!content.isFree)
                                 Positioned(
@@ -272,9 +275,9 @@ class _RecentVIPContentWidgetState extends State<RecentVIPContentWidget> {
                                       color: Colors.black.withOpacity(0.7),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
-                                    child: const Text(
-                                      'Gratuit',
-                                      style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.bold),
+                                    child: Text(
+                                      l10n.vipFree,
+                                      style: const TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.bold),
                                     ),
                                   ),
                                 ),
@@ -303,10 +306,10 @@ class _RecentVIPContentWidgetState extends State<RecentVIPContentWidget> {
                                       const SizedBox(width: 4),
                                       Text(
                                         content.isSeries
-                                            ? 'Série'
-                                            : (content.isEbook ? 'Ebook' : 'Vidéo'),
+                                            ? l10n.vipSeries
+                                            : (content.isEbook ? l10n.vipEbook : l10n.vipVideo),
                                         style: const TextStyle(color: Colors.white, fontSize: 10),
-                                      ),
+                                      ), // Badge sur image (overlay sombre) : reste blanc dans les 2 thèmes
                                     ],
                                   ),
                                 ),
@@ -318,7 +321,7 @@ class _RecentVIPContentWidgetState extends State<RecentVIPContentWidget> {
                         // Titre
                         Text(
                           content.title,
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
+                          style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w600, fontSize: 13),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -329,12 +332,12 @@ class _RecentVIPContentWidgetState extends State<RecentVIPContentWidget> {
                             if (content.isEbook && content.pageCount > 0)
                               Text(
                                 '${content.pageCount} p.',
-                                style: const TextStyle(color: Colors.grey, fontSize: 10),
+                                style: TextStyle(color: colors.textSecondary, fontSize: 10),
                               ),
                             if (content.isVideo && content.duration > 0)
                               Text(
                                 '${(content.duration / 60).floor()} min',
-                                style: const TextStyle(color: Colors.grey, fontSize: 10),
+                                style: TextStyle(color: colors.textSecondary, fontSize: 10),
                               ),
                           ],
                         ),

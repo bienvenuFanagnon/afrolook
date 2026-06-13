@@ -120,6 +120,10 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
   // Cache anciennes vibes
   List<Post> _oldVibesCache = [];
   bool _isLoadingOldVibes = false;
+  Timer? _oldVibesLoadTimer;
+
+  // Cache des fenêtres mensuelles déjà testées et trouvées vides (clé = startDate du mois)
+  final Set<DateTime> _emptyOldVibesWindows = {};
   Set<String> _usedOldVibeIds = {};
 
   @override
@@ -227,6 +231,7 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
     _preloadedControllers.clear();
     _suggestionModalTimer?.cancel();
     _scrollHintTimer?.cancel();
+    _oldVibesLoadTimer?.cancel();
     _pageController.dispose();
     _disposeCurrentVideo();
     _postSubscriptions.forEach((key, subscription) => subscription.cancel());
@@ -279,6 +284,18 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
       }
     });
     for (var idx in toRemove) _preloadedControllers.remove(idx);
+
+    // Limite le nombre de listeners Firestore actifs au voisinage affiché
+    final keepIds = <String>{};
+    for (int i = max(0, minKeep); i <= min(_feedItems.length - 1, maxKeep); i++) {
+      final item = _feedItems[i];
+      if (item is Post && item.id != null) keepIds.add(item.id!);
+    }
+    final subsToRemove = _postSubscriptions.keys.where((id) => !keepIds.contains(id)).toList();
+    for (final id in subsToRemove) {
+      _postSubscriptions[id]?.cancel();
+      _postSubscriptions.remove(id);
+    }
   }
 
   Future<void> _initializeVideo(Post post, {int? index}) async {
@@ -362,6 +379,7 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
 
     await _loadMoreVibes(isInitial: true);
     await _loadOldVibesInBackground();
+    _startOldVibesLoading();
     _rebuildFeedItems();
     setState(() => _isLoadingFeed = false);
 
@@ -371,41 +389,78 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
     }
   }
 
+  /// Choisit une fenêtre mensuelle aléatoire (1-6 mois) en évitant si possible
+  /// les fenêtres déjà connues comme vides.
+  DateTime _pickRandomOldVibesWindowStart(Random random) {
+    DateTime? candidate;
+
+    for (int attempt = 0; attempt < 5; attempt++) {
+      int monthsBack = random.nextInt(6) + 1;
+      final now = DateTime.now();
+      final DateTime endDate = DateTime(now.year, now.month - monthsBack, 1);
+      final DateTime startDate = DateTime(endDate.year, endDate.month - 1, 1);
+
+      if (!_emptyOldVibesWindows.contains(startDate)) {
+        return startDate;
+      }
+      candidate = startDate;
+    }
+
+    return candidate!;
+  }
+
+  Future<List<Post>> _fetchOldVibesForWindow(DateTime startDate) async {
+    final DateTime endDate = DateTime(startDate.year, startDate.month + 1, 1);
+    final int startMicros = startDate.microsecondsSinceEpoch;
+    final int endMicros = endDate.microsecondsSinceEpoch;
+
+    Query query = _firestore.collection('Posts')
+        .where("dataType", isEqualTo: PostDataType.VIDEO.name)
+        .where("typeTabbar", isEqualTo: "VIBE")
+        .where("created_at", isGreaterThanOrEqualTo: startMicros)
+        .where("created_at", isLessThan: endMicros)
+        .orderBy("created_at")
+        .limit(30);
+
+    final snapshot = await query.get();
+    if (snapshot.docs.isEmpty) return [];
+
+    List<Post> validOldVibes = [];
+    for (final doc in snapshot.docs) {
+      final post = Post.fromJson(doc.data() as Map<String, dynamic>);
+      post.id = doc.id;
+      if (_loadedPostIds.contains(post.id)) continue;
+      if (_oldVibesCache.any((p) => p.id == post.id)) continue;
+      if (post.isAdvertisement == true) continue;
+      validOldVibes.add(post);
+      if (validOldVibes.length >= 12) break;
+    }
+    return validOldVibes;
+  }
+
   Future<void> _loadOldVibesInBackground() async {
     if (_isLoadingOldVibes) return;
     _isLoadingOldVibes = true;
     try {
       final random = Random();
-      int monthsBack = random.nextInt(6) + 1;
-      final now = DateTime.now();
-      final DateTime endDate = DateTime(now.year, now.month - monthsBack, 1);
-      final DateTime startDate = DateTime(endDate.year, endDate.month - 1, 1);
-      final int startMicros = startDate.microsecondsSinceEpoch;
-      final int endMicros = endDate.microsecondsSinceEpoch;
 
-      Query query = _firestore.collection('Posts')
-          .where("dataType", isEqualTo: PostDataType.VIDEO.name)
-          .where("typeTabbar", isEqualTo: "VIBE")
-          .where("created_at", isGreaterThanOrEqualTo: startMicros)
-          .where("created_at", isLessThan: endMicros)
-          .orderBy("created_at")
-          .limit(30);
-
-      final snapshot = await query.get();
-      if (snapshot.docs.isEmpty) {
-        _isLoadingOldVibes = false;
-        return;
-      }
-
+      // Jusqu'à 3 fenêtres tentées dans cette même passe : la fenêtre
+      // initiale + jusqu'à 2 fallbacks si vide/quasi-vide (<3 posts).
+      const int maxFallbacks = 2;
       List<Post> validOldVibes = [];
-      for (final doc in snapshot.docs) {
-        final post = Post.fromJson(doc.data() as Map<String, dynamic>);
-        post.id = doc.id;
-        if (_loadedPostIds.contains(post.id)) continue;
-        if (_oldVibesCache.any((p) => p.id == post.id)) continue;
-        if (post.isAdvertisement == true) continue;
-        validOldVibes.add(post);
-        if (validOldVibes.length >= 12) break;
+
+      for (int attempt = 0; attempt <= maxFallbacks; attempt++) {
+        final startDate = _pickRandomOldVibesWindowStart(random);
+        final found = await _fetchOldVibesForWindow(startDate);
+
+        if (found.length < 3) {
+          _emptyOldVibesWindows.add(startDate);
+        }
+
+        if (found.isNotEmpty) {
+          validOldVibes = found;
+          break;
+        }
       }
 
       if (validOldVibes.isNotEmpty) {
@@ -417,6 +472,17 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
     } finally {
       _isLoadingOldVibes = false;
     }
+  }
+
+  void _startOldVibesLoading() {
+    _oldVibesLoadTimer?.cancel();
+    // Recharge périodiquement le cache d'anciennes vibes si nécessaire,
+    // intervalle aligné sur HomeConstPost (22s) - cf. SUIVI_REFONTE.md Session 9.
+    _oldVibesLoadTimer = Timer.periodic(Duration(seconds: 22), (timer) {
+      if (_oldVibesCache.length < 4 && !_isLoadingOldVibes) {
+        _loadOldVibesInBackground();
+      }
+    });
   }
 
   void _rebuildFeedItems() {

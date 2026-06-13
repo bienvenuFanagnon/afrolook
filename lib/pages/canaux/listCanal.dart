@@ -653,7 +653,7 @@ class _CanalListPageState extends State<CanalListPage> {
                             children: [
                               Flexible(
                                 child: Text(
-                                  "#${canal.titre ?? ''}",
+                                  "#${(canal.titre != null && canal.titre!.length > 12) ? '${canal.titre!.substring(0, 12)}...' : canal.titre ?? ''}",
                                   style: TextStyle(
                                     color: _textColor,
                                     fontWeight: FontWeight.bold,

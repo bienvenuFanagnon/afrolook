@@ -31,18 +31,17 @@ class UserService {
     try {
 
       // Obtenir la liste des utilisateurs
-      final users = FirebaseFirestore.instance.collection('Users').where('id', isNotEqualTo: userId).get();
+      final snapshot = await FirebaseFirestore.instance
+          .collection('Users')
+          .where('id', isNotEqualTo: userId)
+          .limit(20)
+          .get();
 
       // Afficher la liste
-      users.then((snapshot) {
-        snapshot.docs.forEach((doc) {
-          printVm(doc.data());
-          listUser.add(  UserData.fromJson(doc.data() as Map<String, dynamic>))
-        ;
-        });
+      snapshot.docs.forEach((doc) {
+        printVm(doc.data());
+        listUser.add(UserData.fromJson(doc.data() as Map<String, dynamic>));
       });
-
-
 
         return listUser;
 

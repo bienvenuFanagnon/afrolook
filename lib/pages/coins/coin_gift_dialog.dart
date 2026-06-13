@@ -1,4 +1,6 @@
 // widgets/coin_gift_dialog.dart
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -315,12 +317,12 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
       shrinkWrap: true,
       physics: const BouncingScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.72,
+        crossAxisCount: 4,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+        childAspectRatio: 0.78,
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 14),
       itemCount: _giftPacks.length,
       itemBuilder: (context, index) {
         final pack = _giftPacks[index];
@@ -344,7 +346,7 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isSelected
                     ? Colors.white
@@ -358,34 +360,36 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(pack.icon, style: const TextStyle(fontSize: 40)),
-                  const SizedBox(height: 8),
+                  Text(pack.icon, style: const TextStyle(fontSize: 26)),
+                  const SizedBox(height: 4),
                   Text(
                     pack.displayLabel,
                     style: TextStyle(
                       color: isSelected ? Colors.black : Colors.white,
                       fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                      fontSize: 10,
                     ),
                     textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 3),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                     decoration: BoxDecoration(
                       color: isSelected
                           ? Colors.black.withOpacity(0.2)
                           : (_currentBalance >= pack.coins
                           ? Colors.black.withOpacity(0.5)
                           : Colors.red.withOpacity(0.2)),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text('🪙',
                             style: TextStyle(
-                                fontSize: 10,
+                                fontSize: 8,
                                 color: isSelected
                                     ? Colors.black
                                     : (_currentBalance >= pack.coins
@@ -403,7 +407,7 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
                                 ? const Color(0xFFFFD700)
                                 : Colors.red),
                             fontWeight: FontWeight.bold,
-                            fontSize: 11,
+                            fontSize: 9,
                           ),
                         ),
                       ],
@@ -412,12 +416,12 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
                   // Petit indicateur si solde insuffisant (optionnel)
                   if (_currentBalance < pack.coins && !isSelected)
                     Padding(
-                      padding: const EdgeInsets.only(top: 4),
+                      padding: const EdgeInsets.only(top: 2),
                       child: Text(
                         'Insuffisant',
                         style: TextStyle(
                           color: Colors.red.withOpacity(0.7),
-                          fontSize: 8,
+                          fontSize: 7,
                         ),
                       ),
                     ),
@@ -488,40 +492,57 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
 
 // widgets/coin_gift_dialog.dart - Modifier _sendGift
 
+  /// 🔥 Envoi "instantané" : la validation locale du solde (déjà disponible
+  /// côté client via [_coinProvider.giftCoinsBalance]) permet de fermer la
+  /// modale et d'afficher la confirmation IMMÉDIATEMENT, sans attendre
+  /// l'écriture Firestore (transaction + notifications) qui s'exécute en
+  /// arrière-plan (fire-and-forget). En cas d'échec, le solde réel est
+  /// re-synchronisé via `_coinProvider.refreshBalance` (déjà utilisé par le
+  /// provider existant) et une erreur est affichée.
   Future<void> _sendGift(CoinPack pack) async {
     if (_currentBalance < pack.coins) {
       _showInsufficientBalanceDialog();
       return;
     }
 
-    setState(() => _isLoading = true);
+    // 1. Optimistic update locale du solde affiché + fermeture immédiate
+    setState(() => _currentBalance -= pack.coins);
 
-    final success = await _coinProvider.sendGift(
-      senderId: _coinProvider.currentUser!.id!,
+    if (mounted) {
+      Navigator.pop(context);
+      _showSuccessAnimation(pack);
+    }
+
+    if (widget.isLive && widget.liveId != null) {
+      _recordLiveGift(widget.liveId!, pack.coins);
+    }
+    widget.onGiftSuccess?.call();
+
+    // 2. Écriture Firestore réelle en arrière-plan (fire-and-forget)
+    final senderId = _coinProvider.currentUser!.id!;
+    unawaited(_coinProvider.sendGift(
+      senderId: senderId,
       receiverId: widget.receiverId,
       coinsAmount: pack.coins,
       post: widget.post!,
       context: context,
-      giftPack: pack,  // 🔥 Passer le pack sélectionné
+      giftPack: pack,
       onSuccess: () {
-        _updateBalance();
-        if (widget.isLive && widget.liveId != null) {
-          _recordLiveGift(widget.liveId!, pack.coins);
-        }
-        widget.onGiftSuccess?.call();
+        _coinProvider.refreshBalance(senderId);
       },
-    );
-
-    setState(() => _isLoading = false);
-
-    if (success) {
-      if (mounted) {
-        Navigator.pop(context);
-        _showSuccessAnimation(pack);
+    ).then((success) {
+      if (!success) {
+        // Rollback : resynchroniser le solde réel depuis Firestore.
+        // notifyListeners() (déclenché par refreshBalance) met à jour le
+        // solde affiché ailleurs dans l'app — la modale étant déjà fermée,
+        // on ne tente pas d'afficher de SnackBar sur son contexte.
+        debugPrint('❌ Échec de l\'envoi du cadeau (solde insuffisant côté serveur), resynchronisation du solde');
+        _coinProvider.refreshBalance(senderId);
       }
-    } else {
-      _showInsufficientBalanceDialog();
-    }
+    }).catchError((e) {
+      debugPrint('❌ Erreur lors de l\'envoi du cadeau : $e');
+      _coinProvider.refreshBalance(senderId);
+    }));
   }
   void _showInsufficientBalanceDialog() {
     showDialog(

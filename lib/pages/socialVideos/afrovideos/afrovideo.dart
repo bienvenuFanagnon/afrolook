@@ -91,6 +91,7 @@ class _AfroVideoState extends State<AfroVideo> with WidgetsBindingObserver, Tick
   bool _isLoading = false;
   final List<AnimationController> _heartAnimations = [];
   final List<AnimationController> _giftAnimations = [];
+  StreamSubscription? _postsVideosSubscription;
 
   StreamController<List<Post>> _streamController = StreamController<List<Post>>();
 
@@ -572,9 +573,14 @@ class _AfroVideoState extends State<AfroVideo> with WidgetsBindingObserver, Tick
       _heartAnimations.add(controller);
     });
     controller.forward().then((_) {
-      setState(() {
+      if (mounted) {
+        setState(() {
+          _heartAnimations.remove(controller);
+        });
+      } else {
         _heartAnimations.remove(controller);
-      });
+      }
+      controller.dispose();
     });
   }
   void _sendReplyGift(String gift) {
@@ -586,9 +592,14 @@ class _AfroVideoState extends State<AfroVideo> with WidgetsBindingObserver, Tick
       _giftReplyAnimations.add(controller);
     });
     controller.forward().then((_) {
-      setState(() {
+      if (mounted) {
+        setState(() {
+          _giftReplyAnimations.remove(controller);
+        });
+      } else {
         _giftReplyAnimations.remove(controller);
-      });
+      }
+      controller.dispose();
     });
   }
 
@@ -601,9 +612,14 @@ class _AfroVideoState extends State<AfroVideo> with WidgetsBindingObserver, Tick
       _giftAnimations.add(controller);
     });
     controller.forward().then((_) {
-      setState(() {
+      if (mounted) {
+        setState(() {
+          _giftAnimations.remove(controller);
+        });
+      } else {
         _giftAnimations.remove(controller);
-      });
+      }
+      controller.dispose();
     });
   }
 
@@ -876,8 +892,10 @@ class _AfroVideoState extends State<AfroVideo> with WidgetsBindingObserver, Tick
             _checkAndShowDialog();
       },
     );
-    postProvider.getPostsVideos(limitePosts).listen((data) {
-      _streamController.add(data);
+    _postsVideosSubscription = postProvider.getPostsVideos(limitePosts).listen((data) {
+      if (mounted) {
+        _streamController.add(data);
+      }
     });
     super.initState();
   }
@@ -885,7 +903,17 @@ class _AfroVideoState extends State<AfroVideo> with WidgetsBindingObserver, Tick
   @override
   void dispose() {
     // TODO: implement dispose
+    _postsVideosSubscription?.cancel();
     _streamController.close();
+    for (final controller in _heartAnimations) {
+      controller.dispose();
+    }
+    for (final controller in _giftAnimations) {
+      controller.dispose();
+    }
+    for (final controller in _giftReplyAnimations) {
+      controller.dispose();
+    }
     super.dispose();
   }
 

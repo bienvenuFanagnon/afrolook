@@ -11,9 +11,12 @@ import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../../providers/authProvider.dart';
+import '../../../providers/sound_provider.dart';
+import '../../../theme/app_colors.dart';
 import '../../canaux/detailsCanal.dart';
 import '../../component/showUserDetails.dart';
 import '../../postDetailsVideo.dart';
+import '../../userPosts/video_preload_manager.dart';
 
 class AdvertisementVideoWidget extends StatefulWidget {
   final Post post;
@@ -54,11 +57,10 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
   bool _hasRecordedView = false;
   bool _hasRecordedClick = false;
 
-  final Color _primaryColor = Color(0xFFE21221);
-  final Color _secondaryColor = Color(0xFFFFD600);
-  final Color _cardColor = Color(0xFF1E1E1E);
-  final Color _textColor = Colors.white;
-  final Color _hintColor = Colors.grey[400]!;
+  late AppColors _colors;
+  static const Color _primaryColor = Color(0xFFE21221);
+
+  late SoundProvider _soundProvider;
 
   @override
   void initState() {
@@ -67,11 +69,23 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
     _loadUserData();
     _loadCanalData();
     _initializeVideo();
+    _soundProvider = Provider.of<SoundProvider>(context, listen: false);
+    _soundProvider.addListener(_onSoundChanged);
+  }
+
+  void _onSoundChanged() {
+    if (_videoController != null && _videoController!.value.isInitialized) {
+      _videoController!.setVolume(_soundProvider.isMuted ? 0.0 : 1.0);
+    }
   }
 
   @override
   void dispose() {
     _visibilityTimer?.cancel();
+    _soundProvider.removeListener(_onSoundChanged);
+    // Ne dispose pas le contrôleur s'il a été remis dans le préchargeur
+    // global (cas d'une pub qui sort de l'écran avant lecture) — sinon le
+    // dispose ici.
     _videoController?.dispose();
     super.dispose();
   }
@@ -162,6 +176,12 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
         if (mounted && info.visibleFraction > 0.5) {
           _recordAdView();
           if (_videoController != null && _videoController!.value.isInitialized && !_videoController!.value.isPlaying) {
+            // 🔥 Forcer le volume selon l'état global du son juste avant de jouer
+            // (même comportement que les vidéos du feed, cf. _playVideo dans
+            // youTube_video_card.dart).
+            final soundProvider = Provider.of<SoundProvider>(context, listen: false);
+            final isMuted = soundProvider.isMuted;
+            _videoController!.setVolume(isMuted ? 0.0 : 1.0);
             _videoController!.play();
           }
         }
@@ -240,10 +260,32 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
 
   Future<void> _initializeVideo() async {
     if (widget.post.url_media == null || widget.post.url_media!.isEmpty) return;
-    _videoController = VideoPlayerController.network(widget.post.url_media!);
-    await _videoController!.initialize();
-    await _videoController!.setVolume(0.1);
-    setState(() => _isVideoInitialized = true);
+
+    // 🔥 Préchargement "Facebook-style" : réutiliser un contrôleur déjà
+    // préchargé en arrière-plan par VideoPreloadManager (cf. Session 6 /
+    // youTube_video_card.dart) pour démarrer la lecture immédiatement.
+    final preloaded = VideoPreloadManager.claimController(widget.post.id ?? '');
+    if (preloaded != null) {
+      _videoController = preloaded;
+    } else {
+      final optimizedUrl = VideoPreloadManager.urlResolver != null
+          ? VideoPreloadManager.urlResolver!(widget.post.url_media!)
+          : widget.post.url_media!;
+      _videoController = VideoPlayerController.network(optimizedUrl);
+      await _videoController!.initialize();
+    }
+
+    // Appliquer l'état global du son (même comportement que les vidéos du feed)
+    final soundProvider = Provider.of<SoundProvider>(context, listen: false);
+    final isMuted = soundProvider.isMuted;
+    await _videoController!.setVolume(isMuted ? 0.0 : 1.0);
+
+    if (mounted) setState(() => _isVideoInitialized = true);
+
+    // Si la pub est créée alors qu'elle n'est pas encore visible, déclencher
+    // un préchargement pour qu'elle soit prête plus tard (sans effet si déjà
+    // préchargée/claim ci-dessus).
+    VideoPreloadManager.preload(widget.post.id ?? '', widget.post.url_media);
   }
 
   Widget _buildHeaderCompact() {
@@ -261,9 +303,9 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(_getDisplayName(), style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 13)),
+                Text(_getDisplayName(), style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 13)),
                 SizedBox(height: 2),
-                Text(formaterDateTime(widget.post.createdAt), style: TextStyle(color: _hintColor, fontSize: 9)),
+                Text(formaterDateTime(widget.post.createdAt), style: TextStyle(color: _colors.textSecondary, fontSize: 9)),
               ],
             ),
           ),
@@ -305,14 +347,15 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final double maxVideoHeight = MediaQuery.of(context).size.height * 0.35; // 35% de l'écran
+    _colors = AppColors.of(context);
+    final double maxVideoHeight = MediaQuery.of(context).size.height * 0.35;
 
     return VisibilityDetector(
       key: Key('ad-video-${widget.post.id}'),
       onVisibilityChanged: _handleVisibilityChanged,
       child: Container(
         margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(color: _cardColor, borderRadius: BorderRadius.circular(14), border: Border.all(color: _secondaryColor, width: 1.5)),
+        decoration: BoxDecoration(color: _colors.surfaceVariant, borderRadius: BorderRadius.circular(14), border: Border.all(color: _colors.accent, width: 1.5)),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -320,7 +363,7 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
             // Badge "Sponsorisé"
             Container(
               padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(color: _secondaryColor, borderRadius: BorderRadius.only(topLeft: Radius.circular(12), bottomRight: Radius.circular(12))),
+              decoration: BoxDecoration(color: _colors.accent, borderRadius: BorderRadius.only(topLeft: Radius.circular(12), bottomRight: Radius.circular(12))),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -344,7 +387,7 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
                   _buildHeaderCompact(),
                   SizedBox(height: 6),
                   if (widget.post.description != null && widget.post.description!.isNotEmpty)
-                    Text(_truncateDescription(widget.post.description!), style: TextStyle(color: _textColor, fontSize: 13, height: 1.3), maxLines: 2, overflow: TextOverflow.ellipsis),
+                    Text(_truncateDescription(widget.post.description!), style: TextStyle(color: _colors.textPrimary, fontSize: 13, height: 1.3), maxLines: 2, overflow: TextOverflow.ellipsis),
                   SizedBox(height: 8),
                   // Lecteur vidéo avec hauteur maximale
                   GestureDetector(
@@ -362,7 +405,7 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
                           : Container(
                         height: maxVideoHeight,
                         color: Colors.grey[900],
-                        child: Center(child: CircularProgressIndicator(color: _secondaryColor)),
+                        child: Center(child: CircularProgressIndicator(color: _colors.accent)),
                       ),
                     ),
                   ),
@@ -370,7 +413,7 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
                   // Statistiques
                   Row(
                     children: [
-                      Row(children: [Icon(Icons.remove_red_eye, color: _hintColor, size: 14), SizedBox(width: 3), Text('${_formatCount(widget.ad.views ?? 0)} vues', style: TextStyle(color: _hintColor, fontSize: 11))]),
+                      Row(children: [Icon(Icons.remove_red_eye, color: _colors.textSecondary, size: 14), SizedBox(width: 3), Text('${_formatCount(widget.ad.views ?? 0)} vues', style: TextStyle(color: _colors.textSecondary, fontSize: 11))]),
                       SizedBox(width: 12),
                       if ((widget.ad.views ?? 0) > 0)
                         Row(children: [Icon(Icons.ads_click, color: _primaryColor, size: 14), SizedBox(width: 3), Text('${widget.ad.ctr.toStringAsFixed(1)}% CTR', style: TextStyle(color: _primaryColor, fontSize: 11, fontWeight: FontWeight.w500))]),

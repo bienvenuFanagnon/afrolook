@@ -13,6 +13,7 @@ import 'package:skeletonizer/skeletonizer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../constant/constColors.dart';
+import '../../../theme/app_colors.dart';
 import '../../../models/model_data.dart';
 import '../../../providers/authProvider.dart';
 import '../../../providers/userProvider.dart';
@@ -32,6 +33,7 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
   @override
   bool get wantKeepAlive => true;
 
+  late AppColors _colors;
   late UserAuthProvider authProvider;
   late UserProvider userProvider;
 
@@ -404,8 +406,8 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Colors.grey[900]!,
-              Colors.grey[850]!,
+              _colors.surfaceVariant,
+              _colors.surfaceVariant,
             ],
           ),
           borderRadius: BorderRadius.circular(24),
@@ -416,13 +418,13 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
               offset: const Offset(0, 5),
             ),
             BoxShadow(
-              color: const Color(0xFFFFD700).withOpacity(0.1),
+              color: _colors.accent.withOpacity(0.1),
               blurRadius: 10,
               offset: const Offset(0, 0),
             ),
           ],
           border: Border.all(
-            color: Colors.grey[800]!,
+            color: _colors.border,
             width: 1,
           ),
         ),
@@ -455,14 +457,14 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
                           border: Border.all(
                             color: user.isVerify!
                                 ? Colors.green
-                                : const Color(0xFFFFD700),
+                                : _colors.accent,
                             width: 2,
                           ),
                           boxShadow: [
                             BoxShadow(
                               color: (user.isVerify!
                                   ? Colors.green
-                                  : const Color(0xFFFFD700)
+                                  : _colors.accent
                               ).withOpacity(0.3),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
@@ -474,16 +476,16 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
                             imageUrl: user.imageUrl ?? '',
                             fit: BoxFit.cover,
                             placeholder: (context, url) => Container(
-                              color: Colors.grey[800],
-                              child: const Center(
+                              color: _colors.border,
+                              child: Center(
                                 child: CircularProgressIndicator(
-                                  color: Color(0xFFFFD700),
+                                  color: _colors.accent,
                                   strokeWidth: 2,
                                 ),
                               ),
                             ),
                             errorWidget: (context, url, error) => Container(
-                              color: Colors.grey[800],
+                              color: _colors.border,
                               child: Icon(
                                 Icons.person,
                                 color: Colors.grey[600],
@@ -733,13 +735,13 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Colors.grey[900]!,
-            Colors.grey[850]!,
+            _colors.surfaceVariant,
+            _colors.surfaceVariant,
           ],
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: const Color(0xFFFFD700).withOpacity(0.2),
+          color: _colors.accent.withOpacity(0.2),
         ),
         boxShadow: [
           BoxShadow(
@@ -766,9 +768,9 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[850],
+        color: _colors.surfaceVariant,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.grey[800]!),
+        border: Border.all(color: _colors.border),
       ),
       child: Row(
         children: [
@@ -777,7 +779,7 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
             height: 70,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.grey[800],
+              color: _colors.border,
             ),
           ),
           const SizedBox(width: 16),
@@ -788,19 +790,19 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
                 Container(
                   width: 120,
                   height: 16,
-                  color: Colors.grey[800],
+                  color: _colors.border,
                 ),
                 const SizedBox(height: 8),
                 Container(
                   width: 80,
                   height: 12,
-                  color: Colors.grey[800],
+                  color: _colors.border,
                 ),
                 const SizedBox(height: 8),
                 Container(
                   width: 60,
                   height: 20,
-                  color: Colors.grey[800],
+                  color: _colors.border,
                 ),
               ],
             ),
@@ -810,13 +812,13 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
               Container(
                 width: 70,
                 height: 30,
-                color: Colors.grey[800],
+                color: _colors.border,
               ),
               const SizedBox(height: 8),
               Container(
                 width: 70,
                 height: 30,
-                color: Colors.grey[800],
+                color: _colors.border,
               ),
             ],
           ),
@@ -828,32 +830,33 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    _colors = AppColors.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
+      backgroundColor: _colors.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0A0A0A),
+        backgroundColor: _colors.background,
         elevation: 0,
         leading: IconButton(
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.grey[900],
+              color: _colors.surfaceVariant,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey[800]!),
+              border: Border.all(color: _colors.border),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.arrow_back,
-              color: Color(0xFFFFD700),
+              color: _colors.accent,
               size: 20,
             ),
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Invitations',
           style: TextStyle(
-            color: Color(0xFFFFD700),
+            color: _colors.accent,
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
@@ -864,15 +867,15 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
             margin: const EdgeInsets.only(right: 16),
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.grey[900],
+              color: _colors.surfaceVariant,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey[800]!),
+              border: Border.all(color: _colors.border),
             ),
             child: Stack(
               children: [
-                const Icon(
+                Icon(
                   Icons.notifications_none,
-                  color: Color(0xFFFFD700),
+                  color: _colors.accent,
                   size: 20,
                 ),
                 if (_invitations.isNotEmpty)
@@ -902,8 +905,8 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
       ),
       body: RefreshIndicator(
         onRefresh: _refreshInvitations,
-        color: const Color(0xFFFFD700),
-        backgroundColor: Colors.grey[900],
+        color: _colors.accent,
+        backgroundColor: _colors.surfaceVariant,
         child: _isInitialLoading
             ? ListView.builder(
           padding: const EdgeInsets.only(top: 16),
@@ -939,13 +942,13 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
               const SizedBox(height: 8),
               Text(
                 _errorMessage!,
-                style: TextStyle(color: Colors.grey[400]),
+                style: TextStyle(color: _colors.textSecondary),
               ),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _loadInitialInvitations,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFFD700),
+                  backgroundColor: _colors.accent,
                   foregroundColor: Colors.black,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
@@ -974,15 +977,15 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
                     Container(
                       padding: const EdgeInsets.all(30),
                       decoration: BoxDecoration(
-                        color: Colors.grey[900],
+                        color: _colors.surfaceVariant,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: const Color(0xFFFFD700).withOpacity(0.3),
+                          color: _colors.accent.withOpacity(0.3),
                         ),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.mail_outline,
-                        color: Color(0xFFFFD700),
+                        color: _colors.accent,
                         size: 60,
                       ),
                     ),
@@ -999,7 +1002,7 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
                     Text(
                       'Vous n\'avez pas d\'invitation en attente',
                       style: TextStyle(
-                        color: Colors.grey[400],
+                        color: _colors.textSecondary,
                         fontSize: 14,
                       ),
                     ),
@@ -1032,7 +1035,7 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
                           child: Center(
                             child: LoadingAnimationWidget.flickr(
                               size: 30,
-                              leftDotColor: const Color(0xFFFFD700),
+                              leftDotColor: _colors.accent,
                               rightDotColor: const Color(0xFF8B0000),
                             ),
                           ),

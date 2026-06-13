@@ -23,6 +23,8 @@ import 'package:afrotok/models/model_data.dart';
 import '../dating/dating_entry_page.dart';
 import '../info.dart';
 import '../user/mes_gains_post_page.dart';
+import '../../theme/app_colors.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 class TopFiveModal {
   static Future<void> showTopFiveModal(
       BuildContext context, List<UserData> topUsers) async {
@@ -36,6 +38,7 @@ class TopFiveModal {
       context: context,
       barrierDismissible: true,
       builder: (BuildContext context) {
+        final colors = AppColors.of(context);
         return Dialog(
           backgroundColor: Colors.transparent,
           insetPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 24),
@@ -43,9 +46,9 @@ class TopFiveModal {
             builder: (context, constraints) {
               return Container(
                 decoration: BoxDecoration(
-                  color: Colors.black,
+                  color: colors.surface,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.yellow[700]!, width: 2),
+                  border: Border.all(color: colors.accent, width: 2),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -55,7 +58,7 @@ class TopFiveModal {
                       width: double.infinity,
                       padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.green[800]!.withOpacity(0.7),
+                        color: colors.primary.withOpacity(0.7),
                         borderRadius: BorderRadius.only(
                           topLeft: Radius.circular(20),
                           topRight: Radius.circular(20),
@@ -71,7 +74,7 @@ class TopFiveModal {
                                   style: TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.yellow[700],
+                                    color: colors.accent,
                                   ),
                                 ),
                                 SizedBox(height: 8),
@@ -79,7 +82,7 @@ class TopFiveModal {
                                   "Découvrez les stars du jour!",
                                   style: TextStyle(
                                     fontSize: 14,
-                                    color: Colors.white,
+                                    color: colors.onPrimary,
                                   ),
                                 ),
                               ],
@@ -92,7 +95,7 @@ class TopFiveModal {
                               onTap: () => Navigator.of(context).pop(),
                               child: Icon(
                                 Icons.close,
-                                color: Colors.yellow[700],
+                                color: colors.accent,
                                 size: 28,
                               ),
                             ),
@@ -122,7 +125,7 @@ class TopFiveModal {
                       width: double.infinity,
                       padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.green[800]!.withOpacity(0.3),
+                        color: colors.primary.withOpacity(0.3),
                         borderRadius: BorderRadius.only(
                           bottomLeft: Radius.circular(20),
                           bottomRight: Radius.circular(20),
@@ -139,8 +142,8 @@ class TopFiveModal {
                           );
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.yellow[700],
-                          foregroundColor: Colors.black,
+                          backgroundColor: colors.accent,
+                          foregroundColor: colors.onAccent,
                           padding: EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -157,7 +160,7 @@ class TopFiveModal {
                     ),
                   ],
                 ),
-              );
+              ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.05, end: 0, duration: 300.ms, curve: Curves.easeOut);
             },
           ),
         );
@@ -178,11 +181,12 @@ class TopFiveUserItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     Color rankColor;
     IconData rankIcon;
 
     if (rank == 1) {
-      rankColor = Colors.yellow[700]!;
+      rankColor = colors.accent;
       rankIcon = Icons.emoji_events;
     } else if (rank == 2) {
       rankColor = Colors.grey[400]!;
@@ -191,7 +195,7 @@ class TopFiveUserItem extends StatelessWidget {
       rankColor = Colors.orange[800]!;
       rankIcon = Icons.workspace_premium;
     } else {
-      rankColor = Colors.green[600]!;
+      rankColor = colors.primary;
       rankIcon = Icons.star;
     }
 
@@ -199,7 +203,7 @@ class TopFiveUserItem extends StatelessWidget {
       margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey[900],
+        color: colors.surfaceVariant,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -233,7 +237,7 @@ class TopFiveUserItem extends StatelessWidget {
               CircleAvatar(
                 backgroundImage: NetworkImage(user.imageUrl ?? ''),
                 radius: 24,
-                backgroundColor: Colors.grey[800],
+                backgroundColor: colors.surfaceVariant,
               ),
               if (user.isVerify ?? false)
                 Positioned(
@@ -242,12 +246,12 @@ class TopFiveUserItem extends StatelessWidget {
                   child: Container(
                     padding: EdgeInsets.all(2),
                     decoration: BoxDecoration(
-                      color: Colors.black,
+                      color: colors.surface,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       Icons.verified,
-                      color: Colors.green,
+                      color: colors.primary,
                       size: 16,
                     ),
                   ),
@@ -268,7 +272,7 @@ class TopFiveUserItem extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: colors.textPrimary,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -278,13 +282,13 @@ class TopFiveUserItem extends StatelessWidget {
                 // FOLLOWERS
                 Row(
                   children: [
-                    Icon(Icons.people, size: 14, color: Colors.green[600]),
+                    Icon(Icons.people, size: 14, color: colors.primary),
                     SizedBox(width: 4),
                     Text(
                       "${user.userAbonnesIds?.length ?? 0} abonnés",
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey[400],
+                        color: colors.textSecondary,
                       ),
                     ),
                   ],
@@ -295,13 +299,13 @@ class TopFiveUserItem extends StatelessWidget {
                 // ⭐ POPULARITÉ
                 Row(
                   children: [
-                    Icon(Icons.star, size: 12, color: Colors.yellow[700]),
+                    Icon(Icons.star, size: 12, color: colors.accent),
                     SizedBox(width: 4),
                     Text(
                       "${(user.popularite ?? 0).toStringAsFixed(2)}%",
                       style: TextStyle(
                         fontSize: 10,
-                        color: Colors.grey[400],
+                        color: colors.textSecondary,
                       ),
                     ),
                   ],
@@ -329,7 +333,7 @@ class TopFiveUserItem extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ).animate().fadeIn(duration: 300.ms, delay: (40 * rank).ms).slideX(begin: -0.05, end: 0, duration: 300.ms, curve: Curves.easeOut);
   }
 }
 
@@ -355,6 +359,7 @@ class TopLiveGridModal {
       context: context,
       barrierDismissible: true,
       builder: (BuildContext context) {
+        final colors = AppColors.of(context);
         return Dialog(
           backgroundColor: Colors.transparent,
           insetPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 24),
@@ -362,12 +367,12 @@ class TopLiveGridModal {
             width: double.infinity,
             constraints: BoxConstraints(maxWidth: 500),
             decoration: BoxDecoration(
-              color: Colors.black,
+              color: colors.surface,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Color(0xFFF9A825), width: 2),
+              border: Border.all(color: colors.accent, width: 2),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.yellow.withOpacity(0.3),
+                  color: colors.accent.withOpacity(0.3),
                   blurRadius: 15,
                   spreadRadius: 2,
                 ),
@@ -382,7 +387,7 @@ class TopLiveGridModal {
                   padding: EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Color(0xFFF9A825), Colors.red],
+                      colors: [colors.accent, colors.danger],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -401,7 +406,7 @@ class TopLiveGridModal {
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.black,
+                                color: colors.onAccent,
                               ),
                             ),
                             SizedBox(height: 8),
@@ -409,7 +414,7 @@ class TopLiveGridModal {
                               "Rejoignez l'expérience en direct!",
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Colors.black87,
+                                color: colors.onAccent.withOpacity(0.87),
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -423,7 +428,7 @@ class TopLiveGridModal {
                           onTap: () => Navigator.of(context).pop(),
                           child: Icon(
                             Icons.close,
-                            color: Colors.black,
+                            color: colors.onAccent,
                             size: 28,
                           ),
                         ),
@@ -443,7 +448,7 @@ class TopLiveGridModal {
                   width: double.infinity,
                   padding: EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.grey[900],
+                    color: colors.surfaceVariant,
                     borderRadius: BorderRadius.only(
                       bottomLeft: Radius.circular(20),
                       bottomRight: Radius.circular(20),
@@ -457,7 +462,7 @@ class TopLiveGridModal {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFFF9A825),
+                          color: colors.accent,
                         ),
                       ),
                       SizedBox(height: 8),
@@ -466,7 +471,7 @@ class TopLiveGridModal {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.white70,
+                          color: colors.textSecondary,
                         ),
                       ),
                       SizedBox(height: 12),
@@ -478,13 +483,13 @@ class TopLiveGridModal {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.live_tv, color: Colors.red, size: 16),
+                            Icon(Icons.live_tv, color: colors.danger, size: 16),
                             SizedBox(width: 4),
                             Text(
                               "Voir plus de lives",
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.red,
+                                color: colors.danger,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
@@ -496,7 +501,7 @@ class TopLiveGridModal {
                 ),
               ],
             ),
-          ),
+          ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.05, end: 0, duration: 300.ms, curve: Curves.easeOut),
         );
       },
     );
@@ -527,6 +532,7 @@ class TopLiveGridModal {
   }
 
   static Widget _buildNoLiveContent(BuildContext context) {
+    final colors = AppColors.of(context);
     return Container(
       padding: EdgeInsets.symmetric(vertical: 30, horizontal: 20),
       child: Column(
@@ -535,7 +541,7 @@ class TopLiveGridModal {
           Icon(
             Icons.videocam_off,
             size: 64,
-            color: Colors.red,
+            color: colors.danger,
           ),
           SizedBox(height: 16),
           Text(
@@ -543,7 +549,7 @@ class TopLiveGridModal {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: colors.textPrimary,
             ),
           ),
           SizedBox(height: 12),
@@ -552,7 +558,7 @@ class TopLiveGridModal {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[400],
+              color: colors.textSecondary,
             ),
           ),
           SizedBox(height: 20),
@@ -563,8 +569,8 @@ class TopLiveGridModal {
               Navigator.push(context, MaterialPageRoute(builder: (context) => CreateLivePage()));
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              backgroundColor: colors.danger,
+              foregroundColor: colors.onPrimary,
               padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -583,7 +589,7 @@ class TopLiveGridModal {
             "Invitez vos abonnés à participer!",
             style: TextStyle(
               fontSize: 12,
-              color: Colors.grey[500],
+              color: colors.textSecondary,
               fontStyle: FontStyle.italic,
             ),
           ),
@@ -606,6 +612,7 @@ class _LiveGridItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     Color rankColor;
 
     if (rank == 1) {
@@ -615,7 +622,7 @@ class _LiveGridItem extends StatelessWidget {
     } else if (rank == 3) {
       rankColor = Color(0xFFCD7F32); // Bronze
     } else {
-      rankColor = Color(0xFFF9A825); // Jaune Afrolook
+      rankColor = colors.accent; // Jaune Afrolook
     }
 
     return GestureDetector(
@@ -637,7 +644,7 @@ class _LiveGridItem extends StatelessWidget {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.grey[900],
+          color: colors.surfaceVariant,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: rankColor, width: 2),
         ),
@@ -674,7 +681,7 @@ class _LiveGridItem extends StatelessWidget {
                         style: TextStyle(
                           fontSize: rank <= 3 ? 16 : 14,
                           fontWeight: FontWeight.bold,
-                          color: rank <= 3 ? Colors.black : Colors.white,
+                          color: rank <= 3 ? colors.black : colors.textPrimary,
                         ),
                       ),
                     ),
@@ -686,7 +693,7 @@ class _LiveGridItem extends StatelessWidget {
                     child: Container(
                       padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.red,
+                        color: colors.danger,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -749,7 +756,7 @@ class _LiveGridItem extends StatelessWidget {
                   Text(
                     live.title,
                     style: TextStyle(
-                      color: Colors.white,
+                      color: colors.textPrimary,
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
                     ),
@@ -761,7 +768,7 @@ class _LiveGridItem extends StatelessWidget {
                     "@${live.hostName}",
                     style: TextStyle(
                       fontSize: 10,
-                      color: Color(0xFFF9A825),
+                      color: colors.accent,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -791,8 +798,8 @@ class _LiveGridItem extends StatelessWidget {
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green[700],
-                  foregroundColor: Colors.white,
+                  backgroundColor: colors.primary,
+                  foregroundColor: colors.onPrimary,
                   padding: EdgeInsets.symmetric(vertical: 6),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -810,7 +817,7 @@ class _LiveGridItem extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ).animate().fadeIn(duration: 300.ms, delay: (50 * rank).ms).scale(begin: const Offset(0.95, 0.95), end: const Offset(1, 1), duration: 300.ms, curve: Curves.easeOut);
   }
 }
 
@@ -1233,6 +1240,7 @@ class TopProductsGridModal {
       context: context,
       barrierDismissible: true,
       builder: (BuildContext context) {
+        final colors = AppColors.of(context);
         double height = MediaQuery.of(context).size.height;
         double width = MediaQuery.of(context).size.width;
 
@@ -1243,7 +1251,7 @@ class TopProductsGridModal {
             width: double.infinity,
             constraints: BoxConstraints(maxWidth: 500, maxHeight: height * 0.8),
             decoration: BoxDecoration(
-              color: Colors.black,
+              color: colors.surface,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: CustomConstants.kPrimaryColor, width: 2),
               boxShadow: [
@@ -1280,18 +1288,18 @@ class TopProductsGridModal {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.rocket_launch, color: Colors.white, size: 24),
+                                Icon(Icons.rocket_launch, color: colors.onPrimary, size: 24),
                                 SizedBox(width: 8),
                                 Text(
                                   "PRODUITS STARS 🌟",
                                   style: TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.white,
+                                    color: colors.onPrimary,
                                   ),
                                 ),
                                 SizedBox(width: 8),
-                                Icon(Icons.star, color: Colors.white, size: 24),
+                                Icon(Icons.star, color: colors.onPrimary, size: 24),
                               ],
                             ),
                             SizedBox(height: 8),
@@ -1299,7 +1307,7 @@ class TopProductsGridModal {
                               "Les produits les plus populaires du moment!",
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Colors.white70,
+                                color: colors.onPrimary.withOpacity(0.7),
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -1319,7 +1327,7 @@ class TopProductsGridModal {
                             ),
                             child: Icon(
                               Icons.close,
-                              color: Colors.white,
+                              color: colors.onPrimary,
                               size: 24,
                             ),
                           ),
@@ -1340,7 +1348,7 @@ class TopProductsGridModal {
                   width: double.infinity,
                   padding: EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.grey[900],
+                    color: colors.surfaceVariant,
                     borderRadius: BorderRadius.only(
                       bottomLeft: Radius.circular(20),
                       bottomRight: Radius.circular(20),
@@ -1364,20 +1372,20 @@ class TopProductsGridModal {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.white70,
+                            color: colors.textSecondary,
                           ),
                         ),
                         SizedBox(height: 12),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.public, color: Colors.green, size: 16),
+                            Icon(Icons.public, color: colors.primary, size: 16),
                             SizedBox(width: 6),
                             Text(
                               "Visibilité panafricaine garantie",
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.green,
+                                color: colors.primary,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -1399,7 +1407,7 @@ class TopProductsGridModal {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.white70,
+                            color: colors.textSecondary,
                           ),
                         ),
                         SizedBox(height: 12),
@@ -1438,7 +1446,7 @@ class TopProductsGridModal {
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: hasEntreprise ? Colors.amber : CustomConstants.kPrimaryColor,
-                          foregroundColor: Colors.black,
+                          foregroundColor: colors.onPrimary,
                           padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -1466,7 +1474,7 @@ class TopProductsGridModal {
                           "Augmentez vos ventes de 300% en moyenne",
                           style: TextStyle(
                             fontSize: 11,
-                            color: Colors.green,
+                            color: colors.primary,
                             fontStyle: FontStyle.italic,
                           ),
                         )
@@ -1475,7 +1483,7 @@ class TopProductsGridModal {
                           "Gratuit • Rapide • Sans engagement",
                           style: TextStyle(
                             fontSize: 11,
-                            color: Colors.grey[500],
+                            color: colors.textSecondary,
                             fontStyle: FontStyle.italic,
                           ),
                         ),
@@ -1484,13 +1492,14 @@ class TopProductsGridModal {
                 ),
               ],
             ),
-          ),
+          ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.05, end: 0, duration: 300.ms, curve: Curves.easeOut),
         );
       },
     );
   }
 
   static Widget _buildProductsGrid(BuildContext context, List<ArticleData> products, double width, double height) {
+    final colors = AppColors.of(context);
     return Expanded(
       child: Container(
         padding: EdgeInsets.all(16),
@@ -1515,7 +1524,7 @@ class TopProductsGridModal {
                       "Ces produits sont boostés et visibles dans toute l'Afrique",
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.white70,
+                        color: colors.textSecondary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -1552,6 +1561,7 @@ class TopProductsGridModal {
   }
 
   static Widget _buildNoProductsContent(BuildContext context, bool hasEntreprise) {
+    final colors = AppColors.of(context);
     return Container(
       padding: EdgeInsets.symmetric(vertical: 30, horizontal: 20),
       child: Column(
@@ -1568,7 +1578,7 @@ class TopProductsGridModal {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: colors.textPrimary,
             ),
           ),
           SizedBox(height: 12),
@@ -1579,7 +1589,7 @@ class TopProductsGridModal {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[400],
+              color: colors.textSecondary,
               height: 1.4,
             ),
           ),
@@ -1588,12 +1598,12 @@ class TopProductsGridModal {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.public, color: Colors.green, size: 16),
+                Icon(Icons.public, color: colors.primary, size: 16),
                 SizedBox(width: 6),
                 Text(
                   "Visibilité panafricaine garantie",
                   style: TextStyle(
-                    color: Colors.green,
+                    color: colors.primary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -1633,12 +1643,12 @@ class TopProductsGridModal {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.speed, color: Colors.green, size: 16),
+                Icon(Icons.speed, color: colors.primary, size: 16),
                 SizedBox(width: 6),
                 Text(
                   "Création en 2 minutes",
                   style: TextStyle(
-                    color: Colors.green,
+                    color: colors.primary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -1667,6 +1677,7 @@ class _ProductGridItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     Color rankColor;
 
     if (rank == 1) {
@@ -1706,7 +1717,7 @@ class _ProductGridItem extends StatelessWidget {
             children: [
               // Produit avec fond uniforme
               Container(
-                color: Colors.grey[900],
+                color: colors.surfaceVariant,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -1719,12 +1730,12 @@ class _ProductGridItem extends StatelessWidget {
                             : '',
                         fit: BoxFit.cover,
                         placeholder: (context, url) => Container(
-                          color: Colors.grey[800],
-                          child: Icon(Icons.shopping_bag, color: Colors.grey, size: 30),
+                          color: colors.shimmerBase,
+                          child: Icon(Icons.shopping_bag, color: colors.textSecondary, size: 30),
                         ),
                         errorWidget: (context, url, error) => Container(
-                          color: Colors.grey[800],
-                          child: Icon(Icons.shopping_bag, color: Colors.grey, size: 30),
+                          color: colors.shimmerBase,
+                          child: Icon(Icons.shopping_bag, color: colors.textSecondary, size: 30),
                         ),
                       ),
                     ),
@@ -1733,7 +1744,7 @@ class _ProductGridItem extends StatelessWidget {
                     Expanded(
                       child: Container(
                         padding: EdgeInsets.all(8),
-                        color: Colors.grey[900],
+                        color: colors.surfaceVariant,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1741,7 +1752,7 @@ class _ProductGridItem extends StatelessWidget {
                             Text(
                               article.titre ?? 'Produit',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: colors.textPrimary,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -1788,7 +1799,7 @@ class _ProductGridItem extends StatelessWidget {
                     style: TextStyle(
                       fontSize: rank <= 3 ? 14 : 12,
                       fontWeight: FontWeight.bold,
-                      color: rank <= 3 ? Colors.black : Colors.white,
+                      color: rank <= 3 ? colors.black : colors.textPrimary,
                     ),
                   ),
                 ),
@@ -1814,12 +1825,12 @@ class _ProductGridItem extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.rocket_launch, color: Colors.black, size: 10),
+                      Icon(Icons.rocket_launch, color: colors.black, size: 10),
                       SizedBox(width: 4),
                       Text(
                         "BOOSTÉ",
                         style: TextStyle(
-                          color: Colors.black,
+                          color: colors.black,
                           fontSize: 8,
                           fontWeight: FontWeight.bold,
                         ),
@@ -1832,7 +1843,7 @@ class _ProductGridItem extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ).animate().fadeIn(duration: 300.ms, delay: (40 * rank).ms).scale(begin: const Offset(0.95, 0.95), end: const Offset(1, 1), duration: 300.ms, curve: Curves.easeOut);
   }
 }
 class ChallengeModal {
@@ -1852,6 +1863,7 @@ class ChallengeModal {
       context: context,
       barrierDismissible: true,
       builder: (BuildContext context) {
+        final colors = AppColors.of(context);
 
         return Dialog(
           backgroundColor: Colors.transparent,
@@ -1860,7 +1872,7 @@ class ChallengeModal {
             width: double.infinity,
             constraints: BoxConstraints(maxWidth: 500, maxHeight: MediaQuery.of(context).size.height * 0.8),
             decoration: BoxDecoration(
-              color: Colors.black,
+              color: colors.surface,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: Colors.purple, width: 2),
               boxShadow: [
@@ -1966,7 +1978,7 @@ class ChallengeModal {
                           width: double.infinity,
                           padding: EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.grey[900],
+                            color: colors.surfaceVariant,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Column(
@@ -1985,7 +1997,7 @@ class ChallengeModal {
                                 challenge.description ?? 'Aucune description',
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: Colors.grey[300],
+                                  color: colors.textSecondary,
                                   height: 1.4,
                                 ),
                                 maxLines: 3, // Limite à 3 lignes
@@ -2035,7 +2047,7 @@ class ChallengeModal {
                                       'Prix à gagner',
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: Colors.grey[400],
+                                        color: colors.textSecondary,
                                       ),
                                     ),
                                     Text(
@@ -2068,23 +2080,26 @@ class ChallengeModal {
                         Container(
                           padding: EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.grey[800],
+                            color: colors.surfaceVariant,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceAround,
                             children: [
                               _buildStatItem(
+                                context,
                                 Icons.people,
                                 'Participants',
                                 '${challenge.totalParticipants ?? 0}',
                               ),
                               _buildStatItem(
+                                context,
                                 Icons.how_to_vote,
                                 'Votes',
                                 '${challenge.totalVotes ?? 0}',
                               ),
                               _buildStatItem(
+                                context,
                                 Icons.visibility,
                                 'Vues',
                                 '${challenge.vues ?? 0}',
@@ -2099,7 +2114,7 @@ class ChallengeModal {
                           width: double.infinity,
                           padding: EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.grey[900],
+                            color: colors.surfaceVariant,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Column(
@@ -2121,11 +2136,13 @@ class ChallengeModal {
                               SizedBox(height: 8),
                               if (challenge.endInscriptionAt != null)
                                 _buildDateItem(
+                                  context,
                                   'Fin des inscriptions:',
                                   _formatDate(challenge.endInscriptionAt!),
                                 ),
                               if (challenge.finishedAt != null)
                                 _buildDateItem(
+                                  context,
                                   'Fin du challenge:',
                                   _formatDate(challenge.finishedAt!),
                                 ),
@@ -2143,7 +2160,7 @@ class ChallengeModal {
                   width: double.infinity,
                   padding: EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.grey[900],
+                    color: colors.surfaceVariant,
                     borderRadius: BorderRadius.only(
                       bottomLeft: Radius.circular(20),
                       bottomRight: Radius.circular(20),
@@ -2153,7 +2170,7 @@ class ChallengeModal {
                 ),
               ],
             ),
-          ),
+          ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.05, end: 0, duration: 300.ms, curve: Curves.easeOut),
         );
       },
     );
@@ -2163,8 +2180,10 @@ class ChallengeModal {
   static void _showFullDescription(BuildContext context, String description) {
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.black,
+      builder: (context) {
+        final colors = AppColors.of(context);
+        return Dialog(
+        backgroundColor: colors.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(color: Colors.purple, width: 2),
@@ -2184,12 +2203,12 @@ class ChallengeModal {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: colors.textPrimary,
                     ),
                   ),
                   Spacer(),
                   IconButton(
-                    icon: Icon(Icons.close, color: Colors.white),
+                    icon: Icon(Icons.close, color: colors.textPrimary),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -2201,7 +2220,7 @@ class ChallengeModal {
                     description,
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey[300],
+                      color: colors.textSecondary,
                       height: 1.5,
                     ),
                   ),
@@ -2222,11 +2241,13 @@ class ChallengeModal {
             ],
           ),
         ),
-      ),
+      );
+      },
     );
   }
 
-  static Widget _buildStatItem(IconData icon, String label, String value) {
+  static Widget _buildStatItem(BuildContext context, IconData icon, String label, String value) {
+    final colors = AppColors.of(context);
     return Column(
       children: [
         Icon(icon, color: Colors.purple, size: 20),
@@ -2236,14 +2257,14 @@ class ChallengeModal {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: colors.textPrimary,
           ),
         ),
         Text(
           label,
           style: TextStyle(
             fontSize: 10,
-            color: Colors.grey[400],
+            color: colors.textSecondary,
           ),
           textAlign: TextAlign.center,
         ),
@@ -2251,7 +2272,8 @@ class ChallengeModal {
     );
   }
 
-  static Widget _buildDateItem(String label, String value) {
+  static Widget _buildDateItem(BuildContext context, String label, String value) {
+    final colors = AppColors.of(context);
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 2),
       child: Row(
@@ -2262,7 +2284,7 @@ class ChallengeModal {
               label,
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey[400],
+                color: colors.textSecondary,
               ),
             ),
           ),
@@ -2270,7 +2292,7 @@ class ChallengeModal {
             value,
             style: TextStyle(
               fontSize: 12,
-              color: Colors.white,
+              color: colors.textPrimary,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -2427,6 +2449,7 @@ class AfrolookInfoModal {
       context: context,
       barrierDismissible: true,
       builder: (BuildContext context) {
+        final colors = AppColors.of(context);
         return Dialog(
           backgroundColor: Colors.transparent,
           insetPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 40),
@@ -2434,7 +2457,7 @@ class AfrolookInfoModal {
             width: double.infinity,
             constraints: BoxConstraints(maxWidth: 400),
             decoration: BoxDecoration(
-              color: Colors.black,
+              color: colors.surface,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: Colors.red, width: 3),
               boxShadow: [
@@ -2546,39 +2569,43 @@ class AfrolookInfoModal {
                     child: Column(
                       children: [
                         _buildInfoItem(
+                          context: context,
                           icon: Icons.live_tv,
                           title: "📡 ACTUALITÉS EN TEMPS RÉEL",
                           description: "Ne ratez plus jamais les annonces importantes ! Suivez en direct l'évolution de la plateforme, les nouvelles fonctionnalités et les événements exclusifs.",
                           color: Colors.red,
                           emoji: "🔥",
-                        ),
+                        ).animate().fadeIn(duration: 300.ms, delay: 0.ms).slideX(begin: -0.05, end: 0, duration: 300.ms, curve: Curves.easeOut),
                         SizedBox(height: 16),
 
                         _buildInfoItem(
+                          context: context,
                           icon: Icons.trending_up,
                           title: "💎 LES COULISSES AFROLOOK",
                           description: "Découvrez les secrets de notre succès ! Notre vision révolutionnaire, nos projets ambitieux et comment nous redéfinissons le digital africain.",
                           color: Colors.orange,
                           emoji: "🌟",
-                        ),
+                        ).animate().fadeIn(duration: 300.ms, delay: 80.ms).slideX(begin: -0.05, end: 0, duration: 300.ms, curve: Curves.easeOut),
                         SizedBox(height: 16),
 
                         _buildInfoItem(
+                          context: context,
                           icon: Icons.rocket_launch,
                           title: "💰 OPPORTUNITÉS EXCLUSIVES",
                           description: "Soyez parmi les premiers informés ! Investissements stratégiques, partenariats gagnants et opportunités réservées à notre communauté.",
                           color: Colors.green,
                           emoji: "💸",
-                        ),
+                        ).animate().fadeIn(duration: 300.ms, delay: 160.ms).slideX(begin: -0.05, end: 0, duration: 300.ms, curve: Curves.easeOut),
                         SizedBox(height: 16),
 
                         _buildInfoItem(
+                          context: context,
                           icon: Icons.celebration,
                           title: "🚀 PROJETS SECRETS EN PRÉPARATION",
                           description: "L'avenir s'écrit maintenant ! Découvrez en avant-première les innovations qui vont bouleverser votre expérience digitale.",
                           color: Colors.blue,
                           emoji: "🎯",
-                        ),
+                        ).animate().fadeIn(duration: 300.ms, delay: 240.ms).slideX(begin: -0.05, end: 0, duration: 300.ms, curve: Curves.easeOut),
                       ],
                     ),
                   ),
@@ -2617,7 +2644,7 @@ class AfrolookInfoModal {
                   width: double.infinity,
                   padding: EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.grey[900],
+                    color: colors.surfaceVariant,
                     borderRadius: BorderRadius.only(
                       bottomLeft: Radius.circular(18),
                       bottomRight: Radius.circular(18),
@@ -2631,7 +2658,7 @@ class AfrolookInfoModal {
                         child: Text(
                           "🎁 Des surprises attendent les plus curieux !",
                           style: TextStyle(
-                            color: Colors.yellow,
+                            color: colors.accent,
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                             fontStyle: FontStyle.italic,
@@ -2676,7 +2703,7 @@ class AfrolookInfoModal {
                       Text(
                         "Rejoignez les initiés qui connaissent déjà ces informations exclusives",
                         style: TextStyle(
-                          color: Colors.grey[400],
+                          color: colors.textSecondary,
                           fontSize: 12,
                           fontStyle: FontStyle.italic,
                         ),
@@ -2695,7 +2722,7 @@ class AfrolookInfoModal {
                               _showChallengeModalAfterInfo(context);
                             },
                             style: TextButton.styleFrom(
-                              foregroundColor: Colors.grey[500],
+                              foregroundColor: colors.textSecondary,
                               padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                             ),
                             child: Row(
@@ -2740,23 +2767,25 @@ class AfrolookInfoModal {
                 ),
               ],
             ),
-          ),
+          ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.05, end: 0, duration: 300.ms, curve: Curves.easeOut),
         );
       },
     );
   }
 
   static Widget _buildInfoItem({
+    required BuildContext context,
     required IconData icon,
     required String title,
     required String description,
     required Color color,
     required String emoji,
   }) {
+    final colors = AppColors.of(context);
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[900],
+        color: colors.surfaceVariant,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withOpacity(0.3)),
         boxShadow: [
@@ -2802,7 +2831,7 @@ class AfrolookInfoModal {
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: colors.textPrimary,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -2811,7 +2840,7 @@ class AfrolookInfoModal {
                   description,
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.grey[300],
+                    color: colors.textSecondary,
                     height: 1.5,
                   ),
                 ),
@@ -3177,6 +3206,7 @@ void showRemunerationAnnounceModal(BuildContext context, String userId) {
     context: context,
     barrierDismissible: false,
     builder: (BuildContext context) {
+      final colors = AppColors.of(context);
       return WillPopScope(
         onWillPop: () async => false,
         child: Dialog(
@@ -3185,7 +3215,7 @@ void showRemunerationAnnounceModal(BuildContext context, String userId) {
           insetPadding: const EdgeInsets.symmetric(horizontal: 20),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.black,
+              color: colors.surface,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: Color(0xFFFFD700).withOpacity(0.3)),
               boxShadow: [
@@ -3231,7 +3261,7 @@ void showRemunerationAnnounceModal(BuildContext context, String userId) {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.grey[900],
+                    color: colors.surfaceVariant,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Column(
@@ -3239,7 +3269,7 @@ void showRemunerationAnnounceModal(BuildContext context, String userId) {
                       Text(
                         'Afrolook rémunère tes publications :',
                         style: TextStyle(
-                          color: Colors.white70,
+                          color: colors.textSecondary,
                           fontSize: 13,
                         ),
                         textAlign: TextAlign.center,
@@ -3250,12 +3280,12 @@ void showRemunerationAnnounceModal(BuildContext context, String userId) {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          _buildRateChip('100', 'VUES'),
+                          _buildRateChip(context, '100', 'VUES'),
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 8),
                             child: Icon(Icons.arrow_forward, color: Color(0xFFFFD700), size: 16),
                           ),
-                          _buildRateChip('200', 'FCFA'),
+                          _buildRateChip(context, '200', 'FCFA'),
                         ],
                       ),
 
@@ -3265,13 +3295,13 @@ void showRemunerationAnnounceModal(BuildContext context, String userId) {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.thumb_up, color: Colors.blue, size: 14),
+                          Icon(Icons.thumb_up, color: colors.info, size: 14),
                           const SizedBox(width: 4),
-                          Text('Likes', style: TextStyle(color: Colors.blue.shade300, fontSize: 11)),
+                          Text('Likes', style: TextStyle(color: colors.info, fontSize: 11)),
                           const SizedBox(width: 12),
-                          Icon(Icons.comment, color: Colors.green, size: 14),
+                          Icon(Icons.comment, color: colors.primary, size: 14),
                           const SizedBox(width: 4),
-                          Text('Commentaires', style: TextStyle(color: Colors.green.shade300, fontSize: 11)),
+                          Text('Commentaires', style: TextStyle(color: colors.primary, fontSize: 11)),
                         ],
                       ),
                     ],
@@ -3290,7 +3320,7 @@ void showRemunerationAnnounceModal(BuildContext context, String userId) {
                     '👉 Rends-toi dans la page MONÉTISATIONS pour voir tes gains et les encaisser !',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Colors.white,
+                      color: colors.textPrimary,
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                     ),
@@ -3311,7 +3341,7 @@ void showRemunerationAnnounceModal(BuildContext context, String userId) {
                         child: Text(
                           'PLUS TARD',
                           style: TextStyle(
-                            color: Colors.grey.shade500,
+                            color: colors.textSecondary,
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                           ),
@@ -3353,7 +3383,7 @@ void showRemunerationAnnounceModal(BuildContext context, String userId) {
                 ),
               ],
             ),
-          ),
+          ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.05, end: 0, duration: 300.ms, curve: Curves.easeOut),
         ),
       );
     },
@@ -3361,7 +3391,8 @@ void showRemunerationAnnounceModal(BuildContext context, String userId) {
 }
 
 // Petit helper pour les chips de taux
-Widget _buildRateChip(String value, String label) {
+Widget _buildRateChip(BuildContext context, String value, String label) {
+  final colors = AppColors.of(context);
   return Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
     decoration: BoxDecoration(
@@ -3384,7 +3415,7 @@ Widget _buildRateChip(String value, String label) {
         Text(
           label,
           style: TextStyle(
-            color: Colors.grey.shade400,
+            color: colors.textSecondary,
             fontSize: 10,
           ),
         ),

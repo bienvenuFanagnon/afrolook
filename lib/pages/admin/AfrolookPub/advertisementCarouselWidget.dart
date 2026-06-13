@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import '../../../services/ad_carousel_service.dart';
+import '../../../theme/app_colors.dart';
 import 'advertisementPostImageWidget.dart';
 import 'advertisement_video_widget.dart';
 
@@ -32,10 +33,6 @@ class _AdvertisementCarouselWidgetState extends State<AdvertisementCarouselWidge
   final AdCarouselService _carouselService = AdCarouselService.instance;
   int _currentIndex = 0;
   bool _isInitializing = true;
-
-  // Couleurs
-  final Color _secondaryColor = const Color(0xFFFFD600);
-  final Color _hintColor = Colors.grey[400]!;
 
   @override
   void initState() {
@@ -76,6 +73,7 @@ class _AdvertisementCarouselWidgetState extends State<AdvertisementCarouselWidge
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Consumer<UserAuthProvider>(
       builder: (context, authProvider, child) {
         final List<Map<String, dynamic>> ads = authProvider.advertisements;
@@ -85,8 +83,8 @@ class _AdvertisementCarouselWidgetState extends State<AdvertisementCarouselWidge
           return Container(
             margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             height: widget.height * 0.5,
-            decoration: BoxDecoration(color: const Color(0xFF1E1E1E), borderRadius: BorderRadius.circular(16)),
-            child: const Center(child: CircularProgressIndicator(color: Color(0xFFFFD600))),
+            decoration: BoxDecoration(color: colors.surfaceVariant, borderRadius: BorderRadius.circular(16)),
+            child: Center(child: CircularProgressIndicator(color: colors.accent)),
           );
         }
 
@@ -133,7 +131,7 @@ class _AdvertisementCarouselWidgetState extends State<AdvertisementCarouselWidge
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       IconButton(
-                        icon: Icon(Icons.chevron_left, color: _secondaryColor, size: 28),
+                        icon: Icon(Icons.chevron_left, color: colors.accent, size: 28),
                         onPressed: () => _goToPrevious(ads),
                       ),
                       ...List.generate(ads.length, (index) {
@@ -148,14 +146,14 @@ class _AdvertisementCarouselWidgetState extends State<AdvertisementCarouselWidge
                             height: 8,
                             margin: const EdgeInsets.symmetric(horizontal: 4),
                             decoration: BoxDecoration(
-                              color: _currentIndex == index ? _secondaryColor : _secondaryColor.withOpacity(0.3),
+                              color: _currentIndex == index ? colors.accent : colors.accent.withOpacity(0.3),
                               borderRadius: BorderRadius.circular(4),
                             ),
                           ),
                         );
                       }),
                       IconButton(
-                        icon: Icon(Icons.chevron_right, color: _secondaryColor, size: 28),
+                        icon: Icon(Icons.chevron_right, color: colors.accent, size: 28),
                         onPressed: () => _goToNext(ads),
                       ),
                     ],

@@ -31,18 +31,14 @@ import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../component/consoleWidget.dart';
+import '../../../../../theme/app_colors.dart';
+import '../../../../../l10n/app_localizations.dart';
 import '../../../../widgetGlobal.dart';
 import '../../../update_pass_word/confirm_user.dart';
 import '../../components/already_have_an_account_acheck.dart';
 import '../../constants.dart';
 import '../Signup/components/signup_form.dart';
 
-
-
-const Color primaryGreen = Color(0xFF25D366);
-const Color darkBackground = Color(0xFF121212);
-const Color lightBackground = Color(0xFF1E1E1E);
-const Color textColor = Colors.white;
 
 
 class LoginPageUser extends StatefulWidget {
@@ -53,6 +49,8 @@ class LoginPageUser extends StatefulWidget {
 }
 
 class _LoginPageUserState extends State<LoginPageUser> {
+  late AppColors _colors;
+  late AppLocalizations l10n;
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -275,8 +273,10 @@ class _LoginPageUserState extends State<LoginPageUser> {
 
   @override
   Widget build(BuildContext context) {
+    _colors = AppColors.of(context);
+    l10n = AppLocalizations.of(context);
     return Scaffold(
-      backgroundColor: darkBackground,
+      backgroundColor: _colors.background,
       body: SafeArea(
         child: GestureDetector(
           onTap: () => FocusScope.of(context).unfocus(),
@@ -287,8 +287,8 @@ class _LoginPageUserState extends State<LoginPageUser> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  darkBackground.withOpacity(0.9),
-                  darkBackground,
+                  _colors.background.withOpacity(0.9),
+                  _colors.background,
                 ],
               ),
             ),
@@ -334,7 +334,7 @@ class _LoginPageUserState extends State<LoginPageUser> {
       children: [
         Container(
           decoration: BoxDecoration(
-            color: primaryGreen.withOpacity(0.1),
+            color: _colors.primary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(20),
           ),
           child: IconButton(
@@ -343,7 +343,7 @@ class _LoginPageUserState extends State<LoginPageUser> {
             },
             icon: Icon(
               Icons.person_add_alt_1,
-              color: primaryGreen,
+              color: _colors.primary,
               size: 24,
             ),
             tooltip: "Créer un compte",
@@ -373,17 +373,17 @@ class _LoginPageUserState extends State<LoginPageUser> {
           style: TextStyle(
             fontSize: min(32, MediaQuery.of(context).size.width * 0.08),
             fontWeight: FontWeight.bold,
-            color: primaryGreen,
+            color: _colors.primary,
           ),
         ),
         SizedBox(height: 5),
 
         // Slogan
         Text(
-          "Votre popularité est à la une",
+          l10n.authSlogan,
           style: TextStyle(
             fontSize: min(16, MediaQuery.of(context).size.width * 0.04),
-            color: Colors.grey[400],
+            color: _colors.textSecondary,
           ),
           textAlign: TextAlign.center,
         ),
@@ -401,13 +401,13 @@ class _LoginPageUserState extends State<LoginPageUser> {
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
-            style: TextStyle(color: textColor),
+            style: TextStyle(color: _colors.textPrimary),
             decoration: InputDecoration(
               filled: true,
-              fillColor: lightBackground,
-              hintText: "Adresse email",
+              fillColor: _colors.surfaceVariant,
+              hintText: l10n.authEmail,
               hintStyle: TextStyle(color: Colors.grey[500]),
-              prefixIcon: Icon(Icons.email_outlined, color: primaryGreen),
+              prefixIcon: Icon(Icons.email_outlined, color: _colors.primary),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(15),
                 borderSide: BorderSide.none,
@@ -416,10 +416,10 @@ class _LoginPageUserState extends State<LoginPageUser> {
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Veuillez entrer votre adresse email';
+                return l10n.authEmailRequired;
               }
               if (!isValidEmail(value)) {
-                return 'Adresse email invalide';
+                return l10n.authEmailInvalid;
               }
               return null;
             },
@@ -431,17 +431,17 @@ class _LoginPageUserState extends State<LoginPageUser> {
             controller: _passwordController,
             obscureText: _obscurePassword,
             textInputAction: TextInputAction.done,
-            style: TextStyle(color: textColor),
+            style: TextStyle(color: _colors.textPrimary),
             decoration: InputDecoration(
               filled: true,
-              fillColor: lightBackground,
-              hintText: "Mot de passe",
+              fillColor: _colors.surfaceVariant,
+              hintText: l10n.authPassword,
               hintStyle: TextStyle(color: Colors.grey[500]),
-              prefixIcon: Icon(Icons.lock_outline, color: primaryGreen),
+              prefixIcon: Icon(Icons.lock_outline, color: _colors.primary),
               suffixIcon: IconButton(
                 icon: Icon(
                   _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                  color: primaryGreen,
+                  color: _colors.primary,
                 ),
                 onPressed: () {
                   setState(() {
@@ -457,10 +457,10 @@ class _LoginPageUserState extends State<LoginPageUser> {
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Veuillez entrer votre mot de passe';
+                return l10n.authPasswordRequired;
               }
               if (value.length < 6) {
-                return 'Le mot de passe doit contenir au moins 6 caractères';
+                return l10n.authPasswordTooShort;
               }
               return null;
             },
@@ -475,9 +475,9 @@ class _LoginPageUserState extends State<LoginPageUser> {
                 Navigator.push(context, MaterialPageRoute(builder: (context) => ConfirmUser()));
               },
               child: Text(
-                "Mot de passe oublié?",
+                l10n.authForgotPassword,
                 style: TextStyle(
-                  color: primaryGreen,
+                  color: _colors.primary,
                   fontSize: min(14, MediaQuery.of(context).size.width * 0.035),
                 ),
               ),
@@ -492,7 +492,7 @@ class _LoginPageUserState extends State<LoginPageUser> {
             child: ElevatedButton(
               onPressed: _isLoading ? null : _signIn,
               style: ElevatedButton.styleFrom(
-                backgroundColor: primaryGreen,
+                backgroundColor: _colors.primary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(25),
                 ),
@@ -504,7 +504,7 @@ class _LoginPageUserState extends State<LoginPageUser> {
                 size: 24,
               )
                   : Text(
-                "Se connecter",
+                l10n.authSignIn,
                 style: TextStyle(
                   fontSize: min(16, MediaQuery.of(context).size.width * 0.04),
                   fontWeight: FontWeight.bold,
@@ -561,7 +561,7 @@ class _LoginPageUserState extends State<LoginPageUser> {
               backgroundColor: Colors.transparent,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(25),
-                side: BorderSide(color: primaryGreen, width: 2),
+                side: BorderSide(color: _colors.primary, width: 2),
               ),
               elevation: 0,
             ),
@@ -570,7 +570,7 @@ class _LoginPageUserState extends State<LoginPageUser> {
               style: TextStyle(
                 fontSize: min(16, MediaQuery.of(context).size.width * 0.04),
                 fontWeight: FontWeight.bold,
-                color: primaryGreen,
+                color: _colors.primary,
               ),
             ),
           ),

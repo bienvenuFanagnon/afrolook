@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/authProvider.dart';
 import '../../../models/dating_data.dart';
+import '../../../theme/app_colors.dart';
 import '../dating_entry_page.dart';
 import '../dating_profile_detail_page.dart';
 
@@ -58,14 +59,16 @@ class _TopDatingProfilesWidgetState extends State<TopDatingProfilesWidget> {
   }
 
   Widget _buildContent(List<DatingProfile> profiles) {
+    final colors = AppColors.of(context);
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: colors.border, width: 0.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(colors.isDark ? 0.3 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -103,15 +106,14 @@ class _TopDatingProfilesWidgetState extends State<TopDatingProfilesWidget> {
               ],
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Text(
               'Des profils qui pourraient vous correspondre',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
+              style: TextStyle(fontSize: 14, color: colors.textSecondary),
             ),
           ),
           const SizedBox(height: 16),
-          // Carrousel horizontal
           SizedBox(
             height: 220,
             child: ListView.separated(
@@ -123,7 +125,6 @@ class _TopDatingProfilesWidgetState extends State<TopDatingProfilesWidget> {
             ),
           ),
           const SizedBox(height: 16),
-          // Call to action
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
             child: ElevatedButton(

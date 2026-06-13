@@ -12,6 +12,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../../providers/authProvider.dart';
+import '../../../theme/app_colors.dart';
 import '../../canaux/detailsCanal.dart';
 import '../../component/showUserDetails.dart';
 
@@ -53,13 +54,8 @@ class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWid
   bool _hasRecordedView = false;
   bool _hasRecordedClick = false;
 
-  // Couleurs
-  final Color _primaryColor = Color(0xFFE21221); // Rouge
-  final Color _secondaryColor = Color(0xFFFFD600); // Jaune
-  final Color _backgroundColor = Color(0xFF121212); // Noir
-  final Color _cardColor = Color(0xFF1E1E1E);
-  final Color _textColor = Colors.white;
-  final Color _hintColor = Colors.grey[400]!;
+  late AppColors _colors;
+  static const Color _primaryColor = Color(0xFFE21221);
 
   @override
   void initState() {
@@ -344,10 +340,10 @@ class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWid
           fit: BoxFit.cover,
           width: double.infinity,
           height: height,
-          placeholder: (context, url) => Container(color: _hintColor.withOpacity(0.1)),
+          placeholder: (context, url) => Container(color: _colors.textSecondary.withOpacity(0.1)),
           errorWidget: (context, url, error) => Container(
-            color: _hintColor.withOpacity(0.1),
-            child: Icon(Icons.broken_image, color: _hintColor),
+            color: _colors.textSecondary.withOpacity(0.1),
+            child: Icon(Icons.broken_image, color: _colors.textSecondary),
           ),
         ),
       ),
@@ -368,10 +364,10 @@ class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWid
                   imageUrl: images[0],
                   fit: BoxFit.cover,
                   height: height,
-                  placeholder: (context, url) => Container(color: _hintColor.withOpacity(0.1)),
+                  placeholder: (context, url) => Container(color: _colors.textSecondary.withOpacity(0.1)),
                   errorWidget: (context, url, error) => Container(
-                    color: _hintColor.withOpacity(0.1),
-                    child: Icon(Icons.broken_image, color: _hintColor),
+                    color: _colors.textSecondary.withOpacity(0.1),
+                    child: Icon(Icons.broken_image, color: _colors.textSecondary),
                   ),
                 ),
               ),
@@ -386,10 +382,10 @@ class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWid
                   imageUrl: images[1],
                   fit: BoxFit.cover,
                   height: height,
-                  placeholder: (context, url) => Container(color: _hintColor.withOpacity(0.1)),
+                  placeholder: (context, url) => Container(color: _colors.textSecondary.withOpacity(0.1)),
                   errorWidget: (context, url, error) => Container(
-                    color: _hintColor.withOpacity(0.1),
-                    child: Icon(Icons.broken_image, color: _hintColor),
+                    color: _colors.textSecondary.withOpacity(0.1),
+                    child: Icon(Icons.broken_image, color: _colors.textSecondary),
                   ),
                 ),
               ),
@@ -416,10 +412,10 @@ class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWid
                   imageUrl: images[0],
                   fit: BoxFit.cover,
                   height: height,
-                  placeholder: (context, url) => Container(color: _hintColor.withOpacity(0.1)),
+                  placeholder: (context, url) => Container(color: _colors.textSecondary.withOpacity(0.1)),
                   errorWidget: (context, url, error) => Container(
-                    color: _hintColor.withOpacity(0.1),
-                    child: Icon(Icons.broken_image, color: _hintColor),
+                    color: _colors.textSecondary.withOpacity(0.1),
+                    child: Icon(Icons.broken_image, color: _colors.textSecondary),
                   ),
                 ),
               ),
@@ -441,10 +437,10 @@ class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWid
                           imageUrl: images[1],
                           fit: BoxFit.cover,
                           width: double.infinity,
-                          placeholder: (context, url) => Container(color: _hintColor.withOpacity(0.1)),
+                          placeholder: (context, url) => Container(color: _colors.textSecondary.withOpacity(0.1)),
                           errorWidget: (context, url, error) => Container(
-                            color: _hintColor.withOpacity(0.1),
-                            child: Icon(Icons.broken_image, color: _hintColor),
+                            color: _colors.textSecondary.withOpacity(0.1),
+                            child: Icon(Icons.broken_image, color: _colors.textSecondary),
                           ),
                         ),
                       ),
@@ -459,10 +455,10 @@ class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWid
                           imageUrl: images[2],
                           fit: BoxFit.cover,
                           width: double.infinity,
-                          placeholder: (context, url) => Container(color: _hintColor.withOpacity(0.1)),
+                          placeholder: (context, url) => Container(color: _colors.textSecondary.withOpacity(0.1)),
                           errorWidget: (context, url, error) => Container(
-                            color: _hintColor.withOpacity(0.1),
-                            child: Icon(Icons.broken_image, color: _hintColor),
+                            color: _colors.textSecondary.withOpacity(0.1),
+                            child: Icon(Icons.broken_image, color: _colors.textSecondary),
                           ),
                         ),
                       ),
@@ -526,10 +522,10 @@ class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWid
                     fit: BoxFit.cover,
                     width: double.infinity,
                     height: double.infinity,
-                    placeholder: (context, url) => Container(color: _hintColor.withOpacity(0.1)),
+                    placeholder: (context, url) => Container(color: _colors.textSecondary.withOpacity(0.1)),
                     errorWidget: (context, url, error) => Container(
-                      color: _hintColor.withOpacity(0.1),
-                      child: Icon(Icons.broken_image, color: _hintColor),
+                      color: _colors.textSecondary.withOpacity(0.1),
+                      child: Icon(Icons.broken_image, color: _colors.textSecondary),
                     ),
                   ),
                 ),
@@ -566,15 +562,15 @@ class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWid
               fit: BoxFit.cover,
               width: double.infinity,
               height: height,
-              placeholder: (context, url) => Container(color: _hintColor.withOpacity(0.1)),
+              placeholder: (context, url) => Container(color: _colors.textSecondary.withOpacity(0.1)),
               errorWidget: (context, url, error) => Container(
-                color: _hintColor.withOpacity(0.1),
-                child: Icon(Icons.videocam, color: _hintColor, size: 30),
+                color: _colors.textSecondary.withOpacity(0.1),
+                child: Icon(Icons.videocam, color: _colors.textSecondary, size: 30),
               ),
             )
                 : Container(
-              color: _hintColor.withOpacity(0.1),
-              child: Center(child: Icon(Icons.videocam, color: _hintColor, size: 30)),
+              color: _colors.textSecondary.withOpacity(0.1),
+              child: Center(child: Icon(Icons.videocam, color: _colors.textSecondary, size: 30)),
             ),
           ),
         ),
@@ -596,9 +592,9 @@ class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWid
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.videocam, color: _secondaryColor, size: 10),
+                Icon(Icons.videocam, color: _colors.accent, size: 10),
                 SizedBox(width: 2),
-                Text('VIDÉO', style: TextStyle(color: _secondaryColor, fontSize: 8, fontWeight: FontWeight.bold)),
+                Text('VIDÉO', style: TextStyle(color: _colors.accent, fontSize: 8, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
@@ -654,6 +650,7 @@ class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWid
 
   @override
   Widget build(BuildContext context) {
+    _colors = AppColors.of(context);
     final double mediaHeight = widget.height ?? _calculatePostHeight();
     final double imageHeight = widget.width * 0.5;
 
@@ -663,9 +660,9 @@ class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWid
       child: Container(
         margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: _cardColor,
+          color: _colors.surfaceVariant,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: _secondaryColor, width: 1.5),
+          border: Border.all(color: _colors.accent, width: 1.5),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -675,7 +672,7 @@ class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWid
             Container(
               padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: _secondaryColor,
+                color: _colors.accent,
                 borderRadius: BorderRadius.only(topLeft: Radius.circular(12), bottomRight: Radius.circular(12)),
               ),
               child: Row(
@@ -713,7 +710,7 @@ class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWid
                   if (widget.post.description != null && widget.post.description!.isNotEmpty)
                     Text(
                       _truncateDescription(widget.post.description!),
-                      style: TextStyle(color: _textColor, fontSize: 13, height: 1.3),
+                      style: TextStyle(color: _colors.textPrimary, fontSize: 13, height: 1.3),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -728,10 +725,10 @@ class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWid
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.remove_red_eye, color: _hintColor, size: 14),
+                          Icon(Icons.remove_red_eye, color: _colors.textSecondary, size: 14),
                           SizedBox(width: 3),
                           Text('${_formatCount(widget.ad.views ?? 0)} vues',
-                              style: TextStyle(color: _hintColor, fontSize: 11)),
+                              style: TextStyle(color: _colors.textSecondary, fontSize: 11)),
                         ],
                       ),
                       SizedBox(width: 12),
@@ -812,12 +809,12 @@ class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWid
               children: [
                 Text(
                   _getDisplayName(),
-                  style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 13),
+                  style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 13),
                 ),
                 SizedBox(height: 2),
                 Text(
                   formaterDateTime(widget.post.createdAt),
-                  style: TextStyle(color: _hintColor, fontSize: 9),
+                  style: TextStyle(color: _colors.textSecondary, fontSize: 9),
                 ),
               ],
             ),

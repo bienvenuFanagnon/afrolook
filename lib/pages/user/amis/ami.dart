@@ -19,15 +19,8 @@ import '../../../providers/userProvider.dart';
 import '../../auth/authTest/constants.dart';
 import '../../component/consoleWidget.dart';
 import 'mesInvitationTable.dart';
-
-// Couleurs personnalisées pour le thème
-const Color primaryBlack = Color(0xFF000000);
-const Color primaryGreen = Color(0xFF4CAF50);
-const Color primaryYellow = Color(0xFFFFEB3B);
-const Color darkGray = Color(0xFF121212);
-const Color lightGray = Color(0xFF1E1E1E);
-const Color textWhite = Color(0xFFFFFFFF);
-const Color textGray = Color(0xFF9E9E9E);
+import '../../../theme/app_colors.dart';
+import '../../../l10n/app_localizations.dart';
 
 class Amis extends StatefulWidget {
   const Amis({super.key});
@@ -37,6 +30,7 @@ class Amis extends StatefulWidget {
 }
 
 class _ListUserChatsState extends State<Amis> {
+  late AppColors _colors;
   late UserAuthProvider authProvider =
   Provider.of<UserAuthProvider>(context, listen: false);
   late UserProvider userProvider =
@@ -51,18 +45,20 @@ class _ListUserChatsState extends State<Amis> {
 
   @override
   Widget build(BuildContext context) {
+    _colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context);
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      backgroundColor: primaryBlack,
+      backgroundColor: _colors.background,
       appBar: AppBar(
-        backgroundColor: darkGray,
+        backgroundColor: _colors.surfaceVariant,
         title: Text(
-          "Amis",
+          l10n.profileFriends,
           style: TextStyle(
             fontSize: SizeText.homeProfileTextSize,
-            color: primaryYellow,
+            color: _colors.accent,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -74,11 +70,11 @@ class _ListUserChatsState extends State<Amis> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: primaryGreen,
+        backgroundColor: _colors.primary,
         onPressed: () {
           Navigator.pushNamed(context, '/add_list_amis');
         },
-        child: Icon(FontAwesome.users, color: primaryBlack),
+        child: Icon(FontAwesome.users, color: _colors.background),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.miniEndFloat,
       body: SingleChildScrollView(
@@ -101,10 +97,10 @@ class _ListUserChatsState extends State<Amis> {
                           Padding(
                             padding: const EdgeInsets.only(right: 4.0),
                             child: Text(
-                              "Mes Amis",
+                              l10n.amisTabFriends,
                               style: TextStyle(
                                 fontSize: SizeText.homeProfileTextSize,
-                                color: textWhite,
+                                color: _colors.textPrimary,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -112,14 +108,14 @@ class _ListUserChatsState extends State<Amis> {
                           Container(
                             padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: primaryGreen,
+                              color: _colors.primary,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
                               "${userProvider.countFriends}",
                               style: TextStyle(
                                 fontSize: 12,
-                                color: primaryBlack,
+                                color: _colors.background,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -137,10 +133,10 @@ class _ListUserChatsState extends State<Amis> {
                           Padding(
                             padding: const EdgeInsets.only(right: 4.0),
                             child: Text(
-                              "Mes Invitations",
+                              l10n.profileInvites,
                               style: TextStyle(
                                 fontSize: SizeText.homeProfileTextSize,
-                                color: textWhite,
+                                color: _colors.textPrimary,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -148,14 +144,14 @@ class _ListUserChatsState extends State<Amis> {
                           Container(
                             padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: primaryGreen,
+                              color: _colors.primary,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
                               "${userProvider.countInvitations}",
                               style: TextStyle(
                                 fontSize: 12,
-                                color: primaryBlack,
+                                color: _colors.background,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -168,15 +164,15 @@ class _ListUserChatsState extends State<Amis> {
                 tabBarProperties: TabBarProperties(
                   alignment: TabBarAlignment.center,
                   height: 48.0,
-                  indicatorColor: primaryGreen,
+                  indicatorColor: _colors.primary,
                   indicatorWeight: 4.0,
-                  labelColor: textWhite,
-                  unselectedLabelColor: textGray,
+                  labelColor: _colors.textPrimary,
+                  unselectedLabelColor: _colors.textSecondary,
                   background: Container(
                     decoration: BoxDecoration(
-                      color: darkGray,
+                      color: _colors.background,
                       border: Border(
-                        bottom: BorderSide(color: lightGray, width: 1),
+                        bottom: BorderSide(color: _colors.surfaceVariant, width: 1),
                       ),
                     ),
                   ),
@@ -217,13 +213,16 @@ class ConversationList extends StatefulWidget {
 }
 
 class _ConversationListState extends State<ConversationList> {
+  late AppColors _colors;
+
   @override
   Widget build(BuildContext context) {
+    _colors = AppColors.of(context);
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
-        color: lightGray,
+        color: _colors.surfaceVariant,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -231,7 +230,7 @@ class _ConversationListState extends State<ConversationList> {
           CircleAvatar(
             backgroundImage: NetworkImage(widget.imageUrl),
             radius: 28,
-            backgroundColor: darkGray,
+            backgroundColor: _colors.background,
           ),
           SizedBox(width: 16),
           Expanded(
@@ -244,7 +243,7 @@ class _ConversationListState extends State<ConversationList> {
                     widget.name,
                     style: TextStyle(
                       fontSize: 16,
-                      color: textWhite,
+                      color: _colors.textPrimary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -254,14 +253,14 @@ class _ConversationListState extends State<ConversationList> {
                       Icon(
                         Icons.people,
                         size: 14,
-                        color: primaryYellow,
+                        color: _colors.accent,
                       ),
                       SizedBox(width: 4),
                       Text(
                         '${widget.abonnesCount} abonné(s)',
                         style: TextStyle(
                             fontSize: 13,
-                            color: textGray,
+                            color: _colors.textSecondary,
                             fontWeight: widget.isMessageRead ? FontWeight.bold : FontWeight.normal
                         ),
                       ),
@@ -277,7 +276,7 @@ class _ConversationListState extends State<ConversationList> {
             },
             icon: Icon(
               Icons.chat,
-              color: primaryGreen,
+              color: _colors.primary,
             ),
           ),
         ],
@@ -316,6 +315,7 @@ class Invitations extends StatefulWidget {
 }
 
 class _InvitationsState extends State<Invitations> {
+  late AppColors _colors;
   late UserAuthProvider authProvider =
   Provider.of<UserAuthProvider>(context, listen: false);
   late UserProvider userProvider =
@@ -324,11 +324,13 @@ class _InvitationsState extends State<Invitations> {
 
   @override
   Widget build(BuildContext context) {
+    _colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
-        color: lightGray,
+        color: _colors.surfaceVariant,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -336,7 +338,7 @@ class _InvitationsState extends State<Invitations> {
           CircleAvatar(
             backgroundImage: NetworkImage(widget.imageUrl),
             radius: 28,
-            backgroundColor: darkGray,
+            backgroundColor: _colors.background,
           ),
           SizedBox(width: 16),
           Expanded(
@@ -349,7 +351,7 @@ class _InvitationsState extends State<Invitations> {
                     widget.name,
                     style: TextStyle(
                       fontSize: 16,
-                      color: textWhite,
+                      color: _colors.textPrimary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -359,14 +361,14 @@ class _InvitationsState extends State<Invitations> {
                       Icon(
                         Icons.people,
                         size: 14,
-                        color: primaryYellow,
+                        color: _colors.accent,
                       ),
                       SizedBox(width: 4),
                       Text(
                         '${widget.userInvitation.inviteUser!.abonnes!} abonné(s)',
                         style: TextStyle(
                             fontSize: 13,
-                            color: textGray,
+                            color: _colors.textSecondary,
                             fontWeight: widget.isMessageRead ? FontWeight.bold : FontWeight.normal
                         ),
                       ),
@@ -395,9 +397,9 @@ class _InvitationsState extends State<Invitations> {
                           key: widget.formKey,
                           content: Text(
                             "Invitation acceptée!",
-                            style: TextStyle(color: textWhite),
+                            style: TextStyle(color: _colors.textPrimary),
                           ),
-                          backgroundColor: primaryGreen,
+                          backgroundColor: _colors.primary,
                           behavior: SnackBarBehavior.floating,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -420,7 +422,7 @@ class _InvitationsState extends State<Invitations> {
                         SnackBar(
                           content: Text(
                             "Erreur lors de l'acceptation.",
-                            style: TextStyle(color: textWhite),
+                            style: TextStyle(color: _colors.textPrimary),
                           ),
                           backgroundColor: Colors.red,
                           behavior: SnackBarBehavior.floating,
@@ -442,8 +444,8 @@ class _InvitationsState extends State<Invitations> {
                   });
                 },
                 style: TextButton.styleFrom(
-                  backgroundColor: primaryGreen,
-                  foregroundColor: primaryBlack,
+                  backgroundColor: _colors.primary,
+                  foregroundColor: _colors.background,
                   padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -454,11 +456,11 @@ class _InvitationsState extends State<Invitations> {
                   child: LoadingAnimationWidget.flickr(
                     size: 15,
                     leftDotColor: Colors.white,
-                    rightDotColor: primaryBlack,
+                    rightDotColor: _colors.background,
                   ),
                 )
                     : Text(
-                  'Accepter',
+                  l10n.btnAccept,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.normal,
@@ -469,14 +471,14 @@ class _InvitationsState extends State<Invitations> {
               TextButton(
                 onPressed: () {},
                 style: TextButton.styleFrom(
-                  foregroundColor: textGray,
+                  foregroundColor: _colors.textSecondary,
                   padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
                 child: Text(
-                  'Refuser',
+                  l10n.btnRefuse,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.normal,
