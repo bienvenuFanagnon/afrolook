@@ -769,6 +769,29 @@ class AppLocalizations {
   String get datingSelectCityDropdownLabel => _t({'fr': 'Sélectionnez une ville', 'en': 'Select a city', 'es': 'Selecciona una ciudad', 'de': 'Stadt auswählen', 'ar': 'حدد مدينة', 'pt': 'Selecione uma cidade', 'zh': '选择城市', 'sw': 'Chagua jiji'});
   String get datingDetectingLocation => _t({'fr': 'Détection de votre position...', 'en': 'Detecting your location...', 'es': 'Detectando tu ubicación...', 'de': 'Standort wird ermittelt...', 'ar': 'جاري تحديد موقعك...', 'pt': 'Detectando sua localização...', 'zh': '正在检测您的位置...', 'sw': 'Inagundua mahali ulipo...'});
   String get datingLocationDetected => _t({'fr': 'Position détectée : {country}', 'en': 'Location detected: {country}', 'es': 'Ubicación detectada: {country}', 'de': 'Standort erkannt: {country}', 'ar': 'تم تحديد الموقع: {country}', 'pt': 'Localização detectada: {country}', 'zh': '检测到位置：{country}', 'sw': 'Mahali pamegunduliwa: {country}'});
+  String get datingLocationWhyTitle => _t({'fr': 'Pourquoi demandons-nous votre position ?', 'en': 'Why do we ask for your location?', 'es': '¿Por qué pedimos tu ubicación?', 'de': 'Warum fragen wir nach deinem Standort?', 'ar': 'لماذا نطلب موقعك؟', 'pt': 'Por que pedimos sua localização?', 'zh': '为什么我们需要您的位置？', 'sw': 'Kwa nini tunaomba mahali ulipo?'});
+  String get datingLocationWhyDesc => _t({
+    'fr': 'Votre position nous permet de vous proposer des profils à proximité de vous et d\'afficher la distance approximative avec les autres membres. Elle n\'est jamais affichée de façon exacte aux autres utilisateurs.',
+    'en': 'Your location helps us suggest profiles near you and show an approximate distance with other members. It is never shown exactly to other users.',
+    'es': 'Tu ubicación nos permite mostrarte perfiles cercanos a ti y la distancia aproximada con otros miembros. Nunca se muestra de forma exacta a otros usuarios.',
+    'de': 'Dein Standort hilft uns, dir Profile in deiner Nähe vorzuschlagen und die ungefähre Entfernung zu anderen Mitgliedern anzuzeigen. Er wird anderen Nutzern niemals exakt angezeigt.',
+    'ar': 'يساعدنا موقعك على اقتراح ملفات شخصية قريبة منك وإظهار مسافة تقريبية مع الأعضاء الآخرين. لا يتم إظهاره بدقة لمستخدمين آخرين أبدًا.',
+    'pt': 'Sua localização nos ajuda a sugerir perfis próximos a você e mostrar a distância aproximada com outros membros. Ela nunca é exibida de forma exata para outros usuários.',
+    'zh': '您的位置可帮助我们为您推荐附近的资料，并显示与其他成员的大致距离。绝不会向其他用户精确显示。',
+    'sw': 'Mahali ulipo hutusaidia kukupendekezea wasifu wa watu walio karibu nawe na kuonyesha umbali wa takriban na wanachama wengine. Haiwezi kuonyeshwa kwa usahihi kwa watumiaji wengine.',
+  });
+  String get datingLocationPermissionDeniedTitle => _t({'fr': 'Position désactivée', 'en': 'Location disabled', 'es': 'Ubicación desactivada', 'de': 'Standort deaktiviert', 'ar': 'الموقع معطل', 'pt': 'Localização desativada', 'zh': '位置已禁用', 'sw': 'Mahali kumezimwa'});
+  String get datingLocationPermissionDeniedDesc => _t({
+    'fr': 'Sans votre position, nous ne pourrons pas vous proposer de profils à proximité. Activez l\'accès à la position dans les paramètres de votre téléphone pour profiter de cette fonctionnalité.',
+    'en': 'Without your location, we won\'t be able to suggest nearby profiles. Enable location access in your phone settings to use this feature.',
+    'es': 'Sin tu ubicación, no podremos sugerirte perfiles cercanos. Activa el acceso a la ubicación en la configuración de tu teléfono para usar esta función.',
+    'de': 'Ohne deinen Standort können wir dir keine Profile in deiner Nähe vorschlagen. Aktiviere den Standortzugriff in den Einstellungen deines Telefons, um diese Funktion zu nutzen.',
+    'ar': 'بدون موقعك، لن نتمكن من اقتراح ملفات شخصية قريبة منك. فعّل الوصول إلى الموقع في إعدادات هاتفك للاستفادة من هذه الميزة.',
+    'pt': 'Sem sua localização, não poderemos sugerir perfis próximos. Ative o acesso à localização nas configurações do seu telefone para usar esse recurso.',
+    'zh': '没有您的位置信息，我们将无法为您推荐附近的资料。请在手机设置中启用位置访问以使用此功能。',
+    'sw': 'Bila mahali ulipo, hatutaweza kukupendekezea wasifu wa watu walio karibu. Wezesha ruhusa ya mahali kwenye mipangilio ya simu yako ili kutumia kipengele hiki.',
+  });
+  String get datingOpenSettings => _t({'fr': 'Ouvrir les paramètres', 'en': 'Open settings', 'es': 'Abrir ajustes', 'de': 'Einstellungen öffnen', 'ar': 'فتح الإعدادات', 'pt': 'Abrir configurações', 'zh': '打开设置', 'sw': 'Fungua mipangilio'});
   String get datingSelectAtLeast3Interests => _t({'fr': 'Sélectionne au moins 3 centres d\'intérêt', 'en': 'Select at least 3 interests', 'es': 'Selecciona al menos 3 intereses', 'de': 'Wähle mindestens 3 Interessen', 'ar': 'حدد ٣ اهتمامات على الأقل', 'pt': 'Selecione pelo menos 3 interesses', 'zh': '请选择至少3项兴趣', 'sw': 'Chagua mapendezi angalau 3'});
   String get datingSearchingForLabel => _t({'fr': 'Je recherche', 'en': 'I am looking for', 'es': 'Estoy buscando', 'de': 'Ich suche', 'ar': 'أبحث عن', 'pt': 'Estou procurando', 'zh': '我在寻找', 'sw': 'Ninatafuta'});
   String get datingMinAgeLabel => _t({'fr': 'Âge minimum', 'en': 'Minimum age', 'es': 'Edad mínima', 'de': 'Mindestalter', 'ar': 'الحد الأدنى للعمر', 'pt': 'Idade mínima', 'zh': '最小年龄', 'sw': 'Umri wa chini'});

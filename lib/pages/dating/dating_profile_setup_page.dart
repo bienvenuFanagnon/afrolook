@@ -71,6 +71,7 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
   double? _detectedLongitude;
   bool _isLoadingLocation = false;
   bool _hasRequestedLocation = false;
+  bool _locationPermissionDenied = false;
 
   // Images - Support Web et Mobile
   List<Uint8List> _selectedImagesBytes = []; // Pour le web
@@ -146,6 +147,8 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
     });
 
     PermissionStatus permission = await Permission.location.request();
+
+    setState(() => _locationPermissionDenied = !permission.isGranted);
 
     if (permission.isGranted) {
       try {
@@ -816,6 +819,77 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
               : t.datingSelectCountryRegionAuto,
           style: TextStyle(color: Colors.grey[500], fontSize: 12),
         ),
+        if (!kIsWeb) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: primaryYellow.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: primaryYellow.withOpacity(0.3)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.info_outline, size: 16, color: primaryYellow),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    t.datingLocationWhyDesc,
+                    style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        if (_locationPermissionDenied) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: primaryRed.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: primaryRed.withOpacity(0.4)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.location_off, size: 16, color: primaryRed),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        t.datingLocationPermissionDeniedTitle,
+                        style: TextStyle(color: primaryRed, fontSize: 13, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  t.datingLocationPermissionDeniedDesc,
+                  style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: OutlinedButton.icon(
+                    onPressed: () => openAppSettings(),
+                    icon: Icon(Icons.settings, size: 16, color: primaryYellow),
+                    label: Text(t.datingOpenSettings, style: TextStyle(color: primaryYellow)),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: primaryYellow.withOpacity(0.5)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: 16),
         CSCPickerPlus(
           showStates: true,

@@ -1475,3 +1475,17 @@ Audit complet du module `lib/pages/dating/` réalisé (15+ pages, service `datin
 **Vérification** : `flutter analyze lib/pages/dating/dating_map_page.dart lib/l10n/app_localizations.dart` → **0 erreur**.
 
 **Backlog** : tâche #8 ("Dating: theme+i18n+CDN `dating_subscription_page.dart`") marquée comme **complétée**.
+
+## Session 45 — Explication de la demande de position + redirection vers les paramètres si refusée
+
+**Contexte** : sur la page de création de profil (`dating_profile_setup_page.dart`), la position GPS est demandée silencieusement, sans expliquer son utilité, et si l'utilisateur refuse, rien ne l'invite à l'activer plus tard.
+
+**Implémenté** (`lib/pages/dating/dating_profile_setup_page.dart`) :
+- Nouveau champ d'état `_locationPermissionDenied`, mis à jour dans `_detectLocationInBackground()` selon le résultat de `Permission.location.request()`.
+- Dans `_buildLocationSection()` :
+  - Ajout d'un bandeau d'information toujours visible (mobile) expliquant pourquoi la position est demandée : trouver des profils à proximité et afficher une distance approximative (jamais exacte aux autres utilisateurs) — clé `datingLocationWhyDesc`.
+  - Ajout d'un bandeau conditionnel (`if (_locationPermissionDenied)`) expliquant que sans position, aucun profil à proximité ne pourra être proposé, avec un bouton "Ouvrir les paramètres" (`openAppSettings()` de `permission_handler`) — clés `datingLocationPermissionDeniedTitle`, `datingLocationPermissionDeniedDesc`, `datingOpenSettings`.
+
+**Nouvelles clés i18n (8 langues)** dans `lib/l10n/app_localizations.dart` : `datingLocationWhyTitle`, `datingLocationWhyDesc`, `datingLocationPermissionDeniedTitle`, `datingLocationPermissionDeniedDesc`, `datingOpenSettings`.
+
+**Vérification** : `flutter analyze lib/pages/dating/dating_profile_setup_page.dart lib/l10n/app_localizations.dart` → **0 erreur** (uniquement des infos préexistantes, sans rapport avec ce changement).
