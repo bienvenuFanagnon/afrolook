@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/dating_data.dart';
 import '../../theme/app_colors.dart';
 import '../../l10n/app_localizations.dart';
@@ -65,13 +66,52 @@ class _DatingMapPageState extends State<DatingMapPage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowPrivacyNotice());
+  }
+
+  /// Affiche un message expliquant que la position des autres profils est
+  /// volontairement floutée pour leur sécurité, dès la première visite de la
+  /// carte puis au maximum une fois par mois.
+  Future<void> _maybeShowPrivacyNotice() async {
+    final prefs = await SharedPreferences.getInstance();
+    final last = prefs.getInt('dating_map_privacy_notice_last_shown') ?? 0;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    const oneMonthMs = 30 * 24 * 60 * 60 * 1000;
+    if (now - last < oneMonthMs) return;
+    await prefs.setInt('dating_map_privacy_notice_last_shown', now);
+    if (!mounted) return;
+    final t = AppLocalizations.of(context);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(t.datingMapPrivacyTitle),
+        content: Text(t.datingMapPrivacyDesc),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade600),
+            child: Text(t.datingMapPrivacyGotIt, style: const TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final located = _locatedProfiles;
 
     final LatLng center = (widget.myLatitude != null && widget.myLongitude != null)
         ? LatLng(widget.myLatitude!, widget.myLongitude!)
         : (located.isNotEmpty
-            ? LatLng(located.first.latitude!, located.first.longitude!)
+            ? () {
+                final fuzzed = located.first.fuzzedLocation!;
+                return LatLng(fuzzed.lat, fuzzed.lng);
+              }()
             : const LatLng(6.1319, 1.2228)); // Lomé, Togo par défaut
 
     final t = AppLocalizations.of(context);
@@ -121,8 +161,9 @@ class _DatingMapPageState extends State<DatingMapPage> {
               MarkerLayer(
                 markers: located.map((profile) {
                   final isSelected = _selectedProfile?.id == profile.id;
+                  final fuzzed = profile.fuzzedLocation!;
                   return Marker(
-                    point: LatLng(profile.latitude!, profile.longitude!),
+                    point: LatLng(fuzzed.lat, fuzzed.lng),
                     width: isSelected ? 76 : 60,
                     height: isSelected ? 96 : 76,
                     alignment: Alignment.topCenter,
@@ -288,7 +329,7 @@ class _DatingMapPageState extends State<DatingMapPage> {
                       Expanded(
                         child: Text(
                           distance != null
-                              ? '${profile.ville} • ${distance.toStringAsFixed(1)} km'
+                              ? '${profile.ville} • ${formatDistanceKm(distance)}'
                               : '${profile.ville}, ${profile.pays}',
                           style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
                           overflow: TextOverflow.ellipsis,

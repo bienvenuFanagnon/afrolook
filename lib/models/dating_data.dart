@@ -15,6 +15,14 @@ double calculateDistanceKm(double lat1, double lon1, double lat2, double lon2) {
 }
 
 double _degToRad(double deg) => deg * (pi / 180);
+
+/// Formate une distance en km de façon arrondie (jamais au mètre près), pour
+/// ne pas donner d'indication de localisation trop précise sur un autre
+/// utilisateur.
+String formatDistanceKm(double distanceKm) {
+  if (distanceKm < 1) return '< 1 km';
+  return '${distanceKm.round()} km';
+}
 /* flutter pub run build_runner build */
 
 ///// Dating //////////
@@ -394,6 +402,23 @@ class DatingProfile {
       return null;
     }
     return calculateDistanceKm(latitude!, longitude!, otherLat, otherLng);
+  }
+
+  /// Position GPS "brouillée" à afficher aux AUTRES utilisateurs (carte,
+  /// recherche...), pour éviter qu'un point exact puisse être utilisé pour
+  /// retrouver le domicile/lieu de vie réel d'une personne (anti-triangulation,
+  /// même principe que Tinder). Un décalage aléatoire d'environ 300 m est
+  /// appliqué, stable par profil et recalculé une fois par jour.
+  ({double lat, double lng})? get fuzzedLocation {
+    if (latitude == null || longitude == null) return null;
+    final dayIndex = DateTime.now().millisecondsSinceEpoch ~/ (24 * 60 * 60 * 1000);
+    final rnd = Random('$userId-$dayIndex'.hashCode);
+    const maxOffsetDeg = 0.003; // ≈ 300 m
+    final angle = rnd.nextDouble() * 2 * pi;
+    final radius = rnd.nextDouble() * maxOffsetDeg;
+    final latOffset = radius * cos(angle);
+    final lngOffset = radius * sin(angle) / cos(_degToRad(latitude!));
+    return (lat: latitude! + latOffset, lng: longitude! + lngOffset);
   }
 
   /// Score de recommandation/compatibilité de [other] vis-à-vis de ce profil

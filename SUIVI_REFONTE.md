@@ -1451,4 +1451,27 @@ Audit complet du module `lib/pages/dating/` réalisé (15+ pages, service `datin
 2. Vérifier le webhook/callback de confirmation de paiement côté backend (Cloud Functions) pour créditer `coinsBalance` après paiement carte validé.
 3. Ajouter un test de bout en bout : recharge par carte bancaire (CinetPay) → crédit du solde → vérification dans `user_coin_transactions`.
 
+## Session 44 — Sécurité carte : floutage de la position GPS des autres profils (anti-triangulation, façon Tinder)
+
+**Contexte** : `dating_map_page.dart` affichait la position GPS exacte (`latitude`/`longitude`) de chaque profil, ce qui permettrait à une personne malveillante de retrouver le lieu de vie réel d'un autre utilisateur en recoupant plusieurs observations. Tinder résout ce problème en n'affichant jamais de point exact : un décalage aléatoire est appliqué à la position affichée, et la distance montrée est arrondie.
+
+**Implémenté** (`lib/models/dating_data.dart`) :
+- Nouveau getter `DatingProfile.fuzzedLocation` : applique un décalage aléatoire d'environ 300 m, **stable par profil et recalculé une fois par jour** (seed = `userId` + index du jour, via `Random`), avant d'exposer la position d'un autre utilisateur. La position réelle (`latitude`/`longitude`) reste utilisée en interne pour le tri par proximité/`recommendationScore` (jamais affichée telle quelle).
+- Nouvelle fonction `formatDistanceKm(double)` : arrondit la distance affichée (`< 1 km`, `3 km`, etc.) au lieu d'une décimale précise (`3.2 km`).
+
+**Implémenté** (`lib/pages/dating/dating_map_page.dart`) :
+- Les marqueurs de la carte utilisent désormais `profile.fuzzedLocation` (au lieu de `profile.latitude!`/`profile.longitude!`) pour les autres utilisateurs ; le marqueur "moi" reste sur la position exacte de l'utilisateur courant (`widget.myLatitude`/`myLongitude`, sa propre position).
+- Le centrage initial de la carte (cas où la position de l'utilisateur courant est inconnue) utilise aussi `fuzzedLocation` du premier profil affiché.
+- La distance affichée dans la carte de profil sélectionné utilise `formatDistanceKm()` au lieu de `toStringAsFixed(1)`.
+
+**Vérification** : `flutter analyze lib/models/dating_data.dart lib/pages/dating/dating_map_page.dart` → **0 erreur**.
+
+**Limites / suite possible** : le floutage est appliqué uniquement côté client (les coordonnées exactes restent dans Firestore et transitent via les requêtes de profils). Pour une protection complète, envisager côté backend (Cloud Function) de ne renvoyer qu'une position déjà floutée/un `geohash` tronqué aux clients autres que le propriétaire — non fait dans cette session pour limiter le risque de régression sur les requêtes de proximité existantes.
+
+### Information utilisateur sur le floutage (1 fois/mois)
+- `dating_map_page.dart` : nouveau `_maybeShowPrivacyNotice()` (même pattern que la modal "Comment ça marche" — `shared_preferences`, clé `dating_map_privacy_notice_last_shown`) : à la première ouverture de la carte, puis au maximum une fois par mois, affiche une `AlertDialog` (`datingMapPrivacyTitle` / `datingMapPrivacyDesc` / bouton `datingMapPrivacyGotIt`) expliquant que la position affichée des autres profils est volontairement floutée pour leur sécurité.
+- Nouvelles clés i18n (8 langues) : `datingMapPrivacyTitle`, `datingMapPrivacyDesc`, `datingMapPrivacyGotIt`.
+
+**Vérification** : `flutter analyze lib/pages/dating/dating_map_page.dart lib/l10n/app_localizations.dart` → **0 erreur**.
+
 **Backlog** : tâche #8 ("Dating: theme+i18n+CDN `dating_subscription_page.dart`") marquée comme **complétée**.
