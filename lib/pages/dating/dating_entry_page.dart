@@ -1,9 +1,9 @@
 // lib/pages/dating/dating_swipe_page.dart
-import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/dating_data.dart';
 import '../../models/model_data.dart';
@@ -36,6 +36,56 @@ class DatingSwipePage extends StatefulWidget {
 }
 
 class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderStateMixin, RouteAware {
+  // ---------- Cache de session (persistance de la position du deck) ----------
+  // Quand l'utilisateur quitte la page de swipe (chat, profil détail, etc.)
+  // puis y revient, une nouvelle instance de cette page peut être créée :
+  // sans ce cache statique, le deck serait rechargé et `_currentIndex`
+  // repartirait de zéro, donnant l'impression que tout "recommence à zéro".
+  // On restaure donc la position exacte là où l'utilisateur s'était arrêté.
+  static String? _cachedUserId;
+  static List<DatingProfile>? _cachedProfiles;
+  static int _cachedCurrentIndex = 0;
+  static Set<String> _cachedLoadedProfileIds = {};
+  static Set<String> _cachedExcludedUserIds = {};
+  static bool _cachedExcludeInteracted = true;
+  static bool _cachedFiltersRelaxed = false;
+  static bool _cachedHasMore = true;
+  static DocumentSnapshot? _cachedLastDocument;
+
+  /// Sauvegarde l'état courant du deck dans le cache statique afin de
+  /// pouvoir reprendre exactement là où l'utilisateur s'était arrêté.
+  void _saveDeckCache() {
+    _cachedUserId = _currentUserId;
+    _cachedProfiles = List<DatingProfile>.from(_profiles);
+    _cachedCurrentIndex = _currentIndex;
+    _cachedLoadedProfileIds = Set<String>.from(_loadedProfileIds);
+    _cachedExcludedUserIds = Set<String>.from(_excludedUserIds);
+    _cachedExcludeInteracted = _excludeInteracted;
+    _cachedFiltersRelaxed = _filtersRelaxed;
+    _cachedHasMore = _hasMore;
+    _cachedLastDocument = _lastDocument;
+  }
+
+  /// Restaure le deck depuis le cache statique si disponible pour cet
+  /// utilisateur. Retourne `true` si la restauration a eu lieu (dans ce cas,
+  /// le rechargement initial des profils peut être évité).
+  bool _restoreDeckCache() {
+    if (_cachedUserId != _currentUserId || _cachedProfiles == null || _cachedProfiles!.isEmpty) {
+      return false;
+    }
+    _profiles = List<DatingProfile>.from(_cachedProfiles!);
+    _currentIndex = _cachedCurrentIndex.clamp(0, _profiles.length);
+    _loadedProfileIds
+      ..clear()
+      ..addAll(_cachedLoadedProfileIds);
+    _excludedUserIds = Set<String>.from(_cachedExcludedUserIds);
+    _excludeInteracted = _cachedExcludeInteracted;
+    _filtersRelaxed = _cachedFiltersRelaxed;
+    _hasMore = _cachedHasMore;
+    _lastDocument = _cachedLastDocument;
+    return true;
+  }
+
   // Swipe data
   List<DatingProfile> _profiles = [];
   List<DatingProfile> _history = [];
@@ -90,19 +140,6 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
   double _animOpacityTo = 1.0;
   bool _animIsExit = false;
 
-  // Messages incitatifs
-  final List<Map<String, dynamic>> _motivationalMessages = [
-    {'text': '✨ Trouvez l\'amour sur AfroLove ✨', 'icon': Icons.favorite, 'color': Colors.red},
-    {'text': '💕 Faites des rencontres authentiques 💕', 'icon': Icons.people, 'color': Colors.pink},
-    {'text': '⭐ Des personnes vous ont liké ! Passez Premium pour les voir ⭐', 'icon': Icons.star, 'color': Colors.amber},
-    {'text': '🎁 Devenez créateur de contenu et gagnez de l\'argent ! 🎁', 'icon': Icons.monetization_on, 'color': Colors.green},
-    {'text': '💬 Discutez en privé avec AfroLove Gold 💬', 'icon': Icons.chat, 'color': Colors.blue},
-    {'text': '🔥 Des profils populaires vous attendent ! Swipez ! 🔥', 'icon': Icons.whatshot, 'color': Colors.orange},
-  ];
-  int _currentMessageIndex = 0;
-  Timer? _messageTimer;
-  bool _showMessage = true;
-
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   static const int _batchSize = 100; // Charger 100 profils par lot
   static const int _maxReloadAttempts = 3; // Limite de tentatives de rechargement (anti-boucle infinie)
@@ -114,6 +151,12 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
   Set<String> _excludedUserIds = {};
   bool _excludeInteracted = true;
 
+  /// Si le nombre de profils correspondant aux critères de recherche
+  /// (tranche d'âge / pays) est trop faible, on élargit automatiquement la
+  /// recherche (on ignore ces filtres) pour éviter de boucler indéfiniment
+  /// sur une poignée de profils.
+  bool _filtersRelaxed = false;
+
   /// Identifiants de tous les profils déjà chargés dans `_profiles` (toutes
   /// pages confondues), pour éviter d'ajouter des doublons lors d'un
   /// "load more" ou d'un recyclage de cycle.
@@ -124,19 +167,18 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
     super.initState();
     _cardAnimController = AnimationController(vsync: this, duration: const Duration(milliseconds: 250))
       ..addListener(_onCardAnimTick);
-    _startMessageTimer();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
       _currentUserId = authProvider.loginUserData.id;
       _listenUnreadNotifications();
       _loadUserSubscription();
       _loadCurrentUserProfile();
+      _maybeShowHowItWorksModal();
     });
   }
 
   @override
   void dispose() {
-    _messageTimer?.cancel();
     _cardAnimController.dispose();
     datingRouteObserver.unsubscribe(this);
     super.dispose();
@@ -172,20 +214,106 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
     // Si vous voulez aussi recharger les profils (ex : après un achat), décommentez la ligne ci-dessous
     // await _loadProfiles(reset: true);
   }
-  void _startMessageTimer() {
-    _messageTimer = Timer.periodic(const Duration(seconds: 8), (timer) {
-      if (mounted) {
-        setState(() => _showMessage = false);
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (mounted) {
-            setState(() {
-              _currentMessageIndex = (_currentMessageIndex + 1) % _motivationalMessages.length;
-              _showMessage = true;
-            });
-          }
-        });
-      }
+
+  /// Affiche le modal "Comment ça marche" une fois par mois maximum
+  /// (et dès la première visite).
+  Future<void> _maybeShowHowItWorksModal() async {
+    final prefs = await SharedPreferences.getInstance();
+    final last = prefs.getInt('dating_how_it_works_last_shown') ?? 0;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    const oneMonthMs = 30 * 24 * 60 * 60 * 1000;
+    if (now - last < oneMonthMs) return;
+    await prefs.setInt('dating_how_it_works_last_shown', now);
+    if (!mounted) return;
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (mounted) _showHowItWorksDialog();
     });
+  }
+
+  void _showHowItWorksDialog() {
+    final t = AppLocalizations.of(context);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: AppColors.of(context).surface,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  t.datingHowItWorksTitle,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.of(context).textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _howItWorksSection(Icons.swipe, t.datingHowItWorksSwipeTitle, t.datingHowItWorksSwipeDesc),
+                _howItWorksSection(Icons.star, t.datingHowItWorksLikeTitle, t.datingHowItWorksLikeDesc),
+                _howItWorksSection(Icons.map, t.datingHowItWorksMapTitle, t.datingHowItWorksMapDesc),
+                _howItWorksSection(Icons.workspace_premium, t.datingHowItWorksSubscriptionsTitle, t.datingHowItWorksSubscriptionsDesc),
+                _howItWorksSection(Icons.rocket_launch, t.datingHowItWorksBoostTitle, t.datingHowItWorksBoostDesc),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red.shade600,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    ),
+                    child: Text(
+                      t.datingHowItWorksGotIt,
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _howItWorksSection(IconData icon, String title, String desc) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: Colors.red.shade50, shape: BoxShape.circle),
+            child: Icon(icon, color: Colors.red.shade600, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.of(context).textPrimary),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  desc,
+                  style: TextStyle(fontSize: 12, color: AppColors.of(context).textSecondary),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _listenUnreadNotifications() {
@@ -635,8 +763,13 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
       _currentUserProfile = DatingProfile.fromJson(snapshot.docs.first.data());
 
       if (_currentUserProfile!.isProfileComplete && _currentUserProfile!.completionPercentage == 100) {
-        await _loadExcludedUserIds();
-        await _loadProfiles();
+        if (_restoreDeckCache()) {
+          if (mounted) setState(() => _isLoading = false);
+          WidgetsBinding.instance.addPostFrameCallback((_) => _precacheUpcomingPhotos());
+        } else {
+          await _loadExcludedUserIds();
+          await _loadProfiles();
+        }
         _checkNewActivity();
         _maybeShowProfileCompletionPrompt();
       } else {
@@ -775,9 +908,12 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
           _lastDocument = null;
           await _loadProfiles();
         } else if (isLoadMore && _profiles.isNotEmpty) {
-          // Fin de cycle : on recycle le deck déjà chargé plutôt que de
-          // réinterroger Firestore (ce qui réinjecterait des doublons).
-          _recycleProfiles();
+          // Plus rien de nouveau côté serveur : on arrête juste le
+          // préchargement en arrière-plan, sans toucher au deck affiché ni
+          // à _currentIndex (le recyclage se fera dans _nextProfile via
+          // _restartDiscoveryCycle quand le deck sera réellement épuisé).
+          _hasMore = false;
+          if (mounted) setState(() => _isLoadingMore = false);
         } else {
           if (mounted) {
             setState(() {
@@ -800,15 +936,17 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
       allProfiles = allProfiles.where((p) => p.userId != _currentUserId).toList();
 
       // Filtre par tranche d'âge recherchée par l'utilisateur courant
+      // (ignoré si les critères ont été élargis faute de résultats suffisants)
       final ageMin = _currentUserProfile!.rechercheAgeMin;
       final ageMax = _currentUserProfile!.rechercheAgeMax;
-      if (ageMin > 0 && ageMax > 0) {
+      if (!_filtersRelaxed && ageMin > 0 && ageMax > 0) {
         allProfiles = allProfiles.where((p) => p.age >= ageMin && p.age <= ageMax).toList();
       }
 
       // Filtre par pays recherché par l'utilisateur courant
+      // (ignoré si les critères ont été élargis faute de résultats suffisants)
       final recherchePays = _currentUserProfile!.recherchePays;
-      if (recherchePays.isNotEmpty && recherchePays.toLowerCase() != 'tous') {
+      if (!_filtersRelaxed && recherchePays.isNotEmpty && recherchePays.toLowerCase() != 'tous') {
         allProfiles = allProfiles.where((p) => p.pays == recherchePays).toList();
       }
 
@@ -843,8 +981,10 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
           if (mounted) await _loadProfiles(isLoadMore: true);
           return;
         }
-        // Plus rien de nouveau à charger : on recycle le deck déjà chargé.
-        _recycleProfiles();
+        // Plus rien de nouveau à charger : on arrête le préchargement en
+        // arrière-plan sans toucher au deck affiché ni à _currentIndex.
+        _hasMore = false;
+        if (mounted) setState(() => _isLoadingMore = false);
         return;
       }
 
@@ -911,6 +1051,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
         if (mounted) setState(() => _isLoading = false);
         WidgetsBinding.instance.addPostFrameCallback((_) => _precacheUpcomingPhotos());
       }
+      _saveDeckCache();
 
       // Préchargement si besoin
       if (!isLoadMore && _profiles.length < 10 && _hasMore && mounted) {
@@ -952,48 +1093,49 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
   }
 
   Future<void> _loadMoreProfiles() async {
-    if (_isLoadingMore) return;
-    if (!_hasMore) {
-      // Plus aucun nouveau profil côté serveur pour ces critères : on
-      // recycle directement le deck déjà chargé (mélange) pour un swipe
-      // infini, sans réinterroger Firestore ni réinjecter de doublons.
-      _recycleProfiles();
-      return;
-    }
+    if (_isLoadingMore || !_hasMore) return;
     await _loadProfiles(isLoadMore: true);
   }
 
-  /// Relance le parcours sur le deck déjà chargé en le remélangeant, une
-  /// fois que tous les profils correspondant aux critères ont été vus
-  /// (fin de cycle). Évite de réinterroger Firestore et de réinjecter des
-  /// doublons dans `_profiles`.
-  void _recycleProfiles() {
-    if (_profiles.isEmpty) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _isLoadingMore = false;
-        });
-      }
-      return;
-    }
+  /// Le deck local est épuisé (l'utilisateur a swipé tous les profils
+  /// chargés) : relance une recherche complète en réincluant les profils déjà
+  /// explorés (`_excludeInteracted = false`) et en repartant du début de la
+  /// collection, pour éviter de tourner en boucle sur un tout petit
+  /// sous-ensemble "non explorés".
+  Future<void> _restartDiscoveryCycle() async {
+    if (_isLoading) return;
     _excludeInteracted = false;
+    _hasMore = true;
+    _lastDocument = null;
     _reloadAttempts = 0;
-    final shuffled = List<DatingProfile>.from(_profiles)..shuffle();
-    _avoidConsecutiveSameLocation(shuffled);
-    print('🔁 Cycle terminé : recyclage de ${shuffled.length} profils');
-    if (mounted) {
-      setState(() {
-        _profiles = shuffled;
-        _currentIndex = 0;
-        _isLoading = false;
-        _isLoadingMore = false;
-      });
+    _loadedProfileIds.clear();
+    await _loadProfiles();
+
+    // Si même en réincluant les profils déjà explorés on retombe sur une
+    // poignée de profils (ex: l'âge/le pays recherchés sont trop restrictifs
+    // par rapport au nombre d'utilisateurs disponibles), on élargit
+    // automatiquement la recherche pour éviter de boucler indéfiniment sur
+    // le même petit groupe.
+    if (!_filtersRelaxed && _profiles.length <= 6 && mounted) {
+      _filtersRelaxed = true;
+      _hasMore = true;
+      _lastDocument = null;
+      _loadedProfileIds.clear();
+      await _loadProfiles();
+      if (mounted) {
+        final t = AppLocalizations.of(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(t.datingExpandedSearchCriteria)),
+        );
+      }
     }
   }
 
+  /// Précharge la prochaine page côté Firestore pendant que l'utilisateur
+  /// approche de la fin du deck déjà chargé. Ne touche ni `_profiles` (sauf
+  /// pour y ajouter de nouveaux profils) ni `_currentIndex`.
   void _checkAndLoadMore() {
-    if (_profiles.length - _currentIndex <= 5 && !_isLoadingMore && mounted) {
+    if (_hasMore && _profiles.length - _currentIndex <= 5 && !_isLoadingMore && mounted) {
       _loadMoreProfiles();
     }
   }
@@ -1006,6 +1148,15 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
       _opacity = 1.0;
     });
     _maybeReinsertBoostedProfile();
+    _saveDeckCache();
+
+    if (_currentIndex >= _profiles.length) {
+      // Deck épuisé : relancer un cycle de découverte plutôt que de rester
+      // bloqué (ou de remélanger les 2-3 mêmes profils à chaque swipe).
+      _restartDiscoveryCycle();
+      return;
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAndLoadMore();
       _precacheUpcomingPhotos();
@@ -1134,6 +1285,17 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
   static const int _boostDurationMs = 30 * 60 * 1000; // 30 minutes
   static const int _boostCostCoins = 100;
 
+  /// Boost longue durée : visibilité accrue + badge "Boosté" sur le profil
+  /// pendant N jours, à choisir par l'utilisateur, en pièces.
+  static const Map<int, int> _longBoostPricesCoins = {
+    1: 300,
+    7: 1500,
+    21: 3500,
+    30: 4500,
+    90: 11000,
+    180: 19000,
+  };
+
   /// Affiche le modal "Booster mon profil" : boost gratuit quotidien pour Gold,
   /// ou achat à l'unité (100 pièces) pour les autres, pendant 30 minutes.
   Future<void> _showBoostDialog() async {
@@ -1172,35 +1334,175 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
             Expanded(child: Text(t.datingBoostTitle, style: TextStyle(color: AppColors.of(context).textPrimary))),
           ],
         ),
-        content: Text(t.datingBoostDescription, style: TextStyle(color: AppColors.of(context).textSecondary)),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(t.datingBoostDescription, style: TextStyle(color: AppColors.of(context).textSecondary)),
+              const SizedBox(height: 8),
+              if (canUseFreeBoost)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      Navigator.pop(context);
+                      await _activateBoost(profileDoc.reference, todayStart, free: true);
+                    },
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+                    child: Text(t.datingBoostUseFree),
+                  ),
+                )
+              else if (isGold)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
+                    child: Text(t.datingBoostFreeToday),
+                  ),
+                ),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    await _activateBoost(profileDoc.reference, todayStart, free: false);
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade600),
+                  child: Text(t.datingBoostBuy.replaceAll('{price}', '$_boostCostCoins')),
+                ),
+              ),
+              const Divider(height: 24),
+              Row(
+                children: [
+                  const Icon(Icons.rocket_launch, color: Colors.deepOrange),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      t.datingLongBoostTitle,
+                      style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.of(context).textPrimary),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(t.datingLongBoostDescription, style: TextStyle(color: AppColors.of(context).textSecondary, fontSize: 13)),
+              const SizedBox(height: 12),
+              ..._longBoostPricesCoins.entries.map((entry) {
+                final days = entry.key;
+                final price = entry.value;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: OutlinedButton(
+                    onPressed: () async {
+                      Navigator.pop(context);
+                      await _activateLongBoost(profileDoc.reference, days, price);
+                    },
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 44),
+                      side: BorderSide(color: Colors.deepOrange.shade300),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(_longBoostLabel(t, days), style: TextStyle(color: AppColors.of(context).textPrimary)),
+                        Text('$price 🪙', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.deepOrange)),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: Text(t.datingCancel)),
-          if (canUseFreeBoost)
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.pop(context);
-                await _activateBoost(profileDoc.reference, todayStart, free: true);
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
-              child: Text(t.datingBoostUseFree),
-            )
-          else if (isGold)
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
-              child: Text(t.datingBoostFreeToday),
-            ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await _activateBoost(profileDoc.reference, todayStart, free: false);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade600),
-            child: Text(t.datingBoostBuy.replaceAll('{price}', '$_boostCostCoins')),
-          ),
         ],
       ),
     );
+  }
+
+  /// Libellé d'affichage pour une durée de boost longue (en jours).
+  String _longBoostLabel(AppLocalizations t, int days) {
+    switch (days) {
+      case 1:
+        return t.datingBoost1Day;
+      case 7:
+        return t.datingBoost1Week;
+      case 21:
+        return t.datingBoost3Weeks;
+      case 30:
+        return t.datingBoost1Month;
+      case 90:
+        return t.datingBoost3Months;
+      case 180:
+        return t.datingBoost6Months;
+      default:
+        return '$days j';
+    }
+  }
+
+  /// Active un boost longue durée (payant) : badge "Boosté" + visibilité
+  /// accrue dans le feed pendant [days] jours, pour [priceCoins] pièces.
+  Future<void> _activateLongBoost(DocumentReference profileRef, int days, int priceCoins) async {
+    final t = AppLocalizations.of(context);
+    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final boostUntil = now + days * 24 * 60 * 60 * 1000;
+
+    try {
+      final userId = authProvider.loginUserData.id;
+      final userRef = firestore.collection('Users').doc(userId);
+      await firestore.runTransaction((transaction) async {
+        final userDoc = await transaction.get(userRef);
+        final currentBalance = userDoc.data()?['coinsBalance'] ?? 0;
+        if (currentBalance < priceCoins) {
+          throw Exception('insufficient_balance');
+        }
+        transaction.update(userRef, {
+          'coinsBalance': currentBalance - priceCoins,
+          'totalCoinsSpent': FieldValue.increment(priceCoins),
+        });
+        transaction.update(profileRef, {
+          'boostUntil': boostUntil,
+          'updatedAt': now,
+        });
+        final transactionId = firestore.collection('user_coin_transactions').doc().id;
+        transaction.set(
+          firestore.collection('user_coin_transactions').doc(transactionId),
+          {
+            'id': transactionId,
+            'userId': userId,
+            'type': 'spend_long_boost',
+            'coinsAmount': -priceCoins,
+            'xofAmount': priceCoins * 2.5,
+            'referenceId': profileRef.id,
+            'description': 'Boost de profil Dating ($days j)',
+            'status': 'success',
+            'createdAt': now,
+            'updatedAt': now,
+          },
+        );
+      });
+      await authProvider.refreshUserData();
+
+      if (mounted) {
+        setState(() {
+          _currentUserProfile = _currentUserProfile?.copyWith(boostUntil: boostUntil);
+        });
+        _showSuccessMessage(t.datingBoostActivated, Colors.amber);
+      }
+    } catch (e) {
+      if (mounted) {
+        if (e.toString().contains('insufficient_balance')) {
+          _showInsufficientCoinsForBoostDialog(priceCoins);
+        } else {
+          print('❌ Erreur activation boost longue durée: $e');
+        }
+      }
+    }
   }
 
   /// Active le boost (gratuit ou payant) sur le profil de l'utilisateur courant.
@@ -1263,7 +1565,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
     } catch (e) {
       if (mounted) {
         if (e.toString().contains('insufficient_balance')) {
-          _showSuccessMessage(t.datingInsufficientCoinsForBoost, Colors.red);
+          _showInsufficientCoinsForBoostDialog(_boostCostCoins);
         } else {
           print('❌ Erreur activation boost: $e');
         }
@@ -1989,6 +2291,41 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
       ),
     );
   }
+  /// Affiche un modal invitant l'utilisateur à recharger ses pièces lorsque
+  /// son solde est insuffisant pour activer un boost de profil.
+  void _showInsufficientCoinsForBoostDialog(int requiredCoins) {
+    final t = AppLocalizations.of(context);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(t.datingInsufficientBalance),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.monetization_on, size: 50, color: Colors.red),
+            const SizedBox(height: 16),
+            Text(
+              t.datingBoostCoinsNeeded.replaceAll('{coins}', '$requiredCoins'),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(t.datingCancel)),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => BuyCoinsPage()));
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+            child: Text(t.datingBuyCoins),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showInsufficientCoinsDialog() {
     final t = AppLocalizations.of(context);
     showDialog(
@@ -2612,39 +2949,6 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
                 ],
               ),
 
-          Positioned(
-            top: 12,
-            left: 20,
-            right: 20,
-            child: AnimatedOpacity(
-              opacity: _showMessage ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 500),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
-                  color: _motivationalMessages[_currentMessageIndex]['color'].withOpacity(0.85),
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8, offset: Offset(0, 2))],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(_motivationalMessages[_currentMessageIndex]['icon'], color: Colors.white, size: 18),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        _motivationalMessages[_currentMessageIndex]['text'],
-                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
           if (_showFilters)
             Positioned(
               top: 60,
@@ -3005,6 +3309,23 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
                 ),
               ),
             ),
+            if (profile.isBoosted)
+              Positioned(
+                top: 16,
+                left: 16,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(colors: [Colors.amber.shade600, Colors.orange.shade600]),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 6, offset: const Offset(0, 2))],
+                  ),
+                  child: Text(
+                    t.datingBoostedBadge,
+                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
             Positioned(
               bottom: 20,
               left: 20,

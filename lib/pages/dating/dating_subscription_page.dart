@@ -243,16 +243,22 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
       print('🔄 Exécution de la transaction Firestore...');
 
       await firestore.runTransaction((transaction) async {
-        // 1. Déduire les pièces si plan payant
+        // 1. Lectures d'abord (règle Firestore : toutes les lectures doivent
+        // être exécutées avant la première écriture de la transaction).
+        DocumentReference<Map<String, dynamic>>? userRef;
+        int currentBalance = 0;
         if (plan.priceCoins > 0) {
-          final userRef = firestore.collection('Users').doc(userId);
+          userRef = firestore.collection('Users').doc(userId);
           final userDoc = await transaction.get(userRef);
-          final currentBalance = userDoc.data()?['coinsBalance'] ?? 0;
+          currentBalance = userDoc.data()?['coinsBalance'] ?? 0;
 
           if (currentBalance < plan.priceCoins) {
             throw Exception('Solde insuffisant');
           }
+        }
 
+        // 2. Écritures ensuite.
+        if (userRef != null) {
           transaction.update(userRef, {
             'coinsBalance': currentBalance - plan.priceCoins,
             'totalCoinsSpent': FieldValue.increment(plan.priceCoins),
@@ -260,10 +266,9 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
           print('💰 ${plan.priceCoins} pièces déduites du solde');
         }
 
-        // 2. Désactiver les anciens abonnements (lus via transaction.get pour
-        // respecter les règles de cohérence des transactions Firestore)
+        // Désactiver les anciens abonnements (déjà récupérés avant la
+        // transaction via une requête, pas besoin de relecture ici).
         for (var doc in oldSubscriptions.docs) {
-          await transaction.get(doc.reference);
           transaction.update(doc.reference, {'isActive': false});
           print('📌 Ancien abonnement désactivé: ${doc.id}');
         }

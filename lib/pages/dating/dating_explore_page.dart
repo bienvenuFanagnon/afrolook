@@ -1,5 +1,6 @@
 // lib/pages/dating/dating_explore_page.dart
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -440,10 +441,16 @@ class _DatingExplorePageState extends State<DatingExplorePage> {
     );
   }
 
+  String _cdnUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    final userProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    return userProvider.convertToCdnUrl(url, userProvider.appDefaultData);
+  }
+
   Widget _buildProfileCard(DatingProfile profile) {
-    final imageUrl = profile.photosUrls.isNotEmpty
+    final imageUrl = _cdnUrl(profile.photosUrls.isNotEmpty
         ? profile.photosUrls[profile.userId.hashCode.abs() % profile.photosUrls.length]
-        : profile.imageUrl;
+        : profile.imageUrl);
     return GestureDetector(
       onTap: () {
         Navigator.push(context, MaterialPageRoute(builder: (_) => DatingProfileDetailPage(profile: profile)));
@@ -462,10 +469,12 @@ class _DatingExplorePageState extends State<DatingExplorePage> {
               children: [
                 // Image de fond
                 Positioned.fill(
-                  child: Image.network(
-                    imageUrl,
+                  child: CachedNetworkImage(
+                    imageUrl: imageUrl,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(color: Colors.grey.shade200, child: const Icon(Icons.person, size: 50, color: Colors.grey)),
+                    fadeInDuration: const Duration(milliseconds: 200),
+                    placeholder: (_, __) => Container(color: Colors.grey.shade300, child: const Icon(Icons.person, size: 50, color: Colors.grey)),
+                    errorWidget: (_, __, ___) => Container(color: Colors.grey.shade200, child: const Icon(Icons.person, size: 50, color: Colors.grey)),
                   ),
                 ),
                 // Overlay pour le texte
@@ -526,6 +535,23 @@ class _DatingExplorePageState extends State<DatingExplorePage> {
                       child: const Icon(Icons.whatshot, size: 12, color: Colors.white),
                     ),
                   ),
+                // Badge "Boosté"
+                if (profile.isBoosted)
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(colors: [Colors.amber.shade600, Colors.orange.shade600]),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        AppLocalizations.of(context).datingBoostedBadge,
+                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -539,6 +565,7 @@ class _DatingExplorePageState extends State<DatingExplorePage> {
     final showUpgradeButton = !hasSubscription ||
         (_subscriptionPlan == 'plus' && _profiles.length >= _maxVisibleProfiles && _maxVisibleProfiles != -1);
 
+    final t = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: AppColors.of(context).background,
       appBar: AppBar(
@@ -546,9 +573,15 @@ class _DatingExplorePageState extends State<DatingExplorePage> {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.travel_explore, color: Colors.white, size: 20),
+            const Icon(Icons.travel_explore, color: Colors.white, size: 20),
             const SizedBox(width: 6),
-            const Text('Explorer', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17)),
+            Flexible(
+              child: Text(
+                t.datingExplore,
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
         backgroundColor: Colors.transparent,
@@ -566,25 +599,20 @@ class _DatingExplorePageState extends State<DatingExplorePage> {
         actions: [
           IconButton(
             icon: Icon(
+              _useSearchFilter ? Icons.tune : Icons.tune_outlined,
+              color: _useSearchFilter ? Colors.amber : Colors.white,
+            ),
+            tooltip: t.datingGenderSearchFilter,
+            onPressed: _toggleSearchFilter,
+          ),
+          IconButton(
+            icon: Icon(
               Icons.verified,
               color: _verifiedOnly ? Colors.amber : Colors.white,
             ),
-            tooltip: AppLocalizations.of(context).datingVerifiedOnlyFilter,
+            tooltip: t.datingVerifiedOnlyFilter,
             onPressed: _toggleVerifiedOnlyFilter,
           ),
-          Row(
-            children: [
-              const Text('Filtre recherche genre', style: TextStyle(color: Colors.white, fontSize: 12)),
-              Switch(
-                value: _useSearchFilter,
-                onChanged: (_) => _toggleSearchFilter(),
-                activeColor: Colors.white,
-                inactiveThumbColor: Colors.grey,
-                inactiveTrackColor: Colors.white70,
-              ),
-            ],
-          ),
-          const SizedBox(width: 8),
         ],
       ),
       body: _isLoading

@@ -1759,25 +1759,11 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
                   SizedBox(height: 4),
                   Row(children: [Icon(Icons.work, size: 14, color: AppColors.of(context).textSecondary), SizedBox(width: 4), Text(widget.profile.profession!, style: TextStyle(fontSize: 13, color: AppColors.of(context).textSecondary))]),
                 ],
-                SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildStatItem(Icons.favorite, '${widget.profile.likesCount}', t.datingLikesCount, Colors.red),
-                    _buildStatItem(Icons.star, '${widget.profile.coupsDeCoeurCount}', t.datingCoupDeCoeurLabel, Colors.amber),
-                    _buildStatItem(Icons.people, '${widget.profile.connexionsCount}', t.datingMatches, Colors.blue),
-                    if (isOwnProfile)
-                      GestureDetector(
-                        onTap: _navigateToMyVisitors,
-                        child: _buildStatItem(Icons.visibility, '${_visitorsCount}', t.datingVisits, Colors.green),
-                      )
-                    else
-                      _buildStatItem(Icons.visibility, '${_visitorsCount}', t.datingVisits, Colors.green),
-                  ],
-                ),
               ],
             ),
           ),
+          if (isOwnProfile || _canViewProfileOwnerSubscription())
+            _buildOwnerSubscriptionBadge(isOwnProfile),
           if (isOwnProfile && !widget.profile.isVerified)
             Container(
               margin: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -1805,27 +1791,116 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
                 style: OutlinedButton.styleFrom(side: BorderSide(color: primaryRed), padding: EdgeInsets.symmetric(vertical: 10), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))),
               ),
             ),
-          if (_canViewProfileOwnerSubscription() && _profileOwnerSubscriptionPlan != null)
-            Container(
-              margin: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(color: Colors.amber.shade100, borderRadius: BorderRadius.circular(20)),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    _profileOwnerSubscriptionPlan == 'gold' ? Icons.diamond : (_profileOwnerSubscriptionPlan == 'plus' ? Icons.star : Icons.favorite),
-                    size: 14,
-                    color: Colors.amber.shade800,
-                  ),
-                  SizedBox(width: 6),
-                  Text(
-                    '${AppLocalizations.of(context).datingSubscriptionLabel}: ${_planLabel(_profileOwnerSubscriptionPlan!)}',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.amber.shade800),
-                  ),
-                ],
-              ),
+          if (isOwnProfile && (_profileOwnerSubscriptionPlan == null || _profileOwnerSubscriptionPlan == 'gratuit'))
+            _buildFreePlanCta(),
+          Container(
+            margin: EdgeInsets.symmetric(horizontal: 20),
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            decoration: BoxDecoration(
+              color: AppColors.of(context).surface,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10, offset: Offset(0, 5))],
             ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildStatItem(Icons.favorite, '${widget.profile.likesCount}', t.datingLikesCount, Colors.red),
+                _buildStatItem(Icons.star, '${widget.profile.coupsDeCoeurCount}', t.datingCoupDeCoeurLabel, Colors.amber),
+                _buildStatItem(Icons.people, '${widget.profile.connexionsCount}', t.datingMatches, Colors.blue),
+                if (isOwnProfile)
+                  GestureDetector(
+                    onTap: _navigateToMyVisitors,
+                    child: _buildStatItem(Icons.visibility, '${_visitorsCount}', t.datingVisits, Colors.green),
+                  )
+                else
+                  _buildStatItem(Icons.visibility, '${_visitorsCount}', t.datingVisits, Colors.green),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Badge affichant le plan d'abonnement du propriétaire du profil (visible
+  /// uniquement par le propriétaire lui-même ou un admin). Pour son propre
+  /// profil, l'utilisateur peut toucher le badge pour aller voir les offres
+  /// d'abonnement, quel que soit son plan actuel.
+  Widget _buildOwnerSubscriptionBadge(bool isOwnProfile) {
+    final t = AppLocalizations.of(context);
+    final plan = _profileOwnerSubscriptionPlan ?? 'gratuit';
+    final badge = Container(
+      margin: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(color: Colors.amber.shade100, borderRadius: BorderRadius.circular(20)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            plan == 'gold' ? Icons.diamond : (plan == 'plus' ? Icons.star : Icons.favorite),
+            size: 14,
+            color: Colors.amber.shade800,
+          ),
+          SizedBox(width: 6),
+          Text(
+            '${t.datingSubscriptionLabel}: ${_planLabel(plan)}',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.amber.shade800),
+          ),
+          if (isOwnProfile) ...[
+            SizedBox(width: 6),
+            Icon(Icons.chevron_right, size: 16, color: Colors.amber.shade800),
+          ],
+        ],
+      ),
+    );
+    if (!isOwnProfile) return badge;
+    return GestureDetector(
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DatingSubscriptionPage())),
+      child: Tooltip(message: t.datingTapToViewPlans, child: badge),
+    );
+  }
+
+  /// Carte d'appel à l'action affichée sur son propre profil quand on est sur
+  /// le plan gratuit, pour inciter à passer à Plus/Gold.
+  Widget _buildFreePlanCta() {
+    final t = AppLocalizations.of(context);
+    return Container(
+      margin: EdgeInsets.fromLTRB(20, 0, 20, 12),
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.amber.shade50, Colors.orange.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.amber.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            t.datingFreePlanCtaTitle,
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.of(context).textPrimary),
+          ),
+          SizedBox(height: 6),
+          Text(
+            t.datingFreePlanCtaDesc,
+            style: TextStyle(fontSize: 12, color: AppColors.of(context).textSecondary, height: 1.4),
+          ),
+          SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DatingSubscriptionPage())),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.amber.shade700,
+                padding: EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+              ),
+              child: Text(t.datingUpgradeNow, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ),
         ],
       ),
     );

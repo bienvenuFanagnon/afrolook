@@ -523,7 +523,7 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
                       padding: const EdgeInsets.all(16),
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
-                        childAspectRatio: 0.7,
+                        childAspectRatio: 0.65,
                         crossAxisSpacing: 16,
                         mainAxisSpacing: 16,
                       ),

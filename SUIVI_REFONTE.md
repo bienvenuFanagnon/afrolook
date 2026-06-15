@@ -1395,4 +1395,60 @@ Audit complet du module `lib/pages/dating/` réalisé (15+ pages, service `datin
 
 **Vérification** : `flutter analyze lib/pages/dating/ lib/l10n/app_localizations.dart` → **0 erreur**.
 
+## Session 43 — Module Dating : algo de découverte, boost long, page Explorer, modal "Comment ça marche", fix transaction abonnement, proposition paiement
+
+### 1. Anti-boucle "6 profils" + reprise de session (`dating_entry_page.dart`)
+- Ajout d'un cache statique de session sur `_DatingSwipePageState` (`_cachedUserId`, `_cachedProfiles`, `_cachedCurrentIndex`, `_cachedLoadedProfileIds`, `_cachedExcludedUserIds`, `_cachedExcludeInteracted`, `_cachedFiltersRelaxed`, `_cachedHasMore`, `_cachedLastDocument`) + `_saveDeckCache()`/`_restoreDeckCache()` : en quittant puis revenant sur la page swipe, l'utilisateur reprend exactement où il s'était arrêté (au lieu de repartir du profil 1).
+- Nouveau champ `_filtersRelaxed` + `_restartDiscoveryCycle()` : si après un cycle complet (`_excludeInteracted = false`) il reste ≤ 6 profils correspondant aux critères (tranche d'âge / pays), ces filtres sont automatiquement ignorés pour élargir la recherche, avec un `SnackBar` (`datingExpandedSearchCriteria`) informant l'utilisateur.
+
+### 2. Boost de profil longue durée (1j / 1 sem / 3 sem / 1 mois / 3 mois / 6 mois)
+- Nouvelle map `_longBoostPricesCoins` (`{1:300, 7:1500, 21:3500, 30:4500, 90:11000, 180:19000}`) et méthode `_activateLongBoost()` (transaction Firestore : débit `coinsBalance`, écriture `boostUntil = now + days*24h`, log `user_coin_transactions` type `spend_long_boost`).
+- `_showBoostDialog()` refondu : section boost rapide (30 min, existant) + nouvelle section "🚀 Boost longue durée" avec un bouton par durée (`_longBoostLabel()`).
+- Badge "Boosté" (`datingBoostedBadge`) ajouté sur la carte swipe (`dating_entry_page.dart`) **et** sur les cartes de `dating_explore_page.dart`, basé sur `profile.isBoosted` (`boostUntil > now`).
+- Nouvelles clés i18n (8 langues) : `datingBoost1Day`, `datingBoost1Week`, `datingBoost3Weeks`, `datingBoost1Month`, `datingBoost3Months`, `datingBoost6Months`.
+
+### 3. Modal "Comment ça marche" (remplace les messages périodiques de la page swipe)
+- Suppression de l'overlay rotatif (`_motivationalMessages`, `_currentMessageIndex`, `_messageTimer`, `_showMessage`, `_startMessageTimer()`) qui apparaissait/disparaissait en boucle.
+- Ajout de `_maybeShowHowItWorksModal()` (utilise `shared_preferences`, clé `dating_how_it_works_last_shown`) : affiche `_showHowItWorksDialog()` à la première visite, puis au maximum une fois par mois (30 jours).
+- Le modal présente 5 sections (Swipe, Like & Coup de cœur, Carte, Abonnements, Boost) avec icône/titre/description, et un bouton "Compris, c'est parti !" (`datingHowItWorksGotIt`).
+- Nouvelles clés i18n (8 langues) : `datingHowItWorksTitle`, `datingHowItWorksSwipeTitle/Desc`, `datingHowItWorksLikeTitle/Desc`, `datingHowItWorksMapTitle/Desc`, `datingHowItWorksSubscriptionsTitle/Desc`, `datingHowItWorksBoostTitle/Desc`, `datingHowItWorksGotIt`.
+
+### 4. Page Explorer (`dating_explore_page.dart`) : CDN + badges + AppBar
+- `_buildProfileCard()` : `Image.network` remplacé par `CachedNetworkImage` (placeholder/erreur stylisés) avec URL passée par `_cdnUrl()` (conversion CDN via `UserAuthProvider.convertToCdnUrl`), comme sur les autres pages dating.
+- Ajout du badge "Boosté" (gradient ambre/orange, haut-gauche) en complément du badge popularité existant (haut-droite).
+- AppBar redessinée : titre dans un `Flexible` (évite la superposition), le `Switch` + texte "Filtre recherche genre" remplacé par un `IconButton` compact (icône `tune`/`tune_outlined`, ambre si actif) avec tooltip `datingGenderSearchFilter`.
+- Nouvelle clé i18n `datingGenderSearchFilter` (8 langues).
+
+### 5. Page détail profil (`dating_profile_detail_page.dart`) : badge abonnement cliquable + CTA plan gratuit
+- Réorganisation de `_buildProfileInfo()` : badge d'abonnement, bouton de vérification, bouton créateur et CTA plan gratuit s'affichent désormais **avant** la rangée de statistiques (likes/coups de cœur/matches/visites), qui est maintenant dans sa propre carte en bas.
+- `_buildOwnerSubscriptionBadge()` : sur son propre profil, le badge de plan (Gratuit/Plus/Gold) est cliquable (`Tooltip` + `chevron_right`) et ouvre `DatingSubscriptionPage`, quel que soit le plan actuel.
+- `_buildFreePlanCta()` : si le plan du propriétaire est `gratuit`/`null`, affiche une carte d'incitation (titre + description listant les avantages Plus/Gold : messages directs sans match, voir qui a liké, swipes/likes illimités, boost...) avec bouton "Voir les offres" → `DatingSubscriptionPage`.
+- Nouvelles clés i18n (8 langues) : `datingTapToViewPlans`, `datingFreePlanCtaTitle`, `datingFreePlanCtaDesc`, `datingUpgradeNow`.
+
+### 6. Modal "recharger les pièces" pour le boost (`dating_entry_page.dart`)
+- Nouvelle méthode `_showInsufficientCoinsForBoostDialog(int requiredCoins)` : si le solde est insuffisant lors de l'activation d'un boost (rapide ou longue durée), affiche un `AlertDialog` "Solde insuffisant" indiquant le nombre de pièces requis (`datingBoostCoinsNeeded`, placeholder `{coins}`) avec un bouton "Recharger" → `BuyCoinsPage`.
+- Remplace l'ancien comportement (simple `SnackBar` `datingInsufficientCoinsForBoost`) dans `_activateBoost()` et `_activateLongBoost()`.
+- Nouvelle clé i18n `datingBoostCoinsNeeded` (8 langues).
+
+### 7. Fix bug souscription : "Transactions require all reads to be executed before all writes"
+- `dating_subscription_page.dart` → `_subscribe()` : la transaction faisait `transaction.get(userRef)` (lecture) → `transaction.update(userRef, ...)` (écriture) → puis `transaction.get(doc.reference)` pour chaque ancien abonnement (lecture après écriture = erreur Firestore).
+- Corrigé : toutes les lectures (solde utilisateur si plan payant) sont faites en premier, puis toutes les écritures (débit pièces, désactivation des anciens abonnements via les références déjà récupérées par la requête pré-transaction, création du nouvel abonnement, log de transaction de pièces).
+
+**Vérification (session 43)** : `flutter analyze` sur tous les fichiers modifiés → **0 erreur** (uniquement warnings/infos préexistants).
+
+### 8. Proposition : recharge de compte par carte bancaire (Google Pay vs alternatives) — NON IMPLÉMENTÉ
+**Demande** : permettre à n'importe quel utilisateur muni d'une carte bancaire de recharger son solde de pièces (FCFA), idéalement avec un prestataire qui prend en charge les frais de transaction.
+
+**Analyse** :
+- **Google Pay** : n'est qu'un wallet/UI de paiement, nécessite un processeur de paiement (Stripe, Adyen, Braintree...) en arrière-plan pour effectuer l'encaissement réel. Ces processeurs ont un support marchand très limité/inexistant pour la zone FCFA (Côte d'Ivoire, Sénégal, Cameroun, etc.), ce qui le rend difficilement exploitable directement.
+- **Google Play Billing (achat intégré)** : obligatoire sur Android pour de la "monnaie virtuelle" selon la politique du Play Store, mais commission de 15-30% et paiements non disponibles en FCFA — solution la plus coûteuse et la moins adaptée ici.
+- **CinetPay / FeexPay / PayGate** (déjà présents, partiellement commentés dans `lib/pages/paiement/newDepot.dart`) : couvrent à la fois le Mobile Money (Orange Money, MTN, Wave, Moov) **et** les cartes bancaires Visa/Mastercard internationales, facturation native en FCFA, frais de transaction carte gérés par le prestataire (CinetPay/FeexPay) plutôt que par l'application.
+
+**Recommandation** : ne pas intégrer Google Pay/Play Billing pour cette fonctionnalité (incompatibilité FCFA + coût). Finaliser/activer l'intégration CinetPay (ou FeexPay) déjà présente dans `newDepot.dart` pour la recharge de pièces — couvre déjà le besoin "carte bancaire pour tous" en FCFA avec frais pris en charge par le prestataire.
+
+**Prochaines étapes (si validées)** :
+1. Décommenter et finaliser `_processCinetPayPayment()` dans `newDepot.dart`, en vérifiant la config API CinetPay (clé API, site ID) dans `lib/models/payment_config.dart`.
+2. Vérifier le webhook/callback de confirmation de paiement côté backend (Cloud Functions) pour créditer `coinsBalance` après paiement carte validé.
+3. Ajouter un test de bout en bout : recharge par carte bancaire (CinetPay) → crédit du solde → vérification dans `user_coin_transactions`.
+
 **Backlog** : tâche #8 ("Dating: theme+i18n+CDN `dating_subscription_page.dart`") marquée comme **complétée**.
