@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../models/dating_data.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/dating/coin_provider.dart';
+import '../../l10n/app_localizations.dart';
 
 
 class BuyCoinsPage extends StatefulWidget {
@@ -29,7 +30,6 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
   void initState() {
     super.initState();
     _initAnimations();
-    _loadCoinPackages();
   }
 
   void _initAnimations() {
@@ -50,6 +50,7 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
       double balance,
       double required,
       ) {
+    final t = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -67,9 +68,9 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
 
               const SizedBox(height: 16),
 
-              const Text(
-                "Solde insuffisant",
-                style: TextStyle(
+              Text(
+                t.datingInsufficientBalance,
+                style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
@@ -79,8 +80,9 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
               const SizedBox(height: 10),
 
               Text(
-                "Solde: ${balance.toStringAsFixed(0)} FCFA\n"
-                    "Requis: ${required.toStringAsFixed(0)} FCFA",
+                t.datingBalanceRequired
+                    .replaceAll('{balance}', balance.toStringAsFixed(0))
+                    .replaceAll('{required}', required.toStringAsFixed(0)),
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.grey[400]),
               ),
@@ -100,9 +102,9 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
                     borderRadius: BorderRadius.circular(30),
                   ),
                 ),
-                child: const Text(
-                  "Recharger maintenant",
-                  style: TextStyle(
+                child: Text(
+                  t.datingRechargeNow,
+                  style: const TextStyle(
                     color: Colors.black,
                     fontWeight: FontWeight.bold,
                   ),
@@ -111,9 +113,9 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
 
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text(
-                  "Plus tard",
-                  style: TextStyle(color: Colors.grey),
+                child: Text(
+                  t.datingLaterButton,
+                  style: const TextStyle(color: Colors.grey),
                 ),
               ),
             ],
@@ -122,11 +124,34 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
       ),
     );
   }
-  Future<void> _loadCoinPackages() async {
-    print('📱 === Chargement des packs de pièces ===');
-    final provider = Provider.of<CoinProvider>(context, listen: false);
-    await provider.loadCoinPackages();
-    print('📊 Packs disponibles: ${provider.availablePackages.length}');
+  /// Catalogue des packs de pièces, défini localement (et non plus dans
+  /// Firestore) pour éviter les doublons/anciens tarifs et garder le
+  /// contrôle total de la grille tarifaire dans le code de l'application.
+  /// Tarifs en FCFA inchangés par rapport à l'offre initiale, nombre de
+  /// pièces doublé, et nouveaux paliers ajoutés jusqu'à 100 000 FCFA avec
+  /// une réduction progressive (plus de pièces par FCFA sur les gros packs).
+  static List<CoinPackage> get _localPackages {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    Map<String, dynamic> raw(String id, String name, int coins, double price) => {
+      'id': id,
+      'name': name,
+      'coinsAmount': coins,
+      'priceXof': price,
+      'isActive': true,
+      'createdAt': now,
+      'updatedAt': now,
+    };
+    return [
+      raw('coin_pack_1', 'Découverte', 200, 250.0),
+      raw('coin_pack_2', 'Starter', 420, 500.0),
+      raw('coin_pack_3', 'Bronze', 900, 1000.0),
+      raw('coin_pack_4', 'Silver', 2400, 2500.0),
+      raw('coin_pack_5', 'Gold', 5000, 5000.0),
+      raw('coin_pack_6', 'Platinum', 10500, 10000.0),
+      raw('coin_pack_7', 'Diamond', 27500, 25000.0),
+      raw('coin_pack_8', 'Legend', 57500, 50000.0),
+      raw('coin_pack_9', 'Ultimate', 120000, 100000.0),
+    ].map((json) => CoinPackage.fromJson(json)).toList();
   }
 
   Future<void> _buyPackage(
@@ -134,6 +159,7 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
       CoinPackage package,
       CoinProvider provider,
       ) async {
+    final t = AppLocalizations.of(context);
     print('📱 === Achat de pièces ===');
     print('📦 Pack: ${package.name}');
     print('💰 Coût: ${package.priceXof} FCFA');
@@ -145,10 +171,10 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
 
     if (currentBalance < package.priceXof) {
       print('❌ Solde insuffisant');
-      _showErrorDialog('Solde insuffisant',
-          'Vous n\'avez pas assez de FCFA pour acheter ce pack.\n'
-              'Solde disponible: ${currentBalance.toStringAsFixed(0)} FCFA\n'
-              'Prix du pack: ${package.priceXof.toStringAsFixed(0)} FCFA');
+      _showErrorDialog(t.datingInsufficientBalance,
+          t.datingInsufficientBalanceMessagePack
+              .replaceAll('{balance}', currentBalance.toStringAsFixed(0))
+              .replaceAll('{price}', package.priceXof.toStringAsFixed(0)));
       return;
     }
 
@@ -161,7 +187,7 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
           children: [
             Icon(Icons.shopping_cart, color: primaryYellow),
             const SizedBox(width: 8),
-            const Text('Confirmer l\'achat', style: TextStyle(color: Colors.white)),
+            Text(t.datingConfirmPurchase, style: const TextStyle(color: Colors.white)),
           ],
         ),
         content: Column(
@@ -174,17 +200,22 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
                 shape: BoxShape.circle,
               ),
               child: Text(
-                '${package.coinsAmount}',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.amber.shade800,
-                ),
+                _packageIcon(package.name),
+                style: const TextStyle(fontSize: 28),
               ),
             ),
             const SizedBox(height: 12),
             Text(
-              'Acheter ${package.coinsAmount} pièces',
+              package.name,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              t.datingBuyCoinsAmount.replaceAll('{count}', _formatNumber(package.coinsAmount)),
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -193,7 +224,7 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
             ),
             const SizedBox(height: 8),
             Text(
-              '${package.priceXof.toStringAsFixed(0)} FCFA',
+              '${_formatNumber(package.priceXof.toInt())} FCFA',
               style: TextStyle(
                 fontSize: 14,
                 color: primaryYellow,
@@ -212,7 +243,7 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
                   Icon(Icons.account_balance_wallet, color: Colors.grey[400], size: 16),
                   const SizedBox(width: 8),
                   Text(
-                    'Solde après achat: ${(currentBalance - package.priceXof).toStringAsFixed(0)} FCFA',
+                    t.datingBalanceAfterPurchase.replaceAll('{balance}', (currentBalance - package.priceXof).toStringAsFixed(0)),
                     style: TextStyle(color: Colors.grey[400], fontSize: 12),
                   ),
                 ],
@@ -223,7 +254,7 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuler', style: TextStyle(color: Colors.grey)),
+            child: Text(t.datingCancel, style: const TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -234,7 +265,7 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
               ),
             ),
             child: Text(
-              'Confirmer',
+              t.datingConfirmButton,
               style: TextStyle(color: primaryBlack, fontWeight: FontWeight.bold),
             ),
           ),
@@ -258,9 +289,9 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
           children: [
             CircularProgressIndicator(color: primaryYellow),
             SizedBox(height: 16),
-            Text('Traitement en cours...', style: TextStyle(color: Colors.white)),
+            Text(t.datingProcessing, style: TextStyle(color: Colors.white)),
             SizedBox(height: 8),
-            Text('Veuillez patienter', style: TextStyle(color: Colors.grey[400])),
+            Text(t.datingPleaseWait, style: TextStyle(color: Colors.grey[400])),
           ],
         ),
       ),
@@ -287,11 +318,12 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
       });
     } else if (mounted) {
       print('❌ Échec de l\'achat');
-      _showErrorDialog('Erreur', 'Une erreur est survenue lors de l\'achat. Veuillez réessayer.');
+      _showErrorDialog(t.datingErrorTitle, t.datingPurchaseErrorMessage);
     }
   }
 
   void _showSuccessDialog(CoinPackage package) {
+    final t = AppLocalizations.of(context);
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -310,9 +342,9 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
               child: const Icon(Icons.check_circle, size: 50, color: Colors.green),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'Achat réussi !',
-              style: TextStyle(
+            Text(
+              t.datingPurchaseSuccess,
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -320,7 +352,7 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
             ),
             const SizedBox(height: 8),
             Text(
-              'Vous avez reçu ${package.coinsAmount} pièces',
+              t.datingReceivedCoins.replaceAll('{count}', '${package.coinsAmount}'),
               style: TextStyle(
                 fontSize: 14,
                 color: primaryYellow,
@@ -329,7 +361,7 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
             ),
             const SizedBox(height: 16),
             Text(
-              'Utilisez vos pièces pour des super likes, abonnements et contenus exclusifs !',
+              t.datingCoinsUsageHint,
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey[400], fontSize: 12),
             ),
@@ -340,7 +372,7 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
             ),
             const SizedBox(height: 8),
             Text(
-              'Redirection...',
+              t.datingRedirecting,
               style: TextStyle(color: Colors.grey[500], fontSize: 12),
             ),
           ],
@@ -350,6 +382,7 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
   }
 
   void _showErrorDialog(String title, String message) {
+    final t = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -369,7 +402,7 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK', style: TextStyle(color: Colors.white)),
+            child: Text(t.datingOkButton, style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -384,6 +417,7 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final authProvider = Provider.of<UserAuthProvider>(context);
     final currentBalance = authProvider.loginUserData.votre_solde_principal ?? 0;
     final currentCoins = authProvider.loginUserData.coinsBalance ?? 0;
@@ -393,9 +427,9 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
     return Scaffold(
       backgroundColor: primaryBlack,
       appBar: AppBar(
-        title: const Text(
-          'Acheter des pièces',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        title: Text(
+          t.datingBuyCoinsTitle,
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         backgroundColor: primaryRed,
         elevation: 0,
@@ -422,9 +456,9 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
                 ),
                 child: Column(
                   children: [
-                    const Text(
-                      'Votre solde',
-                      style: TextStyle(color: Colors.white70, fontSize: 14),
+                    Text(
+                      t.datingYourBalanceLabel,
+                      style: const TextStyle(color: Colors.white70, fontSize: 14),
                     ),
                     const SizedBox(height: 8),
                     Row(
@@ -455,7 +489,7 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
                           const Icon(Icons.monetization_on, color: Colors.white, size: 20),
                           const SizedBox(width: 8),
                           Text(
-                            '$currentCoins pièces',
+                            t.datingCoinsCount.replaceAll('{count}', '$currentCoins'),
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 18,
@@ -473,7 +507,7 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        '100 pièces = 250 FCFA',
+                        t.datingExchangeRate,
                         style: TextStyle(color: Colors.white70, fontSize: 11),
                       ),
                     ),
@@ -481,81 +515,21 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
                 ),
               ),
 
-              // Liste des packs
+              // Liste des packs (catalogue local, défini dans le code)
               Expanded(
                 child: Consumer<CoinProvider>(
                   builder: (context, provider, child) {
-                    if (provider.isLoading && provider.availablePackages.isEmpty) {
-                      return const Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            CircularProgressIndicator(),
-                            SizedBox(height: 16),
-                            Text('Chargement des packs...'),
-                          ],
-                        ),
-                      );
-                    }
-
-                    if (provider.error != null) {
-                      print('❌ Erreur chargement packs: ${provider.error}');
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.error_outline, size: 60, color: Colors.red),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Erreur: ${provider.error}',
-                              style: TextStyle(color: Colors.grey[400]),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: () => provider.loadCoinPackages(),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: primaryRed,
-                              ),
-                              child: const Text('Réessayer'),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-
-                    if (provider.availablePackages.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.shopping_cart_outlined, size: 80, color: Colors.grey[600]),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Aucun pack disponible',
-                              style: TextStyle(color: Colors.grey[500], fontSize: 18),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Revenez plus tard',
-                              style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-
                     return GridView.builder(
                       padding: const EdgeInsets.all(16),
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
-                        childAspectRatio: 0.85,
+                        childAspectRatio: 0.7,
                         crossAxisSpacing: 16,
                         mainAxisSpacing: 16,
                       ),
-                      itemCount: provider.availablePackages.length,
+                      itemCount: _localPackages.length,
                       itemBuilder: (context, index) {
-                        final package = provider.availablePackages[index];
+                        final package = _localPackages[index];
                         return _buildPackageCard(context, package, provider, currentBalance);
                       },
                     );
@@ -569,12 +543,49 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
     );
   }
 
+  /// Emoji représentatif de chaque palier, du plus modeste au plus prestigieux.
+  String _packageIcon(String name) {
+    switch (name) {
+      case 'Découverte':
+        return '🪙';
+      case 'Starter':
+        return '⭐';
+      case 'Bronze':
+        return '🌟';
+      case 'Silver':
+        return '🔥';
+      case 'Gold':
+        return '💎';
+      case 'Platinum':
+        return '👑';
+      case 'Diamond':
+        return '🏆';
+      case 'Legend':
+        return '🚀';
+      case 'Ultimate':
+        return '🏰';
+      default:
+        return '🪙';
+    }
+  }
+
+  String _formatNumber(int value) {
+    final str = value.toString();
+    final buffer = StringBuffer();
+    for (int i = 0; i < str.length; i++) {
+      if (i > 0 && (str.length - i) % 3 == 0) buffer.write(' ');
+      buffer.write(str[i]);
+    }
+    return buffer.toString();
+  }
+
   Widget _buildPackageCard(
       BuildContext context,
       CoinPackage package,
       CoinProvider provider,
       double currentBalance,
       ) {
+    final t = AppLocalizations.of(context);
     final isAffordable = currentBalance >= package.priceXof;
     final discount = package.coinsAmount >= 500 ? 10 : (package.coinsAmount >= 200 ? 5 : 0);
 
@@ -582,6 +593,7 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
       elevation: 4,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: primaryYellow.withOpacity(0.25)),
       ),
       color: secondaryGrey,
       child: InkWell(
@@ -620,7 +632,9 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(10),
+                      width: 56,
+                      height: 56,
+                      alignment: Alignment.center,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [primaryYellow, Colors.amber],
@@ -628,31 +642,51 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
                         shape: BoxShape.circle,
                       ),
                       child: Text(
-                        '${package.coinsAmount}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
+                        _packageIcon(package.name),
+                        style: const TextStyle(fontSize: 26),
                       ),
                     ),
 
                     const SizedBox(height: 10),
 
+                    // Nom du pack
                     Text(
-                      '${package.coinsAmount} pièces',
+                      package.name,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                        fontSize: 16,
+                        fontSize: 15,
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
 
+                    const SizedBox(height: 6),
+
+                    // Nombre de pièces
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.monetization_on, color: primaryYellow, size: 14),
+                        const SizedBox(width: 4),
+                        Text(
+                          t.datingCoinsCount.replaceAll('{count}', _formatNumber(package.coinsAmount)),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey[300],
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+
                     const SizedBox(height: 8),
 
+                    // Prix
                     Text(
-                      '${package.priceXof.toStringAsFixed(0)} FCFA',
+                      '${_formatNumber(package.priceXof.toInt())} FCFA',
                       style: TextStyle(
+                        fontSize: 16,
                         color: primaryYellow,
                         fontWeight: FontWeight.bold,
                       ),
@@ -680,7 +714,7 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
                     ),
                   ),
                   child: Text(
-                    isAffordable ? 'Acheter' : 'Recharger',
+                    isAffordable ? t.datingBuyButton : t.datingRechargeNow,
                     style: TextStyle(
                       color: isAffordable ? Colors.black : Colors.white,
                       fontWeight: FontWeight.bold,

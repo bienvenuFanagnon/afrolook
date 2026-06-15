@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/dating_data.dart';
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
+import '../../theme/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 import 'dating_chat_page.dart';
 import 'dating_subscription_page.dart';
 
@@ -55,6 +57,7 @@ class _DatingConversationsPageState extends State<DatingConversationsPage> {
   }
 
   void _showPremiumDialog() {
+    final t = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -64,9 +67,9 @@ class _DatingConversationsPageState extends State<DatingConversationsPage> {
           children: [
             Icon(Icons.lock, color: Colors.amber),
             const SizedBox(width: 8),
-            const Text(
-              'Accès à la messagerie',
-              style: TextStyle(color: Colors.white),
+            Text(
+              t.datingPremiumMessagingTitle,
+              style: const TextStyle(color: Colors.white),
             ),
           ],
         ),
@@ -86,32 +89,32 @@ class _DatingConversationsPageState extends State<DatingConversationsPage> {
               child: const Icon(Icons.chat_bubble_outline, size: 40, color: Colors.white),
             ),
             const SizedBox(height: 20),
-            const Text(
-              '💬 Accédez à vos conversations',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+            Text(
+              t.datingPremiumMessagingDesc,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
             ),
             const SizedBox(height: 12),
-            const Text(
-              'La messagerie privée est réservée aux membres AfroLove Plus et Gold.',
+            Text(
+              t.datingPremiumUpgradeIntro,
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey, fontSize: 14),
+              style: const TextStyle(color: Colors.grey, fontSize: 14),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Passez à l\'abonnement Premium pour :',
-              style: TextStyle(color: Colors.grey, fontSize: 12),
+            Text(
+              t.datingPremiumUpgradeCallToAction,
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
             ),
             const SizedBox(height: 12),
-            _buildFeatureRow('💬 Messages illimités'),
-            _buildFeatureRow('❤️ Voir qui vous a liké'),
-            _buildFeatureRow('⭐ 2 super likes par jour'),
-            _buildFeatureRow('🚀 Profil mis en avant'),
+            _buildFeatureRow(t.datingFeatureUnlimitedMessages),
+            _buildFeatureRow(t.datingFeatureSeeWhoLiked),
+            _buildFeatureRow(t.datingFeatureSuperLikesPerDay),
+            _buildFeatureRow(t.datingFeatureProfileBoost),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Plus tard', style: TextStyle(color: Colors.grey)),
+            child: Text(t.datingLaterButton, style: const TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -125,9 +128,9 @@ class _DatingConversationsPageState extends State<DatingConversationsPage> {
               backgroundColor: Colors.amber,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
             ),
-            child: const Text(
-              'Voir les offres',
-              style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+            child: Text(
+              t.datingSeeOffersTitleCase,
+              style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -160,6 +163,12 @@ class _DatingConversationsPageState extends State<DatingConversationsPage> {
     });
   }
 
+  String _cdnUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    final userProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    return userProvider.convertToCdnUrl(url, userProvider.appDefaultData);
+  }
+
   Future<void> _openChat(DatingConversation conversation, String otherUserId, DatingProfile otherProfile) async {
     // Met à jour lastMessageAt pour que cette conversation remonte en tête
     await _updateConversationLastMessageAt(conversation.id);
@@ -180,25 +189,27 @@ class _DatingConversationsPageState extends State<DatingConversationsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     if (_currentUserId == null) {
-      return const Scaffold(
-        body: Center(child: Text('Veuillez vous connecter')),
+      return Scaffold(
+        backgroundColor: AppColors.of(context).background,
+        body: Center(child: Text(t.datingPleaseLogin)),
       );
     }
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.of(context).background,
       appBar: AppBar(
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '💬 Messages',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22),
+              t.datingMessagesTitle,
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22),
             ),
             Text(
-              'Discutez avec vos matchs',
-              style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.normal),
+              t.datingChatWithMatches,
+              style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.normal),
             ),
           ],
         ),
@@ -219,20 +230,20 @@ class _DatingConversationsPageState extends State<DatingConversationsPage> {
                 children: [
                   Icon(Icons.error_outline, size: 60, color: Colors.red),
                   const SizedBox(height: 16),
-                  Text('Erreur: ${snapshot.error}'),
+                  Text(t.datingErrorGeneric.replaceAll('{error}', '${snapshot.error}')),
                 ],
               ),
             );
           }
 
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Chargement de vos messages...'),
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  Text(t.datingLoadingMessages),
                 ],
               ),
             );
@@ -262,14 +273,14 @@ class _DatingConversationsPageState extends State<DatingConversationsPage> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const Text(
-                    '💬 Aucun message',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
+                  Text(
+                    t.datingNoMessagesTitle,
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.of(context).textPrimary),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'Commencez une conversation avec vos matchs !',
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  Text(
+                    t.datingStartConversation,
+                    style: TextStyle(fontSize: 14, color: AppColors.of(context).textSecondary),
                   ),
                   const SizedBox(height: 32),
                   ElevatedButton.icon(
@@ -277,9 +288,9 @@ class _DatingConversationsPageState extends State<DatingConversationsPage> {
                       Navigator.pop(context);
                     },
                     icon: const Icon(Icons.favorite, color: Colors.white),
-                    label: const Text(
-                      'Voir mes matchs',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                    label: Text(
+                      t.datingSeeMyMatches,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
@@ -334,7 +345,7 @@ class _DatingConversationsPageState extends State<DatingConversationsPage> {
                       child: Container(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
-                          color: hasUnread ? Colors.red.shade50 : Colors.white,
+                          color: hasUnread ? Colors.red.shade50 : AppColors.of(context).surface,
                           boxShadow: [
                             BoxShadow(
                               color: Colors.grey.withOpacity(0.1),
@@ -343,7 +354,7 @@ class _DatingConversationsPageState extends State<DatingConversationsPage> {
                             ),
                           ],
                           border: Border.all(
-                            color: hasUnread ? Colors.red.shade200 : Colors.grey.shade200,
+                            color: hasUnread ? Colors.red.shade200 : AppColors.of(context).border,
                             width: hasUnread ? 1.5 : 1,
                           ),
                         ),
@@ -381,7 +392,7 @@ class _DatingConversationsPageState extends State<DatingConversationsPage> {
                                       child: ClipRRect(
                                         borderRadius: BorderRadius.circular(28),
                                         child: Image.network(
-                                          otherProfile.imageUrl,
+                                          _cdnUrl(otherProfile.imageUrl),
                                           width: 56,
                                           height: 56,
                                           fit: BoxFit.cover,
@@ -434,7 +445,7 @@ class _DatingConversationsPageState extends State<DatingConversationsPage> {
                                           style: TextStyle(
                                             fontSize: 16,
                                             fontWeight: hasUnread ? FontWeight.bold : FontWeight.w600,
-                                            color: hasUnread ? Colors.black : Colors.grey.shade800,
+                                            color: hasUnread ? AppColors.of(context).textPrimary : AppColors.of(context).textSecondary,
                                           ),
                                         ),
                                         if (otherProfile.isVerified)
@@ -457,7 +468,7 @@ class _DatingConversationsPageState extends State<DatingConversationsPage> {
                                         ),
                                         const SizedBox(width: 4),
                                         Text(
-                                          '${otherProfile.age} ans',
+                                          t.datingAgeYears.replaceAll('{age}', '${otherProfile.age}'),
                                           style: TextStyle(
                                             fontSize: 11,
                                             color: hasUnread ? Colors.red.shade700 : Colors.grey.shade600,
@@ -491,7 +502,7 @@ class _DatingConversationsPageState extends State<DatingConversationsPage> {
                                         const SizedBox(width: 4),
                                         Expanded(
                                           child: Text(
-                                            conversation.lastMessage ?? 'Nouvelle conversation',
+                                            conversation.lastMessage ?? t.datingNewConversation,
                                             style: TextStyle(
                                               fontSize: 12,
                                               color: hasUnread
@@ -556,20 +567,21 @@ class _DatingConversationsPageState extends State<DatingConversationsPage> {
   }
 
   String _formatTimeAgo(int timestamp) {
+    final t = AppLocalizations.of(context);
     final now = DateTime.now();
     final time = DateTime.fromMillisecondsSinceEpoch(timestamp);
     final difference = now.difference(time);
 
     if (difference.inMinutes < 1) {
-      return 'maintenant';
+      return t.datingJustNow;
     } else if (difference.inHours < 1) {
-      return 'il y a ${difference.inMinutes} min';
+      return t.datingMinutesAgo.replaceAll('{count}', '${difference.inMinutes}');
     } else if (difference.inDays < 1) {
-      return 'il y a ${difference.inHours} h';
+      return t.datingHoursAgo.replaceAll('{count}', '${difference.inHours}');
     } else if (difference.inDays == 1) {
-      return 'hier';
+      return t.datingYesterday;
     } else if (difference.inDays < 7) {
-      return 'il y a ${difference.inDays} j';
+      return t.datingDaysAgo.replaceAll('{count}', '${difference.inDays}');
     } else {
       return '${time.day}/${time.month}';
     }

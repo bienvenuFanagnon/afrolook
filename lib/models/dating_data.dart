@@ -1,6 +1,20 @@
 
 
+import 'dart:math';
 import 'enums.dart';
+
+/// Calcule la distance en kilomètres entre deux coordonnées GPS (formule de Haversine)
+double calculateDistanceKm(double lat1, double lon1, double lat2, double lon2) {
+  const double earthRadiusKm = 6371;
+  final double dLat = _degToRad(lat2 - lat1);
+  final double dLon = _degToRad(lon2 - lon1);
+  final double a = sin(dLat / 2) * sin(dLat / 2) +
+      cos(_degToRad(lat1)) * cos(_degToRad(lat2)) * sin(dLon / 2) * sin(dLon / 2);
+  final double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+  return earthRadiusKm * c;
+}
+
+double _degToRad(double deg) => deg * (pi / 180);
 /* flutter pub run build_runner build */
 
 ///// Dating //////////
@@ -355,8 +369,98 @@ class DatingProfile {
   final String? region;
   final String? city;
 
+  // ✅ Coordonnées GPS pour le tri par proximité
+  final double? latitude;
+  final double? longitude;
+
   // ✅ NOUVEAU CHAMP: Score de popularité
   final int popularityScore;
+
+  // ✅ Boost de profil : timestamp (epoch ms) jusqu'auquel le profil bénéficie
+  // d'un bonus de visibilité dans recommendationScore. null/0 = pas de boost.
+  final int? boostUntil;
+
+  // Demande de vérification de profil en attente de validation admin.
+  final bool verificationRequested;
+  final int? verificationRequestedAt;
+
+  /// Indique si un boost est actuellement actif sur ce profil.
+  bool get isBoosted => boostUntil != null && boostUntil! > DateTime.now().millisecondsSinceEpoch;
+
+  /// Calcule la distance (en km) entre ce profil et les coordonnées passées,
+  /// ou null si l'une des deux positions est inconnue.
+  double? distanceFrom(double? otherLat, double? otherLng) {
+    if (latitude == null || longitude == null || otherLat == null || otherLng == null) {
+      return null;
+    }
+    return calculateDistanceKm(latitude!, longitude!, otherLat, otherLng);
+  }
+
+  /// Score de recommandation/compatibilité de [other] vis-à-vis de ce profil
+  /// (l'utilisateur courant). Plus le score est élevé, plus le profil est
+  /// pertinent à suggérer en priorité (centres d'intérêt communs, tranche
+  /// d'âge recherchée, proximité géographique, popularité, vérification).
+  double recommendationScore(DatingProfile other) {
+    double score = 0;
+
+    // Centres d'intérêt en commun : critère le plus important
+    if (centresInteret.isNotEmpty && other.centresInteret.isNotEmpty) {
+      final common = centresInteret.toSet().intersection(other.centresInteret.toSet()).length;
+      score += common * 20;
+    }
+
+    // Bonus si l'âge correspond à la tranche recherchée
+    if (rechercheAgeMin > 0 && rechercheAgeMax > 0 &&
+        other.age >= rechercheAgeMin && other.age <= rechercheAgeMax) {
+      score += 10;
+    }
+
+    // Profil vérifié = plus de confiance
+    if (other.isVerified) score += 5;
+
+    // Popularité (impact modéré pour ne pas écraser la pertinence)
+    score += other.popularityScore.clamp(0, 500) / 10.0;
+
+    // Proximité géographique : plus c'est proche, plus le bonus est élevé (jusqu'à 50)
+    final distance = distanceFrom(other.latitude, other.longitude);
+    if (distance != null) {
+      score += (50 - distance.clamp(0, 50));
+    }
+
+    final now = DateTime.now().millisecondsSinceEpoch;
+
+    // Activité récente : un profil mis à jour récemment a plus de chances de
+    // répondre, donc plus pertinent à suggérer (jusqu'à +15, dégressif sur 30 jours).
+    final daysSinceUpdate = (now - other.updatedAt) / (24 * 60 * 60 * 1000);
+    if (daysSinceUpdate >= 0) {
+      score += (15 - daysSinceUpdate.clamp(0, 15));
+    }
+
+    // Réciprocité : bonus si l'autre profil recherche également notre sexe
+    // et que notre âge correspond à sa tranche recherchée. Augmente le taux
+    // de match réel (pas seulement l'affinité unilatérale).
+    final otherWantsMySex = other.rechercheSexe == 'tous' || other.rechercheSexe == sexe;
+    final otherWantsMyAge = other.rechercheAgeMin <= 0 || other.rechercheAgeMax <= 0 ||
+        (age >= other.rechercheAgeMin && age <= other.rechercheAgeMax);
+    if (otherWantsMySex && otherWantsMyAge) {
+      score += 15;
+    }
+
+    // Cold start : léger bonus de visibilité pour les profils créés dans les
+    // dernières 48h, pour ne pas les laisser invisibles faute de popularité.
+    final hoursSinceCreation = (now - other.createdAt) / (60 * 60 * 1000);
+    if (hoursSinceCreation >= 0 && hoursSinceCreation <= 48) {
+      score += 10;
+    }
+
+    // Boost actif : forte priorité temporaire (fonctionnalité payante "Booster
+    // mon profil"), pour garantir une vraie hausse de visibilité.
+    if (other.isBoosted) {
+      score += 200;
+    }
+
+    return score;
+  }
 
   DatingProfile({
     required this.id,
@@ -389,7 +493,12 @@ class DatingProfile {
     this.countryCode,
     this.region,
     this.city,
+    this.latitude,
+    this.longitude,
     required this.popularityScore,
+    this.boostUntil,
+    this.verificationRequested = false,
+    this.verificationRequestedAt,
   });
 
   factory DatingProfile.fromJson(Map<String, dynamic> json) {
@@ -428,7 +537,12 @@ class DatingProfile {
       countryCode: json['countryCode']?.toString(),
       region: json['region']?.toString(),
       city: json['city']?.toString(),
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
       popularityScore: json['popularityScore'] ?? 0,
+      boostUntil: json['boostUntil'] as int?,
+      verificationRequested: json['verificationRequested'] ?? false,
+      verificationRequestedAt: json['verificationRequestedAt'] as int?,
     );
   }
 
@@ -464,7 +578,12 @@ class DatingProfile {
       'countryCode': countryCode,
       'region': region,
       'city': city,
+      'latitude': latitude,
+      'longitude': longitude,
       'popularityScore': popularityScore,
+      'boostUntil': boostUntil,
+      'verificationRequested': verificationRequested,
+      'verificationRequestedAt': verificationRequestedAt,
     };
   }
 
@@ -499,7 +618,12 @@ class DatingProfile {
     String? countryCode,
     String? region,
     String? city,
+    double? latitude,
+    double? longitude,
     int? popularityScore,
+    int? boostUntil,
+    bool? verificationRequested,
+    int? verificationRequestedAt,
   }) {
     return DatingProfile(
       id: id ?? this.id,
@@ -532,7 +656,12 @@ class DatingProfile {
       countryCode: countryCode ?? this.countryCode,
       region: region ?? this.region,
       city: city ?? this.city,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
       popularityScore: popularityScore ?? this.popularityScore,
+      boostUntil: boostUntil ?? this.boostUntil,
+      verificationRequested: verificationRequested ?? this.verificationRequested,
+      verificationRequestedAt: verificationRequestedAt ?? this.verificationRequestedAt,
     );
   }
 }
@@ -1452,6 +1581,7 @@ class SubscriptionPlan {
   // Nouveaux champs pour les limites
   final int defaultLikes;
   final int defaultSuperLikes;
+  final int defaultSwipes;
 
   SubscriptionPlan({
     required this.id,
@@ -1466,6 +1596,7 @@ class SubscriptionPlan {
     required this.updatedAt,
     required this.defaultLikes,
     required this.defaultSuperLikes,
+    required this.defaultSwipes,
   });
 
   factory SubscriptionPlan.fromJson(Map<String, dynamic> json) {
@@ -1484,6 +1615,7 @@ class SubscriptionPlan {
       updatedAt: json['updatedAt'] ?? 0,
       defaultLikes: json['defaultLikes'] ?? 10,
       defaultSuperLikes: json['defaultSuperLikes'] ?? 1,
+      defaultSwipes: json['defaultSwipes'] ?? 30,
     );
   }
 
@@ -1501,6 +1633,7 @@ class SubscriptionPlan {
       'updatedAt': updatedAt,
       'defaultLikes': defaultLikes,
       'defaultSuperLikes': defaultSuperLikes,
+      'defaultSwipes': defaultSwipes,
     };
   }
 
@@ -1517,6 +1650,7 @@ class SubscriptionPlan {
     int? updatedAt,
     int? defaultLikes,
     int? defaultSuperLikes,
+    int? defaultSwipes,
   }) {
     return SubscriptionPlan(
       id: id ?? this.id,
@@ -1531,6 +1665,7 @@ class SubscriptionPlan {
       updatedAt: updatedAt ?? this.updatedAt,
       defaultLikes: defaultLikes ?? this.defaultLikes,
       defaultSuperLikes: defaultSuperLikes ?? this.defaultSuperLikes,
+      defaultSwipes: defaultSwipes ?? this.defaultSwipes,
     );
   }
 }
@@ -1549,6 +1684,7 @@ class UserDatingSubscription {
   final int updatedAt;
   final int remainingLikes;      // ✅ Nouveau champ
   final int remainingSuperLikes; // ✅ Nouveau champ
+  final int remainingSwipes;     // ✅ Nouveau champ (quota de profils parcourus)
   final int lastResetDate;       // ✅ Nouveau champ (timestamp du dernier reset)
 
   UserDatingSubscription({
@@ -1563,6 +1699,7 @@ class UserDatingSubscription {
     required this.updatedAt,
     required this.remainingLikes,
     required this.remainingSuperLikes,
+    this.remainingSwipes = -1,
     required this.lastResetDate,
   });
 
@@ -1579,6 +1716,7 @@ class UserDatingSubscription {
       updatedAt: json['updatedAt'] ?? 0,
       remainingLikes: json['remainingLikes'] ?? 0,
       remainingSuperLikes: json['remainingSuperLikes'] ?? 0,
+      remainingSwipes: json['remainingSwipes'] ?? -1,
       lastResetDate: json['lastResetDate'] ?? 0,
     );
   }
@@ -1596,6 +1734,7 @@ class UserDatingSubscription {
       'updatedAt': updatedAt,
       'remainingLikes': remainingLikes,
       'remainingSuperLikes': remainingSuperLikes,
+      'remainingSwipes': remainingSwipes,
       'lastResetDate': lastResetDate,
     };
   }
@@ -1612,6 +1751,7 @@ class UserDatingSubscription {
     int? updatedAt,
     int? remainingLikes,
     int? remainingSuperLikes,
+    int? remainingSwipes,
     int? lastResetDate,
   }) {
     return UserDatingSubscription(
@@ -1626,6 +1766,7 @@ class UserDatingSubscription {
       updatedAt: updatedAt ?? this.updatedAt,
       remainingLikes: remainingLikes ?? this.remainingLikes,
       remainingSuperLikes: remainingSuperLikes ?? this.remainingSuperLikes,
+      remainingSwipes: remainingSwipes ?? this.remainingSwipes,
       lastResetDate: lastResetDate ?? this.lastResetDate,
     );
   }

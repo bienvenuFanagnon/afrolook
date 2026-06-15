@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/dating_data.dart';
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
+import '../../theme/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 import 'dating_chat_page.dart';
 import 'dating_subscription_page.dart';
 
@@ -55,6 +57,7 @@ class _DatingConnectionsPageState extends State<DatingConnectionsPage> {
   }
 
   void _showPremiumDialog() {
+    final t = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -64,9 +67,9 @@ class _DatingConnectionsPageState extends State<DatingConnectionsPage> {
           children: [
             Icon(Icons.lock, color: Colors.amber),
             const SizedBox(width: 8),
-            const Text(
-              'Accès au chat',
-              style: TextStyle(color: Colors.white),
+            Text(
+              t.datingChatAccessTitle,
+              style: const TextStyle(color: Colors.white),
             ),
           ],
         ),
@@ -86,32 +89,32 @@ class _DatingConnectionsPageState extends State<DatingConnectionsPage> {
               child: const Icon(Icons.chat_bubble_outline, size: 40, color: Colors.white),
             ),
             const SizedBox(height: 20),
-            const Text(
-              '💬 Discutez avec vos matchs',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+            Text(
+              t.datingChatWithMatchesEmoji,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
             ),
             const SizedBox(height: 12),
-            const Text(
-              'La messagerie privée est réservée aux membres AfroLove Plus et Gold.',
+            Text(
+              t.datingPremiumUpgradeIntro,
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey, fontSize: 14),
+              style: const TextStyle(color: Colors.grey, fontSize: 14),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Passez à l\'abonnement Premium pour :',
-              style: TextStyle(color: Colors.grey, fontSize: 12),
+            Text(
+              t.datingPremiumUpgradeCallToAction,
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
             ),
             const SizedBox(height: 12),
-            _buildFeatureRow('💬 Messages illimités'),
-            _buildFeatureRow('❤️ Voir qui vous a liké'),
-            _buildFeatureRow('⭐ 2 super likes par jour'),
-            _buildFeatureRow('🚀 Profil mis en avant'),
+            _buildFeatureRow(t.datingFeatureUnlimitedMessages),
+            _buildFeatureRow(t.datingFeatureSeeWhoLiked),
+            _buildFeatureRow(t.datingFeatureSuperLikesPerDay),
+            _buildFeatureRow(t.datingFeatureProfileBoost),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Plus tard', style: TextStyle(color: Colors.grey)),
+            child: Text(t.datingLaterButton, style: const TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -125,9 +128,9 @@ class _DatingConnectionsPageState extends State<DatingConnectionsPage> {
               backgroundColor: Colors.amber,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
             ),
-            child: const Text(
-              'Voir les offres',
-              style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+            child: Text(
+              t.datingSeeOffersTitleCase,
+              style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -160,6 +163,12 @@ class _DatingConnectionsPageState extends State<DatingConnectionsPage> {
     });
   }
 
+  String _cdnUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    final userProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    return userProvider.convertToCdnUrl(url, userProvider.appDefaultData);
+  }
+
   Future<void> _openChat(String connectionId, String otherUserId, DatingProfile otherProfile) async {
     // Met à jour lastMessageAt pour que cette conversation remonte en tête
     await _updateConnectionLastMessageAt(connectionId);
@@ -179,25 +188,27 @@ class _DatingConnectionsPageState extends State<DatingConnectionsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     if (_currentUserId == null) {
-      return const Scaffold(
-        body: Center(child: Text('Veuillez vous connecter')),
+      return Scaffold(
+        backgroundColor: AppColors.of(context).background,
+        body: Center(child: Text(t.datingPleaseLogin)),
       );
     }
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.of(context).background,
       appBar: AppBar(
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '💕 Matchs',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22),
+              t.datingMatchesTitle,
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22),
             ),
             Text(
-              'Profils qui vous ont liké mutuellement',
-              style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.normal),
+              t.datingMatchesSubtitle,
+              style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.normal),
             ),
           ],
         ),
@@ -218,20 +229,20 @@ class _DatingConnectionsPageState extends State<DatingConnectionsPage> {
                 children: [
                   Icon(Icons.error_outline, size: 60, color: Colors.red),
                   const SizedBox(height: 16),
-                  Text('Erreur: ${snapshot.error}'),
+                  Text(t.datingErrorGeneric.replaceAll('{error}', '${snapshot.error}')),
                 ],
               ),
             );
           }
 
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Chargement de vos matchs...'),
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  Text(t.datingLoadingMatches),
                 ],
               ),
             );
@@ -261,14 +272,14 @@ class _DatingConnectionsPageState extends State<DatingConnectionsPage> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const Text(
-                    '💔 Aucun match pour le moment',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
+                  Text(
+                    t.datingNoMatchesTitle,
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.of(context).textPrimary),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'Likez des profils pour créer des connexions !',
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  Text(
+                    t.datingLikeProfilesToConnect,
+                    style: TextStyle(fontSize: 14, color: AppColors.of(context).textSecondary),
                   ),
                   const SizedBox(height: 32),
                   ElevatedButton.icon(
@@ -276,9 +287,9 @@ class _DatingConnectionsPageState extends State<DatingConnectionsPage> {
                       Navigator.pop(context);
                     },
                     icon: const Icon(Icons.favorite, color: Colors.white),
-                    label: const Text(
-                      'Découvrir des profils',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                    label: Text(
+                      t.datingDiscoverProfiles,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
@@ -328,7 +339,7 @@ class _DatingConnectionsPageState extends State<DatingConnectionsPage> {
                       child: Container(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
-                          color: Colors.white,
+                          color: AppColors.of(context).surface,
                           boxShadow: [
                             BoxShadow(
                               color: Colors.grey.withOpacity(0.1),
@@ -360,9 +371,9 @@ class _DatingConnectionsPageState extends State<DatingConnectionsPage> {
                                     children: [
                                       const Icon(Icons.fiber_new, size: 12, color: Colors.white),
                                       const SizedBox(width: 4),
-                                      const Text(
-                                        'Nouveau',
-                                        style: TextStyle(
+                                      Text(
+                                        t.datingNewBadge,
+                                        style: const TextStyle(
                                           color: Colors.white,
                                           fontSize: 10,
                                           fontWeight: FontWeight.bold,
@@ -402,7 +413,7 @@ class _DatingConnectionsPageState extends State<DatingConnectionsPage> {
                                           child: ClipRRect(
                                             borderRadius: BorderRadius.circular(35),
                                             child: Image.network(
-                                              otherProfile.imageUrl,
+                                              _cdnUrl(otherProfile.imageUrl),
                                               width: 66,
                                               height: 66,
                                               fit: BoxFit.cover,
@@ -446,10 +457,10 @@ class _DatingConnectionsPageState extends State<DatingConnectionsPage> {
                                       children: [
                                         Text(
                                           otherProfile.pseudo,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 18,
                                             fontWeight: FontWeight.bold,
-                                            color: Colors.black87,
+                                            color: AppColors.of(context).textPrimary,
                                           ),
                                         ),
                                         const SizedBox(height: 4),
@@ -462,7 +473,7 @@ class _DatingConnectionsPageState extends State<DatingConnectionsPage> {
                                             ),
                                             const SizedBox(width: 4),
                                             Text(
-                                              '${otherProfile.age} ans',
+                                              t.datingAgeYears.replaceAll('{age}', '${otherProfile.age}'),
                                               style: const TextStyle(
                                                 fontSize: 12,
                                                 color: Colors.grey,
@@ -501,7 +512,7 @@ class _DatingConnectionsPageState extends State<DatingConnectionsPage> {
                                               ),
                                               const SizedBox(width: 4),
                                               Text(
-                                                'Match du $formattedDate',
+                                                t.datingMatchedOn.replaceAll('{date}', formattedDate),
                                                 style: TextStyle(
                                                   fontSize: 10,
                                                   color: Colors.green.shade700,
@@ -545,14 +556,15 @@ class _DatingConnectionsPageState extends State<DatingConnectionsPage> {
   }
 
   String _formatMatchDate(DateTime date) {
+    final t = AppLocalizations.of(context);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final matchDate = DateTime(date.year, date.month, date.day);
 
     if (matchDate == today) {
-      return "aujourd'hui";
+      return t.datingToday;
     } else if (matchDate == today.subtract(const Duration(days: 1))) {
-      return "hier";
+      return t.datingYesterday;
     } else {
       return "${date.day}/${date.month}/${date.year}";
     }

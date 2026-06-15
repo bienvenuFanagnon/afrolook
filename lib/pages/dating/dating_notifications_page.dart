@@ -6,6 +6,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/dating_data.dart';
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
+import '../../theme/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 import '../pub/native_ad_widget.dart';
 import 'dating_profile_detail_page.dart';
 
@@ -86,6 +88,12 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
     );
   }
 
+  String _cdnUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    final userProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    return userProvider.convertToCdnUrl(url, userProvider.appDefaultData);
+  }
+
   Widget _buildNotificationItem(NotificationData notification) {
     final type = notification.type ?? '';
     final title = notification.titre ?? '';
@@ -132,7 +140,7 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
-            color: Colors.white,
+            color: AppColors.of(context).surface,
             boxShadow: [
               BoxShadow(
                 color: Colors.grey.withOpacity(0.1),
@@ -141,7 +149,7 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
               ),
             ],
             border: Border.all(
-              color: isNew ? Colors.red.shade200 : Colors.grey.shade200,
+              color: isNew ? Colors.red.shade200 : AppColors.of(context).border,
               width: isNew ? 1.5 : 1,
             ),
           ),
@@ -168,7 +176,7 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: isNew ? FontWeight.bold : FontWeight.w500,
-                          color: Colors.grey.shade800,
+                          color: AppColors.of(context).textPrimary,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -176,7 +184,7 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
                         description,
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade600,
+                          color: AppColors.of(context).textSecondary,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -188,7 +196,7 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(25),
                     child: Image.network(
-                      mediaUrl,
+                      _cdnUrl(mediaUrl),
                       width: 40,
                       height: 40,
                       fit: BoxFit.cover,
@@ -246,17 +254,18 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.of(context).background,
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const Text(
-                  '🔔 Notifications',
-                  style: TextStyle(
+                Text(
+                  t.datingNotificationsTitle,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 22,
@@ -281,9 +290,9 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
                   ),
               ],
             ),
-            const Text(
-              'Vos interactions récentes',
-              style: TextStyle(
+            Text(
+              t.datingRecentInteractions,
+              style: const TextStyle(
                 color: Colors.white70,
                 fontSize: 12,
                 fontWeight: FontWeight.normal,
@@ -313,20 +322,20 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
                 children: [
                   Icon(Icons.error_outline, size: 60, color: Colors.red),
                   const SizedBox(height: 16),
-                  Text('Erreur: ${snapshot.error}'),
+                  Text(t.datingErrorGeneric.replaceAll('{error}', '${snapshot.error}')),
                 ],
               ),
             );
           }
 
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Chargement...'),
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  Text(t.datingLoadingText),
                 ],
               ),
             );
@@ -355,14 +364,14 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const Text(
-                    'Aucune notification',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
+                  Text(
+                    t.datingNoNotifications,
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.of(context).textPrimary),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'Les notifications apparaîtront ici',
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  Text(
+                    t.datingNotificationsAppearHere,
+                    style: TextStyle(fontSize: 14, color: AppColors.of(context).textSecondary),
                   ),
                 ],
               ),

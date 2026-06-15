@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/dating/coin_provider.dart';
 import '../../providers/dating/creator_provider.dart';
+import '../../theme/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 import 'buy_coins_page.dart';
 
 class CreatorSubscriptionPage extends StatefulWidget {
@@ -33,6 +35,7 @@ class _CreatorSubscriptionPageState extends State<CreatorSubscriptionPage> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final authProvider = Provider.of<UserAuthProvider>(context);
     final creatorProvider = Provider.of<CreatorProvider>(context, listen: false);
     final coinProvider = Provider.of<CoinProvider>(context, listen: false);
@@ -40,10 +43,10 @@ class _CreatorSubscriptionPageState extends State<CreatorSubscriptionPage> {
     final currentCoins = authProvider.loginUserData.coinsBalance ?? 0;
 
     return Scaffold(
-      backgroundColor: primaryBlack,
+      backgroundColor: AppColors.of(context).background,
       appBar: AppBar(
         title: Text(
-          'S\'abonner à ${widget.creatorName}',
+          t.creatorSubscribeToTitle.replaceAll('{name}', widget.creatorName),
           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         backgroundColor: primaryRed,
@@ -80,7 +83,7 @@ class _CreatorSubscriptionPageState extends State<CreatorSubscriptionPage> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Soutenez ${widget.creatorName}',
+                    t.creatorSupportName.replaceAll('{name}', widget.creatorName),
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -89,7 +92,7 @@ class _CreatorSubscriptionPageState extends State<CreatorSubscriptionPage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Abonnez-vous pour accéder à du contenu exclusif',
+                    t.creatorSubscribeExclusiveAccess,
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.white70, fontSize: 14),
                   ),
@@ -106,7 +109,7 @@ class _CreatorSubscriptionPageState extends State<CreatorSubscriptionPage> {
                         const Icon(Icons.monetization_on, color: Colors.white, size: 18),
                         const SizedBox(width: 8),
                         Text(
-                          '$currentCoins pièces disponibles',
+                          t.creatorCoinsAvailable.replaceAll('{count}', '$currentCoins'),
                           style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
                         ),
                       ],
@@ -123,25 +126,27 @@ class _CreatorSubscriptionPageState extends State<CreatorSubscriptionPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _buildSubscriptionOption(
-                    title: 'Abonnement gratuit',
+                    context,
+                    title: t.creatorFreeSubscriptionTitle,
                     price: 0,
                     isFree: true,
-                    benefits: const [
-                      'Accès aux contenus gratuits',
-                      'Notifications des nouveaux contenus',
-                      'Soutien au créateur',
+                    benefits: [
+                      t.creatorBenefitFreeAccess,
+                      t.creatorBenefitNotifications,
+                      t.creatorBenefitSupport,
                     ],
                   ),
                   const SizedBox(height: 16),
                   _buildSubscriptionOption(
-                    title: 'Abonnement Premium',
+                    context,
+                    title: t.creatorPremiumSubscriptionTitle,
                     price: _subscriptionPrice,
                     isFree: false,
-                    benefits: const [
-                      'Accès à TOUS les contenus',
-                      'Contenus exclusifs',
-                      'Accès aux lives privés',
-                      'Badge de supporter',
+                    benefits: [
+                      t.creatorBenefitAllContent,
+                      t.creatorBenefitExclusiveContent,
+                      t.creatorBenefitPrivateLives,
+                      t.creatorBenefitSupporterBadge,
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -161,8 +166,7 @@ class _CreatorSubscriptionPageState extends State<CreatorSubscriptionPage> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'Il vous manque ${_subscriptionPrice - currentCoins} pièces. '
-                                  'Achetez des pièces pour continuer.',
+                              t.creatorMissingCoinsMessage.replaceAll('{count}', '${_subscriptionPrice - currentCoins}'),
                               style: TextStyle(color: Colors.red.shade800, fontSize: 12),
                             ),
                           ),
@@ -204,8 +208,8 @@ class _CreatorSubscriptionPageState extends State<CreatorSubscriptionPage> {
                     )
                         : Text(
                       _isPaidSubscription
-                          ? 'S\'abonner pour $_subscriptionPrice pièces'
-                          : 'S\'abonner gratuitement',
+                          ? t.creatorSubscribeForCoins.replaceAll('{price}', '$_subscriptionPrice')
+                          : t.creatorSubscribeFree,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -218,7 +222,7 @@ class _CreatorSubscriptionPageState extends State<CreatorSubscriptionPage> {
                   const SizedBox(height: 12),
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Plus tard'),
+                    child: Text(t.datingLaterButton),
                   ),
                 ],
               ),
@@ -229,12 +233,14 @@ class _CreatorSubscriptionPageState extends State<CreatorSubscriptionPage> {
     );
   }
 
-  Widget _buildSubscriptionOption({
+  Widget _buildSubscriptionOption(
+    BuildContext context, {
     required String title,
     required int price,
     required bool isFree,
     required List<String> benefits,
   }) {
+    final t = AppLocalizations.of(context);
     final isSelected = _isPaidSubscription == !isFree;
 
     return GestureDetector(
@@ -252,7 +258,7 @@ class _CreatorSubscriptionPageState extends State<CreatorSubscriptionPage> {
             width: isSelected ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(20),
-          color: isSelected ? primaryRed.withOpacity(0.05) : secondaryGrey,
+          color: isSelected ? primaryRed.withOpacity(0.05) : AppColors.of(context).surface,
         ),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -267,7 +273,7 @@ class _CreatorSubscriptionPageState extends State<CreatorSubscriptionPage> {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: isSelected ? primaryRed : Colors.white,
+                        color: isSelected ? primaryRed : AppColors.of(context).textPrimary,
                       ),
                     ),
                   ),
@@ -288,7 +294,7 @@ class _CreatorSubscriptionPageState extends State<CreatorSubscriptionPage> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '$price pièces',
+                            t.creatorPriceCoins.replaceAll('{price}', '$price'),
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Colors.amber.shade800,
@@ -306,7 +312,7 @@ class _CreatorSubscriptionPageState extends State<CreatorSubscriptionPage> {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        'Gratuit',
+                        t.creatorFreeBadge,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: Colors.green.shade800,
@@ -332,7 +338,7 @@ class _CreatorSubscriptionPageState extends State<CreatorSubscriptionPage> {
                         benefit,
                         style: TextStyle(
                           fontSize: 13,
-                          color: isSelected ? Colors.grey.shade800 : Colors.grey.shade400,
+                          color: isSelected ? AppColors.of(context).textPrimary : AppColors.of(context).textSecondary,
                         ),
                       ),
                     ),
@@ -383,10 +389,11 @@ class _CreatorSubscriptionPageState extends State<CreatorSubscriptionPage> {
         );
       }
 
+      final t = AppLocalizations.of(context);
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Abonnement réussi !'),
+            content: Text(t.creatorSubscriptionSuccess),
             backgroundColor: Colors.green,
           ),
         );
@@ -394,16 +401,17 @@ class _CreatorSubscriptionPageState extends State<CreatorSubscriptionPage> {
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Erreur lors de l\'abonnement'),
+            content: Text(t.creatorSubscriptionError),
             backgroundColor: Colors.red,
           ),
         );
       }
     } catch (e) {
       if (mounted) {
+        final t = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur: ${e.toString()}'),
+            content: Text('${t.creatorRegisterError}: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -416,42 +424,43 @@ class _CreatorSubscriptionPageState extends State<CreatorSubscriptionPage> {
   }
 
   Future<bool> _showInsufficientCoinsDialog(BuildContext context) async {
+    final t = AppLocalizations.of(context);
     return await showDialog(
       context: context,
       barrierDismissible: true,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: secondaryGrey,
+        backgroundColor: AppColors.of(context).surface,
         title: Row(
           children: [
             Icon(Icons.monetization_on, color: primaryYellow),
             const SizedBox(width: 8),
-            const Text('Solde insuffisant', style: TextStyle(color: Colors.white)),
+            Text(t.datingInsufficientBalanceTitle, style: TextStyle(color: AppColors.of(context).textPrimary)),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Vous n\'avez pas assez de pièces pour cet abonnement.',
-              style: TextStyle(color: Colors.grey[300]),
+              t.creatorNotEnoughCoinsMessage,
+              style: TextStyle(color: AppColors.of(context).textPrimary),
             ),
             const SizedBox(height: 8),
             Text(
-              'Achetez des pièces pour continuer.',
-              style: TextStyle(color: Colors.grey[400]),
+              t.datingBuyCoinsPrompt,
+              style: TextStyle(color: AppColors.of(context).textSecondary),
             ),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.grey[800],
+                color: AppColors.of(context).surfaceVariant,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Pièces nécessaires :', style: TextStyle(color: Colors.grey[400])),
+                  Text(t.creatorCoinsNeededLabel, style: TextStyle(color: AppColors.of(context).textSecondary)),
                   Text('$_subscriptionPrice', style: TextStyle(color: primaryYellow, fontWeight: FontWeight.bold)),
                 ],
               ),
@@ -461,7 +470,7 @@ class _CreatorSubscriptionPageState extends State<CreatorSubscriptionPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuler', style: TextStyle(color: Colors.grey)),
+            child: Text(t.datingCancelButton, style: TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -469,7 +478,7 @@ class _CreatorSubscriptionPageState extends State<CreatorSubscriptionPage> {
               backgroundColor: primaryYellow,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
             ),
-            child: Text('Acheter des pièces', style: TextStyle(color: primaryBlack)),
+            child: Text(t.datingBuyCoinsButton, style: TextStyle(color: primaryBlack)),
           ),
         ],
       ),

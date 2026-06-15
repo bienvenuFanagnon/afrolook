@@ -10,6 +10,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/dating_data.dart';
 import '../../providers/authProvider.dart';
 import '../../models/enums.dart';
+import '../../theme/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 
 class CreatorRegisterPage extends StatefulWidget {
   const CreatorRegisterPage({Key? key}) : super(key: key);
@@ -95,16 +97,17 @@ class _CreatorRegisterPageState extends State<CreatorRegisterPage> {
   }
 
   Future<void> _register() async {
+    final t = AppLocalizations.of(context);
     if (_pseudoController.text.trim().isEmpty) {
-      _showSnackBar('Veuillez entrer un pseudo', Colors.red);
+      _showSnackBar(t.creatorEnterPseudoError, Colors.red);
       return;
     }
     if (_bioController.text.trim().isEmpty) {
-      _showSnackBar('Veuillez entrer une bio', Colors.red);
+      _showSnackBar(t.creatorEnterBioError, Colors.red);
       return;
     }
     if ((_selectedImageFile == null && _selectedImageBytes == null)) {
-      _showSnackBar('Veuillez ajouter une photo de profil', Colors.red);
+      _showSnackBar(t.creatorAddProfilePhotoError, Colors.red);
       return;
     }
 
@@ -149,11 +152,11 @@ class _CreatorRegisterPageState extends State<CreatorRegisterPage> {
         'updatedAt': now,
       });
 
-      _showSnackBar('Félicitations ! Vous êtes maintenant créateur !', Colors.green);
+      _showSnackBar(t.creatorRegisterSuccess, Colors.green);
       Navigator.pop(context);
     } catch (e) {
       print('❌ Erreur inscription créateur: $e');
-      _showSnackBar('Erreur: ${e.toString()}', Colors.red);
+      _showSnackBar('${t.creatorRegisterError}: ${e.toString()}', Colors.red);
     } finally {
       setState(() => _isLoading = false);
     }
@@ -172,6 +175,7 @@ class _CreatorRegisterPageState extends State<CreatorRegisterPage> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     // Préparer l'image à afficher
     ImageProvider? imageProvider;
     if (kIsWeb && _selectedImageBytes != null) {
@@ -181,10 +185,10 @@ class _CreatorRegisterPageState extends State<CreatorRegisterPage> {
     }
 
     return Scaffold(
-      backgroundColor: primaryBlack,
+      backgroundColor: AppColors.of(context).background,
       appBar: AppBar(
         title: Text(
-          'Devenir créateur',
+          t.creatorBecomeCreatorTitle,
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         backgroundColor: primaryRed,
@@ -215,9 +219,9 @@ class _CreatorRegisterPageState extends State<CreatorRegisterPage> {
                   ),
                   SizedBox(height: 16),
                   Text(
-                    'Partagez votre contenu et gagnez de l\'argent',
+                    t.creatorShareAndEarn,
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey[400], fontSize: 14),
+                    style: TextStyle(color: AppColors.of(context).textSecondary, fontSize: 14),
                   ),
                 ],
               ),
@@ -232,7 +236,7 @@ class _CreatorRegisterPageState extends State<CreatorRegisterPage> {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: secondaryGrey,
+                  color: AppColors.of(context).surfaceVariant,
                   border: Border.all(color: primaryRed, width: 2),
                 ),
                 child: imageProvider != null
@@ -249,7 +253,7 @@ class _CreatorRegisterPageState extends State<CreatorRegisterPage> {
                   children: [
                     Icon(Icons.add_a_photo, color: primaryYellow, size: 30),
                     SizedBox(height: 8),
-                    Text('Ajouter une photo', style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+                    Text(t.creatorAddPhoto, style: TextStyle(color: AppColors.of(context).textSecondary, fontSize: 12)),
                   ],
                 ),
               ),
@@ -259,13 +263,13 @@ class _CreatorRegisterPageState extends State<CreatorRegisterPage> {
             // Pseudo
             TextFormField(
               controller: _pseudoController,
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: AppColors.of(context).textPrimary),
               decoration: InputDecoration(
-                labelText: 'Nom d\'artiste / Pseudo',
-                labelStyle: TextStyle(color: Colors.grey[400]),
+                labelText: t.creatorArtistNameLabel,
+                labelStyle: TextStyle(color: AppColors.of(context).textSecondary),
                 prefixIcon: Icon(Icons.person, color: primaryRed),
                 filled: true,
-                fillColor: secondaryGrey,
+                fillColor: AppColors.of(context).surfaceVariant,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
               ),
             ),
@@ -274,14 +278,14 @@ class _CreatorRegisterPageState extends State<CreatorRegisterPage> {
             // Bio
             TextFormField(
               controller: _bioController,
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: AppColors.of(context).textPrimary),
               maxLines: 4,
               decoration: InputDecoration(
-                labelText: 'Bio',
-                labelStyle: TextStyle(color: Colors.grey[400]),
+                labelText: t.creatorBioLabel,
+                labelStyle: TextStyle(color: AppColors.of(context).textSecondary),
                 prefixIcon: Icon(Icons.description, color: primaryRed),
                 filled: true,
-                fillColor: secondaryGrey,
+                fillColor: AppColors.of(context).surfaceVariant,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
               ),
             ),
@@ -290,20 +294,20 @@ class _CreatorRegisterPageState extends State<CreatorRegisterPage> {
             // Type de créateur
             DropdownButtonFormField<CreatorType>(
               value: _selectedType,
-              style: TextStyle(color: Colors.white),
-              dropdownColor: secondaryGrey,
+              style: TextStyle(color: AppColors.of(context).textPrimary),
+              dropdownColor: AppColors.of(context).surfaceVariant,
               decoration: InputDecoration(
-                labelText: 'Type de créateur',
-                labelStyle: TextStyle(color: Colors.grey[400]),
+                labelText: t.creatorTypeLabel,
+                labelStyle: TextStyle(color: AppColors.of(context).textSecondary),
                 prefixIcon: Icon(Icons.category, color: primaryRed),
                 filled: true,
-                fillColor: secondaryGrey,
+                fillColor: AppColors.of(context).surfaceVariant,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
               ),
               items: CreatorType.values.map((type) {
                 return DropdownMenuItem(
                   value: type,
-                  child: Text(_getTypeLabel(type)),
+                  child: Text(_getTypeLabel(t, type)),
                 );
               }).toList(),
               onChanged: (value) => setState(() => _selectedType = value!),
@@ -321,7 +325,7 @@ class _CreatorRegisterPageState extends State<CreatorRegisterPage> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
               ),
               child: Text(
-                'Devenir créateur',
+                t.creatorBecomeCreatorTitle,
                 style: TextStyle(color: primaryBlack, fontWeight: FontWeight.bold, fontSize: 16),
               ),
             ),
@@ -329,9 +333,9 @@ class _CreatorRegisterPageState extends State<CreatorRegisterPage> {
 
             // Mentions légales
             Text(
-              'En devenant créateur, vous acceptez les conditions d\'utilisation et la politique de monétisation.',
+              t.creatorLegalTerms,
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[600], fontSize: 10),
+              style: TextStyle(color: AppColors.of(context).textSecondary, fontSize: 10),
             ),
           ],
         ),
@@ -339,18 +343,18 @@ class _CreatorRegisterPageState extends State<CreatorRegisterPage> {
     );
   }
 
-  String _getTypeLabel(CreatorType type) {
+  String _getTypeLabel(AppLocalizations t, CreatorType type) {
     switch (type) {
       case CreatorType.influencer:
-        return 'Influenceur';
+        return t.creatorTypeInfluencer;
       case CreatorType.artist:
-        return 'Artiste';
+        return t.creatorTypeArtist;
       case CreatorType.educator:
-        return 'Éducateur';
+        return t.creatorTypeEducator;
       case CreatorType.entertainer:
-        return 'Divertissement';
+        return t.creatorTypeEntertainer;
       default:
-        return 'Autre';
+        return t.creatorTypeOther;
     }
   }
 }

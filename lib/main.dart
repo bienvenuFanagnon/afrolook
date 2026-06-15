@@ -350,6 +350,7 @@ class _MyAppState extends State<MyApp> {
       child: Consumer2<ThemeProvider, LocaleProvider>(
         builder: (context, themeProvider, localeProvider, _) => MaterialApp(
         navigatorKey: NavigationCacheService().navigatorKey,
+        navigatorObservers: [datingRouteObserver],
         title: 'Afrolook',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,

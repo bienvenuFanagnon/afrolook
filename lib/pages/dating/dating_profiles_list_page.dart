@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/dating_data.dart';
 import '../../providers/dating/dating_provider.dart';
+import '../../theme/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 import 'dating_profile_detail_page.dart';
 
 
@@ -28,9 +30,11 @@ class _DatingProfilesListPageState extends State<DatingProfilesListPage> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     return Scaffold(
+      backgroundColor: AppColors.of(context).background,
       appBar: AppBar(
-        title: Text('Rencontres', style: TextStyle(color: Colors.white)),
+        title: Text(t.datingMeetingsTitle, style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.red.shade600,
         elevation: 0,
         actions: [
@@ -55,7 +59,7 @@ class _DatingProfilesListPageState extends State<DatingProfilesListPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('Erreur: ${provider.error}'),
+                  Text(t.datingErrorGeneric.replaceAll('{error}', '${provider.error}')),
                   SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () {
@@ -66,7 +70,7 @@ class _DatingProfilesListPageState extends State<DatingProfilesListPage> {
                         // provider.loadRecommendedProfiles(userId);
                       }
                     },
-                    child: Text('Réessayer'),
+                    child: Text(t.datingRetry),
                   ),
                 ],
               ),
@@ -85,18 +89,18 @@ class _DatingProfilesListPageState extends State<DatingProfilesListPage> {
                   ),
                   SizedBox(height: 16),
                   Text(
-                    'Aucun profil à afficher',
+                    t.datingNoProfileToShow,
                     style: TextStyle(
                       fontSize: 18,
-                      color: Colors.grey.shade600,
+                      color: AppColors.of(context).textPrimary,
                     ),
                   ),
                   SizedBox(height: 8),
                   Text(
-                    'Revenez plus tard pour découvrir de nouveaux profils',
+                    t.datingComeBackForNewProfiles,
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey.shade500,
+                      color: AppColors.of(context).textSecondary,
                     ),
                   ),
                 ],
@@ -124,6 +128,7 @@ class _DatingProfilesListPageState extends State<DatingProfilesListPage> {
   }
 
   Widget _buildProfileCard(BuildContext context, DatingProfile profile) {
+    final t = AppLocalizations.of(context);
     final provider = Provider.of<DatingProvider>(context, listen: false);
     final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     final currentUserId = authProvider.loginUserData?.id;
@@ -140,7 +145,7 @@ class _DatingProfilesListPageState extends State<DatingProfilesListPage> {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          color: Colors.white,
+          color: AppColors.of(context).surface,
           boxShadow: [
             BoxShadow(
               color: Colors.grey.withOpacity(0.2),
@@ -157,7 +162,7 @@ class _DatingProfilesListPageState extends State<DatingProfilesListPage> {
               child: ClipRRect(
                 borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
                 child: Image.network(
-                  profile.imageUrl,
+                  _cdnUrl(profile.imageUrl),
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
@@ -182,7 +187,7 @@ class _DatingProfilesListPageState extends State<DatingProfilesListPage> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade800,
+                      color: AppColors.of(context).textPrimary,
                     ),
                   ),
                   SizedBox(height: 4),
@@ -191,7 +196,7 @@ class _DatingProfilesListPageState extends State<DatingProfilesListPage> {
                       Icon(
                         Icons.location_on,
                         size: 12,
-                        color: Colors.grey.shade600,
+                        color: AppColors.of(context).textSecondary,
                       ),
                       SizedBox(width: 4),
                       Expanded(
@@ -199,7 +204,7 @@ class _DatingProfilesListPageState extends State<DatingProfilesListPage> {
                           profile.ville,
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey.shade600,
+                            color: AppColors.of(context).textSecondary,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -218,7 +223,7 @@ class _DatingProfilesListPageState extends State<DatingProfilesListPage> {
                             await provider.likeProfile(profile.userId);
                             // await provider.likeProfile(currentUserId, profile.userId);
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Vous avez liké ${profile.pseudo}')),
+                              SnackBar(content: Text(t.datingYouLikedUser.replaceAll('{pseudo}', profile.pseudo))),
                             );
                           }
                         },
@@ -246,6 +251,12 @@ class _DatingProfilesListPageState extends State<DatingProfilesListPage> {
         ),
       ),
     );
+  }
+
+  String _cdnUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    final userProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    return userProvider.convertToCdnUrl(url, userProvider.appDefaultData);
   }
 
   Widget _buildActionButton({

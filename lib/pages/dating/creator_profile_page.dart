@@ -7,6 +7,8 @@ import '../../models/dating_data.dart';
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
 import '../../services/dating/coin_service.dart';
+import '../../theme/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 import 'creator_content_detail_page.dart';
 import 'creator_subscription_page.dart';
 import 'creator_content_form_page.dart';
@@ -188,9 +190,10 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
   }
 
   Future<void> _withdrawCoins() async {
+    final t = AppLocalizations.of(context);
     if (_wallet == null || _wallet!.balanceCoins <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Vous n\'avez pas de pièces à encaisser'), backgroundColor: Colors.orange),
+        SnackBar(content: Text(t.creatorNoCoinsToWithdraw), backgroundColor: Colors.orange),
       );
       return;
     }
@@ -200,42 +203,42 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: secondaryGrey,
-        title: Text('Encaisser des pièces', style: TextStyle(color: Colors.white)),
+        backgroundColor: AppColors.of(context).surface,
+        title: Text(t.creatorWithdrawCoinsDialogTitle, style: TextStyle(color: AppColors.of(context).textPrimary)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Solde actuel: ${_wallet!.balanceCoins} pièces', style: TextStyle(color: Colors.white)),
+            Text(t.creatorCurrentBalanceLabel.replaceAll('{balance}', '${_wallet!.balanceCoins}'), style: TextStyle(color: AppColors.of(context).textPrimary)),
             SizedBox(height: 12),
             TextField(
               controller: amountController,
               keyboardType: TextInputType.number,
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: AppColors.of(context).textPrimary),
               decoration: InputDecoration(
-                labelText: 'Nombre de pièces',
-                labelStyle: TextStyle(color: Colors.grey[400]),
+                labelText: t.creatorCoinsAmountLabel,
+                labelStyle: TextStyle(color: AppColors.of(context).textSecondary),
                 filled: true,
-                fillColor: Colors.grey[800],
+                fillColor: AppColors.of(context).surfaceVariant,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
             SizedBox(height: 8),
-            Text('Taux: 100 pièces = 250 FCFA', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
+            Text(t.creatorConversionRateLabel, style: TextStyle(color: AppColors.of(context).textSecondary, fontSize: 12)),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, null), child: Text('Annuler', style: TextStyle(color: Colors.grey))),
+          TextButton(onPressed: () => Navigator.pop(context, null), child: Text(t.datingCancelButton, style: TextStyle(color: Colors.grey))),
           ElevatedButton(
             onPressed: () {
               final value = int.tryParse(amountController.text.trim());
               if (value != null && value > 0 && value <= _wallet!.balanceCoins) {
                 Navigator.pop(context, value);
               } else {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Montant invalide'), backgroundColor: Colors.red));
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t.creatorInvalidAmount), backgroundColor: Colors.red));
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: primaryYellow),
-            child: Text('Valider', style: TextStyle(color: Colors.black)),
+            child: Text(t.creatorValidateButton, style: TextStyle(color: Colors.black)),
           ),
         ],
       ),
@@ -259,14 +262,14 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
           _wallet = CreatorCoinWallet.fromJson(newWallet.docs.first.data());
         }
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$amount pièces converties avec succès !'), backgroundColor: Colors.green),
+          SnackBar(content: Text(t.creatorCoinsConvertedSuccess.replaceAll('{count}', '$amount')), backgroundColor: Colors.green),
         );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur lors de la conversion'), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t.creatorConversionError), backgroundColor: Colors.red));
       }
     } catch (e) {
       print('❌ Erreur conversion: $e');
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: ${e.toString()}'), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${t.creatorRegisterError}: ${e.toString()}'), backgroundColor: Colors.red));
     } finally {
       setState(() => _isLoading = false);
     }
@@ -282,16 +285,17 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: primaryBlack,
+        backgroundColor: AppColors.of(context).background,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               CircularProgressIndicator(color: primaryRed),
               SizedBox(height: 16),
-              Text('Chargement...', style: TextStyle(color: Colors.grey[400])),
+              Text(t.datingLoadingText, style: TextStyle(color: AppColors.of(context).textSecondary)),
             ],
           ),
         ),
@@ -301,16 +305,16 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
     if (_profile == null) {
       // Pas de profil créateur pour cet utilisateur
       return Scaffold(
-        backgroundColor: primaryBlack,
+        backgroundColor: AppColors.of(context).background,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.people_outline, size: 80, color: Colors.grey[600]),
+              Icon(Icons.people_outline, size: 80, color: AppColors.of(context).textSecondary),
               SizedBox(height: 16),
               Text(
-                'Cet utilisateur n\'est pas créateur',
-                style: TextStyle(color: Colors.white, fontSize: 18),
+                t.creatorUserNotCreator,
+                style: TextStyle(color: AppColors.of(context).textPrimary, fontSize: 18),
               ),
               SizedBox(height: 24),
               if (_isOwner)
@@ -320,7 +324,7 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
                     backgroundColor: primaryYellow,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                   ),
-                  child: Text('Devenir créateur', style: TextStyle(color: primaryBlack)),
+                  child: Text(t.creatorBecomeCreatorTitle, style: TextStyle(color: primaryBlack)),
                 ),
             ],
           ),
@@ -329,7 +333,7 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
     }
 
     return Scaffold(
-      backgroundColor: primaryBlack,
+      backgroundColor: AppColors.of(context).background,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
@@ -341,9 +345,9 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
                 fit: StackFit.expand,
                 children: [
                   Image.network(
-                    _profile!.imageUrl,
+                    _cdnUrl(_profile!.imageUrl),
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(color: secondaryGrey),
+                    errorBuilder: (context, error, stackTrace) => Container(color: AppColors.of(context).surfaceVariant),
                   ),
                   Container(
                     decoration: BoxDecoration(
@@ -375,9 +379,9 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
                         SizedBox(height: 12),
                         Row(
                           children: [
-                            _buildStatChip('${_profile!.subscribersCount} abonnés', Icons.people),
+                            _buildStatChip(t.creatorSubscribersCount.replaceAll('{count}', '${_profile!.subscribersCount}'), Icons.people),
                             SizedBox(width: 8),
-                            _buildStatChip('${_profile!.totalViews} vues', Icons.visibility),
+                            _buildStatChip(t.creatorViewsCount.replaceAll('{count}', '${_profile!.totalViews}'), Icons.visibility),
                           ],
                         ),
                       ],
@@ -391,7 +395,7 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
                 IconButton(
                   icon: Icon(Icons.add, color: primaryYellow),
                   onPressed: _goToCreateContent,
-                  tooltip: 'Ajouter un contenu',
+                  tooltip: t.creatorAddContentTooltip,
                 ),
               if (!_isOwner && !_isSubscribed)
                 ElevatedButton(
@@ -410,7 +414,7 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
                     backgroundColor: primaryRed,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   ),
-                  child: Text('S\'abonner'),
+                  child: Text(t.creatorSubscribeButton),
                 ),
               if (!_isOwner && _isSubscribed)
                 IconButton(
@@ -427,7 +431,7 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
                 margin: EdgeInsets.all(16),
                 padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: secondaryGrey,
+                  color: AppColors.of(context).surface,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 8, offset: Offset(0, 2))],
                 ),
@@ -440,7 +444,7 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
                           children: [
                             Icon(Icons.monetization_on, color: primaryYellow),
                             SizedBox(width: 8),
-                            Text('Portefeuille créateur', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                            Text(t.creatorWalletTitle, style: TextStyle(color: AppColors.of(context).textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
                           ],
                         ),
                         if (_wallet != null && _wallet!.balanceCoins > 0)
@@ -451,7 +455,7 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
                               padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                             ),
-                            child: Text('Encaisser', style: TextStyle(color: Colors.white)),
+                            child: Text(t.creatorWithdrawButton, style: TextStyle(color: Colors.white)),
                           ),
                       ],
                     ),
@@ -459,24 +463,24 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Solde en pièces :', style: TextStyle(color: Colors.grey[400])),
-                        Text('${_wallet?.balanceCoins ?? 0} pièces', style: TextStyle(color: primaryYellow, fontWeight: FontWeight.bold, fontSize: 18)),
+                        Text(t.creatorBalanceCoinsLabel, style: TextStyle(color: AppColors.of(context).textSecondary)),
+                        Text(t.creatorPriceCoinsShort.replaceAll('{price}', '${_wallet?.balanceCoins ?? 0}'), style: TextStyle(color: primaryYellow, fontWeight: FontWeight.bold, fontSize: 18)),
                       ],
                     ),
                     SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Total gagné :', style: TextStyle(color: Colors.grey[400])),
-                        Text('${_wallet?.totalEarnedCoins ?? 0} pièces', style: TextStyle(color: Colors.white)),
+                        Text(t.creatorTotalEarnedLabel, style: TextStyle(color: AppColors.of(context).textSecondary)),
+                        Text(t.creatorPriceCoinsShort.replaceAll('{price}', '${_wallet?.totalEarnedCoins ?? 0}'), style: TextStyle(color: AppColors.of(context).textPrimary)),
                       ],
                     ),
                     SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Total converti :', style: TextStyle(color: Colors.grey[400])),
-                        Text('${_wallet?.totalConvertedCoins ?? 0} pièces', style: TextStyle(color: Colors.white)),
+                        Text(t.creatorTotalConvertedLabel, style: TextStyle(color: AppColors.of(context).textSecondary)),
+                        Text(t.creatorPriceCoinsShort.replaceAll('{price}', '${_wallet?.totalConvertedCoins ?? 0}'), style: TextStyle(color: AppColors.of(context).textPrimary)),
                       ],
                     ),
                   ],
@@ -495,7 +499,7 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
                 mainAxisSpacing: 12,
               ),
               delegate: SliverChildBuilderDelegate(
-                    (context, index) => _buildContentCard(_contents[index]),
+                    (context, index) => _buildContentCard(context, _contents[index]),
                 childCount: _contents.length,
               ),
             ),
@@ -508,16 +512,16 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
                   padding: EdgeInsets.all(40),
                   child: Column(
                     children: [
-                      Icon(Icons.article_outlined, size: 80, color: Colors.grey[600]),
+                      Icon(Icons.article_outlined, size: 80, color: AppColors.of(context).textSecondary),
                       SizedBox(height: 16),
                       Text(
-                        _isOwner ? 'Aucun contenu publié' : 'Ce créateur n\'a pas encore de contenu',
-                        style: TextStyle(color: Colors.grey[500], fontSize: 16),
+                        _isOwner ? t.creatorNoPublishedContent : t.creatorNoContentYet,
+                        style: TextStyle(color: AppColors.of(context).textSecondary, fontSize: 16),
                       ),
                       if (_isOwner)
                         ElevatedButton(
                           onPressed: _goToCreateContent,
-                          child: Text('Créer mon premier contenu'),
+                          child: Text(t.creatorCreateFirstContent),
                           style: ElevatedButton.styleFrom(backgroundColor: primaryYellow, foregroundColor: Colors.black),
                         ),
                     ],
@@ -545,7 +549,8 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
     );
   }
 
-  Widget _buildContentCard(CreatorContent content) {
+  Widget _buildContentCard(BuildContext context, CreatorContent content) {
+    final t = AppLocalizations.of(context);
     final canAccess = !content.isPaid || _isSubscribed || _isOwner;
     return GestureDetector(
       onTap: () {
@@ -554,7 +559,7 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          color: secondaryGrey,
+          color: AppColors.of(context).surface,
           boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 4, offset: Offset(0, 2))],
         ),
         child: Column(
@@ -567,9 +572,9 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
                   fit: StackFit.expand,
                   children: [
                     Image.network(
-                      content.thumbnailUrl ?? content.mediaUrl,
+                      _cdnUrl(content.thumbnailUrl ?? content.mediaUrl),
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(color: Colors.grey[800]),
+                      errorBuilder: (context, error, stackTrace) => Container(color: AppColors.of(context).surfaceVariant),
                     ),
                     if (content.isPaid && !canAccess)
                       Container(
@@ -580,7 +585,7 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
                             children: [
                               Icon(Icons.lock, size: 30, color: Colors.white),
                               SizedBox(height: 4),
-                              Text('Abonnement requis', style: TextStyle(color: Colors.white, fontSize: 10)),
+                              Text(t.creatorSubscriptionRequired, style: TextStyle(color: Colors.white, fontSize: 10)),
                             ],
                           ),
                         ),
@@ -593,7 +598,7 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
                           padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(color: Colors.amber, borderRadius: BorderRadius.circular(12)),
                           child: Text(
-                            '${content.priceCoins} coins',
+                            t.creatorPriceCoinsShort.replaceAll('{price}', '${content.priceCoins}'),
                             style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold),
                           ),
                         ),
@@ -609,7 +614,7 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
                 children: [
                   Text(
                     content.titre,
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.of(context).textPrimary),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -618,11 +623,11 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
                     children: [
                       Icon(Icons.favorite, size: 10, color: Colors.red),
                       SizedBox(width: 2),
-                      Text('${content.likesCount + content.lovesCount}', style: TextStyle(fontSize: 10, color: Colors.grey[400])),
+                      Text('${content.likesCount + content.lovesCount}', style: TextStyle(fontSize: 10, color: AppColors.of(context).textSecondary)),
                       SizedBox(width: 8),
-                      Icon(Icons.visibility, size: 10, color: Colors.grey[500]),
+                      Icon(Icons.visibility, size: 10, color: AppColors.of(context).textSecondary),
                       SizedBox(width: 2),
-                      Text('${content.viewsCount}', style: TextStyle(fontSize: 10, color: Colors.grey[400])),
+                      Text('${content.viewsCount}', style: TextStyle(fontSize: 10, color: AppColors.of(context).textSecondary)),
                     ],
                   ),
                 ],
@@ -632,5 +637,11 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
         ),
       ),
     );
+  }
+
+  String _cdnUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    final userProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    return userProvider.convertToCdnUrl(url, userProvider.appDefaultData);
   }
 }

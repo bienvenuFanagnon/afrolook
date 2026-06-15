@@ -5,6 +5,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/dating_data.dart';
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
+import '../../theme/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 import '../component/consoleWidget.dart';
 import 'dating_profile_detail_page.dart';
 
@@ -27,14 +29,15 @@ class _DatingReceivedLikesPageState extends State<DatingReceivedLikesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.of(context).background,
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '💕 Likes reçus',
+              t.datingLikesReceivedTitle,
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -42,7 +45,7 @@ class _DatingReceivedLikesPageState extends State<DatingReceivedLikesPage> {
               ),
             ),
             Text(
-              'Personnes qui vous ont liké',
+              t.datingPeopleWhoLikedYouSubtitle,
               style: TextStyle(
                 color: Colors.white70,
                 fontSize: 12,
@@ -73,7 +76,7 @@ class _DatingReceivedLikesPageState extends State<DatingReceivedLikesPage> {
                 children: [
                   Icon(Icons.error_outline, size: 60, color: Colors.red),
                   SizedBox(height: 16),
-                  Text('Erreur: ${snapshot.error}'),
+                  Text(t.datingErrorGeneric.replaceAll('{error}', '${snapshot.error}')),
                 ],
               ),
             );
@@ -86,7 +89,7 @@ class _DatingReceivedLikesPageState extends State<DatingReceivedLikesPage> {
                 children: [
                   CircularProgressIndicator(),
                   SizedBox(height: 16),
-                  Text('Chargement...'),
+                  Text(t.datingLoadingText),
                 ],
               ),
             );
@@ -117,19 +120,19 @@ class _DatingReceivedLikesPageState extends State<DatingReceivedLikesPage> {
                   ),
                   SizedBox(height: 24),
                   Text(
-                    'Aucun like reçu',
+                    t.datingNoLikeReceived,
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade800,
+                      color: AppColors.of(context).textPrimary,
                     ),
                   ),
                   SizedBox(height: 12),
                   Text(
-                    'Les personnes qui vous likent apparaîtront ici',
+                    t.datingLikesReceivedEmptyMsg,
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey.shade600,
+                      color: AppColors.of(context).textSecondary,
                     ),
                   ),
                   SizedBox(height: 32),
@@ -139,7 +142,7 @@ class _DatingReceivedLikesPageState extends State<DatingReceivedLikesPage> {
                     },
                     icon: Icon(Icons.favorite, color: Colors.white),
                     label: Text(
-                      'Compléter mon profil',
+                      t.datingCompleteMyProfile,
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     style: ElevatedButton.styleFrom(
@@ -184,7 +187,7 @@ class _DatingReceivedLikesPageState extends State<DatingReceivedLikesPage> {
                       child: Container(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
-                          color: Colors.white,
+                          color: AppColors.of(context).surface,
                           boxShadow: [
                             BoxShadow(
                               color: Colors.grey.withOpacity(0.1),
@@ -193,7 +196,7 @@ class _DatingReceivedLikesPageState extends State<DatingReceivedLikesPage> {
                             ),
                           ],
                           border: Border.all(
-                            color: isNew ? Colors.red.shade200 : Colors.grey.shade200,
+                            color: isNew ? Colors.red.shade200 : AppColors.of(context).border,
                             width: isNew ? 1.5 : 1,
                           ),
                         ),
@@ -231,7 +234,7 @@ class _DatingReceivedLikesPageState extends State<DatingReceivedLikesPage> {
                                       child: ClipRRect(
                                         borderRadius: BorderRadius.circular(28),
                                         child: Image.network(
-                                          profile.imageUrl,
+                                          _cdnUrl(profile.imageUrl),
                                           width: 56,
                                           height: 56,
                                           fit: BoxFit.cover,
@@ -280,7 +283,7 @@ class _DatingReceivedLikesPageState extends State<DatingReceivedLikesPage> {
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.grey.shade800,
+                                        color: AppColors.of(context).textPrimary,
                                       ),
                                     ),
                                     SizedBox(height: 4),
@@ -293,10 +296,10 @@ class _DatingReceivedLikesPageState extends State<DatingReceivedLikesPage> {
                                         ),
                                         SizedBox(width: 4),
                                         Text(
-                                          '${profile.age} ans',
+                                          t.datingAgeYears.replaceAll('{age}', '${profile.age}'),
                                           style: TextStyle(
                                             fontSize: 12,
-                                            color: Colors.grey.shade600,
+                                            color: AppColors.of(context).textSecondary,
                                           ),
                                         ),
                                         SizedBox(width: 12),
@@ -310,7 +313,7 @@ class _DatingReceivedLikesPageState extends State<DatingReceivedLikesPage> {
                                           profile.pays,
                                           style: TextStyle(
                                             fontSize: 12,
-                                            color: Colors.grey.shade600,
+                                            color: AppColors.of(context).textSecondary,
                                           ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -333,7 +336,7 @@ class _DatingReceivedLikesPageState extends State<DatingReceivedLikesPage> {
                                           ),
                                           SizedBox(width: 4),
                                           Text(
-                                            _formatDate(date),
+                                            _formatDate(t, date),
                                             style: TextStyle(
                                               fontSize: 10,
                                               color: isNew ? Colors.red : Colors.grey.shade600,
@@ -359,7 +362,7 @@ class _DatingReceivedLikesPageState extends State<DatingReceivedLikesPage> {
                                   ),
                                 ),
                                 child: Text(
-                                  'Répondre',
+                                  t.datingReplyButton,
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
@@ -382,18 +385,24 @@ class _DatingReceivedLikesPageState extends State<DatingReceivedLikesPage> {
     );
   }
 
-  String _formatDate(DateTime date) {
+  String _formatDate(AppLocalizations t, DateTime date) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final likeDate = DateTime(date.year, date.month, date.day);
 
     if (likeDate == today) {
-      return "Aujourd'hui";
+      return t.datingTodayCap;
     } else if (likeDate == today.subtract(Duration(days: 1))) {
-      return "Hier";
+      return t.datingYesterdayCap;
     } else {
       return "${date.day}/${date.month}/${date.year}";
     }
+  }
+
+  String _cdnUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    final userProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    return userProvider.convertToCdnUrl(url, userProvider.appDefaultData);
   }
 
   Future<DatingProfile?> _getDatingProfile(String userId) async {

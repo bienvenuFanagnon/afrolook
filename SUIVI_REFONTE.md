@@ -1162,3 +1162,237 @@ Vérification de toutes les pages de `lib/pages/contenuPayant/` (espace VIP) : t
 **Vérification** : `flutter analyze lib/pages/contenuPayant/` → **0 nouvelle erreur**.
 
 **Reste à faire (hors VIP, scope plus large)** : un audit similaire est nécessaire sur le reste de l'application (home, chat, profils, stories, chroniques, canaux, dating, afroshop, etc.) où `Image.network`/`CachedNetworkImage`/`NetworkImage`/`VideoPlayerController.network` sont utilisés sans `convertToCdnUrl`. À traiter dans une session dédiée tant le périmètre est large.
+
+---
+
+## Session 34 — Module Dating, étape 1/5 : géolocalisation et tri par proximité
+
+Audit complet du module `lib/pages/dating/` réalisé (15+ pages, service `dating_service.dart`, modèles `dating_data.dart`). Plan de refonte en 5 étapes validé avec l'utilisateur :
+1. Géolocalisation & tri par proximité (cette session)
+2. Requêtes Firestore & logique de matching
+3. Animations de swipe façon Tinder
+4. Abonnements (quotas, gating premium)
+5. Theme (`AppColors`) + traductions (`AppLocalizations`) + CDN
+
+**Réalisé pour l'étape 1** :
+- `lib/models/dating_data.dart` : ajout d'une fonction utilitaire `calculateDistanceKm(lat1, lon1, lat2, lon2)` (formule de Haversine) et ajout des champs `latitude`/`longitude` (nullable) au modèle `DatingProfile` (constructeur, `fromJson`, `toJson`, `copyWith`), avec une méthode `distanceFrom(otherLat, otherLng)` qui retourne la distance en km ou `null` si une position est inconnue.
+- `lib/pages/dating/dating_profile_setup_page.dart` : la détection GPS (`Geolocator.getCurrentPosition`) stockait déjà les coordonnées en mémoire mais ne les sauvegardait jamais. Désormais `_detectedLatitude`/`_detectedLongitude` sont capturées et envoyées dans `DatingProfile` lors de la sauvegarde (en conservant les anciennes valeurs si la détection échoue). Au passage, fix : le `popularityScore` et le `countryCode` existants n'étaient pas préservés lors de la modification d'un profil (remis à 0 / null) — corrigé pour conserver les valeurs précédentes si non redétectées.
+- `lib/pages/dating/dating_entry_page.dart` (`_loadProfiles`) : le tri des profils par groupes de popularité (40% haut / 30% moyen / 30% bas) utilisait un `shuffle()` aléatoire dans chaque groupe. Si la position de l'utilisateur courant est connue, chaque groupe est désormais trié par distance croissante (profil le plus proche en premier) via `distanceFrom`. Sans position connue, le comportement aléatoire d'origine est conservé.
+- Suppression de la méthode morte `_loadProfilesOld` (dupliquait l'ancienne logique de chargement, jamais appelée, ~120 lignes).
+
+**Vérification** : `flutter analyze lib/pages/dating/ lib/models/dating_data.dart` → **0 nouvelle erreur**.
+
+**Limite connue** : seuls les nouveaux profils (ou ceux réenregistrés via la page de configuration) auront des coordonnées GPS. Les profils existants en base n'ont pas de `latitude`/`longitude` et seront donc triés en fin de groupe (via le `da == null` → retourne après les profils géolocalisés). Une régénération ponctuelle des positions pourra être envisagée plus tard si nécessaire.
+
+---
+
+## Session 35 — Module Dating, étape 2/5 : filtres de recherche et logique de matching
+
+**Réalisé** :
+- `lib/pages/dating/dating_entry_page.dart` (`_loadProfiles`) : la requête Firestore ne filtrait que sur `isActive` et `sexe` — l'âge (`rechercheAgeMin`/`rechercheAgeMax`) et le pays (`recherchePays`) de l'utilisateur courant n'étaient jamais appliqués (les filtres existants en base `dating_service.dart` n'étaient pas utilisés par cette page). Ajout d'un filtrage côté client juste après l'exclusion de soi-même : profils dont l'âge n'est pas dans la tranche recherchée, ou dont le pays ne correspond pas à `recherchePays` (sauf valeur "tous"), sont désormais exclus avant le tri par popularité/proximité.
+- Anti-boucle infinie : `_loadProfiles` se rappelait lui-même sans condition d'arrêt si Firestore renvoyait un lot vide ou entièrement filtré (risque de boucle infinie sur une base vide ou avec des filtres très restrictifs). Ajout d'un compteur `_reloadAttempts` (max `_maxReloadAttempts = 3`) : au-delà, on arrête le chargement (`_hasMore = false`) au lieu de relancer indéfiniment. Le compteur est remis à zéro dès qu'un lot de profils valides est obtenu.
+- `_isMatching(user, target)` : ne vérifiait que la compatibilité de genre (`rechercheSexe` vs `sexe`). Ajout de la vérification de la tranche d'âge recherchée (`rechercheAgeMin`/`rechercheAgeMax` de `user` vs `age` de `target`), dans les deux sens lors de la détection d'un match mutuel.
+- `_checkMatchCompatibility` (utilisé pour les super likes) dupliquait une logique de compatibilité de genre incomplète (sans âge) — remplacé par un appel à `_isMatching` dans les deux sens, pour une cohérence totale avec la logique de match des likes simples.
+
+**Vérification** : `flutter analyze lib/pages/dating/dating_entry_page.dart` → **0 nouvelle erreur**.
+
+**Note** : un filtrage serveur (Firestore `where` sur `age`/`pays`) nécessiterait des index composites supplémentaires (et un `orderBy` cohérent avec la pagination par curseur) — non fait dans cette session pour éviter de casser la pagination en production sans coordination sur les index Firestore. Le filtrage côté client reste correct fonctionnellement, juste un peu moins efficace réseau (lots de 50 documents pouvant être réduits après filtrage).
+
+---
+
+## Session 36 — Module Dating, étape 3/5 : animations de swipe façon Tinder + carte des profils
+
+**Réalisé** :
+- `lib/pages/dating/dating_entry_page.dart` : refonte du geste de swipe (`_onPanUpdate`/`_onPanEnd`) pour se rapprocher de Tinder :
+  - Ajout du geste **glisser vers le haut = Super Like** (en plus du like/pass horizontal existant), avec seuil dédié `_superLikeThreshold = 120.0`.
+  - Ajout de retours haptiques (`HapticFeedback.selectionClick()` quand le seuil de décision est atteint pendant le drag, `HapticFeedback.mediumImpact()` au moment où le swipe est validé).
+  - Ajout d'un overlay **"SUPER LIKE"** (badge bleu, façon tampon Tinder) qui apparaît lors du drag vertical vers le haut, en plus des overlays existants **LIKE**/**PASS** pour le drag horizontal.
+  - La carte suivante (sous la carte en cours de swipe) s'agrandit légèrement (`Transform.scale` de 0.92 à 1.0) au fur et à mesure du glissement, pour reproduire l'effet de "pile de cartes" de Tinder.
+- **Nouvelle page carte** `lib/pages/dating/dating_map_page.dart` (`flutter_map` + `latlong2`, ajoutés au `pubspec.yaml` : `flutter_map: ^6.1.0`, `latlong2: ^0.9.1`) :
+  - Carte basée sur OpenStreetMap (pas de clé API requise), centrée sur la position de l'utilisateur courant si connue, sinon sur le premier profil géolocalisé, sinon sur Lomé (Togo) par défaut.
+  - Affiche un marqueur stylé (avatar circulaire avec photo de profil + petite pointe façon épingle) pour chaque profil possédant `latitude`/`longitude` (champs ajoutés à la Session 34).
+  - Marqueur bleu distinct pour la position de l'utilisateur courant.
+  - Au tap sur un marqueur, une carte récapitulative du profil apparaît en bas (photo, pseudo, âge, ville, distance en km calculée via `distanceFrom`), avec un bouton "Voir" qui navigue vers `DatingProfileDetailPage`.
+  - Boutons de zoom +/- superposés sur la carte.
+  - Message d'information si aucun profil n'a de coordonnées GPS.
+  - Navigation ajoutée depuis `dating_entry_page.dart` : nouvelle icône carte (`Icons.map_outlined`) dans l'`AppBar`, ouvre `DatingMapPage` avec la liste de profils déjà chargés et la position de l'utilisateur courant.
+
+**Vérification** : `flutter analyze lib/pages/dating/dating_entry_page.dart lib/pages/dating/dating_map_page.dart` → **0 nouvelle erreur** (uniquement des infos/warnings préexistants de style, type `prefer_const_constructors`, `withOpacity` déprécié, etc., non liés à cette session).
+
+**Note** : les profils sans `latitude`/`longitude` (créés avant la Session 34) n'apparaissent simplement pas sur la carte — comportement attendu, cohérent avec le repli déjà en place pour le tri par proximité.
+
+---
+
+## Session 37 — Module Dating, étape 4/5 : abonnements (quotas, contrôle, gating premium)
+
+**Réalisé** :
+- `lib/pages/dating/dating_entry_page.dart` (`_processLike` / `_sendSuperLike`) : le décompte des likes/super likes restants écrivait la valeur absolue locale (`remainingLikes`/`remainingSuperLikes`) via `_saveRemainingLikes()`, ce qui pouvait écraser une valeur plus récente écrite par une autre session (perte ou duplication de quota en cas d'usage multi-appareils ou de fermeture brutale de l'app entre le `setState` et l'écriture). Ajout de `_decrementRemaining(field)` qui utilise `FieldValue.increment(-1)` pour un décompte atomique côté Firestore ; `_processLike` et `_sendSuperLike` (cas gratuit) l'utilisent désormais à la place de `_saveRemainingLikes()`.
+- `_loadUserSubscription` : en cas d'abonnement payant expiré, le code désactivait l'ancien document (`isActive: false`) et recalculait les quotas gratuits en mémoire, mais ne créait **aucun nouveau document actif** — les décréments suivants (`_decrementRemaining`/`_saveRemainingLikes`) auraient donc continué à écrire sur l'ancien document désactivé. Correction : un nouveau document `user_dating_subscriptions` `gratuit`/actif est créé immédiatement (comme pour un nouvel utilisateur), avec `lastResetDate` et quotas corrects, et `_userSubscriptionDocId`/`_subscriptionPlan` pointent vers ce nouveau document.
+- `lib/pages/dating/dating_likes_list_page.dart` : l'onglet "Reçus" (personnes ayant liké l'utilisateur) affichait la liste complète des profils à **tous les utilisateurs**, alors que "Voir qui vous a liké" est annoncé comme une fonctionnalité réservée aux abonnements Plus/Gold (cf. `features` des plans dans `_initializeSubscriptionPlansIfNeeded`). Ajout de `_loadSubscriptionPlan()` (lecture de `user_dating_subscriptions` actif) et, pour les utilisateurs gratuits, remplacement de la liste par une vignette verrouillée `_buildLockedLikesTeaser` (icône floutée + cadenas, nombre de likes reçus, bouton vers `DatingSubscriptionPage`). L'onglet "Envoyés" reste inchangé et accessible à tous.
+
+**Vérification** : `flutter analyze lib/pages/dating/dating_entry_page.dart lib/pages/dating/dating_likes_list_page.dart` → **0 nouvelle erreur**.
+
+**Note** : la logique de pub (`_checkAndShowSwipeAd`, seuils par plan), le coût en pièces des super likes (`_sendSuperLike`, achat avec pièces) et l'initialisation des plans (`subscription_plans`) étaient déjà correctement implémentés et n'ont pas été modifiés.
+
+---
+
+## Session 38 — Module Dating, étape 5/5 : thème (clair/sombre) + traductions + CDN — `dating_entry_page.dart`
+
+**Contexte** : `lib/l10n/app_localizations.dart` contient déjà ~112 clés `dating*` (section "Dating (Batch 1)") préparées mais inutilisées dans les pages du module dating. Cette session "câble" ces clés existantes dans `dating_entry_page.dart`, applique `AppColors.of(context)` pour le thème clair/sombre, et utilise `convertToCdnUrl` pour les images de profils.
+
+**Réalisé** :
+- `lib/pages/dating/dating_entry_page.dart` :
+  - Ajout des imports `AppColors` et `AppLocalizations`, et d'un helper `_cdnUrl()` (identique au pattern utilisé ailleurs dans l'app) appliqué aux photos de profils affichées dans `_buildProfileCard`.
+  - `Scaffold.backgroundColor` et `Dialog.backgroundColor` (match, likes premium) basés sur `AppColors.of(context).background` / `.surface` au lieu de `Colors.white`.
+  - États vides (chargement, plus de profils, aucun profil) : icônes/textes utilisent `AppColors.of(context).textPrimary` / `.textSecondary` et les clés `t.datingLoadingProfiles`, `t.datingPleaseWait`, `t.datingNoMoreProfilesNow`, `t.datingComeBackLater`, `t.datingRefresh`, `t.datingNoProfilesYet`.
+  - `_showUpgradeDialog` (limite de likes/super likes atteinte) et `_showInsufficientCoinsDialog` (solde de pièces insuffisant pour un super like payant) : tous les textes (titres, messages, boutons "Regarder la pub", "Voir les offres", "Acheter des pièces", etc.) remplacés par les clés `AppLocalizations` correspondantes, avec substitution `{bonus}`/`{price}`/`{balance}` via `replaceAll`.
+  - `_showMatchDialog` ("C'est un match !"), `_showPremiumChatDialog` (messagerie réservée Gold) et `_showLikedProfilesPremiumDialog` (likes envoyés réservés Plus/Gold) : titres, messages et boutons traduits (`datingItsAMatch`, `datingMutualLikeWith`, `datingChatPrivately`, `datingContinue`, `datingPrivateMessagingGoldOnly`, `datingUpgradeGoldForChat`, `datingLikedProfilesCount`, `datingDiscoverLikedProfiles`, `datingViewMyLikes`, `datingContinueSwiping`, `datingUnlockPremium`, etc.) ; fond de dialogue basé sur `AppColors.of(context).surface`.
+  - Messages de feedback (snackbars `_showSuccessMessage`) lors d'un like/super like : "déjà en contact", "ne correspond pas à vos critères", "vous avez liké X", "super like envoyé à X", "erreur d'envoi", incompatibilité de genre — tous traduits via `datingAlreadyInContactWith`, `datingDoesNotMatchCriteria`, `datingYouLiked`, `datingSuperLikeSentTo`, `datingErrorSending`, `datingNotSearchingThisGender`, `datingOtherNotSearchingYourGender`.
+  - Dialogue "Coup de cœur payant" (`_processSuperLike`) : titre, message, coût et solde traduits via `datingPaidCrushTitle`, `datingNoMoreFreeCoupsToday`, `datingSendCoupCost`, `datingYourBalance`, `datingBuyAndSend`, `datingCancel`.
+  - Bandeau incitatif "Afrolove Gold" (`_showGoldIncentiveMessage`) : titre, message et bouton "VOIR L'OFFRE" traduits via `datingGoldTitle`, `datingGoldRemoveAdsMessage`, `datingViewOffer`.
+  - Panneau de filtres (genre, popularité, âge min/max, boutons Annuler/Appliquer) entièrement traduit via `datingFilters`, `datingGender`, `datingAll`, `datingWomen`, `datingMen`, `datingPopularity`, `datingMostPopular`, `datingLeastPopular`, `datingAgeMin`, `datingAgeMax`, `datingApply`, `datingCancel`.
+  - Overlays de swipe LIKE/PASS traduits via `datingLike`/`datingPass` (le badge "SUPER LIKE" reste en majuscules non traduit, terme universel façon Tinder).
+  - Badge "Profil incomplet" sur la carte traduit via `datingIncompleteProfile`.
+  - Barre de navigation basse : labels "Rencontres"/"Explorer"/"Profil" traduits via `datingMeetings`, `datingExplore`, `datingProfile`.
+- `lib/pages/dating/dating_map_page.dart` : ajout d'un helper `_cdnUrl()` appliqué aux avatars des marqueurs et à la carte de profil sélectionné (`Image.network`) ; fond de page et fond de la carte de profil sélectionné basés sur `AppColors.of(context).background`/`.surface` ; texte du pseudo/âge utilise `AppColors.of(context).textPrimary`.
+
+**Vérification** : `flutter analyze lib/pages/dating/dating_entry_page.dart lib/pages/dating/dating_map_page.dart` → **0 nouvelle erreur** (uniquement des infos de style préexistantes : `prefer_const_constructors`, `withOpacity` déprécié, etc.).
+
+**Restant pour l'étape 5/5** : appliquer le même travail (thème + traductions + CDN) aux autres pages du module dating (`dating_profile_detail_page.dart`, `dating_chat_page.dart`, `dating_profile_setup_page.dart`, `dating_subscription_page.dart`, `dating_explore_page.dart`, `dating_likes_list_page.dart`, pages `creator_*`, etc.) — sessions suivantes.
+
+## Session 39 — Module Dating : polish UI façon Tinder, modal "découvrir la carte" et quota de profils parcourus
+
+**Contexte** : suite de la demande "revoir le ui pour être digne d'un réseau comme Tinder, éviter les erreurs UI, attirer les utilisateurs (modal vers la carte) et appliquer les contrôles d'abonnement sur les profils à parcourir".
+
+**Réalisé** :
+- `lib/l10n/app_localizations.dart` : ajout de 5 nouvelles clés (8 langues) : `datingDiscoverMapTitle`, `datingDiscoverMapMessage`, `datingViewMap`, `datingMaybeLater`, `datingNoMoreSwipes`.
+- `lib/pages/dating/dating_entry_page.dart` :
+  - **Polish visuel** : `AppBar` passe d'un fond uni `Colors.red.shade600` à un dégradé rouge→rose (`flexibleSpace` + `LinearGradient`) pour un rendu plus "dating app". `bottomNavigationBar` et `_buildBottomNavItem` utilisent désormais `AppColors.of(context).surface`/`.textSecondary` pour supporter le mode sombre (au lieu de `Colors.white`/`Colors.grey` codés en dur). Le panneau de filtres (`Card`) a maintenant une couleur de fond explicite `AppColors.of(context).surface`.
+  - **Correction UI** : le texte "Chargement de nouveaux profils..." codé en dur est remplacé par `t.datingLoadingMoreProfiles`.
+  - **Quota de profils parcourus (`_remainingSwipes`)** : nouveau champ `remainingSwipes` sur `user_dating_subscriptions`, avec reset quotidien identique aux likes/super likes. Quotas par défaut via `_defaultSwipesForPlan()` : gratuit = 30/jour, plus = 150/jour, gold = illimité (-1). `_canSwipe()` vérifie le quota avant chaque swipe (gauche/droite/super like) et affiche `_showUpgradeDialog(type: 'swipe')` (nouveau cas géré, message `t.datingNoMoreSwipes`) si épuisé ; `_consumeSwipe()` décrémente atomiquement via `_decrementRemaining('remainingSwipes')`.
+  - **Modal "Découvrir la carte"** : toutes les 15 actions de swipe (`_mapPromoCounter`/`_mapPromoThreshold`), `_showMapDiscoveryDialog()` propose à l'utilisateur de visualiser les profils proches sur `DatingMapPage` (boutons `t.datingViewMap` / `t.datingMaybeLater`).
+
+**Vérification** : `flutter analyze lib/pages/dating/dating_entry_page.dart lib/l10n/app_localizations.dart` → **0 nouvelle erreur**.
+
+**Complément — animations de swipe (boutons + relâchement de carte)** :
+- Ajout d'un `AnimationController` (`_cardAnimController`, 250 ms, `Curves.easeOut`) qui pilote `_dragOffset`/`_rotationAngle`/`_opacity` via `_onCardAnimTick`.
+- `_animateCardOff(target, rotation)` : envoie la carte courante hors de l'écran (gauche/droite/haut selon l'action), puis appelle `_nextProfile()` à la fin.
+- `_animateCardBack()` : ramène la carte en douceur au centre si le swipe relâché n'a pas atteint le seuil (au lieu d'un reset instantané).
+- `_handleSwipeLeft` / `_handleSwipeRight` / `_handleSuperLike` retournent désormais un `bool` (succès/échec selon les quotas) sans appeler `_nextProfile()` directement — c'est l'appelant (`_onPanEnd` ou les 3 boutons d'action close/star/favorite) qui déclenche l'animation de sortie correspondante (gauche/droite/haut) seulement si l'action a été acceptée.
+- Résultat : les 3 boutons d'action en bas de l'écran déclenchent maintenant la même animation "carte qui s'envole" façon Tinder que le swipe au doigt, et un swipe relâché trop court revient élastiquement à sa place.
+
+**Vérification** : `flutter analyze lib/pages/dating/dating_entry_page.dart` → **0 nouvelle erreur**.
+
+---
+
+## Session 40 — Module Dating : algorithme de recommandation, modal de nouvelle activité, badges de profil
+
+**Contexte** : suite de la demande "change notre algorithme à un algorithme de suggestion/recommandation de profils au profil courant, applique-le aussi sur Explorer, réduis le nom 'AfroLove' qui se superpose à la carte, ajoute un modal de bienvenue annonçant les nouveaux matchs/likes sur la page de swipe, ajoute des badges de compteur sur les boutons Matchs/Mes likes du profil, et améliore l'UI dating en général".
+
+**Réalisé** :
+- `lib/models/dating_data.dart` : nouvelle méthode `recommendationScore(DatingProfile other)` sur `DatingProfile` — score de compatibilité pondéré (intérêts communs ×20, tranche d'âge recherchée +10, profil vérifié +5, popularité/10 plafonnée à 50, bonus de proximité jusqu'à 50).
+- `lib/pages/dating/dating_entry_page.dart` :
+  - `_loadProfiles()` : le tri high/mid/low (puis mélange 5/3/2) se base désormais sur `recommendationScore` du profil courant plutôt que sur la seule popularité.
+  - **AppBar "AfroLove"** réduite (icône 24→20, texte 22→17px, `mainAxisSize: MainAxisSize.min`, `titleSpacing: 12`) pour ne plus se superposer aux boutons carte/likes/filtre.
+  - **Nouveau modal d'activité** : `_checkNewActivity()` (appelé à l'arrivée sur la page si le profil est complet) interroge `Notifications` pour compter les `DATING_MATCH` et `DATING_LIKE`/`DATING_SUPER_LIKE` non lus (`is_open == false`). Si au moins un est trouvé, `_showNewActivityDialog()` affiche un modal façon "découvrir la carte" (icône cœur en dégradé rouge→rose) annonçant les compteurs, avec un bouton d'action vers `DatingConnectionsPage` (matchs) ou `DatingLikesListPage` (likes).
+  - Ajout de l'import `dating_connections_page.dart`.
+- `lib/pages/dating/dating_explore_page.dart` :
+  - `_mixProfiles()` : tri par `recommendationScore` du profil courant (au lieu de la popularité seule) avant la répartition high/mid/low et le mélange.
+  - **Polish UI** : AppBar passe d'un fond uni `Colors.pink.shade400` à un dégradé rouge→rose (`flexibleSpace`, cohérent avec `dating_entry_page.dart`), titre réduit (icône `travel_explore` 20px, texte 17px). `Scaffold.backgroundColor` et les textes de l'état vide utilisent désormais `AppColors.of(context)` pour le support du mode sombre.
+- `lib/pages/dating/dating_profile_detail_page.dart` :
+  - Nouveaux champs `_unreadMatchesCount`/`_unreadLikesCount` + méthode `_loadUnreadMatchesAndLikesCount()` (même requête `Notifications` que `_loadUnreadNotificationsCount`, filtrée par type `DATING_MATCH` et `DATING_LIKE`/`DATING_SUPER_LIKE`).
+  - Les boutons "Matchs" et "Mes likes" du profil personnel affichent désormais un badge (`badgeCount:`) avec le nombre de matchs/likes non encore consultés, comme pour "Notif".
+- `lib/l10n/app_localizations.dart` : 5 nouvelles clés (8 langues) : `datingNewActivityTitle`, `datingNewActivityMatches(count)`, `datingNewActivityLikes(count)`, `datingViewMatches`, `datingViewLikes`.
+
+**Vérification** : `flutter analyze lib/pages/dating/dating_entry_page.dart lib/pages/dating/dating_explore_page.dart lib/pages/dating/dating_profile_detail_page.dart lib/models/dating_data.dart lib/l10n/app_localizations.dart` → **0 nouvelle erreur**.
+
+**Complément — priorité aux profils non explorés et cycle sans fin** :
+- `lib/pages/dating/dating_entry_page.dart` et `lib/pages/dating/dating_explore_page.dart` : nouvelle méthode `_loadExcludedUserIds()` qui récupère les `userId` déjà likés (`dating_likes` où `fromUserId == currentUserId`) ou déjà matchés (`dating_connections`, `userId1`/`userId2 == currentUserId`).
+- Dans `_loadProfiles()` des deux pages, ces profils sont écartés en priorité (champ `_excludeInteracted`, vrai par défaut) afin que les profils non encore explorés remontent toujours en premier.
+- Si plus aucun profil inexploré n'est disponible alors que la liste complète a été récupérée (`snapshot.docs.length < _batchSize`), `_excludeInteracted` passe à `false` : le filtre est désactivé et les profils déjà likés/matchés réapparaissent, garantissant qu'il reste toujours des profils à swiper/explorer (recommence le cycle).
+- Combiné au tri par `recommendationScore` + mélange par groupes (high/mid/low), l'ordre d'affichage varie d'une visite à l'autre tout en priorisant la nouveauté.
+
+**Vérification** : `flutter analyze lib/pages/dating/dating_entry_page.dart lib/pages/dating/dating_explore_page.dart` → **0 nouvelle erreur**.
+
+**Complément — swipe infini avec chargement en arrière-plan** :
+- `lib/pages/dating/dating_entry_page.dart` : `_checkAndLoadMore()` (appelé après chaque swipe) déclenche désormais `_loadMoreProfiles()` dès qu'il reste ≤5 profils dans la pile, **même si `_hasMore` est `false`**.
+- `_loadMoreProfiles()` : si plus aucun nouveau profil n'est disponible côté serveur (`_hasMore == false`), désactive `_excludeInteracted` (réintègre les profils déjà likés/matchés) et réinitialise `_lastDocument`/`_hasMore`/`_reloadAttempts` pour relancer le cycle de pagination depuis le début — l'utilisateur a donc toujours de nouveaux profils chargés en arrière-plan, sans jamais arriver à une pile vide.
+- Correction d'un bug associé : quand un lot vide était reçu pendant un `_loadProfiles(isLoadMore: true)`, le code remettait `_isLoading` au lieu de `_isLoadingMore` à `false`, ce qui bloquait définitivement `_loadMoreProfiles()` (`_isLoadingMore` restait `true`).
+- `lib/pages/dating/dating_explore_page.dart` : même logique de recyclage quand la fin de la collection `dating_profiles` est atteinte alors que `_excludeInteracted` est encore actif.
+
+**Vérification** : `flutter analyze lib/pages/dating/dating_entry_page.dart lib/pages/dating/dating_explore_page.dart` → **0 nouvelle erreur**.
+
+**Correctif — écran vide quand tous les profils chargés sont déjà explorés** :
+- Bug : avec un lot complet (`snapshot.docs.length == _batchSize`, ex. "50 profils avant" → "0 profils après exclusion"), la condition de recyclage exigeait un lot incomplet, donc `_excludeInteracted` restait actif et `allProfiles` repartait à 0 → `_loadProfiles()` se relançait en boucle (jusqu'à `_maxReloadAttempts`) sur la même requête et finissait avec **aucun profil affiché**.
+- Correctif : dès que le filtre "non explorés" donne une liste vide alors que des profils ont bien été chargés (peu importe la taille du lot), `_excludeInteracted` passe immédiatement à `false` et on **réutilise les profils déjà récupérés** (déjà likés/matchés) au lieu de relancer une requête réseau supplémentaire.
+- `_loadExcludedUserIds()` (les deux pages) : les 3 requêtes Firestore (`dating_likes`, `dating_connections` × 2) sont désormais lancées en parallèle via `Future.wait` au lieu d'être séquentielles, pour accélérer le chargement initial.
+
+**Vérification** : `flutter analyze lib/pages/dating/dating_entry_page.dart lib/pages/dating/dating_explore_page.dart` → **0 nouvelle erreur**.
+
+## Session 41 — Module Dating : suppression des publicités récompensées, anti-doublon de likes, photos aléatoires, plus de profils et nouveau bouton "Découvrir"
+
+**Contexte** : suite de la Session 40. Demandes : (1) afficher une photo aléatoire pour les profils ayant plusieurs photos, (2) ne plus enregistrer de like en double pour un même profil et bien gérer le statut "déjà liké"/match sur la page de détail, (3) supprimer toute la logique "regarder une pub pour un bonus" (publicités récompensées/interstitielles), (4) charger davantage de profils par requête, (5) transformer le bouton "Explorer" du bas de la page swipe en un choix Carte/Liste.
+
+**Réalisé** :
+- **Suppression des publicités récompensées/interstitielles** (`lib/pages/dating/dating_entry_page.dart`) :
+  - Retrait des imports `rewarded_ad_widget.dart` / `rewarded_interstitial_ad_widget.dart`, des champs `_isLoadingAd`, `_rewardedAdKey`, `_showRewardedAd`, `_pendingRewardType`, `_adKey`, `_swipeCounter`, et des méthodes `_addBonusLikes`, `_addBonusSuperLikes`, `_checkAndShowSwipeAd` (et ses 2 appels dans `_handleSwipeLeft`/`_handleSwipeRight`), `_showGoldIncentiveMessage`.
+  - `_showUpgradeDialog()` : suppression du bouton "regarder la pub" et du spinner de chargement de pub ; ne reste que le message d'incitation à l'upgrade Gold et le bouton "Voir les offres".
+  - `_openChat()` était cassé (appel de pub + navigation commentée) : corrigé pour naviguer directement vers `DatingChatPage` avec les bons paramètres (`connectionId`, `otherUserId`, `otherUserName`, `otherUserImage`).
+  - Retrait du widget `RewardedAdWidget`/`InterstitialAdWidget` de l'arbre de build.
+  - Même nettoyage sur `lib/pages/dating/dating_profile_detail_page.dart` : retrait des imports `banner_ad_widget.dart`/`rewarded_ad_widget.dart`, des champs `_rewardedAdKey`/`_showRewardedAd`/`_pendingRewardType`, des méthodes `_addBonusLikes`/`_addBonusSuperLikes`, du bloc `RewardedAdWidget` dans le `CustomScrollView`, du bouton "Regarder la pub" et du texte associé dans `_showUpgradeDialog()`. La méthode `_handleLike2()` (doublon mort de `_handleLike()`, jamais appelé) a été supprimée.
+- **Anti-doublon de likes** :
+  - `dating_entry_page.dart` → `_processLike()` : vérifie désormais l'existence d'un document `dating_likes` (`fromUserId`/`toUserId`) avant d'en créer un nouveau ; si déjà liké, on saute l'insertion, le décompte de quota, l'incrément `likesCount` et le recalcul du score de popularité, mais on continue de vérifier le like mutuel/match.
+  - `dating_profile_detail_page.dart` → `_handleLike()` : retour anticipé avec un message "Vous avez déjà liké ce profil ❤️" si `_isLiked` est déjà vrai (calculé par `_checkLikeStatus()` à l'ouverture de la page) ; vérification supplémentaire juste avant l'insertion (re-requête `dating_likes`) pour couvrir les cas de concurrence, avec mise à jour de `_isLiked` sans nouvelle écriture si un like existe déjà.
+- **Photos aléatoires pour profils multi-photos** :
+  - `dating_explore_page.dart` → `_buildProfileCard()` : l'image affichée est désormais choisie via `profile.photosUrls[profile.userId.hashCode.abs() % profile.photosUrls.length]` (au lieu de toujours la première photo), stable par profil grâce au hash de `userId`.
+  - `dating_entry_page.dart` → `_buildProfileCard()` (page swipe) : correction du calcul existant pour éviter une `IntegerDivisionByZeroException`/index négatif (`.abs()` ajouté avant le modulo).
+- **Plus de profils par requête** : `_batchSize` passé de 50 à 100 dans `dating_entry_page.dart`, et de 20 à 50 dans `dating_explore_page.dart`.
+- **Nouveau bouton "Découvrir"** (remplace "Explorer" dans la barre de navigation basse de la page swipe) :
+  - `_showDiscoverChoiceDialog()` (nouveau, `dating_entry_page.dart`) : ouvre un `showModalBottomSheet` avec 2 choix — **"Carte"** (ouvre `DatingMapPage` avec les profils chargés et la position de l'utilisateur) et **"Liste"** (ouvre `DatingExplorePage`).
+  - `lib/l10n/app_localizations.dart` : nouvelles clés (8 langues) `datingDiscoverNav` ("Découvrir"/"Discover"...), `datingDiscoverChoiceTitle`, `datingDiscoverChoiceMap`, `datingDiscoverChoiceMapSubtitle`, `datingDiscoverChoiceList`, `datingDiscoverChoiceListSubtitle`.
+
+**Vérification** : `flutter analyze lib/pages/dating/` → **0 erreur** (uniquement des warnings/infos préexistants, type `deprecated_member_use`/`prefer_const_constructors`).
+
+## Session 42 — Module Dating : refonte du système d'abonnement (flux post-souscription, 3 paliers carte/explorer, anti-doublons, badge profil consulté, refonte design `dating_subscription_page.dart`)
+
+**Contexte** : refonte complète de la gestion des abonnements `gratuit`/`plus`/`gold` : flux de retour après souscription, application des 3 paliers sur la carte, fiabilisation des données `subscription_plans`/`user_dating_subscriptions`, et alignement de `dating_subscription_page.dart` sur le thème clair/sombre + i18n (8 langues), ce qui complète la tâche #8 du backlog (theme+i18n+CDN `dating_subscription_page.dart`).
+
+### Algorithme d'engagement (rétention sur la page swipe)
+- **Implémenté** : dans `dating_entry_page.dart`, lorsque `_remainingSwipes` atteint 0 (palier gratuit), `_showUpgradeDialog(type: 'swipe')` affiche désormais un compte à rebours (`_formatTimeUntilNextReset()`, basé sur le nouveau champ `_lastResetDate` + 24h) via la clé i18n `datingNextSwipeIn` ("Prochains swipes dans {time}"), pour donner une raison de revenir le lendemain.
+- **Implémenté** : dans `dating_explore_page.dart` et `dating_map_page.dart`, quand la limite `_maxVisibleProfiles` (10/200/illimité selon le plan) est atteinte, un bandeau "Passez à Plus ou Gold pour voir plus de profils..." (`datingMoreProfilesWithPlan`) s'affiche en plus du bouton d'upgrade existant, au lieu de simplement arrêter le chargement silencieusement.
+- **Documenté seulement** (non codé, à planifier séparément si validé) :
+  - Streaks de connexion quotidienne (récompense de bonus de swipes/likes pour les connexions consécutives).
+  - Teaser "X personnes vous ont liké" flouté pour le plan gratuit (incite à l'abonnement Plus/Gold pour révéler).
+  - Boost de visibilité temporaire (quelques heures) juste après un achat d'abonnement, pour donner un effet immédiat perceptible.
+  - Notifications intelligentes basées sur l'heure d'activité habituelle de l'utilisateur (au lieu d'horaires fixes).
+
+### Flux post-souscription (`dating_subscription_page.dart`)
+- `_subscribe()` : après succès, `Navigator.of(context).popUntil((route) => route.isFirst)` ramène systématiquement à `DatingEntryPage` (racine de la pile Dating), quelle que soit la page d'origine (détail profil, explorer...). `dating_entry_page.dart` rafraîchit déjà automatiquement (`didChangeDependencies` → `_refreshData()` → `_loadUserSubscription()`) au retour, donc `_remainingSwipes`/`_remainingLikes`/`_remainingSuperLikes` sont recalculés immédiatement depuis le nouveau document `user_dating_subscriptions` sans attendre le reset du lendemain.
+- Suppression des méthodes mortes `_updateLocalLimits()` (SharedPreferences) et `_updateProviderLimits()` (no-op) ; seul `authProvider.refreshUserData()` est conservé (pour `coinsBalance`).
+
+### Doublons `subscription_plans` et garde anti-resouscription (§5/§8)
+- `_checkAndCreatePlans()` utilise désormais des doc IDs déterministes (`doc('gratuit'|'plus'|'gold').set({...}, SetOptions(merge: true))`) au lieu de `.add()`, garantissant l'unicité par `code`.
+- `_loadPlans()` déduplique les documents existants par `code` (garde celui avec `updatedAt` le plus récent, désactive les autres via `update({isActive: false})`) — nettoyage silencieux et progressif des doublons historiques.
+- `_subscribe()` : la garde anti-resouscription couvre désormais tous les plans y compris `gratuit` (`if (_currentSubscriptionPlan == plan.code) { ... return; }`), message `datingAlreadySubscribedToPlan`. Le bouton "Abonnement actif" (désactivé) s'applique donc aussi au plan gratuit déjà actif.
+
+### Badge d'abonnement du profil consulté (`dating_profile_detail_page.dart`)
+- Nouveau `_loadProfileOwnerSubscription()` : requête `user_dating_subscriptions where userId == profile.userId && isActive == true limit 1`, stockée dans `_profileOwnerSubscriptionPlan`.
+- Nouveau badge "Abonnement : Gratuit/Plus/Gold" affiché uniquement si `_canViewProfileOwnerSubscription()` (= propriétaire du profil ou `role == UserRole.ADM.name`), basé sur `_profileOwnerSubscriptionPlan` (et non plus sur l'abonnement du visiteur). L'ancien badge "Abonnement Gold actif" (qui affichait à tort le plan du visiteur à tout le monde) a été retiré/remplacé par celui-ci.
+- Nouvelles clés i18n (8 langues) : `datingSubscriptionLabel`, `datingPlanFree`, `datingPlanPlus`, `datingPlanGold`.
+
+### 3 paliers sur la carte (`dating_map_page.dart`) et bandeau Explorer
+- `DatingMapPage` reçoit désormais `subscriptionPlan` (depuis `_subscriptionPlan` de `dating_entry_page.dart`, passé sur les 3 points d'ouverture de la carte) et applique `_maxVisibleProfiles` (gratuit=10, plus=200, gold=illimité) sur `_locatedProfiles` (`.take(_maxVisibleProfiles)`).
+- Si la limite est atteinte, un bandeau `datingMoreProfilesWithPlan` s'affiche en haut de la carte.
+- Passage thème/i18n : titre `Carte des profils` → `datingMapPageTitle`, message "Aucun profil géolocalisé..." → `datingNoLocatedProfiles`, bouton "Voir" → `datingViewProfileButton`. `Colors.red.shade600` (AppBar/boutons de zoom) conservé comme accent de marque, conformément à la convention du module.
+
+### Refonte design `dating_subscription_page.dart` (§7, tâche #8 du backlog)
+- Toutes les couleurs en dur remplacées par `AppColors.of(context)` (`.background`, `.surface`, `.surfaceVariant`, `.border`, `.textPrimary`, `.textSecondary`), en conservant `Colors.red`/`Colors.amber`/`Colors.green` pour les accents de marque/statut (gold, succès, erreurs).
+- ~25 nouvelles clés `AppLocalizations` (8 langues) pour tous les textes en dur (titre, solde, confirmation, limites, messages de succès/erreur, etc.).
+- Nouvelle clé `datingBalanceLabel` ("Votre solde") distincte de `datingYourBalance` (préexistante, avec placeholder `{balance}`) pour éviter un conflit de nom.
+
+### Fiabilisation/centralisation (§5 — documentation)
+- Lecture de l'abonnement actif (`user_dating_subscriptions where userId==X && isActive==true limit 1`) reste dupliquée dans `dating_entry_page.dart`, `dating_explore_page.dart` et `dating_profile_detail_page.dart`. Une factorisation dans un service partagé est envisageable mais a été volontairement reportée à une session dédiée pour limiter le risque de régression sur cette refonte.
+
+**Vérification** : `flutter analyze lib/pages/dating/ lib/l10n/app_localizations.dart` → **0 erreur**.
+
+**Backlog** : tâche #8 ("Dating: theme+i18n+CDN `dating_subscription_page.dart`") marquée comme **complétée**.

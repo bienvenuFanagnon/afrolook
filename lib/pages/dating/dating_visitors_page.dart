@@ -1,41 +1,35 @@
-// lib/pages/dating/dating_likes_list_page.dart
+// lib/pages/dating/dating_visitors_page.dart
 import 'dart:ui';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/dating_data.dart';
-import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
 import '../../theme/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 import 'dating_profile_detail_page.dart';
 import 'dating_subscription_page.dart';
 
-class DatingLikesListPage extends StatefulWidget {
-  const DatingLikesListPage({Key? key}) : super(key: key);
+class DatingVisitorsPage extends StatefulWidget {
+  const DatingVisitorsPage({Key? key}) : super(key: key);
 
   @override
-  State<DatingLikesListPage> createState() => _DatingLikesListPageState();
+  State<DatingVisitorsPage> createState() => _DatingVisitorsPageState();
 }
 
-class _DatingLikesListPageState extends State<DatingLikesListPage>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _DatingVisitorsPageState extends State<DatingVisitorsPage> {
   String? _currentUserId;
   bool _isPremium = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
     final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     _currentUserId = authProvider.loginUserData.id;
     _loadSubscriptionPlan();
   }
 
-  /// Vérifie si l'utilisateur a un abonnement Plus ou Gold, pour débloquer
-  /// la liste complète des personnes qui l'ont liké.
   Future<void> _loadSubscriptionPlan() async {
     if (_currentUserId == null) return;
     try {
@@ -57,12 +51,6 @@ class _DatingLikesListPageState extends State<DatingLikesListPage>
   }
 
   @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
     return Scaffold(
@@ -72,7 +60,7 @@ class _DatingLikesListPageState extends State<DatingLikesListPage>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              t.datingMyLikesTitle,
+              t.datingVisitorsTitle,
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -80,7 +68,7 @@ class _DatingLikesListPageState extends State<DatingLikesListPage>
               ),
             ),
             Text(
-              t.datingMyLikesSubtitle,
+              t.datingVisitorsSubtitle,
               style: TextStyle(
                 color: Colors.white70,
                 fontSize: 12,
@@ -95,49 +83,18 @@ class _DatingLikesListPageState extends State<DatingLikesListPage>
           icon: Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        bottom: PreferredSize(
-          preferredSize: Size.fromHeight(48),
-          child: Container(
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: Colors.white24),
-              ),
-            ),
-            child: TabBar(
-              controller: _tabController,
-              indicatorColor: Colors.white,
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.white70,
-              tabs: [
-                Tab(icon: const Icon(Icons.favorite), text: t.datingTabReceived),
-                Tab(icon: const Icon(Icons.thumb_up), text: t.datingTabSent),
-              ],
-            ),
-          ),
-        ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildLikesList(isReceived: true),
-          _buildLikesList(isReceived: false),
-        ],
-      ),
+      body: _buildVisitorsList(),
     );
   }
 
-  Widget _buildLikesList({required bool isReceived}) {
+  Widget _buildVisitorsList() {
     final t = AppLocalizations.of(context);
-    final collection = 'dating_likes';
-    final field = isReceived ? 'toUserId' : 'fromUserId';
-    final emptyIcon = isReceived ? Icons.favorite_border : Icons.thumb_up_off_alt;
-    final emptyTitle = isReceived ? t.datingNoLikeReceived : t.datingNoLikeSent;
-    final emptyMessage = isReceived ? t.datingLikesReceivedEmptyMsg : t.datingLikesSentEmptyMsg;
 
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
-          .collection(collection)
-          .where(field, isEqualTo: _currentUserId)
+          .collection('dating_profile_visits')
+          .where('visitedUserId', isEqualTo: _currentUserId)
           .orderBy('createdAt', descending: true)
           .snapshots(),
       builder: (context, snapshot) {
@@ -168,9 +125,9 @@ class _DatingLikesListPageState extends State<DatingLikesListPage>
           );
         }
 
-        final likes = snapshot.data?.docs ?? [];
+        final visits = snapshot.data?.docs ?? [];
 
-        if (likes.isEmpty) {
+        if (visits.isEmpty) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -186,64 +143,39 @@ class _DatingLikesListPageState extends State<DatingLikesListPage>
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    emptyIcon,
+                    Icons.visibility_off,
                     size: 60,
                     color: Colors.red.shade400,
                   ),
                 ),
                 SizedBox(height: 24),
                 Text(
-                  emptyTitle,
+                  t.datingNoOneVisitedYet,
                   style: TextStyle(
-                    fontSize: 22,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: AppColors.of(context).textPrimary,
                   ),
+                  textAlign: TextAlign.center,
                 ),
-                SizedBox(height: 12),
-                Text(
-                  emptyMessage,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.of(context).textSecondary,
-                  ),
-                ),
-                SizedBox(height: 32),
-                if (!isReceived)
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    icon: Icon(Icons.favorite, color: Colors.white),
-                    label: Text(
-                      t.datingDiscoverProfiles,
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                    ),
-                  ),
               ],
             ),
           );
         }
 
-        if (isReceived && !_isPremium) {
-          return _buildLockedLikesTeaser(likes.length);
+        if (!_isPremium) {
+          return _buildLockedVisitorsTeaser(visits.length);
         }
 
         return ListView.builder(
           padding: EdgeInsets.all(16),
-          itemCount: likes.length,
+          itemCount: visits.length,
           itemBuilder: (context, index) {
-            final like = likes[index];
-            final userId = isReceived ? like['fromUserId'] : like['toUserId'];
-            final createdAt = like['createdAt'] as int;
+            final visit = visits[index];
+            final userId = visit['visitorUserId'];
+            final createdAt = visit['createdAt'] as int;
             final date = DateTime.fromMillisecondsSinceEpoch(createdAt);
+            final isNew = createdAt > DateTime.now().subtract(Duration(days: 1)).millisecondsSinceEpoch;
 
             return FutureBuilder<DatingProfile?>(
               future: _getDatingProfile(userId),
@@ -253,7 +185,6 @@ class _DatingLikesListPageState extends State<DatingLikesListPage>
                 }
 
                 final profile = profileSnapshot.data!;
-                final isNew = createdAt > DateTime.now().subtract(Duration(days: 1)).millisecondsSinceEpoch;
 
                 return AnimatedContainer(
                   duration: Duration(milliseconds: 300),
@@ -282,7 +213,6 @@ class _DatingLikesListPageState extends State<DatingLikesListPage>
                         padding: EdgeInsets.all(12),
                         child: Row(
                           children: [
-                            // Photo de profil (depuis le dating profile)
                             Stack(
                               children: [
                                 Container(
@@ -342,7 +272,7 @@ class _DatingLikesListPageState extends State<DatingLikesListPage>
                                         border: Border.all(color: Colors.white, width: 2),
                                       ),
                                       child: Icon(
-                                        Icons.favorite,
+                                        Icons.visibility,
                                         size: 10,
                                         color: Colors.white,
                                       ),
@@ -351,7 +281,6 @@ class _DatingLikesListPageState extends State<DatingLikesListPage>
                               ],
                             ),
                             SizedBox(width: 16),
-                            // Infos
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -427,7 +356,6 @@ class _DatingLikesListPageState extends State<DatingLikesListPage>
                                 ],
                               ),
                             ),
-                            // Bouton voir profil
                             Container(
                               padding: EdgeInsets.all(10),
                               decoration: BoxDecoration(
@@ -460,9 +388,7 @@ class _DatingLikesListPageState extends State<DatingLikesListPage>
     return userProvider.convertToCdnUrl(url, userProvider.appDefaultData);
   }
 
-  /// Affiche une vignette verrouillée (fonctionnalité Plus/Gold) à la place de la
-  /// liste complète des personnes ayant liké le profil de l'utilisateur gratuit.
-  Widget _buildLockedLikesTeaser(int count) {
+  Widget _buildLockedVisitorsTeaser(int count) {
     final t = AppLocalizations.of(context);
     return Center(
       child: Padding(
@@ -486,7 +412,7 @@ class _DatingLikesListPageState extends State<DatingLikesListPage>
                         end: Alignment.bottomRight,
                       ),
                     ),
-                    child: const Icon(Icons.favorite, color: Colors.white, size: 48),
+                    child: const Icon(Icons.visibility, color: Colors.white, size: 48),
                   ),
                 ),
                 Container(
@@ -498,15 +424,15 @@ class _DatingLikesListPageState extends State<DatingLikesListPage>
             ),
             const SizedBox(height: 24),
             Text(
-              count == 0
-                  ? t.datingNoOneLikedYet
-                  : (count == 1 ? t.datingOnePersonLikedYou : t.datingNPeopleLikedYou.replaceAll('{count}', '$count')),
+              count == 1
+                  ? t.datingOnePersonVisitedYou
+                  : t.datingNPeopleVisitedYou.replaceAll('{count}', '$count'),
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
-              t.datingUpgradeToSeeWhoLiked,
+              t.datingUpgradeToSeeVisitors,
               style: TextStyle(color: Colors.grey.shade600),
               textAlign: TextAlign.center,
             ),
@@ -536,11 +462,11 @@ class _DatingLikesListPageState extends State<DatingLikesListPage>
     final t = AppLocalizations.of(context);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final likeDate = DateTime(date.year, date.month, date.day);
+    final visitDate = DateTime(date.year, date.month, date.day);
 
-    if (likeDate == today) {
+    if (visitDate == today) {
       return t.datingTodayCap;
-    } else if (likeDate == today.subtract(Duration(days: 1))) {
+    } else if (visitDate == today.subtract(Duration(days: 1))) {
       return t.datingYesterdayCap;
     } else {
       return "${date.day}/${date.month}/${date.year}";

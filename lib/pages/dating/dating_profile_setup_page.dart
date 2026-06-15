@@ -18,9 +18,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:geocoding/geocoding.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, Uint8List;
+import 'package:flutter/foundation.dart' show kIsWeb, Uint8List, debugPrint;
 
 import '../../models/dating_data.dart';
+import '../../theme/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 
@@ -65,6 +67,8 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
   String _selectedCity = "";
   String? _detectedCountryCode;
   String? _detectedCountryName;
+  double? _detectedLatitude;
+  double? _detectedLongitude;
   bool _isLoadingLocation = false;
   bool _hasRequestedLocation = false;
 
@@ -155,6 +159,11 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
           position.longitude,
         );
 
+        setState(() {
+          _detectedLatitude = position.latitude;
+          _detectedLongitude = position.longitude;
+        });
+
         if (placemarks.isNotEmpty) {
           setState(() {
             _detectedCountryCode = placemarks[0].isoCountryCode;
@@ -163,7 +172,7 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
               _selectedCountry = _detectedCountryName ?? '';
             }
           });
-          print("📍 Localisation détectée: $_detectedCountryName ($_detectedCountryCode)");
+          debugPrint("📍 Localisation détectée: $_detectedCountryName ($_detectedCountryCode) - lat: $_detectedLatitude, lng: $_detectedLongitude");
         }
       } catch (e) {
         print("❌ Erreur localisation: $e");
@@ -179,7 +188,7 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
         (_selectedImagesBytes.length + _selectedImagesFiles.length);
 
     if (currentTotal >= _maxPhotos) {
-      _showError('Vous ne pouvez ajouter que $_maxPhotos photos maximum');
+      _showError(AppLocalizations.of(context).datingMaxPhotosError.replaceAll('{max}', '$_maxPhotos'));
       return;
     }
 
@@ -191,7 +200,9 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
         final filesToAdd = pickedFiles.take(remainingSlots).toList();
 
         if (pickedFiles.length > remainingSlots) {
-          _showError('Limite de $_maxPhotos photos. Seules ${filesToAdd.length} seront ajoutées.');
+          _showError(AppLocalizations.of(context).datingPhotoLimitInfo
+              .replaceAll('{max}', '$_maxPhotos')
+              .replaceAll('{count}', '${filesToAdd.length}'));
         }
 
         if (kIsWeb) {
@@ -213,7 +224,7 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
       }
     } catch (e) {
       print('❌ Erreur sélection image: $e');
-      _showError('Erreur lors de la sélection des images');
+      _showError(AppLocalizations.of(context).datingErrorSelectImages);
     }
   }
 
@@ -266,7 +277,7 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
 
     } catch (e) {
       print("❌ Erreur upload image: $e");
-      _showError('Erreur lors de l\'upload des images');
+      _showError(AppLocalizations.of(context).datingErrorUploadImages);
     }
 
     setState(() => _isUploading = false);
@@ -295,12 +306,12 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedCountry.isEmpty) {
-      _showError('Veuillez sélectionner votre pays');
+      _showError(AppLocalizations.of(context).datingSelectCountryRequired);
       return;
     }
 
     if (_getTotalImageCount() == 0) {
-      _showError('Veuillez ajouter au moins une photo');
+      _showError(AppLocalizations.of(context).datingAddAtLeastOnePhoto);
       return;
     }
 
@@ -347,9 +358,12 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
         visitorsCount: widget.profile?.visitorsCount ?? 0,
         createdAt: widget.profile?.createdAt ?? now,
         updatedAt: now,
-        countryCode: _detectedCountryCode,
+        countryCode: _detectedCountryCode ?? widget.profile?.countryCode,
         region: _selectedRegion.isNotEmpty ? _selectedRegion : null,
-        city: _selectedCity.isNotEmpty ? _selectedCity : null, popularityScore: 0,
+        city: _selectedCity.isNotEmpty ? _selectedCity : null,
+        latitude: _detectedLatitude ?? widget.profile?.latitude,
+        longitude: _detectedLongitude ?? widget.profile?.longitude,
+        popularityScore: widget.profile?.popularityScore ?? 0,
       );
 
       await _firestore
@@ -360,12 +374,12 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
       print("✅ Profil dating enregistré avec succès");
 
       if (mounted) {
-        _showSuccess(isEditing ? 'Profil mis à jour !' : 'Profil créé avec succès !');
+        _showSuccess(isEditing ? AppLocalizations.of(context).datingProfileUpdated : AppLocalizations.of(context).datingProfileCreated);
         Navigator.pushReplacement(context, MaterialPageRoute(builder:(context) => DatingSwipePage(),));
       }
     } catch (e) {
       print("❌ Erreur sauvegarde profil: $e");
-      _showError('Erreur: ${e.toString()}');
+      _showError(AppLocalizations.of(context).datingErrorGeneric.replaceAll('{error}', e.toString()));
     } finally {
       setState(() => _isUploading = false);
     }
@@ -393,6 +407,12 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
     );
   }
 
+  String _cdnUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    final userProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    return userProvider.convertToCdnUrl(url, userProvider.appDefaultData);
+  }
+
   void _toggleInteret(String interet) {
     setState(() {
       if (_centresInteret.contains(interet)) {
@@ -418,7 +438,7 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
     ImageProvider imageProvider;
 
     if (isExisting) {
-      imageProvider = NetworkImage(image);
+      imageProvider = NetworkImage(_cdnUrl(image));
     } else if (kIsWeb && image is Uint8List) {
       imageProvider = MemoryImage(image);
     } else if (!kIsWeb && image is XFile) {
@@ -511,6 +531,7 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
   }
 
   Widget _buildHeader() {
+    final t = AppLocalizations.of(context);
     return Column(
       children: [
         Container(
@@ -532,7 +553,7 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
         ),
         const SizedBox(height: 16),
         Text(
-          widget.profile == null ? 'Crée ton profil' : 'Modifier mon profil',
+          widget.profile == null ? t.datingCreateYourProfile : t.datingEditMyProfile,
           style: const TextStyle(
             color: Colors.white,
             fontSize: 28,
@@ -541,7 +562,7 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
         ),
         const SizedBox(height: 8),
         Text(
-          'Rencontre des personnes qui te correspondent',
+          t.datingMeetPeopleSubtitle,
           style: TextStyle(
             color: Colors.grey[400],
             fontSize: 14,
@@ -554,6 +575,7 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
 
   Widget _buildPhotoSection() {
     final totalPhotos = _getTotalImageCount();
+    final t = AppLocalizations.of(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -562,7 +584,7 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Photos',
+              t.datingPhotosLabel,
               style: TextStyle(
                 color: primaryYellow,
                 fontSize: 18,
@@ -588,7 +610,7 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
         ),
         const SizedBox(height: 8),
         Text(
-          'Ajoute jusqu\'à $_maxPhotos photos (au moins 1)',
+          t.datingAddUpToPhotos.replaceAll('{max}', '$_maxPhotos'),
           style: TextStyle(
             color: Colors.grey[500],
             fontSize: 12,
@@ -648,7 +670,7 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
             Icon(Icons.add_a_photo, color: primaryYellow, size: 30),
             const SizedBox(height: 4),
             Text(
-              'Ajouter',
+              AppLocalizations.of(context).datingAddLabel,
               style: TextStyle(color: Colors.grey[400], fontSize: 12),
             ),
           ],
@@ -658,11 +680,12 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
   }
 
   Widget _buildPersonalInfoSection() {
+    final t = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Informations personnelles',
+          t.datingPersonalInfoSection,
           style: TextStyle(
             color: primaryYellow,
             fontSize: 18,
@@ -674,7 +697,7 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
           controller: _pseudoController,
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
-            labelText: 'Pseudo',
+            labelText: t.datingPseudoLabel,
             labelStyle: TextStyle(color: Colors.grey[400]),
             prefixIcon: Icon(Icons.person, color: primaryRed),
             filled: true,
@@ -685,7 +708,7 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
             ),
           ),
           validator: (value) =>
-          value == null || value.isEmpty ? 'Champ requis' : null,
+          value == null || value.isEmpty ? t.datingFieldRequired : null,
         ),
         const SizedBox(height: 16),
         TextFormField(
@@ -693,7 +716,7 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
           style: const TextStyle(color: Colors.white),
           keyboardType: TextInputType.number,
           decoration: InputDecoration(
-            labelText: 'Âge',
+            labelText: t.datingAgeLabel,
             labelStyle: TextStyle(color: Colors.grey[400]),
             prefixIcon: Icon(Icons.cake, color: primaryRed),
             filled: true,
@@ -704,10 +727,10 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
             ),
           ),
           validator: (value) {
-            if (value == null || value.isEmpty) return 'Champ requis';
+            if (value == null || value.isEmpty) return t.datingFieldRequired;
             final age = int.tryParse(value);
             if (age == null || age < 18 || age > 100) {
-              return 'Âge invalide (18-100 ans)';
+              return t.datingInvalidAge;
             }
             return null;
           },
@@ -718,7 +741,7 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
           style: const TextStyle(color: Colors.white),
           dropdownColor: secondaryGrey,
           decoration: InputDecoration(
-            labelText: 'Je suis',
+            labelText: t.datingIAmLabel,
             labelStyle: TextStyle(color: Colors.grey[400]),
             prefixIcon: Icon(Icons.people, color: primaryRed),
             filled: true,
@@ -728,9 +751,9 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
               borderSide: BorderSide.none,
             ),
           ),
-          items: const [
-            DropdownMenuItem(value: 'femme', child: Text('Femme')),
-            DropdownMenuItem(value: 'homme', child: Text('Homme')),
+          items: [
+            DropdownMenuItem(value: 'femme', child: Text(t.datingFemale)),
+            DropdownMenuItem(value: 'homme', child: Text(t.datingMale)),
           ],
           onChanged: (value) => setState(() => _selectedSexe = value!),
         ),
@@ -739,7 +762,7 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
           controller: _professionController,
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
-            labelText: 'Profession (optionnel)',
+            labelText: t.datingProfessionOptional,
             labelStyle: TextStyle(color: Colors.grey[400]),
             prefixIcon: Icon(Icons.work, color: primaryRed),
             filled: true,
@@ -756,7 +779,7 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
           style: const TextStyle(color: Colors.white),
           maxLines: 3,
           decoration: InputDecoration(
-            labelText: 'Bio',
+            labelText: t.datingBioLabel,
             labelStyle: TextStyle(color: Colors.grey[400]),
             prefixIcon: Icon(Icons.description, color: primaryRed),
             filled: true,
@@ -767,18 +790,19 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
             ),
           ),
           validator: (value) =>
-          value == null || value.isEmpty ? 'Champ requis' : null,
+          value == null || value.isEmpty ? t.datingFieldRequired : null,
         ),
       ],
     );
   }
 
   Widget _buildLocationSection() {
+    final t = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Localisation',
+          t.datingLocationSection,
           style: TextStyle(
             color: primaryYellow,
             fontSize: 18,
@@ -788,15 +812,18 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
         const SizedBox(height: 8),
         Text(
           kIsWeb
-              ? 'Sélectionne ton pays et ta région'
-              : 'Sélectionne ton pays et ta région (localisation automatique)',
+              ? t.datingSelectCountryRegion
+              : t.datingSelectCountryRegionAuto,
           style: TextStyle(color: Colors.grey[500], fontSize: 12),
         ),
         const SizedBox(height: 16),
         CSCPickerPlus(
           showStates: true,
           showCities: true,
-          defaultCountry: CscCountry.Togo,
+          defaultCountry: _selectedCountry.isEmpty ? CscCountry.Togo : null,
+          currentCountry: _selectedCountry.isNotEmpty ? _selectedCountry : null,
+          currentState: _selectedRegion.isNotEmpty ? _selectedRegion : null,
+          currentCity: _selectedCity.isNotEmpty ? _selectedCity : null,
           flagState: CountryFlag.SHOW_IN_DROP_DOWN_ONLY,
           dropdownDecoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
@@ -808,12 +835,12 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
             color: Colors.grey[800],
             border: Border.all(color: Colors.grey[700]!),
           ),
-          countrySearchPlaceholder: "Rechercher un pays",
-          stateSearchPlaceholder: "Rechercher une région",
-          citySearchPlaceholder: "Rechercher une ville",
-          countryDropdownLabel: "Sélectionnez un pays",
-          stateDropdownLabel: "Sélectionnez une région",
-          cityDropdownLabel: "Sélectionnez une ville",
+          countrySearchPlaceholder: t.datingSearchCountryPlaceholder,
+          stateSearchPlaceholder: t.datingSearchRegionPlaceholder,
+          citySearchPlaceholder: t.datingSearchCityPlaceholder,
+          countryDropdownLabel: t.datingSelectCountryDropdownLabel,
+          stateDropdownLabel: t.datingSelectRegionDropdownLabel,
+          cityDropdownLabel: t.datingSelectCityDropdownLabel,
           selectedItemStyle: TextStyle(color: primaryYellow, fontSize: 14),
           dropdownHeadingStyle: const TextStyle(
             color: Colors.black,
@@ -845,7 +872,7 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Détection de votre position...',
+                  t.datingDetectingLocation,
                   style: TextStyle(color: Colors.grey[500], fontSize: 12),
                 ),
               ],
@@ -866,7 +893,7 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
                   Icon(Icons.location_on, size: 14, color: primaryYellow),
                   const SizedBox(width: 4),
                   Text(
-                    'Position détectée: $_detectedCountryName',
+                    t.datingLocationDetected.replaceAll('{country}', '$_detectedCountryName'),
                     style: TextStyle(color: primaryYellow, fontSize: 11),
                   ),
                 ],
@@ -878,11 +905,12 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
   }
 
   Widget _buildInterestsSection() {
+    final t = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Centres d\'intérêt',
+          t.datingInterests,
           style: TextStyle(
             color: primaryYellow,
             fontSize: 18,
@@ -891,7 +919,7 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
         ),
         const SizedBox(height: 8),
         Text(
-          'Sélectionne au moins 3 centres d\'intérêt',
+          t.datingSelectAtLeast3Interests,
           style: TextStyle(color: Colors.grey[500], fontSize: 12),
         ),
         const SizedBox(height: 16),
@@ -924,11 +952,12 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
   }
 
   Widget _buildSearchPreferencesSection() {
+    final t = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Recherche',
+          t.datingSearchSection,
           style: TextStyle(
             color: primaryYellow,
             fontSize: 18,
@@ -941,7 +970,7 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
           style: const TextStyle(color: Colors.white),
           dropdownColor: secondaryGrey,
           decoration: InputDecoration(
-            labelText: 'Je recherche',
+            labelText: t.datingSearchingForLabel,
             labelStyle: TextStyle(color: Colors.grey[400]),
             prefixIcon: Icon(Icons.favorite, color: primaryRed),
             filled: true,
@@ -951,10 +980,10 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
               borderSide: BorderSide.none,
             ),
           ),
-          items: const [
-            DropdownMenuItem(value: 'homme', child: Text('Hommes')),
-            DropdownMenuItem(value: 'femme', child: Text('Femmes')),
-            DropdownMenuItem(value: 'tous', child: Text('Tous')),
+          items: [
+            DropdownMenuItem(value: 'homme', child: Text(t.datingMen)),
+            DropdownMenuItem(value: 'femme', child: Text(t.datingWomen)),
+            DropdownMenuItem(value: 'tous', child: Text(t.datingAll)),
           ],
           onChanged: (value) => setState(() => _selectedRechercheSexe = value!),
         ),
@@ -966,7 +995,7 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Âge minimum',
+                    t.datingMinAgeLabel,
                     style: TextStyle(color: Colors.grey[400], fontSize: 12),
                   ),
                   const SizedBox(height: 4),
@@ -984,7 +1013,7 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
                         items: List.generate(83, (i) => i + 18).map((age) {
                           return DropdownMenuItem(
                             value: age,
-                            child: Text('$age ans'),
+                            child: Text(t.datingAgeYears.replaceAll('{age}', '$age')),
                           );
                         }).toList(),
                         onChanged: (value) =>
@@ -1001,7 +1030,7 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Âge maximum',
+                    t.datingMaxAgeLabel,
                     style: TextStyle(color: Colors.grey[400], fontSize: 12),
                   ),
                   const SizedBox(height: 4),
@@ -1019,7 +1048,7 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
                         items: List.generate(83, (i) => i + 18).map((age) {
                           return DropdownMenuItem(
                             value: age,
-                            child: Text('$age ans'),
+                            child: Text(t.datingAgeYears.replaceAll('{age}', '$age')),
                           );
                         }).toList(),
                         onChanged: (value) =>
@@ -1052,7 +1081,7 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
           ),
         )
             : Text(
-          widget.profile == null ? 'Créer mon profil' : 'Enregistrer',
+          widget.profile == null ? AppLocalizations.of(context).datingCreateProfileButton : AppLocalizations.of(context).datingSaveButton,
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,

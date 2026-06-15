@@ -6,6 +6,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/dating_data.dart';
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
+import '../../theme/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 import '../pub/native_ad_widget.dart';
 import 'dating_profile_detail_page.dart';
 import 'dating_subscription_page.dart';
@@ -43,8 +45,17 @@ class _DatingExplorePageState extends State<DatingExplorePage> {
   int _maxVisibleProfiles = 10;
   bool _useSearchFilter = false;
 
+  /// Identifiants des profils déjà likés ou matchés par l'utilisateur courant.
+  /// Tant que `_excludeInteracted` est vrai, ces profils sont écartés en
+  /// priorité afin de mettre en avant les profils non encore explorés.
+  Set<String> _excludedUserIds = {};
+  bool _excludeInteracted = true;
+
+  /// Filtre "profils vérifiés uniquement", réservé au plan Gold.
+  bool _verifiedOnly = false;
+
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
-  static const int _batchSize = 20;
+  static const int _batchSize = 50;
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -127,10 +138,44 @@ class _DatingExplorePageState extends State<DatingExplorePage> {
         if (mounted) Navigator.pop(context);
         return;
       }
+      await _loadExcludedUserIds();
       await _loadProfiles(reset: true);
     } catch (e) {
       print('❌ Erreur chargement profil: $e');
       setState(() => _isLoading = false);
+    }
+  }
+
+  /// Charge les identifiants des profils déjà likés ou matchés par
+  /// l'utilisateur courant, pour les écarter en priorité des suggestions
+  /// et privilégier les profils non encore explorés.
+  Future<void> _loadExcludedUserIds() async {
+    if (_currentUserId == null) return;
+    try {
+      final ids = <String>{};
+
+      final results = await Future.wait([
+        firestore.collection('dating_likes').where('fromUserId', isEqualTo: _currentUserId).get(),
+        firestore.collection('dating_connections').where('userId1', isEqualTo: _currentUserId).get(),
+        firestore.collection('dating_connections').where('userId2', isEqualTo: _currentUserId).get(),
+      ]);
+
+      for (var doc in results[0].docs) {
+        final toId = doc['toUserId'];
+        if (toId is String) ids.add(toId);
+      }
+      for (var doc in results[1].docs) {
+        final id = doc['userId2'];
+        if (id is String) ids.add(id);
+      }
+      for (var doc in results[2].docs) {
+        final id = doc['userId1'];
+        if (id is String) ids.add(id);
+      }
+
+      _excludedUserIds = ids;
+    } catch (e) {
+      print('❌ Erreur chargement profils déjà explorés: $e');
     }
   }
 
@@ -158,6 +203,9 @@ class _DatingExplorePageState extends State<DatingExplorePage> {
           query = query.where('sexe', isEqualTo: rechercheSexe);
         }
       }
+      if (_verifiedOnly && _subscriptionPlan == 'gold') {
+        query = query.where('isVerified', isEqualTo: true);
+      }
       query = query
           .orderBy('popularityScore', descending: true)
           .orderBy(FieldPath.documentId);
@@ -166,6 +214,14 @@ class _DatingExplorePageState extends State<DatingExplorePage> {
       }
       final snapshot = await query.limit(_batchSize).get();
       if (snapshot.docs.isEmpty) {
+        // Fin de la collection atteinte : si on excluait encore les profils
+        // déjà explorés, on relance le cycle depuis le début pour ne jamais
+        // laisser l'utilisateur sans profil à découvrir.
+        if (_excludeInteracted && _excludedUserIds.isNotEmpty) {
+          _excludeInteracted = false;
+          _lastDocument = null;
+          return _loadProfiles(reset: reset);
+        }
         _hasMore = false;
         if (reset) setState(() => _isLoading = false);
         else setState(() => _isLoadingMore = false);
@@ -176,6 +232,21 @@ class _DatingExplorePageState extends State<DatingExplorePage> {
           .map((doc) => DatingProfile.fromJson(doc.data() as Map<String, dynamic>))
           .toList();
       allProfiles = allProfiles.where((p) => p.userId != _currentUserId).toList();
+
+      // Mettre en avant les profils non encore explorés (ni likés, ni
+      // matchés). Si le cycle est épuisé, on désactive ce filtre pour
+      // recommencer et s'assurer qu'il reste toujours des profils à explorer.
+      if (_excludeInteracted && _excludedUserIds.isNotEmpty) {
+        final unexplored = allProfiles.where((p) => !_excludedUserIds.contains(p.userId)).toList();
+        if (unexplored.isEmpty && allProfiles.isNotEmpty) {
+          // Cycle épuisé : on remet les profils déjà likés/matchés plutôt
+          // que de relancer une requête (évite un écran vide / un rechargement lent).
+          _excludeInteracted = false;
+        } else {
+          allProfiles = unexplored;
+        }
+      }
+
       if (allProfiles.isEmpty) {
         if (!reset) {
           await _loadProfiles(reset: false);
@@ -210,7 +281,16 @@ class _DatingExplorePageState extends State<DatingExplorePage> {
 
   List<DatingProfile> _mixProfiles(List<DatingProfile> profiles) {
     final sorted = List<DatingProfile>.from(profiles);
-    sorted.sort((a, b) => b.popularityScore.compareTo(a.popularityScore));
+    // Tri par score de recommandation (intérêts communs, tranche d'âge
+    // recherchée, vérification, popularité, proximité) plutôt que la simple
+    // popularité, pour suggérer en priorité les profils les plus pertinents.
+    if (_currentUserProfile != null) {
+      sorted.sort((a, b) => _currentUserProfile!
+          .recommendationScore(b)
+          .compareTo(_currentUserProfile!.recommendationScore(a)));
+    } else {
+      sorted.sort((a, b) => b.popularityScore.compareTo(a.popularityScore));
+    }
     final total = sorted.length;
     final highCount = (total * 0.4).toInt();
     final midCount = (total * 0.3).toInt();
@@ -244,6 +324,45 @@ class _DatingExplorePageState extends State<DatingExplorePage> {
   void _toggleSearchFilter() {
     setState(() {
       _useSearchFilter = !_useSearchFilter;
+      _loadProfiles(reset: true);
+    });
+  }
+
+  /// Active/désactive le filtre "profils vérifiés uniquement" (Gold).
+  /// Pour les autres plans, affiche un message incitant à passer à Gold.
+  void _toggleVerifiedOnlyFilter() {
+    final t = AppLocalizations.of(context);
+    if (_subscriptionPlan != 'gold') {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: AppColors.of(context).surface,
+          title: Row(
+            children: [
+              const Icon(Icons.verified, color: Colors.amber),
+              const SizedBox(width: 8),
+              Expanded(child: Text(t.datingVerifiedOnlyFilter, style: TextStyle(color: AppColors.of(context).textPrimary))),
+            ],
+          ),
+          content: Text(t.datingVerifiedOnlyGoldOnly, style: TextStyle(color: AppColors.of(context).textSecondary)),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: Text(t.datingLaterButton)),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const DatingSubscriptionPage()));
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+              child: Text(t.datingSeeOffers),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    setState(() {
+      _verifiedOnly = !_verifiedOnly;
       _loadProfiles(reset: true);
     });
   }
@@ -322,7 +441,9 @@ class _DatingExplorePageState extends State<DatingExplorePage> {
   }
 
   Widget _buildProfileCard(DatingProfile profile) {
-    final imageUrl = profile.photosUrls.isNotEmpty ? profile.photosUrls.first : profile.imageUrl;
+    final imageUrl = profile.photosUrls.isNotEmpty
+        ? profile.photosUrls[profile.userId.hashCode.abs() % profile.photosUrls.length]
+        : profile.imageUrl;
     return GestureDetector(
       onTap: () {
         Navigator.push(context, MaterialPageRoute(builder: (_) => DatingProfileDetailPage(profile: profile)));
@@ -419,19 +540,38 @@ class _DatingExplorePageState extends State<DatingExplorePage> {
         (_subscriptionPlan == 'plus' && _profiles.length >= _maxVisibleProfiles && _maxVisibleProfiles != -1);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.of(context).background,
       appBar: AppBar(
+        titleSpacing: 12,
         title: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.favorite, color: Colors.white, size: 24),
-            const SizedBox(width: 8),
-            const Text('Explorer', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22)),
+            Icon(Icons.travel_explore, color: Colors.white, size: 20),
+            const SizedBox(width: 6),
+            const Text('Explorer', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17)),
           ],
         ),
-        backgroundColor: Colors.pink.shade400,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.red.shade600, Colors.pink.shade400],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+          ),
+        ),
         actions: [
+          IconButton(
+            icon: Icon(
+              Icons.verified,
+              color: _verifiedOnly ? Colors.amber : Colors.white,
+            ),
+            tooltip: AppLocalizations.of(context).datingVerifiedOnlyFilter,
+            onPressed: _toggleVerifiedOnlyFilter,
+          ),
           Row(
             children: [
               const Text('Filtre recherche genre', style: TextStyle(color: Colors.white, fontSize: 12)),
@@ -456,9 +596,9 @@ class _DatingExplorePageState extends State<DatingExplorePage> {
           children: [
             Icon(Icons.people_outline, size: 80, color: Colors.grey.shade400),
             const SizedBox(height: 16),
-            const Text('Aucun profil trouvé', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text('Aucun profil trouvé', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.of(context).textPrimary)),
             const SizedBox(height: 8),
-            const Text('Essayez plus tard ou modifiez vos critères', style: TextStyle(color: Colors.grey)),
+            Text('Essayez plus tard ou modifiez vos critères', style: TextStyle(color: AppColors.of(context).textSecondary)),
           ],
         ),
       )
@@ -482,6 +622,27 @@ class _DatingExplorePageState extends State<DatingExplorePage> {
           ),
           if (_isLoadingMore)
             const Padding(padding: EdgeInsets.symmetric(vertical: 16), child: CircularProgressIndicator()),
+          if (!_hasMore && showUpgradeButton)
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.amber.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.star, color: Colors.amber, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      AppLocalizations.of(context).datingMoreProfilesWithPlan,
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.of(context).textPrimary),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           if (!_hasMore && showUpgradeButton)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),

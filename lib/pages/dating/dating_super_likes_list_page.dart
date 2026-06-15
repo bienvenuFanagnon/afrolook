@@ -5,6 +5,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/dating_data.dart';
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
+import '../../theme/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 import '../component/consoleWidget.dart';
 import 'dating_profile_detail_page.dart';
 
@@ -36,14 +38,15 @@ class _DatingSuperLikesPageState extends State<DatingSuperLikesPage>
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.of(context).background,
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '⭐ Super likes',
+              t.datingSuperLikesTitle,
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -51,7 +54,7 @@ class _DatingSuperLikesPageState extends State<DatingSuperLikesPage>
               ),
             ),
             Text(
-              'Coups de cœur reçus et envoyés',
+              t.datingSuperLikesSubtitle,
               style: TextStyle(
                 color: Colors.white70,
                 fontSize: 12,
@@ -79,9 +82,9 @@ class _DatingSuperLikesPageState extends State<DatingSuperLikesPage>
               indicatorColor: Colors.white,
               labelColor: Colors.white,
               unselectedLabelColor: Colors.white70,
-              tabs: const [
-                Tab(icon: Icon(Icons.star), text: 'Reçus'),
-                Tab(icon: Icon(Icons.star_border), text: 'Envoyés'),
+              tabs: [
+                Tab(icon: const Icon(Icons.star), text: t.datingTabReceived),
+                Tab(icon: const Icon(Icons.star_border), text: t.datingTabSent),
               ],
             ),
           ),
@@ -98,14 +101,14 @@ class _DatingSuperLikesPageState extends State<DatingSuperLikesPage>
   }
 
   Widget _buildSuperLikesList({required bool isReceived}) {
+    final t = AppLocalizations.of(context);
     final collection = 'dating_coup_de_coeurs';
     final field = isReceived ? 'toUserId' : 'fromUserId';
-    final title = isReceived ? 'Coups de cœur reçus' : 'Coups de cœur envoyés';
     final emptyIcon = isReceived ? Icons.star_border : Icons.star_border;
-    final emptyTitle = isReceived ? 'Aucun super like reçu' : 'Aucun super like envoyé';
+    final emptyTitle = isReceived ? t.datingNoSuperLikeReceived : t.datingNoSuperLikeSent;
     final emptyMessage = isReceived
-        ? 'Les personnes qui vous envoient des super likes apparaîtront ici'
-        : 'Les profils à qui vous envoyez des super likes apparaîtront ici';
+        ? t.datingSuperLikesReceivedEmptyMsg
+        : t.datingSuperLikesSentEmptyMsg;
 
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
@@ -122,7 +125,7 @@ class _DatingSuperLikesPageState extends State<DatingSuperLikesPage>
               children: [
                 Icon(Icons.error_outline, size: 60, color: Colors.red),
                 SizedBox(height: 16),
-                Text('Erreur: ${snapshot.error}'),
+                Text(t.datingErrorGeneric.replaceAll('{error}', '${snapshot.error}')),
               ],
             ),
           );
@@ -135,7 +138,7 @@ class _DatingSuperLikesPageState extends State<DatingSuperLikesPage>
               children: [
                 CircularProgressIndicator(),
                 SizedBox(height: 16),
-                Text('Chargement...'),
+                Text(t.datingLoadingText),
               ],
             ),
           );
@@ -170,7 +173,7 @@ class _DatingSuperLikesPageState extends State<DatingSuperLikesPage>
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: Colors.grey.shade800,
+                    color: AppColors.of(context).textPrimary,
                   ),
                 ),
                 SizedBox(height: 12),
@@ -178,7 +181,7 @@ class _DatingSuperLikesPageState extends State<DatingSuperLikesPage>
                   emptyMessage,
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey.shade600,
+                    color: AppColors.of(context).textSecondary,
                   ),
                 ),
                 SizedBox(height: 32),
@@ -189,7 +192,7 @@ class _DatingSuperLikesPageState extends State<DatingSuperLikesPage>
                     },
                     icon: Icon(Icons.star, color: Colors.white),
                     label: Text(
-                      'Envoyer un super like',
+                      t.datingSendSuperLike,
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     style: ElevatedButton.styleFrom(
@@ -234,7 +237,7 @@ class _DatingSuperLikesPageState extends State<DatingSuperLikesPage>
                     child: Container(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(20),
-                        color: Colors.white,
+                        color: AppColors.of(context).surface,
                         boxShadow: [
                           BoxShadow(
                             color: Colors.grey.withOpacity(0.1),
@@ -243,7 +246,7 @@ class _DatingSuperLikesPageState extends State<DatingSuperLikesPage>
                           ),
                         ],
                         border: Border.all(
-                          color: isNew ? Colors.amber.shade200 : Colors.grey.shade200,
+                          color: isNew ? Colors.amber.shade200 : AppColors.of(context).border,
                           width: isNew ? 1.5 : 1,
                         ),
                       ),
@@ -281,7 +284,7 @@ class _DatingSuperLikesPageState extends State<DatingSuperLikesPage>
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(28),
                                       child: Image.network(
-                                        profile.imageUrl,
+                                        _cdnUrl(profile.imageUrl),
                                         width: 56,
                                         height: 56,
                                         fit: BoxFit.cover,
@@ -330,7 +333,7 @@ class _DatingSuperLikesPageState extends State<DatingSuperLikesPage>
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.grey.shade800,
+                                      color: AppColors.of(context).textPrimary,
                                     ),
                                   ),
                                   SizedBox(height: 4),
@@ -343,10 +346,10 @@ class _DatingSuperLikesPageState extends State<DatingSuperLikesPage>
                                       ),
                                       SizedBox(width: 4),
                                       Text(
-                                        '${profile.age} ans',
+                                        t.datingAgeYears.replaceAll('{age}', '${profile.age}'),
                                         style: TextStyle(
                                           fontSize: 12,
-                                          color: Colors.grey.shade600,
+                                          color: AppColors.of(context).textSecondary,
                                         ),
                                       ),
                                       SizedBox(width: 12),
@@ -360,7 +363,7 @@ class _DatingSuperLikesPageState extends State<DatingSuperLikesPage>
                                         profile.pays,
                                         style: TextStyle(
                                           fontSize: 12,
-                                          color: Colors.grey.shade600,
+                                          color: AppColors.of(context).textSecondary,
                                         ),
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -383,7 +386,7 @@ class _DatingSuperLikesPageState extends State<DatingSuperLikesPage>
                                         ),
                                         SizedBox(width: 4),
                                         Text(
-                                          _formatDate(date),
+                                          _formatDate(t, date),
                                           style: TextStyle(
                                             fontSize: 10,
                                             color: isNew ? Colors.amber.shade800 : Colors.grey.shade600,
@@ -427,18 +430,24 @@ class _DatingSuperLikesPageState extends State<DatingSuperLikesPage>
     );
   }
 
-  String _formatDate(DateTime date) {
+  String _formatDate(AppLocalizations t, DateTime date) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final likeDate = DateTime(date.year, date.month, date.day);
 
     if (likeDate == today) {
-      return "Aujourd'hui";
+      return t.datingTodayCap;
     } else if (likeDate == today.subtract(Duration(days: 1))) {
-      return "Hier";
+      return t.datingYesterdayCap;
     } else {
       return "${date.day}/${date.month}/${date.year}";
     }
+  }
+
+  String _cdnUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    final userProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    return userProvider.convertToCdnUrl(url, userProvider.appDefaultData);
   }
 
   Future<DatingProfile?> _getDatingProfile(String userId) async {

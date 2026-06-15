@@ -4,10 +4,9 @@ import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/dating_data.dart';
 import '../../providers/authProvider.dart';
-import '../../providers/dating/coin_provider.dart';
-import '../../providers/dating/dating_provider.dart';
+import '../../l10n/app_localizations.dart';
+import '../../theme/app_colors.dart';
 import 'buy_coins_page.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class DatingSubscriptionPage extends StatefulWidget {
   const DatingSubscriptionPage({Key? key}) : super(key: key);
@@ -23,155 +22,123 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
   String? _error;
   SubscriptionPlan? _selectedPlan;
   String? _currentSubscriptionPlan;
+  String? _currentSubscriptionDocId;
+  bool _incognitoMode = false;
 
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
   @override
   void initState() {
     super.initState();
-    _checkAndCreatePlans();
+    _loadPlans();
   }
 
-  Future<void> _checkAndCreatePlans() async {
-    print('📱 === Vérification et création des plans d\'abonnement ===');
-    setState(() => _isLoading = true);
-
-    try {
-      // Vérifier si les plans existent
-      final snapshot = await firestore
-          .collection('subscription_plans')
-          .where('isActive', isEqualTo: true)
-          .get();
-
-      print('📊 Nombre de plans trouvés: ${snapshot.docs.length}');
-
-      final existingCodes = snapshot.docs.map((doc) => doc['code'] as String).toList();
-      print('📊 Plans existants: $existingCodes');
-
-      final now = DateTime.now().millisecondsSinceEpoch;
-      bool needsRefresh = false;
-
-      // Créer le plan Plus s'il n'existe pas
-      if (!existingCodes.contains('plus')) {
-        print('➕ Création du plan Plus...');
-        await firestore.collection('subscription_plans').add({
-          'code': 'plus',
-          'name': 'AfroLove Plus',
-          'description': 'Profitez de plus de fonctionnalités',
-          'priceCoins': 500,
-          'durationInDays': 30,
-          'features': [
-            '50 likes par jour',
-            '2 super likes par jour',
-            'Voir qui vous a liké',
-            'Message prioritaire',
-            'Badge exclusif',
-          ],
-          'isActive': true,
-          'createdAt': now,
-          'updatedAt': now,
-        });
-        print('✅ Plan Plus créé avec succès');
-        needsRefresh = true;
-      }
-
-      // Créer le plan Gold s'il n'existe pas
-      if (!existingCodes.contains('gold')) {
-        print('💎 Création du plan Gold...');
-        await firestore.collection('subscription_plans').add({
-          'code': 'gold',
-          'name': 'AfroLove Gold',
-          'description': 'L\'expérience ultime',
-          'priceCoins': 1500,
-          'durationInDays': 30,
-          'features': [
-            'Likes illimités',
-            '5 super likes par jour',
-            'Voir qui vous a liké',
-            'Message prioritaire',
-            'Badge Gold exclusif',
-            'Profil mis en avant',
-            'Boost quotidien',
-          ],
-          'isActive': true,
-          'createdAt': now,
-          'updatedAt': now,
-        });
-        print('✅ Plan Gold créé avec succès');
-        needsRefresh = true;
-      }
-
-      // Créer le plan Gratuit s'il n'existe pas
-      if (!existingCodes.contains('gratuit')) {
-        print('🎁 Création du plan Gratuit...');
-        await firestore.collection('subscription_plans').add({
-          'code': 'gratuit',
-          'name': 'Gratuit',
-          'description': 'Fonctionnalités de base',
-          'priceCoins': 0,
-          'durationInDays': 0,
-          'features': [
-            '10 likes par jour',
-            '1 super like par jour',
-            'Profils recommandés',
-          ],
-          'isActive': true,
-          'createdAt': now,
-          'updatedAt': now,
-        });
-        print('✅ Plan Gratuit créé avec succès');
-        needsRefresh = true;
-      }
-
-      if (needsRefresh) {
-        print('🔄 Rechargement des plans...');
-        await _loadPlans();
-      } else {
-        await _loadPlans();
-      }
-
-    } catch (e) {
-      print('❌ Erreur lors de la vérification des plans: $e');
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
-    }
+  /// Catalogue des plans d'abonnement, défini localement (et non plus dans
+  /// Firestore) pour éviter les doublons/anciens tarifs et garder le contrôle
+  /// total de la grille tarifaire dans le code de l'application.
+  List<SubscriptionPlan> _buildLocalPlans() {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    return [
+      SubscriptionPlan(
+        id: 'gratuit',
+        code: 'gratuit',
+        name: 'Gratuit',
+        description: 'Fonctionnalités de base',
+        priceCoins: 0,
+        durationInDays: 0,
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+        defaultLikes: 5,
+        defaultSuperLikes: 1,
+        defaultSwipes: 15,
+        features: const [
+          '5 likes par jour',
+          '1 super like par jour',
+          '15 profils à découvrir par jour',
+          'Profils recommandés',
+          'Recharge de quota avec des pièces',
+        ],
+      ),
+      SubscriptionPlan(
+        id: 'plus',
+        code: 'plus',
+        name: 'AfroLove Plus',
+        description: 'Profitez de plus de fonctionnalités',
+        priceCoins: 1499,
+        durationInDays: 30,
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+        defaultLikes: 20,
+        defaultSuperLikes: 5,
+        defaultSwipes: 50,
+        features: const [
+          '20 likes par jour',
+          '5 super likes par jour',
+          '50 profils à découvrir par jour',
+          'Annuler le dernier swipe (rewind)',
+          'Badge exclusif',
+          'Recharge de quota avec des pièces',
+        ],
+      ),
+      SubscriptionPlan(
+        id: 'gold',
+        code: 'gold',
+        name: 'AfroLove Gold',
+        description: "L'expérience ultime",
+        priceCoins: 3999,
+        durationInDays: 30,
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+        defaultLikes: 50,
+        defaultSuperLikes: 20,
+        defaultSwipes: -1,
+        features: const [
+          'Profils à découvrir illimités',
+          '50 likes par jour',
+          '20 super likes par jour',
+          'Voir qui vous a liké',
+          'Annuler le dernier swipe (rewind)',
+          'Message direct sans match (1/jour)',
+          'Filtre "profils vérifiés"',
+          'Statistiques de profil',
+          'Boost quotidien gratuit',
+          'Mode incognito (parcourir sans être vu)',
+          'Recharge de quota à -50%',
+          'Badge Gold exclusif',
+        ],
+      ),
+    ];
   }
 
   Future<void> _loadPlans() async {
-    print('📱 === Chargement des plans d\'abonnement dating ===');
+    print('📱 === Chargement des plans d\'abonnement dating (local) ===');
+    _plans = _buildLocalPlans()..sort((a, b) => a.priceCoins.compareTo(b.priceCoins));
+    for (var plan in _plans) {
+      print('   📌 ${plan.name} - ${plan.priceCoins} coins');
+    }
+    setState(() => _isLoading = false);
 
+    // Charger l'abonnement actuel après avoir les plans
+    await _loadCurrentSubscription();
+  }
+
+  /// Active/désactive le mode incognito (avantage Gold) : tant qu'il est
+  /// actif, les visites de profils de l'utilisateur ne sont pas enregistrées
+  /// (cf. `dating_profile_detail_page.dart` -> `_recordVisit`).
+  Future<void> _toggleIncognitoMode(bool value) async {
+    if (_currentSubscriptionDocId == null) return;
+    setState(() => _incognitoMode = value);
     try {
-      final snapshot = await firestore
-          .collection('subscription_plans')
-          .where('isActive', isEqualTo: true)
-          .orderBy('priceCoins')
-          .get();
-
-      print('📊 Nombre de plans trouvés: ${snapshot.docs.length}');
-
-      _plans = snapshot.docs
-          .map((doc) => SubscriptionPlan.fromJson(doc.data()))
-          .toList();
-
-      // Afficher les plans chargés
-      for (var plan in _plans) {
-        print('   📌 ${plan.name} - ${plan.priceCoins} coins');
-      }
-
-      print('✅ Plans chargés avec succès');
-      setState(() => _isLoading = false);
-
-      // Charger l'abonnement actuel après avoir les plans
-      _loadCurrentSubscription();
-
+      await firestore
+          .collection('user_dating_subscriptions')
+          .doc(_currentSubscriptionDocId)
+          .update({'incognitoMode': value});
     } catch (e) {
-      print('❌ Erreur chargement plans: $e');
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
+      print('❌ Erreur mise à jour mode incognito: $e');
+      setState(() => _incognitoMode = !value);
     }
   }
 
@@ -192,6 +159,8 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
       if (snapshot.docs.isNotEmpty) {
         final subscription = UserDatingSubscription.fromJson(snapshot.docs.first.data());
         _currentSubscriptionPlan = subscription.planCode;
+        _currentSubscriptionDocId = snapshot.docs.first.id;
+        _incognitoMode = snapshot.docs.first.data()['incognitoMode'] ?? false;
         print('📌 Abonnement actuel: $_currentSubscriptionPlan');
 
         // Vérifier si l'abonnement est expiré
@@ -234,9 +203,9 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
     print('📅 Durée: ${plan.durationInDays} jours');
 
     // Vérifier si l'utilisateur est déjà abonné à ce plan
-    if (_currentSubscriptionPlan == plan.code && plan.code != 'gratuit') {
+    if (_currentSubscriptionPlan == plan.code) {
       print('⚠️ Utilisateur déjà abonné à ${plan.name}');
-      _showSnackBar('Vous êtes déjà abonné à ce plan !', Colors.orange);
+      _showSnackBar(AppLocalizations.of(context).datingAlreadySubscribedToPlan, Colors.orange);
       return;
     }
 
@@ -261,6 +230,16 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
       final startAt = now;
       final endAt = now + (plan.durationInDays * 24 * 60 * 60 * 1000);
 
+      // Récupérer les anciens abonnements actifs AVANT la transaction : une requête
+      // (where + get) ne fait pas partie du contrat de lecture/écriture d'une
+      // transaction Firestore et provoquait des incohérences (docs non désactivés
+      // de façon fiable, doublons d'abonnements actifs détectés en production).
+      final oldSubscriptions = await firestore
+          .collection('user_dating_subscriptions')
+          .where('userId', isEqualTo: userId)
+          .where('isActive', isEqualTo: true)
+          .get();
+
       print('🔄 Exécution de la transaction Firestore...');
 
       await firestore.runTransaction((transaction) async {
@@ -281,14 +260,10 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
           print('💰 ${plan.priceCoins} pièces déduites du solde');
         }
 
-        // 2. Désactiver les anciens abonnements
-        final oldSubscriptions = await firestore
-            .collection('user_dating_subscriptions')
-            .where('userId', isEqualTo: userId)
-            .where('isActive', isEqualTo: true)
-            .get();
-
+        // 2. Désactiver les anciens abonnements (lus via transaction.get pour
+        // respecter les règles de cohérence des transactions Firestore)
         for (var doc in oldSubscriptions.docs) {
+          await transaction.get(doc.reference);
           transaction.update(doc.reference, {'isActive': false});
           print('📌 Ancien abonnement désactivé: ${doc.id}');
         }
@@ -307,6 +282,7 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
           updatedAt: now,
           remainingLikes: plan.defaultLikes,
           remainingSuperLikes: plan.defaultSuperLikes,
+          remainingSwipes: plan.defaultSwipes,
           lastResetDate: now,
         );
 
@@ -343,16 +319,13 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
       // Mettre à jour les données locales
       _currentSubscriptionPlan = plan.code;
 
-      // Mettre à jour les limites dans SharedPreferences
-      await _updateLocalLimits(plan);
-
-      // Mettre à jour les limites dans le provider
-      await _updateProviderLimits(plan);
-
       if (mounted) {
         _showSuccessSnackBar(plan);
         await authProvider.refreshUserData();
-        Navigator.pop(context);
+        // Revenir sur la page swipe (racine du module Dating) afin que
+        // _loadUserSubscription() s'y exécute automatiquement au retour
+        // (via didChangeDependencies/_refreshData) et prenne en compte le nouveau plan.
+        Navigator.of(context).popUntil((route) => route.isFirst);
       }
 
     } catch (e) {
@@ -368,59 +341,16 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
   }
 
 // =====================================================
-// 2. FONCTION DE MISE À JOUR DES LIMITES LOCALES
-// =====================================================
-
-  /// Met à jour les limites de likes dans SharedPreferences
-  /// Ces valeurs sont utilisées pour l'affichage immédiat dans l'app
-  Future<void> _updateLocalLimits(SubscriptionPlan plan) async {
-    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    final prefs = await SharedPreferences.getInstance();
-    final userId = authProvider.loginUserData.id;
-
-    if (userId == null) {
-      print('⚠️ Impossible de mettre à jour les limites: userId null');
-      return;
-    }
-
-    // Utiliser les valeurs du plan
-    final likesLimit = plan.defaultLikes;
-    final superLikesLimit = plan.defaultSuperLikes;
-
-    await prefs.setInt('dating_remaining_likes_$userId', likesLimit);
-    await prefs.setInt('dating_remaining_super_likes_$userId', superLikesLimit);
-
-    print('📊 Mise à jour SharedPreferences:');
-    print('   👍 Likes: ${likesLimit == -1 ? 'Illimités' : likesLimit}');
-    print('   ⭐ Super likes: $superLikesLimit');
-  }
-
-// =====================================================
-// 3. FONCTION DE MISE À JOUR DES LIMITES DANS LE PROVIDER
-// =====================================================
-
-  /// Met à jour les limites dans le DatingProvider (si utilisé)
-  Future<void> _updateProviderLimits(SubscriptionPlan plan) async {
-    try {
-      final datingProvider = Provider.of<DatingProvider>(context, listen: false);
-      // Si votre DatingProvider a une méthode pour mettre à jour les limites
-      // datingProvider.updateLimits(plan.defaultLikes, plan.defaultSuperLikes);
-
-      print('📊 Mise à jour du DatingProvider effectuée');
-    } catch (e) {
-      print('⚠️ Impossible de mettre à jour le DatingProvider: $e');
-      // Ce n'est pas critique, on continue
-    }
-  }
-
-// =====================================================
-// 4. FONCTIONS UTILITAIRES
+// 2. FONCTIONS UTILITAIRES
 // =====================================================
 
   Future<bool?> _showConfirmationDialog(SubscriptionPlan plan) async {
+    final t = AppLocalizations.of(context);
+    final colors = AppColors.of(context);
     return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: colors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
@@ -430,7 +360,7 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
               color: plan.code == 'gold' ? Colors.amber : Colors.red,
             ),
             SizedBox(width: 8),
-            Text('Confirmer l\'abonnement'),
+            Text(t.datingConfirmSubscriptionTitle, style: TextStyle(color: colors.textPrimary)),
           ],
         ),
         content: Column(
@@ -438,8 +368,8 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
           children: [
             SizedBox(height: 8),
             Text(
-              'Souscrire à ${plan.name} ?',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              t.datingConfirmSubscribeTo.replaceAll('{plan}', plan.name),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colors.textPrimary),
             ),
             SizedBox(height: 12),
             if (plan.priceCoins > 0)
@@ -450,7 +380,7 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  '${plan.priceCoins} pièces',
+                  t.datingCoinsSuffix.replaceAll('{count}', '${plan.priceCoins}'),
                   style: TextStyle(
                     color: Colors.amber.shade800,
                     fontWeight: FontWeight.bold,
@@ -459,28 +389,30 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
               ),
             SizedBox(height: 12),
             Text(
-              'Durée: ${plan.durationInDays} jours',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
+              t.datingDurationDays.replaceAll('{days}', '${plan.durationInDays}'),
+              style: TextStyle(fontSize: 12, color: colors.textSecondary),
             ),
             SizedBox(height: 16),
             Container(
               padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.grey[800],
+                color: colors.surfaceVariant,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
                 children: [
                   _buildLimitRow(
-                    'Likes par jour',
-                    plan.defaultLikes == -1 ? 'Illimités' : '${plan.defaultLikes}',
+                    t.datingLikesPerDay,
+                    plan.defaultLikes == -1 ? t.datingUnlimitedWord : '${plan.defaultLikes}',
                     Icons.favorite,
+                    colors,
                   ),
                   SizedBox(height: 8),
                   _buildLimitRow(
-                    'Super likes par jour',
+                    t.datingSuperLikesPerDay,
                     '${plan.defaultSuperLikes}',
                     Icons.star,
+                    colors,
                   ),
                 ],
               ),
@@ -490,7 +422,7 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Annuler'),
+            child: Text(t.datingCancelButton, style: TextStyle(color: colors.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -500,14 +432,14 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
                 borderRadius: BorderRadius.circular(30),
               ),
             ),
-            child: Text('Confirmer'),
+            child: Text(t.datingConfirmButton),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildLimitRow(String label, String value, IconData icon) {
+  Widget _buildLimitRow(String label, String value, IconData icon, AppColors colors) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -515,13 +447,13 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
           children: [
             Icon(icon, size: 14, color: Colors.amber),
             SizedBox(width: 8),
-            Text(label, style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+            Text(label, style: TextStyle(color: colors.textSecondary, fontSize: 12)),
           ],
         ),
         Text(
           value,
           style: TextStyle(
-            color: Colors.amber,
+            color: Colors.amber.shade700,
             fontWeight: FontWeight.bold,
             fontSize: 12,
           ),
@@ -531,6 +463,7 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
   }
 
   void _showSuccessSnackBar(SubscriptionPlan plan) {
+    final t = AppLocalizations.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -539,7 +472,7 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
             SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Abonnement ${plan.name} activé !',
+                t.datingSubscriptionActiveBadge.replaceAll('{plan}', plan.name),
                 style: TextStyle(color: Colors.white),
               ),
             ),
@@ -565,37 +498,41 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
   }
 
   void _showInsufficientCoinsDialog(SubscriptionPlan plan) {
+    final t = AppLocalizations.of(context);
+    final colors = AppColors.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: colors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Solde insuffisant', style: TextStyle(color: Colors.red)),
+        title: Text(t.datingInsufficientBalanceTitle, style: TextStyle(color: Colors.red)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.monetization_on, size: 50, color: Colors.red),
             SizedBox(height: 16),
             Text(
-              'Vous n\'avez pas assez de pièces pour souscrire à ${plan.name}.',
+              t.datingInsufficientBalanceMessage.replaceAll('{plan}', plan.name),
               textAlign: TextAlign.center,
+              style: TextStyle(color: colors.textPrimary),
             ),
             SizedBox(height: 8),
             Text(
-              '${plan.priceCoins} pièces requis',
-              style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold),
+              t.datingCoinsRequired.replaceAll('{price}', '${plan.priceCoins}'),
+              style: TextStyle(color: Colors.amber.shade700, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 16),
             Text(
-              'Achetez des pièces pour profiter des fonctionnalités premium !',
+              t.datingBuyCoinsPrompt,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: Colors.grey),
+              style: TextStyle(fontSize: 12, color: colors.textSecondary),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Annuler'),
+            child: Text(t.datingCancelButton, style: TextStyle(color: colors.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -608,7 +545,7 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.amber,
             ),
-            child: Text('Acheter des pièces'),
+            child: Text(t.datingBuyCoinsButton),
           ),
         ],
       ),
@@ -641,12 +578,14 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<UserAuthProvider>(context);
     final currentCoins = authProvider.loginUserData.coinsBalance ?? 0;
+    final t = AppLocalizations.of(context);
+    final colors = AppColors.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.background,
       appBar: AppBar(
         title: Text(
-          'AfroLove Premium',
+          t.datingSubscriptionPageTitle,
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.red.shade600,
@@ -663,7 +602,7 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
           children: [
             CircularProgressIndicator(),
             SizedBox(height: 16),
-            Text('Chargement des offres...'),
+            Text(t.datingLoadingOffers, style: TextStyle(color: colors.textPrimary)),
           ],
         ),
       )
@@ -674,13 +613,13 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
           children: [
             Icon(Icons.error_outline, size: 60, color: Colors.red),
             SizedBox(height: 16),
-            Text('Erreur: $_error'),
+            Text('${t.datingErrorPrefix}: $_error', style: TextStyle(color: colors.textPrimary)),
             SizedBox(height: 16),
             ElevatedButton(
               onPressed: () {
-                _checkAndCreatePlans();
+                _loadPlans();
               },
-              child: Text('Réessayer'),
+              child: Text(t.datingRetry),
             ),
           ],
         ),
@@ -692,15 +631,15 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
           children: [
             Icon(Icons.warning_amber, size: 60, color: Colors.orange),
             SizedBox(height: 16),
-            Text('Aucun plan disponible'),
+            Text(t.datingNoPlanAvailable, style: TextStyle(color: colors.textPrimary)),
             SizedBox(height: 8),
-            Text('Veuillez réessayer plus tard'),
+            Text(t.datingTryAgainLater, style: TextStyle(color: colors.textSecondary)),
             SizedBox(height: 16),
             ElevatedButton(
               onPressed: () {
-                _checkAndCreatePlans();
+                _loadPlans();
               },
-              child: Text('Réessayer'),
+              child: Text(t.datingRetry),
             ),
           ],
         ),
@@ -718,7 +657,7 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
             child: Column(
               children: [
                 Text(
-                  'Votre solde',
+                  t.datingBalanceLabel,
                   style: TextStyle(color: Colors.white70, fontSize: 14),
                 ),
                 SizedBox(height: 8),
@@ -735,8 +674,9 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                    SizedBox(width: 4),
                     Text(
-                      ' pièces',
+                      t.datingCoinsWord,
                       style: TextStyle(color: Colors.white70, fontSize: 16),
                     ),
                   ],
@@ -755,8 +695,33 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
                         Icon(_getPlanIcon(_currentSubscriptionPlan!), size: 16, color: Colors.amber),
                         SizedBox(width: 8),
                         Text(
-                          'Abonnement ${_currentSubscriptionPlan == 'gold' ? 'Gold' : 'Plus'} actif',
+                          t.datingSubscriptionActiveBadge.replaceAll(
+                            '{plan}',
+                            _currentSubscriptionPlan == 'gold' ? t.datingPlanGold : t.datingPlanPlus,
+                          ),
                           style: TextStyle(color: Colors.white, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (_currentSubscriptionPlan == 'gold')
+                  Container(
+                    margin: EdgeInsets.only(top: 12),
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.visibility_off, size: 16, color: Colors.amber),
+                        SizedBox(width: 8),
+                        Text(t.datingIncognitoModeTitle, style: TextStyle(color: Colors.white, fontSize: 13)),
+                        Switch(
+                          value: _incognitoMode,
+                          activeColor: Colors.amber,
+                          onChanged: _toggleIncognitoMode,
                         ),
                       ],
                     ),
@@ -778,6 +743,7 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
                 return Container(
                   margin: EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
+                    color: colors.surface,
                     borderRadius: BorderRadius.circular(20),
                     gradient: isCurrentPlan
                         ? LinearGradient(
@@ -785,12 +751,12 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
                     )
                         : null,
                     border: Border.all(
-                      color: isCurrentPlan ? Colors.red.shade300 : Colors.grey.shade200,
+                      color: isCurrentPlan ? Colors.red.shade300 : colors.border,
                       width: isCurrentPlan ? 2 : 1,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
+                        color: Colors.black.withOpacity(0.05),
                         blurRadius: 10,
                         offset: Offset(0, 2),
                       ),
@@ -839,7 +805,7 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
                                     plan.description,
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: Colors.grey.shade600,
+                                      color: colors.textSecondary,
                                     ),
                                   ),
                                 ],
@@ -879,10 +845,11 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Ce que vous obtenez :',
+                              t.datingWhatYouGet,
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
+                                color: colors.textPrimary,
                               ),
                             ),
                             SizedBox(height: 12),
@@ -899,7 +866,7 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
                                   Expanded(
                                     child: Text(
                                       feature,
-                                      style: TextStyle(fontSize: 13),
+                                      style: TextStyle(fontSize: 13, color: colors.textPrimary),
                                     ),
                                   ),
                                 ],
@@ -910,11 +877,11 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
                                 padding: EdgeInsets.only(top: 8),
                                 child: Row(
                                   children: [
-                                    Icon(Icons.calendar_today, size: 14, color: Colors.grey),
+                                    Icon(Icons.calendar_today, size: 14, color: colors.textSecondary),
                                     SizedBox(width: 8),
                                     Text(
-                                      'Durée: ${plan.durationInDays} jours',
-                                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                                      t.datingDurationDays.replaceAll('{days}', '${plan.durationInDays}'),
+                                      style: TextStyle(fontSize: 12, color: colors.textSecondary),
                                     ),
                                   ],
                                 ),
@@ -939,7 +906,7 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
                               ),
                             ),
                             child: Text(
-                              'Abonnement actif',
+                              t.datingSubscriptionActiveButton,
                               style: TextStyle(color: Colors.green),
                             ),
                           )
@@ -965,8 +932,8 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
                             )
                                 : Text(
                               isFree
-                                  ? 'Rester gratuit'
-                                  : 'S\'abonner - ${plan.priceCoins} pièces',
+                                  ? t.datingStayFree
+                                  : t.datingSubscribeForCoins.replaceAll('{price}', '${plan.priceCoins}'),
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -986,10 +953,9 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
           Container(
             padding: EdgeInsets.all(16),
             child: Text(
-              'Abonnement automatiquement renouvelable. '
-                  'Vous pouvez annuler à tout moment dans les paramètres.',
+              t.datingSubscriptionFooterNote,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
+              style: TextStyle(fontSize: 10, color: colors.textSecondary),
             ),
           ),
         ],

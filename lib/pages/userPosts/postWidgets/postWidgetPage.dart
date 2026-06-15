@@ -1893,7 +1893,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                           bottomRight: Radius.circular(16),
                         ),
                         child: CachedNetworkImage(
-                          imageUrl: _optimizeUrl( images[3]),
+                          imageUrl: _optimizeUrl( images[2]),
                           fit: BoxFit.cover,
                           width: double.infinity,
                           placeholder: (context, url) => Container(

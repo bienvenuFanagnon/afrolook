@@ -471,6 +471,24 @@ class _MyHomePageState extends State<MyHomePage>
             Expanded(
               child: ListView(
                 children: [
+                  ListTile(
+                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
+                    leading: Icon(Fontisto.tinder, size: 30, color: Colors.red), // Icône jaune
+                    title: TextCustomerMenu(
+                      titre: "Afro Love",
+                      fontSize: SizeText.homeProfileTextSize,
+                      couleur: colors.textPrimary, // Texte adapté au thème
+                      fontWeight: FontWeight.w600,
+                    ),
+                    onTap: () async {
+                      Navigator.pop(context);
+
+                      Navigator.push(context, MaterialPageRoute(
+                        builder: (context) => DatingSwipePage(),
+                      ));
+                    },
+                  ),
+
                   // BASCULE THEME CLAIR / SOMBRE
                   Consumer<ThemeProvider>(
                     builder: (context, themeProvider, _) => ListTile(
@@ -648,23 +666,6 @@ class _MyHomePageState extends State<MyHomePage>
 
                       Navigator.push(context, MaterialPageRoute(
                         builder: (context) => UserClassement(),
-                      ));
-                    },
-                  ),
-                  ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
-                    leading: Icon(Fontisto.tinder, size: 30, color: colors.primary), // Icône jaune
-                    title: TextCustomerMenu(
-                      titre: "AfroLove",
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: colors.textPrimary, // Texte adapté au thème
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onTap: () async {
-                      Navigator.pop(context);
-
-                      Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => DatingSwipePage(),
                       ));
                     },
                   ),

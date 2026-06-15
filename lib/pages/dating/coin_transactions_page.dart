@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import '../../models/dating_data.dart';
 import '../../models/enums.dart';
 import '../../providers/dating/coin_provider.dart';
+import '../../theme/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 
 class CoinTransactionsPage extends StatefulWidget {
   const CoinTransactionsPage({Key? key}) : super(key: key);
@@ -24,10 +26,12 @@ class _CoinTransactionsPageState extends State<CoinTransactionsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     return Scaffold(
+      backgroundColor: AppColors.of(context).background,
       appBar: AppBar(
         title: Text(
-          'Historique des transactions',
+          t.datingTransactionHistoryTitle,
           style: TextStyle(color: Colors.white),
         ),
         backgroundColor: Colors.red.shade600,
@@ -51,18 +55,18 @@ class _CoinTransactionsPageState extends State<CoinTransactionsPage> {
                   ),
                   SizedBox(height: 16),
                   Text(
-                    'Aucune transaction',
+                    t.datingNoTransactions,
                     style: TextStyle(
                       fontSize: 18,
-                      color: Colors.grey.shade600,
+                      color: AppColors.of(context).textPrimary,
                     ),
                   ),
                   SizedBox(height: 8),
                   Text(
-                    'Vos achats et dépenses apparaîtront ici',
+                    t.datingTransactionsAppearHere,
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey.shade500,
+                      color: AppColors.of(context).textSecondary,
                     ),
                   ),
                 ],
@@ -75,7 +79,7 @@ class _CoinTransactionsPageState extends State<CoinTransactionsPage> {
             itemCount: provider.transactions.length,
             itemBuilder: (context, index) {
               final transaction = provider.transactions[index];
-              return _buildTransactionCard(transaction);
+              return _buildTransactionCard(context, transaction);
             },
           );
         },
@@ -83,36 +87,36 @@ class _CoinTransactionsPageState extends State<CoinTransactionsPage> {
     );
   }
 
-  Widget _buildTransactionCard(UserCoinTransaction transaction) {
+  Widget _buildTransactionCard(BuildContext context, UserCoinTransaction transaction) {
+    final t = AppLocalizations.of(context);
     final isGain = transaction.coinsAmount > 0;
     final icon = isGain ? Icons.trending_up : Icons.trending_down;
     final iconColor = isGain ? Colors.green : Colors.red;
-    final amountText = isGain
-        ? '+${transaction.coinsAmount} pièces'
-        : '${transaction.coinsAmount} pièces';
+    final amountText = t.datingCoinsCount.replaceAll(
+        '{count}', isGain ? '+${transaction.coinsAmount}' : '${transaction.coinsAmount}');
 
     String typeLabel = '';
     switch (transaction.type) {
       case CoinTransactionType.buy_coins:
-        typeLabel = 'Achat de pièces';
+        typeLabel = t.datingTxTypeBuyCoins;
         break;
       case CoinTransactionType.spend_subscription:
-        typeLabel = 'Abonnement dating';
+        typeLabel = t.datingTxTypeSubscriptionDating;
         break;
       case CoinTransactionType.spend_creator_subscription:
-        typeLabel = 'Abonnement créateur';
+        typeLabel = t.datingTxTypeSubscriptionCreator;
         break;
       case CoinTransactionType.spend_paid_content:
-        typeLabel = 'Achat contenu';
+        typeLabel = t.datingTxTypeContentPurchase;
         break;
       case CoinTransactionType.earn_creator_subscription:
-        typeLabel = 'Gain abonnement';
+        typeLabel = t.datingTxTypeCreatorSubscriptionEarning;
         break;
       case CoinTransactionType.earn_paid_content:
-        typeLabel = 'Gain vente contenu';
+        typeLabel = t.datingTxTypeContentSaleEarning;
         break;
       case CoinTransactionType.convert_to_xof:
-        typeLabel = 'Conversion FCFA';
+        typeLabel = t.datingTxTypeConvertToXof;
         break;
       default:
         typeLabel = transaction.type.value;
@@ -120,6 +124,7 @@ class _CoinTransactionsPageState extends State<CoinTransactionsPage> {
 
     return Card(
       margin: EdgeInsets.only(bottom: 12),
+      color: AppColors.of(context).surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
@@ -149,6 +154,7 @@ class _CoinTransactionsPageState extends State<CoinTransactionsPage> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
+                      color: AppColors.of(context).textPrimary,
                     ),
                   ),
                   SizedBox(height: 4),
@@ -156,7 +162,7 @@ class _CoinTransactionsPageState extends State<CoinTransactionsPage> {
                     transaction.description,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey.shade600,
+                      color: AppColors.of(context).textSecondary,
                     ),
                   ),
                   SizedBox(height: 4),
@@ -198,7 +204,7 @@ class _CoinTransactionsPageState extends State<CoinTransactionsPage> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    _getStatusLabel(transaction.status),
+                    _getStatusLabel(t, transaction.status),
                     style: TextStyle(
                       fontSize: 10,
                       color: _getStatusColor(transaction.status),
@@ -235,22 +241,22 @@ class _CoinTransactionsPageState extends State<CoinTransactionsPage> {
     }
   }
 
-  String _getStatusLabel(TransactionStatus status) {
+  String _getStatusLabel(AppLocalizations t, TransactionStatus status) {
     switch (status) {
       case TransactionStatus.success:
-        return 'Succès';
+        return t.datingTxStatusSuccess;
       case TransactionStatus.pending:
-        return 'En attente';
+        return t.datingTxStatusPending;
       case TransactionStatus.failed:
-        return 'Échoué';
+        return t.datingTxStatusFailed;
       case TransactionStatus.canceled:
-        return 'Annulé';
+        return t.datingTxStatusCanceled;
       case TransactionStatus.approved:
-        return 'Approuvé';
+        return t.datingTxStatusApproved;
       case TransactionStatus.rejected:
-        return 'Rejeté';
+        return t.datingTxStatusRejected;
       case TransactionStatus.paid:
-        return 'Payé';
+        return t.datingTxStatusPaid;
       default:
         return status.value;
     }

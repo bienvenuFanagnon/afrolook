@@ -6,10 +6,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/dating_data.dart';
 import '../../models/model_data.dart';
+import '../../l10n/app_localizations.dart';
+import '../../theme/app_colors.dart';
 import '../../providers/authProvider.dart';
-import '../pub/banner_ad_widget.dart';
 import '../pub/native_ad_widget.dart';
-import '../pub/rewarded_ad_widget.dart';
 import 'creator_content_detail_page.dart';
 import 'creator_profile_page.dart';
 import 'creator_subscription_page.dart';
@@ -24,6 +24,7 @@ import 'dating_conversations_page.dart';
 import 'dating_likes_list_page.dart';
 import 'dating_notifications_page.dart';
 import 'dating_super_likes_list_page.dart';
+import 'dating_visitors_page.dart';
 
 
 class DatingProfileDetailPage extends StatefulWidget {
@@ -50,22 +51,31 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
   bool _isCheckingSubscription = true;
   int _visitorsCount = 0;
   String? _currentSubscriptionPlan;
+  String? _profileOwnerSubscriptionPlan;
   int _remainingLikes = 0;
   int _remainingSuperLikes = 0;
   bool _isCreator = false;
   bool _isCheckingCreator = true;
   int _unreadNotificationsCount = 0;
+  int _unreadMatchesCount = 0;
+  int _unreadLikesCount = 0;
 // Dans _DatingProfileDetailPageState
   bool _isProcessing = false;
+  /// Indique si l'utilisateur (propriétaire du profil) a déjà demandé la
+  /// vérification de son profil et que celle-ci est en attente de revue.
+  bool _verificationRequested = false;
   // Animation
   late TabController _tabController;
   int _currentImageIndex = 0;
-  final List<Tab> _tabs = const [
-    Tab(text: 'Profil'),
-    Tab(text: 'Posts'),
-  ];
+  static const int _tabsCount = 2;
 
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+  String _cdnUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    final userProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    return userProvider.convertToCdnUrl(url, userProvider.appDefaultData);
+  }
 
   // Couleurs
   final Color primaryRed = const Color(0xFFE63946);
@@ -75,23 +85,158 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
   final Color lightGrey = const Color(0xFFF5F5F5);
 
 
-// Dans l'état de la page
-  final GlobalKey<RewardedAdWidgetState> _rewardedAdKey = GlobalKey();
-  bool _showRewardedAd = false;
-  String? _pendingRewardType; // 'likes' ou 'superlikes'
-
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _tabs.length, vsync: this);
+    _tabController = TabController(length: _tabsCount, vsync: this);
     _loadUserData();
     _loadSubscriptionStatus();
+    _loadProfileOwnerSubscription();
     _checkLikeStatus();
     _checkCoupDeCoeurStatus();
     _checkIfUserIsCreator();
     _recordVisit();
     _loadVisitorsCount();
     _loadUnreadNotificationsCount();
+    _loadUnreadMatchesAndLikesCount();
+    _loadVerificationStatus();
+  }
+
+  /// Charge le statut de demande de vérification du profil (uniquement
+  /// pertinent pour le propriétaire du profil).
+  Future<void> _loadVerificationStatus() async {
+    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    if (authProvider.loginUserData.id != widget.profile.userId) return;
+    try {
+      final snapshot = await firestore
+          .collection('dating_profiles')
+          .where('userId', isEqualTo: widget.profile.userId)
+          .limit(1)
+          .get();
+      if (snapshot.docs.isNotEmpty && mounted) {
+        setState(() {
+          _verificationRequested = snapshot.docs.first.data()['verificationRequested'] == true;
+        });
+      }
+    } catch (e) {
+      print('❌ Erreur chargement statut vérification: $e');
+    }
+  }
+
+  /// Envoie une demande de vérification de profil (badge "Vérifié") pour
+  /// revue manuelle par l'équipe AfroLove.
+  static const _verificationPriceCoins = 1000;
+
+  Future<void> _requestProfileVerification() async {
+    final t = AppLocalizations.of(context);
+    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    final currentUserId = authProvider.loginUserData.id;
+    if (currentUserId == null) return;
+    if (_currentSubscriptionPlan != 'gold') return;
+
+    final currentCoins = authProvider.loginUserData.coinsBalance ?? 0;
+    if (currentCoins < _verificationPriceCoins) {
+      _showInsufficientCoinsDialog();
+      return;
+    }
+
+    try {
+      final snapshot = await firestore
+          .collection('dating_profiles')
+          .where('userId', isEqualTo: widget.profile.userId)
+          .limit(1)
+          .get();
+      if (snapshot.docs.isEmpty) return;
+      await snapshot.docs.first.reference.update({
+        'verificationRequested': true,
+        'verificationRequestedAt': DateTime.now().millisecondsSinceEpoch,
+      });
+      await firestore.collection('Users').doc(currentUserId).update({
+        'coinsBalance': FieldValue.increment(-_verificationPriceCoins),
+        'totalCoinsSpent': FieldValue.increment(_verificationPriceCoins),
+      });
+      await authProvider.refreshUserData();
+      if (mounted) {
+        setState(() => _verificationRequested = true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(t.datingVerificationRequestSent),
+            backgroundColor: Colors.green,
+            action: SnackBarAction(
+              label: t.datingContactSupport,
+              textColor: Colors.white,
+              onPressed: () => Navigator.pushNamed(context, '/contact'),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ Erreur demande de vérification: $e');
+    }
+  }
+
+  /// Affiche un dialogue unique expliquant le processus de vérification du profil :
+  /// réservé à l'abonnement Gold et coûte [_verificationPriceCoins] pièces.
+  /// Si l'utilisateur n'est pas Gold, propose de découvrir les offres Gold.
+  /// S'il est Gold, propose d'envoyer la demande (payante) ou de contacter le support.
+  void _showVerifyProfileDialog() {
+    final t = AppLocalizations.of(context);
+    final isGold = _currentSubscriptionPlan == 'gold';
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: AppColors.of(context).surface,
+        title: Row(
+          children: [
+            Icon(Icons.verified, color: Colors.blue),
+            const SizedBox(width: 8),
+            Expanded(child: Text(t.datingVerifyProfileTitle, style: TextStyle(color: AppColors.of(context).textPrimary))),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(t.datingVerifyProfileDescription, style: TextStyle(color: AppColors.of(context).textSecondary)),
+            const SizedBox(height: 8),
+            Text(t.datingVerifyProfileCost, style: TextStyle(color: AppColors.of(context).textSecondary, fontWeight: FontWeight.bold)),
+            if (!isGold) ...[
+              const SizedBox(height: 8),
+              Text(t.datingVerifyProfileGoldOnly, style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(t.datingCancel)),
+          OutlinedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/contact');
+            },
+            child: Text(t.datingContactSupport),
+          ),
+          if (isGold)
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _requestProfileVerification();
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+              child: Text(t.datingVerifyProfileSend, style: const TextStyle(color: Colors.white)),
+            )
+          else
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const DatingSubscriptionPage()));
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+              child: Text(t.datingSeeOffersTitleCase, style: const TextStyle(color: Colors.white)),
+            ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -100,25 +245,6 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
     super.dispose();
   }
 
-  Future<void> _addBonusLikes(int amount) async {
-    setState(() {
-      if (_remainingLikes != -1) {
-        _remainingLikes += amount;
-      }
-    });
-    await _updateRemainingLikes(); // sauvegarde dans Firestore
-    _showSnackBar('+$amount likes offerts ! ❤️', Colors.green);
-  }
-
-  Future<void> _addBonusSuperLikes(int amount) async {
-    setState(() {
-      if (_remainingSuperLikes != -1) {
-        _remainingSuperLikes += amount;
-      }
-    });
-    await _updateRemainingLikes();
-    _showSnackBar('+$amount super likes offerts ! ⭐', Colors.amber);
-  }
   Future<void> _loadUserData() async {
     try {
       final doc = await firestore
@@ -179,6 +305,40 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       print('❌ Erreur chargement compteur notifications: $e');
     }
   }
+
+  /// Charge le nombre de matchs et de likes non encore consultés pour
+  /// afficher des badges sur les boutons "Matchs" et "Mes likes" du profil.
+  Future<void> _loadUnreadMatchesAndLikesCount() async {
+    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    final currentUserId = authProvider.loginUserData.id;
+    if (currentUserId == null) return;
+
+    try {
+      final matchSnap = await firestore
+          .collection('Notifications')
+          .where('receiver_id', isEqualTo: currentUserId)
+          .where('type', isEqualTo: 'DATING_MATCH')
+          .where('is_open', isEqualTo: false)
+          .get();
+
+      final likeSnap = await firestore
+          .collection('Notifications')
+          .where('receiver_id', isEqualTo: currentUserId)
+          .where('type', whereIn: ['DATING_LIKE', 'DATING_SUPER_LIKE'])
+          .where('is_open', isEqualTo: false)
+          .get();
+
+      if (mounted) {
+        setState(() {
+          _unreadMatchesCount = matchSnap.docs.length;
+          _unreadLikesCount = likeSnap.docs.length;
+        });
+      }
+    } catch (e) {
+      print('❌ Erreur chargement compteur matchs/likes: $e');
+    }
+  }
+
   Future<void> _checkIfUserIsCreator() async {
     try {
       final snapshot = await firestore
@@ -254,6 +414,53 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       _remainingLikes = 5;
       _remainingSuperLikes = 1;
       setState(() => _isCheckingSubscription = false);
+    }
+  }
+
+  /// Charge l'abonnement du profil CONSULTÉ (et non celui de l'utilisateur connecté).
+  /// Utilisé pour afficher le badge d'abonnement, visible uniquement par le
+  /// propriétaire du profil ou un admin (role == ADM).
+  Future<void> _loadProfileOwnerSubscription() async {
+    try {
+      final snapshot = await firestore
+          .collection('user_dating_subscriptions')
+          .where('userId', isEqualTo: widget.profile.userId)
+          .where('isActive', isEqualTo: true)
+          .limit(1)
+          .get();
+
+      String plan = 'gratuit';
+      if (snapshot.docs.isNotEmpty) {
+        final subscription = snapshot.docs.first;
+        final endAt = subscription['endAt'] as int?;
+        final now = DateTime.now().millisecondsSinceEpoch;
+        if (endAt == null || endAt > now) {
+          plan = subscription['planCode'] ?? 'gratuit';
+        }
+      }
+
+      if (mounted) setState(() => _profileOwnerSubscriptionPlan = plan);
+    } catch (e) {
+      print('❌ Erreur chargement abonnement du profil consulté: $e');
+    }
+  }
+
+  bool _canViewProfileOwnerSubscription() {
+    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    final isOwnProfile = authProvider.loginUserData.id == widget.profile.userId;
+    final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
+    return isOwnProfile || isAdmin;
+  }
+
+  String _planLabel(String planCode) {
+    final t = AppLocalizations.of(context);
+    switch (planCode) {
+      case 'gold':
+        return t.datingPlanGold;
+      case 'plus':
+        return t.datingPlanPlus;
+      default:
+        return t.datingPlanFree;
     }
   }
 
@@ -347,6 +554,21 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
     if (currentUserId == null || currentUserId == widget.profile.userId) return;
 
     try {
+      // Avantage Gold "Mode incognito" : si activé, la visite n'est pas
+      // enregistrée et n'incrémente pas le compteur de visiteurs du profil consulté.
+      final subSnapshot = await firestore
+          .collection('user_dating_subscriptions')
+          .where('userId', isEqualTo: currentUserId)
+          .where('isActive', isEqualTo: true)
+          .limit(1)
+          .get();
+      if (subSnapshot.docs.isNotEmpty) {
+        final subData = subSnapshot.docs.first.data();
+        if (subData['planCode'] == 'gold' && subData['incognitoMode'] == true) {
+          return;
+        }
+      }
+
       final today = DateTime.now().millisecondsSinceEpoch;
       final dayStart = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day).millisecondsSinceEpoch;
 
@@ -437,6 +659,10 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
   }
   Future<void> _handleLike() async {
     if (_isProcessing) return;
+    if (_isLiked) {
+      _showSnackBar(AppLocalizations.of(context).datingAlreadyLikedSnack.replaceAll('{pseudo}', widget.profile.pseudo), Colors.orange);
+      return;
+    }
     setState(() => _isProcessing = true);
 
     try {
@@ -462,7 +688,22 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       final alreadyMatched = await _matchAlreadyExists();
       if (alreadyMatched) {
         setState(() => _isProcessing = false);
-        _showSnackBar('Vous êtes déjà en contact avec ${widget.profile.pseudo}', Colors.orange);
+        _showSnackBar(AppLocalizations.of(context).datingAlreadyInContactWith.replaceAll('{pseudo}', widget.profile.pseudo), Colors.orange);
+        return;
+      }
+
+      // Vérifier qu'on n'a pas déjà liké ce profil (évite les doublons)
+      final existingLike = await firestore
+          .collection('dating_likes')
+          .where('fromUserId', isEqualTo: currentUserId)
+          .where('toUserId', isEqualTo: widget.profile.userId)
+          .limit(1)
+          .get();
+      if (existingLike.docs.isNotEmpty) {
+        setState(() {
+          _isLiked = true;
+          _isProcessing = false;
+        });
         return;
       }
 
@@ -498,7 +739,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
 
       await _updatePopularityScore(widget.profile.userId);
 
-      _showSnackBar('❤️ Vous avez liké ${widget.profile.pseudo}', Colors.green);
+      _showSnackBar(AppLocalizations.of(context).datingYouLiked.replaceAll('{pseudo}', widget.profile.pseudo), Colors.green);
 
       // Vérifier s'il y a un like mutuel (match)
       final mutualLike = await firestore
@@ -513,81 +754,9 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       }
     } catch (e) {
       print('❌ Erreur like: $e');
-      _showSnackBar('Erreur lors du like', Colors.red);
+      _showSnackBar(AppLocalizations.of(context).datingErrorSending, Colors.red);
     } finally {
       if (mounted) setState(() => _isProcessing = false);
-    }
-  }
-  Future<void> _handleLike2() async {
-    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    final currentUserId = authProvider.loginUserData.id;
-    if (currentUserId == null) return;
-
-    // Vérifier les likes restants
-    if (_remainingLikes <= 0) {
-      _showUpgradeDialog('likes');
-      return;
-    }
-
-    // Vérifier la compatibilité des genres
-    final isCompatible = await _checkMatchCompatibility();
-    if (!isCompatible) return;
-
-    // Vérifier si un match existe déjà
-    final alreadyMatched = await _matchAlreadyExists();
-    if (alreadyMatched) {
-      _showSnackBar('Vous êtes déjà en contact avec ${widget.profile.pseudo}', Colors.orange);
-      return;
-    }
-
-    try {
-      final now = DateTime.now().millisecondsSinceEpoch;
-      await firestore.collection('dating_likes').doc().set({
-        'id': firestore.collection('dating_likes').doc().id,
-        'fromUserId': currentUserId,
-        'toUserId': widget.profile.userId,
-        'createdAt': now,
-      });
-
-      setState(() {
-        _isLiked = true;
-        if (_remainingLikes > 0) _remainingLikes--;
-      });
-      await _updateRemainingLikes();
-
-       _sendNotification(
-        toUserId: widget.profile.userId,
-        message: "❤️ @${widget.profile.pseudo} vous a liké !",
-        type: 'like',
-      );
-
-      await firestore
-          .collection('dating_profiles')
-          .where('userId', isEqualTo: widget.profile.userId)
-          .get()
-          .then((snapshot) {
-        if (snapshot.docs.isNotEmpty) {
-          snapshot.docs.first.reference.update({'likesCount': FieldValue.increment(1)});
-        }
-      });
-
-       _updatePopularityScore(widget.profile.userId);
-
-      _showSnackBar('❤️ Vous avez liké ${widget.profile.pseudo}', Colors.green);
-
-      // Vérifier s'il y a un like mutuel (match)
-      final mutualLike = await firestore
-          .collection('dating_likes')
-          .where('fromUserId', isEqualTo: widget.profile.userId)
-          .where('toUserId', isEqualTo: currentUserId)
-          .limit(1)
-          .get();
-
-      if (mutualLike.docs.isNotEmpty) {
-        _showMatchDialog();
-      }
-    } catch (e) {
-      print('❌ Erreur like: $e');
     }
   }
   Future<DatingProfile?> _getCurrentUserDatingProfile() async {
@@ -618,11 +787,11 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
         widget.profile.rechercheSexe == currentProfile.sexe;
 
     if (!currentAcceptsTarget) {
-      _showSnackBar('Vous ne recherchez pas ce genre de personnes.', Colors.orange);
+      _showSnackBar(AppLocalizations.of(context).datingNotSearchingThisGender, Colors.orange);
       return false;
     }
     if (!targetAcceptsCurrent) {
-      _showSnackBar('Cette personne ne recherche pas votre genre.', Colors.orange);
+      _showSnackBar(AppLocalizations.of(context).datingOtherNotSearchingYourGender, Colors.orange);
       return false;
     }
     return true;
@@ -669,7 +838,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       final alreadyMatched = await _matchAlreadyExists();
       if (alreadyMatched) {
         setState(() => _isProcessing = false);
-        _showSnackBar('Vous êtes déjà en contact avec ${widget.profile.pseudo}', Colors.orange);
+        _showSnackBar(AppLocalizations.of(context).datingAlreadyInContactWith.replaceAll('{pseudo}', widget.profile.pseudo), Colors.orange);
         return;
       }
 
@@ -692,25 +861,25 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
             context: context,
             builder: (context) => AlertDialog(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              title: const Text('✨ Coup de cœur payant ✨'),
+              title: Text(AppLocalizations.of(context).datingPaidCrushTitle),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Icon(Icons.star, size: 50, color: Colors.amber),
                   const SizedBox(height: 16),
-                  const Text('Vous n\'avez plus de coups de cœur gratuits aujourd\'hui.'),
+                  Text(AppLocalizations.of(context).datingNoMoreFreeCoupsToday),
                   const SizedBox(height: 8),
-                  Text('Envoyer un coup de cœur coûte $superLikePriceCoins pièces.', style: const TextStyle(color: Colors.amber)),
+                  Text(AppLocalizations.of(context).datingSendCoupCost.replaceAll('{price}', '$superLikePriceCoins'), style: const TextStyle(color: Colors.amber)),
                   const SizedBox(height: 8),
-                  Text('Votre solde : $currentCoins pièces', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  Text(AppLocalizations.of(context).datingYourBalance.replaceAll('{balance}', '$currentCoins'), style: const TextStyle(fontWeight: FontWeight.bold)),
                 ],
               ),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annuler')),
+                TextButton(onPressed: () => Navigator.pop(context, false), child: Text(AppLocalizations.of(context).datingCancel)),
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context, true),
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
-                  child: const Text('Acheter et envoyer'),
+                  child: Text(AppLocalizations.of(context).datingBuyAndSend),
                 ),
               ],
             ),
@@ -729,9 +898,9 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       }
     } catch (e) {
       print('❌ Erreur coup de cœur: $e');
-      _showSnackBar('Erreur lors de l\'envoi', Colors.red);
+      _showSnackBar(AppLocalizations.of(context).datingErrorSending, Colors.red);
     } finally {
-      if (mounted && _pendingRewardType == null) setState(() => _isProcessing = false);
+      if (mounted) setState(() => _isProcessing = false);
     }
   }
   // Future<void> _handleCoupDeCoeur() async {
@@ -943,12 +1112,12 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
               ),
               SizedBox(height: 20),
               Text(
-                'C\'est un match ! 🎉',
+                AppLocalizations.of(context).datingItsAMatch,
                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.red.shade700),
               ),
               SizedBox(height: 8),
               Text(
-                'Vous et ${widget.profile.pseudo} vous êtes likés mutuellement.',
+                AppLocalizations.of(context).datingMutualLikeWith.replaceAll('{pseudo}', widget.profile.pseudo),
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 24),
@@ -957,7 +1126,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(context),
-                      child: Text('Continuer'),
+                      child: Text(AppLocalizations.of(context).datingContinue),
                     ),
                   ),
                   SizedBox(width: 16),
@@ -968,7 +1137,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
                         _openChat();
                       },
                       style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                      child: Text('Discuter en privé'),
+                      child: Text(AppLocalizations.of(context).datingChatPrivately),
                     ),
                   ),
                 ],
@@ -1012,33 +1181,33 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('💬 Discuter en privé', style: TextStyle(color: Colors.red)),
+        title: Text(AppLocalizations.of(context).datingChatPrivateTitle, style: TextStyle(color: Colors.red)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.diamond, size: 50, color: Colors.amber),
             SizedBox(height: 16),
             Text(
-              'La messagerie privée est réservée aux membres AfroLove Gold.',
+              AppLocalizations.of(context).datingPrivateMessagingGoldOnly,
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 8),
             Text(
-              'Passez à l\'abonnement Gold pour discuter avec vos matchs !',
+              AppLocalizations.of(context).datingUpgradeGoldForChat,
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text('Plus tard')),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(AppLocalizations.of(context).datingLaterButton)),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               Navigator.push(context, MaterialPageRoute(builder: (_) => DatingSubscriptionPage()));
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
-            child: Text('Voir les offres'),
+            child: Text(AppLocalizations.of(context).datingSeeOffers),
           ),
         ],
       ),
@@ -1120,26 +1289,13 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
   void _showUpgradeDialog(String feature, {VoidCallback? onRewardComplete}) {
     // feature = 'likes' ou 'superlikes'
     final isLike = feature == 'likes';
-    final planGratuit = _currentSubscriptionPlan == 'gratuit';
-    final planPlus = _currentSubscriptionPlan == 'plus';
-    final isEligibleForAd = planGratuit || planPlus;
-
-    int bonusLikes = 0;
-    int bonusSuperLikes = 0;
-    if (isLike && isEligibleForAd) {
-      bonusLikes = planGratuit ? 5 : 10;
-    } else if (!isLike && isEligibleForAd) {
-      bonusSuperLikes = planGratuit ? 1 : 2;
-    }
-
-    final bonusText = isLike ? '+$bonusLikes likes' : '+$bonusSuperLikes super like(s)';
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
-          isLike ? 'Limite de likes atteinte' : 'Plus de super likes',
+          isLike ? AppLocalizations.of(context).datingLimitLikesReached : AppLocalizations.of(context).datingNoMoreSuperLikes,
           style: TextStyle(color: isLike ? Colors.red : Colors.amber),
         ),
         content: Column(
@@ -1149,8 +1305,8 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
             const SizedBox(height: 16),
             Text(
               isLike
-                  ? 'Vous avez utilisé tous vos likes gratuits du jour.'
-                  : 'Vous n’avez plus de super likes gratuits aujourd’hui.',
+                  ? AppLocalizations.of(context).datingUsedAllFreeLikes
+                  : AppLocalizations.of(context).datingNoMoreFreeSuperLikesToday,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
@@ -1163,21 +1319,12 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
               ),
               child: Column(
                 children: [
-                  const Text('⚡ Solutions :', style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text(AppLocalizations.of(context).datingSolutionsTitle, style: const TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
-                  if (isEligibleForAd && (bonusLikes > 0 || bonusSuperLikes > 0))
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Text(
-                        '🎁 Regardez une publicité pour obtenir $bonusText immédiatement !',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  const Text(
-                    '✨ Ou passez à AfroLove Gold pour des likes illimités et des super likes quotidiens.',
+                  Text(
+                    AppLocalizations.of(context).datingUpgradeGoldUnlimited,
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12),
+                    style: const TextStyle(fontSize: 12),
                   ),
                 ],
               ),
@@ -1187,27 +1334,15 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Plus tard'),
+            child: Text(AppLocalizations.of(context).datingLaterButton),
           ),
-          if (isEligibleForAd && (bonusLikes > 0 || bonusSuperLikes > 0))
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.pop(context);
-                _pendingRewardType = feature;
-                setState(() => _showRewardedAd = true);
-                RewardedAdWidget.showAd(_rewardedAdKey);
-              },
-              icon: const Icon(Icons.play_circle_filled),
-              label: Text('REGARDER LA PUB ($bonusText)'),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
-            ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               Navigator.push(context, MaterialPageRoute(builder: (_) => const DatingSubscriptionPage()));
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('VOIR LES OFFRES',style: TextStyle(color: Colors.white),),
+            child: Text(AppLocalizations.of(context).datingSeeOffersTitleCase, style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -1219,29 +1354,29 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Solde insuffisant'),
+        title: Text(AppLocalizations.of(context).datingInsufficientBalance),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.monetization_on, size: 50, color: Colors.red),
             SizedBox(height: 16),
             Text(
-              'Vous n\'avez pas assez de pièces pour envoyer un Coup de cœur ❤️.',
+              AppLocalizations.of(context).datingNotEnoughCoinsCoupDeCoeur,
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 8),
-            Text('20 pièces requis', style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
+            Text(AppLocalizations.of(context).datingCoinsRequired20, style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text('Annuler')),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(AppLocalizations.of(context).datingCancel)),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               Navigator.pushNamed(context, '/coins/buy');
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
-            child: Text('Acheter des pièces'),
+            child: Text(AppLocalizations.of(context).datingBuyCoins),
           ),
         ],
       ),
@@ -1264,6 +1399,10 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       return;
     }
     Navigator.push(context, MaterialPageRoute(builder: (_) => DatingLikesListPage()));
+  }
+
+  void _navigateToMyVisitors() {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => DatingVisitorsPage()));
   }
 
   void _navigateToMySuperLikes() {
@@ -1304,14 +1443,19 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Signaler ${widget.profile.pseudo}'),
+        title: Text(AppLocalizations.of(context).datingReportProfile.replaceAll('{pseudo}', widget.profile.pseudo)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Pourquoi signalez-vous ce profil ?'),
+            Text(AppLocalizations.of(context).datingWhyReporting),
             SizedBox(height: 16),
-            ...['Comportement inapproprié', 'Faux profil', 'Spam', 'Contenu offensant', 'Autre']
-                .map((r) => ListTile(leading: Icon(Icons.flag, size: 20), title: Text(r), onTap: () => Navigator.pop(context, r))),
+            ...[
+              AppLocalizations.of(context).datingReportReasonInappropriate,
+              AppLocalizations.of(context).datingReportReasonFakeProfile,
+              AppLocalizations.of(context).datingReportReasonSpam,
+              AppLocalizations.of(context).datingReportReasonOffensive,
+              AppLocalizations.of(context).datingReportReasonOther,
+            ].map((r) => ListTile(leading: Icon(Icons.flag, size: 20), title: Text(r), onTap: () => Navigator.pop(context, r))),
           ],
         ),
       ),
@@ -1330,21 +1474,20 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       'description': '',
       'createdAt': DateTime.now().millisecondsSinceEpoch,
     });
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Signalement envoyé'), backgroundColor: Colors.green));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context).datingReportSent), backgroundColor: Colors.green));
   }
 
   Future<void> _handleBlock() async {
+    final t = AppLocalizations.of(context);
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Bloquer ${widget.profile.pseudo}'),
-        content: Text(
-          'Êtes-vous sûr de vouloir bloquer cet utilisateur ? Vous ne pourrez plus voir son profil ni recevoir ses messages.',
-        ),
+        title: Text(t.datingBlockProfile.replaceAll('{pseudo}', widget.profile.pseudo)),
+        content: Text(t.datingBlockConfirm),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: Text('Annuler')),
-          ElevatedButton(onPressed: () => Navigator.pop(context, true), style: ElevatedButton.styleFrom(backgroundColor: Colors.red), child: Text('Bloquer')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(t.datingCancel)),
+          ElevatedButton(onPressed: () => Navigator.pop(context, true), style: ElevatedButton.styleFrom(backgroundColor: Colors.red), child: Text(t.datingBlock)),
         ],
       ),
     );
@@ -1360,7 +1503,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       'blockedUserId': widget.profile.userId,
       'createdAt': DateTime.now().millisecondsSinceEpoch,
     });
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${widget.profile.pseudo} a été bloqué'), backgroundColor: Colors.red));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context).datingUserBlocked.replaceAll('{pseudo}', widget.profile.pseudo)), backgroundColor: Colors.red));
     Navigator.pop(context);
   }
 
@@ -1403,7 +1546,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
             ],
           ),
           SizedBox(height: 4),
-          Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade700)),
+          Text(label, style: TextStyle(fontSize: 11, color: AppColors.of(context).textSecondary)),
         ],
       ),
     );
@@ -1418,7 +1561,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
             itemCount: widget.profile.photosUrls.length,
             onPageChanged: (index) => setState(() => _currentImageIndex = index),
             itemBuilder: (context, index) => Image.network(
-              widget.profile.photosUrls[index],
+              _cdnUrl(widget.profile.photosUrls[index]),
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) => Container(color: Colors.grey.shade200, child: Icon(Icons.person, size: 100)),
             ),
@@ -1450,7 +1593,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           body: Center(
             child: GestureDetector(
               onTap: () => Navigator.pop(context),
-              child: InteractiveViewer(child: Image.network(imageUrl, fit: BoxFit.contain)),
+              child: InteractiveViewer(child: Image.network(_cdnUrl(imageUrl), fit: BoxFit.contain)),
             ),
           ),
         ),
@@ -1463,8 +1606,8 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       children: [
         Icon(icon, size: 22, color: color),
         SizedBox(height: 4),
-        Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        Text(label, style: TextStyle(fontSize: 11, color: Colors.grey)),
+        Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.of(context).textPrimary)),
+        Text(label, style: TextStyle(fontSize: 11, color: AppColors.of(context).textSecondary)),
       ],
     );
   }
@@ -1478,8 +1621,10 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
     final isPlusOrGold = _currentSubscriptionPlan == 'plus' || _currentSubscriptionPlan == 'gold';
     final remainingLikesText = _remainingLikes == -1 ? '∞' : '$_remainingLikes';
 
+    final t = AppLocalizations.of(context);
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.of(context).background,
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
           : CustomScrollView(
@@ -1502,8 +1647,8 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
                     if (value == 'block') _handleBlock();
                   },
                   itemBuilder: (context) => [
-                    PopupMenuItem(value: 'report', child: Row(children: [Icon(Icons.flag, size: 20), SizedBox(width: 8), Text('Signaler')])),
-                    PopupMenuItem(value: 'block', child: Row(children: [Icon(Icons.block, size: 20), SizedBox(width: 8), Text('Bloquer')])),
+                    PopupMenuItem(value: 'report', child: Row(children: [Icon(Icons.flag, size: 20), SizedBox(width: 8), Text(AppLocalizations.of(context).datingReport)])),
+                    PopupMenuItem(value: 'block', child: Row(children: [Icon(Icons.block, size: 20), SizedBox(width: 8), Text(AppLocalizations.of(context).datingBlock)])),
                   ],
                 ),
             ],
@@ -1515,26 +1660,26 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
               child: Container(
                 padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+                  color: AppColors.of(context).surface,
+                  border: Border(bottom: BorderSide(color: AppColors.of(context).border)),
                 ),
                 child: Column(
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        Expanded(child: _buildActionChip(icon: Icons.chat_bubble_outline, label: 'Messages', onTap: _navigateToMyConversations, color: Colors.blue)),
-                        Expanded(child: _buildActionChip(icon: Icons.favorite_border, label: 'Matchs', onTap: _navigateToMyMatches, color: Colors.red)),
-                        Expanded(child: _buildActionChip(icon: Icons.favorite, label: 'Mes likes', onTap: _navigateToMyLikes, color: isPlusOrGold ? Colors.pink : Colors.grey)),
+                        Expanded(child: _buildActionChip(icon: Icons.chat_bubble_outline, label: t.datingMessages, onTap: _navigateToMyConversations, color: Colors.blue)),
+                        Expanded(child: _buildActionChip(icon: Icons.favorite_border, label: t.datingMatches, onTap: _navigateToMyMatches, color: Colors.red, badgeCount: _unreadMatchesCount)),
+                        Expanded(child: _buildActionChip(icon: Icons.favorite, label: t.datingMyLikes, onTap: _navigateToMyLikes, color: isPlusOrGold ? Colors.pink : Colors.grey, badgeCount: _unreadLikesCount)),
                       ],
                     ),
                     SizedBox(height: 12),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        Expanded(child: _buildActionChip(icon: Icons.star, label: 'Coup de cœur ❤️', onTap: _navigateToMySuperLikes, color: isPlusOrGold ? Colors.amber : Colors.grey)),
-                        Expanded(child: _buildActionChip(icon: Icons.notifications_none, label: 'Notif', onTap: _navigateToMyNotifications, color: Colors.orange, badgeCount: _unreadNotificationsCount)),
-                        Expanded(child: _buildActionChip(icon: Icons.person, label: 'Mon profil', onTap: _goToEditProfile, color: Colors.green)),
+                        Expanded(child: _buildActionChip(icon: Icons.star, label: t.datingCoupDeCoeurLabel, onTap: _navigateToMySuperLikes, color: isPlusOrGold ? Colors.amber : Colors.grey)),
+                        Expanded(child: _buildActionChip(icon: Icons.notifications_none, label: t.datingNotif, onTap: _navigateToMyNotifications, color: Colors.orange, badgeCount: _unreadNotificationsCount)),
+                        Expanded(child: _buildActionChip(icon: Icons.person, label: t.datingMyProfile, onTap: _goToEditProfile, color: Colors.green)),
                       ],
                     ),
                   ],
@@ -1543,7 +1688,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
             ),
 
           // Infos profil
-          SliverToBoxAdapter(child: _buildProfileInfo(isOwnProfile, isGold, isPlusOrGold)),
+          SliverToBoxAdapter(child: _buildProfileInfo(isOwnProfile, isPlusOrGold)),
 
           // Boutons d'action (Like, Super like, Discuter en privé)
           if (!isOwnProfile)
@@ -1564,42 +1709,13 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
             ),
           ),
 
-          if (_showRewardedAd)
-            SliverToBoxAdapter(
-              child: RewardedAdWidget(
-                key: _rewardedAdKey,
-                onUserEarnedReward: (amount, name)  async {
-                  if (_pendingRewardType == 'likes') {
-                    int bonus = (_currentSubscriptionPlan == 'gratuit') ? 5 : 10;
-                    await _addBonusLikes(bonus);
-                    // Relancer l'action de like après ajout
-                    _handleLike();
-                  } else if (_pendingRewardType == 'superlikes') {
-                    int bonus = (_currentSubscriptionPlan == 'gratuit') ? 1 : 2;
-                    await _addBonusSuperLikes(bonus);
-                    // Relancer l'action de super like après ajout
-                    _handleCoupDeCoeur();
-                  }
-                  setState(() {
-                    _showRewardedAd = false;
-                    _pendingRewardType = null;
-                  });
-                },
-                onAdDismissed: () {
-                  setState(() {
-                    _showRewardedAd = false;
-                    _pendingRewardType = null;
-                  });
-                },
-                child: const SizedBox.shrink(),
-              ),
-            ),
         ],
       ),
     );
   }
 
-  Widget _buildProfileInfo(bool isOwnProfile, bool isGold, bool isPlusOrGold) {
+  Widget _buildProfileInfo(bool isOwnProfile, bool isPlusOrGold) {
+    final t = AppLocalizations.of(context);
     return Container(
       padding: EdgeInsets.only(top: 30),
       child: Column(
@@ -1608,7 +1724,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
             margin: EdgeInsets.symmetric(horizontal: 20),
             padding: EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.of(context).surface,
               borderRadius: BorderRadius.circular(20),
               boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10, offset: Offset(0, 5))],
             ),
@@ -1617,52 +1733,97 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
               children: [
                 Row(
                   children: [
-                    Expanded(child: Text('${widget.profile.pseudo}, ${widget.profile.age}', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold))),
+                    Expanded(child: Text('${widget.profile.pseudo}, ${widget.profile.age}', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.of(context).textPrimary))),
+                    if (widget.profile.isBoosted)
+                      Container(
+                        margin: EdgeInsets.only(left: 8),
+                        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(colors: [Colors.amber.shade600, Colors.orange.shade600]),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(t.datingBoostedBadge, style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold)),
+                      ),
                     if (widget.profile.isVerified)
                       Container(
+                        margin: EdgeInsets.only(left: 8),
                         padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(20)),
-                        child: Row(children: [Icon(Icons.verified, size: 14, color: Colors.blue), SizedBox(width: 4), Text('Vérifié', style: TextStyle(fontSize: 12, color: Colors.blue))]),
+                        child: Row(children: [Icon(Icons.verified, size: 14, color: Colors.blue), SizedBox(width: 4), Text(t.datingVerified, style: TextStyle(fontSize: 12, color: Colors.blue))]),
                       ),
                   ],
                 ),
                 SizedBox(height: 8),
-                Row(children: [Icon(Icons.location_on, size: 14, color: Colors.grey), SizedBox(width: 4), Text('${widget.profile.ville}, ${widget.profile.pays}', style: TextStyle(fontSize: 13, color: Colors.grey))]),
+                Row(children: [Icon(Icons.location_on, size: 14, color: AppColors.of(context).textSecondary), SizedBox(width: 4), Text('${widget.profile.ville}, ${widget.profile.pays}', style: TextStyle(fontSize: 13, color: AppColors.of(context).textSecondary))]),
                 if (widget.profile.profession?.isNotEmpty ?? false) ...[
                   SizedBox(height: 4),
-                  Row(children: [Icon(Icons.work, size: 14, color: Colors.grey), SizedBox(width: 4), Text(widget.profile.profession!, style: TextStyle(fontSize: 13, color: Colors.grey))]),
+                  Row(children: [Icon(Icons.work, size: 14, color: AppColors.of(context).textSecondary), SizedBox(width: 4), Text(widget.profile.profession!, style: TextStyle(fontSize: 13, color: AppColors.of(context).textSecondary))]),
                 ],
                 SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildStatItem(Icons.favorite, '${widget.profile.likesCount}', 'Likes', Colors.red),
-                    _buildStatItem(Icons.star, '${widget.profile.coupsDeCoeurCount}', 'Coup de cœur ❤️', Colors.amber),
-                    _buildStatItem(Icons.people, '${widget.profile.connexionsCount}', 'Matchs', Colors.blue),
-                    _buildStatItem(Icons.visibility, '${_visitorsCount}', 'Visites', Colors.green),
+                    _buildStatItem(Icons.favorite, '${widget.profile.likesCount}', t.datingLikesCount, Colors.red),
+                    _buildStatItem(Icons.star, '${widget.profile.coupsDeCoeurCount}', t.datingCoupDeCoeurLabel, Colors.amber),
+                    _buildStatItem(Icons.people, '${widget.profile.connexionsCount}', t.datingMatches, Colors.blue),
+                    if (isOwnProfile)
+                      GestureDetector(
+                        onTap: _navigateToMyVisitors,
+                        child: _buildStatItem(Icons.visibility, '${_visitorsCount}', t.datingVisits, Colors.green),
+                      )
+                    else
+                      _buildStatItem(Icons.visibility, '${_visitorsCount}', t.datingVisits, Colors.green),
                   ],
                 ),
               ],
             ),
           ),
+          if (isOwnProfile && !widget.profile.isVerified)
+            Container(
+              margin: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: OutlinedButton.icon(
+                onPressed: _verificationRequested ? null : _showVerifyProfileDialog,
+                icon: Icon(Icons.verified, size: 18, color: _verificationRequested ? AppColors.of(context).textSecondary : Colors.blue),
+                label: Text(
+                  _verificationRequested ? t.datingVerificationPending : t.datingVerifyProfileButton,
+                  style: TextStyle(color: _verificationRequested ? AppColors.of(context).textSecondary : Colors.blue),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: _verificationRequested ? AppColors.of(context).textSecondary : Colors.blue),
+                  padding: EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                ),
+              ),
+            ),
           if (!isOwnProfile && _isCreator && !_isCheckingCreator)
             Container(
               margin: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               child: OutlinedButton.icon(
                 onPressed: _goToCreatorProfile,
                 icon: Icon(Icons.people, size: 18, color: primaryRed),
-                label: Text('Voir le profil créateur', style: TextStyle(color: primaryRed)),
+                label: Text(t.datingViewCreatorProfile, style: TextStyle(color: primaryRed)),
                 style: OutlinedButton.styleFrom(side: BorderSide(color: primaryRed), padding: EdgeInsets.symmetric(vertical: 10), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))),
               ),
             ),
-          if (isGold)
+          if (_canViewProfileOwnerSubscription() && _profileOwnerSubscriptionPlan != null)
             Container(
               margin: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(color: Colors.amber.shade100, borderRadius: BorderRadius.circular(20)),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                children: [Icon(Icons.diamond, size: 14, color: Colors.amber.shade800), SizedBox(width: 6), Text('Abonnement Gold actif', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.amber.shade800))],
+                children: [
+                  Icon(
+                    _profileOwnerSubscriptionPlan == 'gold' ? Icons.diamond : (_profileOwnerSubscriptionPlan == 'plus' ? Icons.star : Icons.favorite),
+                    size: 14,
+                    color: Colors.amber.shade800,
+                  ),
+                  SizedBox(width: 6),
+                  Text(
+                    '${AppLocalizations.of(context).datingSubscriptionLabel}: ${_planLabel(_profileOwnerSubscriptionPlan!)}',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.amber.shade800),
+                  ),
+                ],
               ),
             ),
         ],
@@ -1671,6 +1832,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
   }
 
   Widget _buildActionButtons(String remainingLikesText, bool isGold) {
+    final t = AppLocalizations.of(context);
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 2),
       child: Row(
@@ -1680,9 +1842,8 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
             activeColor: Colors.red.shade400,
             isActive: _isLiked,
             icon: _isLiked ? Icons.favorite : Icons.favorite_border,
-            label: _isLiked ? 'Liké ❤️' : 'Liker',
-            subText: '$remainingLikesText restants',
-            // subText: '- restants',
+            label: _isLiked ? t.datingLikedHeart : t.datingLikeAction,
+            subText: t.datingRemaining.replaceAll('{count}', remainingLikesText),
             onTap: _handleLike,
           ),
 
@@ -1693,9 +1854,8 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
             activeColor: Colors.amber.shade600,
             isActive: _isCoupDeCoeur,
             icon: _isCoupDeCoeur ? Icons.favorite : Icons.favorite_border,
-            label: _isCoupDeCoeur ? 'Envoyé ❤️' : 'Coup de cœur',
-            subText: '$_remainingSuperLikes restants',
-            // subText: '- restants',
+            label: _isCoupDeCoeur ? t.datingSentHeart : t.datingCoupDeCoeurAction,
+            subText: t.datingRemaining.replaceAll('{count}', '$_remainingSuperLikes'),
             onTap: _handleCoupDeCoeur,
           ),
 
@@ -1810,7 +1970,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
                   SizedBox(width: 6),
                   Flexible(
                     child: Text(
-                       'Discuter',
+                       AppLocalizations.of(context).datingChatAction,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: Colors.white, // ✅ blanc
@@ -1826,7 +1986,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           SizedBox(height: 6),
           if (!isGold)
             Text(
-              'Abonnement requis',
+              AppLocalizations.of(context).datingSubscriptionRequired,
               style: TextStyle(
                 fontSize: 10,
                 color: Colors.grey.shade400,
@@ -1837,11 +1997,15 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
     );
   }
   Widget _buildTabBar() {
+    final t = AppLocalizations.of(context);
     return Container(
       margin: EdgeInsets.only(top: 8),
       child: TabBar(
         controller: _tabController,
-        tabs: _tabs,
+        tabs: [
+          Tab(text: t.datingProfile),
+          Tab(text: t.profilePosts),
+        ],
         labelColor: primaryRed,
         unselectedLabelColor: Colors.grey,
         indicatorColor: primaryRed,
@@ -1852,17 +2016,18 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
   }
 
   Widget _buildProfileContent() {
+    final t = AppLocalizations.of(context);
     return SingleChildScrollView(
       padding: EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('À propos', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(t.datingAboutSection, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.of(context).textPrimary)),
           SizedBox(height: 8),
-          Text(widget.profile.bio, style: TextStyle(fontSize: 14, height: 1.5, color: Colors.grey.shade700)),
+          Text(widget.profile.bio, style: TextStyle(fontSize: 14, height: 1.5, color: AppColors.of(context).textSecondary)),
           SizedBox(height: 24),
           if (widget.profile.centresInteret.isNotEmpty) ...[
-            Text('Centres d\'intérêt', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(t.datingInterests, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.of(context).textPrimary)),
             SizedBox(height: 12),
             Wrap(
               spacing: 10,
@@ -1875,18 +2040,21 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
             ),
             SizedBox(height: 24),
           ],
-          Text('Recherche', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(t.datingSearchSection, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.of(context).textPrimary)),
           SizedBox(height: 12),
           Container(
             padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(16)),
+            decoration: BoxDecoration(color: AppColors.of(context).surfaceVariant, borderRadius: BorderRadius.circular(16)),
             child: Row(
               children: [
                 Icon(Icons.favorite, size: 20, color: Colors.red),
                 SizedBox(width: 12),
                 Text(
-                  '${_getSexeLabel(widget.profile.rechercheSexe)} de ${widget.profile.rechercheAgeMin} à ${widget.profile.rechercheAgeMax} ans',
-                  style: TextStyle(fontSize: 14),
+                  t.datingSearchAgeRange
+                      .replaceAll('{gender}', _getSexeLabel(widget.profile.rechercheSexe))
+                      .replaceAll('{min}', '${widget.profile.rechercheAgeMin}')
+                      .replaceAll('{max}', '${widget.profile.rechercheAgeMax}'),
+                  style: TextStyle(fontSize: 14, color: AppColors.of(context).textPrimary),
                 ),
               ],
             ),
@@ -1915,7 +2083,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
               children: [
                 Icon(Icons.article_outlined, size: 80, color: Colors.grey.shade400),
                 SizedBox(height: 16),
-                Text('Aucun post pour le moment', style: TextStyle(fontSize: 16, color: Colors.grey.shade600)),
+                Text(AppLocalizations.of(context).datingNoPostYet, style: TextStyle(fontSize: 16, color: Colors.grey.shade600)),
               ],
             ),
           );
@@ -1943,7 +2111,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
-                  color: Colors.white,
+                  color: AppColors.of(context).surface,
                   boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 8, offset: Offset(0, 2))],
                 ),
                 child: Column(
@@ -1955,11 +2123,11 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
-                            Image.network(content.thumbnailUrl ?? content.mediaUrl, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => Container(color: Colors.grey.shade200, child: Icon(Icons.image, size: 40))),
+                            Image.network(_cdnUrl(content.thumbnailUrl ?? content.mediaUrl), fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => Container(color: Colors.grey.shade200, child: Icon(Icons.image, size: 40))),
                             if (content.isPaid && !canAccess)
                               Container(
                                 color: Colors.black54,
-                                child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.lock, size: 30, color: Colors.white), SizedBox(height: 4), Text('Abonnement requis', style: TextStyle(color: Colors.white, fontSize: 10))])),
+                                child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.lock, size: 30, color: Colors.white), SizedBox(height: 4), Text(AppLocalizations.of(context).datingSubscriptionRequired, style: TextStyle(color: Colors.white, fontSize: 10))])),
                               ),
                             if (content.isPaid && canAccess)
                               Positioned(
@@ -1968,7 +2136,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
                                 child: Container(
                                   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(color: Colors.amber, borderRadius: BorderRadius.circular(12)),
-                                  child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.lock_open, size: 10, color: Colors.white), SizedBox(width: 4), Text('${content.priceCoins} coins', style: TextStyle(color: Colors.white, fontSize: 10))]),
+                                  child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.lock_open, size: 10, color: Colors.white), SizedBox(width: 4), Text(AppLocalizations.of(context).datingCoinsSuffix.replaceAll('{count}', '${content.priceCoins}'), style: TextStyle(color: Colors.white, fontSize: 10))]),
                                 ),
                               ),
                           ],
@@ -1980,7 +2148,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(content.titre, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
+                          Text(content.titre, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.of(context).textPrimary), maxLines: 2, overflow: TextOverflow.ellipsis),
                           SizedBox(height: 4),
                           Row(
                             children: [
@@ -2011,24 +2179,25 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Abonnement requis'),
-        content: Text('Pour accéder aux posts payants de ${widget.profile.pseudo}, vous devez vous abonner à son contenu.'),
+        title: Text(AppLocalizations.of(context).datingSubscriptionRequired),
+        content: Text(AppLocalizations.of(context).datingSubscribeToAccessPaidPosts.replaceAll('{pseudo}', widget.profile.pseudo)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text('Plus tard')),
-          ElevatedButton(onPressed: () { Navigator.pop(context); _subscribeToCreator(); }, style: ElevatedButton.styleFrom(backgroundColor: Colors.red), child: Text('S\'abonner')),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(AppLocalizations.of(context).datingLaterButton)),
+          ElevatedButton(onPressed: () { Navigator.pop(context); _subscribeToCreator(); }, style: ElevatedButton.styleFrom(backgroundColor: Colors.red), child: Text(AppLocalizations.of(context).datingSubscribe)),
         ],
       ),
     );
   }
 
   String _getSexeLabel(String sexe) {
+    final t = AppLocalizations.of(context);
     switch (sexe) {
       case 'homme':
-        return 'Hommes';
+        return t.datingMen;
       case 'femme':
-        return 'Femmes';
+        return t.datingWomen;
       default:
-        return 'Tous';
+        return t.datingAll;
     }
   }
 }

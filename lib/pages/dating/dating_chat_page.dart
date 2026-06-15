@@ -19,6 +19,8 @@ import '../../models/dating_data.dart';
 import '../../models/enums.dart';
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
+import '../../theme/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 import 'dating_profile_detail_page.dart';
 
 class DatingChatPage extends StatefulWidget {
@@ -133,6 +135,12 @@ class _DatingChatPageState extends State<DatingChatPage>
     _audioRecorder = AudioRecorder();
   }
 
+  String _cdnUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    final userProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    return userProvider.convertToCdnUrl(url, userProvider.appDefaultData);
+  }
+
   Future<void> _loadOtherDatingProfile() async {
     final snapshot = await _firestore
         .collection('dating_profiles')
@@ -194,7 +202,7 @@ class _DatingChatPageState extends State<DatingChatPage>
       }
     } catch (e) {
       setState(() => _isLoading = false);
-      _showSnackBar('Erreur lors de l\'initialisation', Colors.red);
+      _showSnackBar(AppLocalizations.of(context).datingErrorInit, Colors.red);
     }
   }
 
@@ -235,7 +243,7 @@ class _DatingChatPageState extends State<DatingChatPage>
       _scrollToBottom();
       _sendNotification('Nouveau message');
     } catch (e) {
-      _showSnackBar('Erreur envoi message', Colors.red);
+      _showSnackBar(AppLocalizations.of(context).datingErrorSendMessage, Colors.red);
     }
   }
 
@@ -255,7 +263,7 @@ class _DatingChatPageState extends State<DatingChatPage>
       } else if (_selectedImageFile != null) {
         await storageRef.putFile(_selectedImageFile!);
       } else {
-        throw Exception('Aucune image sélectionnée');
+        throw Exception(AppLocalizations.of(context).datingNoImageSelected);
       }
       imageUrl = await storageRef.getDownloadURL();
 
@@ -281,7 +289,7 @@ class _DatingChatPageState extends State<DatingChatPage>
           .doc(messageId)
           .set(message.toJson());
 
-      _updateConversationLastMessage('📷 Image', now);
+      _updateConversationLastMessage(AppLocalizations.of(context).datingImageLabel, now);
       _textController.clear();
       _selectedImageFile = null;
       _selectedImageBytes = null;
@@ -289,7 +297,7 @@ class _DatingChatPageState extends State<DatingChatPage>
       _scrollToBottom();
       _sendNotification('Image');
     } catch (e) {
-      _showSnackBar('Erreur envoi image', Colors.red);
+      _showSnackBar(AppLocalizations.of(context).datingErrorSendImage, Colors.red);
     } finally {
       setState(() => _isSendingImage = false);
     }
@@ -327,11 +335,11 @@ class _DatingChatPageState extends State<DatingChatPage>
           .doc(messageId)
           .set(message.toJson());
 
-      _updateConversationLastMessage('🎤 Audio', now);
+      _updateConversationLastMessage(AppLocalizations.of(context).datingAudioLabel, now);
       _scrollToBottom();
       _sendNotification('Message audio');
     } catch (e) {
-      _showSnackBar('Erreur envoi audio', Colors.red);
+      _showSnackBar(AppLocalizations.of(context).datingErrorSendAudio, Colors.red);
     } finally {
       setState(() => _isSendingAudio = false);
     }
@@ -390,7 +398,7 @@ class _DatingChatPageState extends State<DatingChatPage>
       );
       setState(() => _audioPath = path);
     } else {
-      _showSnackBar('Permission microphone refusée', Colors.red);
+      _showSnackBar(AppLocalizations.of(context).datingMicPermissionDenied, Colors.red);
     }
   }
 
@@ -444,7 +452,7 @@ class _DatingChatPageState extends State<DatingChatPage>
         }
       }
     } catch (e) {
-      _showSnackBar('Erreur lecture audio', Colors.red);
+      _showSnackBar(AppLocalizations.of(context).datingErrorPlayAudio, Colors.red);
       setState(() => _isAudioLoading = false);
     }
   }
@@ -470,9 +478,9 @@ class _DatingChatPageState extends State<DatingChatPage>
   void _deleteMessage(DatingMessage message) async {
     try {
       await _firestore.collection('dating_messages').doc(message.id).delete();
-      _showSnackBar('Message supprimé', Colors.green);
+      _showSnackBar(AppLocalizations.of(context).datingMessageDeleted, Colors.green);
     } catch (e) {
-      _showSnackBar('Erreur suppression', Colors.red);
+      _showSnackBar(AppLocalizations.of(context).datingErrorDeleteMessage, Colors.red);
     }
   }
 
@@ -595,6 +603,7 @@ class _DatingChatPageState extends State<DatingChatPage>
   }
 
   void _showProfileOptions() {
+    final t = AppLocalizations.of(context);
     showModalBottomSheet(
       context: context,
       shape: RoundedRectangleBorder(
@@ -606,7 +615,7 @@ class _DatingChatPageState extends State<DatingChatPage>
           children: [
             ListTile(
               leading: Icon(Icons.person, color: primaryRed),
-              title: Text('Voir le profil'),
+              title: Text(t.datingViewProfileAction),
               onTap: () {
                 Navigator.pop(context);
                 _goToProfile();
@@ -614,7 +623,7 @@ class _DatingChatPageState extends State<DatingChatPage>
             ),
             ListTile(
               leading: Icon(Icons.block, color: primaryRed),
-              title: Text('Bloquer'),
+              title: Text(t.datingBlock),
               onTap: () {
                 Navigator.pop(context);
                 _showBlockConfirmation();
@@ -622,7 +631,7 @@ class _DatingChatPageState extends State<DatingChatPage>
             ),
             ListTile(
               leading: Icon(Icons.flag, color: primaryRed),
-              title: Text('Signaler'),
+              title: Text(t.datingReport),
               onTap: () {
                 Navigator.pop(context);
                 _showReportDialog();
@@ -635,19 +644,17 @@ class _DatingChatPageState extends State<DatingChatPage>
   }
 
   void _showBlockConfirmation() {
+    final t = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Bloquer ${widget.otherUserName}'),
-        content: Text(
-          'Êtes-vous sûr de vouloir bloquer cet utilisateur ? '
-              'Vous ne pourrez plus voir son profil ni recevoir ses messages.',
-        ),
+        title: Text(t.datingBlockProfile.replaceAll('{pseudo}', widget.otherUserName)),
+        content: Text(t.datingBlockConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Annuler'),
+            child: Text(t.datingCancel),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -655,7 +662,7 @@ class _DatingChatPageState extends State<DatingChatPage>
               await _blockUser();
             },
             style: ElevatedButton.styleFrom(backgroundColor: primaryRed),
-            child: Text('Bloquer'),
+            child: Text(t.datingBlock),
           ),
         ],
       ),
@@ -674,25 +681,33 @@ class _DatingChatPageState extends State<DatingChatPage>
         'createdAt': now,
       });
 
-      _showSnackBar('${widget.otherUserName} a été bloqué', Colors.red);
+      _showSnackBar(AppLocalizations.of(context).datingUserBlocked.replaceAll('{pseudo}', widget.otherUserName), Colors.red);
       Navigator.pop(context);
     } catch (e) {
-      _showSnackBar('Erreur lors du blocage', Colors.red);
+      _showSnackBar(AppLocalizations.of(context).datingErrorBlockUser, Colors.red);
     }
   }
 
   void _showReportDialog() {
+    final t = AppLocalizations.of(context);
+    final reasons = [
+      t.datingReportReasonInappropriateMessage,
+      t.datingReportReasonHarassment,
+      t.datingReportReasonSpam,
+      t.datingReportReasonOffensive,
+      t.datingReportReasonOther,
+    ];
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Signaler ${widget.otherUserName}'),
+        title: Text(t.datingReportProfile.replaceAll('{pseudo}', widget.otherUserName)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Pourquoi signalez-vous cette conversation ?'),
+            Text(t.datingWhyReportingConversation),
             SizedBox(height: 16),
-            ...['Message inapproprié', 'Harcèlement', 'Spam', 'Contenu offensant', 'Autre']
+            ...reasons
                 .map((reason) => ListTile(
               title: Text(reason),
               onTap: () {
@@ -721,9 +736,9 @@ class _DatingChatPageState extends State<DatingChatPage>
         'createdAt': now,
       });
 
-      _showSnackBar('Signalement envoyé', Colors.green);
+      _showSnackBar(AppLocalizations.of(context).datingReportSent, Colors.green);
     } catch (e) {
-      _showSnackBar('Erreur lors du signalement', Colors.red);
+      _showSnackBar(AppLocalizations.of(context).datingErrorReportSubmit, Colors.red);
     }
   }
 
@@ -733,6 +748,7 @@ class _DatingChatPageState extends State<DatingChatPage>
   Widget _buildMessageBubble(DatingMessage message, bool isMe) {
     final time = DateTime.fromMillisecondsSinceEpoch(message.createdAt);
     final timeStr = DateFormat('HH:mm').format(time);
+    final t = AppLocalizations.of(context);
 
     return GestureDetector(
       onLongPress: () {
@@ -749,7 +765,7 @@ class _DatingChatPageState extends State<DatingChatPage>
                 children: [
                   ListTile(
                     leading: Icon(Icons.delete, color: Colors.red),
-                    title: Text('Supprimer', style: TextStyle(color: Colors.white)),
+                    title: Text(t.datingDeleteAction, style: TextStyle(color: Colors.white)),
                     onTap: () {
                       Navigator.pop(context);
                       _deleteMessage(message);
@@ -757,7 +773,7 @@ class _DatingChatPageState extends State<DatingChatPage>
                   ),
                   ListTile(
                     leading: Icon(Icons.reply, color: primaryYellow),
-                    title: Text('Répondre', style: TextStyle(color: Colors.white)),
+                    title: Text(t.datingReplyAction, style: TextStyle(color: Colors.white)),
                     onTap: () {
                       Navigator.pop(context);
                       _setReplying(message);
@@ -780,7 +796,7 @@ class _DatingChatPageState extends State<DatingChatPage>
                 children: [
                   ListTile(
                     leading: Icon(Icons.reply, color: primaryYellow),
-                    title: Text('Répondre', style: TextStyle(color: Colors.white)),
+                    title: Text(t.datingReplyAction, style: TextStyle(color: Colors.white)),
                     onTap: () {
                       Navigator.pop(context);
                       _setReplying(message);
@@ -827,11 +843,11 @@ class _DatingChatPageState extends State<DatingChatPage>
                     ),
                   if (message.type == MessageType.image && message.mediaUrl != null)
                     GestureDetector(
-                      onTap: () => _showImageFullscreen(message.mediaUrl!),
+                      onTap: () => _showImageFullscreen(_cdnUrl(message.mediaUrl)),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: CachedNetworkImage(
-                          imageUrl: message.mediaUrl!,
+                          imageUrl: _cdnUrl(message.mediaUrl),
                           width: 200,
                           height: 200,
                           fit: BoxFit.cover,
@@ -879,15 +895,16 @@ class _DatingChatPageState extends State<DatingChatPage>
   }
 
   Widget _buildReplyPreview(DatingMessage message) {
+    final t = AppLocalizations.of(context);
     String previewText = '';
     if (message.replyToMessageType == MessageType.text.name) {
       previewText = message.replyToMessageText ?? '';
     } else if (message.replyToMessageType == MessageType.image.name) {
-      previewText = '📷 Image';
+      previewText = t.datingImageLabel;
     } else if (message.replyToMessageType == MessageType.audio.name) {
-      previewText = '🎤 Audio';
+      previewText = t.datingAudioLabel;
     } else {
-      previewText = 'Message';
+      previewText = t.datingMessageLabel;
     }
     return Container(
       margin: EdgeInsets.only(bottom: 4),
@@ -984,16 +1001,17 @@ class _DatingChatPageState extends State<DatingChatPage>
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.of(context).background,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               CircularProgressIndicator(color: primaryRed),
               SizedBox(height: 16),
-              Text('Chargement...', style: TextStyle(color: Colors.grey[600])),
+              Text(t.datingLoadingText, style: TextStyle(color: Colors.grey[600])),
             ],
           ),
         ),
@@ -1001,7 +1019,7 @@ class _DatingChatPageState extends State<DatingChatPage>
     }
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.of(context).background,
       appBar: AppBar(
         title: Row(
           children: [
@@ -1010,8 +1028,8 @@ class _DatingChatPageState extends State<DatingChatPage>
               child: CircleAvatar(
                 radius: 20,
                 backgroundImage: _otherDatingProfile != null
-                    ? NetworkImage(_otherDatingProfile!.imageUrl)
-                    : NetworkImage(widget.otherUserImage),
+                    ? NetworkImage(_cdnUrl(_otherDatingProfile!.imageUrl))
+                    : NetworkImage(_cdnUrl(widget.otherUserImage)),
                 child: (widget.otherUserImage.isEmpty &&
                     _otherDatingProfile?.imageUrl.isEmpty == true)
                     ? Icon(Icons.person, size: 20)
@@ -1029,7 +1047,7 @@ class _DatingChatPageState extends State<DatingChatPage>
                     style: TextStyle(color: Colors.white, fontSize: 16),
                   ),
                   Text(
-                    'En ligne',
+                    t.datingOnlineStatus,
                     style: TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                 ],
@@ -1081,9 +1099,9 @@ class _DatingChatPageState extends State<DatingChatPage>
                       children: [
                         Icon(Icons.chat_bubble_outline, size: 80, color: Colors.grey.shade400),
                         SizedBox(height: 16),
-                        Text('Aucun message', style: TextStyle(fontSize: 18, color: Colors.grey.shade600)),
+                        Text(t.datingNoMessagesYet, style: TextStyle(fontSize: 18, color: Colors.grey.shade600)),
                         SizedBox(height: 8),
-                        Text('Envoyez un message pour commencer la conversation',
+                        Text(t.datingSendFirstMessage,
                             style: TextStyle(fontSize: 14, color: Colors.grey.shade500)),
                       ],
                     ),
@@ -1197,11 +1215,12 @@ class _ChatInputWidgetState extends State<_ChatInputWidget> {
     final primaryRed = const Color(0xFFE63946);
     final secondaryGrey = const Color(0xFF2C2C2C);
     final primaryYellow = const Color(0xFFFFD700);
+    final t = AppLocalizations.of(context);
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.of(context).surface,
         boxShadow: [
           BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 8, offset: Offset(0, -2)),
         ],
@@ -1241,8 +1260,8 @@ class _ChatInputWidgetState extends State<_ChatInputWidget> {
                     style: TextStyle(color: Colors.black87),
                     decoration: InputDecoration(
                       hintText: widget.isRecording
-                          ? "Enregistrement... (${widget.recordingDuration} s)"
-                          : "Écrire un message...",
+                          ? t.datingRecordingInProgress.replaceAll('{seconds}', '${widget.recordingDuration}')
+                          : t.datingWriteMessagePlaceholder,
                       hintStyle: TextStyle(color: Colors.grey[400]),
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -1297,15 +1316,16 @@ class _ChatInputWidgetState extends State<_ChatInputWidget> {
   Widget _buildReplyingBar() {
     final primaryYellow = const Color(0xFFFFD700);
     final secondaryGrey = const Color(0xFF2C2C2C);
+    final t = AppLocalizations.of(context);
     String previewText = '';
     if (widget.replyingToMessage!.type == MessageType.text) {
       previewText = widget.replyingToMessage!.text ?? '';
     } else if (widget.replyingToMessage!.type == MessageType.image) {
-      previewText = '📷 Image';
+      previewText = t.datingImageLabel;
     } else if (widget.replyingToMessage!.type == MessageType.audio) {
-      previewText = '🎤 Audio';
+      previewText = t.datingAudioLabel;
     } else {
-      previewText = 'Message';
+      previewText = t.datingMessageLabel;
     }
     return Container(
       margin: EdgeInsets.only(bottom: 8),
@@ -1429,7 +1449,7 @@ class _AudioMessageWidgetState extends State<_AudioMessageWidget> {
       } catch (e) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur lecture audio'), backgroundColor: Colors.red),
+          SnackBar(content: Text(AppLocalizations.of(context).datingErrorPlayAudio), backgroundColor: Colors.red),
         );
       }
     }
@@ -1741,7 +1761,7 @@ class _AudioMessageWidgetState extends State<_AudioMessageWidget> {
 //       } else if (_selectedImageFile != null) {
 //         await storageRef.putFile(_selectedImageFile!);
 //       } else {
-//         throw Exception('Aucune image sélectionnée');
+//         throw Exception(AppLocalizations.of(context).datingNoImageSelected);
 //       }
 //       imageUrl = await storageRef.getDownloadURL();
 //
@@ -1877,7 +1897,7 @@ class _AudioMessageWidgetState extends State<_AudioMessageWidget> {
 //       );
 //       setState(() => _audioPath = path);
 //     } else {
-//       _showSnackBar('Permission microphone refusée', Colors.red);
+//       _showSnackBar(AppLocalizations.of(context).datingMicPermissionDenied, Colors.red);
 //     }
 //   }
 //
@@ -1931,7 +1951,7 @@ class _AudioMessageWidgetState extends State<_AudioMessageWidget> {
 //         }
 //       }
 //     } catch (e) {
-//       _showSnackBar('Erreur lecture audio', Colors.red);
+//       _showSnackBar(AppLocalizations.of(context).datingErrorPlayAudio, Colors.red);
 //       setState(() => _isAudioLoading = false);
 //     }
 //   }
