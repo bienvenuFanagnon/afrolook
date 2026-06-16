@@ -2,15 +2,15 @@ import 'dart:convert';
 
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 
-import 'package:flutter/foundation.dart' show kIsWeb;
-
 import 'feexpay/feexPayPaymentScreen.dart';
+import '../../../theme/app_colors.dart';
+import '../../../l10n/app_localizations.dart';
 
 class DepositScreen extends StatefulWidget {
   final double? defaultAmount;
@@ -25,7 +25,6 @@ class _DepositScreenState extends State<DepositScreen> {
   final amountController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _termsAccepted = false;
-  String? _selectedPaymentMethod;
 
   @override
   void initState() {
@@ -37,6 +36,8 @@ class _DepositScreenState extends State<DepositScreen> {
 
   void _showPaymentMethodSelection() {
     if (!_formKey.currentState!.validate()) return;
+    final colors = AppColors.of(context);
+    final t = AppLocalizations.of(context);
 
     showModalBottomSheet(
       context: context,
@@ -45,117 +46,102 @@ class _DepositScreenState extends State<DepositScreen> {
       builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.7,
         decoration: BoxDecoration(
-          color: Color(0xFFF9F5EB),
-          borderRadius: BorderRadius.only(
+          color: colors.surface,
+          borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(25),
             topRight: Radius.circular(25),
           ),
         ),
         child: Column(
           children: [
-            // Header
             Container(
-              padding: EdgeInsets.all(20),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Color(0xFFD8A868),
-                borderRadius: BorderRadius.only(
+                color: colors.primary,
+                borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(25),
                   topRight: Radius.circular(25),
                 ),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.payment, color: Colors.white, size: 28),
-                  SizedBox(width: 12),
-                  Text(
-                    'Choisissez votre méthode de paiement',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                  Icon(Icons.payment, color: colors.onPrimary, size: 28),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      t.depositChooseMethodTitle,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: colors.onPrimary,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-            SizedBox(height: 20),
-
+            const SizedBox(height: 16),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: ListView(
                   children: [
-                    // Option FeexPay
                     _PaymentMethodCard(
-                      title: 'FeexPay',
+                      title: 'Carte Bancaire',
+                      subtitle: 'Visa / Mastercard — Toute l\'Afrique',
+                      description: 'Frais : 7%  •  Conversion FCFA automatique',
+                      icon: Icons.credit_card,
+                      color: colors.primary,
+                      iconColor: colors.onPrimary,
+                      onTap: () {
+                        Navigator.pop(context);
+                        _processCinetPayPayment(paymentType: 'CARD');
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    _PaymentMethodCard(
+                      title: 'FeexPay Mobile Money',
                       subtitle: 'Afrique de l\'Ouest',
-                      description: 'MTN • MOOV • ORANGE • WAVE',
+                      description: 'MTN • MOOV • ORANGE • WAVE  •  Frais : 5.6%',
                       icon: Icons.qr_code_scanner,
-                      color: Color(0xFF9C27B0),
+                      color: const Color(0xFF9C27B0),
                       iconColor: Colors.white,
                       onTap: () {
                         Navigator.pop(context);
                         _processFeexPayPayment();
                       },
                     ),
-                    SizedBox(height: 15),
-
-                    // // Option CinetPay
-                    // _PaymentMethodCard(
-                    //   title: 'CinetPay',
-                    //   subtitle: 'Toute l\'Afrique',
-                    //   description: 'Mobile Money • Carte Bancaire • Orange Money',
-                    //   icon: Icons.public,
-                    //   color: Color(0xFF2E7D32),
-                    //   iconColor: Colors.white,
-                    //   onTap: () {
-                    //     Navigator.pop(context);
-                    //     _selectedPaymentMethod = 'cinetpay';
-                    //     _processCinetPayPayment();
-                    //   },
-                    // ),
-                    // SizedBox(height: 15),
-
-                    // Option PayGate
+                    const SizedBox(height: 12),
                     _PaymentMethodCard(
                       title: 'PayGate',
                       subtitle: 'Togo seulement',
-                      description: 'FLOOZ • T-Money • Carte Bancaire',
+                      description: 'FLOOZ • T-Money  •  Frais : 5.6%',
                       icon: Icons.phone_android,
-                      color: Color(0xFF1976D2),
+                      color: colors.info,
                       iconColor: Colors.white,
                       onTap: () {
                         Navigator.pop(context);
                         _showPayGatePhoneDialog();
                       },
                     ),
-
-                    SizedBox(height: 20),
-                    Divider(color: Colors.grey[400]),
-                    SizedBox(height: 10),
-
+                    const SizedBox(height: 16),
+                    Divider(color: colors.border),
+                    const SizedBox(height: 8),
                     Text(
-                      'Sélectionnez la méthode adaptée à votre pays',
-                      style: TextStyle(
-                        color: Color(0xFF5C4A3C),
-                        fontSize: 12,
-                      ),
+                      t.depositSelectCountry,
+                      style: TextStyle(color: colors.textSecondary, fontSize: 12),
                       textAlign: TextAlign.center,
                     ),
                   ],
                 ),
               ),
             ),
-
             Padding(
               padding: const EdgeInsets.all(20),
               child: TextButton(
                 onPressed: () => Navigator.pop(context),
-                style: TextButton.styleFrom(
-                  foregroundColor: Color(0xFF5C4A3C),
-                  padding: EdgeInsets.symmetric(horizontal: 40, vertical: 12),
-                ),
-                child: Text('ANNULER', style: TextStyle(fontWeight: FontWeight.bold)),
+                style: TextButton.styleFrom(foregroundColor: colors.textSecondary),
+                child: Text(t.btnCancel, style: const TextStyle(fontWeight: FontWeight.bold)),
               ),
             ),
           ],
@@ -165,220 +151,506 @@ class _DepositScreenState extends State<DepositScreen> {
   }
 
   void _showPayGatePhoneDialog() {
+    final colors = AppColors.of(context);
+    final t = AppLocalizations.of(context);
     String selectedNetwork = 'FLOOZ';
     final phoneController = TextEditingController();
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: Color(0xFFF9F5EB),
-        title: Row(
-          children: [
-            Icon(Icons.phone_android, color: Color(0xFF1976D2)),
-            SizedBox(width: 10),
-            Text(
-              'Paiement PayGate - Togo',
-              style: TextStyle(
-                color: Color(0xFF5C4A3C),
-                fontWeight: FontWeight.bold,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setStateDialog) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: colors.surface,
+          title: Row(
+            children: [
+              Icon(Icons.phone_android, color: colors.info),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  t.depositPaygateDialogTitle,
+                  style: TextStyle(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
               ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Veuillez saisir vos informations de paiement Togo:',
-              style: TextStyle(color: Color(0xFF5C4A3C)),
-            ),
-            SizedBox(height: 20),
-            TextFormField(
-              controller: phoneController,
-              keyboardType: TextInputType.phone,
-              decoration: InputDecoration(
-                labelText: 'Numéro de téléphone',
-                prefixText: '+228 ',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Color(0xFFD8A868)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(t.depositPaygateSubtitle, style: TextStyle(color: colors.textSecondary)),
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: phoneController,
+                keyboardType: TextInputType.phone,
+                style: TextStyle(color: colors.textPrimary),
+                decoration: InputDecoration(
+                  labelText: t.signupPhone,
+                  labelStyle: TextStyle(color: colors.textSecondary),
+                  prefixText: '+228 ',
+                  prefixIcon: Icon(Icons.phone, color: colors.textSecondary),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: colors.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: colors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: colors.info),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                  filled: true,
+                  fillColor: colors.surfaceVariant,
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Color(0xFFD8A868)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Color(0xFF1976D2)),
-                ),
-                prefixIcon: Icon(Icons.phone, color: Color(0xFF5C4A3C)),
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                filled: true,
-                fillColor: Colors.white,
               ),
+              const SizedBox(height: 15),
+              DropdownButtonFormField<String>(
+                value: selectedNetwork,
+                dropdownColor: colors.surface,
+                style: TextStyle(color: colors.textPrimary),
+                items: const [
+                  DropdownMenuItem(value: 'FLOOZ', child: Text('FLOOZ (Moov)')),
+                  DropdownMenuItem(value: 'T-MONEY', child: Text('T-Money (Togocel)')),
+                ],
+                onChanged: (value) {
+                  setStateDialog(() => selectedNetwork = value!);
+                },
+                decoration: InputDecoration(
+                  labelText: t.depositNetworkLabel,
+                  labelStyle: TextStyle(color: colors.textSecondary),
+                  prefixIcon: Icon(Icons.network_cell, color: colors.textSecondary),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: colors.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: colors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: colors.info),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                  filled: true,
+                  fillColor: colors.surfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(t.btnCancel, style: TextStyle(color: colors.textSecondary)),
             ),
-            SizedBox(height: 15),
-            DropdownButtonFormField<String>(
-              value: selectedNetwork,
-              items: [
-                DropdownMenuItem(
-                  value: 'FLOOZ',
-                  child: Text('FLOOZ (Moov)'),
-                ),
-                DropdownMenuItem(
-                  value: 'T-MONEY',
-                  child: Text('T-Money (Togocel)'),
-                ),
-              ],
-              onChanged: (value) {
-                selectedNetwork = value!;
+            ElevatedButton(
+              onPressed: () {
+                if (phoneController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(t.depositPhoneRequired),
+                      backgroundColor: colors.danger,
+                    ),
+                  );
+                  return;
+                }
+                Navigator.pop(context);
+                _processPayGatePayment(phoneController.text, selectedNetwork);
               },
-              decoration: InputDecoration(
-                labelText: 'Réseau mobile',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Color(0xFFD8A868)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Color(0xFFD8A868)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Color(0xFF1976D2)),
-                ),
-                prefixIcon: Icon(Icons.network_cell, color: Color(0xFF5C4A3C)),
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                filled: true,
-                fillColor: Colors.white,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colors.info,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: Text(
+                t.commonConfirm,
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Annuler',
-              style: TextStyle(color: Color(0xFF5C4A3C)),
+      ),
+    );
+  }
+
+  // Pays CinetPay (ISO 2 lettres) — les plus courants en Afrique + Europe
+  static const _countries = [
+    ('CI', 'Côte d\'Ivoire'), ('SN', 'Sénégal'),    ('CM', 'Cameroun'),
+    ('TG', 'Togo'),          ('BJ', 'Bénin'),        ('BF', 'Burkina Faso'),
+    ('ML', 'Mali'),          ('NE', 'Niger'),        ('GN', 'Guinée'),
+    ('GH', 'Ghana'),         ('NG', 'Nigeria'),      ('CD', 'Congo RDC'),
+    ('CG', 'Congo'),         ('GA', 'Gabon'),        ('MG', 'Madagascar'),
+    ('MA', 'Maroc'),         ('TN', 'Tunisie'),      ('DZ', 'Algérie'),
+    ('FR', 'France'),        ('BE', 'Belgique'),     ('CH', 'Suisse'),
+    ('CA', 'Canada'),        ('US', 'États-Unis'),
+  ];
+
+  Future<void> _processCinetPayPayment({required String paymentType}) async {
+    final colors = AppColors.of(context);
+    final t = AppLocalizations.of(context);
+    final provider = Provider.of<UserAuthProvider>(context, listen: false);
+    final amount = double.tryParse(amountController.text) ?? 0;
+    if (amount <= 0) return;
+
+    final user = provider.loginUserData;
+
+    // Contrôleurs pré-remplis avec les données du profil
+    final prenomCtrl   = TextEditingController(text: user.prenom ?? '');
+    final nomCtrl      = TextEditingController(text: user.nom ?? '');
+    final phoneCtrl    = TextEditingController(text: user.numeroDeTelephone ?? '');
+    final adresseCtrl  = TextEditingController(text: user.adresse ?? '');
+    final villeCtrl    = TextEditingController(text: user.userPays?.placeName ?? user.userPays?.name ?? '');
+    String selectedCountry = user.userPays?.id ?? 'CI';
+    // S'assurer que le pays est dans la liste
+    if (!_countries.any((c) => c.$1 == selectedCountry)) selectedCountry = 'CI';
+
+    const double feeRate = 0.07;
+    final int fees    = (amount * feeRate).round();
+    final int credited = (amount - fees).round();
+    final formKey = GlobalKey<FormState>();
+
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setStateSheet) => DraggableScrollableSheet(
+          initialChildSize: 0.92,
+          minChildSize: 0.6,
+          maxChildSize: 0.97,
+          builder: (_, scrollCtrl) => Container(
+            decoration: BoxDecoration(
+              color: colors.surface,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Form(
+              key: formKey,
+              child: ListView(
+                controller: scrollCtrl,
+                padding: EdgeInsets.only(
+                  left: 20, right: 20, top: 16,
+                  bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+                ),
+                children: [
+                  // Handle
+                  Center(
+                    child: Container(
+                      width: 40, height: 4,
+                      decoration: BoxDecoration(
+                        color: colors.border,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Titre
+                  Row(
+                    children: [
+                      Icon(Icons.credit_card, color: colors.primary, size: 24),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Carte Bancaire — Informations',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Vérifiez et complétez vos informations avant de payer.',
+                    style: TextStyle(fontSize: 12, color: colors.textSecondary),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Résumé des frais
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: colors.primary.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: colors.primary.withOpacity(0.2)),
+                    ),
+                    child: Column(
+                      children: [
+                        _feeRow('Montant saisi', '${amount.round()} FCFA', colors.textPrimary, colors),
+                        _feeRow('Frais (7%)', '- $fees FCFA', colors.danger, colors),
+                        Divider(color: colors.border, height: 16),
+                        _feeRow('Vous recevez', '$credited FCFA', colors.primary, colors),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  Divider(color: colors.border),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      'INFORMATIONS CLIENT',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: colors.textSecondary,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                  ),
+
+                  // Prénom + Nom
+                  Row(
+                    children: [
+                      Expanded(child: _buildField(prenomCtrl, 'Prénom', Icons.person_outline, colors, required: true)),
+                      const SizedBox(width: 12),
+                      Expanded(child: _buildField(nomCtrl, 'Nom', Icons.person, colors, required: true)),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Téléphone
+                  _buildField(phoneCtrl, 'Téléphone', Icons.phone_outlined, colors,
+                      required: true, keyboardType: TextInputType.phone),
+                  const SizedBox(height: 14),
+
+                  // Adresse
+                  _buildField(adresseCtrl, 'Adresse', Icons.home_outlined, colors, required: true),
+                  const SizedBox(height: 14),
+
+                  // Ville
+                  _buildField(villeCtrl, 'Ville', Icons.location_city_outlined, colors, required: true),
+                  const SizedBox(height: 14),
+
+                  // Pays (dropdown)
+                  DropdownButtonFormField<String>(
+                    value: selectedCountry,
+                    dropdownColor: colors.surface,
+                    isExpanded: true,
+                    style: TextStyle(color: colors.textPrimary, fontSize: 14),
+                    decoration: InputDecoration(
+                      labelText: 'Pays',
+                      labelStyle: TextStyle(color: colors.textSecondary),
+                      prefixIcon: Icon(Icons.flag_outlined, color: colors.textSecondary),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: colors.border),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: colors.border),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: colors.primary),
+                      ),
+                      filled: true,
+                      fillColor: colors.surfaceVariant,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                    ),
+                    items: _countries.map((c) => DropdownMenuItem(
+                      value: c.$1,
+                      child: Text('${c.$1} — ${c.$2}', overflow: TextOverflow.ellipsis),
+                    )).toList(),
+                    onChanged: (v) => setStateSheet(() => selectedCountry = v!),
+                    validator: (v) => (v == null || v.isEmpty) ? 'Requis' : null,
+                  ),
+                  const SizedBox(height: 28),
+
+                  // Bouton confirmer
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      if (!formKey.currentState!.validate()) return;
+                      Navigator.pop(ctx, true);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colors.primary,
+                      foregroundColor: colors.onPrimary,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                    icon: Icon(Icons.lock_outline, color: colors.onPrimary),
+                    label: Text(
+                      'Confirmer et payer',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: colors.onPrimary),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: Text(t.btnCancel, style: TextStyle(color: colors.textSecondary)),
+                  ),
+                ],
+              ),
             ),
           ),
-          ElevatedButton(
-            onPressed: () {
-              if (phoneController.text.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Veuillez saisir votre numéro de téléphone'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-                return;
-              }
-              Navigator.pop(context);
-              _selectedPaymentMethod = 'paygate';
-              _processPayGatePayment(phoneController.text, selectedNetwork);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFF1976D2),
-              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    // Loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Center(
+        child: Container(
+          decoration: BoxDecoration(color: colors.surface, borderRadius: BorderRadius.circular(16)),
+          padding: const EdgeInsets.all(30),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(valueColor: AlwaysStoppedAnimation(colors.primary)),
+              const SizedBox(height: 20),
+              Text(
+                t.depositConnecting,
+                style: TextStyle(fontSize: 16, color: colors.primary, fontWeight: FontWeight.bold),
               ),
-            ),
-            child: Text(
-              'Confirmer',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
+              const SizedBox(height: 6),
+              Text(t.depositRedirectSecure, style: TextStyle(fontSize: 12, color: colors.textSecondary)),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    final payload = {
+      'amount':          amount.round(),
+      'userId':          user.id,
+      'paymentType':     paymentType,
+      'customerName':    prenomCtrl.text.trim().isNotEmpty ? prenomCtrl.text.trim() : 'Client',
+      'customerSurname': nomCtrl.text.trim().isNotEmpty   ? nomCtrl.text.trim()    : 'Afrolook',
+      'customerEmail':   user.email ?? '',
+      'customerPhone':   phoneCtrl.text.trim(),
+      'customerAddress': adresseCtrl.text.trim().isNotEmpty ? adresseCtrl.text.trim() : 'N/A',
+      'customerCity':    villeCtrl.text.trim().isNotEmpty   ? villeCtrl.text.trim()   : 'N/A',
+      'customerCountry': selectedCountry,
+      'customerZipCode': '00000',
+    };
+    debugPrint('[CinetPay] payload: $payload');
+
+    try {
+      final callable = FirebaseFunctions.instance.httpsCallable('initiateAfrolookDeposit');
+      final result = await callable(payload);
+
+      debugPrint('[CinetPay] Réponse: ${result.data}');
+      Navigator.of(context).pop();
+
+      final paymentUrl = (result.data['payment_url'] as String?) ?? '';
+      if (paymentUrl.isNotEmpty && await canLaunchUrl(Uri.parse(paymentUrl))) {
+        await launchUrl(Uri.parse(paymentUrl), mode: LaunchMode.externalApplication);
+        Navigator.pop(context);
+      } else {
+        throw Exception('URL de paiement invalide ou vide');
+      }
+    } on FirebaseFunctionsException catch (e) {
+      Navigator.of(context).pop();
+      debugPrint('[CinetPay] FirebaseFunctionsException:');
+      debugPrint('  code    : ${e.code}');
+      debugPrint('  message : ${e.message}');
+      debugPrint('  details : ${e.details}');
+      final detail = (e.details != null && e.details is Map)
+          ? (e.details as Map)['message'] ?? e.message
+          : e.message;
+      _showErrorDialog('[${e.code}] $detail', colors, t);
+    } catch (e, stack) {
+      Navigator.of(context).pop();
+      debugPrint('[CinetPay] Erreur: $e\n$stack');
+      _showErrorDialog(e.toString(), colors, t);
+    }
+  }
+
+  Widget _buildField(
+    TextEditingController ctrl,
+    String label,
+    IconData icon,
+    AppColors colors, {
+    bool required = false,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return TextFormField(
+      controller: ctrl,
+      keyboardType: keyboardType,
+      style: TextStyle(color: colors.textPrimary, fontSize: 14),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: colors.textSecondary, fontSize: 13),
+        prefixIcon: Icon(icon, color: colors.textSecondary, size: 20),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colors.primary),
+        ),
+        filled: true,
+        fillColor: colors.surfaceVariant,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      ),
+      validator: required
+          ? (v) => (v == null || v.trim().isEmpty) ? 'Requis' : null
+          : null,
+    );
+  }
+
+  void _showErrorDialog(String message, AppColors colors, AppLocalizations t) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: colors.surface,
+        title: Row(
+          children: [
+            Icon(Icons.error_outline, color: colors.danger),
+            const SizedBox(width: 10),
+            Text('Échec du paiement', style: TextStyle(color: colors.textPrimary, fontSize: 16)),
+          ],
+        ),
+        content: SelectableText(
+          message,
+          style: TextStyle(color: colors.textSecondary, fontSize: 13),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: ElevatedButton.styleFrom(backgroundColor: colors.primary),
+            child: Text('OK', style: TextStyle(color: colors.onPrimary)),
           ),
         ],
       ),
     );
   }
 
-  Future<void> _processCinetPayPayment() async {
-    final userTransactionsProvider = Provider.of<UserAuthProvider>(context, listen: false);
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => Center(
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black26,
-                blurRadius: 10,
-                offset: Offset(0, 4),
-              ),
-            ],
-          ),
-          padding: EdgeInsets.all(30),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation(Color(0xFF2E7D32)),
-              ),
-              SizedBox(height: 20),
-              Text(
-                'Connexion à CinetPay...',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Color(0xFF2E7D32),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(height: 10),
-              Text(
-                'Redirection vers la plateforme sécurisée',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
+  Widget _feeRow(String label, String value, Color valueColor, AppColors colors) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(fontSize: 13, color: colors.textSecondary)),
+          Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: valueColor)),
+        ],
       ),
     );
-
-    try {
-      final amount = double.tryParse(amountController.text) ?? 0;
-      final response = await userTransactionsProvider.initiateDeposit(
-        amount,
-        userTransactionsProvider.loginUserData,
-      );
-
-      final String paymentUrl = (response['payment_url'] ?? '') as String;
-
-      Navigator.of(context).pop();
-
-      if (await canLaunchUrl(Uri.parse(paymentUrl))) {
-        await launchUrl(
-          Uri.parse(paymentUrl),
-          mode: LaunchMode.externalApplication,
-        );
-        Navigator.pop(context);
-      }
-    } catch (e) {
-      Navigator.of(context).pop();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Échec du traitement CinetPay: ${e.toString()}'),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
   }
 
   Future<void> _processPayGatePayment(String phoneNumber, String network) async {
-    final userTransactionsProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    final colors = AppColors.of(context);
+    final t = AppLocalizations.of(context);
+    final userProvider = Provider.of<UserAuthProvider>(context, listen: false);
     final amount = double.tryParse(amountController.text) ?? 0;
 
     showDialog(
@@ -387,39 +659,24 @@ class _DepositScreenState extends State<DepositScreen> {
       builder: (_) => Center(
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.surface,
             borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black26,
-                blurRadius: 10,
-                offset: Offset(0, 4),
-              ),
-            ],
+            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 4))],
           ),
-          padding: EdgeInsets.all(30),
+          padding: const EdgeInsets.all(30),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation(Color(0xFF1976D2)),
-              ),
-              SizedBox(height: 20),
+              CircularProgressIndicator(valueColor: AlwaysStoppedAnimation(colors.info)),
+              const SizedBox(height: 20),
               Text(
-                'Connexion à PayGate...',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Color(0xFF1976D2),
-                  fontWeight: FontWeight.bold,
-                ),
+                t.depositConnectingPaygate,
+                style: TextStyle(fontSize: 16, color: colors.info, fontWeight: FontWeight.bold),
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               Text(
-                'Initialisation du paiement',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
+                t.depositInitPayment,
+                style: TextStyle(fontSize: 12, color: colors.textSecondary),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -433,19 +690,17 @@ class _DepositScreenState extends State<DepositScreen> {
 
       final response = await http.post(
         Uri.parse('https://initiatepaymentfromafrolook-b6fm6gdlrq-uc.a.run.app'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'data': {
             'transactionId': transactionId,
             'amount': amount,
-            'userId': userTransactionsProvider.loginUserData.id,
+            'userId': userProvider.loginUserData.id,
             'type': 'afrolook_deposit',
             'phoneNumber': phoneNumber,
             'network': network,
-            'userEmail': userTransactionsProvider.loginUserData.email,
-            'userName': userTransactionsProvider.loginUserData.nom,
+            'userEmail': userProvider.loginUserData.email,
+            'userName': userProvider.loginUserData.nom,
           }
         }),
       );
@@ -454,18 +709,11 @@ class _DepositScreenState extends State<DepositScreen> {
 
       if (response.statusCode == 200) {
         final result = json.decode(response.body);
-
         if (result['result']?['success'] == true) {
           final paymentUrl = result['result']?['payment_url'];
-
-          if (kIsWeb) {
-            // Pour le web
-          } else {
+          if (!kIsWeb && paymentUrl != null) {
             if (await canLaunchUrl(Uri.parse(paymentUrl))) {
-              await launchUrl(
-                Uri.parse(paymentUrl),
-                mode: LaunchMode.externalApplication,
-              );
+              await launchUrl(Uri.parse(paymentUrl), mode: LaunchMode.externalApplication);
             }
           }
           Navigator.pop(context);
@@ -473,47 +721,34 @@ class _DepositScreenState extends State<DepositScreen> {
           throw Exception(result['error']?['message'] ?? 'Erreur inconnue');
         }
       } else {
-        throw Exception('HTTP ${response.statusCode}: ${response.body}');
+        throw Exception('HTTP ${response.statusCode}');
       }
     } catch (e) {
       Navigator.of(context).pop();
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Échec du traitement PayGate: ${e.toString()}'),
-          backgroundColor: Colors.red,
+          content: Text('Échec PayGate : ${e.toString()}'),
+          backgroundColor: colors.danger,
           behavior: SnackBarBehavior.floating,
         ),
       );
     }
   }
 
-  // ============================================================
-  // MÉTHODE FEEXPAY
-  // ============================================================
-
   Future<void> _processFeexPayPayment() async {
-    final userTransactionsProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    final colors = AppColors.of(context);
+    final t = AppLocalizations.of(context);
+    final userProvider = Provider.of<UserAuthProvider>(context, listen: false);
     final amount = double.tryParse(amountController.text) ?? 0;
 
     if (amount < 200) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Le montant minimum est de 200 FCFA'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text(t.depositAmountMin), backgroundColor: colors.danger),
       );
       return;
     }
 
-    // Calcul du montant total avec les frais de 5.6%
-    // Formule: Montant_à_payer = Montant_souhaité / (1 - 0.056)
-    final totalAmount = (amount / (1 - 0.056)).ceil();
-
-    print('=== DÉTAILS PAIEMENT FEEXPAY ===');
-    print('Montant souhaité: $amount FCFA');
-    print('Frais Afrolook (5.6%): ${totalAmount - amount} FCFA');
-    print('Total à payer: $totalAmount FCFA');
+    final int totalAmount = (amount / (1 - 0.056)).ceil();
 
     showDialog(
       context: context,
@@ -521,40 +756,24 @@ class _DepositScreenState extends State<DepositScreen> {
       builder: (_) => Center(
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.surface,
             borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black26,
-                blurRadius: 10,
-                offset: Offset(0, 4),
-              ),
-            ],
+            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 4))],
           ),
-          padding: EdgeInsets.all(30),
+          padding: const EdgeInsets.all(30),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircularProgressIndicator(
+              const CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation(Color(0xFF9C27B0)),
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               Text(
-                'Préparation du paiement FeexPay...',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Color(0xFF9C27B0),
-                  fontWeight: FontWeight.bold,
-                ),
+                t.depositPreparingPayment,
+                style: const TextStyle(fontSize: 16, color: Color(0xFF9C27B0), fontWeight: FontWeight.bold),
               ),
-              SizedBox(height: 10),
-              Text(
-                'Veuillez patienter',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
-              ),
+              const SizedBox(height: 10),
+              Text(t.depositPleaseWait, style: TextStyle(fontSize: 12, color: colors.textSecondary)),
             ],
           ),
         ),
@@ -562,12 +781,10 @@ class _DepositScreenState extends State<DepositScreen> {
     );
 
     try {
-      final functions = FirebaseFunctions.instance;
-      final callable = functions.httpsCallable('initiateAfrolookFeexpayPayment');
-
+      final callable = FirebaseFunctions.instance.httpsCallable('initiateAfrolookFeexpayPayment');
       final result = await callable({
         'amount': totalAmount,
-        'userId': userTransactionsProvider.loginUserData.id,
+        'userId': userProvider.loginUserData.id,
         'type': 'afrolook_deposit',
       });
 
@@ -579,25 +796,23 @@ class _DepositScreenState extends State<DepositScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => FeexPayPaymentScreen(
-            token: params['token'],
-            shopId: params['id'],
-            amount: params['amount'],
-            redirectUrl: params['redirecturl'],
-            transKey: params['trans_key'],
+          builder: (_) => FeexPayPaymentScreen(
+            token: '',
+            shopId: '',
+            amount: params['amount'] as int,
+            redirectUrl: (params['redirecturl'] as String?) ?? '',
+            transKey: (params['trans_key'] as String?) ?? '',
             callbackInfo: callbackInfoMap,
-            depositNumber: params['depositNumber'],
+            depositNumber: (params['depositNumber'] as String?) ?? '',
           ),
         ),
       );
-
     } catch (e) {
       Navigator.of(context).pop();
-      print('Erreur FeexPay: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Échec du traitement FeexPay: ${e.toString()}'),
-          backgroundColor: Colors.red,
+          content: Text('Échec FeexPay : ${e.toString()}'),
+          backgroundColor: colors.danger,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -606,20 +821,20 @@ class _DepositScreenState extends State<DepositScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final t = AppLocalizations.of(context);
+
     return Scaffold(
-      backgroundColor: Color(0xFFF9F5EB),
+      backgroundColor: colors.background,
       appBar: AppBar(
         title: Text(
-          'Recharger mon portefeuille Afrolook',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+          t.depositTitle,
+          style: TextStyle(fontWeight: FontWeight.bold, color: colors.onPrimary),
         ),
         centerTitle: true,
-        backgroundColor: Color(0xFFD8A868),
+        backgroundColor: colors.primary,
         elevation: 0,
-        iconTheme: IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: colors.onPrimary),
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -628,85 +843,74 @@ class _DepositScreenState extends State<DepositScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
+                elevation: 2,
+                color: colors.surface,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 child: Padding(
                   padding: const EdgeInsets.all(20.0),
                   child: Column(
                     children: [
-                      Icon(Icons.shopping_bag, color: Color(0xFF5C4A3C), size: 35),
-                      SizedBox(height: 16),
+                      Icon(Icons.info_outline, color: colors.primary, size: 35),
+                      const SizedBox(height: 16),
                       Text(
-                        'Informations importantes',
+                        t.depositImportantInfo,
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF5C4A3C),
+                          color: colors.textPrimary,
                         ),
                       ),
-                      SizedBox(height: 15),
-                      _buildInfoRow('• Montant minimum:', '200 FCFA', Color(0xFF5C4A3C)),
-                      SizedBox(height: 8),
-                      _buildInfoRow('• Frais de service:', '5,6% inclus', Color(0xFF5C4A3C)),
-                      SizedBox(height: 8),
-                      _buildInfoRow('• Support Afrolook:', 'Contact sous 24h', Color(0xFF5C4A3C)),
+                      const SizedBox(height: 15),
+                      _buildInfoRow(t.depositMinAmount, '200 FCFA', colors),
+                      const SizedBox(height: 8),
+                      _buildInfoRow(t.depositFeesMM, '5,6%', colors),
+                      const SizedBox(height: 8),
+                      _buildInfoRow(t.depositFeesCard, '7%', colors),
+                      const SizedBox(height: 8),
+                      _buildInfoRow(t.depositSupportLabel, t.depositSupportVal, colors),
                     ],
                   ),
                 ),
               ),
-              SizedBox(height: 20),
-
+              const SizedBox(height: 20),
               Container(
-                padding: EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Color(0xFFFFEDD5),
+                  color: colors.warning.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Color(0xFFD8A868)),
+                  border: Border.all(color: colors.warning.withOpacity(0.3)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.info_outline, color: Color(0xFFD8A868)),
-                        SizedBox(width: 8),
+                        Icon(Icons.info_outline, color: colors.warning),
+                        const SizedBox(width: 8),
                         Text(
-                          'Information importante',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF5C4A3C),
-                          ),
+                          t.depositImportantInfo,
+                          style: TextStyle(fontWeight: FontWeight.bold, color: colors.textPrimary),
                         ),
                       ],
                     ),
-                    SizedBox(height: 10),
-                    Text(
-                      'Choisissez CinetPay pour toute l\'Afrique, PayGate pour le Togo, ou FeexPay pour plusieurs pays.',
-                      style: TextStyle(color: Colors.grey[800]),
-                    ),
-                    SizedBox(height: 10),
-                    Text(
-                      'En cas de problème, contactez immédiatement le support Afrolook dans les 24h suivant la transaction.',
-                      style: TextStyle(color: Colors.grey[800]),
-                    ),
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
+                    Text(t.depositNoticeText, style: TextStyle(color: colors.textSecondary)),
+                    const SizedBox(height: 8),
+                    Text(t.depositNoticeProblem, style: TextStyle(color: colors.textSecondary)),
+                    const SizedBox(height: 10),
                     Row(
                       children: [
                         Checkbox(
                           value: _termsAccepted,
                           onChanged: (value) {
-                            setState(() {
-                              _termsAccepted = value ?? false;
-                            });
+                            setState(() => _termsAccepted = value ?? false);
                           },
-                          activeColor: Color(0xFFD8A868),
+                          activeColor: colors.primary,
                         ),
                         Expanded(
                           child: Text(
-                            'Je comprends et accepte les conditions de recharge',
-                            style: TextStyle(fontSize: 14),
+                            t.depositTermsText,
+                            style: TextStyle(fontSize: 14, color: colors.textPrimary),
                           ),
                         ),
                       ],
@@ -714,77 +918,72 @@ class _DepositScreenState extends State<DepositScreen> {
                   ],
                 ),
               ),
-              SizedBox(height: 20),
-
+              const SizedBox(height: 20),
               Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      'Montant à recharger',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF5C4A3C),
-                      ),
+                      t.depositAmountLabel,
+                      style: TextStyle(fontWeight: FontWeight.bold, color: colors.textPrimary),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     TextFormField(
                       controller: amountController,
                       keyboardType: TextInputType.number,
+                      style: TextStyle(color: colors.textPrimary),
                       decoration: InputDecoration(
-                        hintText: '200 FCFA minimum',
+                        hintText: t.depositAmountHint,
+                        hintStyle: TextStyle(color: colors.textSecondary),
                         suffixText: 'FCFA',
+                        suffixStyle: TextStyle(color: colors.textSecondary),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: Color(0xFFD8A868)),
+                          borderSide: BorderSide(color: colors.border),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: Color(0xFFD8A868)),
+                          borderSide: BorderSide(color: colors.border),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: Color(0xFF5C4A3C)),
+                          borderSide: BorderSide(color: colors.primary),
                         ),
                         filled: true,
-                        fillColor: Colors.white,
-                        contentPadding: EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 14),
+                        fillColor: colors.surfaceVariant,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       ),
                       validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Veuillez entrer un montant';
-                        }
+                        if (value == null || value.isEmpty) return t.depositAmountRequired;
                         final amount = double.tryParse(value) ?? 0;
-                        if (amount < 200) {
-                          return 'Le montant minimum est 200 FCFA';
-                        }
+                        if (amount < 200) return t.depositAmountMin;
                         return null;
                       },
                     ),
-                    SizedBox(height: 24),
+                    const SizedBox(height: 24),
                     ElevatedButton(
                       onPressed: _termsAccepted ? _showPaymentMethodSelection : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _termsAccepted ? Color(0xFFD8A868) : Colors.grey,
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        elevation: 3,
+                        backgroundColor: _termsAccepted ? colors.primary : colors.border,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        elevation: _termsAccepted ? 3 : 0,
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.payment, color: Colors.white),
-                          SizedBox(width: 10),
+                          Icon(
+                            Icons.payment,
+                            color: _termsAccepted ? colors.onPrimary : colors.textSecondary,
+                          ),
+                          const SizedBox(width: 10),
                           Text(
-                            'CHOISIR LE MODE DE PAIEMENT',
+                            t.depositChooseMethod,
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: _termsAccepted ? colors.onPrimary : colors.textSecondary,
                             ),
                           ),
                         ],
@@ -793,20 +992,17 @@ class _DepositScreenState extends State<DepositScreen> {
                   ],
                 ),
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               Container(
-                padding: EdgeInsets.all(12),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Color(0xFFE8F5E8),
+                  color: colors.primary.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Color(0xFF2E7D32).withOpacity(0.3)),
+                  border: Border.all(color: colors.primary.withOpacity(0.2)),
                 ),
                 child: Text(
-                  'Vous serez redirigé vers une plateforme de paiement sécurisée pour finaliser votre recharge.',
-                  style: TextStyle(
-                    color: Color(0xFF2E7D32),
-                    fontSize: 12,
-                  ),
+                  t.depositSecureRedirect,
+                  style: TextStyle(color: colors.primary, fontSize: 12),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -817,13 +1013,13 @@ class _DepositScreenState extends State<DepositScreen> {
     );
   }
 
-  Widget _buildInfoRow(String label, String value, Color color) {
+  Widget _buildInfoRow(String label, String value, AppColors colors) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(fontWeight: FontWeight.bold, color: color)),
-        SizedBox(width: 5),
-        Expanded(child: Text(value, style: TextStyle(color: Colors.grey[800]))),
+        Text(label, style: TextStyle(fontWeight: FontWeight.bold, color: colors.textPrimary)),
+        const SizedBox(width: 5),
+        Expanded(child: Text(value, style: TextStyle(color: colors.textSecondary))),
       ],
     );
   }
@@ -850,8 +1046,11 @@ class _PaymentMethodCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+
     return Card(
-      elevation: 3,
+      elevation: 2,
+      color: colors.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
         side: BorderSide(color: color.withOpacity(0.2), width: 1),
@@ -859,8 +1058,8 @@ class _PaymentMethodCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(15),
-        child: Container(
-          padding: EdgeInsets.all(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
           child: Row(
             children: [
               Container(
@@ -872,7 +1071,7 @@ class _PaymentMethodCard extends StatelessWidget {
                 ),
                 child: Icon(icon, color: iconColor, size: 24),
               ),
-              SizedBox(width: 15),
+              const SizedBox(width: 15),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -882,34 +1081,23 @@ class _PaymentMethodCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF5C4A3C),
+                        color: colors.textPrimary,
                       ),
                     ),
-                    SizedBox(height: 2),
+                    const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: color,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w600),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
                       description,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 11, color: colors.textSecondary),
                     ),
                   ],
                 ),
               ),
-              Icon(
-                Icons.arrow_forward_ios,
-                size: 16,
-                color: Colors.grey[400],
-              ),
+              Icon(Icons.arrow_forward_ios, size: 16, color: colors.textSecondary),
             ],
           ),
         ),
@@ -917,801 +1105,3 @@ class _PaymentMethodCard extends StatelessWidget {
     );
   }
 }
-
-
-
-// import 'dart:convert';
-//
-// import 'package:afrotok/providers/authProvider.dart';
-// import 'package:cloud_functions/cloud_functions.dart';
-// import 'package:flutter/material.dart';
-// import 'package:get/get.dart';
-// import 'package:provider/provider.dart';
-// import 'package:url_launcher/url_launcher.dart';
-// import 'package:http/http.dart' as http;
-//
-// import 'package:flutter/foundation.dart' show kIsWeb;
-//
-// class DepositScreen extends StatefulWidget {
-//   final double? defaultAmount;
-//
-//   const DepositScreen({Key? key, this.defaultAmount}) : super(key: key);
-//
-//   @override
-//   _DepositScreenState createState() => _DepositScreenState();
-// }
-//
-// class _DepositScreenState extends State<DepositScreen> {
-//   final amountController = TextEditingController();
-//   final _formKey = GlobalKey<FormState>();
-//   bool _termsAccepted = false;
-//   String? _selectedPaymentMethod;
-//
-//   @override
-//   void initState() {
-//     super.initState();
-//     if (widget.defaultAmount != null) {
-//       amountController.text = widget.defaultAmount!.toStringAsFixed(0);
-//     }
-//   }
-//
-//   void _showPaymentMethodSelection() {
-//     if (!_formKey.currentState!.validate()) return;
-//
-//     showModalBottomSheet(
-//       context: context,
-//       backgroundColor: Colors.transparent,
-//       isScrollControlled: true,
-//       builder: (context) => Container(
-//         height: MediaQuery.of(context).size.height * 0.6,
-//         decoration: BoxDecoration(
-//           color: Color(0xFFF9F5EB),
-//           borderRadius: BorderRadius.only(
-//             topLeft: Radius.circular(25),
-//             topRight: Radius.circular(25),
-//           ),
-//         ),
-//         child: Column(
-//           children: [
-//             // Header
-//             Container(
-//               padding: EdgeInsets.all(20),
-//               decoration: BoxDecoration(
-//                 color: Color(0xFFD8A868),
-//                 borderRadius: BorderRadius.only(
-//                   topLeft: Radius.circular(25),
-//                   topRight: Radius.circular(25),
-//                 ),
-//               ),
-//               child: Row(
-//                 children: [
-//                   Icon(Icons.payment, color: Colors.white, size: 28),
-//                   SizedBox(width: 12),
-//                   Text(
-//                     'Choisissez votre méthode de paiement',
-//                     style: TextStyle(
-//                       fontSize: 18,
-//                       fontWeight: FontWeight.bold,
-//                       color: Colors.white,
-//                     ),
-//                   ),
-//                 ],
-//               ),
-//             ),
-//             SizedBox(height: 20),
-//
-//             Expanded(
-//               child: Padding(
-//                 padding: const EdgeInsets.symmetric(horizontal: 20),
-//                 child: Column(
-//                   children: [
-//                     // Option CinetPay
-//                     _PaymentMethodCard(
-//                       title: 'CinetPay',
-//                       subtitle: 'Toute l\'Afrique',
-//                       description: 'Mobile Money • Carte Bancaire • Orange Money',
-//                       icon: Icons.public,
-//                       color: Color(0xFF2E7D32),
-//                       iconColor: Colors.white,
-//                       onTap: () {
-//                         Navigator.pop(context);
-//                         _selectedPaymentMethod = 'cinetpay';
-//                         _processCinetPayPayment();
-//                       },
-//                     ),
-//                     SizedBox(height: 15),
-//
-//                     // Option PayGate
-//                     _PaymentMethodCard(
-//                       title: 'PayGate',
-//                       subtitle: 'Togo seulement',
-//                       description: 'FLOOZ • T-Money • Carte Bancaire',
-//                       icon: Icons.phone_android,
-//                       color: Color(0xFF1976D2),
-//                       iconColor: Colors.white,
-//                       onTap: () {
-//                         Navigator.pop(context);
-//                         _showPayGatePhoneDialog();
-//                       },
-//                     ),
-//
-//                     SizedBox(height: 20),
-//                     Divider(color: Colors.grey[400]),
-//                     SizedBox(height: 10),
-//
-//                     Text(
-//                       'Sélectionnez la méthode adaptée à votre pays',
-//                       style: TextStyle(
-//                         color: Color(0xFF5C4A3C),
-//                         fontSize: 12,
-//                       ),
-//                       textAlign: TextAlign.center,
-//                     ),
-//                   ],
-//                 ),
-//               ),
-//             ),
-//
-//             Padding(
-//               padding: const EdgeInsets.all(20),
-//               child: TextButton(
-//                 onPressed: () => Navigator.pop(context),
-//                 style: TextButton.styleFrom(
-//                   foregroundColor: Color(0xFF5C4A3C),
-//                   padding: EdgeInsets.symmetric(horizontal: 40, vertical: 12),
-//                 ),
-//                 child: Text('ANNULER', style: TextStyle(fontWeight: FontWeight.bold)),
-//               ),
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-//
-//   void _showPayGatePhoneDialog() {
-//     String selectedNetwork = 'FLOOZ';
-//     final phoneController = TextEditingController();
-//
-//     showDialog(
-//       context: context,
-//       builder: (context) => AlertDialog(
-//         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-//         backgroundColor: Color(0xFFF9F5EB),
-//         title: Row(
-//           children: [
-//             Icon(Icons.phone_android, color: Color(0xFF1976D2)),
-//             SizedBox(width: 10),
-//             Text(
-//               'Paiement PayGate - Togo',
-//               style: TextStyle(
-//                 color: Color(0xFF5C4A3C),
-//                 fontWeight: FontWeight.bold,
-//               ),
-//             ),
-//           ],
-//         ),
-//         content: Column(
-//           mainAxisSize: MainAxisSize.min,
-//           children: [
-//             Text(
-//               'Veuillez saisir vos informations de paiement Togo:',
-//               style: TextStyle(color: Color(0xFF5C4A3C)),
-//             ),
-//             SizedBox(height: 20),
-//             TextFormField(
-//               controller: phoneController,
-//               keyboardType: TextInputType.phone,
-//               decoration: InputDecoration(
-//                 labelText: 'Numéro de téléphone',
-//                 prefixText: '+228 ',
-//                 border: OutlineInputBorder(
-//                   borderRadius: BorderRadius.circular(12),
-//                   borderSide: BorderSide(color: Color(0xFFD8A868)),
-//                 ),
-//                 enabledBorder: OutlineInputBorder(
-//                   borderRadius: BorderRadius.circular(12),
-//                   borderSide: BorderSide(color: Color(0xFFD8A868)),
-//                 ),
-//                 focusedBorder: OutlineInputBorder(
-//                   borderRadius: BorderRadius.circular(12),
-//                   borderSide: BorderSide(color: Color(0xFF1976D2)),
-//                 ),
-//                 prefixIcon: Icon(Icons.phone, color: Color(0xFF5C4A3C)),
-//                 contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-//                 filled: true,
-//                 fillColor: Colors.white,
-//               ),
-//             ),
-//             SizedBox(height: 15),
-//             DropdownButtonFormField<String>(
-//               value: selectedNetwork,
-//               items: [
-//                 DropdownMenuItem(
-//                   value: 'FLOOZ',
-//                   child: Text('FLOOZ (Moov)'),
-//                 ),
-//                 DropdownMenuItem(
-//                   value: 'T-MONEY',
-//                   child: Text('T-Money (Togocel)'),
-//                 ),
-//               ],
-//               onChanged: (value) {
-//                 setState(() {
-//                   selectedNetwork = value!;
-//                 });
-//               },
-//               decoration: InputDecoration(
-//                 labelText: 'Réseau mobile',
-//                 border: OutlineInputBorder(
-//                   borderRadius: BorderRadius.circular(12),
-//                   borderSide: BorderSide(color: Color(0xFFD8A868)),
-//                 ),
-//                 enabledBorder: OutlineInputBorder(
-//                   borderRadius: BorderRadius.circular(12),
-//                   borderSide: BorderSide(color: Color(0xFFD8A868)),
-//                 ),
-//                 focusedBorder: OutlineInputBorder(
-//                   borderRadius: BorderRadius.circular(12),
-//                   borderSide: BorderSide(color: Color(0xFF1976D2)),
-//                 ),
-//                 prefixIcon: Icon(Icons.network_cell, color: Color(0xFF5C4A3C)),
-//                 contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-//                 filled: true,
-//                 fillColor: Colors.white,
-//               ),
-//             ),
-//           ],
-//         ),
-//         actions: [
-//           TextButton(
-//             onPressed: () => Navigator.pop(context),
-//             child: Text(
-//               'Annuler',
-//               style: TextStyle(color: Color(0xFF5C4A3C)),
-//             ),
-//           ),
-//           ElevatedButton(
-//             onPressed: () {
-//               if (phoneController.text.isEmpty) {
-//                 ScaffoldMessenger.of(context).showSnackBar(
-//                   SnackBar(
-//                     content: Text('Veuillez saisir votre numéro de téléphone'),
-//                     backgroundColor: Colors.red,
-//                   ),
-//                 );
-//                 return;
-//               }
-//               Navigator.pop(context);
-//               _selectedPaymentMethod = 'paygate';
-//               _processPayGatePayment(phoneController.text, selectedNetwork);
-//             },
-//             style: ElevatedButton.styleFrom(
-//               backgroundColor: Color(0xFF1976D2),
-//               padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-//               shape: RoundedRectangleBorder(
-//                 borderRadius: BorderRadius.circular(12),
-//               ),
-//             ),
-//             child: Text(
-//               'Confirmer',
-//               style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-//
-//   Future<void> _processCinetPayPayment() async {
-//     final userTransactionsProvider = Provider.of<UserAuthProvider>(context, listen: false);
-//
-//     showDialog(
-//       context: context,
-//       barrierDismissible: false,
-//       builder: (_) => Center(
-//         child: Container(
-//           decoration: BoxDecoration(
-//             color: Colors.white,
-//             borderRadius: BorderRadius.circular(16),
-//             boxShadow: [
-//               BoxShadow(
-//                 color: Colors.black26,
-//                 blurRadius: 10,
-//                 offset: Offset(0, 4),
-//               ),
-//             ],
-//           ),
-//           padding: EdgeInsets.all(30),
-//           child: Column(
-//             mainAxisSize: MainAxisSize.min,
-//             children: [
-//               CircularProgressIndicator(
-//                 valueColor: AlwaysStoppedAnimation(Color(0xFF2E7D32)),
-//               ),
-//               SizedBox(height: 20),
-//               Text(
-//                 'Connexion à CinetPay...',
-//                 style: TextStyle(
-//                   fontSize: 16,
-//                   color: Color(0xFF2E7D32),
-//                   fontWeight: FontWeight.bold,
-//                 ),
-//               ),
-//               SizedBox(height: 10),
-//               Text(
-//                 'Redirection vers la plateforme sécurisée',
-//                 style: TextStyle(
-//                   fontSize: 12,
-//                   color: Colors.grey[600],
-//                 ),
-//                 textAlign: TextAlign.center,
-//               ),
-//             ],
-//           ),
-//         ),
-//       ),
-//     );
-//
-//     try {
-//       final amount = double.tryParse(amountController.text) ?? 0;
-//       final response = await userTransactionsProvider.initiateDeposit(
-//         amount,
-//         userTransactionsProvider.loginUserData,
-//       );
-//
-//       final String paymentUrl = (response['payment_url'] ?? '') as String;
-//
-//       Navigator.of(context).pop(); // Fermer le loader
-//
-//       if (await canLaunchUrl(Uri.parse(paymentUrl))) {
-//         await launchUrl(
-//           Uri.parse(paymentUrl),
-//           mode: LaunchMode.externalApplication,
-//         );
-//         Navigator.pop(context); // Fermer la page de dépôt
-//       }
-//     } catch (e) {
-//       Navigator.of(context).pop(); // Fermer le loader
-//
-//       ScaffoldMessenger.of(context).showSnackBar(
-//         SnackBar(
-//           content: Text('Échec du traitement CinetPay: ${e.toString()}'),
-//           backgroundColor: Colors.red,
-//           behavior: SnackBarBehavior.floating,
-//         ),
-//       );
-//     }
-//   }
-//
-//
-//   Future<void> _processPayGatePayment(String phoneNumber, String network) async {
-//     final userTransactionsProvider = Provider.of<UserAuthProvider>(context, listen: false);
-//     final amount = double.tryParse(amountController.text) ?? 0;
-//
-//     showDialog(
-//       context: context,
-//       barrierDismissible: false,
-//       builder: (_) => Center(
-//         child: Container(
-//           decoration: BoxDecoration(
-//             color: Colors.white,
-//             borderRadius: BorderRadius.circular(16),
-//             boxShadow: [
-//               BoxShadow(
-//                 color: Colors.black26,
-//                 blurRadius: 10,
-//                 offset: Offset(0, 4),
-//               ),
-//             ],
-//           ),
-//           padding: EdgeInsets.all(30),
-//           child: Column(
-//             mainAxisSize: MainAxisSize.min,
-//             children: [
-//               CircularProgressIndicator(
-//                 valueColor: AlwaysStoppedAnimation(Color(0xFF1976D2)),
-//               ),
-//               SizedBox(height: 20),
-//               Text(
-//                 'Connexion à PayGate...',
-//                 style: TextStyle(
-//                   fontSize: 16,
-//                   color: Color(0xFF1976D2),
-//                   fontWeight: FontWeight.bold,
-//                 ),
-//               ),
-//               SizedBox(height: 10),
-//               Text(
-//                 'Initialisation du paiement',
-//                 style: TextStyle(
-//                   fontSize: 12,
-//                   color: Colors.grey[600],
-//                 ),
-//                 textAlign: TextAlign.center,
-//               ),
-//             ],
-//           ),
-//         ),
-//       ),
-//     );
-//
-//     try {
-//       final transactionId = 'pg_${DateTime.now().millisecondsSinceEpoch}';
-//
-//       // ✅ REQUÊTE HTTP DIRECTE VERS L'URL EpargnePlus
-//       final response = await http.post(
-//         Uri.parse('https://initiatepaymentfromafrolook-b6fm6gdlrq-uc.a.run.app'),
-//         headers: {
-//           'Content-Type': 'application/json',
-//         },
-//         body: json.encode({
-//           'data': {
-//             'transactionId': transactionId,
-//             'amount': amount,
-//             'userId': userTransactionsProvider.loginUserData.id,
-//             'type': 'afrolook_deposit',
-//             'phoneNumber': phoneNumber,
-//             'network': network,
-//             'userEmail': userTransactionsProvider.loginUserData.email,
-//             'userName': userTransactionsProvider.loginUserData.nom,
-//           }
-//         }),
-//       );
-//
-//       Navigator.of(context).pop(); // Fermer le loader
-//
-//       if (response.statusCode == 200) {
-//         final result = json.decode(response.body);
-//
-//         if (result['result']?['success'] == true) {
-//           final paymentUrl = result['result']?['payment_url'];
-//
-//           if (kIsWeb) {
-//             // Pour le web
-//             // html.window.open(paymentUrl, '_blank');
-//           } else {
-//             // Pour mobile
-//             if (await canLaunchUrl(Uri.parse(paymentUrl))) {
-//               await launchUrl(
-//                 Uri.parse(paymentUrl),
-//                 mode: LaunchMode.externalApplication,
-//               );
-//             }
-//           }
-//           Navigator.pop(context); // Fermer la page de dépôt
-//         } else {
-//           throw Exception(result['error']?['message'] ?? 'Erreur inconnue');
-//         }
-//       } else {
-//         throw Exception('HTTP ${response.statusCode}: ${response.body}');
-//       }
-//
-//     } catch (e) {
-//       Navigator.of(context).pop(); // Fermer le loader
-//
-//       ScaffoldMessenger.of(context).showSnackBar(
-//         SnackBar(
-//           content: Text('Échec du traitement PayGate: ${e.toString()}'),
-//           backgroundColor: Colors.red,
-//           behavior: SnackBarBehavior.floating,
-//         ),
-//       );
-//     }
-//   }
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       backgroundColor: Color(0xFFF9F5EB),
-//       appBar: AppBar(
-//         title: Text(
-//           'Recharger mon portefeuille Afrolook',
-//           style: TextStyle(
-//             fontWeight: FontWeight.bold,
-//             color: Colors.white,
-//           ),
-//         ),
-//         centerTitle: true,
-//         backgroundColor: Color(0xFFD8A868),
-//         elevation: 0,
-//         iconTheme: IconThemeData(color: Colors.white),
-//       ),
-//       body: SingleChildScrollView(
-//         child: Padding(
-//           padding: const EdgeInsets.all(24.0),
-//           child: Column(
-//             crossAxisAlignment: CrossAxisAlignment.stretch,
-//             children: [
-//               // Card avec informations sur les frais
-//               Card(
-//                 elevation: 4,
-//                 shape: RoundedRectangleBorder(
-//                   borderRadius: BorderRadius.circular(16),
-//                 ),
-//                 child: Padding(
-//                   padding: const EdgeInsets.all(20.0),
-//                   child: Column(
-//                     children: [
-//                       Icon(Icons.shopping_bag, color: Color(0xFF5C4A3C), size: 35),
-//                       SizedBox(height: 16),
-//                       Text(
-//                         'Informations importantes',
-//                         style: TextStyle(
-//                           fontSize: 18,
-//                           fontWeight: FontWeight.bold,
-//                           color: Color(0xFF5C4A3C),
-//                         ),
-//                       ),
-//                       SizedBox(height: 15),
-//                       _buildInfoRow('• Montant minimum:', '200 FCFA', Color(0xFF5C4A3C)),
-//                       SizedBox(height: 8),
-//                       _buildInfoRow('• Frais de service:', '5,6% inclus', Color(0xFF5C4A3C)),
-//                       SizedBox(height: 8),
-//                       _buildInfoRow('• Support Afrolook:', 'Contact sous 24h', Color(0xFF5C4A3C)),
-//                     ],
-//                   ),
-//                 ),
-//               ),
-//               SizedBox(height: 20),
-//
-//               // Avertissement obligatoire
-//               Container(
-//                 padding: EdgeInsets.all(16),
-//                 decoration: BoxDecoration(
-//                   color: Color(0xFFFFEDD5),
-//                   borderRadius: BorderRadius.circular(10),
-//                   border: Border.all(color: Color(0xFFD8A868)),
-//                 ),
-//                 child: Column(
-//                   crossAxisAlignment: CrossAxisAlignment.start,
-//                   children: [
-//                     Row(
-//                       children: [
-//                         Icon(Icons.info_outline, color: Color(0xFFD8A868)),
-//                         SizedBox(width: 8),
-//                         Text(
-//                           'Information importante',
-//                           style: TextStyle(
-//                             fontWeight: FontWeight.bold,
-//                             color: Color(0xFF5C4A3C),
-//                           ),
-//                         ),
-//                       ],
-//                     ),
-//                     SizedBox(height: 10),
-//                     Text(
-//                       'Choisissez CinetPay pour toute l\'Afrique ou PayGate spécifiquement pour le Togo.',
-//                       style: TextStyle(color: Colors.grey[800]),
-//                     ),
-//                     SizedBox(height: 10),
-//                     Text(
-//                       'En cas de problème, contactez immédiatement le support Afrolook dans les 24h suivant la transaction.',
-//                       style: TextStyle(color: Colors.grey[800]),
-//                     ),
-//                     SizedBox(height: 10),
-//                     Row(
-//                       children: [
-//                         Checkbox(
-//                           value: _termsAccepted,
-//                           onChanged: (value) {
-//                             setState(() {
-//                               _termsAccepted = value ?? false;
-//                             });
-//                           },
-//                           activeColor: Color(0xFFD8A868),
-//                         ),
-//                         Expanded(
-//                           child: Text(
-//                             'Je comprends et accepte les conditions de recharge',
-//                             style: TextStyle(fontSize: 14),
-//                           ),
-//                         ),
-//                       ],
-//                     ),
-//                   ],
-//                 ),
-//               ),
-//               SizedBox(height: 20),
-//
-//               // Formulaire de dépôt
-//               Form(
-//                 key: _formKey,
-//                 child: Column(
-//                   crossAxisAlignment: CrossAxisAlignment.stretch,
-//                   children: [
-//                     Text(
-//                       'Montant à recharger',
-//                       style: TextStyle(
-//                         fontWeight: FontWeight.bold,
-//                         color: Color(0xFF5C4A3C),
-//                       ),
-//                     ),
-//                     SizedBox(height: 8),
-//                     TextFormField(
-//                       controller: amountController,
-//                       keyboardType: TextInputType.number,
-//                       decoration: InputDecoration(
-//                         hintText: '200 FCFA minimum',
-//                         suffixText: 'FCFA',
-//                         border: OutlineInputBorder(
-//                           borderRadius: BorderRadius.circular(10),
-//                           borderSide: BorderSide(color: Color(0xFFD8A868)),
-//                         ),
-//                         enabledBorder: OutlineInputBorder(
-//                           borderRadius: BorderRadius.circular(10),
-//                           borderSide: BorderSide(color: Color(0xFFD8A868)),
-//                         ),
-//                         focusedBorder: OutlineInputBorder(
-//                           borderRadius: BorderRadius.circular(10),
-//                           borderSide: BorderSide(color: Color(0xFF5C4A3C)),
-//                         ),
-//                         filled: true,
-//                         fillColor: Colors.white,
-//                         contentPadding: EdgeInsets.symmetric(
-//                             horizontal: 16, vertical: 14),
-//                       ),
-//                       validator: (value) {
-//                         if (value == null || value.isEmpty) {
-//                           return 'Veuillez entrer un montant';
-//                         }
-//                         final amount = double.tryParse(value) ?? 0;
-//                         if (amount < 200) {
-//                           return 'Le montant minimum est 200 FCFA';
-//                         }
-//                         return null;
-//                       },
-//                     ),
-//                     SizedBox(height: 24),
-//                     ElevatedButton(
-//                       onPressed: _termsAccepted ? _showPaymentMethodSelection : null,
-//                       style: ElevatedButton.styleFrom(
-//                         backgroundColor: _termsAccepted ? Color(0xFFD8A868) : Colors.grey,
-//                         padding: EdgeInsets.symmetric(vertical: 16),
-//                         shape: RoundedRectangleBorder(
-//                           borderRadius: BorderRadius.circular(10),
-//                         ),
-//                         elevation: 3,
-//                       ),
-//                       child: Row(
-//                         mainAxisAlignment: MainAxisAlignment.center,
-//                         children: [
-//                           Icon(Icons.payment, color: Colors.white),
-//                           SizedBox(width: 10),
-//                           Text(
-//                             'CHOISIR LE MODE DE PAIEMENT',
-//                             style: TextStyle(
-//                               fontSize: 16,
-//                               fontWeight: FontWeight.bold,
-//                               color: Colors.white,
-//                             ),
-//                           ),
-//                         ],
-//                       ),
-//                     ),
-//                   ],
-//                 ),
-//               ),
-//               SizedBox(height: 20),
-//               Container(
-//                 padding: EdgeInsets.all(12),
-//                 decoration: BoxDecoration(
-//                   color: Color(0xFFE8F5E8),
-//                   borderRadius: BorderRadius.circular(8),
-//                   border: Border.all(color: Color(0xFF2E7D32).withOpacity(0.3)),
-//                 ),
-//                 child: Text(
-//                   'Vous serez redirigé vers une plateforme de paiement sécurisée pour finaliser votre recharge.',
-//                   style: TextStyle(
-//                     color: Color(0xFF2E7D32),
-//                     fontSize: 12,
-//                   ),
-//                   textAlign: TextAlign.center,
-//                 ),
-//               ),
-//             ],
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-//
-//   Widget _buildInfoRow(String label, String value, Color color) {
-//     return Row(
-//       crossAxisAlignment: CrossAxisAlignment.start,
-//       children: [
-//         Text(label, style: TextStyle(fontWeight: FontWeight.bold, color: color)),
-//         SizedBox(width: 5),
-//         Expanded(child: Text(value, style: TextStyle(color: Colors.grey[800]))),
-//       ],
-//     );
-//   }
-// }
-//
-// class _PaymentMethodCard extends StatelessWidget {
-//   final String title;
-//   final String subtitle;
-//   final String description;
-//   final IconData icon;
-//   final Color color;
-//   final Color iconColor;
-//   final VoidCallback onTap;
-//
-//   const _PaymentMethodCard({
-//     required this.title,
-//     required this.subtitle,
-//     required this.description,
-//     required this.icon,
-//     required this.color,
-//     required this.iconColor,
-//     required this.onTap,
-//   });
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return Card(
-//       elevation: 3,
-//       shape: RoundedRectangleBorder(
-//         borderRadius: BorderRadius.circular(15),
-//         side: BorderSide(color: color.withOpacity(0.2), width: 1),
-//       ),
-//       child: InkWell(
-//         onTap: onTap,
-//         borderRadius: BorderRadius.circular(15),
-//         child: Container(
-//           padding: EdgeInsets.all(16),
-//           child: Row(
-//             children: [
-//               Container(
-//                 width: 50,
-//                 height: 50,
-//                 decoration: BoxDecoration(
-//                   color: color,
-//                   borderRadius: BorderRadius.circular(12),
-//                 ),
-//                 child: Icon(icon, color: iconColor, size: 24),
-//               ),
-//               SizedBox(width: 15),
-//               Expanded(
-//                 child: Column(
-//                   crossAxisAlignment: CrossAxisAlignment.start,
-//                   children: [
-//                     Text(
-//                       title,
-//                       style: TextStyle(
-//                         fontSize: 16,
-//                         fontWeight: FontWeight.bold,
-//                         color: Color(0xFF5C4A3C),
-//                       ),
-//                     ),
-//                     SizedBox(height: 2),
-//                     Text(
-//                       subtitle,
-//                       style: TextStyle(
-//                         fontSize: 12,
-//                         color: color,
-//                         fontWeight: FontWeight.w600,
-//                       ),
-//                     ),
-//                     SizedBox(height: 4),
-//                     Text(
-//                       description,
-//                       style: TextStyle(
-//                         fontSize: 11,
-//                         color: Colors.grey[600],
-//                       ),
-//                     ),
-//                   ],
-//                 ),
-//               ),
-//               Icon(
-//                 Icons.arrow_forward_ios,
-//                 size: 16,
-//                 color: Colors.grey[400],
-//               ),
-//             ],
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-// }

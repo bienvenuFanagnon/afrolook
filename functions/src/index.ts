@@ -1,6 +1,6 @@
 import {onCall, HttpsError, onRequest} from "firebase-functions/v2/https";
 export {translatePostDescription} from "./translatePost";
-import {onDocumentCreated} from "firebase-functions/v2/firestore"; // ✅ IMPORT MANQUANT
+import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import {initializeApp} from "firebase-admin/app";
 import {getFirestore, FieldValue} from "firebase-admin/firestore";
 import axios from "axios";
@@ -9,6 +9,8 @@ import { RtcRole, RtcTokenBuilder } from "agora-access-token";
 import * as dotenv from "dotenv";
 import * as nodemailer from 'nodemailer'
 
+// Chargement des variables d'environnement (local dev)
+dotenv.config();
 
 // Initialisation Firebase
 initializeApp();
@@ -41,6 +43,15 @@ function generateDepositNumber(): string {
 interface InitiateAfrolookDepositData {
   amount: number;
   userId: string;
+  paymentType?: "MOBILE_MONEY" | "CARD";
+  customerName?: string;
+  customerSurname?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  customerAddress?: string;
+  customerCity?: string;
+  customerCountry?: string;
+  customerZipCode?: string;
 }
 
 // Interface pour la réponse de l'API CinetPay
@@ -98,8 +109,9 @@ export const initiateAfrolookDeposit = onCall(
       throw new HttpsError("invalid-argument", "Le montant doit être un nombre positif");
     }
 
-    // Calcul des frais (5.6%) et conversion en entier
-    const fees = Math.round(amountInt * 0.056);
+    // Calcul des frais selon le canal : 7% carte bancaire, 5.6% mobile money
+    const feeRate = data.paymentType === "CARD" ? 0.07 : 0.056;
+    const fees = Math.round(amountInt * feeRate);
     const amountWithoutFees = amountInt - fees;
 
     // Créer une transaction en attente
@@ -112,73 +124,77 @@ export const initiateAfrolookDeposit = onCall(
       amount: amountInt,
       amountWithoutFees,
       fees,
+      feeRate,
+      paymentType: data.paymentType || "MOBILE_MONEY",
       status: "pending",
       depositNumber: depositNumber,
       createdAt: FieldValue.serverTimestamp(),
       type: "afrolook_deposit",
     });
 
-    // Configuration CinetPay (à remplacer par vos clés)
-    const apiKey = "102325650865f879a7b10492.83921456";
-    const siteid = "5870078";
-    const notifyUrl = "https://afrolookdepositcallback-jnai5yirmq-uc.a.run.app";
-    const returnUrl = "https://epargneplus-bc22b.web.app/payment-success";
+    // Configuration CinetPay depuis les variables d'environnement
+    const apiKey = process.env.CINETPAY_API_KEY!;
+    const siteid = process.env.CINETPAY_SITE_ID!;
+    const notifyUrl = process.env.CINETPAY_NOTIFY_URL!;
+    const returnUrl = process.env.CINETPAY_RETURN_URL!;
 
     try {
-      // Générer la date/heure actuelle
       const currentPaymentDate = new Date();
       const formattedPaymentDate = formatCinetpayDate(currentPaymentDate);
 
-      // Construire la chaîne de signature
+      // Signature HMAC-SHA256 : doit correspondre exactement aux champs envoyés
       const signatureString = [
+        apiKey,
         siteid,
         transactionId,
         formattedPaymentDate,
         amountInt.toString(),
         "XOF",
-        "SINGLE",
-        "PAYMENT",
-        returnUrl,
-        notifyUrl,
-        userId,
-        "Recharge portefeuille Afrolook",
-        "fr",
-        "V3",
-        "",
-        "",
       ].join("");
 
-      // Générer la signature HMAC SHA256
       const signature = crypto
         .createHmac("sha256", apiKey)
         .update(signatureString)
         .digest("hex");
 
-      // Appel à l'API CinetPay avec typage de la réponse
+      const requestBody = {
+        apikey: apiKey,
+        site_id: siteid,
+        transaction_id: transactionId,
+        amount: amountInt,
+        currency: "XOF",
+        description: "Recharge portefeuille Afrolook",
+        customer_id: userId,
+        customer_name:    data.customerName    || "Client",
+        customer_surname: data.customerSurname || "Afrolook",
+        customer_email:   data.customerEmail   || "",
+        customer_phone_number: data.customerPhone || "",
+        customer_address: data.customerAddress || "N/A",
+        customer_city:    data.customerCity    || "N/A",
+        customer_country: data.customerCountry || "CI",
+        customer_zip_code: data.customerZipCode || "00000",
+        return_url: returnUrl,
+        notify_url: notifyUrl,
+        channels: data.paymentType === "CARD" ? "CREDIT_CARD" : "MOBILE_MONEY",
+        metadata: userId,
+        payment_date: formattedPaymentDate,
+        signature: signature,
+      };
+
+      console.log("📤 Requête CinetPay:", JSON.stringify({
+        ...requestBody,
+        apikey: "***",
+        signature: signature.substring(0, 8) + "...",
+      }));
+
       const response = await axios.post<CinetPayResponse>(
         "https://api-checkout.cinetpay.com/v2/payment",
-        {
-          apikey: apiKey,
-          site_id: siteid,
-          transaction_id: transactionId,
-          amount: amountInt,
-          currency: "XOF",
-          description: "Recharge portefeuille Afrolook",
-          customer_id: userId,
-          return_url: returnUrl,
-          notify_url: notifyUrl,
-          channels: "ALL",
-          metadata: userId,
-          signature: signature,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
+        requestBody,
+        { headers: { "Content-Type": "application/json" } }
       );
 
-      // Accès sécurisé aux données avec vérification de type
+      console.log("✅ Réponse CinetPay:", JSON.stringify(response.data));
+
       if (response.data && response.data.data && response.data.data.payment_url) {
         return {
           payment_url: response.data.data.payment_url,
@@ -186,22 +202,38 @@ export const initiateAfrolookDeposit = onCall(
           deposit_number: depositNumber,
         };
       } else {
-        throw new Error("Réponse de CinetPay invalide: payment_url manquant");
+        throw new Error(
+          `Réponse CinetPay invalide: ${JSON.stringify(response.data)}`
+        );
       }
     } catch (error: unknown) {
-      const err = error as Error;
-      console.error("Erreur CinetPay (initiateAfrolookDeposit):", err);
+      let errorMessage = "Erreur inconnue";
+      let cinetpayResponseData: unknown = null;
 
-      // Mettre à jour le statut de la transaction en attente à échoué
+      if (axios.isAxiosError(error)) {
+        cinetpayResponseData = error.response?.data;
+        errorMessage = `HTTP ${error.response?.status}: ${JSON.stringify(cinetpayResponseData)}`;
+        console.error("❌ Erreur axios CinetPay:", {
+          status: error.response?.status,
+          data: cinetpayResponseData,
+          requestUrl: error.config?.url,
+        });
+      } else {
+        const err = error as Error;
+        errorMessage = err.message;
+        console.error("❌ Erreur CinetPay (non-axios):", err);
+      }
+
       await pendingTransactionRef.update({
         status: "failed",
-        error: err.message,
+        error: errorMessage,
+        cinetpayResponse: cinetpayResponseData ?? null,
       });
 
       throw new HttpsError(
         "internal",
         "Erreur lors de la création du paiement",
-        {message: err.message}
+        { message: errorMessage }
       );
     }
   }
@@ -223,10 +255,34 @@ export const afrolookDepositCallback = onRequest(
       const payload = req.body;
       console.log("Afrolook Deposit Callback reçu:", JSON.stringify(payload));
 
-      // Vérification du statut de paiement
-      const isSuccess = payload.cpm_error_message === "SUCCES" || payload.cpm_result === "00";
       const transactionId = payload.cpm_trans_id;
       const userId = payload.cpm_custom || payload.metadata;
+
+      if (!transactionId) {
+        res.status(400).send("Missing transaction id");
+        return;
+      }
+
+      // Vérification de la transaction auprès de CinetPay (sécurité webhook)
+      let isSuccess = false;
+      try {
+        const verifyResponse = await axios.post(
+          "https://api-checkout.cinetpay.com/v2/payment/check",
+          {
+            apikey: process.env.CINETPAY_API_KEY!,
+            site_id: process.env.CINETPAY_SITE_ID!,
+            transaction_id: transactionId,
+          },
+          { headers: { "Content-Type": "application/json" } }
+        );
+        const verifyData = verifyResponse.data?.data;
+        isSuccess = verifyData?.status === "ACCEPTED" && verifyData?.payment_status === "ACCEPTED";
+        console.log("CinetPay verify:", JSON.stringify(verifyData));
+      } catch (verifyError) {
+        console.error("Erreur vérification CinetPay:", verifyError);
+        // Fallback sur les données du webhook
+        isSuccess = payload.cpm_error_message === "SUCCES" || payload.cpm_result === "00";
+      }
 
       if (!isSuccess) {
         console.log("Paiement échoué - mise à jour du statut seulement");
@@ -356,8 +412,6 @@ export const afrolookDepositCallback = onRequest(
 
 
 // Variables Agora
-dotenv.config();
-
 const appId = process.env.AGORA_APP_ID!;
 const appCertificate = process.env.AGORA_APP_CERTIFICATE!;
 
@@ -424,9 +478,11 @@ export const processAfrolookPaygatePayment = onRequest(
         return;
       }
 
-      // Vérification sécurité (optionnel)
+      // Vérification du secret PayGate
       const authHeader = req.headers.authorization;
-      if (authHeader !== "Bearer your-secret-token") {
+      const expectedSecret = process.env.PAYGATE_WEBHOOK_SECRET;
+      if (!expectedSecret || authHeader !== `Bearer ${expectedSecret}`) {
+        console.error("PayGate webhook: secret invalide");
         res.status(401).json({ success: false, error: "Non autorisé" });
         return;
       }
@@ -1321,8 +1377,8 @@ const emailTransporter = nodemailer.createTransport({
   port: 587,
   secure: false,
   auth: {
-    user: 'epargneplus@epargneplusfinance.com',
-    pass: 'Epargneplus@_4',
+    user: process.env.SMTP_USER!,
+    pass: process.env.SMTP_PASS!,
   },
   tls: {
     servername: 'mail96.lwspanel.com',
@@ -1330,13 +1386,6 @@ const emailTransporter = nodemailer.createTransport({
   },
 });
 
-emailTransporter.verify((error: Error | null, success: boolean) => {
-  if (error) {
-    console.error('❌ Erreur de connexion SMTP:', error.message);
-  } else {
-    console.log('✅ Serveur email Afrolook prêt');
-  }
-});
 
 // URLs Afrolook
 const APP_PLAY_STORE_URL_AFRO = "https://play.google.com/store/apps/details?id=com.afrotok.afrotok&pcampaignid=web_share";
@@ -1670,8 +1719,10 @@ const INACTIVE_USER_EMAIL_TEMPLATE = `
 export const sendInactiveUserReminder = onCall(
   { timeoutSeconds: 60 },
   async (request) => {
-    // 🔥 AUCUNE VÉRIFICATION - Version pour tests
-    
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Authentification requise");
+    }
+
     const { userId, userData } = request.data;
 
     if (!userId || !userData) {
@@ -1766,8 +1817,10 @@ export const sendInactiveUserReminder = onCall(
 export const testAfrolookEmail = onCall(
   { timeoutSeconds: 30 },
   async (request) => {
-    // Pas de restrictions pour les tests
-    
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Authentification requise");
+    }
+
     const testUserData = {
       userId: "test_user_123",
       userName: "Jean Test",
@@ -1917,12 +1970,8 @@ async function getInactiveUsersToNotify(limit: number = 10): Promise<any[]> {
 export const processInactiveUsersReminder = onCall(
   { timeoutSeconds: 120, memory: "512MiB" },
   async (request) => {
-    // Vérification simple que l'appel vient de l'application
-    const auth = request.auth;
-    if (!auth) {
-      console.log("⚠️ Appel non authentifié - suite quand même pour les tests");
-      // Pour la production, décommentez la ligne ci-dessous
-      // throw new HttpsError("unauthenticated", "Authentification requise");
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Authentification requise");
     }
 
     console.log("🚀 Début du traitement des utilisateurs inactifs");
@@ -2702,9 +2751,9 @@ export const testEmail = onCall(async (request) => {
 // FEEXPAY FUNCTIONS FOR AFROLOOK
 // ============================================================
 
-// Configuration FeexPay
-const FEEXPAY_API_KEY_AFROLOOK = "fp_XQEXgPR2vy7FnCwyOLXT70dPEZBaapqSLVG3YIlvJQyphh1kmbCnwCaf7D1IBtdY";
-const FEEXPAY_SHOP_ID_AFROLOOK = "5auOKQWnZnJmnx6";
+// Configuration FeexPay (clés depuis les variables d'environnement)
+const FEEXPAY_API_KEY_AFROLOOK = process.env.FEEXPAY_API_KEY!;
+const FEEXPAY_SHOP_ID_AFROLOOK = process.env.FEEXPAY_SHOP_ID!;
 
 // Configuration des frais FeexPay par opérateur
 const FEEXPAY_FEES_CONFIG_AFROLOOK: Record<string, { payin: number; payout: number; total: number }> = {
@@ -2825,9 +2874,9 @@ export const initiateAfrolookFeexpayPayment = onCall(
       const redirectUrl = "https://afrolooki.web.app/feexpay-callback";
 
       return {
-        token: FEEXPAY_API_KEY_AFROLOOK,
-        id: FEEXPAY_SHOP_ID_AFROLOOK,
         amount: totalAmountToPay,
+        amountWithoutFees: amountWithoutFees,
+        fees: fees,
         redirecturl: redirectUrl,
         trans_key: transKey,
         callback_info: callbackInfo,
@@ -2853,7 +2902,10 @@ export const executeAfrolookFeexpayPayment = onCall(
         throw new HttpsError("unauthenticated", "Authentification requise");
       }
 
-      const { token, shopId, amount, phoneNumber, operatorCode, operatorName, country, callbackInfo } = request.data;
+      const { amount, phoneNumber, operatorCode, operatorName, country, callbackInfo } = request.data;
+      // Clés depuis l'environnement sécurisé uniquement
+      const token = FEEXPAY_API_KEY_AFROLOOK;
+      const shopId = FEEXPAY_SHOP_ID_AFROLOOK;
 
       console.log("=== EXECUTE AFROLOOK FEEXPAY PAYMENT ===");
       console.log("Operator:", operatorName, `(${operatorCode})`);
