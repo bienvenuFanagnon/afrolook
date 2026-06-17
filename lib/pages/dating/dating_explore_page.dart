@@ -44,7 +44,7 @@ class _DatingExplorePageState extends State<DatingExplorePage> {
   DatingProfile? _currentUserProfile;
   String? _subscriptionPlan;
   int _maxVisibleProfiles = 10;
-  bool _useSearchFilter = false;
+  bool _useSearchFilter = true;
 
   /// Identifiants des profils déjà likés ou matchés par l'utilisateur courant.
   /// Tant que `_excludeInteracted` est vrai, ces profils sont écartés en
