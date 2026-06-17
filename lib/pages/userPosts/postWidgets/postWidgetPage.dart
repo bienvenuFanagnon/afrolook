@@ -55,6 +55,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../youTube_video_card.dart';
 import 'audioPostWidget.dart';
+import '../../../services/postService/post_view_service.dart';
 
 
 // Couleurs style AfroTok
@@ -252,6 +253,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         'users_vue_id': FieldValue.arrayUnion([userId]),
       });
 
+      PostViewService.recordAuthorView(widget.post, userId);
       print("✅ Vue enregistrée pour $userId");
 
     } catch (e) {

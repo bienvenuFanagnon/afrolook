@@ -47,6 +47,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
   static int _cachedCurrentIndex = 0;
   static Set<String> _cachedLoadedProfileIds = {};
   static Set<String> _cachedExcludedUserIds = {};
+  static Set<String> _cachedPassedUserIds = {};
   static bool _cachedExcludeInteracted = true;
   static bool _cachedFiltersRelaxed = false;
   static bool _cachedHasMore = true;
@@ -60,6 +61,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
     _cachedCurrentIndex = _currentIndex;
     _cachedLoadedProfileIds = Set<String>.from(_loadedProfileIds);
     _cachedExcludedUserIds = Set<String>.from(_excludedUserIds);
+    _cachedPassedUserIds = Set<String>.from(_passedUserIds);
     _cachedExcludeInteracted = _excludeInteracted;
     _cachedFiltersRelaxed = _filtersRelaxed;
     _cachedHasMore = _hasMore;
@@ -79,6 +81,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
       ..clear()
       ..addAll(_cachedLoadedProfileIds);
     _excludedUserIds = Set<String>.from(_cachedExcludedUserIds);
+    _passedUserIds = Set<String>.from(_cachedPassedUserIds);
     _excludeInteracted = _cachedExcludeInteracted;
     _filtersRelaxed = _cachedFiltersRelaxed;
     _hasMore = _cachedHasMore;
@@ -150,6 +153,15 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
   /// priorité afin de mettre en avant les profils non encore explorés.
   Set<String> _excludedUserIds = {};
   bool _excludeInteracted = true;
+
+  /// Identifiants des profils "passés" (swipe gauche) — ces profils ne sont
+  /// JAMAIS réaffichés, ni après un restart de cycle, ni en mode élargissement
+  /// des filtres. Persisté dans Firestore (collection dating_passes).
+  Set<String> _passedUserIds = {};
+
+  /// Vrai quand le deck est véritablement épuisé : même en réincluant les
+  /// likés et en élargissant les filtres, aucun profil n'est disponible.
+  bool _deckExhausted = false;
 
   /// Si le nombre de profils correspondant aux critères de recherche
   /// (tranche d'âge / pays) est trop faible, on élargit automatiquement la
@@ -713,28 +725,35 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
   Future<void> _loadExcludedUserIds() async {
     if (_currentUserId == null) return;
     try {
-      final ids = <String>{};
+      final interactedIds = <String>{};
+      final passedIds = <String>{};
 
       final results = await Future.wait([
         firestore.collection('dating_likes').where('fromUserId', isEqualTo: _currentUserId).get(),
         firestore.collection('dating_connections').where('userId1', isEqualTo: _currentUserId).get(),
         firestore.collection('dating_connections').where('userId2', isEqualTo: _currentUserId).get(),
+        firestore.collection('dating_passes').where('fromUserId', isEqualTo: _currentUserId).get(),
       ]);
 
       for (var doc in results[0].docs) {
         final toId = doc['toUserId'];
-        if (toId is String) ids.add(toId);
+        if (toId is String) interactedIds.add(toId);
       }
       for (var doc in results[1].docs) {
         final id = doc['userId2'];
-        if (id is String) ids.add(id);
+        if (id is String) interactedIds.add(id);
       }
       for (var doc in results[2].docs) {
         final id = doc['userId1'];
-        if (id is String) ids.add(id);
+        if (id is String) interactedIds.add(id);
+      }
+      for (var doc in results[3].docs) {
+        final toId = doc['toUserId'];
+        if (toId is String) passedIds.add(toId);
       }
 
-      _excludedUserIds = ids;
+      _excludedUserIds = interactedIds;
+      _passedUserIds = passedIds;
     } catch (e) {
       print('❌ Erreur chargement profils déjà explorés: $e');
     }
@@ -950,6 +969,12 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
         allProfiles = allProfiles.where((p) => p.pays == recherchePays).toList();
       }
 
+      // Les profils "passés" (swipe gauche) ne sont JAMAIS réaffichés,
+      // quel que soit l'état du cycle ou l'élargissement des filtres.
+      if (_passedUserIds.isNotEmpty) {
+        allProfiles = allProfiles.where((p) => !_passedUserIds.contains(p.userId)).toList();
+      }
+
       // Mettre en avant les profils non encore explorés (ni likés, ni matchés).
       // Si plus aucun profil inexploré n'est disponible (toute la liste a déjà
       // été explorée), on désactive ce filtre pour recommencer le cycle et
@@ -1098,12 +1123,39 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
   }
 
   /// Le deck local est épuisé (l'utilisateur a swipé tous les profils
-  /// chargés) : relance une recherche complète en réincluant les profils déjà
-  /// explorés (`_excludeInteracted = false`) et en repartant du début de la
-  /// collection, pour éviter de tourner en boucle sur un tout petit
-  /// sous-ensemble "non explorés".
+  /// chargés) : relance une recherche complète pour trouver de nouveaux profils.
+  /// Les profils "passés" (swipe gauche) ne sont JAMAIS réaffichés.
+  /// Si vraiment aucun profil n'est trouvable, affiche l'écran "Tu as tout vu !".
   Future<void> _restartDiscoveryCycle() async {
     if (_isLoading) return;
+
+    // Étape 1 : on tente d'abord en excluant les likés + matchés (tout frais)
+    _excludeInteracted = true;
+    _hasMore = true;
+    _lastDocument = null;
+    _reloadAttempts = 0;
+    _loadedProfileIds.clear();
+    await _loadProfiles();
+
+    if (_profiles.isNotEmpty) {
+      // Des profils frais trouvés → on peut élargir silencieusement si peu
+      if (!_filtersRelaxed && _profiles.length <= 6 && mounted) {
+        _filtersRelaxed = true;
+        _hasMore = true;
+        _lastDocument = null;
+        _loadedProfileIds.clear();
+        await _loadProfiles();
+        if (mounted) {
+          final t = AppLocalizations.of(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(t.datingExpandedSearchCriteria)),
+          );
+        }
+      }
+      return;
+    }
+
+    // Étape 2 : aucun profil inexploré → réinclure les likés/matchés
     _excludeInteracted = false;
     _hasMore = true;
     _lastDocument = null;
@@ -1111,23 +1163,36 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
     _loadedProfileIds.clear();
     await _loadProfiles();
 
-    // Si même en réincluant les profils déjà explorés on retombe sur une
-    // poignée de profils (ex: l'âge/le pays recherchés sont trop restrictifs
-    // par rapport au nombre d'utilisateurs disponibles), on élargit
-    // automatiquement la recherche pour éviter de boucler indéfiniment sur
-    // le même petit groupe.
-    if (!_filtersRelaxed && _profiles.length <= 6 && mounted) {
+    if (_profiles.isNotEmpty) {
+      if (!_filtersRelaxed && _profiles.length <= 6 && mounted) {
+        _filtersRelaxed = true;
+        _hasMore = true;
+        _lastDocument = null;
+        _loadedProfileIds.clear();
+        await _loadProfiles();
+        if (mounted) {
+          final t = AppLocalizations.of(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(t.datingExpandedSearchCriteria)),
+          );
+        }
+      }
+      return;
+    }
+
+    // Étape 3 : toujours vide → élargir les filtres et retenter
+    if (!_filtersRelaxed) {
       _filtersRelaxed = true;
       _hasMore = true;
       _lastDocument = null;
+      _reloadAttempts = 0;
       _loadedProfileIds.clear();
       await _loadProfiles();
-      if (mounted) {
-        final t = AppLocalizations.of(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(t.datingExpandedSearchCriteria)),
-        );
-      }
+    }
+
+    // Étape 4 : deck vraiment épuisé
+    if (_profiles.isEmpty && mounted) {
+      setState(() => _deckExhausted = true);
     }
   }
 
@@ -1656,10 +1721,29 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
     if (_isSwiping || _currentIndex >= _profiles.length) return false;
     if (!_canSwipe()) return false;
     _isSwiping = true;
+    final profile = _profiles[_currentIndex];
     _lastSwipeType = 'pass';
     _consumeSwipe();
+    _passProfile(profile.userId); // persister le "pass" dans Firestore
     Future.delayed(const Duration(milliseconds: 300), () => _isSwiping = false);
     return true;
+  }
+
+  /// Sauvegarde un "pass" dans Firestore et l'ajoute immédiatement au set
+  /// local `_passedUserIds` pour que le profil soit exclu dès maintenant.
+  Future<void> _passProfile(String profileUserId) async {
+    if (_currentUserId == null || profileUserId.isEmpty) return;
+    _passedUserIds.add(profileUserId); // exclusion immédiate en mémoire
+    _cachedPassedUserIds.add(profileUserId); // mise à jour du cache statique
+    try {
+      await firestore.collection('dating_passes').add({
+        'fromUserId': _currentUserId,
+        'toUserId': profileUserId,
+        'createdAt': DateTime.now().millisecondsSinceEpoch,
+      });
+    } catch (e) {
+      print('⚠️ _passProfile error: $e');
+    }
   }
 
   /// Retourne `true` si le like a bien été pris en compte — l'appelant
@@ -2884,6 +2968,53 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
                   const SizedBox(height: 8),
                   Text(t.datingPleaseWait, style: TextStyle(color: AppColors.of(context).textSecondary)),
                 ],
+              ),
+            )
+          else if (_deckExhausted)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.celebration, size: 80, color: Colors.amber),
+                    const SizedBox(height: 16),
+                    Text(
+                      t.datingDeckExhaustedTitle,
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.of(context).textPrimary),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      t.datingDeckExhaustedSubtitle,
+                      style: TextStyle(color: AppColors.of(context).textSecondary, height: 1.5),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 28),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.refresh),
+                      label: Text(t.datingRefresh),
+                      onPressed: () async {
+                        if (!mounted) return;
+                        setState(() {
+                          _deckExhausted = false;
+                          _excludeInteracted = false; // réinclure les likés
+                          _filtersRelaxed = false;
+                          _hasMore = true;
+                          _lastDocument = null;
+                          _profiles = [];
+                          _currentIndex = 0;
+                        });
+                        await _loadProfiles();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             )
           else if (_profiles.isEmpty || _currentIndex >= _profiles.length)

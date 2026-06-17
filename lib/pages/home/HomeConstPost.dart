@@ -53,6 +53,7 @@ import 'dart:typed_data';
 import '../userPosts/youTube_video_card.dart';
 import '../userPosts/video_preload_manager.dart';
 import 'feed_cache_service.dart';
+import '../../services/postService/post_view_service.dart';
 import '../../theme/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 import '../../theme/theme_provider.dart';
@@ -283,7 +284,18 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     final DateTime endDate = DateTime(startDate.year, startDate.month + 1, 1);
 
     final int startMicros = startDate.microsecondsSinceEpoch;
-    final int endMicros = endDate.microsecondsSinceEpoch;
+
+    // Borne supérieure : jamais les 2 derniers jours (évite tout chevauchement
+    // avec le feed principal qui charge les posts les plus récents).
+    final int twoDaysAgoMicros = DateTime.now()
+        .subtract(const Duration(days: 2))
+        .microsecondsSinceEpoch;
+    final int safeEndMicros =
+        endDate.microsecondsSinceEpoch < twoDaysAgoMicros
+            ? endDate.microsecondsSinceEpoch
+            : twoDaysAgoMicros;
+
+    if (safeEndMicros <= startMicros) return [];
 
     print("📜 Chargement anciens posts entre $startDate et $endDate");
 
@@ -298,7 +310,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
     query = query
         .where("created_at", isGreaterThanOrEqualTo: startMicros)
-        .where("created_at", isLessThan: endMicros)
+        .where("created_at", isLessThan: safeEndMicros)
         .orderBy("created_at")
         .limit(30); // on prend large pour filtrer ensuite
 
@@ -636,31 +648,23 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     // `_loadInitialPosts()` remplacera/complètera ces posts dès que la
     // réponse réseau arrive, sans repasser par un état "vide".
     _resetPagination(clearPosts: !hasCachedPosts);
-    _startOldPostsLoading();
 
     if (hasCachedPosts) {
-      // 🔥 Affichage déjà assuré par le cache : on lance le réseau en
-      // arrière-plan SANS bloquer le premier paint. `_loadInitialPosts()`
-      // mettra à jour `_posts` (et désactivera le skeleton si besoin) une
-      // fois la réponse reçue.
+      // Cache présent : réseau en arrière-plan, pas de skeleton.
+      // _startOldPostsLoading démarre après pour que _loadedPostIds
+      // soit peuplé par le cache avant la première requête old posts.
       _loadInitialPosts();
-
-      // Démarrer immédiatement le chargement background et les données
-      // additionnelles : elles ne dépendent pas de `_loadInitialPosts()`.
+      _startOldPostsLoading();
       _startBackgroundLoading();
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _loadAllAdditionalDataInParallel();
       });
     } else {
-      // Pas de cache : comportement historique, on attend les premiers
-      // posts avant de démarrer le chargement background et les données
-      // additionnelles.
+      // Pas de cache : on attend les premiers posts avant tout le reste,
+      // garantissant que _loadedPostIds est peuplé avant _startOldPostsLoading.
       await _loadInitialPosts();
-
-      // 4. Démarrer le chargement background
+      _startOldPostsLoading();
       _startBackgroundLoading();
-
-      // 5. Charger les autres données EN PARALLÈLE
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _loadAllAdditionalDataInParallel();
       });
@@ -3432,7 +3436,12 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     // 1. Construction du flux alterné (3 normaux → 2 anciens)
     // ------------------------------------------------------------
     List<Post> normalPosts = List.from(_posts);
-    List<Post> oldBuffer = List.from(_oldPostsCache);
+    // Filet de sécurité : exclure tout post déjà présent dans le feed principal,
+    // même si la race condition entre _startOldPostsLoading et _loadInitialPosts
+    // a permis un chevauchement.
+    List<Post> oldBuffer = _oldPostsCache
+        .where((p) => p.id != null && !_loadedPostIds.contains(p.id))
+        .toList();
 
     List<Post> finalPosts = [];
 
@@ -4000,6 +4009,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         await _checkAndIncrementInteraction(post);
       }
 
+      PostViewService.recordAuthorView(post, currentUserId);
       print('✅ Vue comptée pour post ${post.id} par $currentUserId');
 
 

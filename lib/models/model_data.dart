@@ -872,6 +872,13 @@ class UserData {
   int? totalGiftCoinsSpent;       // Total des pièces dépensées (cadeaux envoyés)
   int? totalGiftCoinsConverted;   // Total des pièces converties en FCFA
 
+  // Monétisation par vues de posts
+  int? totalPostUniqueViews = 0;          // Total cumulé de vues uniques sur ses posts normaux
+  double? postViewsAvailable = 0.0;       // FCFA disponible à encaisser
+  double? postViewsTotalCashed = 0.0;     // Total déjà encaissé (historique)
+  Map<String, int>? postViewsMonthly = {}; // {"2026-06": 1500, ...} — affichage uniquement
+  bool? postViewsMigrationDone = false;   // Flag migration one-time
+
   UserData({
     this.reference,
     this.pseudo,
@@ -963,6 +970,11 @@ class UserData {
     this.totalGiftCoinsPurchased = 0,
     this.totalGiftCoinsSpent = 0,
     this.totalGiftCoinsConverted = 0,
+    this.totalPostUniqueViews = 0,
+    this.postViewsAvailable = 0.0,
+    this.postViewsTotalCashed = 0.0,
+    this.postViewsMonthly,
+    this.postViewsMigrationDone = false,
   }) {
     abonnement ??= AfrolookAbonnement.gratuit();
     liveStats ??= LiveStats.defaultForUser(id ?? '');
@@ -1114,6 +1126,13 @@ class UserData {
     totalGiftCoinsPurchased = json['totalGiftCoinsPurchased'] ?? 0;
     totalGiftCoinsSpent = json['totalGiftCoinsSpent'] ?? 0;
     totalGiftCoinsConverted = json['totalGiftCoinsConverted'] ?? 0;
+
+    totalPostUniqueViews = json['totalPostUniqueViews'] ?? 0;
+    postViewsAvailable = (json['postViewsAvailable'] as num?)?.toDouble() ?? 0.0;
+    postViewsTotalCashed = (json['postViewsTotalCashed'] as num?)?.toDouble() ?? 0.0;
+    postViewsMonthly = (json['postViewsMonthly'] as Map<String, dynamic>?)
+        ?.map((k, v) => MapEntry(k, (v as num).toInt())) ?? {};
+    postViewsMigrationDone = json['postViewsMigrationDone'] ?? false;
   }
 
   Map<String, dynamic> toJson() {

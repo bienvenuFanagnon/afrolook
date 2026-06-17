@@ -51,6 +51,7 @@ import '../../providers/sound_provider.dart';
 import 'feed_cache_service.dart';
 import '../../theme/app_colors.dart';
 import '../../l10n/app_localizations.dart';
+import '../../services/postService/post_view_service.dart';
 
 
 // Constantes de couleur
@@ -3725,6 +3726,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         authProvider.loginUserData.viewedPostIds!.add(post.id!);
       }
 
+      PostViewService.recordAuthorView(post, currentUserId);
       print('✅ Vue comptée pour post ${post.id} par $currentUserId');
 
       // ✅ 2. GESTION DE L'INTERACTION (par session)

@@ -41,6 +41,7 @@ import 'coins/coin_gift_dialog.dart';
 import 'coins/coin_recharge_screen.dart';
 import 'coins/post_gifts_list.dart';
 import 'home/homeWidget.dart';
+import '../services/postService/post_view_service.dart';
 
 // Couleurs Afrolook
 const _afroBlack = Color(0xFF000000);
@@ -562,6 +563,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
         'users_vue_id': FieldValue.arrayUnion([currentUserId]),
         'popularity': FieldValue.increment(2),
       });
+      PostViewService.recordAuthorView(widget.initialPost, currentUserId);
       print('✅ Vue unique enregistrée pour ${widget.initialPost.id}');
     } catch (e) {
       print("Erreur incrémentation vues: $e");
@@ -767,6 +769,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       _currentPost.users_vue_id ??= [];
       if (!_currentPost.users_vue_id!.contains(userId)) _currentPost.users_vue_id!.add(userId);
     });
+    PostViewService.recordAuthorView(_currentPost, userId);
   }
 
   // ==================== INTERACTIONS (inchangées) ====================

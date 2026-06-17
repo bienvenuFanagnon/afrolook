@@ -40,6 +40,7 @@ import '../theme/app_colors.dart';
 import 'userPosts/postWidgets/translatable_description.dart';
 import '../providers/locale_provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import '../services/postService/post_view_service.dart';
 
 const _afroBlack = Color(0xFF000000);
 const _afroGreen = Color(0xFF2ECC71);
@@ -692,6 +693,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         'users_vue_id': FieldValue.arrayUnion([currentUserId]),
         'popularity': FieldValue.increment(2),
       });
+      PostViewService.recordAuthorView(widget.initialPost!, currentUserId);
       print('✅ Vue unique enregistrée pour ${widget.initialPost!.id}');
     } catch (e) {
       print("Erreur incrémentation vues: $e");
@@ -1042,6 +1044,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         post.vues = (post.vues ?? 0) + 1;
         post.users_vue_id = [...?post.users_vue_id, currentUserId];
       });
+      PostViewService.recordAuthorView(post, currentUserId);
     } catch (e) { print('Erreur enregistrement vue: $e'); }
   }
 

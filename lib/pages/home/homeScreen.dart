@@ -48,6 +48,7 @@ import '../../services/utils/abonnement_utils.dart';
 import '../LiveAgora/livesAgora.dart';
 import '../LiveAgora/mesLives.dart';
 import '../Marketing/affiliationMarketing.dart';
+import '../Marketing/affiliation_announce_modal.dart';
 import '../UserServices/listUserService.dart';
 import '../UserServices/presence_en_ligne.dart';
 import '../afroshop/marketPlace/acceuil/home_afroshop.dart';
@@ -634,7 +635,7 @@ class _MyHomePageState extends State<MyHomePage>
                     },
                   ),
 
-                  if(authProvider.loginUserData.role == UserRole.ADM.name)
+                  // if(authProvider.loginUserData.role == UserRole.ADM.name)
                   ListTile(
                     trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
                     leading: Icon(Icons.connect_without_contact, size: 30, color: colors.primary), // Icône jaune
@@ -1484,19 +1485,25 @@ class _MyHomePageState extends State<MyHomePage>
 
 
   Future<void> _showDailyModal() async {
-    const modalKeys = ['remuneration', 'top_dating', 'challenge_month','invite_amis'];
+    // Période de priorité : uniquement affiliation + invite_amis jusqu'au 17 juillet 2026
+    final priorityEnd = DateTime(2026, 7, 17);
+    final inPriorityPeriod = DateTime.now().isBefore(priorityEnd);
+    final modalKeys = inPriorityPeriod
+        ? ['affiliation_marketing', 'remuneration', 'invite_amis']
+        : ['remuneration', 'top_dating', 'challenge_month', 'invite_amis', 'affiliation_marketing'];
     final modalToShow = await DailyModalService.getModalToShowToday(modalKeys);
     if (modalToShow == null) return;
 
     if (modalToShow == 'invite_amis') {
-// Afficher le modal
       showInviteFriendsModal(context, authProvider.loginUserData);
-    }  if (modalToShow == 'remuneration') {
+    } else if (modalToShow == 'remuneration') {
       showRemunerationAnnounceModal(context, authProvider.loginUserData.id!);
     } else if (modalToShow == 'top_dating') {
       showTopDatingAnnounceModal(context);
     } else if (modalToShow == 'challenge_month') {
       showChallengeMonthAnnounceModal(context);
+    } else if (modalToShow == 'affiliation_marketing') {
+      showAffiliationAnnounceModal(context);
     }
     await DailyModalService.markModalShownToday(modalToShow);
   }

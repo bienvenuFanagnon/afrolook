@@ -24,6 +24,7 @@ import '../dating/dating_entry_page.dart';
 import '../info.dart';
 import '../user/mes_gains_post_page.dart';
 import '../../theme/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 class TopFiveModal {
   static Future<void> showTopFiveModal(
@@ -3200,13 +3201,15 @@ if(userProvider.listAllUsers.isNotEmpty){
 
 
 
-// Widget helper pour les stats
 void showRemunerationAnnounceModal(BuildContext context, String userId) {
   showDialog(
     context: context,
     barrierDismissible: false,
     builder: (BuildContext context) {
       final colors = AppColors.of(context);
+      final t      = AppLocalizations.of(context);
+      const gold   = Color(0xFFFFD700);
+
       return WillPopScope(
         onWillPop: () async => false,
         child: Dialog(
@@ -3217,166 +3220,101 @@ void showRemunerationAnnounceModal(BuildContext context, String userId) {
             decoration: BoxDecoration(
               color: colors.surface,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Color(0xFFFFD700).withOpacity(0.3)),
+              border: Border.all(color: gold.withOpacity(0.3)),
               boxShadow: [
-                BoxShadow(
-                  color: Color(0xFFFFD700).withOpacity(0.2),
-                  blurRadius: 15,
-                  offset: const Offset(0, 4),
-                ),
+                BoxShadow(color: gold.withOpacity(0.2), blurRadius: 15, offset: const Offset(0, 4)),
               ],
             ),
             padding: const EdgeInsets.all(20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Icône principale
+                // Badge NOUVEAU
+                Align(
+                  alignment: Alignment.topRight,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Text('NOUVEAU',
+                        style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold,
+                            letterSpacing: 1)),
+                  ),
+                ),
+                const SizedBox(height: 4),
+
+                // Icône
                 Container(
                   padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Color(0xFFFFD700).withOpacity(0.15),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.monetization_on_rounded,
-                    color: Color(0xFFFFD700),
-                    size: 32,
-                  ),
+                  decoration: BoxDecoration(color: gold.withOpacity(0.15), shape: BoxShape.circle),
+                  child: const Icon(Icons.monetization_on_rounded, color: gold, size: 32),
                 ),
                 const SizedBox(height: 12),
 
                 // Titre
-                Text(
-                  '💰 GAGNE DE L\'ARGENT !',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Color(0xFFFFD700),
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                Text(t.remuModalTitle,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: gold, fontSize: 17, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 10),
+
+                // Description
+                Text(t.remuModalDesc,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: colors.textSecondary, fontSize: 12)),
                 const SizedBox(height: 12),
 
-                // Message principal
+                // Badge taux central
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                   decoration: BoxDecoration(
-                    color: colors.surfaceVariant,
-                    borderRadius: BorderRadius.circular(12),
+                    color: gold.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(color: gold.withOpacity(0.4)),
                   ),
-                  child: Column(
-                    children: [
-                      Text(
-                        'Afrolook rémunère tes publications :',
-                        style: TextStyle(
-                          color: colors.textSecondary,
-                          fontSize: 13,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-
-                      // Taux
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _buildRateChip(context, '100', 'VUES'),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            child: Icon(Icons.arrow_forward, color: Color(0xFFFFD700), size: 16),
-                          ),
-                          _buildRateChip(context, '200', 'FCFA'),
-                        ],
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      // Likes & commentaires
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.thumb_up, color: colors.info, size: 14),
-                          const SizedBox(width: 4),
-                          Text('Likes', style: TextStyle(color: colors.info, fontSize: 11)),
-                          const SizedBox(width: 12),
-                          Icon(Icons.comment, color: colors.primary, size: 14),
-                          const SizedBox(width: 4),
-                          Text('Commentaires', style: TextStyle(color: colors.primary, fontSize: 11)),
-                        ],
-                      ),
-                    ],
-                  ),
+                  child: Text(t.remuModalRate,
+                      style: const TextStyle(color: gold, fontSize: 16, fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5)),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
 
-                // Message d'invitation
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: Color(0xFFFFD700).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    '👉 Rends-toi dans la page MONÉTISATIONS pour voir tes gains et les encaisser !',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: colors.textPrimary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
+                // 3 points clés
+                _remuPoint(Icons.check_circle_outline, t.remuModalPoint1, colors),
+                const SizedBox(height: 6),
+                _remuPoint(Icons.check_circle_outline, t.remuModalPoint2, colors),
+                const SizedBox(height: 6),
+                _remuPoint(Icons.check_circle_outline, t.remuModalPoint3, colors),
                 const SizedBox(height: 20),
 
                 // Boutons
                 Row(
                   children: [
-                    // Bouton Plus tard
                     Expanded(
                       child: TextButton(
                         onPressed: () => Navigator.pop(context),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                        child: Text(
-                          'PLUS TARD',
-                          style: TextStyle(
-                            color: colors.textSecondary,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
+                        style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12)),
+                        child: Text(t.remuModalLater,
+                            style: TextStyle(color: colors.textSecondary, fontSize: 13,
+                                fontWeight: FontWeight.w500)),
                       ),
                     ),
                     const SizedBox(width: 12),
-
-                    // Bouton Voir mes gains
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
                           Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => MesGainsPage(userId: userId),
-                            ),
-                          );
+                          Navigator.push(context,
+                              MaterialPageRoute(builder: (_) => MesGainsPage(userId: userId)));
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFFFFD700),
+                          backgroundColor: gold,
                           foregroundColor: Colors.black,
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         ),
-                        child: const Text(
-                          'VOIR MES GAINS',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        child: Text(t.remuModalBtn,
+                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                       ),
                     ),
                   ],
@@ -3390,36 +3328,13 @@ void showRemunerationAnnounceModal(BuildContext context, String userId) {
   );
 }
 
-// Petit helper pour les chips de taux
-Widget _buildRateChip(BuildContext context, String value, String label) {
-  final colors = AppColors.of(context);
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-    decoration: BoxDecoration(
-      color: Color(0xFFFFD700).withOpacity(0.15),
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: Color(0xFFFFD700).withOpacity(0.3)),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          value,
-          style: TextStyle(
-            color: Color(0xFFFFD700),
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: TextStyle(
-            color: colors.textSecondary,
-            fontSize: 10,
-          ),
-        ),
-      ],
-    ),
+Widget _remuPoint(IconData icon, String text, AppColors colors) {
+  return Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Icon(icon, color: colors.primary, size: 16),
+      const SizedBox(width: 8),
+      Expanded(child: Text(text, style: TextStyle(color: colors.textPrimary, fontSize: 12))),
+    ],
   );
 }

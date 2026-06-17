@@ -1,5 +1,5 @@
 # SUIVI REFONTE UI — AFROLOOK V2
-_Dernière mise à jour : 13 juin 2026 (session 13)_
+_Dernière mise à jour : 17 juin 2026 (session 46)_
 
 ---
 
@@ -1489,3 +1489,79 @@ Audit complet du module `lib/pages/dating/` réalisé (15+ pages, service `datin
 **Nouvelles clés i18n (8 langues)** dans `lib/l10n/app_localizations.dart` : `datingLocationWhyTitle`, `datingLocationWhyDesc`, `datingLocationPermissionDeniedTitle`, `datingLocationPermissionDeniedDesc`, `datingOpenSettings`.
 
 **Vérification** : `flutter analyze lib/pages/dating/dating_profile_setup_page.dart lib/l10n/app_localizations.dart` → **0 erreur** (uniquement des infos préexistantes, sans rapport avec ce changement).
+
+---
+
+## Session 46 — Feed home doublons, rémunération vues, marketing affiliation, dating swipe fixes
+
+### 1. Fix doublons feed Home (`HomeConstPost.dart`) ✅ FAIT
+
+**Cause** : race condition entre `_startOldPostsLoading()` (lancé avec `_loadedPostIds` vide) et `_loadInitialPosts()`.
+
+**3 corrections appliquées** :
+- **Fix A (déduplication au rendu)** : `oldBuffer` filtré contre `_loadedPostIds` dans `_buildContent()`.
+- **Fix B (ordre d'exécution)** : `_startOldPostsLoading()` déplacé APRÈS `_loadInitialPosts()` dans les deux branches (avec et sans cache), en utilisant `await` sur `_loadInitialPosts()` dans la branche sans cache.
+- **Fix C (borne supérieure date)** : dans `_fetchOldPostsForWindow()`, la borne supérieure est plafonnée à `now - 2 jours` pour éviter que les anciens posts chevauchent les nouveaux posts chargés ce jour.
+
+### 2. Système de rémunération des vues de posts ✅ FAIT
+
+**Nouveau fichier** `lib/services/postService/post_view_service.dart` :
+- `recordAuthorView(post, viewerUserId)` : incrémente `totalPostUniqueViews`, `postViewsAvailable (+2 FCFA)`, `postViewsMonthly.$month` dans Firestore — uniquement pour `type == POST` et `auteur ≠ viewer`.
+- `migrateUserPostViews(userId)` : migration one-time (flag `postViewsMigrationDone`) qui agrège les vues des 3 derniers mois.
+- `fixMonthlyData(userId)` : recalcule uniquement `postViewsMonthly` sans toucher au solde/total (pour corriger les dates corrompues).
+- `_parseCreatedAt()` : auto-détection µs (> 10¹³) vs ms → `DateTime.fromMicrosecondsSinceEpoch`/`fromMillisecondsSinceEpoch`.
+
+**Correction dates corrompues ("Avril 57708", "Février 577737")** :
+- Cause : `created_at` stocké en µs mais ancienne migration utilisait `fromMillisecondsSinceEpoch` → années ~57 000.
+- Fix : `_parseCreatedAt()` auto-détecte l'unité ; filtrage côté client (pas de filtre date Firestore car valeurs µs/ms incomparables).
+
+**Refonte `lib/pages/user/mes_gains_post_page.dart`** (réécriture complète) :
+- AppColors + AppLocalizations (8 langues), taux `1 vue = 2 FCFA`, seuil encaissement 1 000 FCFA.
+- Section historique mensuel : filtre **strictement les 3 derniers mois valides** (`.take(3)` + filtre par date réelle), ignore les clés avec année > `currentYear + 1`.
+- `_hasCorruptMonthly()` : détecte les données corrompues et appelle `fixMonthlyData` si besoin.
+- Boutons rapides 25%/50%/100% pour montant à encaisser.
+
+### 3. Modal rémunération + homeScreen ✅ FAIT
+
+**`lib/pages/home/listTopModal.dart`** — `showRemunerationAnnounceModal` réécrit :
+- Badge "NOUVEAU" rouge, icône dorée `monetization_on_rounded`.
+- Taux affiché via clé i18n `remuModalRate` ("1 vue = 2 FCFA").
+- 3 points explicatifs (`remuModalPoint1/2/3`), bouton CTA → `MesGainsPage`.
+
+**`lib/pages/home/homeScreen.dart`** :
+- `'remuneration'` ajouté dans la liste prioritaire des modals : `['affiliation_marketing', 'remuneration', 'invite_amis']`.
+- Bug corrigé : `if (modalToShow == 'remuneration')` → `else if` (logique de dispatch cassée sans `else`).
+
+### 4. Pages Marketing affiliation ✅ FAIT
+
+- `lib/pages/Marketing/affiliationMarketing.dart` : refonte UI avec AppColors + AppLocalizations.
+- `lib/pages/Marketing/pageExplicationMarketing.dart` : refonte UI avec AppColors + AppLocalizations.
+- **Nouveau fichier** `lib/pages/Marketing/affiliation_announce_modal.dart` : modal d'annonce programme affiliation.
+- Commission split : **75% parrain affiché dans l'UI** — les 25% de revenus app ne sont JAMAIS mentionnés nulle part (modals, textes, traductions, notifications).
+
+### 5. Dating swipe — fixes boucle infinie + persistance position ✅ FAIT
+
+**Fix A — Passes persistés dans Firestore** (`dating_entry_page.dart`) :
+- Nouveau set `_passedUserIds` (séparé de `_excludedUserIds` qui contient likes/matchs).
+- `_passProfile(userId)` : écrit dans la collection `dating_passes` + ajoute immédiatement à `_passedUserIds`.
+- `_handleSwipeLeft()` : appelle `_passProfile(profile.userId)` à chaque swipe gauche.
+- `_loadExcludedUserIds()` : charge aussi `dating_passes` au démarrage (4e requête dans `Future.wait`).
+- `_loadProfiles()` : filtre `_passedUserIds` **en premier**, avant tout filtre, et ce filtre ne peut jamais être désactivé.
+- Résultat : les profils passés **ne reviennent jamais**, même après un restart de cycle.
+
+**Fix B — Cache statique étendu** :
+- `_cachedPassedUserIds` : cache statique ajouté pour `_passedUserIds`.
+- `_saveDeckCache()` / `_restoreDeckCache()` : sauvegardes/restaurations incluent les passes.
+- `_passProfile()` met à jour `_cachedPassedUserIds` immédiatement (sans attendre la navigation).
+
+**Fix C — Écran "Tu as tout vu !" quand deck épuisé** :
+- `bool _deckExhausted` : flag activé quand aucun profil n'est trouvable.
+- `_restartDiscoveryCycle()` refondé en 4 étapes ordonnées :
+  1. Profils frais (excluant likes + passes) → si trouvé, on continue
+  2. Réinclure les likés/matchés (mais jamais les passes) → si trouvé, on continue
+  3. Élargir les filtres âge/pays → dernière tentative
+  4. Deck vraiment épuisé → `_deckExhausted = true`
+- Nouvel écran "Tu as tout vu ! 🎉" (icône trophée, texte explicatif, bouton "Actualiser").
+- Nouvelles clés i18n : `datingDeckExhaustedTitle`, `datingDeckExhaustedSubtitle` (8 langues).
+
+**Vérification** : `flutter analyze lib/pages/dating/dating_entry_page.dart lib/l10n/app_localizations.dart` → **0 erreur** (91 infos/warnings pré-existants).

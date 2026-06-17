@@ -36,6 +36,7 @@ import '../../../providers/mixed_feed_service_provider.dart';
 import 'dart:typed_data';
 import '../../theme/app_colors.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import '../../services/postService/post_view_service.dart';
 
 
 // Constantes de couleur
@@ -2600,6 +2601,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
         authProvider.loginUserData.viewedPostIds!.add(post.id!);
       }
 
+      PostViewService.recordAuthorView(post, currentUserId);
     } catch (e) {
       print('Error recording post view: $e');
       _postsViewedInSession.remove(post.id!);

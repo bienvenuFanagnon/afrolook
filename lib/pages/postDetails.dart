@@ -54,6 +54,7 @@ import '../../providers/authProvider.dart';
 import '../providers/coin_gift_provider.dart';
 import '../services/linkService.dart';
 import '../services/postService/feed_interaction_service.dart';
+import '../services/postService/post_view_service.dart';
 import '../services/utils/abonnement_utils.dart';
 import 'UserServices/deviceService.dart';
 import 'canaux/detailsCanal.dart';
@@ -2017,6 +2018,7 @@ class _DetailsPostState extends State<DetailsPost>
         'popularity': FieldValue.increment(2),
       });
 
+      PostViewService.recordAuthorView(widget.post, currentUserId);
       print('✅ Vue unique enregistrée pour ${widget.post.id}');
     } catch (e) {
       print("Erreur incrémentation vues: $e");
@@ -2077,6 +2079,7 @@ class _DetailsPostState extends State<DetailsPost>
         'popularity': FieldValue.increment(2),
       });
 
+      PostViewService.recordAuthorView(widget.post, currentUserId);
       print('✅ Vue enregistrée pour ${widget.post.id}');
     } catch (e) {
       print("Erreur incrémentation vues: $e");

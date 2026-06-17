@@ -1,1239 +1,520 @@
-// pages/mes_gains_page.dart
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:provider/provider.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../models/model_data.dart';
+import '../../providers/authProvider.dart';
+import '../../services/postService/post_view_service.dart';
 import '../../services/remuneration_service.dart';
-import '../postDetails.dart';
-import '../postDetailsVideo.dart';
+import '../../theme/app_colors.dart';
 
-// ============================================
-// PAGE PRINCIPALE DES GAINS
-// ============================================
+const double _fcfaPerView = 2.0;
+const double _minEncaissement = 1000.0;
+
 class MesGainsPage extends StatefulWidget {
   final String userId;
-
   const MesGainsPage({Key? key, required this.userId}) : super(key: key);
 
   @override
-  _MesGainsPageState createState() => _MesGainsPageState();
+  State<MesGainsPage> createState() => _MesGainsPageState();
 }
 
-class _MesGainsPageState extends State<MesGainsPage> with SingleTickerProviderStateMixin {
-  final RemunerationService _service = RemunerationService();
+class _MesGainsPageState extends State<MesGainsPage> {
+  final _firestore = FirebaseFirestore.instance;
+  final _remuService = RemunerationService();
+  final _amountController = TextEditingController();
 
-  bool _isLoading = false;
-  bool _hasCalculated = false;
-  bool _isProcessing = false;
+  bool _isMigrating = false;
+  bool _isEncashing = false;
+  bool _isLoadingHistory = false;
 
-  Map<String, dynamic>? _gainsActuels;
-  RemunerationConfig? _config;
-
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-
-  // Variables pour la progression
-  int _currentProgress = 0;
-  int _totalProgress = 0;
-  String _currentPostDescription = '';
-  bool _showProgress = false;
-
-  final List<Map<String, String>> _motivationMessages = [
-    {
-      'title': '🔥 PUBLIE ET GAGNE',
-      'message': 'Plus tu publies, plus tu gagnes ! Chaque vue compte.',
-      'icon': '🚀',
-    },
-    {
-      'title': '👥 INVITE TES AMIS',
-      'message': 'Parraine un ami et gagne 10% de ses gains à vie !',
-      'icon': '🤝',
-    },
-    {
-      'title': '📱 PARTAGE SUR LES RÉSEAUX',
-      'message': 'WhatsApp, Facebook, TikTok - Partage tes looks partout !',
-      'icon': '📲',
-    },
-    {
-      'title': '🎯 ABONNE-TOI',
-      'message': 'Suis d\'autres créateurs et booste ta visibilité !',
-      'icon': '⭐',
-    },
-    {
-      'title': '💎 CONTENU DE QUALITÉ',
-      'message': 'Plus ton contenu est beau, plus tu as de vues !',
-      'icon': '✨',
-    },
-  ];
+  List<Map<String, dynamic>> _history = [];
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: Duration(milliseconds: 1500),
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
-    );
-    _animationController.forward();
-    _chargerConfiguration();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _init());
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
+    _amountController.dispose();
     super.dispose();
   }
 
-  Future<void> _chargerConfiguration() async {
-    _config = await _service.getActiveConfig();
-    setState(() {});
+  Future<void> _init() async {
+    final auth = Provider.of<UserAuthProvider>(context, listen: false);
+    final user = auth.loginUserData;
+
+    if (user.postViewsMigrationDone != true) {
+      setState(() => _isMigrating = true);
+      await PostViewService.migrateUserPostViews(widget.userId);
+      await auth.refreshUserData();
+      if (mounted) setState(() => _isMigrating = false);
+    } else if (_hasCorruptMonthly(user)) {
+      // Migration déjà faite mais map mensuelle corrompue (dates en µs traitées
+      // en ms lors d'une ancienne version → années comme 57708). On recalcule
+      // uniquement la map mensuelle sans toucher les soldes.
+      setState(() => _isMigrating = true);
+      await PostViewService.fixMonthlyData(widget.userId);
+      await auth.refreshUserData();
+      if (mounted) setState(() => _isMigrating = false);
+    }
+    _loadHistory();
   }
 
-  Future<void> _calculerGains() async {
-    setState(() {
-      _showProgress = true;
-      _currentProgress = 0;
-      _totalProgress = 0;
-      _isLoading = true;
+  bool _hasCorruptMonthly(UserData user) {
+    final monthly = user.postViewsMonthly ?? {};
+    final currentYear = DateTime.now().year;
+    return monthly.keys.any((k) {
+      try { return int.parse(k.split('-').first) > currentYear + 1; }
+      catch (_) { return false; }
     });
+  }
 
+  Future<void> _loadHistory() async {
+    setState(() => _isLoadingHistory = true);
     try {
-      _gainsActuels = await _service.calculerTousGains(
-        widget.userId,
-        _config!,
-            (current, total, post) {
-          setState(() {
-            _currentProgress = current;
-            _totalProgress = total;
-            _currentPostDescription = post.description ?? 'Publication sans description';
-          });
-        },
-      );
+      final snap = await _firestore
+          .collection('TransactionSoldes')
+          .where('user_id', isEqualTo: widget.userId)
+          .where('type', isEqualTo: 'ENCAISSEMENT_VUES_POST')
+          .orderBy('createdAt', descending: true)
+          .limit(20)
+          .get();
+      _history = snap.docs.map((d) {
+        final data = d.data();
+        data['id'] = d.id;
+        return data;
+      }).toList();
+    } catch (_) {}
+    if (mounted) setState(() => _isLoadingHistory = false);
+  }
 
-      setState(() {
-        _hasCalculated = true;
-        _isLoading = false;
-        _showProgress = false;
+  Future<void> _encaisser(UserData user, AppLocalizations t, AppColors colors) async {
+    final input = double.tryParse(_amountController.text.trim()) ?? 0;
+    final available = user.postViewsAvailable ?? 0;
+
+    if (input < _minEncaissement) { _snack(t.gainsErrMin, colors.danger); return; }
+    if (input > available)        { _snack(t.gainsErrMax, colors.danger); return; }
+
+    final enCours = await _remuService.isEncaissementEnCours(widget.userId);
+    if (enCours) { _snack(t.gainsErrCooldown, colors.danger); return; }
+
+    setState(() => _isEncashing = true);
+    try {
+      await _firestore.runTransaction((tx) async {
+        final ref  = _firestore.collection('Users').doc(widget.userId);
+        final snap = await tx.get(ref);
+        final cur  = (snap.data()?['postViewsAvailable'] as num?)?.toDouble() ?? 0;
+        if (input > cur) throw Exception('solde_insuffisant');
+        tx.update(ref, {
+          'postViewsAvailable':   FieldValue.increment(-input),
+          'postViewsTotalCashed': FieldValue.increment(input),
+          'votre_solde_principal': FieldValue.increment(input),
+          'votre_solde':           FieldValue.increment(input),
+        });
+        tx.set(_firestore.collection('TransactionSoldes').doc(), {
+          'user_id': widget.userId,
+          'type': 'ENCAISSEMENT_VUES_POST',
+          'statut': 'VALIDER',
+          'montant': input,
+          'description': 'Encaissement ${input.toInt()} FCFA — vues posts',
+          'methode_paiement': 'solde_principal',
+          'createdAt': DateTime.now().millisecondsSinceEpoch,
+          'updatedAt': DateTime.now().millisecondsSinceEpoch,
+        });
       });
-
-      _animationController.forward(from: 0.0);
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _showProgress = false;
-      });
-
-      _showMessage('Erreur lors du calcul: $e', isError: true);
+      _amountController.clear();
+      await Provider.of<UserAuthProvider>(context, listen: false).refreshUserData();
+      await _loadHistory();
+      _snack(t.gainsSuccess(input.toInt()), colors.primary);
+    } on Exception catch (e) {
+      _snack(e.toString().contains('solde_insuffisant') ? t.gainsErrInsuff : t.gainsErrGeneral, colors.danger);
+    } finally {
+      if (mounted) setState(() => _isEncashing = false);
     }
   }
 
-  void _showMessage(String message, {bool isError = false}) {
+  void _snack(String msg, Color bg) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? Colors.red : Color(0xFFFFD700),
-        behavior: SnackBarBehavior.floating,
-      ),
+      SnackBar(content: Text(msg), backgroundColor: bg, duration: const Duration(seconds: 3)),
     );
-  }
-
-  String _getPeriodeText() {
-    DateTime now = DateTime.now();
-    DateTime cinqMois = DateTime(now.year, now.month - 5, 1);
-    final format = DateFormat('MMM yyyy');
-    return '${format.format(cinqMois)} - ${format.format(now)}';
   }
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final t = AppLocalizations.of(context);
+    final user = Provider.of<UserAuthProvider>(context).loginUserData;
+
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colors.background,
       appBar: AppBar(
-        title: Text(
-          'MES GAINS - ${widget.userId.substring(0,10)}',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            letterSpacing: 2,
-            color: Color(0xFFFFD700),
-          ),
-        ),
-        backgroundColor: Colors.black,
+        title: Text(t.gainsTitle,
+            style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold)),
+        backgroundColor: colors.background,
+        iconTheme: IconThemeData(color: colors.textPrimary),
         elevation: 0,
-        iconTheme: IconThemeData(color: Color(0xFFFFD700)),
-        actions: [
-          // Bouton pour l'historique des transactions
-          IconButton(
-            icon: Icon(Icons.history, color: Color(0xFFFFD700)),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => HistoriqueEncaissementsPage(userId: widget.userId),
-                ),
-              );
-            },
-          ),
-        ],
-        bottom: PreferredSize(
-          preferredSize: Size.fromHeight(1),
-          child: Container(
-            height: 1,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.black, Color(0xFFFFD700), Colors.black],
+      ),
+      body: _isMigrating
+          ? _migrationLoader(colors, t)
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _statsCard(user, colors, t),
+                  const SizedBox(height: 16),
+                  _encaissCard(user, colors, t),
+                  const SizedBox(height: 16),
+                  _monthlyCard(user, colors, t),
+                  const SizedBox(height: 16),
+                  _historyCard(colors, t),
+                  const SizedBox(height: 32),
+                ],
               ),
             ),
-          ),
-        ),
-      ),
-      body: _isLoading && _showProgress
-          ? _buildProgressIndicator()
-          : RefreshIndicator(
-        onRefresh: _calculerGains,
-        color: Color(0xFFFFD700),
-        backgroundColor: Colors.black,
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(16),
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeaderInfo(),
-                SizedBox(height: 20),
-                _buildCalculButton(),
-                SizedBox(height: 25),
-                if (_hasCalculated) ...[
-                  _buildCarteResume(),
-                  SizedBox(height: 20),
-                  _buildConfigurationInfo(),
-                  SizedBox(height: 25),
-                  _buildStatsResume(),
-                  SizedBox(height: 25),
-                  _buildMotivationSection(),
-                  SizedBox(height: 25),
-                  _buildGainsActuels(),
-                ] else ...[
-                  _buildWelcomeMessage(),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 
-  Widget _buildHeaderInfo() {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Color(0xFFFFD700).withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Color(0xFFFFD700).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(Icons.date_range, color: Color(0xFFFFD700), size: 30),
-          ),
-          SizedBox(width: 15),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Période de calcul',
-                  style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  _getPeriodeText(),
-                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  '(5 derniers mois)',
-                  style: TextStyle(color: Color(0xFFFFD700), fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCalculButton() {
-    return Container(
-      width: double.infinity,
-      height: 70,
-      child: ElevatedButton(
-        onPressed: _isLoading ? null : _calculerGains,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Color(0xFFFFD700),
-          foregroundColor: Colors.black,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-          elevation: 10,
-          shadowColor: Color(0xFFFFD700).withOpacity(0.5),
-        ),
-        child: Row(
+  // ── Loader migration ──────────────────────────────────────
+  Widget _migrationLoader(AppColors colors, AppLocalizations t) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(_isLoading ? Icons.hourglass_empty : Icons.calculate, size: 28),
-            SizedBox(width: 10),
-            Text(
-              _isLoading ? 'CALCUL EN COURS...' : 'CALCULER MES GAINS',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1),
-            ),
+            CircularProgressIndicator(color: colors.accent),
+            const SizedBox(height: 24),
+            Text(t.gainsMigrating,
+                style: TextStyle(color: colors.textPrimary, fontSize: 15, fontWeight: FontWeight.w600),
+                textAlign: TextAlign.center),
+            const SizedBox(height: 8),
+            Text(t.gainsMigratingDesc,
+                style: TextStyle(color: colors.textSecondary, fontSize: 13),
+                textAlign: TextAlign.center),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildProgressIndicator() {
-    double progress = _totalProgress > 0 ? _currentProgress / _totalProgress : 0;
-
-    return Center(
-      child: Container(
-        margin: EdgeInsets.all(20),
-        padding: EdgeInsets.all(25),
-        decoration: BoxDecoration(
-          color: Color(0xFF1A1A1A),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Color(0xFFFFD700).withOpacity(0.3)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'CALCUL EN COURS',
-              style: TextStyle(color: Color(0xFFFFD700), fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 20),
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                SizedBox(
-                  width: 100,
-                  height: 100,
-                  child: CircularProgressIndicator(
-                    value: progress,
-                    backgroundColor: Colors.grey.shade800,
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
-                    strokeWidth: 8,
-                  ),
-                ),
-                Text(
-                  '${(progress * 100).toInt()}%',
-                  style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            SizedBox(height: 15),
-            Text(
-              '$_currentProgress / $_totalProgress publications',
-              style: TextStyle(color: Colors.white, fontSize: 16),
-            ),
-            SizedBox(height: 10),
-            Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(10)),
-              child: Text(
-                _currentPostDescription.length > 30
-                    ? '${_currentPostDescription.substring(0, 30)}...'
-                    : _currentPostDescription,
-                style: TextStyle(color: Colors.grey.shade400, fontSize: 14, fontStyle: FontStyle.italic),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWelcomeMessage() {
-    return Container(
-      padding: EdgeInsets.all(30),
-      decoration: BoxDecoration(
-        color: Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Color(0xFFFFD700).withOpacity(0.2)),
-      ),
-      child: Column(
-        children: [
-          Icon(Feather.dollar_sign, color: Color(0xFFFFD700), size: 60),
-          SizedBox(height: 20),
-          Text(
-            'Calculez vos gains !',
-            style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 15),
-          Text(
-            'Découvrez combien vous avez gagné avec vos publications des 5 derniers mois.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey.shade400, fontSize: 16),
-          ),
-          SizedBox(height: 10),
-          Text(
-            'Chaque ${_config?.nombreVuesParPalier ?? 100} vues = ${_config?.montantParPalier ?? 200} ${_config?.devise ?? 'FCFA'}',
-            style: TextStyle(color: Color(0xFFFFD700), fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatsResume() {
-    var gains = _gainsActuels;
-    if (gains == null) return SizedBox.shrink();
+  // ── Carte statistiques ────────────────────────────────────
+  Widget _statsCard(UserData user, AppColors colors, AppLocalizations t) {
+    final totalViews = user.totalPostUniqueViews ?? 0;
+    final available  = user.postViewsAvailable   ?? 0;
+    final cashed     = user.postViewsTotalCashed  ?? 0;
 
     return Container(
-      padding: EdgeInsets.all(20),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF2A2A2A), Color(0xFF1A1A1A)],
+          colors: [colors.surface, colors.surfaceVariant],
         ),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Color(0xFFFFD700).withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.accent.withOpacity(0.35)),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildStatItem(
-            '${gains['postsTraites']}',
-            'Publications',
-            Icons.post_add,
-          ),
-          Container(height: 40, width: 1, color: Color(0xFFFFD700).withOpacity(0.3)),
-          _buildStatItem(
-            '${gains['postsAvecGains']}',
-            'Posts gagnants',
-            Icons.emoji_events,
-          ),
-          Container(height: 40, width: 1, color: Color(0xFFFFD700).withOpacity(0.3)),
-          _buildStatItem(
-            '${gains['totalGains']?.toStringAsFixed(0)}',
-            'Gains totaux',
-            Icons.monetization_on,
-          ),
+          Row(children: [
+            Icon(Icons.bar_chart_rounded, color: colors.accent, size: 20),
+            const SizedBox(width: 8),
+            Text(t.gainsStats,
+                style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 15)),
+          ]),
+          const SizedBox(height: 16),
+          Row(children: [
+            Expanded(child: _statChip(t.gainsTotalViews, '$totalViews', Icons.visibility_outlined, colors.info, colors)),
+            const SizedBox(width: 12),
+            Expanded(child: _statChip(t.gainsPerView, t.gainsPerViewRate, Icons.attach_money, colors.primary, colors)),
+          ]),
+          const SizedBox(height: 12),
+          Row(children: [
+            Expanded(child: _statChip(t.gainsAvailable, '${available.toInt()} FCFA', Icons.account_balance_wallet_outlined, colors.accent, colors)),
+            const SizedBox(width: 12),
+            Expanded(child: _statChip(t.gainsTotalCashed, '${cashed.toInt()} FCFA', Icons.check_circle_outline, colors.primary, colors)),
+          ]),
         ],
       ),
     );
   }
 
-  Widget _buildStatItem(String valeur, String label, IconData icon) {
-    return Column(
-      children: [
-        Icon(icon, color: Color(0xFFFFD700), size: 24),
-        SizedBox(height: 4),
-        Text(valeur, style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-        Text(label, style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
-      ],
-    );
-  }
-
-  Widget _buildCarteResume() {
-    if (_gainsActuels == null) return SizedBox.shrink();
-
+  Widget _statChip(String label, String value, IconData icon, Color color, AppColors colors) {
     return Container(
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF1A1A1A), Colors.black]),
-        boxShadow: [BoxShadow(color: Color(0xFFFFD700).withOpacity(0.2), blurRadius: 20, offset: Offset(0, 5))],
-        border: Border.all(color: Color(0xFFFFD700).withOpacity(0.3), width: 1),
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withOpacity(0.2)),
       ),
-      child: Padding(
-        padding: EdgeInsets.all(20),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('SOLDE DISPONIBLE', style: TextStyle(color: Colors.grey.shade400, fontSize: 14, letterSpacing: 1)),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Color(0xFFFFD700).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Color(0xFFFFD700).withOpacity(0.3)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.trending_up, color: Color(0xFFFFD700), size: 16),
-                      SizedBox(width: 4),
-                      Text('5 derniers mois', style: TextStyle(color: Color(0xFFFFD700), fontSize: 12)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 15),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
-              children: [
-                Text(
-                  '${_gainsActuels?['totalGains']?.toStringAsFixed(0) ?? '0'}',
-                  style: TextStyle(
-                    color: Color(0xFFFFD700),
-                    fontSize: 48,
-                    fontWeight: FontWeight.bold,
-                    shadows: [Shadow(color: Color(0xFFFFD700).withOpacity(0.3), blurRadius: 15)],
-                  ),
-                ),
-                SizedBox(width: 5),
-                Text(_config?.devise ?? 'FCFA', style: TextStyle(color: Colors.grey.shade400, fontSize: 18)),
-              ],
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _gainsActuels?['totalGains'] > 0 && !_isProcessing ? () => _showEncaissementDialog() : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFFFFD700),
-                foregroundColor: Colors.black,
-                minimumSize: Size(double.infinity, 55),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                elevation: 10,
-                shadowColor: Color(0xFFFFD700).withOpacity(0.5),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.payments, size: 20),
-                  SizedBox(width: 10),
-                  Text(
-                    'ENCAISSER MES GAINS',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildConfigurationInfo() {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Color(0xFFFFD700).withOpacity(0.2)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildInfoItem(Icons.remove_red_eye, '${_config?.nombreVuesParPalier}', 'vues ='),
-          Container(height: 40, width: 1, color: Color(0xFFFFD700).withOpacity(0.3)),
-          _buildInfoItem(Icons.monetization_on, '${_config?.montantParPalier}', _config?.devise ?? 'FCFA'),
+          Row(children: [
+            Icon(icon, color: color, size: 13),
+            const SizedBox(width: 4),
+            Flexible(child: Text(label, style: TextStyle(color: colors.textSecondary, fontSize: 10),
+                overflow: TextOverflow.ellipsis)),
+          ]),
+          const SizedBox(height: 5),
+          Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 14)),
         ],
       ),
     );
   }
 
-  Widget _buildInfoItem(IconData icon, String valeur, String label) {
-    return Column(
-      children: [
-        Icon(icon, color: Color(0xFFFFD700), size: 20),
-        SizedBox(height: 4),
-        Text(valeur, style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 16)),
-        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
-      ],
-    );
-  }
+  // ── Carte encaissement ────────────────────────────────────
+  Widget _encaissCard(UserData user, AppColors colors, AppLocalizations t) {
+    final available = user.postViewsAvailable ?? 0;
+    final canEncash = available >= _minEncaissement;
 
-  Widget _buildMotivationSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: EdgeInsets.only(left: 8, bottom: 12),
-          child: Row(
-            children: [
-              Icon(Fontisto.fire, color: Color(0xFFFFD700), size: 20),
-              SizedBox(width: 8),
-              Text(
-                'BOOSTE TES GAINS',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1),
-              ),
-            ],
-          ),
-        ),
-        Container(
-          height: 180,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: _motivationMessages.length,
-            itemBuilder: (context, index) => _buildMotivationCard(_motivationMessages[index]),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMotivationCard(Map<String, String> message) {
     return Container(
-      width: 280,
-      margin: EdgeInsets.only(right: 12),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF2A2A2A), Color(0xFF1A1A1A)]),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Color(0xFFFFD700).withOpacity(0.2)),
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.border),
       ),
-      child: Stack(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Positioned(
-            right: 10,
-            bottom: 10,
-            child: Text(message['icon'] ?? '🔥', style: TextStyle(fontSize: 60, color: Colors.white.withOpacity(0.1))),
-          ),
-          Padding(
-            padding: EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(message['title'] ?? '', style: TextStyle(color: Color(0xFFFFD700), fontSize: 16, fontWeight: FontWeight.bold)),
-                SizedBox(height: 8),
-                Text(message['message'] ?? '', style: TextStyle(color: Colors.white, fontSize: 14)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+          Row(children: [
+            Icon(Icons.payments_outlined, color: colors.primary, size: 20),
+            const SizedBox(width: 8),
+            Text(t.gainsEncaissTitle,
+                style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 15)),
+          ]),
+          const SizedBox(height: 4),
+          Text(t.gainsEncaissAvail(available.toInt()),
+              style: TextStyle(color: colors.accent, fontWeight: FontWeight.bold, fontSize: 13)),
+          const SizedBox(height: 16),
 
-  Widget _buildGainsActuels() {
-    var gainsParPost = _gainsActuels?['gainsParPost'] as List? ?? [];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: EdgeInsets.only(left: 8, bottom: 12),
-          child: Row(
-            children: [
-              Icon(Fontisto.bar_chart, color: Color(0xFFFFD700), size: 20),
-              SizedBox(width: 8),
-              Text(
-                'GAINS PAR PUBLICATION',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1),
-              ),
-            ],
-          ),
-        ),
-        if (gainsParPost.isEmpty)
-          Container(
-            height: 150,
-            decoration: BoxDecoration(
-              color: Color(0xFF1A1A1A),
-              borderRadius: BorderRadius.circular(15),
-              border: Border.all(color: Color(0xFFFFD700).withOpacity(0.1)),
-            ),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.money_off, size: 50, color: Colors.grey.shade700),
-                  SizedBox(height: 10),
-                  Text('Aucun gain disponible', style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
-                  SizedBox(height: 5),
-                  Text('Publie du contenu pour commencer à gagner !', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-                ],
+          if (!canEncash)
+            _infoBox(t.gainsEncaissMinMsg, colors.warning, Icons.info_outline, colors)
+          else ...[
+            TextField(
+              controller: _amountController,
+              keyboardType: TextInputType.number,
+              style: TextStyle(color: colors.textPrimary),
+              decoration: InputDecoration(
+                labelText: t.gainsEncaissLabel,
+                labelStyle: TextStyle(color: colors.textSecondary),
+                hintText: t.gainsEncaissHint(_minEncaissement.toInt(), available.toInt()),
+                hintStyle: TextStyle(color: colors.textSecondary, fontSize: 12),
+                filled: true,
+                fillColor: colors.surfaceVariant,
+                border: _border(colors.border),
+                enabledBorder: _border(colors.border),
+                focusedBorder: _border(colors.accent),
+                suffixText: 'FCFA',
+                suffixStyle: TextStyle(color: colors.textSecondary),
               ),
             ),
-          )
-        else
-          ...gainsParPost.map((gain) => _buildGainPostCard(gain)).toList(),
-      ],
-    );
-  }
-
-  Widget _buildGainPostCard(Map<String, dynamic> gain) {
-    Post post = gain['post'];
-
-    return Container(
-      margin: EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Color(0xFFFFD700).withOpacity(0.1)),
-      ),
-      child: ListTile(
-        onTap: () {
-          if(post.dataType==PostDataType.VIDEO.name){
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => VideoYoutubePageDetails(initialPost: post),
-              ),
-            );
-
-          }else {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => DetailsPost(post: post),
-              ),
-            );
-
-          }
-        },
-        contentPadding: EdgeInsets.all(12),
-        leading: Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            color: Color(0xFFFFD700).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Center(child: Icon(Icons.post_add, color: Color(0xFFFFD700), size: 25)),
-        ),
-        title: Text(
-          post.description ?? 'Sans description',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(height: 4),
-            Row(
-              children: [
-                Icon(Icons.remove_red_eye, size: 14, color: Colors.grey.shade500),
-                SizedBox(width: 4),
-                Text('${gain['vuesActuelles']} vues', style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
-              ],
-            ),
-            Text(
-              'Paliers: ${gain['paliersNonPayes']} disponibles',
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
-            ),
-          ],
-        ),
-        trailing: Container(
-          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.green.withOpacity(0.3)),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text('+${gain['montantGagnable']}', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 14)),
-              Text(_config?.devise ?? 'FCFA', style: TextStyle(color: Colors.green.shade300, fontSize: 8)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ============================================
-  // ENCAISSEMENT
-  // ============================================
-
-  Future<void> _effectuerEncaissement() async {
-    if (_isProcessing) return;
-
-    setState(() => _isProcessing = true);
-
-    // Afficher le loader
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Center(
-        child: Container(
-          padding: EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Color(0xFF1A1A1A),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Color(0xFFFFD700).withOpacity(0.3)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFD700))),
-              SizedBox(height: 15),
-              Text('Transfert sécurisé en cours...', style: TextStyle(color: Colors.white)),
-              SizedBox(height: 5),
-              Text('Veuillez patienter', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    // Appel au service avec la nouvelle méthode
-    var resultat = await _service.encaisserGains(
-      widget.userId,
-      _gainsActuels!['gainsParPost'], // Liste des posts avec leurs gains
-      _gainsActuels!['totalGains'],   // Montant total
-    );
-
-    Navigator.pop(context); // Fermer le loader
-    setState(() => _isProcessing = false);
-
-    // Afficher le résultat
-    _showResultatDialog(resultat);
-  }
-
-  void _showResultatDialog(Map<String, dynamic> resultat) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Dialog(
-        backgroundColor: Color(0xFF1A1A1A),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(
-            color: resultat['success'] ? Colors.green :
-            resultat['code'] == 'ENCAISSEMENT_EN_COURS' ? Color(0xFFFFD700) : Colors.red,
-            width: 2,
-          ),
-        ),
-        child: Container(
-          padding: EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                resultat['success'] ? Icons.check_circle :
-                resultat['code'] == 'ENCAISSEMENT_EN_COURS' ? Icons.hourglass_empty : Icons.error,
-                color: resultat['success'] ? Colors.green :
-                resultat['code'] == 'ENCAISSEMENT_EN_COURS' ? Color(0xFFFFD700) : Colors.red,
-                size: 50,
-              ),
-              SizedBox(height: 15),
-              Text(
-                resultat['success'] ? 'TRANSFERT RÉUSSI !' :
-                resultat['code'] == 'ENCAISSEMENT_EN_COURS' ? 'TRANSFERT EN COURS' : 'ERREUR',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 10),
-              Text(
-                resultat['success']
-                    ? '${resultat['montant']} ${_config?.devise} ont été crédités sur votre compte principal'
-                    : resultat['code'] == 'ENCAISSEMENT_EN_COURS'
-                    ? 'Un transfert est déjà en cours. Veuillez patienter quelques instants.'
-                    : resultat['error'] ?? 'Une erreur est survenue',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey.shade400),
-              ),
-              if (resultat['success']) ...[
-                SizedBox(height: 15),
-                Container(
-                  padding: EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.security, color: Colors.green, size: 16),
-                      SizedBox(width: 5),
-                      Text(
-                        'Transaction sécurisée #${resultat['transactionId'].toString().substring(0, 8)}...',
-                        style: TextStyle(color: Colors.green.shade300, fontSize: 10),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  if (resultat['success']) {
-                    _calculerGains(); // Recalculer après encaissement
-                  }
-                },
+            const SizedBox(height: 10),
+            Row(children: [
+              _quickBtn('25%', available * 0.25, colors),
+              const SizedBox(width: 8),
+              _quickBtn('50%', available * 0.50, colors),
+              const SizedBox(width: 8),
+              _quickBtn('100%', available, colors),
+            ]),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: resultat['success'] ? Colors.green : Color(0xFFFFD700),
-                  foregroundColor: Colors.black,
-                  minimumSize: Size(double.infinity, 45),
+                  backgroundColor: colors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                child: Text('OK'),
+                onPressed: _isEncashing ? null : () => _encaisser(user, t, colors),
+                child: _isEncashing
+                    ? const SizedBox(height: 18, width: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : Text(t.gainsEncaissBtn,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showEncaissementDialog() {
-    if (_isProcessing) {
-      _showMessage('Un encaissement est déjà en cours...');
-      return;
-    }
-
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Color(0xFF1A1A1A),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: Color(0xFFFFD700).withOpacity(0.3)),
-        ),
-        child: Container(
-          padding: EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.account_balance_wallet, color: Color(0xFFFFD700), size: 60),
-              SizedBox(height: 15),
-              Text(
-                'TRANSFERT VERS COMPTE PRINCIPAL',
-                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: 20),
-              Container(
-                padding: EdgeInsets.all(15),
-                decoration: BoxDecoration(
-                  color: Colors.black,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Color(0xFFFFD700).withOpacity(0.2)),
-                ),
-                child: Column(
-                  children: [
-                    Text('Montant à transférer', style: TextStyle(color: Colors.grey.shade400, fontSize: 14)),
-                    SizedBox(height: 8),
-                    Text(
-                      '${_gainsActuels?['totalGains']?.toStringAsFixed(0) ?? '0'} ${_config?.devise ?? 'FCFA'}',
-                      style: TextStyle(color: Color(0xFFFFD700), fontSize: 32, fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(height: 5),
-                    Text('→ Compte principal', style: TextStyle(color: Colors.green, fontSize: 14)),
-                  ],
-                ),
-              ),
-              SizedBox(height: 20),
-              Container(
-                padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.blue.withOpacity(0.3)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.security, color: Colors.blue, size: 20),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Transaction sécurisée - Anti-fraude actif',
-                        style: TextStyle(color: Colors.blue.shade200, fontSize: 12),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(height: 25),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: TextButton.styleFrom(foregroundColor: Colors.grey, padding: EdgeInsets.symmetric(vertical: 15)),
-                      child: Text('ANNULER'),
-                    ),
-                  ),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        Navigator.pop(context); // Fermer le dialogue
-                        await _effectuerEncaissement();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFFFFD700),
-                        foregroundColor: Colors.black,
-                        padding: EdgeInsets.symmetric(vertical: 15),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                      child: Text('TRANSFÉRER', style: TextStyle(fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ============================================
-  // PARRAINAGE
-  // ============================================
-
-  void _showParrainageDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Color(0xFF1A1A1A),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: Color(0xFFFFD700).withOpacity(0.3)),
-        ),
-        child: Container(
-          padding: EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.card_giftcard, color: Color(0xFFFFD700), size: 50),
-              SizedBox(height: 15),
-              Text('MON CODE DE PARRAINAGE', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-              SizedBox(height: 20),
-              Container(
-                padding: EdgeInsets.all(20),
-                decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(10), border: Border.all(color: Color(0xFFFFD700))),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('AFRO2024', style: TextStyle(color: Color(0xFFFFD700), fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 2)),
-                    SizedBox(width: 10),
-                    Icon(Icons.copy, color: Color(0xFFFFD700), size: 20),
-                  ],
-                ),
-              ),
-              SizedBox(height: 20),
-              Text(
-                'Partage ton code et gagne 10% des gains de tes filleuls à vie !',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey.shade400),
-              ),
-              SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildShareButton(Fontisto.whatsapp, Color(0xFF25D366)),
-                  _buildShareButton(Icons.facebook, Color(0xFF1877F2)),
-                  _buildShareButton(Icons.telegram, Colors.white),
-                  _buildShareButton(Icons.telegram, Color(0xFF0088CC)),
-                ],
-              ),
-              SizedBox(height: 15),
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('Fermer', style: TextStyle(color: Colors.grey)),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildShareButton(IconData icon, Color color) {
-    return InkWell(
-      onTap: () async {
-        final url = 'https://afrolook.com/parrainage/AFRO2024';
-        if (await canLaunch(url)) await launch(url);
-      },
-      child: Container(
-        padding: EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          shape: BoxShape.circle,
-          border: Border.all(color: color.withOpacity(0.3)),
-        ),
-        child: Icon(icon, color: color, size: 25),
-      ),
-    );
-  }
-}
-
-// ============================================
-// PAGE HISTORIQUE DES ENCAISSEMENTS
-// ============================================
-class HistoriqueEncaissementsPage extends StatefulWidget {
-  final String userId;
-
-  const HistoriqueEncaissementsPage({Key? key, required this.userId}) : super(key: key);
-
-  @override
-  _HistoriqueEncaissementsPageState createState() => _HistoriqueEncaissementsPageState();
-}
-
-class _HistoriqueEncaissementsPageState extends State<HistoriqueEncaissementsPage> {
-  final RemunerationService _service = RemunerationService();
-  List<Map<String, dynamic>> _transactions = [];
-  bool _isLoading = true;
-  RemunerationConfig? _config;
-
-  @override
-  void initState() {
-    super.initState();
-    _chargerDonnees();
-  }
-
-  Future<void> _chargerDonnees() async {
-    setState(() => _isLoading = true);
-
-    _config = await _service.getActiveConfig();
-    _transactions = await _service.getHistoriqueEncaissements(widget.userId);
-
-    setState(() => _isLoading = false);
-  }
-
-  String _formatDate(int microseconds) {
-    if (microseconds <= 0) return 'Date inconnue';
-    try {
-      return DateFormat('dd/MM/yyyy HH:mm').format(
-          DateTime.fromMicrosecondsSinceEpoch(microseconds)
-      );
-    } catch (e) {
-      return 'Date invalide';
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: Text(
-          'HISTORIQUE',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            letterSpacing: 2,
-            color: Color(0xFFFFD700),
-          ),
-        ),
-        backgroundColor: Colors.black,
-        elevation: 0,
-        iconTheme: IconThemeData(color: Color(0xFFFFD700)),
-        bottom: PreferredSize(
-          preferredSize: Size.fromHeight(1),
-          child: Container(
-            height: 1,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.black, Color(0xFFFFD700), Colors.black],
-              ),
-            ),
-          ),
-        ),
-      ),
-      body: _isLoading
-          ? Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFD700))))
-          : _transactions.isEmpty
-          ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.lock_clock, color: Colors.grey.shade700, size: 60),
-            SizedBox(height: 20),
-            Text(
-              'Aucun encaissement',
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 18),
-            ),
-            SizedBox(height: 10),
-            Text(
-              'Vous n\'avez pas encore effectué d\'encaissement',
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-              textAlign: TextAlign.center,
             ),
           ],
-        ),
-      )
-          : RefreshIndicator(
-        onRefresh: _chargerDonnees,
-        color: Color(0xFFFFD700),
-        backgroundColor: Colors.black,
-        child: ListView.builder(
-          padding: EdgeInsets.all(16),
-          itemCount: _transactions.length,
-          itemBuilder: (context, index) {
-            var tx = _transactions[index];
-            return Container(
-              margin: EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(
-                color: Color(0xFF1A1A1A),
-                borderRadius: BorderRadius.circular(15),
-                border: Border.all(color: Color(0xFFFFD700).withOpacity(0.2)),
-              ),
-              child: ListTile(
-                contentPadding: EdgeInsets.all(16),
-                leading: Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: Icon(Icons.payments, color: Colors.green, size: 24),
-                  ),
-                ),
-                title: Text(
-                  '${tx['montant']} ${_config?.devise ?? 'FCFA'}',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(height: 4),
-                    Text(
-                      tx['description'] ?? 'Encaissement',
-                      style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      _formatDate(tx['createdAt'] ?? 0),
-                      style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
-                    ),
-                  ],
-                ),
-                trailing: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.green.withOpacity(0.3)),
-                  ),
-                  child: Text(
-                    'SUCCÈS',
-                    style: TextStyle(
-                      color: Colors.green,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
+        ],
       ),
     );
   }
+
+  Widget _quickBtn(String label, double amount, AppColors colors) {
+    return GestureDetector(
+      onTap: () => _amountController.text = amount.toInt().toString(),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: colors.surfaceVariant,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: colors.border),
+        ),
+        child: Text(label, style: TextStyle(color: colors.textSecondary, fontSize: 12)),
+      ),
+    );
+  }
+
+  // ── Historique mensuel ────────────────────────────────────
+  Widget _monthlyCard(UserData user, AppColors colors, AppLocalizations t) {
+    final monthly = user.postViewsMonthly ?? {};
+    if (monthly.isEmpty) return const SizedBox.shrink();
+
+    final now = DateTime.now();
+    final threeMonthsAgo = now.subtract(const Duration(days: 90));
+
+    // Garder uniquement les 3 derniers mois valides (pas de dates futures ni corrompues).
+    final sorted = monthly.entries.where((e) {
+      try {
+        final p = e.key.split('-');
+        final dt = DateTime(int.parse(p[0]), int.parse(p[1]));
+        return !dt.isBefore(DateTime(threeMonthsAgo.year, threeMonthsAgo.month))
+            && !dt.isAfter(DateTime(now.year, now.month));
+      } catch (_) { return false; }
+    }).toList()
+      ..sort((a, b) => b.key.compareTo(a.key));
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Icon(Icons.calendar_month_outlined, color: colors.info, size: 18),
+            const SizedBox(width: 8),
+            Text(t.gainsMonthTitle,
+                style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 15)),
+          ]),
+          const SizedBox(height: 12),
+          ...sorted.take(3).map((e) {
+            final views = e.value;
+            final fcfa  = (views * _fcfaPerView).toInt();
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(children: [
+                Expanded(child: Text(_formatMonth(e.key),
+                    style: TextStyle(color: colors.textPrimary, fontSize: 13))),
+                Text(t.gainsMonthViews(views),
+                    style: TextStyle(color: colors.textSecondary, fontSize: 12)),
+                const SizedBox(width: 12),
+                Text('$fcfa FCFA',
+                    style: TextStyle(color: colors.accent, fontWeight: FontWeight.bold, fontSize: 13)),
+              ]),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  String _formatMonth(String key) {
+    try {
+      final p  = key.split('-');
+      final dt = DateTime(int.parse(p[0]), int.parse(p[1]));
+      return DateFormat('MMMM yyyy', 'fr_FR').format(dt);
+    } catch (_) { return key; }
+  }
+
+  // ── Historique transactions ───────────────────────────────
+  Widget _historyCard(AppColors colors, AppLocalizations t) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Icon(Icons.history, color: colors.textSecondary, size: 18),
+            const SizedBox(width: 8),
+            Text(t.gainsHistoryTitle,
+                style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 15)),
+          ]),
+          const SizedBox(height: 12),
+          if (_isLoadingHistory)
+            Center(child: CircularProgressIndicator(color: colors.accent, strokeWidth: 2))
+          else if (_history.isEmpty)
+            Text(t.gainsHistoryEmpty,
+                style: TextStyle(color: colors.textSecondary, fontSize: 13))
+          else
+            ..._history.map((tx) => _txRow(tx, colors, t)),
+        ],
+      ),
+    );
+  }
+
+  Widget _txRow(Map<String, dynamic> tx, AppColors colors, AppLocalizations t) {
+    final montant = (tx['montant'] as num?)?.toInt() ?? 0;
+    final ts   = tx['createdAt'] as int?;
+    final date = ts != null
+        ? DateFormat('dd/MM/yyyy HH:mm').format(DateTime.fromMillisecondsSinceEpoch(ts))
+        : '—';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colors.surfaceVariant,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(children: [
+        Icon(Icons.check_circle, color: colors.primary, size: 16),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(t.gainsTxLabel(montant),
+                style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 13)),
+            Text(date, style: TextStyle(color: colors.textSecondary, fontSize: 11)),
+          ]),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: colors.primary.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(t.gainsTxStatus,
+              style: TextStyle(color: colors.primary, fontSize: 11, fontWeight: FontWeight.bold)),
+        ),
+      ]),
+    );
+  }
+
+  // ── Helpers ───────────────────────────────────────────────
+  Widget _infoBox(String msg, Color color, IconData icon, AppColors colors) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Icon(icon, color: color, size: 16),
+        const SizedBox(width: 8),
+        Expanded(child: Text(msg, style: TextStyle(color: color, fontSize: 12))),
+      ]),
+    );
+  }
+
+  OutlineInputBorder _border(Color color) => OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: color));
 }
