@@ -1,5 +1,5 @@
 # SUIVI REFONTE UI — AFROLOOK V2
-_Dernière mise à jour : 18 juin 2026 (session 47)_
+_Dernière mise à jour : 18 juin 2026 (session 48)_
 
 ---
 
@@ -1612,3 +1612,56 @@ Audit complet du module `lib/pages/dating/` réalisé (15+ pages, service `datin
 **Commit** : `6404d95`
 
 **Vérification** : `dart analyze` → 0 erreur (warnings/infos pré-existants uniquement).
+
+---
+
+## Session 48 — Gestion des publicités : refonte UI tableau de bord (admin)
+
+### Fichier modifié
+- `lib/pages/user/userPubs/user_my_advertisements_page.dart` (réécriture complète)
+
+### Réalisé
+
+**Thème clair/sombre (AppColors)** :
+- Suppression de toutes les constantes de couleur hardcodées (`_primaryColor`, `_cardColor`, `_backgroundColor`, etc.)
+- `late AppColors _colors` initialisé dans `build()`, utilisé dans toutes les méthodes
+
+**Tableau de bord KPI** :
+- Ligne 1 : 4 cartes cliquables — En attente / Actives / Expirées / Rejetées (chacune filtre la liste au tap)
+- Ligne 2 : Annulées + Toutes (filtre global)
+- Animation `AnimatedContainer` au sélection
+- CTA "Créer une publicité" intégré dans le tableau de bord
+
+**Chips de filtre horizontaux** : Toutes / Actives / En attente / Expirées / Rejetées / Annulées — couleur sémantique par statut, animation de sélection
+
+**Fix dates expirées** :
+- `_loadCounters()` : pour chaque annonce `status='active'` dont `endDate <= now` → corrige automatiquement le statut à `'expired'` dans Firestore + mémorise l'ID dans `_autoFixedIds`
+- `_effectiveStatus()` : helper client-side pour rattraper les cas non encore propagés dans le stream
+- Filtre client-side dans le `StreamBuilder` pour la cohérence immédiate
+- Bannière d'alerte orange sur les cartes auto-corrigées
+
+**Onglet Annulées** :
+- Statut `'cancelled'` désormais comptabilisé et filtrable
+- `_statusLabel`, `_statusColor`, `_statusIcon` couvrent les 5 statuts
+
+**Aperçu du post selon son type** (`_buildPostPreview`) :
+- `IMAGE` → première image via `CachedNetworkImage`
+- `VIDEO` → thumbnail/première image + icône play centré + badge "Vidéo"
+- `AUDIO` → thumbnail ou `images.first` + badge headphones ; sinon dégradé violet
+- `TEXT` → fond surfaceVariant + icône + description (4 lignes max)
+- `EBOOK` / autre → première image si disponible, sinon icône menu_book
+
+**Chargement post indépendant** : `_buildAdCardWithPost(doc)` utilise un `FutureBuilder<DocumentSnapshot>` par carte → les cards apparaissent avec un placeholder immédiatement, le post se charge indépendamment sans bloquer la liste
+
+**Cartes publicité redessinées** :
+- Aperçu post 130px pleine largeur
+- Badge statut + ID court + date de création
+- Barre `LinearProgressIndicator` (rouge si ≤3j, gris si expiré/annulé)
+- Dates début/fin + prix payé
+- Bloc stats (Vues / Clics / CTR) bordé
+- Motif de rejet si présent
+- Boutons : Détails / Renouveler (uniquement si active ou expirée) / Supprimer
+
+**Commit** : `e42ba4f`
+
+**Vérification** : `dart analyze` → 0 erreur, 0 warning (infos `withOpacity` dépréciés pré-existants, non liés à cette session).
