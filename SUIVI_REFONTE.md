@@ -1,5 +1,5 @@
 # SUIVI REFONTE UI — AFROLOOK V2
-_Dernière mise à jour : 17 juin 2026 (session 46)_
+_Dernière mise à jour : 18 juin 2026 (session 47)_
 
 ---
 
@@ -1565,3 +1565,50 @@ Audit complet du module `lib/pages/dating/` réalisé (15+ pages, service `datin
 - Nouvelles clés i18n : `datingDeckExhaustedTitle`, `datingDeckExhaustedSubtitle` (8 langues).
 
 **Vérification** : `flutter analyze lib/pages/dating/dating_entry_page.dart lib/l10n/app_localizations.dart` → **0 erreur** (91 infos/warnings pré-existants).
+
+---
+
+## Session 47 — OtherUserPage : refonte complète (thème, i18n, onglet Publicités, audio fallback)
+
+### Fichiers modifiés
+- `lib/pages/user/otherUser/otherUser.dart`
+- `lib/l10n/app_localizations.dart` (22 nouvelles clés)
+- `lib/pages/Marketing/affiliationMarketing.dart`
+- `lib/pages/user/mes_gains_post_page.dart`
+- `lib/services/postService/post_view_service.dart`
+
+### Réalisé
+
+**Suppression du stream Firestore** :
+- `_listenToUserChanges()` / `_userSubscription` remplacés par une lecture unique de `widget.otherUser.userlikes` dans `initState`.
+- Imports nettoyés : supprimé `dart:async`, `video_thumbnail`, `constColors`, `sizeText`, `textCustom`.
+
+**Onglet Publicités** :
+- Nouvel onglet "Publicités" dans le toggle de filtre (Posts / Publicités).
+- `_loadInitialAds()` / `_loadMoreAds()` : chargement paginé des posts `isAdvertisement == true`.
+- `_fetchAdvertisements(List<Post>)` : batch-fetch des objets `Advertisement` via Firestore `whereIn` (max 30 par requête), avec cache `_adsData: Map<String, Advertisement>` pour éviter les re-chargements.
+- `_buildAdCard(Post, double)` : card pub avec stats (Vues / Clics / CTR), badge statut coloré, bouton d'action (`getActionButtonText()` / `getActionIcon()`).
+- Grille ads avec `childAspectRatio: 0.65` (plus de hauteur pour les stats).
+
+**Thème AppColors + i18n AppLocalizations** :
+- Toutes les couleurs hardcodées remplacées par `AppColors.of(context)`.
+- 22 nouvelles clés i18n ajoutées (8 langues) dans `app_localizations.dart` :
+  - Navigation : `otherUserSubscribe`, `otherUserUnsubscribe`, `otherUserAbout`, `otherUserNoDescription`
+  - Filtres : `otherUserFilterTitle`, `otherUserTabPosts`, `otherUserTabAds`, `otherUserFilterAll/Images/Videos/Texts/Audios`
+  - États vides : `otherUserNoPosts`, `otherUserNoAds`, `otherUserNoFilterPosts(String type)`
+  - Profil : `otherUserReferralCode`, `otherUserSponsorships`, `otherUserLikesReceived`, `otherUserCodeCopied`, `otherUserVerified`, `otherUserShareProfile`, `otherUserSendReminder`
+
+**Affichage des posts** :
+- Vidéo : `post.thumbnail` stocké → image + play icon ; sinon container gris + play (suppression de `VideoThumbnail.thumbnailData()` async).
+- Types corrigés en MAJUSCULES dans `_getPostTypeIcon` / `_getPostTypeLabel` (correspondance Firestore : `VIDEO`, `IMAGE`, `TEXT`, `AUDIO`).
+- Pagination : `_postsPerPage = 12` (était 5), `startAfterDocument`.
+
+**Audio — fallback `post.images`** :
+- Ordre de priorité pour la couverture d'un post audio :
+  1. `post.thumbnail` (non vide) → image + badge headphones bas-gauche
+  2. `post.images` (non vide) → `images.first` + badge headphones bas-gauche
+  3. Aucune image → dégradé violet + headphones centré
+
+**Commit** : `6404d95`
+
+**Vérification** : `dart analyze` → 0 erreur (warnings/infos pré-existants uniquement).
