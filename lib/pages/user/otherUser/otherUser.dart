@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math';
 
 import 'package:afrotok/models/tiktokModel.dart';
@@ -13,11 +12,9 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/providers/authProvider.dart';
-import 'package:afrotok/constant/constColors.dart';
-import 'package:afrotok/constant/sizeText.dart';
-import 'package:afrotok/constant/textCustom.dart';
 import 'package:afrotok/pages/user/profile/profileDetail/widget/numbers_widget.dart';
-import 'package:video_thumbnail/video_thumbnail.dart';
+import 'package:afrotok/theme/app_colors.dart';
+import 'package:afrotok/l10n/app_localizations.dart';
 
 import '../../../providers/userProvider.dart';
 import '../../../services/linkService.dart';
@@ -37,27 +34,35 @@ class _OtherUserPageState extends State<OtherUserPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final ScrollController _scrollController = ScrollController();
 
+  // ── Posts normaux ──────────────────────────────────────────
   List<Post> _posts = [];
   bool _loading = true;
   bool _loadingMore = false;
   DocumentSnapshot? _lastDocument;
   String _selectedFilter = 'all';
-  final int _postsPerPage = 5;
+
+  // ── Publicités (isAdvertisement == true) ───────────────────
+  List<Post> _adsPosts = [];
+  bool _adsLoading = false;
+  bool _adsLoadingMore = false;
+  DocumentSnapshot? _adsLastDocument;
+  Map<String, Advertisement> _adsData = {};
+
+  // ── Onglet actif ───────────────────────────────────────────
+  bool _showAds = false;
+
+  final int _postsPerPage = 12;
   bool _isSharing = false;
-  bool _abonneTap = false; // Pour gérer le chargement de l'abonnement
+  bool _abonneTap = false;
   late UserAuthProvider authProvider;
 
-  // Nouvelle variable pour les likes du profil en temps réel
   int _profileLikes = 0;
   bool _isSendingReminder = false;
-  // Subscription pour écouter les changements
-  StreamSubscription<DocumentSnapshot>? _userSubscription;
   @override
   void initState() {
     super.initState();
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    // Écouter les changements en temps réel
-    _listenToUserChanges();
+    _profileLikes = widget.otherUser.userlikes ?? 0;
     _loadInitialPosts();
     _scrollController.addListener(_scrollListener);
   }
@@ -185,28 +190,6 @@ class _OtherUserPageState extends State<OtherUserPage> {
         ],
       ),
     );
-  }
-// Méthode pour écouter les changements de l'utilisateur
-  void _listenToUserChanges() {
-    _userSubscription = FirebaseFirestore.instance
-        .collection('Users')
-        .doc(widget.otherUser.id)
-        .snapshots()
-        .listen((snapshot) {
-      if (snapshot.exists) {
-        final data = snapshot.data() as Map<String, dynamic>;
-        final newLikes = data['profileLikesCount'] ?? 0;
-
-        // Mettre à jour uniquement si la valeur a changé
-        if (_profileLikes != newLikes) {
-          setState(() {
-            _profileLikes = newLikes;
-          });
-        }
-      }
-    }, onError: (error) {
-      print('Erreur écoute utilisateur: $error');
-    });
   }
   @override
   void dispose() {
@@ -429,90 +412,93 @@ class _OtherUserPageState extends State<OtherUserPage> {
   }
   Widget _buildFollowButton() {
     final isOwnProfile = authProvider.loginUserData.id == widget.otherUser.id;
-    final isAdmin = authProvider.loginUserData.role == 'ADM'; // ✅ Vérification locale
-
-    if (isOwnProfile) return SizedBox();
+    if (isOwnProfile) return const SizedBox();
+    final isAdmin = authProvider.loginUserData.role == 'ADM';
+    final colors = AppColors.of(context);
+    final t = AppLocalizations.of(context);
 
     return Row(
       children: [
-        // Bouton S'abonner
         Expanded(
           flex: isAdmin ? 3 : 4,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: _isAbonne ? Colors.grey[800] : Colors.green,
-              foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(vertical: 16),
+              backgroundColor: _isAbonne ? colors.surfaceVariant : colors.primary,
+              foregroundColor: colors.onPrimary,
+              padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              side: _isAbonne ? BorderSide(color: Colors.green, width: 1.5) : BorderSide.none,
+              side: _isAbonne
+                  ? BorderSide(color: colors.primary, width: 1.5)
+                  : BorderSide.none,
             ),
             onPressed: _abonneTap ? null : _toggleAbonnement,
             child: _abonneTap
                 ? SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                color: Colors.white,
-                strokeWidth: 2,
-              ),
-            )
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        color: colors.onPrimary, strokeWidth: 2),
+                  )
                 : Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(_isAbonne ? Icons.person_remove : Icons.person_add, size: 20),
-                SizedBox(width: 8),
-                Text(
-                  _isAbonne ? 'SE DÉSABONNER' : "S'ABONNER",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(_isAbonne ? Icons.person_remove : Icons.person_add,
+                          size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        _isAbonne ? t.otherUserUnsubscribe : t.otherUserSubscribe,
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
           ),
         ),
 
-        // 🔥 BOUTON ADMIN - visible uniquement si rôle ADM
+        // Bouton admin — email de rappel
         if (isAdmin) ...[
-          SizedBox(width: 8),
+          const SizedBox(width: 8),
           Container(
             decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.2),
+              color: colors.warning.withOpacity(0.2),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.orange, width: 1),
+              border: Border.all(color: colors.warning, width: 1),
             ),
             child: IconButton(
               icon: _isSendingReminder
                   ? SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(color: Colors.orange, strokeWidth: 2),
-              )
-                  : Icon(Icons.email, color: Colors.orange, size: 24),
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          color: colors.warning, strokeWidth: 2),
+                    )
+                  : Icon(Icons.email, color: colors.warning, size: 24),
               onPressed: _isSendingReminder ? null : _showConfirmReminderDialog,
-              tooltip: 'Envoyer un email de rappel',
+              tooltip: t.otherUserSendReminder,
             ),
           ),
         ],
 
-        // Bouton Partager
-        SizedBox(width: 8),
+        const SizedBox(width: 8),
         Container(
           decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.2),
+            color: colors.primary.withOpacity(0.2),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.green, width: 1),
+            border: Border.all(color: colors.primary, width: 1),
           ),
           child: IconButton(
             icon: _isSharing
                 ? SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(color: Colors.green, strokeWidth: 2),
-            )
-                : Icon(Icons.share, color: Colors.green, size: 24),
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        color: colors.primary, strokeWidth: 2),
+                  )
+                : Icon(Icons.share, color: colors.primary, size: 24),
             onPressed: _isSharing ? null : _shareProfile,
-            tooltip: 'Partager le profil',
+            tooltip: t.otherUserShareProfile,
           ),
         ),
       ],
@@ -520,39 +506,36 @@ class _OtherUserPageState extends State<OtherUserPage> {
   }
 
   Widget _buildShareButton() {
+    final colors = AppColors.of(context);
     return GestureDetector(
       onTap: _isSharing ? null : _shareProfile,
       child: Container(
-        padding: EdgeInsets.all(12),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: _isSharing ? Colors.grey : Colors.green,
+          color: _isSharing ? colors.surfaceVariant : colors.primary,
           borderRadius: BorderRadius.circular(30),
         ),
         child: _isSharing
             ? SizedBox(
-          width: 24,
-          height: 24,
-          child: CircularProgressIndicator(
-            color: Colors.white,
-            strokeWidth: 2,
-          ),
-        )
-            : Icon(
-          Icons.share,
-          color: Colors.white,
-          size: 24,
-        ),
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                    color: colors.onPrimary, strokeWidth: 2),
+              )
+            : Icon(Icons.share, color: colors.onPrimary, size: 24),
       ),
     );
   }
   Widget _buildReferralCodeCompact() {
+    final colors = AppColors.of(context);
+    final t = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.yellow.withOpacity(0.1),
+        color: colors.accent.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.yellow),
+        border: Border.all(color: colors.accent),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -561,17 +544,14 @@ class _OtherUserPageState extends State<OtherUserPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "Code de parrainage",
-                style: TextStyle(
-                  color: Colors.grey[400],
-                  fontSize: 12,
-                ),
+                t.otherUserReferralCode,
+                style: TextStyle(color: colors.textSecondary, fontSize: 12),
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Text(
                 "${widget.otherUser.codeParrainage}",
                 style: TextStyle(
-                  color: Colors.yellow,
+                  color: colors.supportAccent,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
@@ -581,19 +561,19 @@ class _OtherUserPageState extends State<OtherUserPage> {
           Row(
             children: [
               Container(
-                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.2),
+                  color: colors.info.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.group, color: Colors.blue, size: 14),
-                    SizedBox(width: 4),
+                    Icon(Icons.group, color: colors.info, size: 14),
+                    const SizedBox(width: 4),
                     Text(
                       "${widget.otherUser.usersParrainer?.length ?? 0}",
                       style: TextStyle(
-                        color: Colors.blue,
+                        color: colors.info,
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
@@ -601,19 +581,19 @@ class _OtherUserPageState extends State<OtherUserPage> {
                   ],
                 ),
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               GestureDetector(
                 onTap: () {
                   Clipboard.setData(ClipboardData(
                       text: "${widget.otherUser.codeParrainage}"));
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Code copié !'),
-                      backgroundColor: Colors.green,
+                      content: Text(t.otherUserCodeCopied),
+                      backgroundColor: colors.primary,
                     ),
                   );
                 },
-                child: Icon(Icons.copy, color: Colors.yellow, size: 20),
+                child: Icon(Icons.copy, color: colors.supportAccent, size: 20),
               ),
             ],
           ),
@@ -633,15 +613,13 @@ class _OtherUserPageState extends State<OtherUserPage> {
 
       final snapshot = await query.get();
 
-      // Filtrage manuel : on garde que ceux sans challenge_id et sans canal_id
       final filteredPosts = snapshot.docs
           .map((doc) => Post.fromJson({'id': doc.id, ...doc.data()}))
           .where((post) =>
-      (post.challenge_id == null || post.challenge_id!.isEmpty) &&
-          (post.canal_id == null || post.canal_id!.isEmpty)
-          && (post.type == PostType.POST.name)
-      )
-
+              (post.challenge_id == null || post.challenge_id!.isEmpty) &&
+              (post.canal_id == null || post.canal_id!.isEmpty) &&
+              (post.type == PostType.POST.name) &&
+              post.isAdvertisement != true)
           .toList();
 
       setState(() {
@@ -675,14 +653,13 @@ class _OtherUserPageState extends State<OtherUserPage> {
       final snapshot = await query.get();
 
       if (snapshot.docs.isNotEmpty) {
-        // Filtrage manuel encore
         final filteredPosts = snapshot.docs
             .map((doc) => Post.fromJson({'id': doc.id, ...doc.data()}))
             .where((post) =>
-        (post.challenge_id == null || post.challenge_id!.isEmpty) &&
-            (post.canal_id == null || post.canal_id!.isEmpty)
-            && (post.type == PostType.POST.name)
-        )
+                (post.challenge_id == null || post.challenge_id!.isEmpty) &&
+                (post.canal_id == null || post.canal_id!.isEmpty) &&
+                (post.type == PostType.POST.name) &&
+                post.isAdvertisement != true)
             .toList();
 
         setState(() {
@@ -702,7 +679,11 @@ class _OtherUserPageState extends State<OtherUserPage> {
     if (_scrollController.offset >=
             _scrollController.position.maxScrollExtent - 200 &&
         !_scrollController.position.outOfRange) {
-      _loadMorePosts();
+      if (_showAds) {
+        _loadMoreAds();
+      } else {
+        _loadMorePosts();
+      }
     }
   }
 
@@ -715,6 +696,96 @@ class _OtherUserPageState extends State<OtherUserPage> {
     });
     printVm("_selectedFilter : ${_selectedFilter}");
     await _loadInitialPosts();
+  }
+
+  Future<void> _switchTab(bool showAds) async {
+    if (_showAds == showAds) return;
+    setState(() => _showAds = showAds);
+    if (showAds && _adsPosts.isEmpty && !_adsLoading) {
+      await _loadInitialAds();
+    }
+  }
+
+  Future<void> _loadInitialAds() async {
+    try {
+      setState(() => _adsLoading = true);
+      final snapshot = await _firestore
+          .collection('Posts')
+          .where('user_id', isEqualTo: widget.otherUser.id)
+          .where('isAdvertisement', isEqualTo: true)
+          .orderBy('created_at', descending: true)
+          .limit(_postsPerPage)
+          .get();
+
+      final posts = snapshot.docs
+          .map((doc) => Post.fromJson({'id': doc.id, ...doc.data()}))
+          .toList();
+
+      await _fetchAdvertisements(posts);
+
+      setState(() {
+        _adsPosts = posts;
+        _adsLastDocument = snapshot.docs.isNotEmpty ? snapshot.docs.last : null;
+        _adsLoading = false;
+      });
+    } catch (e) {
+      print('Erreur chargement pubs: $e');
+      setState(() => _adsLoading = false);
+    }
+  }
+
+  Future<void> _loadMoreAds() async {
+    if (_adsLoadingMore || _adsLastDocument == null) return;
+    try {
+      setState(() => _adsLoadingMore = true);
+      final snapshot = await _firestore
+          .collection('Posts')
+          .where('user_id', isEqualTo: widget.otherUser.id)
+          .where('isAdvertisement', isEqualTo: true)
+          .orderBy('created_at', descending: true)
+          .startAfterDocument(_adsLastDocument!)
+          .limit(_postsPerPage)
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        final newPosts = snapshot.docs
+            .map((doc) => Post.fromJson({'id': doc.id, ...doc.data()}))
+            .toList();
+        await _fetchAdvertisements(newPosts);
+        setState(() {
+          _adsPosts.addAll(newPosts);
+          _adsLastDocument = snapshot.docs.last;
+        });
+      }
+    } catch (e) {
+      print('Erreur chargement plus de pubs: $e');
+    } finally {
+      setState(() => _adsLoadingMore = false);
+    }
+  }
+
+  Future<void> _fetchAdvertisements(List<Post> posts) async {
+    final ids = posts
+        .where((p) => p.advertisementId != null && p.advertisementId!.isNotEmpty)
+        .map((p) => p.advertisementId!)
+        .where((id) => !_adsData.containsKey(id))
+        .toList();
+    if (ids.isEmpty) return;
+    for (int i = 0; i < ids.length; i += 30) {
+      final batch = ids.sublist(i, min(i + 30, ids.length));
+      try {
+        final snap = await _firestore
+            .collection('Advertisements')
+            .where(FieldPath.documentId, whereIn: batch)
+            .get();
+        for (final doc in snap.docs) {
+          _adsData[doc.id] =
+              Advertisement.fromJson({'id': doc.id, ...doc.data()});
+        }
+      } catch (e) {
+        print('Erreur fetch advertisements: $e');
+      }
+    }
   }
 
   List<Post> get _filteredPosts {
@@ -735,50 +806,51 @@ class _OtherUserPageState extends State<OtherUserPage> {
   }
 
   Widget _buildVerificationBadge() {
-    if (widget.otherUser.isVerify == true) {
-      return Container(
-        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-        decoration: BoxDecoration(
-          color: Colors.green,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.verified, color: Colors.white, size: 12),
-            SizedBox(width: 4),
-            Text(
-              'Vérifié',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-              ),
+    if (widget.otherUser.isVerify != true) return const SizedBox();
+    final colors = AppColors.of(context);
+    final t = AppLocalizations.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: colors.primary,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.verified, color: colors.onPrimary, size: 12),
+          const SizedBox(width: 4),
+          Text(
+            t.otherUserVerified,
+            style: TextStyle(
+              color: colors.onPrimary,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
             ),
-          ],
-        ),
-      );
-    }
-    return SizedBox();
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final height = MediaQuery.of(context).size.height;
+    final colors = AppColors.of(context);
+    final t = AppLocalizations.of(context);
     final width = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colors.background,
       body: RefreshIndicator(
         onRefresh: _loadInitialPosts,
-        backgroundColor: Colors.green,
-        color: Colors.white,
+        backgroundColor: colors.primary,
+        color: colors.onPrimary,
         child: CustomScrollView(
           controller: _scrollController,
           slivers: [
-            // En-tête du profil
             SliverAppBar(
               expandedHeight: 300,
+              backgroundColor: colors.background,
               flexibleSpace: FlexibleSpaceBar(
                 background: Container(
                   decoration: BoxDecoration(
@@ -786,82 +858,71 @@ class _OtherUserPageState extends State<OtherUserPage> {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.green.withOpacity(0.3),
-                        Colors.black,
+                        colors.primary.withOpacity(0.3),
+                        colors.background,
                       ],
                     ),
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      // Photo de profil
-                      Stack(
-                        children: [
-                          Container(
-                            width: 120,
-                            height: 120,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.green,
-                                width: 3,
-                              ),
-                            ),
-                            child: ClipOval(
-                              child: GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => FullScreenImageViewer(
-                                        imageUrl: widget.otherUser.imageUrl ?? '',
-                                      ),
-                                    ),
-                                  );
-                                },
-                                child: CachedNetworkImage(
-                                  imageUrl: widget.otherUser.imageUrl ?? '',
-                                  fit: BoxFit.cover,
-                                  placeholder: (context, url) => Container(
-                                    color: Colors.grey[800],
-                                    child: Icon(Icons.person, color: Colors.grey),
-                                  ),
-                                  errorWidget: (context, url, error) => Container(
-                                    color: Colors.grey[800],
-                                    child: Icon(Icons.person, color: Colors.grey),
+                      Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: colors.primary, width: 3),
+                        ),
+                        child: ClipOval(
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => FullScreenImageViewer(
+                                    imageUrl: widget.otherUser.imageUrl ?? '',
                                   ),
                                 ),
+                              );
+                            },
+                            child: CachedNetworkImage(
+                              imageUrl: widget.otherUser.imageUrl ?? '',
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Container(
+                                color: colors.surfaceVariant,
+                                child: Icon(Icons.person, color: colors.textSecondary),
+                              ),
+                              errorWidget: (context, url, error) => Container(
+                                color: colors.surfaceVariant,
+                                child: Icon(Icons.person, color: colors.textSecondary),
                               ),
                             ),
                           ),
-                        ],
+                        ),
                       ),
-                      SizedBox(height: 8),
-
-                      // Nom et badge de vérification
+                      const SizedBox(height: 8),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
                             "@${widget.otherUser.pseudo!}",
                             style: TextStyle(
-                              color: Colors.white,
+                              color: colors.textPrimary,
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          SizedBox(width: 8),
+                          const SizedBox(width: 8),
                           _buildVerificationBadge(),
                         ],
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       UserPresenceWidget(
-                        userId: widget.otherUser!.id!,
+                        userId: widget.otherUser.id!,
                         showTextStatus: true,
                         isChatHeader: false,
                       ),
-                      SizedBox(height: 4),
-
+                      const SizedBox(height: 4),
                     ],
                   ),
                 ),
@@ -913,64 +974,49 @@ class _OtherUserPageState extends State<OtherUserPage> {
             //   ),
             // ),
 
-            // Grille des posts
-            // Dans votre SliverToBoxAdapter
             SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.all(8),
+                padding: const EdgeInsets.all(8),
                 child: Column(
                   children: [
-                    // Statistiques
                     NumbersWidget(
                       followers: widget.otherUser.userAbonnesIds?.length ?? 0,
                       taux: widget.otherUser.popularite!,
                       points: widget.otherUser.pointContribution!,
                     ),
-
-                    SizedBox(height: 16),
-
-                    // Ligne des actions
+                    const SizedBox(height: 16),
                     Row(
                       children: [
-                        // Bouton S'abonner (prend plus d'espace)
                         Expanded(
                           flex: 4,
                           child: _buildFollowButton(),
                         ),
-                        SizedBox(width: 12),
-
-                        // Bouton Partager
+                        const SizedBox(width: 12),
                         Expanded(
                           flex: 1,
                           child: _buildShareButton(),
                         ),
                       ],
                     ),
-
-                    SizedBox(height: 16),
-
-                    // Code de parrainage (si vous voulez le mettre ici au lieu de l'AppBar)
+                    const SizedBox(height: 16),
                     _buildReferralCodeCompact(),
-
-                    SizedBox(height: 16),
-
-                    // Likes du profil
+                    const SizedBox(height: 16),
                     Container(
-                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
+                        color: colors.primary.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.green),
+                        border: Border.all(color: colors.primary),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.favorite, color: Colors.red, size: 20),
-                          SizedBox(width: 8),
+                          Icon(Icons.favorite, color: colors.danger, size: 20),
+                          const SizedBox(width: 8),
                           Text(
-                            "${_formatNumber(widget.otherUser.userlikes ?? 0)} like(s) reçus",
+                            "${_formatNumber(widget.otherUser.userlikes ?? 0)} ${t.otherUserLikesReceived}",
                             style: TextStyle(
-                              color: Colors.green,
+                              color: colors.primary,
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                             ),
@@ -978,74 +1024,108 @@ class _OtherUserPageState extends State<OtherUserPage> {
                         ],
                       ),
                     ),
-
-                    SizedBox(height: 16),
-
-                    // À propos
+                    const SizedBox(height: 16),
                     _buildAboutSection(),
-                    SizedBox(height: 16),
-
-                    // Filtres
+                    const SizedBox(height: 16),
                     _buildFilterSection(),
                   ],
                 ),
               ),
             ),
-            if (_loading)
-              SliverToBoxAdapter(
-                child: Container(
-                  height: 200,
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+            // ── Grille : Posts ou Publicités ───────────────────────
+            if (_showAds) ...[
+              if (_adsLoading)
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: 200,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(colors.warning),
+                      ),
                     ),
                   ),
-                ),
-              )
-            else if (_filteredPosts.isEmpty)
-              SliverToBoxAdapter(
-                child: Container(
-                  height: 200,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.post_add,
-                        size: 64,
-                        color: Colors.grey[700],
-                      ),
-                      SizedBox(height: 16),
-                      Text(
-                        _selectedFilter == 'all'
-                            ? 'Aucun post publié'
-                            : 'Aucun ${_getFilterLabel(_selectedFilter)} publié',
-                        style: TextStyle(
-                          color: Colors.grey[500],
-                          fontSize: 16,
+                )
+              else if (_adsPosts.isEmpty)
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: 200,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.campaign, size: 64, color: colors.textSecondary),
+                        const SizedBox(height: 16),
+                        Text(
+                          t.otherUserNoAds,
+                          style: TextStyle(color: colors.textSecondary, fontSize: 16),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
+                  ),
+                )
+              else
+                SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                    childAspectRatio: 0.65,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      if (index == _adsPosts.length) return _buildLoadMoreIndicator();
+                      return _buildAdCard(_adsPosts[index], width);
+                    },
+                    childCount: _adsPosts.length + (_adsLoadingMore ? 1 : 0),
                   ),
                 ),
-              )
-            else
-              SliverGrid(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 8,
-                  childAspectRatio: 0.8,
+            ] else ...[
+              if (_loading)
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: 200,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(colors.primary),
+                      ),
+                    ),
+                  ),
+                )
+              else if (_filteredPosts.isEmpty)
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: 200,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.post_add, size: 64, color: colors.textSecondary),
+                        const SizedBox(height: 16),
+                        Text(
+                          _selectedFilter == 'all'
+                              ? t.otherUserNoPosts
+                              : t.otherUserNoFilterPosts(_getFilterLabel(_selectedFilter)),
+                          style: TextStyle(color: colors.textSecondary, fontSize: 16),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                    childAspectRatio: 0.8,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      if (index == _filteredPosts.length) return _buildLoadMoreIndicator();
+                      return _buildPostCard(_filteredPosts[index], width);
+                    },
+                    childCount: _filteredPosts.length + (_loadingMore ? 1 : 0),
+                  ),
                 ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    if (index == _filteredPosts.length) {
-                      return _buildLoadMoreIndicator();
-                    }
-                    return _buildPostCard(_filteredPosts[index], width);
-                  },
-                  childCount: _filteredPosts.length + (_loadingMore ? 1 : 0),
-                ),
-              ),
+            ],
           ],
         ),
       ),
@@ -1129,36 +1209,38 @@ class _OtherUserPageState extends State<OtherUserPage> {
   }
 
   Widget _buildAboutSection() {
+    final colors = AppColors.of(context);
+    final t = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[900],
+        color: colors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.green.withOpacity(0.3)),
+        border: Border.all(color: colors.primary.withOpacity(0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.info, color: Colors.green, size: 20),
-              SizedBox(width: 8),
+              Icon(Icons.info, color: colors.primary, size: 20),
+              const SizedBox(width: 8),
               Text(
-                'À PROPOS',
+                t.otherUserAbout,
                 style: TextStyle(
-                  color: Colors.green,
+                  color: colors.primary,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ],
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           Text(
-            widget.otherUser.apropos ?? 'Aucune description',
+            widget.otherUser.apropos ?? t.otherUserNoDescription,
             style: TextStyle(
-              color: Colors.grey[400],
+              color: colors.textSecondary,
               fontSize: 14,
               height: 1.4,
             ),
@@ -1169,99 +1251,161 @@ class _OtherUserPageState extends State<OtherUserPage> {
   }
 
   Widget _buildFilterSection() {
+    final colors = AppColors.of(context);
+    final t = AppLocalizations.of(context);
     final filters = [
-      {'value': 'all', 'label': 'Tous', 'icon': Icons.all_inclusive},
-        {'value': 'IMAGE', 'label': 'Images', 'icon': Icons.photo},
-      {'value': 'VIDEO', 'label': 'Vidéos', 'icon': Icons.videocam},
-      {'value': 'TEXT', 'label': 'Textes', 'icon': Icons.text_fields},
+      {'value': 'all', 'label': t.otherUserFilterAll, 'icon': Icons.all_inclusive},
+      {'value': 'IMAGE', 'label': t.otherUserFilterImages, 'icon': Icons.photo},
+      {'value': 'VIDEO', 'label': t.otherUserFilterVideos, 'icon': Icons.videocam},
+      {'value': 'AUDIO', 'label': t.otherUserFilterAudios, 'icon': Icons.headphones},
+      {'value': 'TEXT', 'label': t.otherUserFilterTexts, 'icon': Icons.text_fields},
     ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'FILTRER PAR TYPE',
-          style: TextStyle(
-            color: Colors.green,
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
+        // ── Onglets Posts / Publicités ──────────────────────────
+        Container(
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: colors.border),
           ),
-        ),
-        SizedBox(height: 12),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
           child: Row(
-            children: filters.map((filter) {
-              final isSelected = _selectedFilter == filter['value'];
-              return Padding(
-                padding: EdgeInsets.only(right: 8),
-                child: FilterChip(
-
-                  selected: isSelected,
-                  onSelected: (_) => _applyFilter(filter['value'].toString()),
-                  label: Text(
-                    filter['label'].toString(),
-                    style: TextStyle(
-                      color: isSelected ? Colors.black : Colors.white,
-                      fontWeight: FontWeight.w600,
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => _switchTab(false),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: !_showAds ? colors.primary : Colors.transparent,
+                      borderRadius: BorderRadius.circular(11),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.grid_view,
+                            size: 16,
+                            color: !_showAds ? colors.onPrimary : colors.textSecondary),
+                        const SizedBox(width: 6),
+                        Text(
+                          t.otherUserTabPosts,
+                          style: TextStyle(
+                            color: !_showAds ? colors.onPrimary : colors.textSecondary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-
-                  deleteIcon: Icon(
-                    filter['icon'] as IconData,
-                    color: isSelected ? Colors.black : Colors.green,
-                    size: 16,
-                  ),
-                  backgroundColor: Colors.grey[800],
-                  selectedColor: Colors.green,
-                  checkmarkColor: Colors.black,
-                  side: BorderSide(color: Colors.green),
                 ),
-              );
-            }).toList(),
+              ),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => _switchTab(true),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: _showAds ? colors.warning : Colors.transparent,
+                      borderRadius: BorderRadius.circular(11),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.campaign,
+                            size: 16,
+                            color: _showAds ? colors.onPrimary : colors.textSecondary),
+                        const SizedBox(width: 6),
+                        Text(
+                          t.otherUserTabAds,
+                          style: TextStyle(
+                            color: _showAds ? colors.onPrimary : colors.textSecondary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
+
+        // ── Chips de filtre (uniquement onglet Posts) ───────────
+        if (!_showAds) ...[
+          const SizedBox(height: 12),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: filters.map((filter) {
+                final isSelected = _selectedFilter == filter['value'];
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: FilterChip(
+                    selected: isSelected,
+                    onSelected: (_) => _applyFilter(filter['value'].toString()),
+                    label: Text(
+                      filter['label'].toString(),
+                      style: TextStyle(
+                        color: isSelected ? colors.onPrimary : colors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    avatar: Icon(
+                      filter['icon'] as IconData,
+                      color: isSelected ? colors.onPrimary : colors.primary,
+                      size: 16,
+                    ),
+                    backgroundColor: colors.surfaceVariant,
+                    selectedColor: colors.primary,
+                    checkmarkColor: colors.onPrimary,
+                    side: BorderSide(color: colors.primary),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
       ],
     );
   }
 
   Widget _buildPostCard(Post post, double width) {
+    final colors = AppColors.of(context);
     return GestureDetector(
       onTap: () => _navigateToPostDetails(post),
       child: Container(
-        margin: EdgeInsets.all(4),
+        margin: const EdgeInsets.all(4),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          color: Colors.grey[900],
-          border: Border.all(color: Colors.green.withOpacity(0.3)),
+          color: colors.surface,
+          border: Border.all(color: colors.primary.withOpacity(0.3)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.3),
+              color: colors.black.withOpacity(0.3),
               blurRadius: 6,
-              offset: Offset(0, 3),
+              offset: const Offset(0, 3),
             ),
           ],
         ),
         child: Stack(
           children: [
-            // Contenu du post
             _buildPostContent(post),
-
-            // Overlay avec statistiques
             Positioned(
               bottom: 0,
               left: 0,
               right: 0,
               child: Container(
-                padding: EdgeInsets.all(8),
-                decoration: BoxDecoration(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
-                    colors: [
-                      Colors.black.withOpacity(0.8),
-                      Colors.transparent,
-                    ],
+                    colors: [Color(0xCC000000), Colors.transparent],
                   ),
                   borderRadius: BorderRadius.only(
                     bottomLeft: Radius.circular(12),
@@ -1278,30 +1422,25 @@ class _OtherUserPageState extends State<OtherUserPage> {
                 ),
               ),
             ),
-
-            // Badge type de contenu
             Positioned(
               top: 8,
               right: 8,
               child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.7),
+                  color: colors.black.withOpacity(0.7),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      _getPostTypeIcon(post.dataType),
-                      color: Colors.green,
-                      size: 12,
-                    ),
-                    SizedBox(width: 4),
+                    Icon(_getPostTypeIcon(post.dataType),
+                        color: colors.primary, size: 12),
+                    const SizedBox(width: 4),
                     Text(
                       _getPostTypeLabel(post.dataType),
                       style: TextStyle(
-                        color: Colors.white,
+                        color: colors.textPrimary,
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                       ),
@@ -1318,63 +1457,342 @@ class _OtherUserPageState extends State<OtherUserPage> {
 
 
 
-  Widget _buildPostContent(Post post) {
-    if (post.dataType == PostDataType.VIDEO.name && post.url_media != null) {
-      return FutureBuilder<Uint8List?>(
-        future: VideoThumbnail.thumbnailData(
-          video: post.url_media!,
-          imageFormat: ImageFormat.JPEG,
-          maxHeight: 300, // taille de l'aperçu
-          quality: 75,
+  Widget _buildAdCard(Post post, double width) {
+    final colors = AppColors.of(context);
+    final ad = (post.advertisementId != null && post.advertisementId!.isNotEmpty)
+        ? _adsData[post.advertisementId]
+        : null;
+
+    Color statusColor;
+    String statusText;
+    IconData statusIcon;
+    switch (ad?.status) {
+      case 'active':
+        statusColor = colors.primary;
+        statusText = 'Active';
+        statusIcon = Icons.check_circle;
+        break;
+      case 'pending':
+        statusColor = colors.warning;
+        statusText = 'Attente';
+        statusIcon = Icons.hourglass_empty;
+        break;
+      case 'expired':
+        statusColor = colors.textSecondary;
+        statusText = 'Expirée';
+        statusIcon = Icons.timer_off;
+        break;
+      case 'rejected':
+        statusColor = colors.danger;
+        statusText = 'Rejetée';
+        statusIcon = Icons.cancel;
+        break;
+      default:
+        statusColor = colors.warning;
+        statusText = 'PUB';
+        statusIcon = Icons.campaign;
+    }
+
+    return GestureDetector(
+      onTap: () => _navigateToPostDetails(post),
+      child: Container(
+        margin: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: colors.surface,
+          border: Border.all(
+            color: ad?.status == 'active'
+                ? colors.warning.withOpacity(0.6)
+                : colors.border,
+          ),
         ),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Container(
-              color: Colors.grey[700],
-              child: Center(child: CircularProgressIndicator()),
-            );
-          }
+        child: Stack(
+          children: [
+            // Contenu post (image / vidéo / audio / texte)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: SizedBox.expand(child: _buildPostContent(post)),
+            ),
 
-          if (snapshot.hasError || snapshot.data == null) {
-            return Container(
-              color: Colors.grey[700],
-              child: Icon(Icons.videocam, color: Colors.green, size: 40),
-            );
-          }
-
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Stack(
-              children: [
-                Image.memory(
-                  snapshot.data!,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: double.infinity,
+            // Bandeau bas : stats Advertisement
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(6, 14, 6, 6),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [Color(0xEE000000), Colors.transparent],
+                  ),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(12),
+                    bottomRight: Radius.circular(12),
+                  ),
                 ),
-                Center(
-                  child: Container(
-                    padding: EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
-                      shape: BoxShape.circle,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Ligne stats si Advertisement chargé
+                    if (ad != null)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _buildAdStat(Icons.remove_red_eye,
+                              _formatNumber(ad.views ?? 0), colors.info),
+                          _buildAdStat(Icons.ads_click,
+                              _formatNumber(ad.clicks ?? 0), colors.warning),
+                          _buildAdStat(
+                              Icons.trending_up,
+                              '${ad.ctr.toStringAsFixed(1)}%',
+                              ad.ctr > 5 ? colors.primary : colors.warning),
+                        ],
+                      ),
+                    // Bouton d'action
+                    if (ad != null &&
+                        (ad.actionButtonText != null ||
+                            ad.actionType != null)) ...[
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: colors.warning.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(ad.getActionIcon(),
+                                size: 10, color: Colors.white),
+                            const SizedBox(width: 4),
+                            Text(
+                              ad.getActionButtonText(),
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    // Si pas encore chargé : icône like/vue/comment classiques
+                    if (ad == null)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _buildPostStat(Icons.favorite, post.loves ?? 0),
+                          _buildPostStat(Icons.visibility, post.vues ?? 0),
+                          _buildPostStat(Icons.comment, post.comments ?? 0),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Badge type contenu — haut gauche
+            Positioned(
+              top: 8,
+              left: 8,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(
+                  color: colors.black.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(_getPostTypeIcon(post.dataType),
+                        color: colors.warning, size: 10),
+                    const SizedBox(width: 3),
+                    Text(
+                      _getPostTypeLabel(post.dataType),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold),
                     ),
-                    child: Icon(
-                      Icons.play_arrow,
-                      color: Colors.white,
-                      size: 30,
+                  ],
+                ),
+              ),
+            ),
+
+            // Badge statut — haut droite
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.85),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(statusIcon, size: 10, color: Colors.white),
+                    const SizedBox(width: 3),
+                    Text(
+                      statusText,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold),
                     ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAdStat(IconData icon, String value, Color color) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: color, size: 12),
+        const SizedBox(height: 1),
+        Text(
+          value,
+          style: const TextStyle(
+              color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPostContent(Post post) {
+    final colors = AppColors.of(context);
+    if (post.dataType == PostDataType.VIDEO.name) {
+      final thumb = post.thumbnail;
+      if (thumb != null && thumb.isNotEmpty) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              CachedNetworkImage(
+                imageUrl: thumb,
+                fit: BoxFit.cover,
+                placeholder: (_, __) => Container(color: colors.surfaceVariant),
+                errorWidget: (_, __, ___) => Container(color: colors.surfaceVariant),
+              ),
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: colors.black.withOpacity(0.6),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.play_arrow, color: Colors.white, size: 30),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          color: colors.surfaceVariant,
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: colors.black.withOpacity(0.6),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.play_arrow, color: Colors.white, size: 30),
+            ),
+          ),
+        ),
+      );
+    } else if (post.dataType == PostDataType.AUDIO.name) {
+      // Priorité : thumbnail → première image → dégradé violet
+      final coverUrl = (post.thumbnail != null && post.thumbnail!.isNotEmpty)
+          ? post.thumbnail!
+          : (post.images != null && post.images!.isNotEmpty)
+              ? post.images!.first
+              : null;
+
+      if (coverUrl != null) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              CachedNetworkImage(
+                imageUrl: coverUrl,
+                fit: BoxFit.cover,
+                placeholder: (_, __) =>
+                    Container(color: colors.surfaceVariant),
+                errorWidget: (_, __, ___) =>
+                    Container(color: colors.surfaceVariant),
+              ),
+              Positioned(
+                bottom: 8,
+                left: 8,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: const BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.headphones,
+                      color: Colors.white, size: 16),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+      // Pas de couverture → dégradé violet avec headphones centré
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF4A0080), Color(0xFF311B92)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.headphones, color: Colors.white, size: 40),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Text(
+                    post.description ?? 'Audio',
+                    textAlign: TextAlign.center,
+                    style:
+                        const TextStyle(color: Colors.white70, fontSize: 11),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
-          );
-        },
+          ),
+        ),
       );
-    } else if (post.dataType == 'IMAGE' &&
+    } else if (post.dataType == PostDataType.IMAGE.name &&
         post.images != null &&
         post.images!.isNotEmpty) {
-      // Pour les images
       return ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: CachedNetworkImage(
@@ -1383,17 +1801,16 @@ class _OtherUserPageState extends State<OtherUserPage> {
           width: double.infinity,
           height: double.infinity,
           placeholder: (context, url) => Container(
-            color: Colors.grey[700],
-            child: Icon(Icons.photo, color: Colors.green),
+            color: colors.surfaceVariant,
+            child: Icon(Icons.photo, color: colors.primary),
           ),
           errorWidget: (context, url, error) => Container(
-            color: Colors.grey[700],
-            child: Icon(Icons.broken_image, color: Colors.green),
+            color: colors.surfaceVariant,
+            child: Icon(Icons.broken_image, color: colors.primary),
           ),
         ),
       );
     } else {
-      // Pour les posts texte
       return _buildTextPost(post);
     }
   }
@@ -1454,14 +1871,15 @@ class _OtherUserPageState extends State<OtherUserPage> {
   }
 
   Widget _buildPostStat(IconData icon, int count) {
+    final colors = AppColors.of(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: Colors.green, size: 12),
-        SizedBox(width: 4),
+        Icon(icon, color: colors.primary, size: 12),
+        const SizedBox(width: 4),
         Text(
           _formatNumber(count),
-          style: TextStyle(
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 10,
             fontWeight: FontWeight.bold,
@@ -1472,11 +1890,12 @@ class _OtherUserPageState extends State<OtherUserPage> {
   }
 
   Widget _buildLoadMoreIndicator() {
+    final colors = AppColors.of(context);
     return Container(
-      margin: EdgeInsets.all(16),
+      margin: const EdgeInsets.all(16),
       child: Center(
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+          valueColor: AlwaysStoppedAnimation<Color>(colors.primary),
         ),
       ),
     );
@@ -1484,12 +1903,14 @@ class _OtherUserPageState extends State<OtherUserPage> {
 
   IconData _getPostTypeIcon(String? dataType) {
     switch (dataType) {
-      case 'video':
+      case 'VIDEO':
         return Icons.videocam;
-      case 'image':
+      case 'IMAGE':
         return Icons.photo;
-      case 'text':
+      case 'TEXT':
         return Icons.text_fields;
+      case 'AUDIO':
+        return Icons.headphones;
       default:
         return Icons.post_add;
     }
@@ -1497,27 +1918,27 @@ class _OtherUserPageState extends State<OtherUserPage> {
 
   String _getPostTypeLabel(String? dataType) {
     switch (dataType) {
-      case 'video':
+      case 'VIDEO':
         return 'VIDÉO';
-      case 'image':
+      case 'IMAGE':
         return 'IMAGE';
-      case 'text':
+      case 'TEXT':
         return 'TEXTE';
+      case 'AUDIO':
+        return 'AUDIO';
       default:
         return 'POST';
     }
   }
 
   String _getFilterLabel(String filter) {
+    final t = AppLocalizations.of(context);
     switch (filter) {
-      case 'image':
-          return 'IMAGE';
-      case 'video':
-        return 'VIDEO';
-      case 'text':
-        return 'TEXT';
-      default:
-        return 'IMAGE';
+      case 'IMAGE': return t.otherUserFilterImages;
+      case 'VIDEO': return t.otherUserFilterVideos;
+      case 'TEXT':  return t.otherUserFilterTexts;
+      case 'AUDIO': return t.otherUserFilterAudios;
+      default:      return t.otherUserFilterAll;
     }
   }
 

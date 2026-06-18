@@ -29,9 +29,12 @@ class PostViewService {
   ///   - l'auteur est connu et différent du viewer (pas ses propres vues)
   static Future<void> recordAuthorView(Post post, String viewerUserId) async {
     if (post.type != PostType.POST.name) return;
+    if (post.isAdvertisement == true) return;
     final authorId = post.user_id;
     if (authorId == null || authorId.isEmpty) return;
     if (authorId == viewerUserId) return;
+    final postId = post.id;
+    if (postId == null || postId.isEmpty) return;
 
     final month = _currentMonth();
     try {
@@ -39,6 +42,7 @@ class PostViewService {
         'totalPostUniqueViews': FieldValue.increment(1),
         'postViewsAvailable': FieldValue.increment(2.0),
         'postViewsMonthly.$month': FieldValue.increment(1),
+        'postViewsMonthlyPostIds.$month': FieldValue.arrayUnion([postId]),
       });
     } catch (e) {
       print('PostViewService.recordAuthorView error: $e');
@@ -54,11 +58,13 @@ class PostViewService {
       final data = userDoc.data()!;
       if (data['postViewsMigrationDone'] == true) return;
 
-      final monthly = await _aggregateMonthlyViews(userId);
+      final postIds = <String, List<String>>{};
+      final monthly = await _aggregateMonthlyViews(userId, postIds);
       final totalViews = monthly.values.fold(0, (a, b) => a + b);
 
       final Map<String, dynamic> monthlyUpdate = {};
       monthly.forEach((k, v) => monthlyUpdate['postViewsMonthly.$k'] = v);
+      postIds.forEach((k, v) => monthlyUpdate['postViewsMonthlyPostIds.$k'] = v);
 
       await _firestore.collection('Users').doc(userId).update({
         'totalPostUniqueViews': FieldValue.increment(totalViews),
@@ -78,11 +84,13 @@ class PostViewService {
   /// Ne touche pas postViewsAvailable ni totalPostUniqueViews.
   static Future<void> fixMonthlyData(String userId) async {
     try {
-      final monthly = await _aggregateMonthlyViews(userId);
+      final postIds = <String, List<String>>{};
+      final monthly = await _aggregateMonthlyViews(userId, postIds);
 
-      await _firestore.collection('Users').doc(userId).update({
-        'postViewsMonthly': monthly, // remplacement complet
-      });
+      final Map<String, dynamic> update = {'postViewsMonthly': monthly};
+      postIds.forEach((k, v) => update['postViewsMonthlyPostIds.$k'] = v);
+
+      await _firestore.collection('Users').doc(userId).update(update);
 
       print('✅ Correction map mensuelle: ${monthly.length} mois recalculés');
     } catch (e) {
@@ -92,7 +100,9 @@ class PostViewService {
 
   /// Requête commune : posts de l'utilisateur des 3 derniers mois,
   /// agrégés par mois avec détection automatique ms/µs.
-  static Future<Map<String, int>> _aggregateMonthlyViews(String userId) async {
+  /// Si [postIdsCollector] est fourni, il est également peuplé (postId par mois).
+  static Future<Map<String, int>> _aggregateMonthlyViews(String userId,
+      [Map<String, List<String>>? postIdsCollector]) async {
     final threeMonthsAgo = DateTime.now().subtract(const Duration(days: 90));
     final now = DateTime.now();
 
@@ -109,6 +119,8 @@ class PostViewService {
     for (final doc in postsSnap.docs) {
       final postData = doc.data();
 
+      if (postData['isAdvertisement'] == true) continue;
+
       final views = (postData['uniqueViewsCount'] as num?)?.toInt()
           ?? (postData['vues'] as num?)?.toInt()
           ?? 0;
@@ -121,6 +133,10 @@ class PostViewService {
 
       final key = '${postDate.year}-${postDate.month.toString().padLeft(2, '0')}';
       monthly[key] = (monthly[key] ?? 0) + views;
+
+      if (postIdsCollector != null) {
+        (postIdsCollector[key] ??= []).add(doc.id);
+      }
     }
 
     return monthly;

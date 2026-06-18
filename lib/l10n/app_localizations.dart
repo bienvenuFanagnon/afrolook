@@ -1330,8 +1330,8 @@ class AppLocalizations {
   String get gainsMigratingDesc => _t({'fr': 'Calcul de vos vues des 3 derniers mois', 'en': 'Counting your views from the last 3 months', 'es': 'Contando tus vistas de los últimos 3 meses', 'de': 'Deine Aufrufe der letzten 3 Monate werden gezählt', 'ar': 'حساب مشاهداتك من الأشهر الثلاثة الماضية', 'pt': 'A calcular as suas visualizações dos últimos 3 meses', 'zh': '统计过去3个月的观看次数', 'sw': 'Kuhesabu maoni yako ya miezi 3 iliyopita'});
   String get gainsStats => _t({'fr': 'Vos statistiques', 'en': 'Your statistics', 'es': 'Tus estadísticas', 'de': 'Ihre Statistiken', 'ar': 'إحصائياتك', 'pt': 'As suas estatísticas', 'zh': '您的统计数据', 'sw': 'Takwimu zako'});
   String get gainsTotalViews => _t({'fr': 'Total vues', 'en': 'Total views', 'es': 'Total vistas', 'de': 'Aufrufe gesamt', 'ar': 'إجمالي المشاهدات', 'pt': 'Total de visualizações', 'zh': '总观看次数', 'sw': 'Jumla ya maoni'});
-  String get gainsPerView => _t({'fr': 'Valeur / vue', 'en': 'Value / view', 'es': 'Valor / vista', 'de': 'Wert / Aufruf', 'ar': 'القيمة / مشاهدة', 'pt': 'Valor / visualização', 'zh': '每次观看价值', 'sw': 'Thamani / maoni'});
-  String get gainsPerViewRate => _t({'fr': '2 FCFA', 'en': '2 FCFA', 'es': '2 FCFA', 'de': '2 FCFA', 'ar': '2 فرنك', 'pt': '2 FCFA', 'zh': '2 FCFA', 'sw': '2 FCFA'});
+  String get gainsPerView => _t({'fr': 'Taux (100 vues)', 'en': 'Rate (100 views)', 'es': 'Tasa (100 vistas)', 'de': 'Rate (100 Aufrufe)', 'ar': 'المعدل (100 مشاهدة)', 'pt': 'Taxa (100 vistas)', 'zh': '费率 (100次观看)', 'sw': 'Kiwango (maoni 100)'});
+  String get gainsPerViewRate => _t({'fr': '200 FCFA', 'en': '200 FCFA', 'es': '200 FCFA', 'de': '200 FCFA', 'ar': '200 فرنك', 'pt': '200 FCFA', 'zh': '200 FCFA', 'sw': 'FCFA 200'});
   String get gainsAvailable => _t({'fr': 'Disponible', 'en': 'Available', 'es': 'Disponible', 'de': 'Verfügbar', 'ar': 'متاح', 'pt': 'Disponível', 'zh': '可提现', 'sw': 'Inapatikana'});
   String get gainsTotalCashed => _t({'fr': 'Déjà encaissé', 'en': 'Already cashed out', 'es': 'Ya cobrado', 'de': 'Bereits ausgezahlt', 'ar': 'تم صرفه بالفعل', 'pt': 'Já levantado', 'zh': '已提现', 'sw': 'Tayari kulipiwa'});
   String get gainsEncaissTitle => _t({'fr': 'Encaisser vos gains', 'en': 'Cash out your earnings', 'es': 'Cobrar tus ganancias', 'de': 'Einnahmen auszahlen', 'ar': 'صرف أرباحك', 'pt': 'Levantar os seus ganhos', 'zh': '提现收益', 'sw': 'Toa mapato yako'});
@@ -1342,6 +1342,9 @@ class AppLocalizations {
   String get gainsEncaissBtn => _t({'fr': 'ENCAISSER', 'en': 'CASH OUT', 'es': 'COBRAR', 'de': 'AUSZAHLEN', 'ar': 'صرف', 'pt': 'LEVANTAR', 'zh': '提现', 'sw': 'TOA'});
   String get gainsMonthTitle => _t({'fr': 'Vues par mois', 'en': 'Monthly views', 'es': 'Vistas por mes', 'de': 'Aufrufe pro Monat', 'ar': 'المشاهدات الشهرية', 'pt': 'Visualizações mensais', 'zh': '每月观看次数', 'sw': 'Maoni kwa mwezi'});
   String gainsMonthViews(int n) => _t({'fr': '$n vues', 'en': '$n views', 'es': '$n vistas', 'de': '$n Aufrufe', 'ar': '$n مشاهدة', 'pt': '$n visualizações', 'zh': '$n 次观看', 'sw': 'maoni $n'});
+  String gainsSeeMore(int n) => _t({'fr': 'Voir plus ($n mois)', 'en': 'See more ($n months)', 'es': 'Ver más ($n meses)', 'de': 'Mehr anzeigen ($n Monate)', 'ar': 'عرض المزيد ($n أشهر)', 'pt': 'Ver mais ($n meses)', 'zh': '查看更多 ($n 个月)', 'sw': 'Ona zaidi (miezi $n)'});
+  String get gainsSeeLess => _t({'fr': 'Voir moins', 'en': 'See less', 'es': 'Ver menos', 'de': 'Weniger anzeigen', 'ar': 'عرض أقل', 'pt': 'Ver menos', 'zh': '收起', 'sw': 'Ona kidogo'});
+  String get gainsMonthPostsEmpty => _t({'fr': 'Aucun post avec des vues ce mois', 'en': 'No posts with views this month', 'es': 'Sin publicaciones con vistas este mes', 'de': 'Keine Beiträge mit Aufrufen in diesem Monat', 'ar': 'لا توجد منشورات بمشاهدات هذا الشهر', 'pt': 'Sem publicações com visualizações este mês', 'zh': '本月没有带观看次数的帖子', 'sw': 'Hakuna machapisho yenye maoni mwezi huu'});
   String get gainsHistoryTitle => _t({'fr': 'Historique des encaissements', 'en': 'Cash-out history', 'es': 'Historial de cobros', 'de': 'Auszahlungsverlauf', 'ar': 'سجل الصرف', 'pt': 'Histórico de levantamentos', 'zh': '提现记录', 'sw': 'Historia ya Malipo'});
   String get gainsHistoryEmpty => _t({'fr': 'Aucun encaissement pour le moment.', 'en': 'No cash-outs yet.', 'es': 'Aún no hay cobros.', 'de': 'Noch keine Auszahlungen.', 'ar': 'لا توجد عمليات صرف بعد.', 'pt': 'Sem levantamentos por enquanto.', 'zh': '暂无提现记录。', 'sw': 'Hakuna malipo bado.'});
   String gainsTxLabel(int amount) => _t({'fr': '$amount FCFA encaissés', 'en': '$amount FCFA cashed out', 'es': '$amount FCFA cobrados', 'de': '$amount FCFA ausgezahlt', 'ar': 'تم صرف $amount فرنك', 'pt': '$amount FCFA levantados', 'zh': '已提现 $amount FCFA', 'sw': 'FCFA $amount kulipwa'});
@@ -1362,6 +1365,30 @@ class AppLocalizations {
   String get remuModalPoint3 => _t({'fr': 'Historique complet de tes vues et gains', 'en': 'Full history of your views and earnings', 'es': 'Historial completo de tus vistas y ganancias', 'de': 'Vollständiger Verlauf deiner Aufrufe und Einnahmen', 'ar': 'سجل كامل لمشاهداتك وأرباحك', 'pt': 'Histórico completo das suas visualizações e ganhos', 'zh': '完整的观看和收益历史记录', 'sw': 'Historia kamili ya maoni na mapato yako'});
   String get remuModalLater => _t({'fr': 'PLUS TARD', 'en': 'LATER', 'es': 'MÁS TARDE', 'de': 'SPÄTER', 'ar': 'لاحقاً', 'pt': 'MAIS TARDE', 'zh': '稍后', 'sw': 'BAADAYE'});
   String get remuModalBtn => _t({'fr': 'VOIR MES GAINS', 'en': 'SEE MY EARNINGS', 'es': 'VER MIS GANANCIAS', 'de': 'MEINE EINNAHMEN', 'ar': 'عرض أرباحي', 'pt': 'VER OS MEUS GANHOS', 'zh': '查看我的收益', 'sw': 'TAZAMA MAPATO YANGU'});
+
+  // === OtherUserPage ===
+  String get otherUserSubscribe => _t({'fr': 'S\'ABONNER', 'en': 'SUBSCRIBE', 'es': 'SUSCRIBIRSE', 'de': 'ABONNIEREN', 'ar': 'اشتراك', 'pt': 'INSCREVER-SE', 'zh': '订阅', 'sw': 'JIUNGE'});
+  String get otherUserUnsubscribe => _t({'fr': 'SE DÉSABONNER', 'en': 'UNSUBSCRIBE', 'es': 'CANCELAR', 'de': 'ABMELDEN', 'ar': 'إلغاء الاشتراك', 'pt': 'CANCELAR', 'zh': '取消订阅', 'sw': 'ACHA KUFUATA'});
+  String get otherUserAbout => _t({'fr': 'À PROPOS', 'en': 'ABOUT', 'es': 'ACERCA DE', 'de': 'ÜBER', 'ar': 'نبذة', 'pt': 'SOBRE', 'zh': '关于', 'sw': 'KUHUSU'});
+  String get otherUserNoDescription => _t({'fr': 'Aucune description', 'en': 'No description', 'es': 'Sin descripción', 'de': 'Keine Beschreibung', 'ar': 'لا يوجد وصف', 'pt': 'Sem descrição', 'zh': '暂无简介', 'sw': 'Hakuna maelezo'});
+  String get otherUserFilterTitle => _t({'fr': 'FILTRER PAR TYPE', 'en': 'FILTER BY TYPE', 'es': 'FILTRAR POR TIPO', 'de': 'NACH TYP FILTERN', 'ar': 'تصفية حسب النوع', 'pt': 'FILTRAR POR TIPO', 'zh': '按类型筛选', 'sw': 'CHUJA KWA AINA'});
+  String get otherUserTabPosts => _t({'fr': 'Posts', 'en': 'Posts', 'es': 'Posts', 'de': 'Beiträge', 'ar': 'المنشورات', 'pt': 'Posts', 'zh': '帖子', 'sw': 'Machapisho'});
+  String get otherUserTabAds => _t({'fr': 'Publicités', 'en': 'Ads', 'es': 'Anuncios', 'de': 'Werbung', 'ar': 'الإعلانات', 'pt': 'Anúncios', 'zh': '广告', 'sw': 'Matangazo'});
+  String get otherUserNoPosts => _t({'fr': 'Aucun post publié', 'en': 'No posts published', 'es': 'Sin publicaciones', 'de': 'Keine Beiträge', 'ar': 'لا توجد منشورات', 'pt': 'Sem posts publicados', 'zh': '暂无帖子', 'sw': 'Hakuna machapisho'});
+  String get otherUserNoAds => _t({'fr': 'Aucune publicité publiée', 'en': 'No ads published', 'es': 'Sin anuncios publicados', 'de': 'Keine Werbung veröffentlicht', 'ar': 'لا توجد إعلانات منشورة', 'pt': 'Sem anúncios publicados', 'zh': '暂无广告', 'sw': 'Hakuna matangazo'});
+  String get otherUserReferralCode => _t({'fr': 'Code de parrainage', 'en': 'Referral code', 'es': 'Código de referido', 'de': 'Empfehlungscode', 'ar': 'رمز الإحالة', 'pt': 'Código de indicação', 'zh': '推荐码', 'sw': 'Msimbo wa rufaa'});
+  String get otherUserSponsorships => _t({'fr': 'parrainages', 'en': 'sponsorships', 'es': 'referidos', 'de': 'Empfehlungen', 'ar': 'إحالات', 'pt': 'indicações', 'zh': '推荐数', 'sw': 'mapendekezo'});
+  String get otherUserLikesReceived => _t({'fr': 'like(s) reçus', 'en': 'like(s) received', 'es': 'me gusta recibidos', 'de': 'erhaltene Likes', 'ar': 'إعجابات مستلمة', 'pt': 'curtida(s) recebida(s)', 'zh': '获赞数', 'sw': 'mapendo yaliyopokelewa'});
+  String get otherUserCodeCopied => _t({'fr': 'Code copié !', 'en': 'Code copied!', 'es': '¡Código copiado!', 'de': 'Code kopiert!', 'ar': 'تم نسخ الرمز!', 'pt': 'Código copiado!', 'zh': '代码已复制！', 'sw': 'Msimbo umenakiliwa!'});
+  String get otherUserFilterAll => _t({'fr': 'Tous', 'en': 'All', 'es': 'Todos', 'de': 'Alle', 'ar': 'الكل', 'pt': 'Todos', 'zh': '全部', 'sw': 'Yote'});
+  String get otherUserFilterImages => _t({'fr': 'Images', 'en': 'Images', 'es': 'Imágenes', 'de': 'Bilder', 'ar': 'صور', 'pt': 'Imagens', 'zh': '图片', 'sw': 'Picha'});
+  String get otherUserFilterVideos => _t({'fr': 'Vidéos', 'en': 'Videos', 'es': 'Vídeos', 'de': 'Videos', 'ar': 'الفيديوهات', 'pt': 'Vídeos', 'zh': '视频', 'sw': 'Video'});
+  String get otherUserFilterTexts => _t({'fr': 'Textes', 'en': 'Texts', 'es': 'Textos', 'de': 'Texte', 'ar': 'نصوص', 'pt': 'Textos', 'zh': '文字', 'sw': 'Maandishi'});
+  String get otherUserFilterAudios => _t({'fr': 'Audios', 'en': 'Audios', 'es': 'Audios', 'de': 'Audios', 'ar': 'صوتيات', 'pt': 'Áudios', 'zh': '音频', 'sw': 'Sauti'});
+  String get otherUserVerified => _t({'fr': 'Vérifié', 'en': 'Verified', 'es': 'Verificado', 'de': 'Verifiziert', 'ar': 'موثق', 'pt': 'Verificado', 'zh': '已认证', 'sw': 'Imethibitishwa'});
+  String get otherUserShareProfile => _t({'fr': 'Partager le profil', 'en': 'Share profile', 'es': 'Compartir perfil', 'de': 'Profil teilen', 'ar': 'مشاركة الملف الشخصي', 'pt': 'Partilhar perfil', 'zh': '分享资料', 'sw': 'Shiriki wasifu'});
+  String get otherUserSendReminder => _t({'fr': 'Envoyer un rappel', 'en': 'Send a reminder', 'es': 'Enviar recordatorio', 'de': 'Erinnerung senden', 'ar': 'إرسال تذكير', 'pt': 'Enviar lembrete', 'zh': '发送提醒', 'sw': 'Tuma ukumbusho'});
+  String otherUserNoFilterPosts(String type) => _t({'fr': 'Aucun $type publié', 'en': 'No $type published', 'es': 'Sin $type publicados', 'de': 'Keine $type veröffentlicht', 'ar': 'لا يوجد $type منشور', 'pt': 'Sem $type publicados', 'zh': '暂无$type', 'sw': 'Hakuna $type'});
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -9,6 +9,8 @@ import '../../providers/authProvider.dart';
 import '../../services/postService/post_view_service.dart';
 import '../../services/remuneration_service.dart';
 import '../../theme/app_colors.dart';
+import '../postDetails.dart';
+import '../postDetailsVideo.dart';
 
 const double _fcfaPerView = 2.0;
 const double _minEncaissement = 1000.0;
@@ -29,6 +31,7 @@ class _MesGainsPageState extends State<MesGainsPage> {
   bool _isMigrating = false;
   bool _isEncashing = false;
   bool _isLoadingHistory = false;
+  bool _showAllMonths = false;
 
   List<Map<String, dynamic>> _history = [];
 
@@ -238,7 +241,8 @@ class _MesGainsPageState extends State<MesGainsPage> {
           ]),
           const SizedBox(height: 12),
           Row(children: [
-            Expanded(child: _statChip(t.gainsAvailable, '${available.toInt()} FCFA', Icons.account_balance_wallet_outlined, colors.accent, colors)),
+            Expanded(child: _statChip(t.gainsAvailable, '${available.toInt()} FCFA', Icons.account_balance_wallet_outlined, colors.accent, colors,
+                subtitle: '${(available / _fcfaPerView).toInt()} vues')),
             const SizedBox(width: 12),
             Expanded(child: _statChip(t.gainsTotalCashed, '${cashed.toInt()} FCFA', Icons.check_circle_outline, colors.primary, colors)),
           ]),
@@ -247,7 +251,7 @@ class _MesGainsPageState extends State<MesGainsPage> {
     );
   }
 
-  Widget _statChip(String label, String value, IconData icon, Color color, AppColors colors) {
+  Widget _statChip(String label, String value, IconData icon, Color color, AppColors colors, {String? subtitle}) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -266,6 +270,10 @@ class _MesGainsPageState extends State<MesGainsPage> {
           ]),
           const SizedBox(height: 5),
           Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 14)),
+          if (subtitle != null) ...[
+            const SizedBox(height: 2),
+            Text(subtitle, style: TextStyle(color: color.withOpacity(0.7), fontSize: 11)),
+          ],
         ],
       ),
     );
@@ -371,18 +379,22 @@ class _MesGainsPageState extends State<MesGainsPage> {
     if (monthly.isEmpty) return const SizedBox.shrink();
 
     final now = DateTime.now();
-    final threeMonthsAgo = now.subtract(const Duration(days: 90));
+    final currentYear = now.year;
 
-    // Garder uniquement les 3 derniers mois valides (pas de dates futures ni corrompues).
     final sorted = monthly.entries.where((e) {
       try {
         final p = e.key.split('-');
-        final dt = DateTime(int.parse(p[0]), int.parse(p[1]));
-        return !dt.isBefore(DateTime(threeMonthsAgo.year, threeMonthsAgo.month))
-            && !dt.isAfter(DateTime(now.year, now.month));
+        final year = int.parse(p[0]);
+        return year >= 2020 && year <= currentYear + 1;
       } catch (_) { return false; }
     }).toList()
       ..sort((a, b) => b.key.compareTo(a.key));
+
+    if (sorted.isEmpty) return const SizedBox.shrink();
+
+    const int defaultVisible = 3;
+    final visible = _showAllMonths ? sorted : sorted.take(defaultVisible).toList();
+    final hiddenCount = sorted.length - defaultVisible;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -401,25 +413,76 @@ class _MesGainsPageState extends State<MesGainsPage> {
                 style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 15)),
           ]),
           const SizedBox(height: 12),
-          ...sorted.take(3).map((e) {
-            final views = e.value;
+          ...visible.map((e) {
+            final views = (e.value as num).toInt();
             final fcfa  = (views * _fcfaPerView).toInt();
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Row(children: [
-                Expanded(child: Text(_formatMonth(e.key),
-                    style: TextStyle(color: colors.textPrimary, fontSize: 13))),
-                Text(t.gainsMonthViews(views),
-                    style: TextStyle(color: colors.textSecondary, fontSize: 12)),
-                const SizedBox(width: 12),
-                Text('$fcfa FCFA',
-                    style: TextStyle(color: colors.accent, fontWeight: FontWeight.bold, fontSize: 13)),
-              ]),
+            return GestureDetector(
+              onTap: () => _showMonthPostsBottomSheet(widget.userId, e.key),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: colors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: colors.border),
+                ),
+                child: Row(children: [
+                  Expanded(child: Text(_formatMonth(e.key),
+                      style: TextStyle(color: colors.textPrimary, fontSize: 13))),
+                  Text(t.gainsMonthViews(views),
+                      style: TextStyle(color: colors.textSecondary, fontSize: 12)),
+                  const SizedBox(width: 12),
+                  Text('$fcfa FCFA',
+                      style: TextStyle(color: colors.accent, fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(width: 8),
+                  Icon(Icons.chevron_right, color: colors.textSecondary, size: 16),
+                ]),
+              ),
             );
           }),
+          if (sorted.length > defaultVisible)
+            GestureDetector(
+              onTap: () => setState(() => _showAllMonths = !_showAllMonths),
+              child: Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Text(
+                    _showAllMonths ? t.gainsSeeLess : t.gainsSeeMore(hiddenCount),
+                    style: TextStyle(color: colors.info, fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(_showAllMonths ? Icons.expand_less : Icons.expand_more,
+                      color: colors.info, size: 18),
+                ]),
+              ),
+            ),
         ],
       ),
     );
+  }
+
+  void _showMonthPostsBottomSheet(String userId, String monthKey) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _MonthPostsSheet(
+        userId: userId,
+        monthKey: monthKey,
+        firestore: _firestore,
+        onPostTap: _openPostDetail,
+        formatMonth: _formatMonth,
+      ),
+    );
+  }
+
+  void _openPostDetail(Post post) {
+    final isVideo = post.dataType == PostDataType.VIDEO.name;
+    Navigator.push(context, MaterialPageRoute(
+      builder: (_) => isVideo
+          ? VideoYoutubePageDetails(initialPost: post)
+          : DetailsPost(post: post),
+    ));
   }
 
   String _formatMonth(String key) {
@@ -517,4 +580,285 @@ class _MesGainsPageState extends State<MesGainsPage> {
 
   OutlineInputBorder _border(Color color) => OutlineInputBorder(
       borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: color));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Bottom sheet paginé — posts d'un mois
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _MonthPostsSheet extends StatefulWidget {
+  final String userId;
+  final String monthKey;
+  final FirebaseFirestore firestore;
+  final void Function(Post) onPostTap;
+  final String Function(String) formatMonth;
+
+  const _MonthPostsSheet({
+    required this.userId,
+    required this.monthKey,
+    required this.firestore,
+    required this.onPostTap,
+    required this.formatMonth,
+  });
+
+  @override
+  State<_MonthPostsSheet> createState() => _MonthPostsSheetState();
+}
+
+class _MonthPostsSheetState extends State<_MonthPostsSheet> {
+  static const int _pageSize = 20;
+
+  final List<Post> _posts = [];
+  bool _isLoading = true;
+  bool _isLoadingMore = false;
+  bool _hasMore = false;
+
+  List<String> _allPostIds = [];
+  int _idOffset = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInitial();
+  }
+
+  Future<void> _loadInitial() async {
+    final userDoc = await widget.firestore.collection('Users').doc(widget.userId).get();
+    final monthlyIds = (userDoc.data()?['postViewsMonthlyPostIds'] as Map<String, dynamic>?) ?? {};
+    final rawIds = monthlyIds[widget.monthKey];
+    _allPostIds = rawIds is List ? List<String>.from(rawIds.whereType<String>()) : [];
+
+    if (_allPostIds.isNotEmpty) {
+      await _loadNextIdBatch();
+    } else {
+      await _loadFallback();
+    }
+
+    if (mounted) setState(() => _isLoading = false);
+  }
+
+  Future<void> _loadNextIdBatch() async {
+    final end = (_idOffset + _pageSize).clamp(0, _allPostIds.length);
+    final batch = _allPostIds.sublist(_idOffset, end);
+    if (batch.isEmpty) { _hasMore = false; return; }
+
+    final newPosts = <Post>[];
+    for (int i = 0; i < batch.length; i += 30) {
+      final sub = batch.sublist(i, (i + 30).clamp(0, batch.length));
+      final snap = await widget.firestore
+          .collection('Posts')
+          .where(FieldPath.documentId, whereIn: sub)
+          .get();
+      newPosts.addAll(snap.docs.map((d) {
+        final data = Map<String, dynamic>.from(d.data());
+        data['id'] = d.id;
+        return Post.fromJson(data);
+      }).where((p) => p.isAdvertisement != true));
+    }
+
+    _posts.addAll(newPosts);
+    _posts.sort((a, b) => (b.seenByUsersCount ?? 0).compareTo(a.seenByUsersCount ?? 0));
+    _idOffset = end;
+    _hasMore = _idOffset < _allPostIds.length;
+  }
+
+  Future<void> _loadFallback() async {
+    final snap = await widget.firestore
+        .collection('Posts')
+        .where('user_id', isEqualTo: widget.userId)
+        .where('type', isEqualTo: PostType.POST.name)
+        .orderBy('created_at', descending: true)
+        .limit(100)
+        .get();
+
+    final loaded = snap.docs.map((d) {
+      final data = Map<String, dynamic>.from(d.data());
+      data['id'] = d.id;
+      return Post.fromJson(data);
+    }).where((p) =>
+        p.isAdvertisement != true &&
+        ((p.seenByUsersCount ?? 0) > 0 || (p.uniqueViewsCount ?? 0) > 0),
+    ).toList()
+      ..sort((a, b) => (b.seenByUsersCount ?? 0).compareTo(a.seenByUsersCount ?? 0));
+
+    _posts.addAll(loaded);
+    _hasMore = false;
+  }
+
+  Future<void> _loadMore() async {
+    if (_isLoadingMore || !_hasMore) return;
+    setState(() => _isLoadingMore = true);
+    await _loadNextIdBatch();
+    if (mounted) setState(() => _isLoadingMore = false);
+  }
+
+  static DateTime? _parseDate(dynamic value) {
+    if (value == null) return null;
+    if (value is Timestamp) return value.toDate();
+    final ts = value is int ? value : int.tryParse(value.toString());
+    if (ts == null) return null;
+    return ts > 9999999999999
+        ? DateTime.fromMicrosecondsSinceEpoch(ts)
+        : DateTime.fromMillisecondsSinceEpoch(ts);
+  }
+
+  String _formatDate(dynamic value) {
+    final dt = _parseDate(value);
+    if (dt == null) return '—';
+    return DateFormat('dd/MM/yyyy', 'fr_FR').format(dt);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final t = AppLocalizations.of(context);
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.7,
+      minChildSize: 0.4,
+      maxChildSize: 0.95,
+      builder: (ctx, scrollCtrl) => Container(
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(children: [
+          const SizedBox(height: 8),
+          Container(
+            width: 40, height: 4,
+            decoration: BoxDecoration(
+              color: colors.border,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(children: [
+              Icon(Icons.calendar_today_outlined, color: colors.info, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                widget.formatMonth(widget.monthKey),
+                style: TextStyle(
+                    color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            ]),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: _isLoading
+                ? Center(child: CircularProgressIndicator(color: colors.accent, strokeWidth: 2))
+                : _posts.isEmpty
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(32),
+                          child: Text(t.gainsMonthPostsEmpty,
+                              style: TextStyle(color: colors.textSecondary, fontSize: 14),
+                              textAlign: TextAlign.center),
+                        ),
+                      )
+                    : ListView.separated(
+                        controller: scrollCtrl,
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                        itemCount: _posts.length + (_hasMore ? 1 : 0),
+                        separatorBuilder: (_, __) => Divider(color: colors.border, height: 1),
+                        itemBuilder: (ctx, i) {
+                          if (i == _posts.length) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              child: Center(
+                                child: _isLoadingMore
+                                    ? CircularProgressIndicator(
+                                        color: colors.accent, strokeWidth: 2)
+                                    : TextButton.icon(
+                                        onPressed: _loadMore,
+                                        icon: Icon(Icons.expand_more, color: colors.info),
+                                        label: Text(
+                                          'Voir plus (${_allPostIds.length - _idOffset} restants)',
+                                          style: TextStyle(color: colors.info),
+                                        ),
+                                      ),
+                              ),
+                            );
+                          }
+                          return _buildPostItem(_posts[i], colors, t);
+                        },
+                      ),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  Widget _buildPostItem(Post post, AppColors colors, AppLocalizations t) {
+    final thumb = (post.thumbnail?.isNotEmpty == true)
+        ? post.thumbnail
+        : (post.images?.isNotEmpty == true ? post.images!.first : null);
+    final views = post.seenByUsersCount ?? 0;
+    final desc = post.description?.trim() ?? '';
+
+    return GestureDetector(
+      onTap: () => widget.onPostTap(post),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Row(children: [
+          if (thumb != null && thumb.isNotEmpty)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                thumb,
+                width: 54, height: 54, fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _placeholder(colors),
+              ),
+            )
+          else
+            _placeholder(colors),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              if (desc.isNotEmpty)
+                Text(desc,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: colors.textPrimary, fontSize: 13)),
+              const SizedBox(height: 4),
+              Text(_formatDate(post.createdAt),
+                  style: TextStyle(color: colors.textSecondary, fontSize: 11)),
+            ]),
+          ),
+          const SizedBox(width: 12),
+          Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: colors.info.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.visibility_outlined, color: colors.info, size: 12),
+                const SizedBox(width: 4),
+                Text('$views',
+                    style: TextStyle(
+                        color: colors.info, fontWeight: FontWeight.bold, fontSize: 12)),
+              ]),
+            ),
+            const SizedBox(height: 4),
+            Text('${(views * _fcfaPerView).toInt()} FCFA',
+                style: TextStyle(
+                    color: colors.accent, fontWeight: FontWeight.bold, fontSize: 12)),
+          ]),
+        ]),
+      ),
+    );
+  }
+
+  Widget _placeholder(AppColors colors) => Container(
+        width: 54,
+        height: 54,
+        decoration: BoxDecoration(
+          color: colors.surfaceVariant,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(Icons.image_outlined, color: colors.textSecondary, size: 22),
+      );
 }

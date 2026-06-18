@@ -581,20 +581,7 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
               parrain.pseudo ?? 'Parrain',
               style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold),
             ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(parrain.email ?? '', style: TextStyle(color: colors.textSecondary)),
-                SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(Icons.phone, color: colors.textSecondary, size: 12),
-                    SizedBox(width: 4),
-                    Text(parrain.numeroDeTelephone ?? '', style: TextStyle(color: colors.textSecondary, fontSize: 11)),
-                  ],
-                ),
-              ],
-            ),
+            subtitle: Text(parrain.email ?? '', style: TextStyle(color: colors.textSecondary)),
           ),
           SizedBox(height: 8),
           ElevatedButton(
