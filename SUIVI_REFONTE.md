@@ -1780,3 +1780,60 @@ Audit complet du module `lib/pages/dating/` réalisé (15+ pages, service `datin
 - `user_my_advertisements_page.dart` : déjà enforced (pas de bouton Renouveler pour cancelled/rejected — session 48)
 
 **`dart analyze`** → 0 erreur, 0 warning (infos pré-existants, non bloquants)
+
+---
+
+## Session 51 — Affichage pub dans pages détail vidéo + injection pubs dans chroniques + préchargement
+
+**Date :** 2026-06-18  
+**Fichiers modifiés :**
+- `lib/services/ad_preload_service.dart` *(nouveau)*
+- `lib/pages/postDetailsVideo.dart`
+- `lib/pages/post_video_format_tel_details.dart`
+- `lib/pages/chronique/chroniquedetails.dart`
+
+---
+
+**1. Nouveau service — `AdPreloadService` (`lib/services/ad_preload_service.dart`)** :
+- Singleton qui pré-initialise les `VideoPlayerController` des pubs vidéo actives au démarrage
+- `preload()` : charge les pubs actives depuis Firestore (limit 10), initialise les contrôleurs vidéo (muted + looping), stocke dans `_controllers[adId]`
+- `getController(adId)` : retourne le contrôleur pré-initialisé ou null
+- `getRandomActiveAd()` : pub active aléatoire parmi celles chargées
+- `invalidate()` : vide le cache (dispose les contrôleurs)
+- Pubs sans `postId` ou expirées → ignorées ; pubs sans `url_media` → ignorées (images uniquement)
+
+**2. `postDetailsVideo.dart` (VideoYoutubePageDetails)** :
+- Random 1–3 sur `_recordAdClick` : `FieldValue.increment(Random().nextInt(3) + 1)`
+- Nouvelle méthode `_recordAdView(ad)` : random 1–3 pour vues + `uniqueViews` fixe à 1 + `dailyStats.$today.views`
+- `_loadAdvertisement()` : appelle `_recordAdView(ad)` après succès
+- Header pub (`_buildAdvertisementHeader`) réécrit avec `AppColors.of(context)` + ligne stats (Vues / Clics / CTR)
+- `_loadOwnerAd()` : requête `Advertisements.where('postId')` — charge si utilisateur = propriétaire
+- `_buildBoostSection()` : section Boost propriétaire (identique à `postDetails.dart` — bouton Booster / stats / renouveler)
+
+**3. `post_video_format_tel_details.dart` (PostDetailsVideoFormatTel)** :
+- Cache d'ads : `Map<String, Advertisement?> _adCache` + `Set<String> _loadingAdIds`
+- `_ensureAdLoaded(post)` : charge l'`Advertisement` depuis Firestore, enregistre vue (random 1–3), stocke dans `_adCache`
+- `_recordAdViewForPost(ad)` : random 1–3 vues + uniqueViews fixe
+- `_buildVideoAdOverlay(post)` : overlay positionné sur la vidéo — badge **SPONSORISÉ**, stats (vues/clics/CTR), bouton d'action (random 1–3 clics)
+- `_buildVideoPage(post)` : branche `isAdvertisement` → `_buildVideoAdOverlay` au lieu de `_buildActionButtons`
+
+**4. `chroniquedetails.dart` (ChroniqueDetailPage) — injection pubs entre chroniques** :
+- `_activeAds`, `_adImageUrls` : liste de pubs + map URL images pré-chargées
+- `_loadActiveAds()` : charge pubs Firestore + URLs images des posts en parallèle (`Future.wait`) → plus de FutureBuilder lent
+- Getter `_displayItems` : liste mixte `Chronique | Advertisement` — 1 pub après la 1ère chronique (i=0), puis 1 pub toutes les 3 chroniques (i=3, 6, 9…)
+- Helpers : `_virtualToChronique(int)`, `_isVirtualAd(int)`, `_chroniqueToVirtual(int)` — maintient `_currentPage` en index chronique même si le PageView inclut des slots pub
+- `_recordAdView(ad)` / `_recordAdClick(ad)` : random 1–3 pour vues et clics
+- `_buildAdSlide(ad)` :
+  - Fond `BoxFit.cover` assombri (opacité 55 %) → image pré-chargée depuis `_adImageUrls`
+  - Image principale `Positioned.fill` + `BoxFit.contain` → affichage correct images paysage/portrait
+  - Dégradés haut + bas pour lisibilité
+  - Badge **SPONSORISÉ** positionné en haut
+  - Bouton d'action : `bottom: _showMessages ? 280.0 : 120.0` → jamais caché par le bottom bar de saisie
+
+**Fixes bugs** :
+- Images pubs dans chroniques ne s'affichaient pas en grand → réglé avec `BoxFit.contain` + fond `BoxFit.cover`
+- Bouton d'action caché par le champ de saisie → offset dynamique selon `_showMessages`
+- Chargement lent des images → pré-chargement URLs dans `_loadActiveAds()` via `Future.wait`
+- Champ `_virtualPage` inutilisé → supprimé
+
+**`dart analyze`** → 0 erreur sur tous les fichiers modifiés
