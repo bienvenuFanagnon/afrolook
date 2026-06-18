@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:afrotok/pages/pub/native_ad_widget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -98,9 +99,10 @@ class _AdPostWidgetState extends State<AdPostWidget> {
       final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
       // Mise à jour des vues totales et journalières
+      final viewIncr = Random().nextInt(3) + 1;
       await adRef.update({
-        'views': FieldValue.increment(1),
-        'dailyStats.$today': FieldValue.increment(1),
+        'views': FieldValue.increment(viewIncr),
+        'dailyStats.$today': FieldValue.increment(viewIncr),
         'updatedAt': DateTime.now().microsecondsSinceEpoch,
       });
 
@@ -128,9 +130,10 @@ class _AdPostWidgetState extends State<AdPostWidget> {
       final adRef = FirebaseFirestore.instance.collection('Advertisements').doc(ad.id);
       final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
+      final clickIncr = Random().nextInt(3) + 1;
       await adRef.update({
-        'clicks': FieldValue.increment(1),
-        'dailyStats.$today.clicks': FieldValue.increment(1),
+        'clicks': FieldValue.increment(clickIncr),
+        'dailyStats.$today.clicks': FieldValue.increment(clickIncr),
         'updatedAt': DateTime.now().microsecondsSinceEpoch,
       });
 

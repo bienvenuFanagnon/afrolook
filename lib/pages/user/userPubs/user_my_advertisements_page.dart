@@ -10,6 +10,7 @@ import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
 
 import '../../../providers/authProvider.dart';
+import '../../../services/ad_config_service.dart';
 import '../../paiement/newDepot.dart';
 import 'user_ad_detail_page.dart';
 import 'user_create_advertisement_page.dart';
@@ -37,20 +38,18 @@ class _UserMyAdvertisementsPageState extends State<UserMyAdvertisementsPage> {
   // IDs d'annonces dont le statut a été corrigé automatiquement (active → expired)
   final Set<String> _autoFixedIds = {};
 
-  final Map<int, int> _durationPrices = {
-    2: 2500,
-    4: 4500,
-    12: 10000,
-    24: 18000,
-    52: 30000,
-  };
-  final List<int> _durationOptions = [2, 4, 12, 24, 52];
+  List<AdDuration> _durations = AdConfigService.defaults;
+  Map<int, int> get _durationPrices => AdConfigService.toMap(_durations);
+  List<int> get _durationOptions => _durations.map((d) => d.weeks).toList();
 
   @override
   void initState() {
     super.initState();
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     _loadCounters();
+    AdConfigService.getDurations().then((d) {
+      if (mounted) setState(() => _durations = d);
+    });
   }
 
   // ── DONNÉES ──────────────────────────────────────────────────────────────────
@@ -381,22 +380,7 @@ class _UserMyAdvertisementsPageState extends State<UserMyAdvertisementsPage> {
 
   // ── HELPERS ──────────────────────────────────────────────────────────────────
 
-  String _getDurationLabel(int weeks) {
-    switch (weeks) {
-      case 2:
-        return '2 semaines';
-      case 4:
-        return '1 mois';
-      case 12:
-        return '3 mois';
-      case 24:
-        return '6 mois';
-      case 52:
-        return '12 mois';
-      default:
-        return '$weeks semaines';
-    }
-  }
+  String _getDurationLabel(int weeks) => AdConfigService.labelFor(weeks, _durations);
 
   String _formatNumber(int n) {
     if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';

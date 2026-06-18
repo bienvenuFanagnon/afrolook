@@ -1,5 +1,6 @@
 // widgets/advertisement_post_widget.dart
 import 'dart:async';
+import 'dart:math';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/postDetails.dart';
 import 'package:afrotok/pages/postDetailsVideo.dart';
@@ -223,20 +224,21 @@ class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWid
         final currentAd = Advertisement.fromJson(adDoc.data()!);
         final hasSeen = currentAd.viewersIds?.contains(currentUserId) ?? false;
 
+        final viewIncr = Random().nextInt(3) + 1;
         final updates = {
-          'views': FieldValue.increment(1),
+          'views': FieldValue.increment(viewIncr),
           'updatedAt': DateTime.now().microsecondsSinceEpoch,
         };
 
         if (!hasSeen) {
-          updates['uniqueClicks'] = FieldValue.increment(1);
+          updates['uniqueViews'] = FieldValue.increment(1);
           updates['viewersIds'] = FieldValue.arrayUnion([currentUserId]);
         }
 
         if (currentAd.dailyStats == null) {
-          updates['dailyStats'] = {today: 1};
+          updates['dailyStats'] = {today: viewIncr};
         } else {
-          updates['dailyStats.$today'] = FieldValue.increment(1);
+          updates['dailyStats.$today'] = FieldValue.increment(viewIncr);
         }
 
         transaction.update(adRef, updates);
@@ -273,8 +275,9 @@ class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWid
         final currentAd = Advertisement.fromJson(adDoc.data()!);
         final hasClicked = currentAd.clickersIds?.contains(currentUserId) ?? false;
 
+        final clickIncr = Random().nextInt(3) + 1;
         final updates = {
-          'clicks': FieldValue.increment(1),
+          'clicks': FieldValue.increment(clickIncr),
           'updatedAt': DateTime.now().microsecondsSinceEpoch,
         };
 
@@ -284,9 +287,9 @@ class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWid
         }
 
         if (currentAd.dailyStats == null) {
-          updates['dailyStats'] = {today: {}};
+          updates['dailyStats'] = {today: {'clicks': clickIncr}};
         } else {
-          updates['dailyStats.$today.clicks'] = FieldValue.increment(1);
+          updates['dailyStats.$today.clicks'] = FieldValue.increment(clickIncr);
         }
 
         transaction.update(adRef, updates);

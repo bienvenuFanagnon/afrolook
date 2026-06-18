@@ -2,6 +2,9 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:afrotok/services/ad_config_service.dart';
+import 'package:afrotok/pages/user/userPubs/user_create_advertisement_page.dart';
+
 import 'package:afrotok/pages/challenge/challengeDetails.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/component/showUserDetails.dart';
@@ -136,6 +139,11 @@ class _DetailsPostState extends State<DetailsPost>
   Advertisement? _advertisement;
   bool _isLoadingAd = false;
   bool _isAd = false;
+
+  // Section "Booster ce post" — pour le propriétaire d'un post non-pub
+  Advertisement? _ownerAdForPost;
+  bool _isLoadingOwnerAd = false;
+  bool _ownerAdLoaded = false;
   late SharedPreferences _prefs;
   final String _lastViewDatePrefix = 'last_view_date_';
   bool _isSharing = false;
@@ -844,6 +852,26 @@ class _DetailsPostState extends State<DetailsPost>
     }
   }
 
+  // Charge la pub liée à ce post (pour le propriétaire d'un post non-pub)
+  Future<void> _loadOwnerAd() async {
+    if (_ownerAdLoaded) return;
+    setState(() => _isLoadingOwnerAd = true);
+    try {
+      final snap = await firestore
+          .collection('Advertisements')
+          .where('postId', isEqualTo: widget.post.id)
+          .limit(1)
+          .get();
+      if (snap.docs.isNotEmpty) {
+        setState(() => _ownerAdForPost = Advertisement.fromJson(snap.docs.first.data()));
+      }
+    } catch (_) {}
+    setState(() {
+      _isLoadingOwnerAd = false;
+      _ownerAdLoaded = true;
+    });
+  }
+
 // 4. Ajouter ce widget dans la partie supérieure de la page (après l'en-tête) :
 
   Widget _buildAdvertisementHeader() {
@@ -938,6 +966,348 @@ class _DetailsPostState extends State<DetailsPost>
         ],
       ),
     );
+  }
+
+  // ── SECTION BOOSTER CE POST (propriétaire uniquement) ───────────────────────
+
+  Widget _buildBoostSection() {
+    final isOwner = authProvider.loginUserData.id == widget.post.user_id;
+    if (!isOwner) return const SizedBox.shrink();
+
+    if (_isLoadingOwnerAd) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Center(child: SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: _colors.primary))),
+      );
+    }
+
+    final ad = _ownerAdForPost;
+
+    // Annulée ou rejetée : message admin
+    if (ad != null && (ad.status == 'cancelled' || ad.status == 'rejected')) {
+      return _buildBoostCard(
+        icon: Icons.block,
+        iconColor: _colors.danger,
+        title: ad.status == 'rejected' ? 'Publicité rejetée' : 'Publicité annulée',
+        subtitle: ad.rejectionReason != null && ad.rejectionReason!.isNotEmpty
+            ? 'Motif : ${ad.rejectionReason}'
+            : 'Contactez l\'administrateur pour renouveler cette publicité.',
+        child: null,
+      );
+    }
+
+    // En attente
+    if (ad != null && ad.status == 'pending') {
+      return _buildBoostCard(
+        icon: Icons.hourglass_empty,
+        iconColor: _colors.warning,
+        title: 'Publicité en attente',
+        subtitle: 'Votre publicité est en cours de validation par l\'administration.',
+        child: null,
+      );
+    }
+
+    // Active ou expirée : stats + renouveler
+    if (ad != null && (ad.status == 'active' || ad.status == 'expired')) {
+      final isExpired = ad.status == 'expired' ||
+          (ad.endDate != null && ad.endDate! <= DateTime.now().microsecondsSinceEpoch);
+      return _buildBoostCard(
+        icon: isExpired ? Icons.timer_off : Icons.campaign,
+        iconColor: isExpired ? _colors.textSecondary : _colors.primary,
+        title: isExpired ? 'Publicité expirée' : 'Publicité active',
+        subtitle: null,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          // Stats
+          Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            decoration: BoxDecoration(
+              color: _colors.surfaceVariant,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: _colors.border),
+            ),
+            child: Row(children: [
+              _boostStat(Icons.remove_red_eye, '${ad.views ?? 0}', 'Vues', _colors.info),
+              Container(width: 0.5, height: 36, color: _colors.border),
+              _boostStat(Icons.ads_click, '${ad.clicks ?? 0}', 'Clics', _colors.warning),
+              Container(width: 0.5, height: 36, color: _colors.border),
+              _boostStat(Icons.trending_up, '${ad.ctr.toStringAsFixed(1)}%', 'CTR', _colors.primary),
+            ]),
+          ),
+          if (ad.endDate != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                isExpired
+                    ? 'Expirée le ${_formatBoostDate(ad.endDate!)}'
+                    : 'Fin le ${_formatBoostDate(ad.endDate!)}',
+                style: TextStyle(
+                    color: isExpired ? _colors.danger : _colors.textSecondary, fontSize: 12),
+              ),
+            ),
+          // Bouton renouveler
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _showBoostRenewalDialog(ad),
+              icon: const Icon(Icons.update, size: 16),
+              label: const Text('Renouveler la publicité'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _colors.primary,
+                foregroundColor: _colors.onPrimary,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+              ),
+            ),
+          ),
+        ]),
+      );
+    }
+
+    // Aucune pub : bouton booster
+    return _buildBoostCard(
+      icon: Icons.rocket_launch,
+      iconColor: _colors.accent,
+      title: 'Booster ce post',
+      subtitle: 'Transformez ce post en publicité et touchez plus d\'utilisateurs en Afrique.',
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: () => _navigateToCreateAd(),
+          icon: const Icon(Icons.add_box_outlined, size: 16),
+          label: const Text('Créer une publicité'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _colors.accent,
+            foregroundColor: _colors.onAccent,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            padding: const EdgeInsets.symmetric(vertical: 10),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBoostCard({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String? subtitle,
+    required Widget? child,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _colors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _colors.border, width: 0.5),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(icon, color: iconColor, size: 18),
+          const SizedBox(width: 8),
+          Text(title,
+              style: TextStyle(
+                  color: _colors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14)),
+        ]),
+        if (subtitle != null) ...[
+          const SizedBox(height: 6),
+          Text(subtitle, style: TextStyle(color: _colors.textSecondary, fontSize: 12)),
+        ],
+        if (child != null) ...[const SizedBox(height: 12), child],
+      ]),
+    );
+  }
+
+  Widget _boostStat(IconData icon, String value, String label, Color color) {
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(children: [
+          Icon(icon, color: color, size: 13),
+          const SizedBox(height: 2),
+          Text(value,
+              style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 12)),
+          Text(label, style: TextStyle(color: _colors.textSecondary, fontSize: 9)),
+        ]),
+      ),
+    );
+  }
+
+  String _formatBoostDate(int microseconds) {
+    return DateFormat('dd/MM/yyyy')
+        .format(DateTime.fromMicrosecondsSinceEpoch(microseconds));
+  }
+
+  void _navigateToCreateAd() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => UserCreateAdvertisementPage(existingPost: widget.post),
+      ),
+    ).then((_) {
+      // Recharger après retour
+      _ownerAdLoaded = false;
+      _loadOwnerAd();
+    });
+  }
+
+  void _showBoostRenewalDialog(Advertisement ad) {
+    const extensionOptions = [2, 4, 12, 24, 52];
+    int? selectedWeeks;
+
+    showDialog(
+      context: context,
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setD) => AlertDialog(
+          backgroundColor: _colors.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(children: [
+            Icon(Icons.update, color: _colors.primary, size: 22),
+            const SizedBox(width: 10),
+            Text('Renouveler la publicité',
+                style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold)),
+          ]),
+          content: FutureBuilder<List<AdDuration>>(
+            future: AdConfigService.getDurations(),
+            builder: (_, snap) {
+              final durations = snap.data ?? AdConfigService.defaults;
+              final priceMap = AdConfigService.toMap(durations);
+              return Column(mainAxisSize: MainAxisSize.min, children: [
+                Text('Choisissez la durée', style: TextStyle(color: _colors.textSecondary, fontSize: 13)),
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 8, runSpacing: 8,
+                  children: durations.map((d) {
+                    final sel = selectedWeeks == d.weeks;
+                    return GestureDetector(
+                      onTap: () => setD(() => selectedWeeks = d.weeks),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: sel ? _colors.primary.withOpacity(0.12) : _colors.surfaceVariant,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: sel ? _colors.primary : _colors.border, width: sel ? 1.5 : 0.5),
+                        ),
+                        child: Column(mainAxisSize: MainAxisSize.min, children: [
+                          Text(d.label,
+                              style: TextStyle(
+                                  color: sel ? _colors.primary : _colors.textPrimary,
+                                  fontWeight: sel ? FontWeight.bold : FontWeight.normal,
+                                  fontSize: 13)),
+                          Text('${priceMap[d.weeks] ?? d.price} FCFA',
+                              style: TextStyle(color: _colors.textSecondary, fontSize: 11)),
+                        ]),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                if (selectedWeeks != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: _colors.surfaceVariant,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'Solde actuel : ${authProvider.loginUserData.votre_solde_principal?.toStringAsFixed(0) ?? 0} FCFA',
+                      style: TextStyle(color: _colors.textSecondary, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ]);
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Annuler', style: TextStyle(color: _colors.textSecondary)),
+            ),
+            ElevatedButton(
+              onPressed: selectedWeeks != null
+                  ? () {
+                      Navigator.pop(ctx);
+                      _renewBoostAd(ad, selectedWeeks!);
+                    }
+                  : null,
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: _colors.primary, foregroundColor: _colors.onPrimary),
+              child: const Text('Renouveler'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _renewBoostAd(Advertisement ad, int weeks) async {
+    final durations = await AdConfigService.getDurations();
+    final priceMap = AdConfigService.toMap(durations);
+    final price = priceMap[weeks] ?? 0;
+    final balance = authProvider.loginUserData.votre_solde_principal ?? 0;
+    final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
+
+    if (!isAdmin && balance < price) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Solde insuffisant ($balance FCFA). Vous avez besoin de $price FCFA.'),
+        backgroundColor: _colors.danger,
+      ));
+      return;
+    }
+
+    try {
+      final now = DateTime.now().microsecondsSinceEpoch;
+      final newEndDate = (ad.isExpired || ad.endDate == null || ad.endDate! <= now)
+          ? now + weeks * 7 * 24 * 60 * 60 * 1000000
+          : ad.endDate! + weeks * 7 * 24 * 60 * 60 * 1000000;
+
+      if (!isAdmin) {
+        await firestore.collection('Users').doc(authProvider.loginUserData.id).update({
+          'votre_solde_principal': FieldValue.increment(-price.toDouble()),
+        });
+        authProvider.loginUserData.votre_solde_principal = balance - price;
+        // Log transaction
+        final tx = TransactionSolde()
+          ..id = firestore.collection('TransactionSoldes').doc().id
+          ..user_id = authProvider.loginUserData.id
+          ..type = TypeTransaction.DEPENSE.name
+          ..statut = StatutTransaction.VALIDER.name
+          ..description = 'Renouvellement publicité ${AdConfigService.labelFor(weeks, durations)}'
+          ..montant = price.toDouble()
+          ..methode_paiement = 'solde'
+          ..createdAt = DateTime.now().millisecondsSinceEpoch
+          ..updatedAt = DateTime.now().millisecondsSinceEpoch;
+        await firestore.collection('TransactionSoldes').doc(tx.id).set(tx.toJson());
+      }
+
+      await firestore.collection('Advertisements').doc(ad.id).update({
+        'endDate': newEndDate,
+        'status': 'pending',
+        'renewalCount': FieldValue.increment(1),
+        'updatedAt': now,
+        'pricePaid': FieldValue.increment(price),
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: const Text('Demande de renouvellement envoyée — en attente de validation'),
+          backgroundColor: _colors.primary,
+        ));
+        _ownerAdLoaded = false;
+        _loadOwnerAd();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Erreur : $e'),
+          backgroundColor: _colors.danger,
+        ));
+      }
+    }
   }
 
   // Méthode utilitaire pour optimiser les URLs
@@ -1177,18 +1547,16 @@ class _DetailsPostState extends State<DetailsPost>
 
         final currentAd = Advertisement.fromJson(adDoc.data()!);
 
-        // Préparer les mises à jour
+        final clickIncr = Random().nextInt(3) + 1;
         Map<String, dynamic> updates = {
-          'clicks': FieldValue.increment(1),
+          'clicks': FieldValue.increment(clickIncr),
           'updatedAt': DateTime.now().microsecondsSinceEpoch,
         };
 
-        // Mettre à jour dailyStats
         if (currentAd.dailyStats != null) {
-          updates['dailyStats.$today.clicks'] = FieldValue.increment(1);
+          updates['dailyStats.$today.clicks'] = FieldValue.increment(clickIncr);
         }
 
-        // Vérifier si c'est un clic unique
         final hasClicked =
             currentAd.clickersIds?.contains(currentUserId) ?? false;
         if (!hasClicked) {
@@ -1634,6 +2002,10 @@ class _DetailsPostState extends State<DetailsPost>
     _isAd = widget.post.isAdvertisement == true;
     if (_isAd && widget.post.advertisementId != null) {
       _loadAdvertisement();
+    }
+    // Section boost : si le post appartient à l'utilisateur connecté
+    if (authProvider.loginUserData.id == widget.post.user_id) {
+      _loadOwnerAd();
     }
     _checkIfFavorite();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -5907,6 +6279,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                       SizedBox(height: 5),
 
                       _buildAdvertisementHeader(),
+                      _buildBoostSection(),
                       _buildPostContent(updatedPost),
 
                       if (_isLookChallenge)

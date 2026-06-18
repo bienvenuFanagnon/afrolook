@@ -1,9 +1,11 @@
-// afrolookAdminPubPage.dart — refonte UI session 48
+// afrolookAdminPubPage.dart — refonte UI session 49
 import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/services/ad_config_service.dart';
 import 'package:afrotok/theme/app_colors.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -571,6 +573,122 @@ class _AdvertisementManagementPageState extends State<AdvertisementManagementPag
           if (label != null) ...[const SizedBox(height: 4),
             Text(label, style: TextStyle(color: _colors.textSecondary, fontSize: 11))],
         ])));
+
+  // ── ÉDITEUR DE TARIFS (admin) ─────────────────────────────────────────────────
+
+  void _showTariffsEditor() async {
+    final currentDurations = await AdConfigService.getDurations();
+    // Copie éditable
+    final edited = currentDurations.map((d) => AdDuration(weeks: d.weeks, price: d.price, label: d.label)).toList();
+    final controllers = {for (final d in edited) d.weeks: TextEditingController(text: d.price.toString())};
+
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setD) {
+          bool saving = false;
+          return AlertDialog(
+            backgroundColor: _colors.surface,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Row(children: [
+              Icon(Icons.price_change_outlined, color: _colors.accent, size: 22),
+              const SizedBox(width: 10),
+              Text('Tarifs publicités',
+                  style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold)),
+            ]),
+            content: SingleChildScrollView(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Text('Modifiez les tarifs (FCFA). Les changements s\'appliquent immédiatement.',
+                    style: TextStyle(color: _colors.textSecondary, fontSize: 12)),
+                const SizedBox(height: 14),
+                ...edited.map((d) => Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  decoration: BoxDecoration(
+                    color: _colors.surfaceVariant,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: _colors.border),
+                  ),
+                  child: Row(children: [
+                    Expanded(
+                      flex: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(d.label,
+                              style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 13)),
+                          Text('${d.weeks} semaines',
+                              style: TextStyle(color: _colors.textSecondary, fontSize: 11)),
+                        ]),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 3,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 12, top: 4, bottom: 4),
+                        child: TextField(
+                          controller: controllers[d.weeks],
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          style: TextStyle(color: _colors.textPrimary, fontSize: 14, fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.right,
+                          decoration: InputDecoration(
+                            suffix: Text('FCFA', style: TextStyle(color: _colors.textSecondary, fontSize: 11)),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                            filled: true,
+                            fillColor: _colors.surface,
+                          ),
+                          onChanged: (v) {
+                            final idx = edited.indexWhere((x) => x.weeks == d.weeks);
+                            if (idx >= 0 && v.isNotEmpty) {
+                              edited[idx] = AdDuration(weeks: d.weeks, price: int.tryParse(v) ?? d.price, label: d.label);
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                  ]),
+                )),
+              ]),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text('Annuler', style: TextStyle(color: _colors.textSecondary)),
+              ),
+              StatefulBuilder(
+                builder: (__, setSaving) => ElevatedButton.icon(
+                  onPressed: saving ? null : () async {
+                    setSaving(() => saving = true);
+                    // Mettre à jour edited avec les valeurs des controllers
+                    final finalList = edited.map((d) {
+                      final val = int.tryParse(controllers[d.weeks]?.text ?? '') ?? d.price;
+                      return AdDuration(weeks: d.weeks, price: val, label: d.label);
+                    }).toList();
+                    await AdConfigService.update(finalList, authProvider.loginUserData.id ?? '');
+                    if (ctx.mounted) {
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: const Text('Tarifs mis à jour'),
+                        backgroundColor: _colors.primary,
+                      ));
+                    }
+                  },
+                  icon: saving ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.save, size: 16),
+                  label: const Text('Enregistrer'),
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: _colors.accent, foregroundColor: _colors.onAccent),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
 
   // ── WIDGETS STATS ─────────────────────────────────────────────────────────────
 
@@ -1198,6 +1316,11 @@ class _AdvertisementManagementPageState extends State<AdvertisementManagementPag
                 color: _colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 17)),
         iconTheme: IconThemeData(color: _colors.textPrimary),
         actions: [
+          IconButton(
+            icon: Icon(Icons.price_change_outlined, color: _colors.accent),
+            tooltip: 'Tarifs publicités',
+            onPressed: _showTariffsEditor,
+          ),
           IconButton(
             icon: Icon(Icons.refresh, color: _colors.textSecondary),
             onPressed: _loadGlobalStats,

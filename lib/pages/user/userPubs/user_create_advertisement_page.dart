@@ -7,28 +7,6 @@ import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
-import 'package:video_thumbnail/video_thumbnail.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:provider/provider.dart';
-import 'package:uuid/uuid.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:iconsax/iconsax.dart';
-
-import '../../../models/model_data.dart';
-import '../../../providers/authProvider.dart';
-import '../../paiement/depotPaiment.dart';
-import '../../paiement/newDepot.dart'; // à adapter selon votre chemin
-
-
-// user_create_advertisement_page.dart
-import 'dart:io';
-import 'dart:typed_data';
-import 'package:flutter/material.dart';
-import 'package:intl_phone_field/intl_phone_field.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -42,10 +20,14 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../models/model_data.dart';
 import '../../../providers/authProvider.dart';
+import '../../../services/ad_config_service.dart';
 import '../../paiement/depotPaiment.dart';
+import '../../paiement/newDepot.dart';
 
 class UserCreateAdvertisementPage extends StatefulWidget {
-  const UserCreateAdvertisementPage({Key? key}) : super(key: key);
+  final Post? existingPost; // null = créer un nouveau post ; non-null = booster un post existant
+
+  const UserCreateAdvertisementPage({Key? key, this.existingPost}) : super(key: key);
 
   @override
   State<UserCreateAdvertisementPage> createState() => _UserCreateAdvertisementPageState();
@@ -93,15 +75,10 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
   bool _isUploading = false;
   double _uploadProgress = 0;
 
-  // Tarifs (semaines)
-  final Map<int, int> _durationPrices = {
-    2: 2500,   // 2 semaines
-    4: 4500,   // 1 mois
-    12: 10000, // 3 mois
-    24: 18000, // 6 mois
-    52: 30000, // 12 mois
-  };
-  final List<int> _durationOptions = [2, 4, 12, 24, 52];
+  // Tarifs chargés depuis AdConfigService (Firestore)
+  List<AdDuration> _durations = AdConfigService.defaults;
+  Map<int, int> get _durationPrices => AdConfigService.toMap(_durations);
+  List<int> get _durationOptions => _durations.map((d) => d.weeks).toList();
 
   // Couleurs
   final Color _primaryColor = const Color(0xFFE21221);
@@ -119,6 +96,16 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     _filteredCountries = List.from(AfricanCountry.allCountries);
     _countrySearchController.addListener(_filterCountries);
+    _loadConfig();
+    // Si post existant fourni, pré-remplir la description
+    if (widget.existingPost != null) {
+      _descriptionController.text = widget.existingPost!.description ?? '';
+    }
+  }
+
+  Future<void> _loadConfig() async {
+    final durations = await AdConfigService.getDurations();
+    if (mounted) setState(() => _durations = durations);
   }
 
   @override
@@ -394,8 +381,10 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
 
   // ========== PUBLICATION ==========
   Future<void> _publishAdvertisement() async {
-    // Validations
-    if (_selectedAdType == null) { _showError('Choisissez le type de publicité'); return; }
+    final isBoost = widget.existingPost != null;
+
+    // Validations communes
+    if (!isBoost && _selectedAdType == null) { _showError('Choisissez le type de publicité'); return; }
     if (_selectedActionType == null) { _showError('Choisissez un type d\'action'); return; }
     if (_selectedDurationWeeks == null) { _showError('Choisissez la durée'); return; }
     if (_descriptionController.text.trim().isEmpty) { _showError('La description est obligatoire'); return; }
@@ -404,16 +393,19 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
       if (_whatsappController.text.isEmpty) { _showError('Numéro WhatsApp requis'); return; }
     } else {
       if (_actionUrlController.text.isEmpty || !_actionUrlController.text.startsWith('http')) {
-        _showError('Lien valide requis (http:// ou https://)');
-        return;
+        _showError('Lien valide requis (http:// ou https://)'); return;
       }
     }
 
-    if (_selectedAdType == 'image' && _selectedImages.isEmpty) { _showError('Sélectionnez au moins une image'); return; }
-    if (_selectedAdType == 'video' && _videoFile == null && _videoBytes == null) { _showError('Sélectionnez une vidéo'); return; }
+    // Validations médias uniquement si nouveau post
+    if (!isBoost) {
+      if (_selectedAdType == 'image' && _selectedImages.isEmpty) { _showError('Sélectionnez au moins une image'); return; }
+      if (_selectedAdType == 'video' && _videoFile == null && _videoBytes == null) { _showError('Sélectionnez une vidéo'); return; }
+    }
+
     if (!_selectAllCountries && _selectedCountries.isEmpty) { _showError('Sélectionnez au moins un pays'); return; }
 
-    final int price = _durationPrices[_selectedDurationWeeks!]!;
+    final int price = _durationPrices[_selectedDurationWeeks!] ?? 0;
     final currentBalance = authProvider.loginUserData.votre_solde_principal ?? 0;
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
 
@@ -425,7 +417,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
     setState(() => _isUploading = true);
 
     try {
-      // 1. Débiter (sauf admin) et mettre à jour le solde local
+      // 1. Débiter (sauf admin)
       if (!isAdmin) {
         await FirebaseFirestore.instance.collection('Users').doc(authProvider.loginUserData.id).update({
           'votre_solde_principal': FieldValue.increment(-price),
@@ -434,84 +426,87 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
         await _createTransaction(price, 'Publicité ${_getDurationLabel(_selectedDurationWeeks!)}');
       }
 
-      // 2. Upload des médias
-      List<String> mediaUrls = [];
-      String? videoUrl;
-      String? thumbnailUrl;
-
-      if (_selectedAdType == 'image') {
-        for (var img in _selectedImages) {
-          final fileName = 'ad_images/${Uuid().v4()}.jpg';
-          final ref = FirebaseStorage.instance.ref().child(fileName);
-          final tempDir = await getTemporaryDirectory();
-          final file = File('${tempDir.path}/${Uuid().v4()}.jpg');
-          await file.writeAsBytes(img);
-          await ref.putFile(file);
-          final url = await ref.getDownloadURL();
-          mediaUrls.add(url);
-        }
-      } else {
-        // Upload vidéo
-        final videoFileName = 'ad_videos/${Uuid().v4()}.mp4';
-        final videoRef = FirebaseStorage.instance.ref().child(videoFileName);
-        UploadTask uploadTask;
-        if (_videoFile != null) {
-          uploadTask = videoRef.putFile(File(_videoFile!.path));
-        } else {
-          uploadTask = videoRef.putData(_videoBytes!);
-        }
-        uploadTask.snapshotEvents.listen((snap) {
-          if (mounted) setState(() => _uploadProgress = snap.bytesTransferred / snap.totalBytes);
-        });
-        final videoSnapshot = await uploadTask;
-        videoUrl = await videoSnapshot.ref.getDownloadURL();
-
-        // Upload miniature
-        if (_useCustomThumbnail && (_customThumbnailFile != null || _customThumbnailBytes != null)) {
-          thumbnailUrl = await _uploadCustomThumbnail();
-        } else if (_localThumbnailPath != null) {
-          final thumbFileName = 'ad_thumbnails/${Uuid().v4()}.jpg';
-          final thumbRef = FirebaseStorage.instance.ref().child(thumbFileName);
-          await thumbRef.putFile(File(_localThumbnailPath!));
-          thumbnailUrl = await thumbRef.getDownloadURL();
-        }
-      }
-
-      // 3. Créer le post
-      final String postId = FirebaseFirestore.instance.collection('Posts').doc().id;
       final now = DateTime.now().microsecondsSinceEpoch;
-      Post post = Post()
-        ..id = postId
-        ..user_id = authProvider.loginUserData.id
-        ..description = _descriptionController.text.trim()
-        ..createdAt = now
-        ..updatedAt = now
-        ..status = PostStatus.VALIDE.name
-        ..type = PostType.POST.name
-        ..dataType = _selectedAdType == 'image' ? PostDataType.IMAGE.name : PostDataType.VIDEO.name
-        ..typeTabbar = 'OFFRES'
-        ..isAdvertisement = true
-        ..availableCountries = _selectAllCountries
-            ? AfricanCountry.allCountries.map((c) => c.code).toList()
-            : _selectedCountries.map((c) => c.code).toList();
-
-      if (_selectedAdType == 'image') {
-        post.images = mediaUrls;
-      } else {
-        post.url_media = videoUrl;
-        post.thumbnail = thumbnailUrl;
-      }
-
-      await FirebaseFirestore.instance.collection('Posts').doc(postId).set(post.toJson());
-
-      // 4. Créer l'annonce publicitaire
-      final String adId = FirebaseFirestore.instance.collection('Advertisements').doc().id;
       final String actionUrl = _selectedActionType == 'whatsapp'
           ? 'https://wa.me/${_whatsappController.text.replaceAll(RegExp(r'[^0-9+]'), '')}'
           : _actionUrlController.text;
-
       final int durationDays = _selectedDurationWeeks! * 7;
+      final List<String> targetCountries = _selectAllCountries
+          ? AfricanCountry.allCountries.map((c) => c.code).toList()
+          : _selectedCountries.map((c) => c.code).toList();
 
+      String postId;
+
+      if (isBoost) {
+        // ── Mode "booster" : lier au post existant ───────────────────────────
+        postId = widget.existingPost!.id!;
+        // Mettre à jour le post existant
+        await FirebaseFirestore.instance.collection('Posts').doc(postId).update({
+          'isAdvertisement': true,
+          'description': _descriptionController.text.trim(),
+          'availableCountries': targetCountries,
+          'updatedAt': now,
+        });
+      } else {
+        // ── Mode "nouveau post" : créer le post + upload médias ───────────────
+        List<String> mediaUrls = [];
+        String? videoUrl;
+        String? thumbnailUrl;
+
+        if (_selectedAdType == 'image') {
+          for (var img in _selectedImages) {
+            final fileName = 'ad_images/${Uuid().v4()}.jpg';
+            final ref = FirebaseStorage.instance.ref().child(fileName);
+            final tempDir = await getTemporaryDirectory();
+            final file = File('${tempDir.path}/${Uuid().v4()}.jpg');
+            await file.writeAsBytes(img);
+            await ref.putFile(file);
+            mediaUrls.add(await ref.getDownloadURL());
+          }
+        } else {
+          final videoFileName = 'ad_videos/${Uuid().v4()}.mp4';
+          final videoRef = FirebaseStorage.instance.ref().child(videoFileName);
+          UploadTask uploadTask = _videoFile != null
+              ? videoRef.putFile(File(_videoFile!.path))
+              : videoRef.putData(_videoBytes!);
+          uploadTask.snapshotEvents.listen((snap) {
+            if (mounted) setState(() => _uploadProgress = snap.bytesTransferred / snap.totalBytes);
+          });
+          videoUrl = await (await uploadTask).ref.getDownloadURL();
+          if (_useCustomThumbnail && (_customThumbnailFile != null || _customThumbnailBytes != null)) {
+            thumbnailUrl = await _uploadCustomThumbnail();
+          } else if (_localThumbnailPath != null) {
+            final thumbRef = FirebaseStorage.instance.ref().child('ad_thumbnails/${Uuid().v4()}.jpg');
+            await thumbRef.putFile(File(_localThumbnailPath!));
+            thumbnailUrl = await thumbRef.getDownloadURL();
+          }
+        }
+
+        postId = FirebaseFirestore.instance.collection('Posts').doc().id;
+        Post post = Post()
+          ..id = postId
+          ..user_id = authProvider.loginUserData.id
+          ..description = _descriptionController.text.trim()
+          ..createdAt = now
+          ..updatedAt = now
+          ..status = PostStatus.VALIDE.name
+          ..type = PostType.POST.name
+          ..dataType = _selectedAdType == 'image' ? PostDataType.IMAGE.name : PostDataType.VIDEO.name
+          ..typeTabbar = 'OFFRES'
+          ..isAdvertisement = true
+          ..availableCountries = targetCountries;
+
+        if (_selectedAdType == 'image') {
+          post.images = mediaUrls;
+        } else {
+          post.url_media = videoUrl;
+          post.thumbnail = thumbnailUrl;
+        }
+        await FirebaseFirestore.instance.collection('Posts').doc(postId).set(post.toJson());
+      }
+
+      // 2. Créer l'annonce
+      final String adId = FirebaseFirestore.instance.collection('Advertisements').doc().id;
       Advertisement ad = Advertisement(
         id: adId,
         postId: postId,
@@ -524,8 +519,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
         status: 'pending',
         isRenewable: true,
         renewalCount: 0,
-        pricePaid: _durationPrices[_selectedDurationWeeks],
-
+        pricePaid: price,
         createdBy: authProvider.loginUserData.id,
         createdAt: now,
         updatedAt: now,
@@ -533,7 +527,6 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
       await FirebaseFirestore.instance.collection('Advertisements').doc(adId).set(ad.toJson());
       await FirebaseFirestore.instance.collection('Posts').doc(postId).update({'advertisementId': adId});
 
-      // 5. Succès
       _showSuccessDialog();
     } catch (e) {
       print('Erreur publication: $e');
@@ -653,7 +646,10 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
     return Scaffold(
       backgroundColor: _backgroundColor,
       appBar: AppBar(
-        title: Text('Créer une publicité', style: TextStyle(color: _secondaryColor)),
+        title: Text(
+          widget.existingPost != null ? 'Booster ce post' : 'Créer une publicité',
+          style: TextStyle(color: _secondaryColor),
+        ),
         backgroundColor: _cardColor,
         leading: IconButton(icon: Icon(Icons.arrow_back, color: _secondaryColor), onPressed: () => Navigator.pop(context)),
       ),
@@ -676,8 +672,14 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
               children: [
                 _buildInfoBanner(),
                 SizedBox(height: 16),
-                _buildAdTypeCard(),
-                SizedBox(height: 16),
+                // En mode "boost", afficher le post existant au lieu du sélecteur de type + médias
+                if (widget.existingPost != null) ...[
+                  _buildExistingPostPreview(widget.existingPost!),
+                  SizedBox(height: 16),
+                ] else ...[
+                  _buildAdTypeCard(),
+                  SizedBox(height: 16),
+                ],
                 _buildDescriptionCard(),
                 SizedBox(height: 16),
                 _buildDurationCard(),
@@ -686,8 +688,11 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
                 SizedBox(height: 16),
                 _buildCountrySelectionCard(),
                 SizedBox(height: 16),
-                _buildMediaCard(),
-                SizedBox(height: 32),
+                // Section médias uniquement pour les nouveaux posts
+                if (widget.existingPost == null) ...[
+                  _buildMediaCard(),
+                  SizedBox(height: 16),
+                ],
                 _buildSubmitButton(),
                 SizedBox(height: 20),
               ],
@@ -696,6 +701,69 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
           if (_showCountrySelection) _buildCountrySelectionModal(),
         ],
       ),
+    );
+  }
+
+  Widget _buildExistingPostPreview(Post post) {
+    final dataType = post.dataType ?? '';
+    final images = post.images ?? [];
+    final thumbnail = post.thumbnail;
+
+    Widget preview;
+    if (dataType == PostDataType.IMAGE.name && images.isNotEmpty) {
+      preview = ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.network(images.first, height: 160, width: double.infinity, fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Container(height: 80, color: _cardColor, child: Icon(Icons.image, color: _hintColor))),
+      );
+    } else if (dataType == PostDataType.VIDEO.name) {
+      final thumb = (thumbnail?.isNotEmpty == true) ? thumbnail! : (images.isNotEmpty ? images.first : null);
+      preview = ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Stack(children: [
+          thumb != null
+              ? Image.network(thumb, height: 160, width: double.infinity, fit: BoxFit.cover)
+              : Container(height: 160, color: _cardColor),
+          const Positioned.fill(child: Center(child: Icon(Icons.play_circle_outline, color: Colors.white, size: 48))),
+        ]),
+      );
+    } else if (dataType == PostDataType.AUDIO.name) {
+      preview = Container(
+        height: 80,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          gradient: const LinearGradient(colors: [Color(0xFF4A0080), Color(0xFF311B92)]),
+        ),
+        child: const Center(child: Icon(Icons.headphones, color: Colors.white, size: 36)),
+      );
+    } else {
+      preview = Container(
+        height: 60,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(color: _cardColor, borderRadius: BorderRadius.circular(12)),
+        child: Text(post.description ?? '', style: TextStyle(color: _textColor, fontSize: 13), maxLines: 3, overflow: TextOverflow.ellipsis),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _cardColor, borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _primaryColor.withOpacity(0.5)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(Icons.article_outlined, color: _secondaryColor, size: 16),
+          const SizedBox(width: 6),
+          Text('Post à booster', style: TextStyle(color: _secondaryColor, fontWeight: FontWeight.bold, fontSize: 13)),
+        ]),
+        const SizedBox(height: 10),
+        preview,
+        if ((post.description ?? '').isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(post.description!, style: TextStyle(color: _hintColor, fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
+        ],
+      ]),
     );
   }
 
@@ -994,16 +1062,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
     );
   }
 
-  String _getDurationLabel(int weeks) {
-    switch (weeks) {
-      case 2: return '2 sem.';
-      case 4: return '1 mois';
-      case 12: return '3 mois';
-      case 24: return '6 mois';
-      case 52: return '12 mois';
-      default: return '$weeks sem.';
-    }
-  }
+  String _getDurationLabel(int weeks) => AdConfigService.labelFor(weeks, _durations);
 
   // Les widgets de sélection des pays (à copier depuis la version précédente)
   Widget _buildCountrySelectionCard() {

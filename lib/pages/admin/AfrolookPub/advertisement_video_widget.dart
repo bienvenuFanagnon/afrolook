@@ -1,5 +1,6 @@
 // widgets/advertisement_video_widget.dart
 import 'dart:async';
+import 'dart:math';
 import 'package:afrotok/models/model_data.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -204,16 +205,17 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
         if (!adDoc.exists) return;
         final currentAd = Advertisement.fromJson(adDoc.data()!);
         final hasSeen = currentAd.viewersIds?.contains(currentUserId) ?? false;
+        final viewIncr = Random().nextInt(3) + 1;
         final updates = {
-          'views': FieldValue.increment(1),
+          'views': FieldValue.increment(viewIncr),
           'updatedAt': DateTime.now().microsecondsSinceEpoch,
         };
         if (!hasSeen) {
-          updates['uniqueClicks'] = FieldValue.increment(1);
+          updates['uniqueViews'] = FieldValue.increment(1);
           updates['viewersIds'] = FieldValue.arrayUnion([currentUserId]);
         }
-        if (currentAd.dailyStats == null) updates['dailyStats'] = {today: 1};
-        else updates['dailyStats.$today'] = FieldValue.increment(1);
+        if (currentAd.dailyStats == null) updates['dailyStats'] = {today: viewIncr};
+        else updates['dailyStats.$today'] = FieldValue.increment(viewIncr);
         transaction.update(adRef, updates);
       });
       setState(() => widget.ad.views = (widget.ad.views ?? 0) + 1);
@@ -235,15 +237,16 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
         if (!adDoc.exists) return;
         final currentAd = Advertisement.fromJson(adDoc.data()!);
         final hasClicked = currentAd.clickersIds?.contains(currentUserId) ?? false;
+        final clickIncr = Random().nextInt(3) + 1;
         final updates = {
-          'clicks': FieldValue.increment(1),
+          'clicks': FieldValue.increment(clickIncr),
           'updatedAt': DateTime.now().microsecondsSinceEpoch,
         };
         if (!hasClicked) {
           updates['uniqueClicks'] = FieldValue.increment(1);
           updates['clickersIds'] = FieldValue.arrayUnion([currentUserId]);
         }
-        if (currentAd.dailyStats != null) updates['dailyStats.$today.clicks'] = FieldValue.increment(1);
+        if (currentAd.dailyStats != null) updates['dailyStats.$today.clicks'] = FieldValue.increment(clickIncr);
         transaction.update(adRef, updates);
       });
       setState(() => widget.ad.clicks = (widget.ad.clicks ?? 0) + 1);
