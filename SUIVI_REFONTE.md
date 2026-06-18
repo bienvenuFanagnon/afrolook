@@ -1728,4 +1728,55 @@ Audit complet du module `lib/pages/dating/` réalisé (15+ pages, service `datin
 
 **`dart analyze`** → 0 erreur, 0 warning (18 `info` : `withOpacity` dépréciés pré-existants dans tout le projet, non bloquants)
 
-**Vérification** : `dart analyze` → 0 erreur, 0 warning (infos `withOpacity` dépréciés pré-existants, non liés à cette session).
+### Session 50 (18 juin 2026 — agent actuel)
+
+**Système publicitaire — améliorations complètes ✅ FAIT**
+
+**Commit** : `da8f91a`
+
+**1. Config tarifaire centralisée — `lib/services/ad_config_service.dart`** (nouveau fichier) :
+- Classe `AdDuration` : `{weeks, price, label}`
+- Classe `AdConfigService` : lecture Firestore `AdConfig/pricing` avec cache 30 min + fallback sur les 5 durées par défaut (2/4/12/24/52 semaines)
+- Méthodes : `getDurations()`, `toMap()`, `labelFor()`, `update()`, `invalidateCache()`
+- Tarifs par défaut : 2 sem. 2 500 FCFA · 1 mois 4 500 FCFA · 3 mois 10 000 FCFA · 6 mois 18 000 FCFA · 12 mois 30 000 FCFA
+
+**2. Éditeur de tarifs admin — `afrolookAdminPubPage.dart`** :
+- Bouton `Icons.price_change_outlined` dans l'AppBar
+- Dialog avec champs de prix éditables par durée (clavier numérique)
+- Sauvegarde dans `AdConfig/pricing` via `AdConfigService.update()` + invalidation du cache
+
+**3. Boost post depuis `postDetails.dart`** :
+- Variables : `_ownerAdForPost`, `_isLoadingOwnerAd`, `_ownerAdLoaded`
+- `_loadOwnerAd()` : requête `Advertisements.where('postId', isEqualTo: post.id).limit(1)` — appelée si `userId == post.user_id`
+- `_buildBoostSection()` : section visible uniquement pour le propriétaire du post
+  - **Aucune pub** → bouton "Créer une publicité" → `UserCreateAdvertisementPage(existingPost: post)`
+  - **Pending** → badge "En attente de validation"
+  - **Active/Expirée** → stats (Vues/Clics/CTR) + dates + bouton "Renouveler" avec dialog durée/prix
+  - **Annulée/Rejetée** → message "Contacter l'administrateur"
+- `_renewBoostAd()` : débit solde + log `TransactionSolde` DEPENSE + mise à jour Firestore (status: `pending`, nouveaux dates, `pricePaid` incrémenté)
+- Section insérée dans l'arbre build après `_buildAdvertisementHeader()`
+
+**4. "Booster un post existant" — `user_create_advertisement_page.dart`** :
+- `Post? existingPost` ajouté au constructeur
+- Tarifs chargés depuis `AdConfigService` (plus de `Map` hardcodé)
+- Mode **boost** : affichage aperçu du post existant + skip section upload médias + skip création de nouveau Post (lien direct sur le `postId` existant)
+- `initState` : pré-remplit `_descriptionController` depuis `existingPost.description`
+- `_publishAdvertisement()` : branche `isBoost` → update le post existant (`isAdvertisement: true`, `availableCountries`, `description`) puis crée uniquement l'`Advertisement`
+- Nettoyage des imports dupliqués + ajout `foundation.dart` et `flutter_vector_icons`
+
+**5. `user_my_advertisements_page.dart`** :
+- Tarifs lus depuis `AdConfigService` au lieu du `Map` hardcodé
+- `_getDurationLabel()` délégué à `AdConfigService.labelFor()`
+
+**6. Comptage aléatoire 1–3 dans tous les widgets pub** :
+- `advertisementPostImageWidget.dart` : vues et clics → `FieldValue.increment(Random().nextInt(3) + 1)`
+- `advertisement_video_widget.dart` : idem
+- `ad_post_page_video_widget.dart` : idem
+- `postDetails.dart` (`_recordAdClick`) : idem
+- Note : les compteurs `uniqueViews` / `uniqueClicks` restent à `increment(1)` (vue/clic unique par utilisateur, non amplifié)
+
+**7. Règle pub annulée/rejetée = admin uniquement** :
+- `postDetails.dart` : section boost affiche message "Contacter l'administrateur" sans bouton pour ces statuts
+- `user_my_advertisements_page.dart` : déjà enforced (pas de bouton Renouveler pour cancelled/rejected — session 48)
+
+**`dart analyze`** → 0 erreur, 0 warning (infos pré-existants, non bloquants)
