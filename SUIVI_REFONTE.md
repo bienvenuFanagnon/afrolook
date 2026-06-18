@@ -1664,4 +1664,68 @@ Audit complet du module `lib/pages/dating/` réalisé (15+ pages, service `datin
 
 **Commit** : `e42ba4f`
 
+### Session 49 (18 juin 2026 — agent actuel)
+
+**Page admin publicités — refonte UI complète ✅ FAIT**
+
+- `lib/pages/admin/AfrolookPub/afrolookAdminPubPage.dart` (`AdvertisementManagementPage`) — réécriture complète :
+
+**AppColors dark/light** :
+- Suppression de toutes les constantes hardcodées (`_primaryColor = Color(0xFFE21221)`, `_secondaryColor`, `_backgroundColor = Color(0xFF121212)`, `_cardColor`, `_textColor`)
+- Pattern `late AppColors _colors` initialisé dans `build()` via `AppColors.of(context)`
+
+**Auto-fix dates expirées** :
+- `_loadGlobalStats()` : détecte les annonces `status='active'` avec `endDate <= now`
+- Correction automatique Firestore (`status: 'expired'`) en `Future.wait` groupé
+- IDs mémorisés dans `_autoFixedIds: Set<String>`
+- `_effectiveStatus(data)` helper client-side utilisé dans le `StreamBuilder` pour cohérence immédiate
+- Bannière alerte orange sur les cartes auto-corrigées
+
+**6 onglets TabBar** (ajout de l'onglet Annulées) :
+- Stats / En attente (badge rouge si > 0) / Actives / Expirées / Rejetées / Annulées
+- `TabController(length: 6, ...)`
+- `_cancelledAds` comptabilisé dans `_loadGlobalStats()`
+
+**Aperçu du post selon son type** (`_buildPostPreview`) :
+- `IMAGE` → première image via `CachedNetworkImage`
+- `VIDEO` → thumbnail/images.first + play centré + badge "Vidéo"
+- `AUDIO` → thumbnail/images.first + badge headphones ; sinon `_buildAudioGradient()` (dégradé violet)
+- `TEXT` → fond surfaceVariant + icône + description 4 lignes max
+- `EBOOK` / autre → images.first ou icône menu_book
+
+**Chargement post indépendant** : `_buildAdCardWithPost(doc)` avec `FutureBuilder<DocumentSnapshot>` par carte
+
+**Cartes publicité redessinées** :
+- Aperçu 130px pleine largeur (type-aware)
+- Badge statut + ID court + date création + prix payé
+- Bannière alerte auto-fix (si applicable)
+- Description post (2 lignes max)
+- Lien + bouton d'action (si présent)
+- Barre `LinearProgressIndicator` (orange si ≤3j restants, gris si expiré/annulé)
+- Dates début/fin avec indication dépassement
+- Bloc stats : Vues / Clics / CTR / Vues uniques
+- Motif rejet (si applicable)
+- Boutons d'action admin selon statut :
+  - Pending : **Accepter** (vert) / **Rejeter** (rouge, ouvre dialog motif + remboursement) / Supprimer
+  - Active : **Annuler** / **Prolonger** (dialog durée, gratuit admin) / Supprimer
+  - Expired : **Prolonger** / Supprimer
+  - Rejected / Cancelled : Supprimer uniquement
+
+**Actions admin préservées** :
+- `_refundUser(ad)` : crédite `Users.votre_solde_principal` + log `TransactionSolde` GAIN
+- `_updateAdStatus(ad, status, {reason})` : appelle `_refundUser` si rejet de pending
+- `_renewAd(ad, days)` : prolonge sans débit (admin), choix 7/14/30/60/90 jours
+- `_deleteAd(ad)` : supprime annonce + post associé (avec confirmation)
+- Dialog rejet : motif obligatoire + message remboursement affiché
+
+**Onglet Stats redessiné** :
+- Grille 3 colonnes : Total / En attente / Actives / Expirées / Rejetées / Annulées
+- Grille 2 colonnes : Vues totales / Clics / Vues uniques / CTR global
+- Carte revenus totaux (pubs actives + expirées)
+- Top 5 par vues et Top 5 par clics (barres avec rang coloré)
+- Activité 7 derniers jours (barres de progression horizontales)
+- `RefreshIndicator` pour rechargement manuel
+
+**`dart analyze`** → 0 erreur, 0 warning (18 `info` : `withOpacity` dépréciés pré-existants dans tout le projet, non bloquants)
+
 **Vérification** : `dart analyze` → 0 erreur, 0 warning (infos `withOpacity` dépréciés pré-existants, non liés à cette session).
