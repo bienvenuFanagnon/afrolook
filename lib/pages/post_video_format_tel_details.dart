@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math';
 import 'dart:typed_data';
+import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:afrotok/pages/component/showUserDetails.dart';
 import 'package:afrotok/pages/paiement/newDepot.dart';
 import 'package:afrotok/pages/postDetails.dart';
@@ -100,8 +102,12 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
   // Nouveaux membres pour le préchargement
   final Map<int, VideoPlayerController> _preloadedControllers = {};
-  final int _preloadRadius = 2; // nombre de vidéos avant/après à précharger
+  final int _preloadRadius = 2;
   final Set<int> _preloadingIndices = {};
+
+  // Cache des données pub pour les posts qui sont des publicités
+  final Map<String, Advertisement?> _adCache = {};
+  final Set<String> _loadingAdIds = {};
 
   // Interactions state
   bool _isSharing = false;
@@ -2459,6 +2465,157 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     );
   }
 
+  // ============================================================
+  // AD OVERLAY — affiché quand le post courant est une publicité
+  // ============================================================
+
+  Future<void> _ensureAdLoaded(Post post) async {
+    if (post.id == null) return;
+    if (_adCache.containsKey(post.id) || _loadingAdIds.contains(post.id)) return;
+    _loadingAdIds.add(post.id!);
+    try {
+      final snap = await _firestore
+          .collection('Advertisements')
+          .where('postId', isEqualTo: post.id)
+          .where('status', isEqualTo: 'active')
+          .limit(1)
+          .get();
+      Advertisement? ad;
+      if (snap.docs.isNotEmpty) {
+        ad = Advertisement.fromJson(snap.docs.first.data());
+        ad.id = snap.docs.first.id;
+        _recordAdViewForPost(ad);
+      }
+      if (mounted) setState(() => _adCache[post.id!] = ad);
+    } catch (_) {
+      if (mounted) setState(() => _adCache[post.id!] = null);
+    } finally {
+      _loadingAdIds.remove(post.id!);
+    }
+  }
+
+  Future<void> _recordAdViewForPost(Advertisement ad) async {
+    if (ad.id == null) return;
+    final viewIncr = Random().nextInt(3) + 1;
+    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    try {
+      await _firestore.collection('Advertisements').doc(ad.id).update({
+        'views': FieldValue.increment(viewIncr),
+        'uniqueViews': FieldValue.increment(1),
+        'dailyStats.$today.views': FieldValue.increment(viewIncr),
+        'updatedAt': DateTime.now().microsecondsSinceEpoch,
+      });
+    } catch (_) {}
+  }
+
+  Widget _adStatChip(IconData icon, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(6)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: Colors.white70, size: 11),
+          const SizedBox(width: 3),
+          Text(value, style: const TextStyle(color: Colors.white70, fontSize: 10)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVideoAdOverlay(Post post) {
+    if (!_adCache.containsKey(post.id)) {
+      _ensureAdLoaded(post);
+    }
+    final ad = post.id != null ? _adCache[post.id!] : null;
+
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 60,
+      left: 12,
+      right: 60,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Badge SPONSORISÉ
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFD600),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.verified, color: Colors.black, size: 12),
+                SizedBox(width: 4),
+                Text('SPONSORISÉ', style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
+          if (ad != null) ...[
+            const SizedBox(height: 8),
+            // Stats
+            Row(
+              children: [
+                _adStatChip(Icons.visibility, '${ad.views}'),
+                const SizedBox(width: 6),
+                _adStatChip(Icons.touch_app, '${ad.clicks}'),
+                const SizedBox(width: 6),
+                _adStatChip(Icons.percent, '${ad.ctr.toStringAsFixed(1)}%'),
+              ],
+            ),
+            const SizedBox(height: 8),
+            // Bouton d'action
+            GestureDetector(
+              onTap: () async {
+                final clickIncr = Random().nextInt(3) + 1;
+                final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+                _firestore.collection('Advertisements').doc(ad.id).update({
+                  'clicks': FieldValue.increment(clickIncr),
+                  'uniqueClicks': FieldValue.increment(1),
+                  'dailyStats.$today.clicks': FieldValue.increment(clickIncr),
+                });
+                if (ad.actionUrl != null && ad.actionUrl!.isNotEmpty) {
+                  final url = Uri.parse(ad.actionUrl!);
+                  if (await canLaunchUrl(url)) {
+                    await launchUrl(url, mode: LaunchMode.externalApplication);
+                  }
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFE21221), Color(0xFFFF5252)],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      ad.actionType == 'download' ? Icons.download
+                          : ad.actionType == 'visit' ? Icons.language
+                          : Icons.info,
+                      color: Colors.white,
+                      size: 14,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(ad.getActionButtonText().toUpperCase(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.arrow_forward, color: Colors.white, size: 12),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildVideoPage(Post post) {
     return Stack(
       children: [
@@ -2466,17 +2623,19 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         Positioned.fill(
           child: GestureDetector(
             onDoubleTap: () {
-              // final screenSize = MediaQuery.of(context).size;
-              // _showFlyingHearts(screenSize.width / 2, screenSize.height / 2);
               _handleLike(post);
             },
             child: _buildVideoPlayer(post),
           ),
         ),
 
-        // Contenu interactif (boutons, infos) - au-dessus de la vidéo
+        // Overlay pub si le post est une publicité, sinon boutons normaux
+        if (post.isAdvertisement == true)
+          _buildVideoAdOverlay(post)
+        else
+          _buildActionButtons(post),
+
         _buildUserInfo(post),
-        _buildActionButtons(post),
         _buildScrollHint(),
 
         // Animation des cœurs
@@ -2484,12 +2643,15 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
         if (widget.isIn)
           Positioned(
-            top:12,
+            top: 12,
             left: 10,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(children: [IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.arrow_back, color: Colors.yellow)), const Text('Vibe vidéos', style: TextStyle(color: _afroGreen, fontSize: 20, fontWeight: FontWeight.bold))]),
+                Row(children: [
+                  IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.arrow_back, color: Colors.yellow)),
+                  const Text('Vibe vidéos', style: TextStyle(color: _afroGreen, fontSize: 20, fontWeight: FontWeight.bold)),
+                ]),
               ],
             ),
           ),

@@ -71,13 +71,16 @@ import '../component/showUserDetails.dart';
 import 'chroniqueform.dart';
 // pages/chronique/chronique_detail_page.dart
 import 'dart:io';
+import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:video_player/video_player.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
@@ -123,6 +126,10 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
   final int _batchSize = 5;
   bool _isLoadingMore = false;
 
+  // Publicités injectées entre les chroniques
+  List<Advertisement> _activeAds = [];
+  final Map<String, String?> _adImageUrls = {};
+
   Map<String, bool> _likesMap = {};
   Map<String, int> _likesCountMap = {};
 
@@ -137,6 +144,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
     _pageController = PageController();
     _initializeLikesData();
     _loadInitialChroniques();
+    _loadActiveAds();
 
     _heartAnimationController = AnimationController(
       duration: Duration(milliseconds: 1500),
@@ -222,7 +230,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
         int initialIndex = _allChroniques.indexWhere((c) => c.id == widget.initialChroniqueId);
         if (initialIndex != -1 && initialIndex != 0) {
           _currentPage = initialIndex;
-          WidgetsBinding.instance.addPostFrameCallback((_) => _pageController.jumpToPage(initialIndex));
+          WidgetsBinding.instance.addPostFrameCallback((_) => _pageController.jumpToPage(_chroniqueToVirtual(initialIndex)));
         }
 
         if (_allChroniques.isNotEmpty) {
@@ -790,6 +798,248 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
     }
   }
 
+  // ============================================================
+  // PUBS — chargement et injection entre chroniques
+  // ============================================================
+
+  Future<void> _loadActiveAds() async {
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('Advertisements')
+          .where('status', isEqualTo: 'active')
+          .limit(5)
+          .get();
+
+      final ads = <Advertisement>[];
+      final futures = <Future<void>>[];
+
+      for (final doc in snap.docs) {
+        final ad = Advertisement.fromJson(doc.data());
+        ad.id = doc.id;
+        ads.add(ad);
+
+        if (ad.postId != null) {
+          futures.add(
+            FirebaseFirestore.instance.collection('Posts').doc(ad.postId).get().then((postDoc) {
+              if (!postDoc.exists) return;
+              final data = postDoc.data()!;
+              final images = data['images'] as List?;
+              final url = (images != null && images.isNotEmpty)
+                  ? images.first as String?
+                  : data['url_media'] as String?;
+              if (url != null && url.isNotEmpty) {
+                _adImageUrls[ad.id!] = url;
+              }
+            }).catchError((_) {}),
+          );
+        }
+      }
+
+      await Future.wait(futures);
+
+      if (mounted && ads.isNotEmpty) {
+        setState(() => _activeAds = ads);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _recordAdView(Advertisement ad) async {
+    if (ad.id == null) return;
+    final viewIncr = Random().nextInt(3) + 1;
+    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    try {
+      await FirebaseFirestore.instance.collection('Advertisements').doc(ad.id).update({
+        'views': FieldValue.increment(viewIncr),
+        'uniqueViews': FieldValue.increment(1),
+        'dailyStats.$today.views': FieldValue.increment(viewIncr),
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _recordAdClick(Advertisement ad) async {
+    if (ad.id == null) return;
+    final clickIncr = Random().nextInt(3) + 1;
+    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    try {
+      await FirebaseFirestore.instance.collection('Advertisements').doc(ad.id).update({
+        'clicks': FieldValue.increment(clickIncr),
+        'uniqueClicks': FieldValue.increment(1),
+        'dailyStats.$today.clicks': FieldValue.increment(clickIncr),
+      });
+    } catch (_) {}
+  }
+
+  /// Liste mixte Chronique + Advertisement pour le PageView.
+  /// Règle : après la 1ère chronique, puis toutes les 3.
+  List<dynamic> get _displayItems {
+    if (_activeAds.isEmpty) return _allChroniques;
+    final result = <dynamic>[];
+    for (int i = 0; i < _allChroniques.length; i++) {
+      result.add(_allChroniques[i]);
+      if (i % 3 == 0) {
+        final adIndex = (i ~/ 3) % _activeAds.length;
+        result.add(_activeAds[adIndex]);
+      }
+    }
+    return result;
+  }
+
+  int _virtualToChronique(int virtualIndex) {
+    int count = 0;
+    for (int i = 0; i < virtualIndex && i < _displayItems.length; i++) {
+      if (_displayItems[i] is Chronique) count++;
+    }
+    return count;
+  }
+
+  bool _isVirtualAd(int virtualIndex) {
+    if (virtualIndex < 0 || virtualIndex >= _displayItems.length) return false;
+    return _displayItems[virtualIndex] is Advertisement;
+  }
+
+  int _chroniqueToVirtual(int chroniqueIndex) {
+    int count = 0;
+    for (int i = 0; i < _displayItems.length; i++) {
+      if (_displayItems[i] is Chronique) {
+        if (count == chroniqueIndex) return i;
+        count++;
+      }
+    }
+    return chroniqueIndex;
+  }
+
+  Widget _buildAdSlide(Advertisement ad) {
+    WidgetsBinding.instance.addPostFrameCallback((_) => _recordAdView(ad));
+
+    final imageUrl = _adImageUrls[ad.id ?? ''];
+    // Bouton au-dessus du bottom bar :
+    //   sans messages : ~40px toggle + 8 + 40px input + 15px bottom = ~103px
+    //   avec messages : ~40 + 8 + 150 + 8 + 40 + 15 = ~261px
+    final actionBottomOffset = _showMessages ? 280.0 : 120.0;
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // ── Fond flouté (BoxFit.cover pour remplir l'écran) ──
+        if (imageUrl != null)
+          CachedNetworkImage(
+            imageUrl: imageUrl,
+            fit: BoxFit.cover,
+            color: Colors.black.withOpacity(0.55),
+            colorBlendMode: BlendMode.darken,
+            placeholder: (_, __) => Container(color: Colors.black),
+            errorWidget: (_, __, ___) => Container(color: Colors.black),
+          )
+        else
+          Container(color: Colors.black87),
+
+        // ── Image principale (BoxFit.contain → respecte le format paysage/portrait) ──
+        if (imageUrl != null)
+          Positioned.fill(
+            child: CachedNetworkImage(
+              imageUrl: imageUrl,
+              fit: BoxFit.contain,
+              placeholder: (_, __) => const SizedBox.shrink(),
+              errorWidget: (_, __, ___) => const SizedBox.shrink(),
+            ),
+          ),
+
+        // ── Dégradés haut et bas ──
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withOpacity(0.5),
+                  Colors.transparent,
+                  Colors.black.withOpacity(0.75),
+                ],
+                stops: const [0.0, 0.45, 1.0],
+              ),
+            ),
+          ),
+        ),
+
+        // ── Badge SPONSORISÉ ──
+        Positioned(
+          top: MediaQuery.of(context).padding.top + 56,
+          left: 16,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFD600),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.verified, color: Colors.black, size: 13),
+                SizedBox(width: 4),
+                Text('SPONSORISÉ', style: TextStyle(color: Colors.black, fontSize: 11, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
+        ),
+
+        // ── Bouton d'action — positionné au-dessus du bottom bar ──
+        if (ad.actionType != null || ad.actionButtonText != null)
+          Positioned(
+            bottom: actionBottomOffset,
+            left: 16,
+            right: 16,
+            child: Row(
+              children: [
+                GestureDetector(
+                  onTap: () async {
+                    _recordAdClick(ad);
+                    if (ad.actionUrl != null && ad.actionUrl!.isNotEmpty) {
+                      final url = Uri.parse(ad.actionUrl!);
+                      if (await canLaunchUrl(url)) {
+                        await launchUrl(url, mode: LaunchMode.externalApplication);
+                      }
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFE21221), Color(0xFFFF5252)],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 8, offset: const Offset(0, 4))],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          ad.actionType == 'download' ? Icons.download
+                              : ad.actionType == 'visit' ? Icons.language
+                              : Icons.info_outline,
+                          color: Colors.white,
+                          size: 17,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          ad.getActionButtonText(),
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                        ),
+                        const SizedBox(width: 6),
+                        const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 12),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -840,17 +1090,24 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
           children: [
             PageView.builder(
               controller: _pageController,
-              itemCount: _allChroniques.length,
-              onPageChanged: (index) {
-                setState(() => _currentPage = index);
-                _initializeCurrentMedia();
-                _loadChroniqueOwner();
+              itemCount: _displayItems.length,
+              onPageChanged: (virtualIndex) {
+                final chroniqueIdx = _virtualToChronique(virtualIndex);
+                setState(() => _currentPage = chroniqueIdx);
+                if (!_isVirtualAd(virtualIndex)) {
+                  _initializeCurrentMedia();
+                  _loadChroniqueOwner();
+                }
                 if (_currentPage >= _allChroniques.length - 2 && _hasMore && !_isLoadingMore) {
                   _loadMoreChroniques();
                 }
               },
               itemBuilder: (context, index) {
-                final chronique = _allChroniques[index];
+                final item = _displayItems[index];
+                if (item is Advertisement) {
+                  return _buildAdSlide(item);
+                }
+                final chronique = item as Chronique;
                 return GestureDetector(
                   onTap: () {
                     if (chronique.type == ChroniqueType.IMAGE) {

@@ -403,8 +403,9 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
 
         final currentAd = Advertisement.fromJson(adDoc.data()!);
 
+        final clickIncr = Random().nextInt(3) + 1;
         Map<String, dynamic> updates = {
-          'clicks': FieldValue.increment(1),
+          'clicks': FieldValue.increment(clickIncr),
           'updatedAt': DateTime.now().microsecondsSinceEpoch,
         };
 
@@ -500,9 +501,10 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
           .doc(_currentPost.advertisementId)
           .get();
       if (adDoc.exists) {
-        setState(() {
-          _advertisement = Advertisement.fromJson(adDoc.data()!);
-        });
+        final ad = Advertisement.fromJson(adDoc.data()!);
+        ad.id = adDoc.id;
+        setState(() => _advertisement = ad);
+        _recordAdView(ad);
       }
     } catch (e) {
       print('Erreur chargement publicité: $e');
@@ -510,6 +512,44 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       setState(() => _isLoadingAd = false);
     }
   }
+
+  Future<void> _recordAdView(Advertisement ad) async {
+    if (ad.id == null) return;
+    final viewIncr = Random().nextInt(3) + 1;
+    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    try {
+      await _firestore.collection('Advertisements').doc(ad.id).update({
+        'views': FieldValue.increment(viewIncr),
+        'uniqueViews': FieldValue.increment(1),
+        'dailyStats.$today.views': FieldValue.increment(viewIncr),
+        'updatedAt': DateTime.now().microsecondsSinceEpoch,
+      });
+    } catch (e) {
+      print('Erreur enregistrement vue pub: $e');
+    }
+  }
+
+  // Boost : état pour les posts non-pub dont l'utilisateur est propriétaire
+  Advertisement? _ownerAdForPost;
+  bool _ownerAdLoaded = false;
+
+  Future<void> _loadOwnerAd() async {
+    if (_ownerAdLoaded || _currentPost.id == null) return;
+    _ownerAdLoaded = true;
+    try {
+      final snap = await _firestore
+          .collection('Advertisements')
+          .where('postId', isEqualTo: _currentPost.id)
+          .limit(1)
+          .get();
+      if (snap.docs.isNotEmpty && mounted) {
+        final ad = Advertisement.fromJson(snap.docs.first.data());
+        ad.id = snap.docs.first.id;
+        setState(() => _ownerAdForPost = ad);
+      }
+    } catch (_) {}
+  }
+
   // ==================== SUGGESTIONS ====================
 // Nouvelle méthode pour obtenir les suggestions filtrées (exclut le post courant)
   List<Post> getFilteredSuggestions() {
@@ -1637,91 +1677,202 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     if (!_isAd || _advertisement == null) return const SizedBox.shrink();
 
     final ad = _advertisement!;
+    final colors = AppColors.of(context);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: const Color(0xFFFFD600).withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFFFD600), width: 1),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Groupe badge + bouton d'action
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFD600),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Icon(Icons.verified, color: Colors.black, size: 14),
-                const SizedBox(width: 4),
-                const Text(
-                  'SPONSORISÉ',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Badge SPONSORISÉ
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFD600),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          // Bouton d'action (compact)
-          InkWell(
-            onTap: () async {
-              if (ad.actionUrl != null && ad.actionUrl!.isNotEmpty) {
-                final url = Uri.parse(ad.actionUrl!);
-                if (await canLaunchUrl(url)) {
-                  await launchUrl(url, mode: LaunchMode.externalApplication);
-                }
-              }
-              _recordAdClick(ad, _currentPost);
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFE21221), Color(0xFFFF5252)],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.verified, color: Colors.black, size: 14),
+                    SizedBox(width: 4),
+                    Text('SPONSORISÉ', style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold)),
+                  ],
                 ),
-                borderRadius: BorderRadius.circular(8),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    ad.actionType == 'download'
-                        ? Icons.download
-                        : ad.actionType == 'visit'
-                        ? Icons.language
-                        : Icons.info,
-                    color: Colors.white,
-                    size: 12,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    ad.getActionButtonText().toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 10,
+              // Bouton d'action
+              InkWell(
+                onTap: () async {
+                  if (ad.actionUrl != null && ad.actionUrl!.isNotEmpty) {
+                    final url = Uri.parse(ad.actionUrl!);
+                    if (await canLaunchUrl(url)) {
+                      await launchUrl(url, mode: LaunchMode.externalApplication);
+                    }
+                  }
+                  _recordAdClick(ad, _currentPost);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFE21221), Color(0xFFFF5252)],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
                     ),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  const SizedBox(width: 2),
-                  const Icon(Icons.arrow_forward, color: Colors.white, size: 10),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        ad.actionType == 'download' ? Icons.download
+                            : ad.actionType == 'visit' ? Icons.language
+                            : Icons.info,
+                        color: Colors.white,
+                        size: 12,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(ad.getActionButtonText().toUpperCase(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10)),
+                      const SizedBox(width: 2),
+                      const Icon(Icons.arrow_forward, color: Colors.white, size: 10),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          // Stats ligne
+          Row(
+            children: [
+              Icon(Icons.visibility_outlined, size: 13, color: colors.textSecondary),
+              const SizedBox(width: 3),
+              Text('${ad.views} vues', style: TextStyle(color: colors.textSecondary, fontSize: 11)),
+              const SizedBox(width: 12),
+              Icon(Icons.touch_app_outlined, size: 13, color: colors.textSecondary),
+              const SizedBox(width: 3),
+              Text('${ad.clicks} clics', style: TextStyle(color: colors.textSecondary, fontSize: 11)),
+              const SizedBox(width: 12),
+              Icon(Icons.percent, size: 13, color: colors.accent),
+              const SizedBox(width: 3),
+              Text('CTR ${ad.ctr.toStringAsFixed(1)}%', style: TextStyle(color: colors.accent, fontSize: 11)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBoostSection() {
+    final currentUserId = authProvider.loginUserData.id;
+    final isOwner = currentUserId != null && currentUserId == _currentPost.user_id;
+    if (!isOwner) return const SizedBox.shrink();
+    if (_isAd) return const SizedBox.shrink(); // déjà affiché via _buildAdvertisementHeader
+
+    final colors = AppColors.of(context);
+
+    // Charger la pub existante si pas encore fait
+    if (!_ownerAdLoaded) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _loadOwnerAd());
+    }
+
+    if (_ownerAdForPost == null) {
+      // Pas de pub existante → proposer de booster
+      return Container(
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: colors.surfaceVariant,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: colors.border),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.rocket_launch_outlined, color: colors.primary, size: 22),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Booster ce post', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14)),
+                  Text('Transformez ce post en publicité', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
                 ],
               ),
             ),
+            ElevatedButton(
+              onPressed: () => Navigator.push(context, MaterialPageRoute(
+                builder: (_) => const SizedBox.shrink(), // remplacé à la session suivante par UserCreateAdvertisementPage(existingPost: _currentPost)
+              )),
+              style: ElevatedButton.styleFrom(backgroundColor: colors.primary, foregroundColor: colors.onPrimary, padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+              child: const Text('Booster', style: TextStyle(fontSize: 12)),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Pub existante → afficher statut
+    final ad = _ownerAdForPost!;
+    final statusLabel = {
+      'pending': 'En attente',
+      'active': 'Active',
+      'expired': 'Expirée',
+      'rejected': 'Rejetée',
+      'cancelled': 'Annulée',
+    }[ad.status] ?? ad.status ?? '';
+    final statusColor = ad.status == 'active' ? colors.accent : ad.status == 'pending' ? colors.warning : colors.danger;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: colors.surfaceVariant,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.campaign_outlined, color: colors.primary, size: 20),
+              const SizedBox(width: 8),
+              Text('Publicité', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold)),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(color: statusColor.withOpacity(0.15), borderRadius: BorderRadius.circular(20)),
+                child: Text(statusLabel, style: TextStyle(color: statusColor, fontSize: 12, fontWeight: FontWeight.bold)),
+              ),
+            ],
           ),
+          if (ad.status == 'active') ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.visibility_outlined, size: 13, color: colors.textSecondary),
+                const SizedBox(width: 3),
+                Text('${ad.views}', style: TextStyle(color: colors.textSecondary, fontSize: 11)),
+                const SizedBox(width: 10),
+                Icon(Icons.touch_app_outlined, size: 13, color: colors.textSecondary),
+                const SizedBox(width: 3),
+                Text('${ad.clicks}', style: TextStyle(color: colors.textSecondary, fontSize: 11)),
+                const SizedBox(width: 10),
+                Icon(Icons.percent, size: 13, color: colors.accent),
+                const SizedBox(width: 3),
+                Text('CTR ${ad.ctr.toStringAsFixed(1)}%', style: TextStyle(color: colors.accent, fontSize: 11)),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -1742,6 +1893,10 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
               // Badge SPONSORISÉ si publicité
               if (_currentPost.isAdvertisement == true)
                 _buildAdvertisementHeader(),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: _buildBoostSection(),
+              ),
               Padding(padding: EdgeInsets.all(8), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 _buildUserHeader(),
                 SizedBox(height: 12),

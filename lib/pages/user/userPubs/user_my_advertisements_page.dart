@@ -1,5 +1,6 @@
 // user_my_advertisements_page.dart — refonte UI session 48
 import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/theme/app_colors.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -185,6 +186,7 @@ class _UserMyAdvertisementsPageState extends State<UserMyAdvertisementsPage> {
       }
     } catch (e) {
       if (mounted) {
+        printVm('Erreur pub : $e');
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Erreur : $e'),
           backgroundColor: _colors.danger,
@@ -280,6 +282,8 @@ class _UserMyAdvertisementsPageState extends State<UserMyAdvertisementsPage> {
                   _loadCounters();
                 }
               } catch (e) {
+                printVm('Erreur pub : $e');
+
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                     content: Text('Erreur : $e'),
@@ -1104,6 +1108,8 @@ class _UserMyAdvertisementsPageState extends State<UserMyAdvertisementsPage> {
               stream: _getUserAdsStream(),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
+                  printVm('Erreur pub : ${snapshot.error}');
+
                   return Padding(
                     padding: const EdgeInsets.all(24),
                     child: Center(
