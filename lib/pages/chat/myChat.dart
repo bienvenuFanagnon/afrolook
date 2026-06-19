@@ -6,13 +6,14 @@ import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/component/showUserDetails.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as Path;
-import 'package:chat_bubbles/chat_bubbles.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
@@ -39,6 +40,7 @@ import 'package:cryptography/cryptography.dart';
 import '../userPosts/postWidgets/postUserWidget.dart';
 import '../../services/chat_cache_service.dart';
 import '../../services/encryption_service.dart';
+import '../../widgets/chat/chat_bubble_widget.dart';
 
 class MyChat extends StatefulWidget {
   final String title;
@@ -63,7 +65,12 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
 
   // Gestion des fichiers
   File? _image;
+  List<File> _multiImages = [];
+  bool _isSendingMultiImages = false;
   final ImagePicker _picker = ImagePicker();
+
+  // Emoji picker
+  bool _showEmojiPicker = false;
 
   // États d'envoi
   bool _isSendingImage = false;
@@ -363,6 +370,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _focusNode.dispose();
+    _textController.dispose();
     super.dispose();
   }
 
@@ -410,6 +418,8 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       if (pickedFile != null) {
         setState(() {
           _image = File(pickedFile.path);
+          _multiImages.clear();
+          _showEmojiPicker = false;
         });
       }
     } catch (e) {
@@ -417,75 +427,140 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     }
   }
 
-  // Widget Audio compact
-  Widget _buildCompactAudioPlayer(Message message, bool isMe) {
-    final isCurrentPlaying = _currentPlayingMessageId == message.id;
-    final duration = isCurrentPlaying ? _currentAudioDuration : Duration(seconds: 0);
-    final position = isCurrentPlaying ? _currentAudioPosition : Duration(seconds: 0);
-    final isPlaying = isCurrentPlaying && _isAudioPlaying;
-    final isLoading = isCurrentPlaying && _isAudioLoading;
+  /// Sélection multiple d'images (jusqu'à 3) — réservé Premium.
+  Future<void> _getMultipleImages() async {
+    final isPremium = _authProvider.loginUserData.abonnement?.estPremium == true;
+    if (!isPremium) {
+      _showPremiumGate('Envoyer plusieurs images est réservé aux membres Premium 👑');
+      return;
+    }
+    try {
+      final picked = await _picker.pickMultiImage(limit: 3);
+      if (picked.isNotEmpty) {
+        setState(() {
+          _multiImages = picked.map((x) => File(x.path)).toList();
+          _image = null;
+          _showEmojiPicker = false;
+        });
+      }
+    } catch (e) {
+      _showErrorSnackbar("Erreur lors de la sélection des images");
+    }
+  }
 
-    return GestureDetector(
-      onLongPress: () => _showMessageOptions(message),
-      child: Container(
-        constraints: BoxConstraints(maxWidth: 180),
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+  void _showPremiumGate(String message) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: isMe ? _colors.primary : _colors.surface,
+          gradient: const LinearGradient(
+            colors: [Color(0xFF1a0a2a), Color(0xFF2a1a3a)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFFDB813).withOpacity(0.4)),
         ),
-        child: Row(
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            GestureDetector(
-              onTap: () => _toggleAudio(message),
-              child: Container(
-                padding: EdgeInsets.all(4),
-                child: isLoading
-                    ? SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: isMe ? Colors.white : _colors.textPrimary,
-                  ),
-                )
-                    : Icon(
-                  isPlaying ? Icons.pause : Icons.play_arrow,
-                  color: isMe ? Colors.white : _colors.textPrimary,
-                  size: 16,
-                ),
+            const Text('👑', style: TextStyle(fontSize: 40)),
+            const SizedBox(height: 12),
+            const Text('Fonctionnalité Premium',
+                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 8),
+            Text(message,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white70, fontSize: 14)),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFDB813),
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
               ),
-            ),
-            SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Slider(
-                    value: position.inSeconds.toDouble(),
-                    min: 0,
-                    max: duration.inSeconds > 0 ? duration.inSeconds.toDouble() : 1.0,
-                    onChanged: isCurrentPlaying ? (value) {
-                      _seekAudio(value);
-                    } : null,
-                    activeColor: isMe ? Colors.white : _colors.primary,
-                    inactiveColor: isMe ? Colors.white54 : _colors.textSecondary,
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(width: 8),
-            Text(
-              _formatTime(position),
-              style: TextStyle(
-                color: isMe ? Colors.white : _colors.textPrimary,
-                fontSize: 10,
-              ),
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/abonnement');
+              },
+              child: const Text('Passer à Premium', style: TextStyle(fontWeight: FontWeight.w800)),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Future<void> _sendMultipleImagesMessage() async {
+    if (_multiImages.isEmpty) return;
+    setState(() => _isSendingMultiImages = true);
+
+    try {
+      final urls = <String>[];
+      for (final img in _multiImages) {
+        final ref = FirebaseStorage.instance.ref().child(
+            'chat_images/${Path.basename(img.path)}_${DateTime.now().millisecondsSinceEpoch}');
+        final snap = await ref.putFile(img);
+        urls.add(await snap.ref.getDownloadURL());
+      }
+
+      final replyMsg = _replyingToMessage != null ? _getReplyMessageText(_replyingToMessage!) : '';
+      final reply = ReplyMessage(
+        message: replyMsg,
+        messageType: _replyingToMessage?.messageType ?? '',
+        messageId: _replyingToMessage?.id ?? '',
+      );
+
+      final msg = Message(
+        id: '',
+        createdAt: DateTime.now(),
+        message: urls.first,
+        sendBy: _authProvider.loginUserData.id!,
+        replyMessage: reply,
+        messageType: MessageType.image.name,
+        chat_id: widget.chat.docId!,
+        create_at_time_spam: DateTime.now().millisecondsSinceEpoch,
+        message_state: MessageState.NONLU.name,
+        receiverBy: widget.chat.senderId == _authProvider.loginUserData.id!
+            ? widget.chat.receiverId!
+            : widget.chat.senderId!,
+        is_valide: true,
+        // Stocker les URLs supplémentaires dans imageText séparées par |
+        imageText: urls.length > 1 ? urls.join('|') : null,
+      );
+
+      _updateChatCounters('📷 ${urls.length} photos');
+      final msgId = _firestore.collection('Messages').doc().id;
+      msg.id = msgId;
+      await _firestore.collection('Messages').doc(msgId).set(msg.toJson());
+      await _sendNotification('📷 ${urls.length} photos');
+      await _resetAfterMessage();
+    } catch (e) {
+      _showErrorSnackbar("Erreur lors de l'envoi des images");
+    } finally {
+      if (mounted) setState(() { _isSendingMultiImages = false; _multiImages.clear(); });
+    }
+  }
+
+  // Widget Audio compact avec waveform
+  Widget _buildCompactAudioPlayer(Message message, bool isMe) {
+    final isCurrentPlaying = _currentPlayingMessageId == message.id;
+    return AudioBubble(
+      message: message,
+      isMe: isMe,
+      audioPlayer: _audioPlayer,
+      currentPlayingId: _currentPlayingMessageId,
+      isPlaying: isCurrentPlaying && _isAudioPlaying,
+      isLoading: isCurrentPlaying && _isAudioLoading,
+      position: isCurrentPlaying ? _currentAudioPosition : Duration.zero,
+      duration: isCurrentPlaying ? _currentAudioDuration : Duration.zero,
+      onToggle: () => _toggleAudio(message),
+      onSeek: (v) => _seekAudio(v),
+      onLongPress: () => _showMessageOptions(message),
     );
   }
 
@@ -776,9 +851,11 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   }
 
   void _sendMessage() {
-    if (_isSendingImage || _isSendingAudio) return;
+    if (_isSendingImage || _isSendingAudio || _isSendingMultiImages) return;
 
-    if (_image != null) {
+    if (_multiImages.isNotEmpty) {
+      _sendMultipleImagesMessage();
+    } else if (_image != null) {
       _sendImageMessage();
     } else if (_isRecording) {
       _stopRecording();
@@ -946,22 +1023,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   /// Séparateur de date entre deux groupes de messages (façon WhatsApp).
   Widget _buildDateSeparator(DateTime date) {
     final l10n = AppLocalizations.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Center(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: BoxDecoration(
-            color: _colors.surfaceVariant,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            _formatDateSeparator(date, l10n),
-            style: TextStyle(fontSize: 11, color: _colors.textSecondary, fontWeight: FontWeight.w600),
-          ),
-        ),
-      ),
-    );
+    return ChatDateSeparator(label: _formatDateSeparator(date, l10n));
   }
 
   Widget _buildReplyIndicator(Message message) {
@@ -1047,89 +1109,38 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   }
 
   Widget _buildTextMessage(Message message, bool isMe) {
-    return GestureDetector(
+    return TextBubble(
+      message: message,
+      isMe: isMe,
       onLongPress: () => _showMessageOptions(message),
-      child: BubbleSpecialOne(
-        text: message.message,
-        isSender: isMe,
-        color: isMe ? _colors.primary : _colors.surface,
-        textStyle: TextStyle(
-          fontSize: 14,
-          color: isMe ? Colors.white : _colors.textPrimary,
-        ),
-      ),
     );
   }
 
   Widget _buildImageMessage(Message message, bool isMe) {
-    return GestureDetector(
-      onLongPress: () => _showMessageOptions(message),
+    // Détecter multi-images (URLs séparées par |)
+    final raw = message.imageText ?? '';
+    if (raw.contains('|')) {
+      final urls = [message.message, ...raw.split('|').where((u) => u.isNotEmpty)];
+      return MultiImageBubble(
+        urls: urls,
+        message: message,
+        isMe: isMe,
+        onTapImage: _showImageFullScreen,
+        onLongPress: () => _showMessageOptions(message),
+      );
+    }
+    return ImageBubble(
+      message: message,
+      isMe: isMe,
       onTap: () => _showImageFullScreen(message.message),
-      child: Container(
-        constraints: BoxConstraints(maxWidth: 200),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                height: 150,
-                width: 200,
-                child: CachedNetworkImage(
-                  imageUrl: message.message,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(
-                    color: _colors.surfaceVariant,
-                    child: Center(child: CircularProgressIndicator(color: _colors.primary)),
-                  ),
-                  errorWidget: (context, url, error) => Container(
-                    color: _colors.surfaceVariant,
-                    child: Icon(Icons.error, color: _colors.textSecondary),
-                  ),
-                ),
-              ),
-            ),
-            if (message.imageText != null && message.imageText!.isNotEmpty)
-              Container(
-                width: 200,
-                padding: EdgeInsets.all(6),
-                child: Text(
-                  message.imageText!,
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-          ],
-        ),
-      ),
+      onLongPress: () => _showMessageOptions(message),
     );
   }
 
   Widget _buildMessageStatus(Message message, bool isMe) {
-    final isRead = message.message_state == MessageState.LU.name;
-
-    return Padding(
-      padding: EdgeInsets.only(top: 2),
-      child: Row(
-        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            _formatMessageTime(message.createdAt),
-            style: TextStyle(fontSize: 9, color: _colors.textSecondary),
-          ),
-          if (isMe) ...[
-            SizedBox(width: 4),
-            Icon(
-              isRead ? MaterialCommunityIcons.check_all : MaterialCommunityIcons.check,
-              size: 12,
-              color: isRead ? _colors.primary : _colors.textSecondary,
-            ),
-          ],
-        ],
-      ),
-    );
+    // Le statut est désormais rendu dans chaque bulle custom via MessageMeta.
+    // On garde cette méthode vide pour compatibilité avec _buildMessageBubble.
+    return const SizedBox.shrink();
   }
 
   void _showMessageOptions(Message message) {
@@ -1198,51 +1209,198 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     }
   }
 
-  // Barre d'envoi de message
+  // ── Input bar complète ──────────────────────────────────────────────────────
+
   Widget _buildMessageInput() {
-    return Container(
-      color: _colors.surfaceVariant,
-      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-      child: Column(
-        children: [
-          if (_replying) _buildReplyIndicatorBar(),
-          if (_image != null) _buildImagePreview(),
-          Row(
+    return Column(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: _colors.background,
+            border: Border(top: BorderSide(color: _colors.border.withOpacity(0.3))),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+          child: Column(
             children: [
-              _buildMediaButtons(),
-              Expanded(child: _buildMessageTextField()),
-              _buildSendButton(),
+              if (_replying && _replyingToMessage != null) _buildReplyIndicatorBar(),
+              if (_image != null) _buildImagePreview(),
+              if (_multiImages.isNotEmpty) _buildMultiImagePreview(),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // Bouton + (ouvre menu médias)
+                  _buildAttachButton(),
+                  const SizedBox(width: 6),
+                  // Champ texte
+                  Expanded(child: _buildMessageTextField()),
+                  const SizedBox(width: 6),
+                  // Micro ou Envoyer
+                  _buildSendOrMicButton(),
+                ],
+              ),
             ],
           ),
+        ),
+        // Emoji picker
+        if (_showEmojiPicker)
+          SizedBox(
+            height: 280,
+            child: EmojiPicker(
+              textEditingController: _textController,
+              onEmojiSelected: (category, emoji) {
+                setState(() {
+                  canSend = _textController.text.trim().isNotEmpty;
+                });
+              },
+              config: Config(
+                height: 280,
+                checkPlatformCompatibility: true,
+                emojiViewConfig: EmojiViewConfig(
+                  columns: 8,
+                  emojiSizeMax: 28,
+                  backgroundColor: _colors.background,
+                  buttonMode: ButtonMode.CUPERTINO,
+                ),
+                categoryViewConfig: CategoryViewConfig(
+                  backgroundColor: _colors.surfaceVariant,
+                  indicatorColor: _colors.primary,
+                  iconColorSelected: _colors.primary,
+                ),
+                searchViewConfig: SearchViewConfig(
+                  backgroundColor: _colors.background,
+                  buttonIconColor: _colors.primary,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildAttachButton() {
+    return GestureDetector(
+      onTap: _showAttachMenu,
+      child: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: LinearGradient(
+            colors: [_colors.primary, Color.lerp(_colors.primary, const Color(0xFF1abc9c), 0.5)!],
+          ),
+          boxShadow: [BoxShadow(color: _colors.primary.withOpacity(0.35), blurRadius: 8, offset: const Offset(0, 2))],
+        ),
+        child: const Icon(Icons.add_rounded, color: Colors.white, size: 22),
+      ),
+    );
+  }
+
+  void _showAttachMenu() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        final isPremium = _authProvider.loginUserData.abonnement?.estPremium == true;
+        return Container(
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+          decoration: BoxDecoration(
+            color: _colors.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: _colors.border.withOpacity(0.3)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(width: 36, height: 4, decoration: BoxDecoration(color: _colors.border, borderRadius: BorderRadius.circular(2))),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _attachItem(Icons.photo_library_rounded, 'Photo', Colors.blue, () {
+                      Navigator.pop(context);
+                      _getImage();
+                    }),
+                    _attachItem(
+                      Icons.photo_library_outlined,
+                      'Multi-photos',
+                      isPremium ? _colors.primary : Colors.grey,
+                      () {
+                        Navigator.pop(context);
+                        _getMultipleImages();
+                      },
+                      badge: isPremium ? null : '👑',
+                    ),
+                    _attachItem(Icons.mic_rounded, _isRecording ? 'Stop' : 'Vocal', Colors.red, () {
+                      Navigator.pop(context);
+                      if (_isRecording) _stopRecording(); else _startRecording();
+                    }),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _attachItem(IconData icon, String label, Color color, VoidCallback onTap, {String? badge}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.12),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: color.withOpacity(0.3)),
+                ),
+                child: Icon(icon, color: color, size: 26),
+              ),
+              if (badge != null)
+                Positioned(
+                  top: -4,
+                  right: -4,
+                  child: Text(badge, style: const TextStyle(fontSize: 14)),
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(label, style: TextStyle(fontSize: 11, color: _colors.textSecondary)),
         ],
       ),
     );
   }
 
   Widget _buildReplyIndicatorBar() {
+    final replyText = _getReplyMessageText(_replyingToMessage!);
     return Container(
-      padding: EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
       decoration: BoxDecoration(
-        color: _colors.border,
-        borderRadius: BorderRadius.circular(6),
+        color: _colors.primary.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border(left: BorderSide(color: _colors.primary, width: 3)),
       ),
       child: Row(
         children: [
-          Icon(Icons.reply, color: _colors.primary, size: 16),
-          SizedBox(width: 6),
+          Icon(Icons.reply_rounded, color: _colors.primary, size: 16),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text(AppLocalizations.of(context).chatReplyTo,
+                    style: TextStyle(color: _colors.primary, fontSize: 10, fontWeight: FontWeight.w800)),
                 Text(
-                  AppLocalizations.of(context).chatReplyTo,
-                  style: TextStyle(color: _colors.primary, fontSize: 11, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 1),
-                Text(
-                  _getReplyMessageText(_replyingToMessage!).length > 35
-                      ? '${_getReplyMessageText(_replyingToMessage!).substring(0, 35)}...'
-                      : _getReplyMessageText(_replyingToMessage!),
+                  replyText.length > 40 ? '${replyText.substring(0, 40)}…' : replyText,
                   style: TextStyle(color: _colors.textSecondary, fontSize: 11),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -1250,16 +1408,9 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
               ],
             ),
           ),
-          IconButton(
-            icon: Icon(Icons.close, size: 16),
-            color: Colors.grey,
-            padding: EdgeInsets.zero,
-            onPressed: () {
-              setState(() {
-                _replying = false;
-                _replyingToMessage = null;
-              });
-            },
+          GestureDetector(
+            onTap: () => setState(() { _replying = false; _replyingToMessage = null; }),
+            child: Icon(Icons.close_rounded, size: 16, color: _colors.textSecondary),
           ),
         ],
       ),
@@ -1268,49 +1419,31 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
 
   Widget _buildImagePreview() {
     return Container(
-      padding: EdgeInsets.symmetric(vertical: 6),
+      margin: const EdgeInsets.only(bottom: 6),
       child: Stack(
         children: [
-          Container(
-            height: 60,
-            width: 60,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              image: DecorationImage(
-                image: FileImage(_image!),
-                fit: BoxFit.cover,
-              ),
-            ),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.file(_image!, height: 70, width: 70, fit: BoxFit.cover),
           ),
           if (_isSendingImage)
             Positioned.fill(
               child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  color: Colors.black54,
-                ),
-                child: Center(
-                  child: CircularProgressIndicator(color: Colors.green),
-                ),
+                decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), color: Colors.black54),
+                child: Center(child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
               ),
             ),
           Positioned(
-            top: -6,
-            right: -6,
-            child: IconButton(
-              icon: Container(
-                padding: EdgeInsets.all(2),
-                decoration: BoxDecoration(
-                  color: Colors.red,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.close, color: Colors.white, size: 14),
+            top: -4,
+            right: -4,
+            child: GestureDetector(
+              onTap: () => setState(() => _image = null),
+              child: Container(
+                width: 20,
+                height: 20,
+                decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                child: const Icon(Icons.close, color: Colors.white, size: 12),
               ),
-              onPressed: () {
-                setState(() {
-                  _image = null;
-                });
-              },
             ),
           ),
         ],
@@ -1318,60 +1451,93 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildMediaButtons() {
-    return Row(
-      children: [
-        IconButton(
-          icon: Icon(Icons.camera_alt, color: _colors.primary, size: 22),
-          onPressed: _getImage,
-          padding: EdgeInsets.zero,
-        ),
-        IconButton(
-          icon: Icon(
-            _isRecording ? Icons.stop : Icons.mic,
-            color: _isRecording ? Colors.red : _colors.primary,
-            size: 22,
-          ),
-          onPressed: () {
-            if (_isRecording) {
-              _stopRecording();
-            } else {
-              _startRecording();
-            }
-          },
-          padding: EdgeInsets.zero,
-        ),
-      ],
+  Widget _buildMultiImagePreview() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          ...List.generate(_multiImages.length, (i) => Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(right: 6),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.file(_multiImages[i], height: 70, width: 70, fit: BoxFit.cover),
+                ),
+              ),
+              if (i == 0)
+                Positioned(
+                  top: -4,
+                  right: 2,
+                  child: GestureDetector(
+                    onTap: () => setState(() => _multiImages.clear()),
+                    child: Container(
+                      width: 20, height: 20,
+                      decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                      child: const Icon(Icons.close, color: Colors.white, size: 12),
+                    ),
+                  ),
+                ),
+            ],
+          )),
+          if (_isSendingMultiImages)
+            Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: CircularProgressIndicator(color: _colors.primary, strokeWidth: 2),
+            ),
+        ],
+      ),
     );
   }
 
   Widget _buildMessageTextField() {
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
         color: _colors.surfaceVariant,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: _colors.border.withOpacity(0.4)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
+          // Bouton emoji
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _showEmojiPicker = !_showEmojiPicker;
+                if (_showEmojiPicker) _focusNode.unfocus();
+                else _focusNode.requestFocus();
+              });
+            },
+            child: Padding(
+              padding: const EdgeInsets.only(left: 10, bottom: 10),
+              child: Text(_showEmojiPicker ? '⌨️' : '😊', style: const TextStyle(fontSize: 20)),
+            ),
+          ),
           Expanded(
             child: TextField(
               onChanged: (value) {
                 setState(() {
-                   canSend = _textController.text.trim().isNotEmpty || _image != null || _isRecording;
-
+                  canSend = _textController.text.trim().isNotEmpty || _image != null || _isRecording || _multiImages.isNotEmpty;
                 });
-
+                if (_showEmojiPicker) setState(() => _showEmojiPicker = false);
+              },
+              onTap: () {
+                if (_showEmojiPicker) setState(() => _showEmojiPicker = false);
               },
               controller: _textController,
               focusNode: _focusNode,
-              maxLines: null,
+              maxLines: 5,
+              minLines: 1,
               style: TextStyle(color: _colors.textPrimary, fontSize: 14),
               decoration: InputDecoration(
-                hintText: _isRecording ? "${AppLocalizations.of(context).chatRecording}... ($_recordingDuration s)" : AppLocalizations.of(context).chatMessage,
+                hintText: _isRecording
+                    ? '🎙️ Enregistrement… ($_recordingDuration s)'
+                    : AppLocalizations.of(context).chatMessage,
                 hintStyle: TextStyle(color: _colors.textSecondary, fontSize: 14),
                 border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
               ),
             ),
           ),
@@ -1379,53 +1545,93 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       ),
     );
   }
-  bool canSend =false;
-  Widget _buildSendButton() {
-    if (_isSendingImage || _isSendingAudio) {
-      return Container(
-        padding: EdgeInsets.all(8),
-        child: SizedBox(
-          width: 16,
-          height: 16,
-          child: CircularProgressIndicator(color: _colors.primary, strokeWidth: 2),
+
+  bool canSend = false;
+
+  Widget _buildSendOrMicButton() {
+    final isSending = _isSendingImage || _isSendingAudio || _isSendingMultiImages;
+    canSend = _textController.text.trim().isNotEmpty || _image != null || _isRecording || _multiImages.isNotEmpty;
+
+    if (isSending) {
+      return SizedBox(
+        width: 38, height: 38,
+        child: CircularProgressIndicator(color: _colors.primary, strokeWidth: 2.5),
+      );
+    }
+
+    if (!canSend) {
+      // Bouton micro
+      return GestureDetector(
+        onLongPressStart: (_) => _startRecording(),
+        onLongPressEnd: (_) => _stopRecording(),
+        child: Container(
+          width: 38, height: 38,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: _isRecording ? Colors.red.withOpacity(0.15) : _colors.surfaceVariant,
+            border: Border.all(color: _isRecording ? Colors.red : _colors.border.withOpacity(0.4)),
+          ),
+          child: Icon(
+            _isRecording ? Icons.stop_rounded : Icons.mic_rounded,
+            color: _isRecording ? Colors.red : _colors.textSecondary,
+            size: 20,
+          ),
         ),
       );
     }
 
-     canSend = _textController.text.trim().isNotEmpty || _image != null || _isRecording;
-
-    return IconButton(
-      icon: Icon(
-        Icons.send,
-        color: canSend ? _colors.primary : _colors.textSecondary,
-        size: 20,
-      ),
-      onPressed: canSend ? _sendMessage : null,
-      padding: EdgeInsets.zero,
+    // Bouton envoyer animé
+    return GestureDetector(
+      onTap: _sendMessage,
+      child: Container(
+        width: 38, height: 38,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: LinearGradient(
+            colors: [_colors.primary, Color.lerp(_colors.primary, const Color(0xFF1abc9c), 0.6)!],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [BoxShadow(color: _colors.primary.withOpacity(0.4), blurRadius: 8, offset: const Offset(0, 2))],
+        ),
+        child: const Icon(Icons.send_rounded, color: Colors.white, size: 18),
+      )
+          .animate(key: const ValueKey('send-btn'))
+          .scale(begin: const Offset(0.7, 0.7), duration: 200.ms, curve: Curves.elasticOut),
     );
   }
 
   // AppBar
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: _colors.background,
-      elevation: 0,
-      leading: IconButton(
-        icon: const Icon(
-          Icons.arrow_back,
-          color: Colors.green,
+      flexibleSpace: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              _colors.background,
+              Color.lerp(_colors.background, _colors.primary, 0.06)!,
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
         ),
+      ),
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      shadowColor: Colors.transparent,
+      leading: IconButton(
+        icon: Icon(Icons.arrow_back_ios_new_rounded, color: _colors.primary, size: 20),
         onPressed: () => Navigator.pop(context),
       ),
       titleSpacing: 0,
-      title: _buildChatHeader(), // Widget
+      title: _buildChatHeader(),
       actions: [
         IconButton(
-          icon: const Icon(
-            Icons.arrow_downward,
-            color: Colors.green,
-            size: 20,
-          ),
+          icon: Icon(Icons.search_rounded, color: _colors.textSecondary, size: 22),
+          onPressed: () {},
+        ),
+        IconButton(
+          icon: Icon(Icons.keyboard_arrow_down_rounded, color: _colors.primary, size: 26),
           onPressed: _scrollToBottom,
         ),
       ],
@@ -1463,18 +1669,31 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
               },
               child: Row(
                 children: [
+                  // Avatar avec ring dégradé pulsant
                   Stack(
                     children: [
-                      CircleAvatar(
-                        radius: 20,
-                        backgroundImage: NetworkImage(
-                          user.imageUrl!,
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [_colors.primary, Color.lerp(_colors.primary, const Color(0xFF1abc9c), 0.6)!],
+                          ),
+                          boxShadow: [BoxShadow(color: _colors.primary.withOpacity(0.3), blurRadius: 8)],
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(2),
+                          child: CircleAvatar(
+                            radius: 19,
+                            backgroundImage: NetworkImage(user.imageUrl ?? ''),
+                            backgroundColor: _colors.surfaceVariant,
+                          ),
                         ),
                       ),
-
                       Positioned(
-                        bottom: 0,
-                        right: 0,
+                        bottom: 1,
+                        right: 1,
                         child: UserPresenceWidget(
                           userId: user.id!,
                           size: 12,
@@ -1489,20 +1708,19 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
                   Expanded(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
                             Flexible(
                               child: Text(
-                                "@${user.pseudo ?? ""}",
+                                "@${user.pseudo ?? ''}",
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   color: _colors.textPrimary,
                                   fontSize: 15,
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ),
@@ -1514,26 +1732,16 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
                             ),
                           ],
                         ),
-
                         const SizedBox(height: 2),
-
                         if (isTyping)
-                          const Text(
-                            "en train d'écrire...",
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: Color(0xFF25D366),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          )
+                          Row(mainAxisSize: MainAxisSize.min, children: [
+                            const TypingIndicator(),
+                            const SizedBox(width: 6),
+                            Text("en train d'écrire…",
+                                style: TextStyle(color: _colors.primary, fontSize: 11, fontWeight: FontWeight.w500)),
+                          ])
                         else
-                          UserPresenceWidget(
-                            userId: user.id!,
-                            showTextStatus: true,
-                            isChatHeader: true,
-                          ),
+                          UserPresenceWidget(userId: user.id!, showTextStatus: true, isChatHeader: true),
                       ],
                     ),
                   ),
@@ -1628,7 +1836,18 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     return Scaffold(
       backgroundColor: _colors.background,
       appBar: _buildAppBar(),
-      body: Column(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: RadialGradient(
+            center: const Alignment(-0.8, -0.6),
+            radius: 1.2,
+            colors: [
+              _colors.primary.withOpacity(0.04),
+              _colors.background,
+            ],
+          ),
+        ),
+        child: Column(
         children: [
           Expanded(
             child: _isLoading
@@ -1680,6 +1899,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
           ),
           _buildMessageInput(),
         ],
+        ),
       ),
     );
   }

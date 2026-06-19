@@ -321,6 +321,32 @@ class _AbonnementScreenState extends State<AbonnementScreen> {
                 subtitle: 'Exclusif Premium',
                 color: Color(0xFFFDB813),
               ),
+
+              // ── Nouveaux avantages Chat ──
+              _buildAdvantageCard(
+                icon: Icons.visibility_off_rounded,
+                title: 'Mode fantôme',
+                subtitle: 'Présence cachée',
+                color: Colors.deepPurple,
+              ),
+              _buildAdvantageCard(
+                icon: Icons.photo_library_rounded,
+                title: '3 images',
+                subtitle: 'Simultanément',
+                color: Colors.cyan,
+              ),
+              _buildAdvantageCard(
+                icon: Icons.auto_awesome_rounded,
+                title: 'Emojis 3D',
+                subtitle: 'Animés exclusifs',
+                color: Colors.pink,
+              ),
+              _buildAdvantageCard(
+                icon: Icons.mood_rounded,
+                title: 'Stickers',
+                subtitle: 'Afrolook exclusifs',
+                color: Color(0xFFFF6B35),
+              ),
             ],
           ),
 
@@ -411,6 +437,42 @@ class _AbonnementScreenState extends State<AbonnementScreen> {
                     _buildDetailItem(
                       '✅ Support prioritaire',
                       Colors.blue,
+                    ),
+
+                    // ── Chat & Messagerie ──
+                    SizedBox(height: 10),
+                    Text(
+                      '💬  Chat & Messagerie',
+                      style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 0.8),
+                    ),
+                    SizedBox(height: 6),
+                    _buildDetailItem(
+                      '👻 Mode fantôme — masque ta présence en ligne',
+                      Colors.deepPurple,
+                    ),
+                    _buildDetailItem(
+                      '🖼️ Envoi de 3 images simultanément dans le chat',
+                      Colors.cyan,
+                    ),
+                    _buildDetailItem(
+                      '✨ Emojis 3D animés exclusifs dans les conversations',
+                      Colors.pink,
+                    ),
+                    _buildDetailItem(
+                      '🎭 Stickers exclusifs Afrolook',
+                      Color(0xFFFF6B35),
+                    ),
+                    _buildDetailItem(
+                      '🎁 Gifts animés à envoyer (bientôt)',
+                      Colors.amber,
+                    ),
+                    _buildDetailItem(
+                      '🎨 Thèmes et couleurs de chat personnalisés (bientôt)',
+                      Colors.tealAccent,
+                    ),
+                    _buildDetailItem(
+                      '🗂️ Galerie média centralisée par conversation',
+                      Colors.lightBlue,
                     ),
                   ],
                 ),

@@ -1837,3 +1837,109 @@ Audit complet du module `lib/pages/dating/` réalisé (15+ pages, service `datin
 - Champ `_virtualPage` inutilisé → supprimé
 
 **`dart analyze`** → 0 erreur sur tous les fichiers modifiés
+
+---
+
+## Session 52 — Refonte système de messagerie niveau WhatsApp + UI chat
+
+**Date :** 2026-06-19  
+**Fichiers modifiés :**
+- `pubspec.yaml`
+- `lib/widgets/chat/chat_bubble_widget.dart` *(nouveau)*
+- `lib/pages/chat/myChat.dart`
+- `lib/pages/user/conversation/listUserConv.dart`
+- `lib/pages/user/userAbonnementPage.dart`
+
+---
+
+**1. Nouveaux packages (`pubspec.yaml`)** :
+- `emoji_picker_flutter: ^3.1.0` (remplace `^2.2.0` commenté qui conflictait avec `pdfx`)
+- `lottie: ^3.1.2` (stickers animés / gifts futurs)
+- `flutter_slidable: ^3.1.1` (swipe actions sur liste conversations)
+
+---
+
+**2. Nouveau widget `lib/widgets/chat/chat_bubble_widget.dart`** :
+
+Ensemble de widgets exportés utilisés dans `myChat.dart` :
+- `ChatDateSeparator` — pill de date (fond vert transparent)
+- `TypingIndicator` — 3 dots animés via `flutter_animate`
+- `ReadReceiptIcon` — check / check_all coloré selon état
+- `TextBubble` — bulle texte avec dégradé vert (envoyé) / fond sombre (reçu), shadow
+- `_EmojiOnlyBubble` — emoji seul 44px avec animation scale
+- `ImageBubble` / `MultiImageBubble` — image(s) avec coins arrondis, layout 1/2/3 photos
+- `AudioBubble` — waveform animée (20 barres, seed `message.id.hashCode` = cohérent) + bouton play circulaire
+- `MessageMeta` — heure + `ReadReceiptIcon`
+- `_ReplyPreview` — citation avec bordure gauche colorée
+- `_ReactionChip` — pill emoji flottant
+
+---
+
+**3. Refonte `myChat.dart`** (refonte majeure de l'UI) :
+
+**Imports** : `emoji_picker_flutter`, `flutter_animate`, retrait de `chat_bubbles`  
+**Fond** : `RadialGradient` subtil (4% opacité `primary`) sur tout le `Scaffold`
+
+**Header (`_buildAppBar`)** :
+- Gradient top transparent → teinte primaire 6%
+- Avatar avec ring gradient pulsant (2px border, shadow verte)
+- `TypingIndicator` animé à la place du texte statique
+
+**Bulles** : `TextBubble` / `AudioBubble` / `ImageBubble` / `MultiImageBubble` / `ChatDateSeparator`
+
+**Input bar (`_buildMessageInput`)** :
+- Bouton + gradient → `_showAttachMenu()` (Photo / Multi-photos 👑 / Vocal)
+- `EmojiPicker` toggle (280px, onglets personnalisés)
+- Bouton envoi animé (scale spring) avec gradient vert
+- Preview multi-images (strip horizontal)
+
+**Fonctionnalités Premium (gate `_showPremiumGate`)** :
+- Envoi jusqu'à 3 images simultanément (`_getMultipleImages()`, limit: 3)
+- URLs supplémentaires stockées dans `message.imageText` séparées par `|`
+- `MultiImageBubble` détecte `|` dans `imageText` → layouts 1/2/3 photos
+
+**Méthodes nouvelles** :
+- `_sendMultipleImagesMessage()` — upload parallèle, stockage multi-URL
+- `_showPremiumGate(msg)` — bottom sheet paywall gold/dark avec route `/abonnement`
+- `_getMultipleImages()` — vérification Premium avant sélection
+
+---
+
+**4. Refonte `listUserConv.dart`** :
+
+**`ConversationList`** — widget entièrement redessiné :
+- Paramètres ajoutés : `isPinned`, `isPro`, `messageType`
+- Avatar 52px avec ring gradient (vert + glow si en ligne, gris si hors ligne)
+- Badge **PRO** (dégradé or) si `UserData.hasEntreprise == true`
+- Épingle (icône + fond teinté) si conversation épinglée
+- Badge non-lus : fond vert, texte noir (meilleure lisibilité)
+- Preview message enrichi : `📷 Photo` / `📷 3 photos` / `🎙️ Message vocal`
+
+**Swipe actions `flutter_slidable`** :
+- Glisser gauche → **Archiver** (avec undo snackbar)
+- Glisser droite → **Épingler / Désépingler**
+- Épinglés remontés en tête de liste (tri local)
+- Conversations archivées masquées de la liste (avec undo)
+
+**Section amis récents** — `_StoryRingAvatar` :
+- Ring gradient animé (pulsation `ScaleTransition 1.0 → 1.08`) si ami en ligne
+- Ring gris statique si hors ligne
+
+---
+
+**5. Page abonnement Premium (`userAbonnementPage.dart`)** :
+
+Nouveaux avantages ajoutés dans la grille `_buildWhyPremiumSection` :
+- 👻 **Mode fantôme** — présence en ligne masquable (`Colors.deepPurple`)
+- 🖼️ **3 images** simultanément dans le chat (`Colors.cyan`)
+- ✨ **Emojis 3D animés** exclusifs (`Colors.pink`)
+- 🎭 **Stickers Afrolook** exclusifs (`Color(0xFFFF6B35)`)
+
+Nouveaux détails dans la section expandable :
+- Section "💬 Chat & Messagerie" avec 7 avantages listés
+- Gifts animés (bientôt), thèmes personnalisés (bientôt), galerie média par conversation
+
+---
+
+**`dart analyze`** → 0 erreur sur tous les fichiers modifiés  
+(warnings mineurs pré-existants : `unused_field`, `unused_element`, `print` — non liés)

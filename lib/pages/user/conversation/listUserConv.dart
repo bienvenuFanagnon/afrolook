@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:intl/intl.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
@@ -596,13 +597,13 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     final bool hasMoreFriends = _recentFriends.length >= maxRecentFriends;
 
     return Container(
-      height: 140,
-      padding: EdgeInsets.symmetric(vertical: 12),
+      height: 148,
+      padding: const EdgeInsets.symmetric(vertical: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -610,82 +611,52 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
                   _l10n.convRecentlyActive,
                   style: TextStyle(
                     color: _colors.primary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 1.2,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.3,
                   ),
                 ),
                 if (hasMoreFriends)
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/amis');
-                    },
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-                      minimumSize: Size(0, 0),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
+                  GestureDetector(
+                    onTap: () => Navigator.pushNamed(context, '/amis'),
                     child: Text(
                       _l10n.convSeeMoreFriends,
-                      style: TextStyle(
-                        color: _colors.primary,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style: TextStyle(color: _colors.primary, fontSize: 13),
                     ),
                   ),
               ],
             ),
           ),
-          SizedBox(height: 4),
+          const SizedBox(height: 8),
           Expanded(
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              padding: EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
               itemCount: _recentFriends.length,
               itemBuilder: (context, index) {
                 final user = _recentFriends[index];
                 final bool isOnline = _isUserOnline(user);
                 final String lastActiveText = _getLastActiveText(user.last_time_active ?? 0);
-
                 return GestureDetector(
                   onTap: () => _createAndOpenChat(user),
                   child: Container(
-                    width: 70,
-                    margin: EdgeInsets.only(right: 12),
+                    width: 68,
+                    margin: const EdgeInsets.only(right: 10),
                     child: Column(
                       children: [
-                        Stack(
-                          children: [
-                            CircleAvatar(
-                              radius: 28,
-                              backgroundImage: user.imageUrl != null && user.imageUrl!.isNotEmpty
-                                  ? NetworkImage(user.imageUrl!)
-                                  : AssetImage('assets/icon/amixilo3.png') as ImageProvider,
-                              backgroundColor: _colors.textSecondary,
-                            ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: UserPresenceWidget(
-                                userId: user.id!,
-                                size: 12.0, // Contrôle de la taille du point vert
-                                showTextStatus: false, // Uniquement le point vert sur l'avatar
-                              ),
-                            ),
-                          ],
+                        _StoryRingAvatar(
+                          imageUrl: user.imageUrl,
+                          isOnline: isOnline,
+                          primaryColor: _colors.primary,
+                          userId: user.id!,
                         ),
-                        SizedBox(height: 4),
+                        const SizedBox(height: 4),
                         Text(
                           '@${user.pseudo ?? ""}',
-                          style: TextStyle(
-                            color: _colors.textPrimary,
-                            fontSize: 11,
-                          ),
+                          style: TextStyle(color: _colors.textPrimary, fontSize: 11),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        SizedBox(height: 2),
                         Text(
                           isOnline ? _l10n.convOnline : lastActiveText,
                           style: TextStyle(
@@ -752,46 +723,120 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     );
   }
 
+  // Ensemble des chats épinglés (géré localement pour l'instant)
+  final Set<String> _pinnedChatIds = {};
+  final Set<String> _archivedChatIds = {};
+
   Widget _buildChatList(List<ChatWithLastMessage> chats) {
+    final visibleChats = chats.where((c) => !_archivedChatIds.contains(c.chat.docId)).toList();
+    // Épinglés en premier
+    visibleChats.sort((a, b) {
+      final aPinned = _pinnedChatIds.contains(a.chat.docId) ? 0 : 1;
+      final bPinned = _pinnedChatIds.contains(b.chat.docId) ? 0 : 1;
+      if (aPinned != bPinned) return aPinned - bPinned;
+      return (b.chat.updatedAt ?? 0).compareTo(a.chat.updatedAt ?? 0);
+    });
+
     return ListView.builder(
       controller: _scrollController,
-      itemCount: chats.length + 1,
+      itemCount: visibleChats.length + 1,
       itemBuilder: (context, index) {
         if (index == 0) {
           return Padding(
-            padding: EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.symmetric(vertical: 8),
             child: _buildAdBanner(key: 'chat_list_first_ad'),
           );
         }
 
         final chatIndex = index - 1;
+        if (chatIndex >= visibleChats.length) return const SizedBox.shrink();
 
-        if (chatIndex >= chats.length) {
-          return SizedBox.shrink();
-        }
-
-        final chatWithMessage = chats[chatIndex];
+        final chatWithMessage = visibleChats[chatIndex];
         final Chat chat = chatWithMessage.chat;
         final Message? lastMessage = chatWithMessage.lastMessage;
 
         final int unreadCount = _getUnreadCount(chat);
         final bool isOnline = _isUserOnline(chat.chatFriend ?? UserData());
         final bool isLastMessageFromMe = _isLastMessageFromCurrentUser(lastMessage);
+        final bool isPinned = _pinnedChatIds.contains(chat.docId);
+        final bool isPro = chat.chatFriend?.hasEntreprise == true;
 
-        return GestureDetector(
-          onTap: () => _openChat(chat),
-          child: ConversationList(
-            name: "@${chat.chatFriend?.pseudo ?? _l10n.convDefaultUser}",
-            messageText: _getMessagePreview(lastMessage),
-            imageUrl: chat.chatFriend?.imageUrl ?? '',
-            time: _formatTime(chat.updatedAt),
-            isMessageRead: unreadCount == 0,
-            isOnline: isOnline,
-            unreadCount: unreadCount,
-            isTyping: false,
-            isLastMessageFromMe: isLastMessageFromMe,
-            messageStatus: _getMessageStatus(lastMessage),
-            id_user: chat.chatFriend!.id!,
+        return Slidable(
+          key: ValueKey(chat.docId),
+          startActionPane: ActionPane(
+            motion: const DrawerMotion(),
+            extentRatio: 0.25,
+            children: [
+              SlidableAction(
+                onPressed: (_) {
+                  setState(() {
+                    if (isPinned) {
+                      _pinnedChatIds.remove(chat.docId);
+                    } else {
+                      _pinnedChatIds.add(chat.docId!);
+                    }
+                  });
+                },
+                backgroundColor: _colors.primary,
+                foregroundColor: Colors.white,
+                icon: isPinned ? Icons.push_pin : Icons.push_pin_outlined,
+                label: isPinned ? 'Désépingler' : 'Épingler',
+                borderRadius: const BorderRadius.horizontal(right: Radius.circular(12)),
+              ),
+            ],
+          ),
+          endActionPane: ActionPane(
+            motion: const DrawerMotion(),
+            extentRatio: 0.25,
+            dismissible: DismissiblePane(
+              onDismissed: () {
+                setState(() {
+                  _archivedChatIds.add(chat.docId!);
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text('Conversation archivée'),
+                    action: SnackBarAction(
+                      label: 'Annuler',
+                      onPressed: () => setState(() => _archivedChatIds.remove(chat.docId)),
+                    ),
+                    backgroundColor: _colors.surface,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+            ),
+            children: [
+              SlidableAction(
+                onPressed: (_) {
+                  setState(() => _archivedChatIds.add(chat.docId!));
+                },
+                backgroundColor: _colors.textSecondary,
+                foregroundColor: Colors.white,
+                icon: Icons.archive_outlined,
+                label: 'Archiver',
+                borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
+              ),
+            ],
+          ),
+          child: GestureDetector(
+            onTap: () => _openChat(chat),
+            child: ConversationList(
+              name: "@${chat.chatFriend?.pseudo ?? _l10n.convDefaultUser}",
+              messageText: _getMessagePreview(lastMessage),
+              imageUrl: chat.chatFriend?.imageUrl ?? '',
+              time: _formatTime(chat.updatedAt),
+              isMessageRead: unreadCount == 0,
+              isOnline: isOnline,
+              unreadCount: unreadCount,
+              isTyping: false,
+              isLastMessageFromMe: isLastMessageFromMe,
+              messageStatus: _getMessageStatus(lastMessage),
+              id_user: chat.chatFriend!.id!,
+              isPinned: isPinned,
+              isPro: isPro,
+              messageType: lastMessage?.messageType,
+            ),
           ),
         );
       },
@@ -853,7 +898,8 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
             unreadCount: unreadCount,
             isTyping: false,
             isSearchResult: isSearchResult,
-              id_user: chat.chatFriend!.id!
+            id_user: chat.chatFriend!.id!,
+            isPro: chat.chatFriend?.hasEntreprise == true,
           ),
         );
       },
@@ -867,9 +913,15 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       case 'text':
         return lastMessage.message;
       case 'image':
-        return '📷 Image${lastMessage.imageText != null ? ': ${lastMessage.imageText}' : ''}';
+        // Multi-images : URL séparées par | dans imageText
+        final hasMulti = lastMessage.imageText != null && lastMessage.imageText!.contains('|');
+        if (hasMulti) {
+          final count = lastMessage.imageText!.split('|').length + 1;
+          return '📷 $count photos';
+        }
+        return '📷 Photo';
       case 'voice':
-        return _l10n.convVoiceMessage;
+        return '🎙️ Message vocal';
       default:
         return lastMessage.message;
     }
@@ -1034,7 +1086,9 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   }
 }
 
-// ConversationList Widget (inchangé, gardé tel quel)
+// ---------------------------------------------------------------------------
+// ConversationList — item visuel refait (ring gradient, badge PRO, épinglé)
+// ---------------------------------------------------------------------------
 class ConversationList extends StatefulWidget {
   final String name;
   final String messageText;
@@ -1049,6 +1103,9 @@ class ConversationList extends StatefulWidget {
   final bool isSearchResult;
   final bool isLastMessageFromMe;
   final Widget messageStatus;
+  final bool isPinned;
+  final bool isPro;
+  final String? messageType;
 
   const ConversationList({
     Key? key,
@@ -1065,6 +1122,9 @@ class ConversationList extends StatefulWidget {
     this.isSearchResult = false,
     this.isLastMessageFromMe = false,
     this.messageStatus = const SizedBox.shrink(),
+    this.isPinned = false,
+    this.isPro = false,
+    this.messageType,
   }) : super(key: key);
 
   @override
@@ -1079,48 +1139,71 @@ class _ConversationListState extends State<ConversationList> {
   Widget build(BuildContext context) {
     _colors = AppColors.of(context);
     _l10n = AppLocalizations.of(context);
+
     return Container(
       decoration: BoxDecoration(
-        color: _colors.background,
+        color: widget.isPinned
+            ? _colors.primary.withAlpha(13)  // légère teinte pour épinglé
+            : _colors.background,
         border: Border(bottom: BorderSide(color: _colors.divider, width: 0.5)),
       ),
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       child: Row(
-        children: <Widget>[
-          _buildAvatar(widget.id_user),
-          SizedBox(width: 16),
+        children: [
+          _buildAvatar(),
+          const SizedBox(width: 12),
           _buildMessageInfo(),
-          _buildTimeAndStatus(),
+          const SizedBox(width: 8),
+          _buildTrailing(),
         ],
       ),
     );
   }
 
-  Widget _buildAvatar(String id_user) {
+  Widget _buildAvatar() {
+    if (widget.isLoading) {
+      return Container(
+        width: 52, height: 52,
+        decoration: BoxDecoration(shape: BoxShape.circle, color: _colors.textSecondary),
+      );
+    }
     return Stack(
       children: [
-        widget.isLoading
-            ? CircleAvatar(
-          backgroundColor: _colors.textSecondary,
-          radius: 24,
-        )
-            : CircleAvatar(
-          backgroundImage: widget.imageUrl.isNotEmpty
-              ? NetworkImage(widget.imageUrl)
-              : AssetImage('assets/icon/amixilo3.png') as ImageProvider,
-          backgroundColor: _colors.textSecondary,
-          radius: 24,
-        ),
-        if (!widget.isLoading)
-          Positioned(
-            bottom: 0,
-            right: 0,
-            child: UserPresenceWidget(
-              userId: id_user,
-              size: 12.0, // Contrôle de la taille du point vert
-              showTextStatus: false, // Uniquement le point vert sur l'avatar
+        // Ring gradient
+        Container(
+          width: 52, height: 52,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              colors: widget.isOnline
+                  ? [_colors.primary, Color.lerp(_colors.primary, const Color(0xFF1abc9c), 0.6)!]
+                  : [_colors.textSecondary, _colors.border],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-          )
+            boxShadow: widget.isOnline
+                ? [BoxShadow(color: _colors.primary.withAlpha(77), blurRadius: 8, spreadRadius: 1)]
+                : [],
+          ),
+          padding: const EdgeInsets.all(2.5),
+          child: CircleAvatar(
+            radius: 23,
+            backgroundImage: widget.imageUrl.isNotEmpty
+                ? NetworkImage(widget.imageUrl)
+                : const AssetImage('assets/icon/amixilo3.png') as ImageProvider,
+            backgroundColor: _colors.surface,
+          ),
+        ),
+        // Point de présence en bas à droite
+        Positioned(
+          bottom: 1,
+          right: 1,
+          child: UserPresenceWidget(
+            userId: widget.id_user,
+            size: 12.0,
+            showTextStatus: false,
+          ),
+        ),
       ],
     );
   }
@@ -1129,45 +1212,67 @@ class _ConversationListState extends State<ConversationList> {
     return Expanded(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            widget.name,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: _colors.textPrimary,
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-          SizedBox(height: 6),
-          widget.isLoading
-              ? Container(
-            width: 150,
-            height: 14,
-            color: _colors.textSecondary,
-          )
-              : Row(
+        children: [
+          Row(
             children: [
-              if (widget.isLastMessageFromMe)
-                Text(
-                  _l10n.convYouPrefix,
+              // Icône épinglé
+              if (widget.isPinned) ...[
+                Icon(Icons.push_pin, size: 13, color: _colors.primary),
+                const SizedBox(width: 3),
+              ],
+              // Nom
+              Flexible(
+                child: Text(
+                  widget.name,
                   style: TextStyle(
-                    fontSize: 14,
-                    color: _colors.primary,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: _colors.textPrimary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              // Badge PRO entreprise
+              if (widget.isPro) ...[
+                const SizedBox(width: 5),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFFDB813), Color(0xFFFF8C00)],
+                    ),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text(
+                    'PRO',
+                    style: TextStyle(fontSize: 9, color: Colors.white, fontWeight: FontWeight.w800, letterSpacing: 0.5),
                   ),
                 ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 4),
+          widget.isLoading
+              ? Container(width: 140, height: 13, color: _colors.textSecondary)
+              : Row(
+            children: [
+              if (widget.isLastMessageFromMe) ...[
+                Text(
+                  _l10n.convYouPrefix,
+                  style: TextStyle(fontSize: 13, color: _colors.primary, fontWeight: FontWeight.w500),
+                ),
+              ],
               Expanded(
                 child: Text(
-                  widget.isTyping ? _l10n.convTyping : widget.messageText,
+                  widget.isTyping
+                      ? '${_l10n.convTyping}...'
+                      : widget.messageText,
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 13,
                     color: widget.isTyping
-                        ? _colors.accent
+                        ? _colors.primary
                         : (widget.isMessageRead ? _colors.textSecondary : _colors.textPrimary),
-                    fontWeight: widget.isMessageRead
-                        ? FontWeight.normal
-                        : FontWeight.w500,
+                    fontWeight: widget.isMessageRead ? FontWeight.normal : FontWeight.w500,
                     fontStyle: widget.isSearchResult ? FontStyle.italic : FontStyle.normal,
                   ),
                   overflow: TextOverflow.ellipsis,
@@ -1181,43 +1286,120 @@ class _ConversationListState extends State<ConversationList> {
     );
   }
 
-  Widget _buildTimeAndStatus() {
+  Widget _buildTrailing() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         if (widget.time.isNotEmpty)
           Text(
             widget.time,
             style: TextStyle(
-              fontSize: 12,
-              color: _colors.textSecondary,
-              fontWeight: widget.isMessageRead
-                  ? FontWeight.normal
-                  : FontWeight.bold,
+              fontSize: 11,
+              color: widget.isMessageRead ? _colors.textSecondary : _colors.primary,
+              fontWeight: widget.isMessageRead ? FontWeight.normal : FontWeight.w600,
             ),
           ),
-        if (widget.time.isNotEmpty) SizedBox(height: 6),
+        const SizedBox(height: 5),
         if (widget.unreadCount > 0)
           Container(
-            padding: EdgeInsets.all(6),
+            constraints: const BoxConstraints(minWidth: 22),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
             decoration: BoxDecoration(
               color: _colors.primary,
-              shape: BoxShape.circle,
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
-              '${widget.unreadCount}',
-              style: TextStyle(
-                fontSize: 12,
-                color: _colors.onPrimary,
-                fontWeight: FontWeight.bold,
-              ),
+              widget.unreadCount > 99 ? '99+' : '${widget.unreadCount}',
+              style: const TextStyle(fontSize: 11, color: Colors.black, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
             ),
           )
         else if (widget.isSearchResult)
           Icon(Icons.add_circle_outline, color: _colors.primary, size: 20)
         else if (widget.isLastMessageFromMe)
-            widget.messageStatus,
+          widget.messageStatus
+        else
+          const SizedBox(height: 22),
       ],
     );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// _StoryRingAvatar — avatar avec ring gradient animé pour la section amis récents
+// ---------------------------------------------------------------------------
+class _StoryRingAvatar extends StatefulWidget {
+  final String? imageUrl;
+  final bool isOnline;
+  final Color primaryColor;
+  final String userId;
+
+  const _StoryRingAvatar({
+    required this.imageUrl,
+    required this.isOnline,
+    required this.primaryColor,
+    required this.userId,
+  });
+
+  @override
+  State<_StoryRingAvatar> createState() => _StoryRingAvatarState();
+}
+
+class _StoryRingAvatarState extends State<_StoryRingAvatar> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1600),
+    );
+    _scale = Tween<double>(begin: 1.0, end: 1.08).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+    if (widget.isOnline) {
+      _controller.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ringWidget = Container(
+      width: 54, height: 54,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          colors: widget.isOnline
+              ? [widget.primaryColor, Color.lerp(widget.primaryColor, const Color(0xFF1abc9c), 0.6)!]
+              : [Colors.grey.shade600, Colors.grey.shade400],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: widget.isOnline
+            ? [BoxShadow(color: widget.primaryColor.withAlpha(90), blurRadius: 10, spreadRadius: 1)]
+            : [],
+      ),
+      padding: const EdgeInsets.all(2.5),
+      child: CircleAvatar(
+        radius: 24,
+        backgroundImage: (widget.imageUrl != null && widget.imageUrl!.isNotEmpty)
+            ? NetworkImage(widget.imageUrl!) as ImageProvider
+            : const AssetImage('assets/icon/amixilo3.png'),
+        backgroundColor: Colors.grey.shade800,
+      ),
+    );
+
+    if (!widget.isOnline) return ringWidget;
+
+    return ScaleTransition(scale: _scale, child: ringWidget);
   }
 }
