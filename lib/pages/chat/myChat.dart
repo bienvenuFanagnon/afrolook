@@ -41,6 +41,7 @@ import '../userPosts/postWidgets/postUserWidget.dart';
 import '../../services/chat_cache_service.dart';
 import '../../services/encryption_service.dart';
 import '../../widgets/chat/chat_bubble_widget.dart';
+import '../user/privacy_settings_page.dart';
 
 class MyChat extends StatefulWidget {
   final String title;
@@ -116,10 +117,14 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   // Marquage "lu" en batch (au lieu d'une écriture par message dans le build)
   Timer? _readReceiptDebounce;
 
-  /// Clé AES-256 dérivée pour cette conversation (chiffrement au repos des
-  /// messages texte). `null` si l'autre participant n'a pas encore de clé
-  /// publique publiée (messages alors envoyés en clair).
+  /// Clé AES-256 dérivée pour cette conversation (chiffrement au repos).
+  /// Si `null` après init, l'envoi de texte est bloqué jusqu'à résolution.
   SecretKey? _chatKey;
+
+  // Blocage utilisateur
+  late String _otherId;
+  bool _isBlockedByMe = false;   // j'ai bloqué l'autre
+  bool _isBlockedByOther = false; // l'autre m'a bloqué
 
   // Pour éviter les reconstructions inutiles
   final _messageKey = GlobalKey();
@@ -132,11 +137,16 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     _authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     _userProvider = Provider.of<UserProvider>(context, listen: false);
 
+    _otherId = widget.chat.senderId == _authProvider.loginUserData.id!
+        ? widget.chat.receiverId!
+        : widget.chat.senderId!;
+
     _audioRecorder = AudioRecorder();
     _initializeChat();
     _setupAudioListener();
     _loadCachedMessages();
     _initEncryptionAndLoad();
+    _loadBlockStatus();
     _scrollController.addListener(_onScroll);
 
     // Scroll vers le bas après initialisation
@@ -802,6 +812,32 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     final messageText = _textController.text.trim();
     if (messageText.isEmpty) return;
 
+    // Jamais d'envoi en clair : vérifier (ou récupérer) la clé de chiffrement.
+    SecretKey? chatKey = _chatKey;
+    if (chatKey == null) {
+      final myId = _authProvider.loginUserData.id!;
+      final otherId = widget.chat.senderId == myId
+          ? widget.chat.receiverId!
+          : widget.chat.senderId!;
+      chatKey = await EncryptionService.getChatKey(widget.chat.docId!, myId, otherId);
+      if (chatKey != null && mounted) setState(() => _chatKey = chatKey);
+    }
+
+    if (chatKey == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.orange,
+          content: Text(
+            '🔒 Chiffrement en cours d\'initialisation, réessayez dans quelques secondes',
+            textAlign: TextAlign.center,
+          ),
+          duration: Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
     try {
       ReplyMessage reply = ReplyMessage(
         message: _replyingToMessage != null ? _getReplyMessageText(_replyingToMessage!) : '',
@@ -831,15 +867,9 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       String msgid = _firestore.collection('Messages').doc().id;
       msg.id = msgid;
 
-      // Chiffrement au repos : le texte du message est chiffré (AES-256)
-      // avant d'être stocké dans Firestore, si la clé de la conversation
-      // est disponible (clé publique de l'autre participant connue).
       final json = msg.toJson();
-      final chatKey = _chatKey;
-      if (chatKey != null) {
-        json['message'] = await EncryptionService.encryptText(chatKey, messageText);
-        json['is_encrypted'] = true;
-      }
+      json['message'] = await EncryptionService.encryptText(chatKey, messageText);
+      json['is_encrypted'] = true;
 
       await _firestore.collection('Messages').doc(msgid).set(json);
       await _sendNotification(messageText);
@@ -1144,35 +1174,60 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   }
 
   void _showMessageOptions(Message message) {
+    final isMe = message.sendBy == _authProvider.loginUserData.id!;
+    final isText = message.messageType == MessageType.text.name;
+
     showModalBottomSheet(
       context: context,
-      builder: (BuildContext context) {
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
         return Container(
+          margin: const EdgeInsets.fromLTRB(12, 0, 12, 16),
           decoration: BoxDecoration(
             color: _colors.surfaceVariant,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(15),
-              topRight: Radius.circular(15),
-            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: _colors.border.withOpacity(0.3)),
           ),
           child: SafeArea(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (message.sendBy == _authProvider.loginUserData.id!)
-                  ListTile(
-                    leading: Icon(Icons.delete, color: Colors.red),
-                    title: Text(AppLocalizations.of(context).btnDelete, style: TextStyle(color: _colors.textPrimary)),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _deleteMessage(message);
-                    },
+                // Handle visuel
+                Container(
+                  margin: const EdgeInsets.symmetric(vertical: 10),
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: _colors.border,
+                    borderRadius: BorderRadius.circular(2),
                   ),
-                ListTile(
-                  leading: Icon(Icons.reply, color: Colors.blue),
-                  title: Text(AppLocalizations.of(context).btnReply, style: TextStyle(color: _colors.textPrimary)),
+                ),
+                // Aperçu du message (texte uniquement, tronqué)
+                if (isText && message.message.isNotEmpty)
+                  Container(
+                    margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: _colors.background,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      message.message.length > 60
+                          ? '${message.message.substring(0, 60)}…'
+                          : message.message,
+                      style: TextStyle(color: _colors.textSecondary, fontSize: 12),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                // Répondre
+                _optionTile(
+                  ctx,
+                  icon: Icons.reply_rounded,
+                  iconColor: _colors.primary,
+                  label: AppLocalizations.of(context).btnReply,
                   onTap: () {
-                    Navigator.pop(context);
+                    Navigator.pop(ctx);
                     setState(() {
                       _replying = true;
                       _replyingToMessage = message;
@@ -1180,7 +1235,56 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
                     _focusNode.requestFocus();
                   },
                 ),
-                SizedBox(height: 8),
+                // Copier le texte (si c'est du texte)
+                if (isText)
+                  _optionTile(
+                    ctx,
+                    icon: Icons.copy_rounded,
+                    iconColor: Colors.blueGrey,
+                    label: 'Copier le texte',
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      Clipboard.setData(ClipboardData(text: message.message));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('Texte copié', textAlign: TextAlign.center),
+                          duration: const Duration(seconds: 2),
+                          backgroundColor: Colors.blueGrey,
+                        ),
+                      );
+                    },
+                  ),
+                // Signaler (messages reçus uniquement)
+                if (!isMe) ...[
+                  Divider(color: _colors.border.withOpacity(0.4), height: 1, indent: 16, endIndent: 16),
+                  _optionTile(
+                    ctx,
+                    icon: Icons.flag_outlined,
+                    iconColor: Colors.orange,
+                    label: 'Signaler ce message',
+                    labelColor: Colors.orange,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _showReportSheet(message);
+                    },
+                  ),
+                ],
+                // Supprimer pour tous (expéditeur uniquement)
+                if (isMe) ...[
+                  Divider(color: _colors.border.withOpacity(0.4), height: 1, indent: 16, endIndent: 16),
+                  _optionTile(
+                    ctx,
+                    icon: Icons.delete_outline_rounded,
+                    iconColor: Colors.red,
+                    label: 'Supprimer pour tous',
+                    labelColor: Colors.red,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _confirmDeleteMessage(message);
+                    },
+                  ),
+                ],
+                const SizedBox(height: 4),
               ],
             ),
           ),
@@ -1189,24 +1293,448 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     );
   }
 
-  Future<void> _deleteMessage(Message message) async {
-    try {
-      message.is_valide = false;
-      bool success = await _userProvider.updateMessage(message);
+  Widget _optionTile(
+    BuildContext ctx, {
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+    Color? labelColor,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+      leading: Icon(icon, color: iconColor, size: 22),
+      title: Text(
+        label,
+        style: TextStyle(
+          color: labelColor ?? _colors.textPrimary,
+          fontSize: 15,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      onTap: onTap,
+    );
+  }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: success ? Colors.green : Colors.red,
-          content: Text(
-            success ? 'Message supprimé' : 'Erreur de suppression',
-            textAlign: TextAlign.center,
+  /// Dialog de confirmation avant suppression — évite les suppressions accidentelles.
+  void _confirmDeleteMessage(Message message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _colors.surfaceVariant,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Supprimer ce message ?',
+          style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w700),
+        ),
+        content: Text(
+          'Ce message sera supprimé pour vous et votre interlocuteur.',
+          style: TextStyle(color: _colors.textSecondary, fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Annuler', style: TextStyle(color: _colors.textSecondary)),
           ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _deleteMessage(message);
+            },
+            child: const Text('Supprimer', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Suppression logique d'un message avec traçabilité complète.
+  /// Écriture Firestore directe — on n'utilise pas le modèle pour éviter
+  /// de modifier Message (champs deleted_at / deleted_by / delete_scope absents du modèle).
+  Future<void> _deleteMessage(Message message) async {
+    final msgId = message.id;
+    if (msgId == null || msgId.isEmpty) return;
+
+    try {
+      await _firestore.collection('Messages').doc(msgId).update({
+        'is_valide': false,
+        'deleted_at': DateTime.now().millisecondsSinceEpoch,
+        'deleted_by': _authProvider.loginUserData.id!,
+        'delete_scope': 'all',
+      });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.green,
+          content: Text('Message supprimé', textAlign: TextAlign.center),
           duration: Duration(seconds: 2),
         ),
       );
     } catch (e) {
-      _showErrorSnackbar("Erreur lors de la suppression");
+      debugPrint('⚠️ _deleteMessage error ($msgId): $e');
+      _showErrorSnackbar('Erreur lors de la suppression');
     }
+  }
+
+  /// Bottom sheet de choix de motif de signalement.
+  void _showReportSheet(Message message) {
+    final reasons = [
+      ('spam', 'Spam', Icons.mark_email_unread_outlined),
+      ('harassment', 'Harcèlement ou menaces', Icons.warning_amber_rounded),
+      ('inappropriate', 'Contenu inapproprié', Icons.no_adult_content),
+      ('other', 'Autre', Icons.help_outline_rounded),
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          margin: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+          decoration: BoxDecoration(
+            color: _colors.surfaceVariant,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: _colors.border.withOpacity(0.3)),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  margin: const EdgeInsets.symmetric(vertical: 10),
+                  width: 36, height: 4,
+                  decoration: BoxDecoration(color: _colors.border, borderRadius: BorderRadius.circular(2)),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+                  child: Text(
+                    'Pourquoi signalez-vous ce message ?',
+                    style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w700, fontSize: 15),
+                  ),
+                ),
+                ...reasons.map((r) {
+                  final (key, label, icon) = r;
+                  return ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+                    leading: Icon(icon, color: Colors.orange, size: 22),
+                    title: Text(label, style: TextStyle(color: _colors.textPrimary, fontSize: 14)),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _reportMessage(message, key);
+                    },
+                  );
+                }),
+                const SizedBox(height: 4),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Enregistre le signalement dans la collection `Reports`.
+  /// Écriture Firestore directe — collection admin-only côté client.
+  /// `createdAt` en millisecondes (cohérence avec le reste du projet).
+  Future<void> _reportMessage(Message message, String reason) async {
+    final myId = _authProvider.loginUserData.id!;
+    final msgId = message.id;
+    if (msgId.isEmpty) return;
+
+    // ID = messageId_userId → un seul signalement par utilisateur par message
+    final reportId = '${msgId}_$myId';
+
+    try {
+      await _firestore.collection('Reports').doc(reportId).set({
+        'reportedBy': myId,
+        'messageId': msgId,
+        'chatId': widget.chat.docId!,
+        'reason': reason,
+        'reportedUserId': message.sendBy,
+        'createdAt': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.orange,
+          content: Text('Signalement envoyé. Merci.', textAlign: TextAlign.center),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      debugPrint('⚠️ _reportMessage error ($msgId): $e');
+      if (!mounted) return;
+      _showErrorSnackbar('Erreur lors du signalement');
+    }
+  }
+
+  // ── Blocage utilisateur ─────────────────────────────────────────────────────
+
+  /// Vérifie les deux directions de blocage au chargement du chat.
+  Future<void> _loadBlockStatus() async {
+    final myId = _authProvider.loginUserData.id!;
+    final blockByMe = '${myId}_$_otherId';
+    final blockByOther = '${_otherId}_$myId';
+
+    try {
+      final results = await Future.wait([
+        _firestore.collection('BlockedUsers').doc(blockByMe).get(),
+        _firestore.collection('BlockedUsers').doc(blockByOther).get(),
+      ]);
+
+      if (!mounted) return;
+      setState(() {
+        _isBlockedByMe    = results[0].exists;
+        _isBlockedByOther = results[1].exists;
+      });
+    } catch (e) {
+      debugPrint('⚠️ _loadBlockStatus error: $e');
+    }
+  }
+
+  /// Bloque l'autre utilisateur : crée le document `BlockedUsers/${myId}_${otherId}`.
+  Future<void> _blockUser() async {
+    final myId = _authProvider.loginUserData.id!;
+    final docId = '${myId}_$_otherId';
+
+    try {
+      await _firestore.collection('BlockedUsers').doc(docId).set({
+        'blockedBy': myId,
+        'blockedUser': _otherId,
+        'chatId': widget.chat.docId!,
+        'createdAt': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      if (!mounted) return;
+      setState(() => _isBlockedByMe = true);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.grey[800],
+          content: Text(
+            '@${widget.chat.receiver?.pseudo ?? _otherId} a été bloqué',
+            textAlign: TextAlign.center,
+          ),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      debugPrint('⚠️ _blockUser error: $e');
+      _showErrorSnackbar('Erreur lors du blocage');
+    }
+  }
+
+  /// Débloque l'autre utilisateur : supprime le document `BlockedUsers/${myId}_${otherId}`.
+  Future<void> _unblockUser() async {
+    final myId = _authProvider.loginUserData.id!;
+    final docId = '${myId}_$_otherId';
+
+    try {
+      await _firestore.collection('BlockedUsers').doc(docId).delete();
+
+      if (!mounted) return;
+      setState(() => _isBlockedByMe = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.green,
+          content: Text(
+            '@${widget.chat.receiver?.pseudo ?? _otherId} a été débloqué',
+            textAlign: TextAlign.center,
+          ),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      debugPrint('⚠️ _unblockUser error: $e');
+      _showErrorSnackbar('Erreur lors du déblocage');
+    }
+  }
+
+  /// Menu contextuel de la conversation (bouton ⋮ dans l'AppBar).
+  void _showChatMenu() {
+    final pseudo = widget.chat.receiver?.pseudo ?? _otherId;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          margin: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+          decoration: BoxDecoration(
+            color: _colors.surfaceVariant,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: _colors.border.withOpacity(0.3)),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  margin: const EdgeInsets.symmetric(vertical: 10),
+                  width: 36, height: 4,
+                  decoration: BoxDecoration(color: _colors.border, borderRadius: BorderRadius.circular(2)),
+                ),
+                // Confidentialité — paramètres de l'utilisateur connecté
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+                  leading: Icon(Icons.shield_outlined, color: _colors.primary, size: 22),
+                  title: Text(
+                    'Ma confidentialité',
+                    style: TextStyle(color: _colors.textPrimary, fontSize: 15, fontWeight: FontWeight.w500),
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const PrivacySettingsPage()),
+                    );
+                  },
+                ),
+                Divider(color: _colors.border.withOpacity(0.4), height: 1, indent: 16, endIndent: 16),
+                // Bloquer / Débloquer
+                if (_isBlockedByMe)
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+                    leading: const Icon(Icons.lock_open_rounded, color: Colors.green, size: 22),
+                    title: Text(
+                      'Débloquer @$pseudo',
+                      style: TextStyle(color: _colors.textPrimary, fontSize: 15, fontWeight: FontWeight.w500),
+                    ),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _unblockUser();
+                    },
+                  )
+                else
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+                    leading: const Icon(Icons.block_rounded, color: Colors.red, size: 22),
+                    title: Text(
+                      'Bloquer @$pseudo',
+                      style: const TextStyle(color: Colors.red, fontSize: 15, fontWeight: FontWeight.w500),
+                    ),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _confirmBlockUser(pseudo);
+                    },
+                  ),
+                const SizedBox(height: 4),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Confirmation avant de bloquer (action irréversible visible).
+  void _confirmBlockUser(String pseudo) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _colors.surfaceVariant,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Bloquer @$pseudo ?',
+          style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w700),
+        ),
+        content: Text(
+          'Cette personne ne pourra plus vous envoyer de messages. Vous pouvez la débloquer à tout moment.',
+          style: TextStyle(color: _colors.textSecondary, fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Annuler', style: TextStyle(color: _colors.textSecondary)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _blockUser();
+            },
+            child: const Text('Bloquer', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Bannière affichée au-dessus de l'input quand la conversation est bloquée.
+  Widget _buildBlockBanner() {
+    final pseudo = widget.chat.receiver?.pseudo ?? _otherId;
+
+    if (_isBlockedByMe) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        color: Colors.grey[900],
+        child: Row(
+          children: [
+            const Icon(Icons.block_rounded, color: Colors.grey, size: 16),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Vous avez bloqué @$pseudo.',
+                style: const TextStyle(color: Colors.grey, fontSize: 13),
+              ),
+            ),
+            GestureDetector(
+              onTap: _unblockUser,
+              child: const Text(
+                'Débloquer',
+                style: TextStyle(color: Colors.blue, fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_isBlockedByOther) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        color: Colors.grey[900],
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.lock_rounded, color: Colors.grey, size: 16),
+            SizedBox(width: 8),
+            Text(
+              'Vous ne pouvez pas envoyer de message à cette personne.',
+              style: TextStyle(color: Colors.grey, fontSize: 13),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return const SizedBox.shrink();
+  }
+
+  /// Input désactivé affiché à la place de `_buildMessageInput` quand bloqué.
+  Widget _buildBlockedInputBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      decoration: BoxDecoration(
+        color: _colors.background,
+        border: Border(top: BorderSide(color: _colors.border.withOpacity(0.3))),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.lock_rounded, color: _colors.textSecondary, size: 16),
+          const SizedBox(width: 8),
+          Text(
+            'Messagerie désactivée',
+            style: TextStyle(color: _colors.textSecondary, fontSize: 14),
+          ),
+        ],
+      ),
+    );
   }
 
   // ── Input bar complète ──────────────────────────────────────────────────────
@@ -1634,6 +2162,10 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
           icon: Icon(Icons.keyboard_arrow_down_rounded, color: _colors.primary, size: 26),
           onPressed: _scrollToBottom,
         ),
+        IconButton(
+          icon: Icon(Icons.more_vert_rounded, color: _colors.textSecondary, size: 22),
+          onPressed: _showChatMenu,
+        ),
       ],
     );
   }
@@ -1897,7 +2429,10 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
               },
             ),
           ),
-          _buildMessageInput(),
+          _buildBlockBanner(),
+          (_isBlockedByMe || _isBlockedByOther)
+              ? _buildBlockedInputBar()
+              : _buildMessageInput(),
         ],
         ),
       ),

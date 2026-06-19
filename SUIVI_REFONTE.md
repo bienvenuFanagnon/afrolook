@@ -1,5 +1,5 @@
 # SUIVI REFONTE UI — AFROLOOK V2
-_Dernière mise à jour : 18 juin 2026 (session 48)_
+_Dernière mise à jour : 19 juin 2026 (session 53)_
 
 ---
 
@@ -1943,3 +1943,152 @@ Nouveaux détails dans la section expandable :
 
 **`dart analyze`** → 0 erreur sur tous les fichiers modifiés  
 (warnings mineurs pré-existants : `unused_field`, `unused_element`, `print` — non liés)
+
+---
+
+## Session 53 — Sécurité Afrolook Messenger : chiffrement E2E, blocage, signalement, présence Premium
+
+**Date :** 2026-06-19  
+**Fichiers modifiés / créés :**
+- `firestore.rules` *(nouveau)*
+- `firebase.json`
+- `lib/services/encryption_service.dart`
+- `lib/pages/chat/myChat.dart`
+- `lib/pages/home/user_presence_widget.dart`
+- `lib/pages/user/privacy_settings_page.dart` *(nouveau)*
+
+---
+
+### Task 1 — Firestore Security Rules ✅
+
+**Nouveau fichier `firestore.rules`** à la racine (versionné, déployable via `firebase deploy --only firestore:rules`).
+
+Règles définies pour chaque collection :
+
+| Collection | Lecture | Création | Mise à jour | Suppression |
+|---|---|---|---|---|
+| `Messages` | Participants uniquement (`send_by` ou `receiverBy == uid`) | Expéditeur + `is_valide: true` | Expéditeur: `is_valide/deleted_*` · Destinataire: `message_state` · Les deux: `reaction` | ❌ (logique via `is_valide`) |
+| `Chats` | Participants uniquement | L'un des deux | L'un des deux | ❌ |
+| `Users` | Tout utilisateur auth | — | Son propre document | — |
+| `UserKeys` | Tout utilisateur auth | — | Sa propre clé | — |
+| `Reports` | ❌ côté client | `reportedBy == uid` + champs obligatoires | ❌ | ❌ |
+| `BlockedUsers` | Les deux parties | Bloqueur uniquement + champs obligatoires | ❌ | Bloqueur uniquement |
+| `Friends` | Les deux parties | Les deux parties | Les deux parties | Les deux parties |
+| `/*` (autres) | Auth uniquement | Auth uniquement | — | — |
+
+`firebase.json` : ajout de `"firestore": { "rules": "firestore.rules" }`.
+
+---
+
+### Task 2 — Chiffrement E2E : plus jamais d'envoi en clair ✅
+
+**`lib/services/encryption_service.dart`** — `getChatKey()` :
+- Signature étendue : `maxRetries = 3`, `retryDelayMs = 1500 ms`
+- Si la clé publique de l'autre utilisateur est absente → réessaie jusqu'à 3× (1,5 s entre chaque) avant de retourner `null`
+- Méthode `invalidateChatKey(chatId)` ajoutée (rotation de clés future)
+
+**`lib/pages/chat/myChat.dart`** — `_sendTextMessage()` :
+- Si `_chatKey == null` au moment d'envoyer → relance `getChatKey()` (qui retente 3×)
+- Si toujours `null` → SnackBar orange "Chiffrement en cours d'initialisation" + **`return`** (message non envoyé)
+- `is_encrypted: true` toujours positionné quand la clé est disponible — **jamais d'envoi en clair silencieux**
+
+---
+
+### Task 3 — Suppression de message (traçabilité complète) ✅
+
+**`lib/pages/chat/myChat.dart`** :
+
+`_showMessageOptions(message)` redessiné :
+- Aperçu tronqué du message en haut du sheet
+- Options : Répondre · Copier (texte) · Signaler (reçus) · Supprimer pour tous (envoyés)
+
+`_confirmDeleteMessage(message)` : dialog de confirmation avant suppression.
+
+`_deleteMessage(message)` : écriture Firestore directe (sans passer par le modèle) :
+```dart
+_firestore.collection('Messages').doc(msgId).update({
+  'is_valide': false,
+  'deleted_at': DateTime.now().millisecondsSinceEpoch,  // int ms — cohérent avec le projet
+  'deleted_by': myId,
+  'delete_scope': 'all',
+});
+```
+
+---
+
+### Task 4 — Signalement de message ✅
+
+**`lib/pages/chat/myChat.dart`** :
+
+`_showReportSheet(message)` : bottom sheet avec 4 motifs :
+- `spam` · `harassment` (Harcèlement ou menaces) · `inappropriate` (Contenu inapproprié) · `other` (Autre)
+
+`_reportMessage(message, reason)` : écriture collection `Reports` :
+```dart
+_firestore.collection('Reports').doc('${msgId}_$myId').set({
+  'reportedBy': myId,
+  'messageId': msgId,
+  'chatId': chatId,
+  'reason': reason,
+  'reportedUserId': message.sendBy,
+  'createdAt': DateTime.now().millisecondsSinceEpoch,  // int ms
+});
+```
+- ID = `${messageId}_${myId}` → un seul signalement par utilisateur par message
+- Collection inaccessible côté client (Firestore Rules : lecture/update/delete = `false`)
+
+---
+
+### Task 5 — Blocage utilisateur ✅
+
+**`lib/pages/chat/myChat.dart`** :
+
+Nouvelles variables d'état : `_otherId`, `_isBlockedByMe`, `_isBlockedByOther`
+
+`_loadBlockStatus()` : vérifie les deux directions (`${myId}_${otherId}` et `${otherId}_${myId}`) via `Future.wait` à l'init du chat.
+
+`_blockUser()` : création de `BlockedUsers/${myId}_${otherId}` avec `createdAt: DateTime.now().millisecondsSinceEpoch`
+
+`_unblockUser()` : suppression du même document
+
+`_showChatMenu()` : bouton ⋮ dans l'AppBar → bottom sheet avec "Ma confidentialité" + "Bloquer/Débloquer @pseudo"
+
+`_confirmBlockUser(pseudo)` : dialog de confirmation avant blocage
+
+`_buildBlockBanner()` : bannière contextuelle :
+- Si `_isBlockedByMe` → "Vous avez bloqué @pseudo" + bouton Débloquer
+- Si `_isBlockedByOther` → "Vous ne pouvez pas envoyer de message à cette personne"
+
+`_buildBlockedInputBar()` : input verrouillé (remplace `_buildMessageInput()` si bloqué dans l'un ou l'autre sens)
+
+---
+
+### Task 6 — Présence Premium (ghostMode, hideLastSeen) ✅
+
+**`lib/pages/home/user_presence_widget.dart`** :
+- Lit `data['privacySettings']` depuis le document Firestore de l'utilisateur affiché
+- `ghostMode: true` → `effectiveOnline = false` (point vert masqué, texte "hors ligne")
+- `hideLastSeen: true` → affiche `"—"` au lieu de "Il y a X min"
+- Rétrocompatible : si `privacySettings` absent → comportement inchangé
+
+**`lib/pages/user/privacy_settings_page.dart`** *(nouveau)* :
+- Page accessible via le menu ⋮ du chat ("Ma confidentialité")
+- Toggles avec Premium gate (🔑 → `/abonnement`) :
+  - **Mode fantôme** (`ghostMode`) — apparaître hors ligne pour tous
+  - **Masquer la dernière connexion** (`hideLastSeen`) — afficher "—"
+  - **Masquer les accusés de lecture** — marqué "Bientôt"
+- Écriture via notation pointée Firestore : `update({'privacySettings.ghostMode': value})` (sans modifier le modèle `UserData`)
+- Bannière Premium cliquable si non Premium → `/abonnement`
+
+---
+
+**Convention dates** : toutes les nouvelles collections (`Reports`, `BlockedUsers`) et champs de traçabilité (`deleted_at`) utilisent **`DateTime.now().millisecondsSinceEpoch`** (int, millisecondes) — cohérent avec `create_at_time_spam`, `dating_data.dart`, `coin_pack.dart`, etc.
+
+---
+
+**À faire (sessions suivantes)** :
+- [ ] Déployer `firestore.rules` via Firebase Console ou `firebase deploy --only firestore:rules`
+- [ ] Typing indicator côté Firestore (champ `isTyping` en temps réel)
+- [ ] Stickers Afrolook (picker + assets Lottie Premium)
+- [ ] Gifts virtuels (animations Lottie + crédits Afrolook)
+- [ ] Invitation externe (contact sans compte → `share_plus`)

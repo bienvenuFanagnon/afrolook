@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cryptography/cryptography.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Chiffrement de bout en bout (au repos) des messages texte des chats privés.
@@ -54,22 +55,50 @@ class EncryptionService {
   /// Calcule (et met en cache) la clé AES-256 dérivée pour la conversation
   /// [chatId] entre [myUserId] et [otherUserId].
   ///
-  /// Retourne `null` si [otherUserId] n'a pas encore de clé publique publiée
-  /// (premier lancement de l'app sur son appareil) : dans ce cas, les
-  /// messages sont envoyés en clair jusqu'à ce que sa clé soit disponible.
-  static Future<SecretKey?> getChatKey(String chatId, String myUserId, String otherUserId) async {
+  /// Retourne `null` uniquement si [otherUserId] n'a toujours pas de clé
+  /// publique après [maxRetries] tentatives espacées de [retryDelayMs] ms.
+  /// L'appelant DOIT refuser l'envoi et avertir l'utilisateur — jamais en clair.
+  static Future<SecretKey?> getChatKey(
+    String chatId,
+    String myUserId,
+    String otherUserId, {
+    int maxRetries = 3,
+    int retryDelayMs = 1500,
+  }) async {
     final cached = _chatKeyCache[chatId];
     if (cached != null) return cached;
 
     try {
       final myKeyPair = await _getOrCreateKeyPair(myUserId);
 
-      final otherDoc = await FirebaseFirestore.instance.collection('UserKeys').doc(otherUserId).get();
-      final otherPublicB64 = otherDoc.data()?['public_key'] as String?;
-      if (otherPublicB64 == null) return null;
+      String? otherPublicB64;
+      for (int attempt = 0; attempt < maxRetries; attempt++) {
+        final otherDoc = await FirebaseFirestore.instance
+            .collection('UserKeys')
+            .doc(otherUserId)
+            .get();
+        otherPublicB64 = otherDoc.data()?['public_key'] as String?;
+        if (otherPublicB64 != null) break;
 
-      final otherPublicKey = SimplePublicKey(base64Decode(otherPublicB64), type: KeyPairType.x25519);
-      final sharedSecret = await _x25519.sharedSecretKey(keyPair: myKeyPair, remotePublicKey: otherPublicKey);
+        if (attempt < maxRetries - 1) {
+          await Future.delayed(Duration(milliseconds: retryDelayMs));
+        }
+      }
+
+      // Clé publique introuvable après tous les essais → refus d'envoi
+      if (otherPublicB64 == null) {
+        debugPrint('🔒 EncryptionService: clé publique absente pour $otherUserId après $maxRetries tentatives — envoi refusé');
+        return null;
+      }
+
+      final otherPublicKey = SimplePublicKey(
+        base64Decode(otherPublicB64),
+        type: KeyPairType.x25519,
+      );
+      final sharedSecret = await _x25519.sharedSecretKey(
+        keyPair: myKeyPair,
+        remotePublicKey: otherPublicKey,
+      );
       final sharedBytes = await sharedSecret.extractBytes();
 
       final derived = await _hkdf.deriveKey(
@@ -81,9 +110,15 @@ class EncryptionService {
       _chatKeyCache[chatId] = derived;
       return derived;
     } catch (e) {
-      print('⚠️ EncryptionService.getChatKey error ($chatId): $e');
+
+      debugPrint('⚠️ EncryptionService.getChatKey error ($chatId): $e');
       return null;
     }
+  }
+
+  /// Vide le cache d'une conversation (ex : après rotation de clés).
+  static void invalidateChatKey(String chatId) {
+    _chatKeyCache.remove(chatId);
   }
 
   /// Chiffre [plainText] avec [key] (AES-256-GCM), encodé en base64 avec un

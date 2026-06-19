@@ -92,16 +92,24 @@ class UserPresenceWidget extends StatelessWidget {
           return const SizedBox.shrink();
         }
 
-        // Évaluation de l'état
-        final bool online = _isReallyOnline(data);
+        // Paramètres de confidentialité Premium de l'utilisateur affiché
+        final privacySettings = (data['privacySettings'] as Map<String, dynamic>?) ?? {};
+        final bool ghostMode     = privacySettings['ghostMode']     == true;
+        final bool hideLastSeen  = privacySettings['hideLastSeen']  == true;
+
+        // ghostMode → cet utilisateur choisit d'apparaître hors ligne
+        final bool effectiveOnline = ghostMode ? false : _isReallyOnline(data);
         final int lastActive = data['last_time_active'] ?? 0;
 
+        // hideLastSeen → ne pas révéler l'heure de dernière connexion
+        final String lastSeenText = hideLastSeen ? '—' : _formatLastActiveText(lastActive);
+
         // 🔵 LOG À CHAQUE CHANGEMENT REÇU EN TEMPS RÉEL
-        debugPrint('🔔 [PRESENCE UPDATE] Événement reçu pour $userId -> Affichage: ${online ? "POINT VERT" : "HORS LIGNE"}');
+        debugPrint('🔔 [PRESENCE UPDATE] $userId -> online=$effectiveOnline ghost=$ghostMode hideLastSeen=$hideLastSeen');
 
         // Si on veut afficher uniquement le point vert (Ex: sur la photo de profil)
         if (!showTextStatus) {
-          return online
+          return effectiveOnline
               ? Container(
             width: size,
             height: size,
@@ -117,9 +125,9 @@ class UserPresenceWidget extends StatelessWidget {
         if (isChatHeader) {
           final colors = AppColors.of(context);
           return Text(
-            online ? "En ligne" : _formatLastActiveText(lastActive),
+            effectiveOnline ? "En ligne" : lastSeenText,
             style: TextStyle(
-              color: online
+              color: effectiveOnline
                   ? const Color(0xFF25D366)
                   : colors.textSecondary,
               fontSize: 12,
@@ -133,7 +141,7 @@ class UserPresenceWidget extends StatelessWidget {
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (online) ...[
+            if (effectiveOnline) ...[
               Container(
                 width: size,
                 height: size,
@@ -157,16 +165,17 @@ class UserPresenceWidget extends StatelessWidget {
                 ),
                 child: Center(
                   child: Text(
-                    online ? " En ligne" : _formatLastActiveText(lastActive),
+                    effectiveOnline ? " En ligne" : lastSeenText,
                     style: TextStyle(
-                      color: online ? const Color(0xFF25D366) : Colors.white,
+                      color: effectiveOnline ? const Color(0xFF25D366) : Colors.white,
                       fontSize: 8,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
               ),
-            )          ],
+            ),
+          ],
         );
       },
     );

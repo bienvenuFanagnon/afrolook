@@ -1,0 +1,157 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─────────────────────────────────────────────────────────────
+    // HELPERS
+    // ─────────────────────────────────────────────────────────────
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function uid() {
+      return request.auth.uid;
+    }
+
+    // Vérifie que l'utilisateur est participant du chat (sender ou receiver)
+    function isChatParticipant(chatId) {
+      let chat = get(/databases/$(database)/documents/Chats/$(chatId)).data;
+      return chat.sender_id == uid() || chat.receiver_id == uid();
+    }
+
+    // Vérifie qu'un utilisateur n'est pas bloqué par l'autre
+    function isNotBlocked(otherUserId) {
+      let blockId = uid() + '_' + otherUserId;
+      let reverseId = otherUserId + '_' + uid();
+      return !exists(/databases/$(database)/documents/BlockedUsers/$(blockId))
+          && !exists(/databases/$(database)/documents/BlockedUsers/$(reverseId));
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // MESSAGES — seuls les participants d'un chat peuvent lire/écrire
+    // ─────────────────────────────────────────────────────────────
+    match /Messages/{messageId} {
+      // Lecture : seul l'expéditeur ou le destinataire
+      allow read: if isAuth()
+          && (resource.data.send_by == uid()
+              || resource.data.receiverBy == uid());
+
+      // Création : l'expéditeur doit être l'utilisateur connecté
+      allow create: if isAuth()
+          && request.resource.data.send_by == uid()
+          && request.resource.data.is_valide == true;
+
+      // Mise à jour :
+      // - Expéditeur : peut supprimer (is_valide=false) ou ajouter une réaction
+      // - Destinataire : peut marquer comme lu (message_state)
+      allow update: if isAuth() && (
+        // Suppression par l'expéditeur
+        (resource.data.send_by == uid()
+          && request.resource.data.diff(resource.data)
+              .affectedKeys().hasOnly(['is_valide', 'deleted_at', 'deleted_by', 'delete_scope']))
+        ||
+        // Marquage lu par le destinataire
+        (resource.data.receiverBy == uid()
+          && request.resource.data.diff(resource.data)
+              .affectedKeys().hasOnly(['message_state', 'status']))
+        ||
+        // Réaction par les deux parties
+        (request.resource.data.diff(resource.data)
+              .affectedKeys().hasOnly(['reaction']))
+      );
+
+      // Suppression physique interdite — uniquement logique via is_valide
+      allow delete: if false;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // CHATS — seuls les deux participants accèdent à leur conversation
+    // ─────────────────────────────────────────────────────────────
+    match /Chats/{chatId} {
+      allow read: if isAuth()
+          && (resource.data.sender_id == uid()
+              || resource.data.receiver_id == uid());
+
+      allow create: if isAuth()
+          && (request.resource.data.sender_id == uid()
+              || request.resource.data.receiver_id == uid());
+
+      allow update: if isAuth()
+          && (resource.data.sender_id == uid()
+              || resource.data.receiver_id == uid());
+
+      allow delete: if false;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // USERS — lecture authentifiée, écriture seulement son propre profil
+    // ─────────────────────────────────────────────────────────────
+    match /Users/{userId} {
+      allow read: if isAuth();
+      allow write: if isAuth() && uid() == userId;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // USER KEYS — clé publique lisible par tous (nécessaire pour E2E)
+    // Écriture uniquement de sa propre clé
+    // ─────────────────────────────────────────────────────────────
+    match /UserKeys/{userId} {
+      allow read: if isAuth();
+      allow write: if isAuth() && uid() == userId;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // REPORTS — création uniquement par l'auteur du signalement
+    // Lecture interdite côté client (admin uniquement via Cloud Functions)
+    // ─────────────────────────────────────────────────────────────
+    match /Reports/{reportId} {
+      allow create: if isAuth()
+          && request.resource.data.reportedBy == uid()
+          && request.resource.data.keys().hasAll(['reportedBy', 'messageId', 'chatId', 'reason', 'createdAt']);
+      allow read, update, delete: if false;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // BLOCKED USERS — gestion des blocages
+    // ─────────────────────────────────────────────────────────────
+    match /BlockedUsers/{blockId} {
+      // Lecture : seules les parties concernées
+      allow read: if isAuth()
+          && (resource.data.blockedBy == uid()
+              || resource.data.blockedUser == uid());
+
+      // Création : seul le bloqueur
+      allow create: if isAuth()
+          && request.resource.data.blockedBy == uid()
+          && request.resource.data.keys().hasAll(['blockedBy', 'blockedUser', 'chatId', 'createdAt']);
+
+      // Suppression (déblocage) : seul le bloqueur
+      allow delete: if isAuth() && resource.data.blockedBy == uid();
+
+      allow update: if false;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // FRIENDS — lecture/écriture pour les deux parties
+    // ─────────────────────────────────────────────────────────────
+    match /Friends/{friendId} {
+      allow read: if isAuth()
+          && (resource.data.current_user_id == uid()
+              || resource.data.friend_id == uid());
+      allow create, update: if isAuth()
+          && (request.resource.data.current_user_id == uid()
+              || request.resource.data.friend_id == uid());
+      allow delete: if isAuth()
+          && (resource.data.current_user_id == uid()
+              || resource.data.friend_id == uid());
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // TOUTES LES AUTRES COLLECTIONS — requièrent auth minimale
+    // (à affiner selon les besoins de chaque collection)
+    // ─────────────────────────────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if isAuth();
+    }
+  }
+}
