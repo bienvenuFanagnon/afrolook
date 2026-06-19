@@ -117,22 +117,23 @@ class _PostShareSheetState extends State<PostShareSheet>
       final thumbnail = _getThumbnail(post);
 
       final msgId = FirebaseFirestore.instance.collection('Messages').doc().id;
+      final now = DateTime.now().millisecondsSinceEpoch;
       await FirebaseFirestore.instance.collection('Messages').doc(msgId).set({
         'id': msgId,
-        'sendBy': myId,
+        'send_by': myId,
+        'receiverBy': chat.senderId == myId ? chat.receiverId : chat.senderId,
         'chat_id': chat.id,
-        'messageType': 'post',
+        'message_type': 'post',
         'message': post.description ?? '',
+        'imageText': thumbnail,
         'post_id': post.id,
-        'post_thumbnail': thumbnail,
         'post_data_type': post.dataType ?? 'IMAGE',
-        'post_owner_id': post.user_id ?? '',
         'is_valide': true,
         'is_encrypted': false,
         'message_state': 'NONLU',
-        'create_at_time_spam': DateTime.now().millisecondsSinceEpoch,
-        'replyMessage': {
-          'message': '', 'messageType': '', 'messageId': '', 'replyTo': ''
+        'create_at_time_spam': now,
+        'reply_message': {
+          'message': '', 'message_type': 'text', 'messageId': '', 'replyTo': ''
         },
       });
       await FirebaseFirestore.instance

@@ -14,6 +14,7 @@ import '../../../models/model_data.dart';
 import '../../../providers/authProvider.dart';
 import '../../../theme/app_colors.dart';
 import '../../postDetails.dart';
+import '../../post_video_format_tel_details.dart';
 import 'group_info_page.dart';
 
 class GroupChatPage extends StatefulWidget {
@@ -823,7 +824,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
     }
 
     return GestureDetector(
-      onTap: postId.isEmpty ? null : () => _openSharedPost(postId),
+      onTap: postId.isEmpty ? null : () => _openSharedPost(postId, dataType: dataType),
       child: Container(
         width: 220,
         decoration: BoxDecoration(
@@ -918,17 +919,21 @@ class _GroupChatPageState extends State<GroupChatPage> {
     );
   }
 
-  Future<void> _openSharedPost(String postId) async {
+  Future<void> _openSharedPost(String postId, {String dataType = 'IMAGE'}) async {
     try {
       final doc = await _firestore.collection('Posts').doc(postId).get();
       if (!doc.exists || !mounted) return;
       final post = Post.fromJson(doc.data()!);
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => _PostNavigatorPage(post: post),
-        ),
-      );
+      final type = post.dataType ?? dataType;
+      if (type == 'VIDEO') {
+        Navigator.push(context, MaterialPageRoute(
+          builder: (_) => PostDetailsVideoFormatTel(initialPost: post),
+        ));
+      } else {
+        Navigator.push(context, MaterialPageRoute(
+          builder: (_) => DetailsPost(post: post),
+        ));
+      }
     } catch (_) {}
   }
 

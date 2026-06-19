@@ -1,5 +1,5 @@
 # SUIVI REFONTE UI — AFROLOOK V2
-_Dernière mise à jour : 19 juin 2026 (session 54)_
+_Dernière mise à jour : 19 juin 2026 (session 55)_
 
 ---
 
@@ -2184,3 +2184,82 @@ Nouvelles variables d'état : `_otherId`, `_isBlockedByMe`, `_isBlockedByOther`
 - [ ] Stickers Afrolook (picker + assets Lottie Premium)
 - [ ] Gifts virtuels (animations Lottie + crédits Afrolook)
 - [ ] Invitation externe (contact sans compte → `share_plus`)
+
+---
+
+## Session 55 — 4 bugs critiques Messenger
+
+**Date :** 2026-06-19
+**Fichiers modifiés :**
+- `lib/widgets/chat/post_share_sheet.dart`
+- `lib/pages/chat/myChat.dart`
+- `lib/widgets/chat/chat_bubble_widget.dart`
+- `lib/pages/user/conversation/listUserConv.dart`
+- `lib/pages/chat/group/group_chat_page.dart`
+
+---
+
+### B1 — Posts partagés non affichés dans le chat simple ✅
+
+**Cause racine :** `PostShareSheet._sendToChat` sauvegardait les champs Firestore en camelCase (`'messageType'`, `'sendBy'`, `'replyMessage'`) mais `Message.fromJson` lit en snake_case (`json["message_type"]`, `json["send_by"]`, `json["reply_message"]`) → `message.messageType` était `null` → branche `default` du switch → texte brut affiché.
+
+**Fix `lib/widgets/chat/post_share_sheet.dart`** :
+- `'sendBy': myId` → `'send_by': myId`
+- `'messageType': 'post'` → `'message_type': 'post'`
+- `'post_thumbnail': thumbnail` → `'imageText': thumbnail` (PostBubble lit `message.imageText`)
+- `'replyMessage': {...}` → `'reply_message': {'message': '', 'message_type': 'text', ...}`
+- Ajout de `'receiverBy'` pour la cohérence avec le modèle
+
+**Fix `lib/pages/chat/myChat.dart`** :
+- `PostBubble.onTap` : remplacé `Navigator.pushNamed('/post/${message.imageText}')` (mauvais — imageText = thumbnail, pas post_id) par `_openSharedPost(message.id)`
+- Nouvelle méthode `_openSharedPost(messageId)` : charge `post_id` + `post_data_type` depuis Firestore via message.id, charge le Post, navigue vers `PostDetailsVideoFormatTel` (VIDEO) ou `DetailsPost` (autres)
+- Imports ajoutés : `postDetails.dart`, `post_video_format_tel_details.dart`
+
+---
+
+### B2 — Icône de lecture toujours verte en mode clair ✅
+
+**Cause racine :** `ReadReceiptIcon` utilisait `colors.primary` (vert) pour l'état lu, même quand `isMe=true` (bulle sur fond vert) → icône verte sur fond vert = invisible en mode clair.
+
+**Fix `lib/widgets/chat/chat_bubble_widget.dart`** (`ReadReceiptIcon.build`) :
+```dart
+// Avant
+color: isRead ? AppColors.of(context).primary : AppColors.of(context).textSecondary,
+
+// Après
+color: isMe
+    ? (isRead ? Colors.white : Colors.white54)
+    : (isRead ? colors.primary : colors.textSecondary),
+```
+
+---
+
+### B3 — Liste discussions : "Message chiffré" au lieu du vrai message ✅
+
+**Cause racine :** `_getLastMessageForChat` retournait le message brut sans déchiffrement. `_getMessagePreview` détectait `'enc:v1:'` et affichait `'🔒 Message chiffré'`.
+
+**Fix `lib/pages/user/conversation/listUserConv.dart`** :
+- Import `encryption_service.dart` ajouté
+- `_processChatDocument` passe `otherUserId` à `_getLastMessageForChat`
+- `_getLastMessageForChat({String? otherUserId})` : après avoir chargé le message, si `msg.is_encrypted && msg.message.startsWith('enc:v1:')`, appelle `EncryptionService.getChatKey(chatId, myId, otherUserId)` puis `EncryptionService.decryptText(key, msg.message)` — le message est déchiffré in-place avant d'être retourné
+- `_getMessagePreview` : suppression du retour `'🔒 Message chiffré'` (remplacé par `'🔒 Message'` si déchiffrement impossible), ajout du cas `'post'` → `'📎 Post partage'`
+
+---
+
+### B4 — Groupe : post partagé navigue toujours vers DetailsPost ✅
+
+**Cause racine :** `_openSharedPost(postId)` dans `group_chat_page.dart` naviguait toujours vers `DetailsPost` sans tenir compte du type du post.
+
+**Fix `lib/pages/chat/group/group_chat_page.dart`** :
+- Import `post_video_format_tel_details.dart` ajouté
+- `_openSharedPost(postId, {dataType})` : charge le post, lit `post.dataType`, navigue vers `PostDetailsVideoFormatTel` si VIDEO, `DetailsPost` sinon
+- `_buildSharedPostCard` : passe `dataType: dataType` à `_openSharedPost`
+
+---
+
+### Backlog session 55 (prochaines sessions)
+
+**Session 56 :** U1 (redirection groupe après partage), U2 (menu 3 points conversations archivées), G1 (mute notifications groupe)
+**Session 57 :** G2 (ajouter membres + notifs), G3 (notif quand quelqu'un quitte), G4 (mode lecture seule admin), U3 (vues messages groupe)
+**Session 58 :** P1 (partager produits/contenu payant), P2 (partager lives)
+**Sessions 59-60 :** R1 (refonte pages vente contenu), R2 (refonte lives + cadeaux directs)

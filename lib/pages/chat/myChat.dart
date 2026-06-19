@@ -45,6 +45,8 @@ import 'package:share_plus/share_plus.dart';
 
 import '../user/privacy_settings_page.dart';
 import 'chat_media_gallery_page.dart';
+import '../postDetails.dart';
+import '../post_video_format_tel_details.dart';
 
 class MyChat extends StatefulWidget {
   final String title;
@@ -1282,12 +1284,37 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
           message: message,
           isMe: isMe,
           onLongPress: () => _showMessageOptions(message),
-          onTap: message.imageText != null
-              ? () => Navigator.pushNamed(context, '/post/${message.imageText}')
-              : null,
+          onTap: () => _openSharedPost(message.id),
         );
       default:
         return _buildTextMessage(message, isMe);
+    }
+  }
+
+  Future<void> _openSharedPost(String messageId) async {
+    try {
+      final msgDoc = await _firestore.collection('Messages').doc(messageId).get();
+      if (!msgDoc.exists || !mounted) return;
+      final data = msgDoc.data()!;
+      final postId = data['post_id'] as String?;
+      final dataType = data['post_data_type'] as String? ?? 'IMAGE';
+      if (postId == null || postId.isEmpty) return;
+
+      final postDoc = await _firestore.collection('Posts').doc(postId).get();
+      if (!postDoc.exists || !mounted) return;
+      final post = Post.fromJson(postDoc.data()!);
+
+      if (dataType == 'VIDEO') {
+        Navigator.push(context, MaterialPageRoute(
+          builder: (_) => PostDetailsVideoFormatTel(initialPost: post),
+        ));
+      } else {
+        Navigator.push(context, MaterialPageRoute(
+          builder: (_) => DetailsPost(post: post),
+        ));
+      }
+    } catch (e) {
+      print('Erreur ouverture post partage: $e');
     }
   }
 

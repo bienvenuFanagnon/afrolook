@@ -117,7 +117,9 @@ class ReadReceiptIcon extends StatelessWidget {
     return Icon(
       isRead ? MaterialCommunityIcons.check_all : MaterialCommunityIcons.check,
       size: 13,
-      color: isRead ? AppColors.of(context).primary : AppColors.of(context).textSecondary,
+      color: isMe
+          ? (isRead ? Colors.white : Colors.white54)
+          : (isRead ? AppColors.of(context).primary : AppColors.of(context).textSecondary),
     );
   }
 }

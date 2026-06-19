@@ -19,6 +19,7 @@ import '../../../providers/authProvider.dart';
 import '../../../theme/app_colors.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/chat_service.dart';
+import '../../../services/encryption_service.dart';
 import '../../../pages/chat/myChat.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -340,8 +341,11 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
           chat.chatFriend = userData;
           chat.receiver = userData;
 
-          // Récupérer le dernier message avec stream
-          final lastMessage = await _getLastMessageForChat(chat.docId!);
+          // Récupérer le dernier message avec déchiffrement
+          final lastMessage = await _getLastMessageForChat(
+            chat.docId!,
+            otherUserId: otherUserId,
+          );
 
           return ChatWithLastMessage(
             chat: chat,
@@ -372,7 +376,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     return null;
   }
 
-  Future<Message?> _getLastMessageForChat(String chatId) async {
+  Future<Message?> _getLastMessageForChat(String chatId, {String? otherUserId}) async {
     try {
       final querySnapshot = await FirebaseFirestore.instance
           .collection('Messages')
@@ -383,7 +387,18 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
           .get();
 
       if (querySnapshot.docs.isNotEmpty) {
-        return Message.fromJson(querySnapshot.docs.first.data());
+        final msg = Message.fromJson(querySnapshot.docs.first.data());
+        // Déchiffrement si nécessaire
+        if (msg.is_encrypted && msg.message.startsWith('enc:v1:') && otherUserId != null) {
+          try {
+            final myId = authProvider.loginUserData.id!;
+            final key = await EncryptionService.getChatKey(chatId, myId, otherUserId);
+            if (key != null) {
+              msg.message = await EncryptionService.decryptText(key, msg.message);
+            }
+          } catch (_) {}
+        }
+        return msg;
       }
     } catch (e) {
       print("❌ [LAST_MESSAGE] Erreur: $e");
@@ -1707,10 +1722,10 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
 
     switch (lastMessage.messageType) {
       case 'text':
-        if (lastMessage.message.startsWith('enc:v1:')) return '🔒 Message chiffré';
+        // Si le déchiffrement a échoué, on affiche un indicateur discret
+        if (lastMessage.message.startsWith('enc:v1:')) return '🔒 Message';
         return lastMessage.message;
       case 'image':
-        // Multi-images : URL séparées par | dans imageText
         final hasMulti = lastMessage.imageText != null && lastMessage.imageText!.contains('|');
         if (hasMulti) {
           final count = lastMessage.imageText!.split('|').length + 1;
@@ -1718,9 +1733,11 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
         }
         return '📷 Photo';
       case 'voice':
-        return '🎙️ Message vocal';
+        return '🎙 Message vocal';
+      case 'post':
+        return '📎 Post partage';
       default:
-        return lastMessage.message;
+        return lastMessage.message.isNotEmpty ? lastMessage.message : '...';
     }
   }
 
