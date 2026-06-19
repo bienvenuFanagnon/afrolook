@@ -92,6 +92,9 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   Timer? _recordingTimer;
   int _recordingDuration = 0;
 
+  // Scroll vers message répondu
+  String? _highlightedMessageId;
+
   // Firebase
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -368,6 +371,22 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
       }
     }
+  }
+
+  void _scrollToMessage(String messageId) {
+    final ctx = GlobalObjectKey(messageId).currentContext;
+    if (ctx != null) {
+      Scrollable.ensureVisible(
+        ctx,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+        alignment: 0.3,
+      );
+    }
+    setState(() => _highlightedMessageId = messageId);
+    Future.delayed(const Duration(milliseconds: 1200), () {
+      if (mounted) setState(() => _highlightedMessageId = null);
+    });
   }
 
   @override
@@ -1013,11 +1032,6 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       margin: EdgeInsets.only(top: isFirstInGroup ? 8 : 1, bottom: 1),
       child: Column(
         children: [
-          if (message.replyMessage.message.isNotEmpty)
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: _buildReplyIndicator(message),
-            ),
           Row(
             mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
             children: [
@@ -1056,58 +1070,6 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     return ChatDateSeparator(label: _formatDateSeparator(date, l10n));
   }
 
-  Widget _buildReplyIndicator(Message message) {
-    final reply = message.replyMessage;
-
-    Widget replyContent;
-
-    if (reply.messageType == MessageType.image.name && _isImageUrl(reply.message)) {
-      replyContent = Container(
-        width: 24,
-        height: 24,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(4),
-          image: DecorationImage(
-            image: CachedNetworkImageProvider(reply.message),
-            fit: BoxFit.cover,
-          ),
-        ),
-      );
-    } else if (reply.messageType == MessageType.voice.name) {
-      replyContent = Icon(Icons.audiotrack, size: 16, color: _colors.primary);
-    } else {
-      replyContent = Text(
-        reply.message.length > 25
-            ? '${reply.message.substring(0, 25)}...'
-            : reply.message,
-        style: TextStyle(
-          fontSize: 12,
-          color: Colors.white70,
-        ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      );
-    }
-
-    return Container(
-      margin: EdgeInsets.only(bottom: 4),
-      padding: EdgeInsets.all(6),
-      decoration: BoxDecoration(
-        color: _colors.surfaceVariant.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: _colors.border),
-      ),
-      constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.6),
-      child: Row(
-        children: [
-          Icon(Icons.reply, color: _colors.primary, size: 14),
-          SizedBox(width: 6),
-          Expanded(child: replyContent),
-        ],
-      ),
-    );
-  }
-
   Widget _buildUserAvatar(String userId) {
     return FutureBuilder<UserData>(
       future: _authProvider.getUserById(userId).then((users) => users.first),
@@ -1143,6 +1105,9 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       message: message,
       isMe: isMe,
       onLongPress: () => _showMessageOptions(message),
+      onTapReply: message.replyMessage.messageId.isNotEmpty
+          ? () => _scrollToMessage(message.replyMessage.messageId)
+          : null,
     );
   }
 
@@ -1748,7 +1713,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
             border: Border(top: BorderSide(color: _colors.border.withOpacity(0.3))),
           ),
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
-          child: Column(
+          child: _isRecording ? _buildRecordingBar() : Column(
             children: [
               if (_replying && _replyingToMessage != null) _buildReplyIndicatorBar(),
               if (_image != null) _buildImagePreview(),
@@ -1801,6 +1766,85 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
               ),
             ),
           ),
+      ],
+    );
+  }
+
+  Widget _buildRecordingBar() {
+    final minutes = _recordingDuration ~/ 60;
+    final seconds = _recordingDuration % 60;
+    final timeStr = '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+
+    return Row(
+      children: [
+        // Bouton annuler
+        GestureDetector(
+          onTap: () => _stopRecording(cancel: true),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: _colors.surfaceVariant,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: _colors.border.withOpacity(0.4)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.delete_outline_rounded, color: _colors.textSecondary, size: 18),
+                const SizedBox(width: 4),
+                Text('Annuler', style: TextStyle(color: _colors.textSecondary, fontSize: 13)),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        // Indicateur micro + chrono
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.red.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.red.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.mic_rounded, color: Colors.red, size: 18),
+                const SizedBox(width: 8),
+                Text(
+                  timeStr,
+                  style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w600, fontSize: 14),
+                ),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'En cours…',
+                    style: TextStyle(color: Colors.red, fontSize: 12),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        // Bouton envoyer
+        GestureDetector(
+          onTap: () => _stopRecording(),
+          child: Container(
+            width: 42, height: 42,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: [_colors.primary, Color.lerp(_colors.primary, const Color(0xFF1abc9c), 0.6)!],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow: [BoxShadow(color: _colors.primary.withOpacity(0.4), blurRadius: 8, offset: const Offset(0, 2))],
+            ),
+            child: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+          ),
+        ),
       ],
     );
   }
@@ -2355,8 +2399,21 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
 
         final message = item.message!;
         final isLastItem = itemIndex == items.length - 1;
+        final isHighlighted = _highlightedMessageId == message.id;
 
-        return _buildMessageBubble(message, isLastItem, item.isFirstInGroup, item.isLastInGroup);
+        return KeyedSubtree(
+          key: GlobalObjectKey(message.id!),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            decoration: isHighlighted
+                ? BoxDecoration(
+                    color: _colors.primary.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  )
+                : null,
+            child: _buildMessageBubble(message, isLastItem, item.isFirstInGroup, item.isLastInGroup),
+          ),
+        );
       },
     );
   }

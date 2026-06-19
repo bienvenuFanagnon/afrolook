@@ -330,6 +330,12 @@ class _AbonnementScreenState extends State<AbonnementScreen> {
                 color: Colors.deepPurple,
               ),
               _buildAdvantageCard(
+                icon: Icons.access_time_rounded,
+                title: 'Connexion cachée',
+                subtitle: 'Dernière vue masquée',
+                color: Colors.indigo,
+              ),
+              _buildAdvantageCard(
                 icon: Icons.photo_library_rounded,
                 title: '3 images',
                 subtitle: 'Simultanément',
@@ -449,6 +455,10 @@ class _AbonnementScreenState extends State<AbonnementScreen> {
                     _buildDetailItem(
                       '👻 Mode fantôme — masque ta présence en ligne',
                       Colors.deepPurple,
+                    ),
+                    _buildDetailItem(
+                      '🕐 Masquer ta dernière connexion aux autres',
+                      Colors.indigo,
                     ),
                     _buildDetailItem(
                       '🖼️ Envoi de 3 images simultanément dans le chat',

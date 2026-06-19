@@ -291,6 +291,7 @@ class TextBubble extends StatelessWidget {
   final bool isFirstInGroup;
   final bool isLastInGroup;
   final VoidCallback? onLongPress;
+  final VoidCallback? onTapReply;
 
   const TextBubble({
     super.key,
@@ -299,6 +300,7 @@ class TextBubble extends StatelessWidget {
     this.isFirstInGroup = true,
     this.isLastInGroup = true,
     this.onLongPress,
+    this.onTapReply,
   });
 
   @override
@@ -353,7 +355,11 @@ class TextBubble extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (hasReply) _ReplyPreview(reply: message.replyMessage, isMe: isMe),
+            if (hasReply)
+              GestureDetector(
+                onTap: onTapReply,
+                child: _ReplyPreview(reply: message.replyMessage, isMe: isMe),
+              ),
             Text(
               message.message,
               style: TextStyle(

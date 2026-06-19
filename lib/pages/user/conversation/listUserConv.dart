@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:afrotok/models/chatmodels/message.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +9,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:intl/intl.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../models/model_data.dart';
@@ -58,6 +61,60 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   late AppColors _colors;
   late AppLocalizations _l10n;
 
+  // ── Cache local conversations ─────────────────────────────────────────────
+  String get _convCacheKey => 'conv_list_${authProvider.loginUserData.id ?? ''}';
+
+  Future<void> _saveConvCache(List<ChatWithLastMessage> chats) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final items = chats.take(30).map((cwm) {
+        final friend = cwm.chat.chatFriend;
+        final lm = cwm.lastMessage;
+        return {
+          ...cwm.chat.toJson(),
+          'friendId': friend?.id,
+          'friendPseudo': friend?.pseudo,
+          'friendImageUrl': friend?.imageUrl,
+          'friendHasEntreprise': friend?.hasEntreprise ?? false,
+          if (lm != null) 'lastMsg': lm.toJson(),
+        };
+      }).toList();
+      await prefs.setString(_convCacheKey, jsonEncode(items));
+    } catch (_) {}
+  }
+
+  Future<void> _loadConvCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_convCacheKey);
+      if (raw == null) return;
+      final list = jsonDecode(raw);
+      if (list is! List) return;
+      final chats = list.whereType<Map<String, dynamic>>().map((item) {
+        final chat = Chat.fromJson(item);
+        chat.chatFriend = UserData()
+          ..id = item['friendId'] as String?
+          ..pseudo = item['friendPseudo'] as String?
+          ..imageUrl = item['friendImageUrl'] as String?
+          ..hasEntreprise = item['friendHasEntreprise'] == true;
+        chat.receiver = chat.chatFriend;
+        Message? lastMsg;
+        if (item['lastMsg'] is Map<String, dynamic>) {
+          lastMsg = Message.fromJson(item['lastMsg'] as Map<String, dynamic>);
+        }
+        return ChatWithLastMessage(chat: chat, lastMessage: lastMsg);
+      }).toList();
+      if (chats.isNotEmpty && mounted) {
+        setState(() {
+          _chats = chats;
+          _isLoading = false;
+        });
+      }
+    } catch (_) {}
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+
   @override
   void initState() {
     super.initState();
@@ -66,13 +123,13 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
 
     _scrollController.addListener(_onScroll);
 
-    // Initialiser le stream des chats
-    _initChatsStream();
+    // Affichage instantané depuis le cache, puis stream en arrière-plan
+    _loadConvCache().then((_) => _initChatsStream());
     _loadRecentFriends();
   }
 
   void _initChatsStream() {
-    // Créer un stream combiné pour les mises à jour en temps réel
+    // Stream en temps réel — mises à jour silencieuses (pas de loader visible)
     _chatsStream = FirebaseFirestore.instance
         .collection('Chats')
         .where(Filter.or(
@@ -81,31 +138,24 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     ))
         .where("type", isEqualTo: ChatType.USER.name)
         .orderBy('updated_at', descending: true)
+        .limit(50)
         .snapshots()
         .asyncMap((snapshot) async {
-      print('📨 [STREAM] Reçu ${snapshot.docs.length} chats de Firestore');
-
       List<ChatWithLastMessage> listChats = [];
-      List<Future<ChatWithLastMessage?>> futures = [];
-
-      for (var chatDoc in snapshot.docs) {
-        futures.add(_processChatDocument(chatDoc));
-      }
-
+      final futures = snapshot.docs.map(_processChatDocument).toList();
       final results = await Future.wait(futures);
       listChats.addAll(results.whereType<ChatWithLastMessage>());
-
-      // Trier par updated_at décroissant
       listChats.sort((a, b) => (b.chat.updatedAt ?? 0).compareTo(a.chat.updatedAt ?? 0));
 
       if (mounted) {
         setState(() {
           _chats = listChats;
           _isLoading = false;
-          _hasMore = false; // Plus besoin de pagination, tout est en stream
+          _hasMore = false;
         });
       }
 
+      _saveConvCache(listChats);
       return listChats;
     });
   }
@@ -829,7 +879,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
               isMessageRead: unreadCount == 0,
               isOnline: isOnline,
               unreadCount: unreadCount,
-              isTyping: false,
+              isTyping: _isOtherUserTyping(chat),
               isLastMessageFromMe: isLastMessageFromMe,
               messageStatus: _getMessageStatus(lastMessage),
               id_user: chat.chatFriend!.id!,
@@ -896,7 +946,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
             isMessageRead: unreadCount == 0,
             isOnline: isOnline,
             unreadCount: unreadCount,
-            isTyping: false,
+            isTyping: _isOtherUserTyping(chat),
             isSearchResult: isSearchResult,
             id_user: chat.chatFriend!.id!,
             isPro: chat.chatFriend?.hasEntreprise == true,
@@ -911,6 +961,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
 
     switch (lastMessage.messageType) {
       case 'text':
+        if (lastMessage.message.startsWith('enc:v1:')) return '🔒 Message chiffré';
         return lastMessage.message;
       case 'image':
         // Multi-images : URL séparées par | dans imageText
@@ -930,6 +981,15 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   bool _isLastMessageFromCurrentUser(Message? lastMessage) {
     if (lastMessage == null) return false;
     return lastMessage.sendBy == authProvider.loginUserData.id;
+  }
+
+  bool _isOtherUserTyping(Chat chat) {
+    final myId = authProvider.loginUserData.id;
+    if (chat.senderId == myId) {
+      return chat.receiver_sending != null && chat.receiver_sending!.isNotEmpty;
+    } else {
+      return chat.send_sending != null && chat.send_sending!.isNotEmpty;
+    }
   }
 
   Widget _getMessageStatus(Message? lastMessage) {

@@ -1,5 +1,5 @@
 # SUIVI REFONTE UI — AFROLOOK V2
-_Dernière mise à jour : 19 juin 2026 (session 53)_
+_Dernière mise à jour : 19 juin 2026 (session 54)_
 
 ---
 
@@ -2089,6 +2089,98 @@ Nouvelles variables d'état : `_otherId`, `_isBlockedByMe`, `_isBlockedByOther`
 **À faire (sessions suivantes)** :
 - [ ] Déployer `firestore.rules` via Firebase Console ou `firebase deploy --only firestore:rules`
 - [ ] Typing indicator côté Firestore (champ `isTyping` en temps réel)
+- [ ] Stickers Afrolook (picker + assets Lottie Premium)
+- [ ] Gifts virtuels (animations Lottie + crédits Afrolook)
+- [ ] Invitation externe (contact sans compte → `share_plus`)
+
+---
+
+## Session 54 — Messenger UX : annulation audio, cache liste, typing, réponse scrollable, page Premium
+
+**Date :** 2026-06-19  
+**Fichiers modifiés :**
+- `lib/pages/chat/myChat.dart`
+- `lib/widgets/chat/chat_bubble_widget.dart`
+- `lib/pages/user/conversation/listUserConv.dart`
+- `lib/pages/user/userAbonnementPage.dart`
+- `lib/main.dart`
+
+---
+
+### Task 1 — Annulation enregistrement audio ✅
+
+**`lib/pages/chat/myChat.dart`** :
+- Ajout de `String? _highlightedMessageId` (pour le scroll)
+- `_buildMessageInput()` : quand `_isRecording == true`, affiche `_buildRecordingBar()` au lieu du champ texte
+- `_buildRecordingBar()` (nouvelle méthode) :
+  - Bouton ❌ "Annuler" → `_stopRecording(cancel: true)` (efface le fichier temp)
+  - Indicateur rouge 🔴 + chrono `MM:SS` (utilise `_recordingDuration` existant)
+  - Bouton ▶ Envoyer → `_stopRecording()` (envoie)
+- La méthode `_stopRecording({bool cancel = false})` existait déjà et gère les deux cas
+
+---
+
+### Task 2 — Suppression du double reply indicator ✅
+
+**`lib/pages/chat/myChat.dart`** :
+- Supprimé l'appel à `_buildReplyIndicator(message)` dans `_buildMessageBubble` (lignes 1016-1020)
+- Supprimé la méthode `_buildReplyIndicator()` entière (51 lignes)
+- `_ReplyPreview` dans `TextBubble` (`chat_bubble_widget.dart:356`) était déjà là depuis session 52 — il n'y avait plus de raison de doublon
+
+---
+
+### Task 3 — Scroll vers le message répondu ✅
+
+**`lib/widgets/chat/chat_bubble_widget.dart`** :
+- Ajout de `VoidCallback? onTapReply` à `TextBubble`
+- `_ReplyPreview` enveloppé dans `GestureDetector(onTap: onTapReply)`
+
+**`lib/pages/chat/myChat.dart`** :
+- `_buildTextMessage()` : passe `onTapReply: () => _scrollToMessage(message.replyMessage.messageId)` si `messageId` non vide
+- `_scrollToMessage(String messageId)` (nouvelle méthode) :
+  - Utilise `GlobalObjectKey(messageId).currentContext` pour trouver le widget dans le tree
+  - `Scrollable.ensureVisible()` avec `duration: 400ms, curve: easeInOut, alignment: 0.3`
+  - Highlight 1 200 ms via `_highlightedMessageId` + `AnimatedContainer` gradient primary
+- `_buildMessageList()` : chaque message wrapé dans `KeyedSubtree(key: GlobalObjectKey(message.id!))` + `AnimatedContainer` de highlight conditionnel
+
+---
+
+### Task 4 — Liste conversations : cache + typing + preview ✅
+
+**`lib/pages/user/conversation/listUserConv.dart`** :
+
+**Cache local (affichage instantané style WhatsApp) :**
+- `_convCacheKey` : clé SharedPreferences `conv_list_{userId}`
+- `_saveConvCache(chats)` : sérialise les 30 premières conversations (champs Chat + friend minimal + lastMsg JSON) après chaque mise à jour stream
+- `_loadConvCache()` : lu dans `initState` — reconstruit des `ChatWithLastMessage` avec `Chat.fromJson` + `UserData` inline + `Message.fromJson` → `setState` immédiat, plus de spinner visible
+- Stream Firestore démarre après le cache (`_loadConvCache().then((_) => _initChatsStream())`)
+- `.limit(50)` ajouté sur la requête Firestore (plafond raisonnable)
+
+**Typing indicator :**
+- `_isOtherUserTyping(Chat chat)` : lit `chat.receiver_sending` si je suis sender, sinon `chat.send_sending` — non vide = autre personne en train d'écrire
+- Remplace `isTyping: false` dans les deux endroits où `ConversationList` est instancié
+
+**Preview déchiffré :**
+- `_getMessagePreview()` : si `lastMessage.message.startsWith('enc:v1:')` → retourne `'🔒 Message chiffré'` au lieu du code base64
+
+---
+
+### Task 5 — Page abonnement : route + hideLastSeen ✅
+
+**`lib/main.dart`** :
+- Import `userAbonnementPage.dart` ajouté
+- Route `'/abonnement'` enregistrée dans `onGenerateRoute` → `AbonnementScreen()`
+- Corrige `Navigator.pushNamed(context, '/abonnement')` utilisé dans `myChat.dart` et `privacy_settings_page.dart`
+
+**`lib/pages/user/userAbonnementPage.dart`** :
+- Nouvelle carte avantage : **"Connexion cachée"** (`Icons.access_time_rounded`, indigo) — masquer la dernière connexion (`hideLastSeen`)
+- Nouveau détail dans la section expandable : `'🕐 Masquer ta dernière connexion aux autres'`
+
+---
+
+**À faire (sessions suivantes)** :
+- [ ] Déployer `firestore.rules` via Firebase Console ou `firebase deploy --only firestore:rules`
+- [ ] Typing indicator côté Firestore (écrire `send_sending`/`receiver_sending` dans `myChat.dart` quand l'utilisateur tape)
 - [ ] Stickers Afrolook (picker + assets Lottie Premium)
 - [ ] Gifts virtuels (animations Lottie + crédits Afrolook)
 - [ ] Invitation externe (contact sans compte → `share_plus`)
