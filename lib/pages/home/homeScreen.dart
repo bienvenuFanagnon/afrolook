@@ -35,6 +35,8 @@ import 'package:skeletonizer/skeletonizer.dart';
 import 'package:upgrader/upgrader.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:workmanager/workmanager.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shorebird_code_push/shorebird_code_push.dart' show ShorebirdUpdater;
 import '../../constant/custom_theme.dart';
 import '../../providers/chroniqueProvider.dart';
 import '../../providers/contenuPayantProvider.dart';
@@ -155,6 +157,8 @@ class _MyHomePageState extends State<MyHomePage>
   Color _color =Colors.blue;
   TabController? _tabController;
   int _unreadNotificationsCount = 0;
+  String _appVersion = '';
+  int? _shorebirdPatch;
 
   // Liste des onglets avec texte et icônes
   DocumentSnapshot? lastDocument;
@@ -1039,7 +1043,11 @@ class _MyHomePageState extends State<MyHomePage>
 
             SizedBox(height: 5),
             Text(
-              'Version: 1.2.76 sbd.11.ph.1 (${authProvider.appDefaultData.app_version_code!})',
+              _appVersion.isEmpty
+                  ? 'Version: ...'
+                  : _shorebirdPatch != null
+                      ? 'Version: $_appVersion (patch $_shorebirdPatch)'
+                      : 'Version: $_appVersion',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: colors.textSecondary,
@@ -1264,6 +1272,18 @@ class _MyHomePageState extends State<MyHomePage>
   List<Post> listVideos=[];
   late final AppLifecycleListener _lifecycleListener;
   final PresenceService _presenceService = PresenceService();
+
+  Future<void> _loadVersionInfo() async {
+    final info = await PackageInfo.fromPlatform();
+    final patchInfo = await ShorebirdUpdater().readCurrentPatch();
+    if (mounted) {
+      setState(() {
+        _appVersion = info.version;
+        _shorebirdPatch = patchInfo?.number;
+      });
+    }
+  }
+
   @override
   void initState() {
     // _changeColor();
@@ -1275,6 +1295,7 @@ class _MyHomePageState extends State<MyHomePage>
     // });
 
     // 🔥 Lancer la présence automatique dès l'accès à la Home
+    _loadVersionInfo();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _handleInitialDestination();
       // Gestion des notifications à chaud (app déjà ouverte)

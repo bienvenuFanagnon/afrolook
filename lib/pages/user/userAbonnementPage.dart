@@ -353,6 +353,12 @@ class _AbonnementScreenState extends State<AbonnementScreen> {
                 subtitle: 'Afrolook exclusifs',
                 color: Color(0xFFFF6B35),
               ),
+              _buildAdvantageCard(
+                icon: Icons.done_all_rounded,
+                title: 'Lu discret',
+                subtitle: 'Accusés masqués',
+                color: Colors.teal,
+              ),
             ],
           ),
 
@@ -471,6 +477,10 @@ class _AbonnementScreenState extends State<AbonnementScreen> {
                     _buildDetailItem(
                       '🎭 Stickers exclusifs Afrolook',
                       Color(0xFFFF6B35),
+                    ),
+                    _buildDetailItem(
+                      '✔️ Masquer les accusés de lecture — tes "vus" restent privés',
+                      Colors.teal,
                     ),
                     _buildDetailItem(
                       '🎁 Gifts animés à envoyer (bientôt)',

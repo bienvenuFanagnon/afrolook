@@ -642,6 +642,10 @@ class _MonthPostsSheetState extends State<_MonthPostsSheet> {
     final batch = _allPostIds.sublist(_idOffset, end);
     if (batch.isEmpty) { _hasMore = false; return; }
 
+    final parts = widget.monthKey.split('-');
+    final year  = int.parse(parts[0]);
+    final month = int.parse(parts[1]);
+
     final newPosts = <Post>[];
     for (int i = 0; i < batch.length; i += 30) {
       final sub = batch.sublist(i, (i + 30).clamp(0, batch.length));
@@ -653,7 +657,15 @@ class _MonthPostsSheetState extends State<_MonthPostsSheet> {
         final data = Map<String, dynamic>.from(d.data());
         data['id'] = d.id;
         return Post.fromJson(data);
-      }).where((p) => p.isAdvertisement != true));
+      }).where((p) {
+        if (p.isAdvertisement == true) return false;
+        // Filtre vues > 1
+        if ((p.seenByUsersCount ?? 0) < 1 && (p.uniqueViewsCount ?? 0) < 1) return false;
+        // Verification supplementaire : le post doit appartenir au mois selectionne
+        final dt = _parseDate(p.createdAt);
+        if (dt == null) return true; // si pas de date, on garde
+        return dt.year == year && dt.month == month;
+      }));
     }
 
     _posts.addAll(newPosts);
@@ -663,22 +675,32 @@ class _MonthPostsSheetState extends State<_MonthPostsSheet> {
   }
 
   Future<void> _loadFallback() async {
+    final parts = widget.monthKey.split('-');
+    final year  = int.parse(parts[0]);
+    final month = int.parse(parts[1]);
+
+    // Charger plus de posts pour compenser le filtrage en memoire
     final snap = await widget.firestore
         .collection('Posts')
         .where('user_id', isEqualTo: widget.userId)
         .where('type', isEqualTo: PostType.POST.name)
         .orderBy('created_at', descending: true)
-        .limit(100)
+        .limit(300)
         .get();
 
     final loaded = snap.docs.map((d) {
       final data = Map<String, dynamic>.from(d.data());
       data['id'] = d.id;
       return Post.fromJson(data);
-    }).where((p) =>
-        p.isAdvertisement != true &&
-        ((p.seenByUsersCount ?? 0) > 0 || (p.uniqueViewsCount ?? 0) > 0),
-    ).toList()
+    }).where((p) {
+      if (p.isAdvertisement == true) return false;
+      // Vues > 1
+      if ((p.seenByUsersCount ?? 0) < 1 && (p.uniqueViewsCount ?? 0) < 1) return false;
+      // Filtre par mois selectionne
+      final dt = _parseDate(p.createdAt);
+      if (dt == null) return false;
+      return dt.year == year && dt.month == month;
+    }).toList()
       ..sort((a, b) => (b.seenByUsersCount ?? 0).compareTo(a.seenByUsersCount ?? 0));
 
     _posts.addAll(loaded);

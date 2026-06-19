@@ -7,6 +7,7 @@ import 'package:afrotok/pages/component/showUserDetails.dart';
 import 'package:afrotok/pages/paiement/newDepot.dart';
 import 'package:afrotok/pages/postDetails.dart';
 import 'package:afrotok/pages/post_video_format_tel_details.dart';
+import 'package:afrotok/widgets/chat/post_share_sheet.dart';
 import 'package:afrotok/pages/pub/banner_ad_widget.dart';
 import 'package:afrotok/pages/pub/native_ad_widget.dart';
 import 'package:afrotok/pages/pub/rewarded_ad_widget.dart';
@@ -1109,6 +1110,57 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     }
   }
 
+  void _showShareOptions(Post post) {
+    final colors = AppColors.of(context);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 36, height: 4,
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                  color: colors.border, borderRadius: BorderRadius.circular(2)),
+            ),
+            ListTile(
+              leading: Icon(Icons.share, color: colors.info),
+              title: Text('Partager', style: TextStyle(color: colors.textPrimary)),
+              onTap: () { Navigator.pop(ctx); _sharePost(post); },
+            ),
+            ListTile(
+              leading: Icon(Icons.send_rounded, color: colors.primary),
+              title: Text('Envoyer dans un chat',
+                  style: TextStyle(color: colors.textPrimary)),
+              onTap: () {
+                Navigator.pop(ctx);
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => PostShareSheet(post: post),
+                );
+              },
+            ),
+            Divider(color: colors.divider),
+            ListTile(
+              leading: Icon(Icons.cancel, color: colors.textSecondary),
+              title: Text('Annuler', style: TextStyle(color: colors.textPrimary)),
+              onTap: () => Navigator.pop(ctx),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showGiftDialog(Post post) {
     _handleGift(post);
   }
@@ -1540,11 +1592,14 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
           _showGiftDialog(_currentPost);
         }
       },),
-      _isSharing ? SizedBox(width: 28, height: 28, child: CircularProgressIndicator(strokeWidth: 2)) : IconButton(icon: Icon(Icons.share, color: Colors.white, size: 28), onPressed: () {
-        if(hasAccess){
-          _sharePost(_currentPost);
-        }
-      },),
+      _isSharing
+          ? const SizedBox(width: 28, height: 28, child: CircularProgressIndicator(strokeWidth: 2))
+          : IconButton(
+              icon: const Icon(Icons.share, color: Colors.white, size: 28),
+              onPressed: hasAccess
+                  ? () => _showShareOptions(_currentPost)
+                  : null,
+            ),
     ]);
   }
 

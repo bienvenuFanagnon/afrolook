@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:local_auth/local_auth.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/authProvider.dart';
@@ -20,9 +21,13 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
   late AppColors _colors;
   late UserAuthProvider _authProvider;
 
-  bool _ghostMode    = false;
-  bool _hideLastSeen = false;
-  bool _saving       = false;
+  bool _ghostMode         = false;
+  bool _hideLastSeen      = false;
+  bool _hideReadReceipts  = false;
+  bool _biometricLock     = false;
+  bool _saving            = false;
+
+  final LocalAuthentication _localAuth = LocalAuthentication();
 
   @override
   void initState() {
@@ -38,8 +43,10 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
       final privacy = (doc.data()?['privacySettings'] as Map<String, dynamic>?) ?? {};
       if (!mounted) return;
       setState(() {
-        _ghostMode    = privacy['ghostMode']    == true;
-        _hideLastSeen = privacy['hideLastSeen'] == true;
+        _ghostMode        = privacy['ghostMode']        == true;
+        _hideLastSeen     = privacy['hideLastSeen']     == true;
+        _hideReadReceipts = privacy['hideReadReceipts'] == true;
+        _biometricLock    = privacy['biometricLock']    == true;
       });
     } catch (e) {
       debugPrint('⚠️ PrivacySettingsPage._loadSettings: $e');
@@ -132,14 +139,66 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
             icon: Icons.done_all_rounded,
             title: 'Masquer les accusés de lecture',
             subtitle: 'Les doubles coches resteront grises',
-            value: false,
-            locked: true,
-            comingSoon: true,
-            onChanged: (_) {},
+            value: _hideReadReceipts,
+            locked: !isPremium,
+            onChanged: (v) {
+              setState(() => _hideReadReceipts = v);
+              _saveField('hideReadReceipts', v);
+            },
+          ),
+          const SizedBox(height: 24),
+
+          // Section : Sécurité
+          _buildSectionHeader('Sécurité'),
+          const SizedBox(height: 8),
+          _buildToggleTile(
+            icon: Icons.fingerprint_rounded,
+            title: 'Verrouillage biométrique',
+            subtitle: 'Déverrouiller la messagerie par empreinte ou Face ID',
+            value: _biometricLock,
+            locked: !isPremium,
+            onChanged: (v) => _toggleBiometricLock(v),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _toggleBiometricLock(bool enable) async {
+    final canCheck = await _localAuth.canCheckBiometrics;
+    final isAvailable = await _localAuth.isDeviceSupported();
+    if (!canCheck || !isAvailable) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.orange,
+          content: Text('Biométrie non disponible sur cet appareil', textAlign: TextAlign.center),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    try {
+      final authenticated = await _localAuth.authenticate(
+        localizedReason: enable
+            ? 'Confirmez votre identité pour activer le verrouillage'
+            : 'Confirmez votre identité pour désactiver le verrouillage',
+        options: const AuthenticationOptions(biometricOnly: false),
+      );
+      if (!authenticated) return;
+      setState(() => _biometricLock = enable);
+      await _saveField('biometricLock', enable);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.red,
+          content: Text('Authentification échouée', textAlign: TextAlign.center),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   Widget _buildPremiumBanner() {

@@ -1,15 +1,13 @@
 package com.afrotok.afrotok
 
-//import io.flutter.embedding.android.FlutterActivity
-
 import android.net.Uri
 import android.os.Bundle
 import android.content.Intent
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.embedding.engine.FlutterEngine
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
 
-class MainActivity : FlutterActivity() {
+class MainActivity : FlutterFragmentActivity() {
     private val CHANNEL = "app.web.deeplynks"
     private var initialLink: String? = null
 

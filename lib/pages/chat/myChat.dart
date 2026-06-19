@@ -41,7 +41,10 @@ import '../userPosts/postWidgets/postUserWidget.dart';
 import '../../services/chat_cache_service.dart';
 import '../../services/encryption_service.dart';
 import '../../widgets/chat/chat_bubble_widget.dart';
+import 'package:share_plus/share_plus.dart';
+
 import '../user/privacy_settings_page.dart';
+import 'chat_media_gallery_page.dart';
 
 class MyChat extends StatefulWidget {
   final String title;
@@ -95,6 +98,10 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   // Scroll vers message répondu
   String? _highlightedMessageId;
 
+  // Messages éphémères — durée en secondes (0 = désactivé)
+  int _ephemeralDuration = 0;
+  Timer? _ephemeralTimer;
+
   // Firebase
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -120,14 +127,21 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   // Marquage "lu" en batch (au lieu d'une écriture par message dans le build)
   Timer? _readReceiptDebounce;
 
+  // Typing indicator — debounce 3s avant de passer à NOTSENDING
+  Timer? _typingDebounce;
+  bool _isSendingTyping = false;
+
   /// Clé AES-256 dérivée pour cette conversation (chiffrement au repos).
   /// Si `null` après init, l'envoi de texte est bloqué jusqu'à résolution.
   SecretKey? _chatKey;
 
   // Blocage utilisateur
   late String _otherId;
-  bool _isBlockedByMe = false;   // j'ai bloqué l'autre
-  bool _isBlockedByOther = false; // l'autre m'a bloqué
+  bool _isBlockedByMe = false;
+  bool _isBlockedByOther = false;
+
+  // Confidentialité — paramètre personnel
+  bool _hideReadReceipts = false;
 
   // Pour éviter les reconstructions inutiles
   final _messageKey = GlobalKey();
@@ -150,7 +164,9 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     _loadCachedMessages();
     _initEncryptionAndLoad();
     _loadBlockStatus();
+    _loadMyPrivacySettings();
     _scrollController.addListener(_onScroll);
+    _textController.addListener(_onTextChanged);
 
     // Scroll vers le bas après initialisation
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -246,6 +262,10 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   /// Marque en une seule écriture batch tous les messages reçus non encore
   /// lus (au lieu d'écrire un par un pendant le build de la liste).
   void _scheduleReadReceipts(List<Message> messages) {
+    // Si l'utilisateur a activé "Masquer les accusés de lecture", on ne révèle
+    // pas qu'on a lu les messages de l'autre (double coche reste grise).
+    if (_hideReadReceipts) return;
+
     final currentUserId = _authProvider.loginUserData.id;
     final unread = messages.where((m) =>
         m.sendBy != currentUserId && m.message_state != MessageState.LU.name).toList();
@@ -276,6 +296,119 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       widget.chat.my_msg_not_read = 0;
     }
     _firestore.collection('Chats').doc(widget.chat.id).update(widget.chat.toJson());
+    _loadEphemeralSettings();
+  }
+
+  Future<void> _loadEphemeralSettings() async {
+    try {
+      final doc = await _firestore.collection('Chats').doc(widget.chat.id).get();
+      final dur = (doc.data()?['ephemeral_duration'] as int?) ?? 0;
+      if (mounted) {
+        setState(() => _ephemeralDuration = dur);
+        if (dur > 0) _startEphemeralTimer();
+      }
+    } catch (_) {}
+  }
+
+  void _startEphemeralTimer() {
+    _ephemeralTimer?.cancel();
+    _ephemeralTimer = Timer.periodic(const Duration(seconds: 10), (_) => _expireMessages());
+  }
+
+  Future<void> _expireMessages() async {
+    if (_ephemeralDuration == 0) return;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final expired = _messages.where((m) {
+      final expiresAt = m.expires_at ?? 0;
+      return expiresAt > 0 && now >= expiresAt;
+    }).toList();
+
+    if (expired.isEmpty) return;
+
+    final batch = _firestore.batch();
+    for (final m in expired) {
+      batch.update(_firestore.collection('Messages').doc(m.id), {
+        'is_valide': false,
+        'deleted_at': now,
+        'deleted_by': 'system_ephemeral',
+        'delete_scope': 'all',
+      });
+    }
+    await batch.commit();
+  }
+
+  void _showEphemeralPicker() {
+    final options = [
+      {'label': 'Désactivé', 'value': 0},
+      {'label': '30 secondes', 'value': 30},
+      {'label': '5 minutes', 'value': 300},
+      {'label': '1 heure', 'value': 3600},
+      {'label': '24 heures', 'value': 86400},
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        margin: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+        decoration: BoxDecoration(
+          color: _colors.surfaceVariant,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: _colors.border.withOpacity(0.3)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 10),
+                width: 36, height: 4,
+                decoration: BoxDecoration(color: _colors.border, borderRadius: BorderRadius.circular(2)),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+                child: Text(
+                  'Durée des messages éphémères',
+                  style: TextStyle(color: _colors.textPrimary, fontSize: 16, fontWeight: FontWeight.w700),
+                ),
+              ),
+              ...options.map((opt) {
+                final isSelected = _ephemeralDuration == opt['value'] as int;
+                return ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+                  leading: Icon(
+                    isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                    color: isSelected ? _colors.primary : _colors.textSecondary,
+                    size: 20,
+                  ),
+                  title: Text(
+                    opt['label'] as String,
+                    style: TextStyle(
+                      color: _colors.textPrimary,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
+                    ),
+                  ),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    final newDuration = opt['value'] as int;
+                    setState(() => _ephemeralDuration = newDuration);
+                    if (newDuration > 0) {
+                      _startEphemeralTimer();
+                    } else {
+                      _ephemeralTimer?.cancel();
+                    }
+                    await _firestore.collection('Chats').doc(widget.chat.id).update({
+                      'ephemeral_duration': newDuration,
+                    });
+                  },
+                );
+              }),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   /// Calcule la clé de chiffrement de cette conversation avant de démarrer
@@ -389,6 +522,47 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     });
   }
 
+  // ── Typing indicator ────────────────────────────────────────────────────────
+
+  void _onTextChanged() {
+    if (_textController.text.trim().isEmpty) {
+      _typingDebounce?.cancel();
+      _clearTypingState();
+    } else {
+      _setTypingState();
+      _typingDebounce?.cancel();
+      _typingDebounce = Timer(const Duration(seconds: 3), _clearTypingState);
+    }
+  }
+
+  Future<void> _setTypingState() async {
+    if (_isSendingTyping) return;
+    _isSendingTyping = true;
+    try {
+      final myId = _authProvider.loginUserData.id!;
+      final field = widget.chat.senderId == myId ? 'send_sending' : 'receiver_sending';
+      await _firestore.collection('Chats').doc(widget.chat.id).update({field: 'SENDING'});
+    } catch (_) {}
+  }
+
+  /// Retourne le timestamp d'expiration du message si un mode éphémère est actif,
+  /// sinon null.
+  int? get _messageExpiresAt {
+    if (_ephemeralDuration <= 0) return null;
+    return DateTime.now().millisecondsSinceEpoch + (_ephemeralDuration * 1000);
+  }
+
+  Future<void> _clearTypingState() async {
+    _isSendingTyping = false;
+    try {
+      final myId = _authProvider.loginUserData.id!;
+      final field = widget.chat.senderId == myId ? 'send_sending' : 'receiver_sending';
+      await _firestore.collection('Chats').doc(widget.chat.id).update({field: 'NOTSENDING'});
+    } catch (_) {}
+  }
+
+  // ────────────────────────────────────────────────────────────────────────────
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
@@ -396,9 +570,13 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     _audioRecorder?.dispose();
     _recordingTimer?.cancel();
     _readReceiptDebounce?.cancel();
+    _typingDebounce?.cancel();
+    _ephemeralTimer?.cancel();
+    _clearTypingState();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _focusNode.dispose();
+    _textController.removeListener(_onTextChanged);
     _textController.dispose();
     super.dispose();
   }
@@ -558,6 +736,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
             ? widget.chat.receiverId!
             : widget.chat.senderId!,
         is_valide: true,
+        expires_at: _messageExpiresAt,
         // Stocker les URLs supplémentaires dans imageText séparées par |
         imageText: urls.length > 1 ? urls.join('|') : null,
       );
@@ -738,6 +917,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
             ? widget.chat.receiverId!
             : widget.chat.senderId!,
         is_valide: true,
+        expires_at: _messageExpiresAt,
         imageText: imageText.isNotEmpty ? imageText : null,
       );
 
@@ -807,6 +987,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
             ? widget.chat.receiverId!
             : widget.chat.senderId!,
         is_valide: true,
+        expires_at: _messageExpiresAt,
       );
 
       _updateChatCounters("🎤 Message audio");
@@ -878,6 +1059,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
             ? widget.chat.receiverId!
             : widget.chat.senderId!,
         is_valide: true,
+        expires_at: _messageExpiresAt,
       );
 
       _updateChatCounters(messageText);
@@ -1095,6 +1277,15 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         return _buildImageMessage(message, isMe);
       case 'voice':
         return _buildCompactAudioPlayer(message, isMe);
+      case 'post':
+        return PostBubble(
+          message: message,
+          isMe: isMe,
+          onLongPress: () => _showMessageOptions(message),
+          onTap: message.imageText != null
+              ? () => Navigator.pushNamed(context, '/post/${message.imageText}')
+              : null,
+        );
       default:
         return _buildTextMessage(message, isMe);
     }
@@ -1459,6 +1650,17 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     }
   }
 
+  Future<void> _loadMyPrivacySettings() async {
+    final myId = _authProvider.loginUserData.id!;
+    try {
+      final doc = await _firestore.collection('Users').doc(myId).get();
+      final privacy = (doc.data()?['privacySettings'] as Map<String, dynamic>?) ?? {};
+      if (mounted) setState(() => _hideReadReceipts = privacy['hideReadReceipts'] == true);
+    } catch (e) {
+      debugPrint('⚠️ _loadMyPrivacySettings error: $e');
+    }
+  }
+
   /// Bloque l'autre utilisateur : crée le document `BlockedUsers/${myId}_${otherId}`.
   Future<void> _blockUser() async {
     final myId = _authProvider.loginUserData.id!;
@@ -1542,6 +1744,28 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
                   width: 36, height: 4,
                   decoration: BoxDecoration(color: _colors.border, borderRadius: BorderRadius.circular(2)),
                 ),
+                // Médias partagés
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+                  leading: Icon(Icons.photo_library_outlined, color: _colors.primary, size: 22),
+                  title: Text(
+                    'Médias partagés',
+                    style: TextStyle(color: _colors.textPrimary, fontSize: 15, fontWeight: FontWeight.w500),
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ChatMediaGalleryPage(
+                          chatId: widget.chat.docId!,
+                          chatTitle: widget.title,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                Divider(color: _colors.border.withOpacity(0.4), height: 1, indent: 16, endIndent: 16),
                 // Confidentialité — paramètres de l'utilisateur connecté
                 ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 20),
@@ -1558,6 +1782,47 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
                     );
                   },
                 ),
+                Divider(color: _colors.border.withOpacity(0.4), height: 1, indent: 16, endIndent: 16),
+                // Inviter sur Afrolook
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+                  leading: Icon(Icons.person_add_rounded, color: _colors.primary, size: 22),
+                  title: Text(
+                    'Inviter sur Afrolook',
+                    style: TextStyle(color: _colors.textPrimary, fontSize: 15, fontWeight: FontWeight.w500),
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    Share.share(
+                      'Rejoins-moi sur Afrolook 🌍 — la plateforme mode & lifestyle africaine !\n'
+                      'Télécharge l\'app : https://afrolook.app',
+                      subject: 'Invitation Afrolook',
+                    );
+                  },
+                ),
+                Divider(color: _colors.border.withOpacity(0.4), height: 1, indent: 16, endIndent: 16),
+                // Messages éphémères — Premium
+                Builder(builder: (ctx2) {
+                  final isPremium = _authProvider.loginUserData.abonnement?.estPremium == true;
+                  final labels = {0: 'Désactivé', 30: '30 secondes', 300: '5 minutes', 3600: '1 heure', 86400: '24 heures'};
+                  final currentLabel = labels[_ephemeralDuration] ?? 'Désactivé';
+                  return ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+                    leading: Icon(Icons.timer_outlined, color: isPremium ? _colors.primary : Colors.grey, size: 22),
+                    title: Text(
+                      'Messages éphémères',
+                      style: TextStyle(color: _colors.textPrimary, fontSize: 15, fontWeight: FontWeight.w500),
+                    ),
+                    subtitle: Text(
+                      isPremium ? currentLabel : '👑 Premium',
+                      style: TextStyle(color: isPremium ? _colors.textSecondary : Colors.amber, fontSize: 12),
+                    ),
+                    onTap: isPremium ? () {
+                      Navigator.pop(ctx);
+                      _showEphemeralPicker();
+                    } : null,
+                  );
+                }),
                 Divider(color: _colors.border.withOpacity(0.4), height: 1, indent: 16, endIndent: 16),
                 // Bloquer / Débloquer
                 if (_isBlockedByMe)

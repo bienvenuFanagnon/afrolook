@@ -1,12 +1,14 @@
 import 'dart:convert';
 
 import 'package:afrotok/models/chatmodels/message.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:intl/intl.dart';
+import 'package:local_auth/local_auth.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -18,8 +20,12 @@ import '../../../theme/app_colors.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/chat_service.dart';
 import '../../../pages/chat/myChat.dart';
+import 'package:share_plus/share_plus.dart';
+
 import '../../home/user_presence_widget.dart';
 import '../../pub/native_ad_widget.dart';
+import '../../chat/group/create_group_page.dart';
+import '../../chat/group/group_chat_page.dart';
 
 class ListUserChatsOptimized extends StatefulWidget {
   const ListUserChatsOptimized({super.key});
@@ -39,7 +45,8 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
 
   // Gestion de la pagination par lots de 5 - chargement automatique
   List<ChatWithLastMessage> _chats = [];
-  bool _isLoading = true;
+  bool _isLoading = false;   // false: pas de skeleton bloquant au démarrage
+  bool _isRefreshing = false; // indicateur discret en haut pendant sync Firebase
   bool _isLoadingMore = false;
   bool _hasMore = true;
   final ScrollController _scrollController = ScrollController();
@@ -57,6 +64,22 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
 
   // Pour éviter les setState pendant le build
   bool _hasPendingUpdate = false;
+
+  // Verrouillage biométrique
+  bool _isLocked = false;
+  final LocalAuthentication _localAuth = LocalAuthentication();
+
+  // Groupes
+  List<Map<String, dynamic>> _groups = [];
+  bool _loadingGroups = false;
+  String get _groupCacheKey => 'group_list_${authProvider.loginUserData.id ?? ''}';
+
+  // Filtre d'affichage : 'all' | 'users' | 'groups'
+  String _chatFilter = 'all';
+
+  // Archives (persistées en local)
+  Set<String> _archivedChatIds = {};
+  String get _archiveCacheKey => 'archived_chats_${authProvider.loginUserData.id ?? ''}';
 
   late AppColors _colors;
   late AppLocalizations _l10n;
@@ -113,6 +136,42 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     } catch (_) {}
   }
 
+  Future<void> _saveGroupCache(List<Map<String, dynamic>> groups) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_groupCacheKey, jsonEncode(groups.take(30).toList()));
+    } catch (_) {}
+  }
+
+  Future<void> _loadGroupCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_groupCacheKey);
+      if (raw == null) return;
+      final list = jsonDecode(raw);
+      if (list is! List) return;
+      final groups = list.whereType<Map<String, dynamic>>().toList();
+      if (groups.isNotEmpty && mounted) {
+        setState(() => _groups = groups);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _loadArchiveCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getStringList(_archiveCacheKey) ?? [];
+      if (mounted) setState(() => _archivedChatIds = raw.toSet());
+    } catch (_) {}
+  }
+
+  Future<void> _saveArchiveCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_archiveCacheKey, _archivedChatIds.toList());
+    } catch (_) {}
+  }
+
   // ─────────────────────────────────────────────────────────────────────────
 
   @override
@@ -123,13 +182,119 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
 
     _scrollController.addListener(_onScroll);
 
-    // Affichage instantané depuis le cache, puis stream en arrière-plan
+    // Charge archives, cache conv, cache groupes, puis lance le stream Firebase
+    _loadArchiveCache();
+    _loadGroupCache().then((_) => _loadGroups());
     _loadConvCache().then((_) => _initChatsStream());
     _loadRecentFriends();
+    _checkBiometricLock();
+  }
+
+  Future<void> _loadGroups() async {
+    try {
+      final myId = authProvider.loginUserData.id!;
+      final snap = await FirebaseFirestore.instance
+          .collection('GroupChats')
+          .where('member_ids', arrayContains: myId)
+          .orderBy('last_message_at', descending: true)
+          .get();
+
+      final groups = snap.docs.map((d) => d.data()).toList();
+      await _saveGroupCache(groups);
+      if (mounted) setState(() { _groups = groups; _loadingGroups = false; });
+    } catch (e) {
+      if (mounted) setState(() => _loadingGroups = false);
+    }
+  }
+
+  void _openCreateGroup() {
+    final isPremium = authProvider.loginUserData.abonnement?.estPremium == true;
+    if (!isPremium) {
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (_) => Container(
+          margin: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF1a0a2a), Color(0xFF2a1a3a)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFFDB813).withOpacity(0.4)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('👑', style: TextStyle(fontSize: 40)),
+              const SizedBox(height: 12),
+              const Text('Groupes Premium', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 8),
+              const Text(
+                'Créer et gérer des groupes est réservé aux membres Premium.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white70, fontSize: 14),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFDB813),
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/abonnement');
+                },
+                child: const Text('Passer à Premium', style: TextStyle(fontWeight: FontWeight.w800)),
+              ),
+            ],
+          ),
+        ),
+      );
+      return;
+    }
+
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const CreateGroupPage())).then((_) => _loadGroups());
+  }
+
+  Future<void> _checkBiometricLock() async {
+    try {
+      final uid = authProvider.loginUserData.id;
+      if (uid == null) return;
+      final doc = await FirebaseFirestore.instance.collection('Users').doc(uid).get();
+      final privacy = (doc.data()?['privacySettings'] as Map<String, dynamic>?) ?? {};
+      final isPremium = authProvider.loginUserData.abonnement?.estPremium == true;
+      if (isPremium && privacy['biometricLock'] == true) {
+        if (mounted) setState(() => _isLocked = true);
+        await _authenticate();
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _authenticate() async {
+    try {
+      final authenticated = await _localAuth.authenticate(
+        localizedReason: 'Déverrouillez pour accéder à vos messages',
+        options: const AuthenticationOptions(biometricOnly: false),
+      );
+      if (mounted) {
+        if (authenticated) {
+          setState(() => _isLocked = false);
+        } else {
+          Navigator.pop(context);
+        }
+      }
+    } catch (_) {
+      if (mounted) Navigator.pop(context);
+    }
   }
 
   void _initChatsStream() {
-    // Stream en temps réel — mises à jour silencieuses (pas de loader visible)
+    if (mounted) setState(() => _isRefreshing = true);
     _chatsStream = FirebaseFirestore.instance
         .collection('Chats')
         .where(Filter.or(
@@ -151,6 +316,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
         setState(() {
           _chats = listChats;
           _isLoading = false;
+          _isRefreshing = false;
           _hasMore = false;
         });
       }
@@ -525,6 +691,44 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   Widget build(BuildContext context) {
     _colors = AppColors.of(context);
     _l10n = AppLocalizations.of(context);
+
+    if (_isLocked) {
+      return Scaffold(
+        backgroundColor: _colors.background,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.lock_rounded, size: 64, color: _colors.primary),
+              const SizedBox(height: 20),
+              Text(
+                'Messagerie verrouillée',
+                style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w700, fontSize: 18),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Utilisez votre empreinte ou Face ID pour déverrouiller',
+                style: TextStyle(color: _colors.textSecondary, fontSize: 13),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 28),
+              ElevatedButton.icon(
+                onPressed: _authenticate,
+                icon: const Icon(Icons.fingerprint_rounded),
+                label: const Text('Déverrouiller'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _colors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: _colors.background,
       appBar: _buildAppBar(),
@@ -535,6 +739,15 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
             _buildRecentFriendsSection(),
           if (!_isSearching && _recentFriends.isNotEmpty)
             Divider(height: 1, color: _colors.textSecondary),
+          // Bannière discrète de sync Firebase
+          if (!_isSearching && _isRefreshing)
+            LinearProgressIndicator(
+              minHeight: 2,
+              backgroundColor: Colors.transparent,
+              color: _colors.primary.withOpacity(0.5),
+            ),
+          // Pills de filtre
+          if (!_isSearching) _buildFilterPills(),
           if (!_isSearching) _buildHeader(),
           Expanded(
             child: _isSearching
@@ -568,15 +781,29 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
                   );
                 }
 
-                if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
-                  return _buildLoadingSkeleton();
+                // Filtre "groupes" — affiche uniquement la liste verticale des groupes
+                if (_chatFilter == 'groups') {
+                  if (_loadingGroups) return _buildLoadingSkeleton();
+                  if (_groups.isEmpty) return _buildEmptyState();
+                  return _buildGroupsVerticalList();
                 }
 
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                // Filtre "users" — uniquement les chats 1-1
+                if (_chatFilter == 'users') {
+                  if (_chats.isNotEmpty) return _buildChatList(_chats);
+                  if (_isLoading || snapshot.connectionState == ConnectionState.waiting) {
+                    return _buildLoadingSkeleton();
+                  }
                   return _buildEmptyState();
                 }
 
-                return _buildChatList(snapshot.data!);
+                // Filtre "all" (défaut) — chats 1-1 + groupes mélangés, triés par date
+                final bool stillLoading =
+                    (_isLoading || snapshot.connectionState == ConnectionState.waiting) &&
+                    _chats.isEmpty;
+                if (stillLoading) return _buildLoadingSkeleton();
+                if (_chats.isEmpty && _groups.isEmpty) return _buildEmptyState();
+                return _buildMergedList(_chats);
               },
             ),
           ),
@@ -773,9 +1000,527 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     );
   }
 
+  Widget _buildFilterPills() {
+    final filters = [
+      {'key': 'all',    'label': 'Tous'},
+      {'key': 'users',  'label': 'Messages'},
+      {'key': 'groups', 'label': 'Groupes'},
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          ...filters.map((f) {
+            final isActive = _chatFilter == f['key'];
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: GestureDetector(
+                onTap: () => setState(() => _chatFilter = f['key']!),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: isActive ? _colors.primary : _colors.surface,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isActive ? _colors.primary : _colors.border.withOpacity(0.5),
+                    ),
+                  ),
+                  child: Text(
+                    f['label']!,
+                    style: TextStyle(
+                      color: isActive ? Colors.white : _colors.textSecondary,
+                      fontSize: 13,
+                      fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
+          const Spacer(),
+          // Bouton créer groupe toujours visible
+          GestureDetector(
+            onTap: _openCreateGroup,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: _colors.primary.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.group_add_rounded, color: _colors.primary, size: 15),
+                  const SizedBox(width: 4),
+                  Text('Groupe', style: TextStyle(color: _colors.primary, fontSize: 12, fontWeight: FontWeight.w600)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGroupsVerticalList() {
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      itemCount: _groups.length + 1,
+      itemBuilder: (_, index) {
+        if (index == _groups.length) return _buildArchiveTile();
+        return _buildGroupTile(_groups[index]);
+      },
+    );
+  }
+
+  Widget _buildGroupTile(Map<String, dynamic> group) {
+    final name = group['name'] as String? ?? '';
+    final imageUrl = group['image_url'] as String? ?? '';
+    final lastMsg = group['last_message'] as String? ?? '';
+    final lastMsgAt = group['last_message_at'] as int? ?? 0;
+    final isFrozen = group['is_frozen'] == true;
+    final memberCount = group['member_count'] as int? ?? 0;
+
+    String timeStr = '';
+    if (lastMsgAt > 0) {
+      final date = DateTime.fromMillisecondsSinceEpoch(lastMsgAt);
+      final now = DateTime.now();
+      if (date.day == now.day && date.month == now.month && date.year == now.year) {
+        timeStr = '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+      } else {
+        timeStr = '${date.day}/${date.month}';
+      }
+    }
+
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      leading: Stack(
+        children: [
+          CircleAvatar(
+            radius: 26,
+            backgroundColor: _colors.surfaceVariant,
+            backgroundImage: imageUrl.isNotEmpty ? CachedNetworkImageProvider(imageUrl) : null,
+            child: imageUrl.isEmpty
+                ? Icon(Icons.group_rounded, color: _colors.textSecondary, size: 24)
+                : null,
+          ),
+          if (isFrozen)
+            Positioned(
+              bottom: 0, right: 0,
+              child: Container(
+                width: 14, height: 14,
+                decoration: const BoxDecoration(color: Colors.orange, shape: BoxShape.circle),
+                child: const Icon(Icons.pause_rounded, size: 9, color: Colors.white),
+              ),
+            ),
+        ],
+      ),
+      title: Row(
+        children: [
+          Expanded(
+            child: Text(
+              name,
+              style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w700, fontSize: 15),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (timeStr.isNotEmpty)
+            Text(timeStr, style: TextStyle(color: _colors.textSecondary, fontSize: 11)),
+        ],
+      ),
+      subtitle: Row(
+        children: [
+          Icon(Icons.group_outlined, size: 12, color: _colors.textSecondary),
+          const SizedBox(width: 4),
+          Expanded(
+            child: Text(
+              lastMsg.isNotEmpty ? lastMsg : '$memberCount membres',
+              style: TextStyle(color: _colors.textSecondary, fontSize: 12),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (isFrozen)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text('Gelé', style: TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.w700)),
+            ),
+        ],
+      ),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => GroupChatPage(
+            groupId: group['id'] as String,
+            groupName: name,
+            groupImageUrl: imageUrl.isNotEmpty ? imageUrl : null,
+          ),
+        ),
+      ).then((_) => _loadGroups()),
+    );
+  }
+
+  Widget _buildMergedList(List<ChatWithLastMessage> userChats) {
+    // Construit une liste unifiée de type dynamic :
+    // - ChatWithLastMessage pour les chats 1-1
+    // - Map<String,dynamic> pour les groupes
+    final List<dynamic> merged = [
+      ...userChats.where((c) => !_archivedChatIds.contains(c.chat.docId)),
+      ..._groups,
+    ];
+
+    // Trie par date descendante
+    merged.sort((a, b) {
+      int tsA, tsB;
+      if (a is ChatWithLastMessage) {
+        tsA = a.chat.updatedAt ?? 0;
+        // Épinglés remontent tout en haut
+        if (_pinnedChatIds.contains(a.chat.docId)) tsA = 99999999999999;
+      } else {
+        tsA = (a as Map<String, dynamic>)['last_message_at'] as int? ?? 0;
+      }
+      if (b is ChatWithLastMessage) {
+        tsB = b.chat.updatedAt ?? 0;
+        if (_pinnedChatIds.contains(b.chat.docId)) tsB = 99999999999999;
+      } else {
+        tsB = (b as Map<String, dynamic>)['last_message_at'] as int? ?? 0;
+      }
+      return tsB.compareTo(tsA);
+    });
+
+    return ListView.builder(
+      controller: _scrollController,
+      itemCount: merged.length + 2, // +1 ad banner, +1 archive tile
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: _buildAdBanner(key: 'chat_list_first_ad'),
+          );
+        }
+        if (index == merged.length + 1) return _buildArchiveTile();
+        final item = merged[index - 1];
+        if (item is Map<String, dynamic>) {
+          return _buildGroupTile(item);
+        }
+        final cwm = item as ChatWithLastMessage;
+        return _buildUserChatTile(cwm);
+      },
+    );
+  }
+
+  Widget _buildArchiveTile() {
+    final count = _archivedChatIds.length;
+    if (count == 0) return const SizedBox.shrink();
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+      leading: Container(
+        width: 52, height: 52,
+        decoration: BoxDecoration(color: _colors.surfaceVariant, shape: BoxShape.circle),
+        child: Icon(Icons.archive_rounded, color: _colors.textSecondary, size: 26),
+      ),
+      title: Text('Archives', style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w600, fontSize: 15)),
+      subtitle: Text('$count conversation${count > 1 ? 's' : ''}', style: TextStyle(color: _colors.textSecondary, fontSize: 12)),
+      trailing: Icon(Icons.chevron_right_rounded, color: _colors.textSecondary),
+      onTap: _showArchivedChats,
+    );
+  }
+
+  void _showArchivedChats() {
+    final archived = _chats.where((c) => _archivedChatIds.contains(c.chat.docId)).toList();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => Container(
+        height: MediaQuery.of(context).size.height * 0.75,
+        decoration: BoxDecoration(
+          color: _colors.background,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            // Handle + header — zone de drag pour fermer
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onVerticalDragEnd: (details) {
+                if (details.primaryVelocity != null && details.primaryVelocity! > 200) {
+                  Navigator.pop(ctx);
+                }
+              },
+              child: Column(
+                children: [
+                  Container(
+                    margin: const EdgeInsets.symmetric(vertical: 10),
+                    width: 36, height: 4,
+                    decoration: BoxDecoration(color: _colors.border, borderRadius: BorderRadius.circular(2)),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                    child: Row(
+                      children: [
+                        Text('Archives', style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w800, fontSize: 17)),
+                        const Spacer(),
+                        Text('${archived.length} conv.', style: TextStyle(color: _colors.textSecondary, fontSize: 12)),
+                        const SizedBox(width: 12),
+                        GestureDetector(
+                          onTap: () => Navigator.pop(ctx),
+                          child: Icon(Icons.close_rounded, color: _colors.textSecondary, size: 22),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Divider(height: 1, color: _colors.border.withOpacity(0.3)),
+                ],
+              ),
+            ),
+            // Liste scrollable
+            Expanded(
+              child: archived.isEmpty
+                  ? Center(child: Text('Aucune conversation archivée', style: TextStyle(color: _colors.textSecondary)))
+                  : ListView.builder(
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: archived.length,
+                      itemBuilder: (_, i) {
+                        final cwm = archived[i];
+                        final chat = cwm.chat;
+                        final friend = chat.chatFriend;
+                        return ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                          leading: CircleAvatar(
+                            radius: 24,
+                            backgroundImage: friend?.imageUrl != null && friend!.imageUrl!.isNotEmpty
+                                ? CachedNetworkImageProvider(friend.imageUrl!)
+                                : null,
+                            backgroundColor: _colors.surfaceVariant,
+                            child: friend?.imageUrl == null || friend!.imageUrl!.isEmpty
+                                ? Icon(Icons.person, color: _colors.textSecondary)
+                                : null,
+                          ),
+                          title: Text('@${friend?.pseudo ?? '...'}',
+                              style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w600, fontSize: 14)),
+                          subtitle: Text(_getMessagePreview(cwm.lastMessage),
+                              style: TextStyle(color: _colors.textSecondary, fontSize: 12),
+                              overflow: TextOverflow.ellipsis),
+                          trailing: TextButton(
+                            onPressed: () {
+                              setState(() => _archivedChatIds.remove(chat.docId));
+                              _saveArchiveCache();
+                              Navigator.pop(ctx);
+                            },
+                            child: Text('Désarchiver', style: TextStyle(color: _colors.primary, fontSize: 12, fontWeight: FontWeight.w600)),
+                          ),
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            _openChat(chat);
+                          },
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUserChatTile(ChatWithLastMessage chatWithMessage) {
+    final Chat chat = chatWithMessage.chat;
+    final Message? lastMessage = chatWithMessage.lastMessage;
+    final int unreadCount = _getUnreadCount(chat);
+    final bool isOnline = _isUserOnline(chat.chatFriend ?? UserData());
+    final bool isLastMessageFromMe = _isLastMessageFromCurrentUser(lastMessage);
+    final bool isPinned = _pinnedChatIds.contains(chat.docId);
+    final bool isPro = chat.chatFriend?.hasEntreprise == true;
+
+    return Slidable(
+      key: ValueKey(chat.docId),
+      startActionPane: ActionPane(
+        motion: const DrawerMotion(),
+        extentRatio: 0.25,
+        children: [
+          SlidableAction(
+            onPressed: (_) {
+              setState(() {
+                if (isPinned) {
+                  _pinnedChatIds.remove(chat.docId);
+                } else {
+                  _pinnedChatIds.add(chat.docId!);
+                }
+              });
+            },
+            backgroundColor: _colors.primary,
+            foregroundColor: Colors.white,
+            icon: isPinned ? Icons.push_pin : Icons.push_pin_outlined,
+            label: isPinned ? 'Désépingler' : 'Épingler',
+            borderRadius: const BorderRadius.horizontal(right: Radius.circular(12)),
+          ),
+        ],
+      ),
+      endActionPane: ActionPane(
+        motion: const DrawerMotion(),
+        extentRatio: 0.25,
+        dismissible: DismissiblePane(
+          onDismissed: () {
+            setState(() { _archivedChatIds.add(chat.docId!); });
+            _saveArchiveCache();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Conversation archivée'),
+                action: SnackBarAction(
+                  label: 'Annuler',
+                  onPressed: () { setState(() => _archivedChatIds.remove(chat.docId)); _saveArchiveCache(); },
+                ),
+              ),
+            );
+          },
+        ),
+        children: [
+          SlidableAction(
+            onPressed: (_) {
+              setState(() { _archivedChatIds.add(chat.docId!); });
+              _saveArchiveCache();
+            },
+            backgroundColor: Colors.grey,
+            foregroundColor: Colors.white,
+            icon: Icons.archive_outlined,
+            label: 'Archiver',
+            borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
+          ),
+        ],
+      ),
+      child: GestureDetector(
+        onTap: () => _openChat(chat),
+        child: ConversationList(
+          name: "@${chat.chatFriend?.pseudo ?? _l10n.convDefaultUser}",
+          messageText: _getMessagePreview(lastMessage),
+          imageUrl: chat.chatFriend?.imageUrl ?? '',
+          time: _formatTime(chat.updatedAt),
+          isMessageRead: unreadCount == 0,
+          isOnline: isOnline,
+          unreadCount: unreadCount,
+          isTyping: _isOtherUserTyping(chat),
+          isLastMessageFromMe: isLastMessageFromMe,
+          messageStatus: _getMessageStatus(lastMessage),
+          id_user: chat.chatFriend!.id!,
+          isPinned: isPinned,
+          isPro: isPro,
+          messageType: lastMessage?.messageType,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGroupsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: Row(
+            children: [
+              Text(
+                'GROUPES',
+                style: TextStyle(color: _colors.primary, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 1.2),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: _openCreateGroup,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _colors.primary.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.add_rounded, color: _colors.primary, size: 14),
+                      const SizedBox(width: 4),
+                      Text('Nouveau', style: TextStyle(color: _colors.primary, fontSize: 12, fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: 86,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            itemCount: _groups.length,
+            itemBuilder: (_, index) {
+              final group = _groups[index];
+              final imageUrl = group['image_url'] as String? ?? '';
+              final name = group['name'] as String? ?? '';
+              final isFrozen = group['is_frozen'] == true;
+
+              return GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => GroupChatPage(
+                      groupId: group['id'] as String,
+                      groupName: name,
+                      groupImageUrl: imageUrl.isNotEmpty ? imageUrl : null,
+                    ),
+                  ),
+                ).then((_) => _loadGroups()),
+                child: Container(
+                  width: 68,
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Stack(
+                        children: [
+                          CircleAvatar(
+                            radius: 26,
+                            backgroundColor: _colors.surfaceVariant,
+                            backgroundImage: imageUrl.isNotEmpty ? CachedNetworkImageProvider(imageUrl) : null,
+                            child: imageUrl.isEmpty
+                                ? Icon(Icons.group_rounded, color: _colors.textSecondary, size: 24)
+                                : null,
+                          ),
+                          if (isFrozen)
+                            Positioned(
+                              bottom: 0, right: 0,
+                              child: Container(
+                                width: 14, height: 14,
+                                decoration: const BoxDecoration(color: Colors.orange, shape: BoxShape.circle),
+                                child: const Icon(Icons.pause_rounded, size: 9, color: Colors.white),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        name,
+                        style: TextStyle(color: _colors.textPrimary, fontSize: 11, fontWeight: FontWeight.w600),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
   // Ensemble des chats épinglés (géré localement pour l'instant)
   final Set<String> _pinnedChatIds = {};
-  final Set<String> _archivedChatIds = {};
 
   Widget _buildChatList(List<ChatWithLastMessage> chats) {
     final visibleChats = chats.where((c) => !_archivedChatIds.contains(c.chat.docId)).toList();
@@ -789,7 +1534,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
 
     return ListView.builder(
       controller: _scrollController,
-      itemCount: visibleChats.length + 1,
+      itemCount: visibleChats.length + 2, // +1 ad, +1 archive tile
       itemBuilder: (context, index) {
         if (index == 0) {
           return Padding(
@@ -797,6 +1542,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
             child: _buildAdBanner(key: 'chat_list_first_ad'),
           );
         }
+        if (index == visibleChats.length + 1) return _buildArchiveTile();
 
         final chatIndex = index - 1;
         if (chatIndex >= visibleChats.length) return const SizedBox.shrink();
@@ -840,15 +1586,14 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
             extentRatio: 0.25,
             dismissible: DismissiblePane(
               onDismissed: () {
-                setState(() {
-                  _archivedChatIds.add(chat.docId!);
-                });
+                setState(() { _archivedChatIds.add(chat.docId!); });
+                _saveArchiveCache();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: const Text('Conversation archivée'),
                     action: SnackBarAction(
                       label: 'Annuler',
-                      onPressed: () => setState(() => _archivedChatIds.remove(chat.docId)),
+                      onPressed: () { setState(() => _archivedChatIds.remove(chat.docId)); _saveArchiveCache(); },
                     ),
                     backgroundColor: _colors.surface,
                     behavior: SnackBarBehavior.floating,
@@ -860,6 +1605,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
               SlidableAction(
                 onPressed: (_) {
                   setState(() => _archivedChatIds.add(chat.docId!));
+                  _saveArchiveCache();
                 },
                 backgroundColor: _colors.textSecondary,
                 foregroundColor: Colors.white,
@@ -986,9 +1732,9 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   bool _isOtherUserTyping(Chat chat) {
     final myId = authProvider.loginUserData.id;
     if (chat.senderId == myId) {
-      return chat.receiver_sending != null && chat.receiver_sending!.isNotEmpty;
+      return chat.receiver_sending == 'SENDING';
     } else {
-      return chat.send_sending != null && chat.send_sending!.isNotEmpty;
+      return chat.send_sending == 'SENDING';
     }
   }
 
@@ -1103,8 +1849,47 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
             _l10n.convTryOtherTerms,
             style: TextStyle(color: _colors.border, fontSize: 12),
           ),
+          SizedBox(height: 24),
+          _buildInviteButton(),
         ],
       ),
+    );
+  }
+
+  Widget _buildInviteButton() {
+    return GestureDetector(
+      onTap: _inviteFriend,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [_colors.primary, Color.lerp(_colors.primary, const Color(0xFF1abc9c), 0.5)!],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [BoxShadow(color: _colors.primary.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 3))],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.person_add_rounded, color: Colors.white, size: 18),
+            const SizedBox(width: 8),
+            const Text(
+              'Inviter sur Afrolook',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _inviteFriend() {
+    Share.share(
+      'Rejoins-moi sur Afrolook 🌍 — la plateforme mode & lifestyle africaine !\n'
+      'Télécharge l\'app : https://afrolook.app',
+      subject: 'Invitation Afrolook',
     );
   }
 

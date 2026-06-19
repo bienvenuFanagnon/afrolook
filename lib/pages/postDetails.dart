@@ -65,6 +65,7 @@ import 'canaux/detailsCanal.dart';
 import 'coins/coin_gift_dialog.dart';
 import 'coins/coin_recharge_screen.dart';
 import 'coins/post_gifts_list.dart';
+import '../widgets/chat/post_share_sheet.dart';
 
 // Couleurs migrées vers AppColors (_colors.*) dans _DetailsPostState
 
@@ -5943,6 +5944,60 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
     }
   }
 
+  void _showShareOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: _colors.surface,
+          borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 36, height: 4,
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                  color: _colors.border,
+                  borderRadius: BorderRadius.circular(2)),
+            ),
+            ListTile(
+              leading: Icon(Icons.share, color: _colors.info),
+              title: Text('Partager',
+                  style: TextStyle(color: _colors.textPrimary)),
+              onTap: () { Navigator.pop(ctx); _handleShare(); },
+            ),
+            ListTile(
+              leading: Icon(Icons.send_rounded, color: _colors.primary),
+              title: Text('Envoyer dans un chat',
+                  style: TextStyle(color: _colors.textPrimary)),
+              onTap: () {
+                Navigator.pop(ctx);
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => PostShareSheet(post: widget.post),
+                );
+              },
+            ),
+            Divider(color: _colors.divider),
+            ListTile(
+              leading: Icon(Icons.cancel, color: _colors.textSecondary),
+              title: Text('Annuler',
+                  style: TextStyle(color: _colors.textPrimary)),
+              onTap: () => Navigator.pop(ctx),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildStatsRow(Post post) {
     final hasAccess = _hasAccessToContent();
 
@@ -6017,12 +6072,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           ),
         )
             :GestureDetector(
-          onTap: hasAccess
-              ? () async {
-            _handleShare();
-
-                }
-              : null,
+          onTap: hasAccess ? _showShareOptions : null,
           child: _buildStatItem(
             icon: Icons.share,
             count: post.partage ?? 0,
@@ -6196,12 +6246,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                     ? _colors.textSecondary.withOpacity(0.3)
                     : _colors.textPrimary,
                 size: 30),
-            onPressed: hasAccess
-                ? () async {
-              _handleShare();
-
-                  }
-                : null,
+            onPressed: hasAccess ? _showShareOptions : null,
           ),
         ],
       ),

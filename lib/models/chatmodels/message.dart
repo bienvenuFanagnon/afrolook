@@ -70,6 +70,9 @@ class Message {
   /// conversation) et doit être déchiffré avant affichage.
   bool is_encrypted;
 
+  /// Timestamp (ms) d'expiration pour les messages éphémères. 0 = pas éphémère.
+  int? expires_at;
+
   /// Status of the message.
   final ValueNotifier<MessageStatus> _status;
 
@@ -92,8 +95,9 @@ class Message {
     Reaction? reaction,
     required this.messageType,
     this.voiceMessageDuration,
-    this.imageText, // Nouveau champ ajouté
+    this.imageText,
     this.is_encrypted = false,
+    this.expires_at,
     MessageStatus status = MessageStatus.pending,
   })  : reaction = reaction ?? Reaction(reactions: [], reactedUserIds: []),
         key = GlobalKey(),
@@ -146,8 +150,9 @@ class Message {
     create_at_time_spam: json['create_at_time_spam'],
     message_state: json['message_state'],
     receiverBy: json['receiverBy'],
-    imageText: json['imageText'], // Nouveau champ ajouté
+    imageText: json['imageText'],
     is_encrypted: json['is_encrypted'] == true,
+    expires_at: json['expires_at'] as int?,
   );
 
   Map<String, dynamic> toJson() => {
@@ -167,8 +172,9 @@ class Message {
     'status': status.name,
     'message_state': message_state,
     'receiverBy': receiverBy,
-    'imageText': imageText, // Nouveau champ ajouté
+    'imageText': imageText,
     'is_encrypted': is_encrypted,
+    if (expires_at != null) 'expires_at': expires_at,
   };
 }
 class ReplyMessage {

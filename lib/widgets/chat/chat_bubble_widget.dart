@@ -799,3 +799,104 @@ class _AudioBubbleState extends State<AudioBubble> with SingleTickerProviderStat
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// PostBubble — bulle pour un post partagé dans le chat
+// ---------------------------------------------------------------------------
+class PostBubble extends StatelessWidget {
+  final Message message;
+  final bool isMe;
+  final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
+
+  const PostBubble({
+    super.key,
+    required this.message,
+    required this.isMe,
+    this.onTap,
+    this.onLongPress,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final thumbnail = message.imageText ?? '';
+
+    return GestureDetector(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      child: Container(
+        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.72),
+        decoration: BoxDecoration(
+          color: isMe ? colors.primary.withOpacity(0.15) : colors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: isMe ? colors.primary.withOpacity(0.4) : colors.border.withOpacity(0.5)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Miniature
+            if (thumbnail.isNotEmpty)
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+                child: CachedNetworkImage(
+                  imageUrl: thumbnail,
+                  height: 160,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorWidget: (_, __, ___) => Container(
+                    height: 100,
+                    color: colors.surfaceVariant,
+                    child: Icon(Icons.image_not_supported, color: colors.textSecondary),
+                  ),
+                ),
+              )
+            else
+              Container(
+                height: 80,
+                decoration: BoxDecoration(
+                  color: colors.surfaceVariant,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+                ),
+                child: Center(child: Icon(Icons.article_outlined, color: colors.textSecondary, size: 32)),
+              ),
+            // Description + label
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.link_rounded, size: 14, color: colors.primary),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Post Afrolook',
+                        style: TextStyle(color: colors.primary, fontSize: 11, fontWeight: FontWeight.w700),
+                      ),
+                    ],
+                  ),
+                  if (message.message.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      message.message.length > 80
+                          ? '${message.message.substring(0, 80)}…'
+                          : message.message,
+                      style: TextStyle(color: colors.textPrimary, fontSize: 13),
+                      maxLines: 3,
+                    ),
+                  ],
+                  const SizedBox(height: 6),
+                  Align(
+                    alignment: Alignment.bottomRight,
+                    child: MessageMeta(message: message, isMe: isMe),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

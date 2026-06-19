@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:afrotok/pages/component/showUserDetails.dart';
 import 'package:afrotok/pages/paiement/newDepot.dart';
 import 'package:afrotok/pages/postDetails.dart';
+import 'package:afrotok/widgets/chat/post_share_sheet.dart';
 import 'package:afrotok/pages/postDetailsVideo.dart';
 import 'package:afrotok/pages/pub/banner_ad_widget.dart';
 import 'package:afrotok/pages/pub/native_ad_widget.dart';
@@ -1724,7 +1725,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Bouton Partager (comme sur TikTok)
+            // Bouton Partager (externe)
             ListTile(
               leading: Icon(Icons.share, color: colors.info),
               title: Text('Partager', style: TextStyle(color: colors.textPrimary)),
@@ -1733,6 +1734,21 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
                  _sharePost(post);
               },
             ).animate().fadeIn(duration: 200.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
+
+            // Bouton Envoyer dans le chat
+            ListTile(
+              leading: Icon(Icons.send_rounded, color: colors.primary),
+              title: Text('Envoyer dans un chat', style: TextStyle(color: colors.textPrimary)),
+              onTap: () {
+                Navigator.pop(context);
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => PostShareSheet(post: post),
+                );
+              },
+            ).animate().fadeIn(duration: 200.ms, delay: 20.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
 
             if (post.user_id != authProvider.loginUserData.id)
               ListTile(
