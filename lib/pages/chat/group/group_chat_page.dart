@@ -12,9 +12,17 @@ import 'package:provider/provider.dart';
 
 import '../../../models/model_data.dart';
 import '../../../providers/authProvider.dart';
+import '../../../services/utils/abonnement_utils.dart';
+import '../../../widgets/user_badge_widget.dart';
 import '../../../theme/app_colors.dart';
+import '../../component/showUserDetails.dart';
+import '../../afroshop/marketPlace/acceuil/produit_details.dart';
+import '../../contenuPayant/contentDetails.dart';
 import '../../postDetails.dart';
 import '../../post_video_format_tel_details.dart';
+import '../../LiveAgora/livesAgora.dart';
+import '../../LiveAgora/livePage.dart';
+import '../../LiveAgora/live_ended_page.dart';
 import 'group_info_page.dart';
 
 class GroupChatPage extends StatefulWidget {
@@ -45,9 +53,14 @@ class _GroupChatPageState extends State<GroupChatPage> {
   bool _isFrozen = false;
   bool _isSending = false;
   bool _showEmojiPicker = false;
+  bool _isMuted = false;
+  bool _isReadOnly = false;
+  String _myRole = 'member';
+  Map<String, dynamic> _myPermissions = {};
   Map<String, dynamic> _groupData = {};
   List<Map<String, dynamic>> _messages = [];
   bool _isLoadingMessages = true;
+  final Map<String, Map<String, dynamic>> _senderBadgeCache = {};
 
   // Reponse
   Map<String, dynamic>? _replyingToMsg;
@@ -76,15 +89,49 @@ class _GroupChatPageState extends State<GroupChatPage> {
 
   Future<void> _loadGroup() async {
     try {
-      final doc = await _firestore.collection('GroupChats').doc(widget.groupId).get();
-      final data = doc.data() ?? {};
+      final myId = _auth.loginUserData.id!;
+      final groupDoc = await _firestore.collection('GroupChats').doc(widget.groupId).get();
+      final data = groupDoc.data() ?? {};
+      final userDoc = await _firestore.collection('Users').doc(myId).get();
+      final mutedGroups = (userDoc.data()?['muted_groups'] as List<dynamic>? ?? []).cast<String>();
+      final memberDoc = await _firestore
+          .collection('GroupChats')
+          .doc(widget.groupId)
+          .collection('members')
+          .doc(myId)
+          .get();
+      final role = memberDoc.data()?['role'] as String? ?? 'member';
+      final perms = (memberDoc.data()?['permissions'] as Map<String, dynamic>?) ?? {};
       if (mounted) {
         setState(() {
           _groupData = data;
           _isFrozen = data['is_frozen'] == true;
+          _isReadOnly = data['is_read_only'] == true;
+          _isMuted = mutedGroups.contains(widget.groupId);
+          _myRole = role;
+          _myPermissions = perms;
         });
       }
       await _checkOwnerPremium(data);
+    } catch (_) {}
+  }
+
+  Future<void> _toggleMute() async {
+    final myId = _auth.loginUserData.id!;
+    final newMuted = !_isMuted;
+    try {
+      await _firestore.collection('Users').doc(myId).update({
+        'muted_groups': newMuted
+            ? FieldValue.arrayUnion([widget.groupId])
+            : FieldValue.arrayRemove([widget.groupId]),
+      });
+      if (mounted) setState(() => _isMuted = newMuted);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(newMuted
+            ? 'Notifications désactivées pour ce groupe'
+            : 'Notifications réactivées'),
+        duration: const Duration(seconds: 2),
+      ));
     } catch (_) {}
   }
 
@@ -130,14 +177,22 @@ class _GroupChatPageState extends State<GroupChatPage> {
         .snapshots()
         .listen((snap) {
       if (mounted) {
+        final msgs = snap.docs
+            .map((d) => d.data())
+            .where((d) => d['is_valide'] == true || d['is_deleted'] == true)
+            .toList();
         setState(() {
-          _messages = snap.docs
-              .map((d) => d.data())
-              .where((d) => d['is_valide'] == true || d['is_deleted'] == true)
-              .toList();
+          _messages = msgs;
           _isLoadingMessages = false;
         });
         _scrollToBottom();
+        _markMessagesRead();
+        // Charger les badges des expéditeurs
+        final senderIds = msgs
+            .map((m) => m['send_by'] as String? ?? '')
+            .where((id) => id.isNotEmpty)
+            .toSet();
+        _loadBadgesFor(senderIds);
       }
     });
   }
@@ -165,8 +220,65 @@ class _GroupChatPageState extends State<GroupChatPage> {
     return ids.contains(myId);
   }
 
+  bool get _isAdminOrOwner => _myRole == 'owner' || _myRole == 'admin';
+
+  bool _hasPermission(String right) {
+    if (_isAdminOrOwner) return true;
+    return _myPermissions[right] == true;
+  }
+
+  Future<void> _showSenderProfile(String userId) async {
+    if (userId.isEmpty) return;
+    try {
+      final doc = await _firestore.collection('Users').doc(userId).get();
+      if (!doc.exists || !mounted) return;
+      final user = UserData.fromJson(doc.data()!);
+      final size = MediaQuery.of(context).size;
+      showUserDetailsModalDialog(user, size.width, size.height, context);
+    } catch (_) {}
+  }
+
+  void _loadBadgesFor(Set<String> userIds) {
+    final toLoad = userIds.where((id) => !_senderBadgeCache.containsKey(id)).toList();
+    if (toLoad.isEmpty) return;
+    for (var i = 0; i < toLoad.length; i += 10) {
+      final chunk = toLoad.sublist(i, i + 10 > toLoad.length ? toLoad.length : i + 10);
+      _firestore
+          .collection('Users')
+          .where(FieldPath.documentId, whereIn: chunk)
+          .get()
+          .then((snap) {
+        if (!mounted) return;
+        setState(() {
+          for (final doc in snap.docs) {
+            final d = doc.data();
+            _senderBadgeCache[doc.id] = {
+              'isVerify': d['isVerify'] == true,
+              'officialBadge': d['officialBadge'] == true,
+              'officialAccountType': d['officialAccountType'],
+              'isPremium': d['abonnement']?['estPremium'] == true,
+            };
+          }
+        });
+      }).catchError((_) {});
+    }
+  }
+
+  Widget _buildUserBadge(String userId) {
+    final cache = _senderBadgeCache[userId];
+    if (cache == null) return const SizedBox.shrink();
+    return UserBadgeWidget(
+      isVerified: cache['isVerify'] == true,
+      officialBadge: cache['officialBadge'] == true,
+      officialAccountType: cache['officialAccountType'] as String?,
+      isPremiumOverride: cache['isPremium'] == true,
+      size: 12,
+    );
+  }
+
   Future<void> _sendTextMessage() async {
     if (_isFrozen || _isSending || !_canSend) return;
+    if (_isReadOnly && !_isAdminOrOwner) return;
     final text = _textController.text.trim();
     if (text.isEmpty) return;
 
@@ -209,11 +321,19 @@ class _GroupChatPageState extends State<GroupChatPage> {
       }
 
       await _firestore.collection('GroupMessages').doc(msgId).set(msgData);
-      await _firestore.collection('GroupChats').doc(widget.groupId).update({
+      final otherMembers = (_groupData['member_ids'] as List<dynamic>? ?? [])
+          .cast<String>()
+          .where((id) => id != myId)
+          .toList();
+      final groupUpdate = <String, dynamic>{
         'last_message': text,
         'last_message_at': now,
         'updated_at': now,
-      });
+      };
+      for (final id in otherMembers) {
+        groupUpdate['unread_counts.$id'] = FieldValue.increment(1);
+      }
+      await _firestore.collection('GroupChats').doc(widget.groupId).update(groupUpdate);
 
       await _sendGroupNotification(text);
     } catch (_) {
@@ -224,6 +344,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
 
   Future<void> _sendImageMessage() async {
     if (_isFrozen || !_canSend) return;
+    if (_isReadOnly && !_isAdminOrOwner) return;
     final myId = _auth.loginUserData.id!;
     if (!_isMember(myId)) return;
 
@@ -260,11 +381,19 @@ class _GroupChatPageState extends State<GroupChatPage> {
         'message_state': 'NONLU',
       });
 
-      await _firestore.collection('GroupChats').doc(widget.groupId).update({
+      final otherMembersImg = (_groupData['member_ids'] as List<dynamic>? ?? [])
+          .cast<String>()
+          .where((id) => id != myId)
+          .toList();
+      final groupUpdateImg = <String, dynamic>{
         'last_message': 'Photo',
         'last_message_at': now,
         'updated_at': now,
-      });
+      };
+      for (final id in otherMembersImg) {
+        groupUpdateImg['unread_counts.$id'] = FieldValue.increment(1);
+      }
+      await _firestore.collection('GroupChats').doc(widget.groupId).update(groupUpdateImg);
 
       await _sendGroupNotification('Photo');
     } catch (_) {
@@ -323,6 +452,8 @@ class _GroupChatPageState extends State<GroupChatPage> {
 
         for (final doc in snap.docs) {
           final data = doc.data();
+          final mutedGroups = (data['muted_groups'] as List<dynamic>? ?? []).cast<String>();
+          if (mutedGroups.contains(widget.groupId)) continue;
           final oneSignalId = data['oneIgnalUserid'] as String?;
           if (oneSignalId != null && oneSignalId.length > 5) {
             await _auth.sendNotification(
@@ -339,6 +470,96 @@ class _GroupChatPageState extends State<GroupChatPage> {
           }
         }
       }
+    } catch (_) {}
+  }
+
+  Future<void> _markMessagesRead() async {
+    try {
+      final myId = _auth.loginUserData.id!;
+      final now = DateTime.now().millisecondsSinceEpoch;
+      await Future.wait([
+        _firestore
+            .collection('GroupChats')
+            .doc(widget.groupId)
+            .collection('reads')
+            .doc(myId)
+            .set({'user_id': myId, 'last_read_at': now}),
+        _firestore
+            .collection('GroupChats')
+            .doc(widget.groupId)
+            .update({'unread_counts.$myId': 0}),
+      ]);
+    } catch (_) {}
+  }
+
+  Future<void> _showMessageReaders(Map<String, dynamic> msg) async {
+    final msgTime = msg['create_at_time_spam'] as int? ?? 0;
+    final myId = _auth.loginUserData.id!;
+    try {
+      final snap = await _firestore
+          .collection('GroupChats')
+          .doc(widget.groupId)
+          .collection('reads')
+          .get();
+      final readers = <Map<String, dynamic>>[];
+      for (final doc in snap.docs) {
+        final data = doc.data();
+        final userId = data['user_id'] as String? ?? '';
+        if (userId == myId) continue;
+        final lastRead = data['last_read_at'] as int? ?? 0;
+        if (lastRead >= msgTime) {
+          final userDoc = await _firestore.collection('Users').doc(userId).get();
+          final userData = userDoc.data() ?? {};
+          if (userData['incognitoMode'] == true) continue;
+          readers.add(userData);
+        }
+      }
+      if (!mounted) return;
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (_) => Container(
+          margin: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+          decoration: BoxDecoration(
+            color: _colors.surfaceVariant,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: _colors.border.withOpacity(0.3)),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  margin: const EdgeInsets.symmetric(vertical: 10),
+                  width: 36, height: 4,
+                  decoration: BoxDecoration(color: _colors.border, borderRadius: BorderRadius.circular(2)),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    readers.isEmpty ? 'Personne n\'a encore lu ce message' : '${readers.length} lu par',
+                    style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w700, fontSize: 15),
+                  ),
+                ),
+                ...readers.map((u) {
+                  final pseudo = u['pseudo'] as String? ?? '';
+                  final img = u['imageUrl'] as String? ?? '';
+                  return ListTile(
+                    leading: CircleAvatar(
+                      radius: 18,
+                      backgroundColor: _colors.surfaceVariant,
+                      backgroundImage: img.isNotEmpty ? CachedNetworkImageProvider(img) : null,
+                      child: img.isEmpty ? Icon(Icons.person, size: 16, color: _colors.textSecondary) : null,
+                    ),
+                    title: Text('@$pseudo', style: TextStyle(color: _colors.textPrimary, fontSize: 14)),
+                  );
+                }),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ),
+      );
     } catch (_) {}
   }
 
@@ -371,7 +592,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
     final isDeleted = msg['is_deleted'] == true;
     final myId = _auth.loginUserData.id!;
     final myRole = _getMemberRole(myId);
-    final canDelete = isMe || myRole == 'owner' || myRole == 'admin';
+    final canDelete = isMe || _hasPermission('can_delete_others');
 
     HapticFeedback.mediumImpact();
 
@@ -467,6 +688,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
       body: Column(
         children: [
           if (_isFrozen) _buildFrozenBanner(),
+          if (!_isFrozen && _isReadOnly) _buildReadOnlyBanner(),
           Expanded(
             child: _isLoadingMessages
                 ? Center(child: CircularProgressIndicator(color: _colors.primary, strokeWidth: 2))
@@ -483,8 +705,9 @@ class _GroupChatPageState extends State<GroupChatPage> {
                         },
                       ),
           ),
-          if (!_isFrozen) _buildInputBar(),
+          if (!_isFrozen && (!_isReadOnly || _isAdminOrOwner)) _buildInputBar(),
           if (_isFrozen) _buildFrozenInputPlaceholder(),
+          if (!_isFrozen && _isReadOnly && !_isAdminOrOwner) _buildReadOnlyInputPlaceholder(),
         ],
       ),
     );
@@ -560,6 +783,15 @@ class _GroupChatPageState extends State<GroupChatPage> {
       ),
       actions: [
         IconButton(
+          tooltip: _isMuted ? 'Réactiver les notifications' : 'Désactiver les notifications',
+          icon: Icon(
+            _isMuted ? Icons.notifications_off_outlined : Icons.notifications_none_rounded,
+            color: _isMuted ? _colors.textSecondary : _colors.primary,
+            size: 22,
+          ),
+          onPressed: _toggleMute,
+        ),
+        IconButton(
           icon: Icon(Icons.info_outline_rounded, color: _colors.primary, size: 22),
           onPressed: () => Navigator.push(
             context,
@@ -612,6 +844,47 @@ class _GroupChatPageState extends State<GroupChatPage> {
           const SizedBox(width: 8),
           Text(
             'Messages desactives — groupe gele',
+            style: TextStyle(color: _colors.textSecondary, fontSize: 13),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReadOnlyBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: _colors.primary.withOpacity(0.08),
+      child: Row(
+        children: [
+          Icon(Icons.edit_off_rounded, color: _colors.primary, size: 16),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Lecture seule — seuls les admins peuvent écrire',
+              style: TextStyle(color: _colors.primary, fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReadOnlyInputPlaceholder() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: _colors.surface,
+        border: Border(top: BorderSide(color: _colors.border.withOpacity(0.3))),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.edit_off_rounded, color: _colors.textSecondary, size: 16),
+          const SizedBox(width: 8),
+          Text(
+            'Groupe en lecture seule',
             style: TextStyle(color: _colors.textSecondary, fontSize: 13),
           ),
         ],
@@ -680,14 +953,27 @@ class _GroupChatPageState extends State<GroupChatPage> {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             if (!isMe) ...[
-              CircleAvatar(
-                radius: 14,
-                backgroundColor: _colors.surfaceVariant,
-                backgroundImage:
-                    senderImage.isNotEmpty ? CachedNetworkImageProvider(senderImage) : null,
-                child: senderImage.isEmpty
-                    ? Icon(Icons.person, size: 14, color: _colors.textSecondary)
-                    : null,
+              GestureDetector(
+                onTap: () => _showSenderProfile(msg['send_by'] as String? ?? ''),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    CircleAvatar(
+                      radius: 14,
+                      backgroundColor: _colors.surfaceVariant,
+                      backgroundImage:
+                          senderImage.isNotEmpty ? CachedNetworkImageProvider(senderImage) : null,
+                      child: senderImage.isEmpty
+                          ? Icon(Icons.person, size: 14, color: _colors.textSecondary)
+                          : null,
+                    ),
+                    Positioned(
+                      bottom: -2,
+                      right: -2,
+                      child: _buildUserBadge(msg['send_by'] as String? ?? ''),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(width: 6),
             ],
@@ -768,6 +1054,8 @@ class _GroupChatPageState extends State<GroupChatPage> {
                       )
                     else if (type == 'post')
                       _buildSharedPostCard(msg, isMe)
+                    else if (type == 'link_share')
+                      _buildLinkShareCard(msg, isMe)
                     else
                       Text(
                         text,
@@ -778,13 +1066,27 @@ class _GroupChatPageState extends State<GroupChatPage> {
                         ),
                       ),
 
-                    // Heure
+                    // Heure + vues (messages envoyés par moi)
                     const SizedBox(height: 3),
-                    Text(
-                      timeStr,
-                      style: TextStyle(
-                        color: isMe ? Colors.white54 : _colors.textSecondary,
-                        fontSize: 10,
+                    GestureDetector(
+                      onTap: isMe && !isDeleted ? () => _showMessageReaders(msg) : null,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            timeStr,
+                            style: TextStyle(
+                              color: isMe ? Colors.white54 : _colors.textSecondary,
+                              fontSize: 10,
+                            ),
+                          ),
+                          if (isMe && !isDeleted) ...[
+                            const SizedBox(width: 6),
+                            Icon(Icons.done_all_rounded,
+                                size: 12,
+                                color: Colors.white54),
+                          ],
+                        ],
                       ),
                     ),
                   ],
@@ -917,6 +1219,180 @@ class _GroupChatPageState extends State<GroupChatPage> {
         ),
       ),
     );
+  }
+
+  Widget _buildLinkShareCard(Map<String, dynamic> msg, bool isMe) {
+    final title = msg['item_title'] as String? ?? msg['message'] as String? ?? '';
+    final thumbnail = msg['item_thumbnail'] as String? ?? '';
+    final itemType = msg['item_type'] as String? ?? '';
+    final isLive = itemType == 'live';
+
+    IconData icon;
+    String typeLabel;
+    String actionLabel;
+    Color typeColor;
+    switch (itemType) {
+      case 'live':
+        icon = Icons.live_tv_rounded;
+        typeLabel = '● LIVE';
+        actionLabel = 'Visiter le live';
+        typeColor = Colors.redAccent;
+        break;
+      case 'product':
+        icon = Icons.shopping_bag_outlined;
+        typeLabel = 'Produit';
+        actionLabel = 'Voir le produit';
+        typeColor = isMe ? Colors.white70 : _colors.primary;
+        break;
+      case 'vip':
+        icon = Icons.star_rounded;
+        typeLabel = 'Contenu VIP';
+        actionLabel = 'Voir le contenu';
+        typeColor = const Color(0xFFF9A825);
+        break;
+      default:
+        icon = Icons.link_rounded;
+        typeLabel = 'Lien partagé';
+        actionLabel = 'Voir';
+        typeColor = isMe ? Colors.white70 : _colors.primary;
+    }
+
+    return GestureDetector(
+      onTap: () => _openSharedItem(msg),
+      child: Container(
+        width: 220,
+        decoration: BoxDecoration(
+          color: isMe ? Colors.white.withOpacity(0.12) : _colors.surfaceVariant,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: isMe ? Colors.white24 : _colors.border.withOpacity(0.4)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (thumbnail.isNotEmpty)
+              Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                    child: CachedNetworkImage(
+                      imageUrl: thumbnail,
+                      height: 110,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorWidget: (_, __, ___) => Container(
+                        height: 60, color: _colors.surfaceVariant,
+                        child: Center(child: Icon(icon, color: _colors.textSecondary, size: 24)),
+                      ),
+                    ),
+                  ),
+                  if (isLive)
+                    Positioned(
+                      top: 6, left: 6,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(6)),
+                        child: const Text('● LIVE', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800)),
+                      ),
+                    ),
+                ],
+              )
+            else if (isLive)
+              Container(
+                height: 55,
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                ),
+                child: Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.live_tv_rounded, color: Colors.redAccent, size: 20),
+                      const SizedBox(width: 5),
+                      const Text('● LIVE', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w800, fontSize: 13)),
+                    ],
+                  ),
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(icon, size: 12, color: typeColor),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          typeLabel,
+                          style: TextStyle(color: typeColor, fontSize: 10, fontWeight: FontWeight.w800),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    title.length > 55 ? '${title.substring(0, 55)}...' : title,
+                    style: TextStyle(color: isMe ? Colors.white : _colors.textPrimary, fontSize: 12),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(actionLabel, style: TextStyle(color: isMe ? Colors.white60 : _colors.textSecondary, fontSize: 10, fontStyle: FontStyle.italic)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openSharedItem(Map<String, dynamic> msg) async {
+    final itemType = msg['item_type'] as String? ?? '';
+    final itemId = msg['item_id'] as String? ?? '';
+    if (itemId.isEmpty || !mounted) return;
+
+    switch (itemType) {
+      case 'product':
+        Navigator.push(context, MaterialPageRoute(
+          builder: (_) => ProduitDetail(productId: itemId),
+        ));
+        break;
+      case 'vip':
+        try {
+          final doc = await _firestore.collection('ContentPaie').doc(itemId).get();
+          if (!doc.exists || !mounted) return;
+          final content = ContentPaie.fromJson(doc.data()!);
+          Navigator.push(context, MaterialPageRoute(
+            builder: (_) => ContentDetailScreen(content: content),
+          ));
+        } catch (_) {}
+        break;
+      case 'live':
+        try {
+          final doc = await _firestore.collection('lives').doc(itemId).get();
+          if (!doc.exists || !mounted) return;
+          final live = PostLive.fromMap(doc.data()!);
+          if (live.isLive) {
+            Navigator.push(context, MaterialPageRoute(
+              builder: (_) => LivePage(
+                liveId: itemId,
+                postLive: live,
+                isHost: false,
+                isInvited: false,
+                hostName: live.hostName ?? '',
+                hostImage: live.hostImage ?? '',
+              ),
+            ));
+          } else {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => LiveEndedPage(live: live)));
+          }
+        } catch (_) {}
+        break;
+    }
   }
 
   Future<void> _openSharedPost(String postId, {String dataType = 'IMAGE'}) async {

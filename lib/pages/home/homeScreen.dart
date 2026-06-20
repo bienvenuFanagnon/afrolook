@@ -47,6 +47,7 @@ import '../../services/postService/mixed_feed_service.dart';
 import '../../services/sessions/session_checker_service.dart';
 import '../../services/sessions/session_service.dart';
 import '../../services/utils/abonnement_utils.dart';
+import '../../widgets/user_badge_widget.dart';
 import '../LiveAgora/livesAgora.dart';
 import '../LiveAgora/mesLives.dart';
 import '../Marketing/affiliationMarketing.dart';
@@ -429,10 +430,7 @@ class _MyHomePageState extends State<MyHomePage>
                                       ],
                                     ),
                                     SizedBox(width: 5),
-                                    AbonnementUtils.getUserBadge(
-                                      abonnement: authProvider.loginUserData!.abonnement,
-                                      isVerified: authProvider.loginUserData!.isVerify!,
-                                    ),
+                                    UserBadgeWidget(user: authProvider.loginUserData, size: 15),
                                   ],
                                 ),
 

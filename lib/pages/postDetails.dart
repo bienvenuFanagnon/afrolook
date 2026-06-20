@@ -59,6 +59,7 @@ import '../services/linkService.dart';
 import '../services/postService/feed_interaction_service.dart';
 import '../services/postService/post_view_service.dart';
 import '../services/utils/abonnement_utils.dart';
+import '../widgets/user_badge_widget.dart';
 import 'UserServices/deviceService.dart';
 import 'canaux/detailsCanal.dart';
 
@@ -4295,9 +4296,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                         ),
                       ),
                       SizedBox(width: 4),
-                      AbonnementUtils.getUserBadge(
-                          abonnement: user.abonnement,
-                          isVerified: user.isVerify!),
+                      UserBadgeWidget(user: user, size: 15),
                       // if (user.isVerify ?? false)
                       //   Icon(Icons.verified, color: _twitterBlue, size: 16),
 

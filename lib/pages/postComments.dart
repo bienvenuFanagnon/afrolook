@@ -11,6 +11,7 @@ import '../providers/authProvider.dart';
 import '../providers/userProvider.dart';
 import '../services/postService/feed_interaction_service.dart';
 import '../services/utils/abonnement_utils.dart';
+import '../widgets/user_badge_widget.dart';
 import '../theme/app_colors.dart';
 import '../l10n/app_localizations.dart';
 import 'dart:ui' as ui;
@@ -459,10 +460,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                                 ),
                               ),
                               const SizedBox(width: 4),
-                              AbonnementUtils.getUserBadge(
-                                abonnement: post.user!.abonnement,
-                                isVerified: post.user!.isVerify ?? false,
-                              ),
+                              UserBadgeWidget(user: post.user, size: 14),
                             ],
                           ),
                           Text(
@@ -629,10 +627,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                     style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: _colors.textPrimary),
                   ),
                   const SizedBox(width: 4),
-                  AbonnementUtils.getUserBadge(
-                    abonnement: pcm.user?.abonnement,
-                    isVerified: pcm.user?.isVerify ?? false,
-                  ),
+                  UserBadgeWidget(user: pcm.user, size: 14),
                   const Spacer(),
                   Text(
                     formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(pcm.createdAt!)),

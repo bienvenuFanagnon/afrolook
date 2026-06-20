@@ -31,6 +31,7 @@ import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:afrotok/pages/postComments.dart';
 import 'package:afrotok/services/linkService.dart';
+import 'package:afrotok/widgets/user_badge_widget.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -1505,7 +1506,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               Text(canal != null ? '#${canal.titre}' : '@${user?.pseudo ?? ''}', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-              if (canal?.isVerify == true || user?.isVerify == true) Icon(Icons.verified, color: Colors.blue, size: 16),
+              if (user != null) UserBadgeWidget(user: user, size: 15),
               if (isLocked) Icon(Icons.lock, color: _afroYellow, size: 16),
             ]),
             Text(canal != null ? '${canal?.usersSuiviId?.length ?? 0} abonnés' : '${user?.userAbonnesIds?.length ?? 0} abonnés', style: TextStyle(color: Colors.grey)),

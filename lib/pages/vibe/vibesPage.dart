@@ -21,6 +21,7 @@ import 'package:afrotok/services/linkService.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import '../../providers/coin_gift_provider.dart';
 import '../../services/utils/abonnement_utils.dart';
+import '../../widgets/user_badge_widget.dart';
 import '../admin/AfrolookPub/ad_post_page_video_widget.dart';
 import '../canaux/detailsCanal.dart';
 import '../coins/coin_gift_dialog.dart';
@@ -1077,12 +1078,12 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
           if (canal != null)
             GestureDetector(
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CanalDetails(canal: canal))),
-              child: Row(children: [Text('#${canal.titre ?? ''}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)), if (user != null) ...[const SizedBox(width: 4), AbonnementUtils.getUserBadge(abonnement: user.abonnement, isVerified: user.isVerify ?? false)]]),
+              child: Row(children: [Text('#${canal.titre ?? ''}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)), if (user != null) ...[const SizedBox(width: 4), UserBadgeWidget(user: user, size: 14)]]),
             )
           else if (user != null)
             GestureDetector(
               onTap: () => showUserDetailsModalDialog(user, MediaQuery.of(context).size.width, MediaQuery.of(context).size.height, context),
-              child: Row(children: [Text('@${user.pseudo ?? ''}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)), const SizedBox(width: 4), AbonnementUtils.getUserBadge(abonnement: user.abonnement, isVerified: user.isVerify ?? false)]),
+              child: Row(children: [Text('@${user.pseudo ?? ''}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)), const SizedBox(width: 4), UserBadgeWidget(user: user, size: 14)]),
             ),
           if (canal != null)
             Text('${canal.usersSuiviId?.length ?? 0} abonnés', style: const TextStyle(color: Colors.white70))

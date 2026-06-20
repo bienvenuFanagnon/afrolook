@@ -41,6 +41,7 @@ import '../../providers/authProvider.dart';
 import '../../providers/profilLikeProvider.dart';
 import '../../providers/userProvider.dart';
 import '../../services/utils/abonnement_utils.dart';
+import '../../widgets/user_badge_widget.dart';
 import '../chat/myChat.dart';
 import '../component/consoleWidget.dart';
 import '../widgetGlobal.dart';
@@ -1264,10 +1265,7 @@ class _UserProfileModalState extends State<UserProfileModal> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        AbonnementUtils.getUserBadge(
-                          abonnement: widget.user!.abonnement,
-                          isVerified: widget.user!.isVerify!,
-                        ),
+                        UserBadgeWidget(user: widget.user, size: 18),
                       ],
                     ),
 

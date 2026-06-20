@@ -23,6 +23,7 @@ import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../providers/sound_provider.dart';
 import '../../services/utils/abonnement_utils.dart';
+import '../../widgets/user_badge_widget.dart';
 import '../UserServices/ServiceWidget.dart';
 
 import '../admin/AfrolookPub/advertisementCarouselWidget.dart';
@@ -2958,8 +2959,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                               ),
                             ),
                           ),
-                          if (user.isVerify ?? false)
-                            Icon(Icons.verified, color: colors.primary, size: 12),
+                          UserBadgeWidget(user: user, size: 12),
                         ],
                       ),
                       SizedBox(height: 2),

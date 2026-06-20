@@ -29,6 +29,7 @@ import '../../providers/userProvider.dart';
 import '../home/user_presence_widget.dart';
 import '../user/detailsOtherUser.dart';
 import '../../services/utils/abonnement_utils.dart';
+import '../../widgets/user_badge_widget.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:async';
 
@@ -45,8 +46,13 @@ import 'package:share_plus/share_plus.dart';
 
 import '../user/privacy_settings_page.dart';
 import 'chat_media_gallery_page.dart';
+import '../afroshop/marketPlace/acceuil/produit_details.dart';
+import '../contenuPayant/contentDetails.dart';
 import '../postDetails.dart';
 import '../post_video_format_tel_details.dart';
+import '../LiveAgora/livesAgora.dart';
+import '../LiveAgora/livePage.dart';
+import '../LiveAgora/live_ended_page.dart';
 
 class MyChat extends StatefulWidget {
   final String title;
@@ -164,7 +170,8 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     _initializeChat();
     _setupAudioListener();
     _loadCachedMessages();
-    _initEncryptionAndLoad();
+    _loadMessages();
+    _tryLoadOldEncryptionKey();
     _loadBlockStatus();
     _loadMyPrivacySettings();
     _scrollController.addListener(_onScroll);
@@ -413,21 +420,19 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     );
   }
 
-  /// Calcule la clé de chiffrement de cette conversation avant de démarrer
-  /// le flux de messages, afin que les messages chiffrés reçus dès la
-  /// première page puissent être déchiffrés.
-  Future<void> _initEncryptionAndLoad() async {
-    final myId = _authProvider.loginUserData.id!;
-    final otherId = widget.chat.senderId == myId
-        ? widget.chat.receiverId!
-        : widget.chat.senderId!;
-
-    _chatKey = await EncryptionService.getChatKey(widget.chat.docId!, myId, otherId);
-
-    _loadMessages();
+  /// Tente de récupérer la clé des anciens messages chiffrés (best-effort).
+  /// N'est plus nécessaire pour les nouveaux messages.
+  Future<void> _tryLoadOldEncryptionKey() async {
+    try {
+      final myId = _authProvider.loginUserData.id!;
+      final otherId = widget.chat.senderId == myId
+          ? widget.chat.receiverId!
+          : widget.chat.senderId!;
+      _chatKey = await EncryptionService.getChatKey(widget.chat.docId!, myId, otherId);
+    } catch (_) {}
   }
 
-  /// Déchiffre en place le champ `message` des messages texte chiffrés.
+  /// Déchiffre les anciens messages qui portent encore is_encrypted=true.
   Future<void> _decryptMessages(List<Message> messages) async {
     final key = _chatKey;
     if (key == null) return;
@@ -436,9 +441,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       if (m.is_encrypted) {
         try {
           m.message = await EncryptionService.decryptText(key, m.message);
-        } catch (e) {
-          print('⚠️ Erreur déchiffrement message ${m.id}: $e');
-        }
+        } catch (_) {}
       }
     }
   }
@@ -1014,32 +1017,6 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     final messageText = _textController.text.trim();
     if (messageText.isEmpty) return;
 
-    // Jamais d'envoi en clair : vérifier (ou récupérer) la clé de chiffrement.
-    SecretKey? chatKey = _chatKey;
-    if (chatKey == null) {
-      final myId = _authProvider.loginUserData.id!;
-      final otherId = widget.chat.senderId == myId
-          ? widget.chat.receiverId!
-          : widget.chat.senderId!;
-      chatKey = await EncryptionService.getChatKey(widget.chat.docId!, myId, otherId);
-      if (chatKey != null && mounted) setState(() => _chatKey = chatKey);
-    }
-
-    if (chatKey == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: Colors.orange,
-          content: Text(
-            '🔒 Chiffrement en cours d\'initialisation, réessayez dans quelques secondes',
-            textAlign: TextAlign.center,
-          ),
-          duration: Duration(seconds: 4),
-        ),
-      );
-      return;
-    }
-
     try {
       ReplyMessage reply = ReplyMessage(
         message: _replyingToMessage != null ? _getReplyMessageText(_replyingToMessage!) : '',
@@ -1070,11 +1047,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       String msgid = _firestore.collection('Messages').doc().id;
       msg.id = msgid;
 
-      final json = msg.toJson();
-      json['message'] = await EncryptionService.encryptText(chatKey, messageText);
-      json['is_encrypted'] = true;
-
-      await _firestore.collection('Messages').doc(msgid).set(json);
+      await _firestore.collection('Messages').doc(msgid).set(msg.toJson());
       await _sendNotification(messageText);
       await _resetAfterMessage();
 
@@ -1286,9 +1259,183 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
           onLongPress: () => _showMessageOptions(message),
           onTap: () => _openSharedPost(message.id),
         );
+      case 'link_share':
+        return _buildLinkShareBubble(message, isMe);
       default:
         return _buildTextMessage(message, isMe);
     }
+  }
+
+  Widget _buildLinkShareBubble(Message message, bool isMe) {
+    final title = message.message;
+    final thumbnail = message.imageText ?? '';
+    final itemType = message.itemType ?? '';
+    final isLive = itemType == 'live';
+
+    IconData icon;
+    String typeLabel;
+    String actionLabel;
+    Color typeColor;
+    switch (itemType) {
+      case 'live':
+        icon = Icons.live_tv_rounded;
+        typeLabel = '● LIVE';
+        actionLabel = 'Visiter le live';
+        typeColor = Colors.redAccent;
+        break;
+      case 'product':
+        icon = Icons.shopping_bag_outlined;
+        typeLabel = 'Produit';
+        actionLabel = 'Voir le produit';
+        typeColor = isMe ? Colors.white70 : _colors.primary;
+        break;
+      case 'vip':
+        icon = Icons.star_rounded;
+        typeLabel = 'Contenu VIP';
+        actionLabel = 'Voir le contenu';
+        typeColor = const Color(0xFFF9A825);
+        break;
+      default:
+        icon = Icons.link_rounded;
+        typeLabel = 'Lien partagé';
+        actionLabel = 'Appuyer pour voir';
+        typeColor = isMe ? Colors.white70 : _colors.primary;
+    }
+
+    return GestureDetector(
+      onLongPress: () => _showMessageOptions(message),
+      onTap: () => _openSharedItem(message.id),
+      child: Align(
+        alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+        child: Container(
+          margin: EdgeInsets.only(
+            left: isMe ? 60 : 12, right: isMe ? 12 : 60,
+            top: 3, bottom: 3,
+          ),
+          constraints: const BoxConstraints(maxWidth: 230),
+          decoration: BoxDecoration(
+            color: isMe ? _colors.primary : _colors.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: isMe ? null : Border.all(color: _colors.border.withOpacity(0.3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Thumbnail ou placeholder live
+              if (thumbnail.isNotEmpty)
+                Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+                      child: Image.network(thumbnail, height: 120, width: double.infinity, fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const SizedBox.shrink()),
+                    ),
+                    if (isLive)
+                      Positioned(
+                        top: 6, left: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text('● LIVE', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800)),
+                        ),
+                      ),
+                  ],
+                )
+              else if (isLive)
+                Container(
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.12),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+                  ),
+                  child: Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.live_tv_rounded, color: Colors.redAccent, size: 24),
+                        const SizedBox(width: 6),
+                        const Text('● LIVE', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w800, fontSize: 14)),
+                      ],
+                    ),
+                  ),
+                ),
+
+              Padding(
+                padding: const EdgeInsets.all(10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(icon, size: 12, color: typeColor),
+                        const SizedBox(width: 4),
+                        Text(typeLabel,
+                            style: TextStyle(color: typeColor, fontSize: 10, fontWeight: FontWeight.w800)),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      title.length > 60 ? '${title.substring(0, 60)}…' : title,
+                      style: TextStyle(color: isMe ? Colors.white : _colors.textPrimary, fontSize: 12),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 5),
+                    Text(actionLabel,
+                        style: TextStyle(color: isMe ? Colors.white60 : _colors.textSecondary, fontSize: 10, fontStyle: FontStyle.italic)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openSharedItem(String messageId) async {
+    try {
+      final doc = await _firestore.collection('Messages').doc(messageId).get();
+      if (!doc.exists || !mounted) return;
+      final data = doc.data()!;
+      final itemType = data['item_type'] as String? ?? '';
+      final itemId = data['item_id'] as String? ?? '';
+      if (itemId.isEmpty) return;
+
+      switch (itemType) {
+        case 'product':
+          Navigator.push(context, MaterialPageRoute(builder: (_) => ProduitDetail(productId: itemId)));
+          break;
+        case 'vip':
+          final contentDoc = await _firestore.collection('ContentPaie').doc(itemId).get();
+          if (!contentDoc.exists || !mounted) return;
+          final content = ContentPaie.fromJson(contentDoc.data()!);
+          Navigator.push(context, MaterialPageRoute(builder: (_) => ContentDetailScreen(content: content)));
+          break;
+        case 'live':
+          final liveDoc = await _firestore.collection('lives').doc(itemId).get();
+          if (!liveDoc.exists || !mounted) return;
+          final live = PostLive.fromMap(liveDoc.data()!);
+          if (live.isLive) {
+            Navigator.push(context, MaterialPageRoute(
+              builder: (_) => LivePage(
+                liveId: itemId,
+                postLive: live,
+                isHost: false,
+                isInvited: false,
+                hostName: live.hostName ?? '',
+                hostImage: live.hostImage ?? '',
+              ),
+            ));
+          } else {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => LiveEndedPage(live: live)));
+          }
+          break;
+      }
+    } catch (_) {}
   }
 
   Future<void> _openSharedPost(String messageId) async {
@@ -1319,6 +1466,36 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   }
 
   Widget _buildTextMessage(Message message, bool isMe) {
+    // Message chiffré non déchiffré (clé absente) → afficher un indicateur visuel
+    if (message.is_encrypted == true && message.message.startsWith('enc:v1:')) {
+      return Align(
+        alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+        child: Container(
+          margin: EdgeInsets.only(
+            left: isMe ? 60 : 12, right: isMe ? 12 : 60, top: 3, bottom: 3,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: isMe ? _colors.primary.withOpacity(0.85) : _colors.surfaceVariant,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.lock_outline_rounded, size: 14,
+                  color: isMe ? Colors.white70 : _colors.textSecondary),
+              const SizedBox(width: 4),
+              Text('Message ancien non disponible',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontStyle: FontStyle.italic,
+                    color: isMe ? Colors.white70 : _colors.textSecondary,
+                  )),
+            ],
+          ),
+        ),
+      );
+    }
     return TextBubble(
       message: message,
       isMe: isMe,
@@ -2593,11 +2770,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
                               ),
                             ),
                             const SizedBox(width: 4),
-                            AbonnementUtils.getUserBadge(
-                              abonnement: user.abonnement,
-                              isVerified: user.isVerify ?? false,
-                              size: 14,
-                            ),
+                            UserBadgeWidget(user: user, size: 14),
                           ],
                         ),
                         const SizedBox(height: 2),

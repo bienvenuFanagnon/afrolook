@@ -30,6 +30,7 @@ import 'package:video_thumbnail/video_thumbnail.dart';
 
 import '../providers/coin_gift_provider.dart';
 import '../services/utils/abonnement_utils.dart';
+import '../widgets/user_badge_widget.dart';
 import 'UserServices/deviceService.dart';
 import 'admin/AfrolookPub/ad_post_page_video_widget.dart';
 import 'canaux/detailsCanal.dart';
@@ -2039,7 +2040,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
                   Text(shortName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                   if (user != null) ...[
                     const SizedBox(width: 4),
-                    AbonnementUtils.getUserBadge(abonnement: user.abonnement, isVerified: user.isVerify ?? false),
+                    UserBadgeWidget(user: user, size: 14),
                   ],
                 ],
               ),
@@ -2052,7 +2053,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
                 children: [
                   Text(shortName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                   const SizedBox(width: 4),
-                  AbonnementUtils.getUserBadge(abonnement: user.abonnement, isVerified: user.isVerify ?? false),
+                  UserBadgeWidget(user: user, size: 14),
                 ],
               ),
             ),

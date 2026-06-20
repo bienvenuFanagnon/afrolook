@@ -31,6 +31,7 @@ import '../../../providers/coin_gift_provider.dart';
 import '../../../providers/sound_provider.dart';
 import '../../../services/linkService.dart';
 import '../../../services/utils/abonnement_utils.dart';
+import '../../../widgets/user_badge_widget.dart';
 import '../../coins/coin_gift_dialog.dart';
 import '../../coins/coin_recharge_screen.dart';
 import '../../coins/post_gifts_list.dart';
@@ -1072,10 +1073,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                           ),
                         ),
                         SizedBox(width: 4),
-                        AbonnementUtils.getUserBadge(
-                          abonnement: widget.post.user!.abonnement,
-                          isVerified: widget.post.user!.isVerify!,
-                        )
+                        UserBadgeWidget(user: widget.post.user, size: 14)
                       ],
                     ),
                   ),
@@ -1179,7 +1177,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                         ),
                         SizedBox(width: 4),
                         // if (_isVerified())
-                          AbonnementUtils.getUserBadge(abonnement: widget.post.user!.abonnement,isVerified: widget.post.user!.isVerify!)
+                          UserBadgeWidget(user: widget.post.user, size: 14)
                       ],
                     ),
                   ),

@@ -1,5 +1,5 @@
 # SUIVI REFONTE UI — AFROLOOK V2
-_Dernière mise à jour : 19 juin 2026 (session 55)_
+_Dernière mise à jour : 20 juin 2026 (session 66)_
 
 ---
 
@@ -51,6 +51,8 @@ Tout est fait en **français**.
 
 | Fichier | Notes |
 |---|---|
+| `lib/pages/contenuPayant/contentDetails.dart` | ✅ R1 session 59 — 63 couleurs hardcodées migrées vers AppColors |
+| `lib/pages/LiveAgora/livePage.dart` | ✅ R2 session 59-60 — suppression système encaissement, stats fin de live |
 | `lib/pages/home/homeScreen.dart` | Page principale — déjà importé AppColors + ThemeProvider |
 | `lib/pages/home/HomeConstPost.dart` | Feed principal — AppColors + toggle thème dans UI |
 | `lib/pages/home/listTopModal.dart` | Modal liste top — AppColors |
@@ -2259,7 +2261,722 @@ color: isMe
 
 ### Backlog session 55 (prochaines sessions)
 
-**Session 56 :** U1 (redirection groupe après partage), U2 (menu 3 points conversations archivées), G1 (mute notifications groupe)
-**Session 57 :** G2 (ajouter membres + notifs), G3 (notif quand quelqu'un quitte), G4 (mode lecture seule admin), U3 (vues messages groupe)
-**Session 58 :** P1 (partager produits/contenu payant), P2 (partager lives)
+**Session 56 :** U1 ✅, U2 ✅, G1 ✅
+**Session 57 :** U3 ✅, G2 ✅, G3 ✅, G4 ✅
+**Session 58 :** P1 ✅, P2 ✅
+
+---
+
+## Session 60 — Fix bouton partage live + analyse UI
+
+**Date :** 2026-06-19
+**Fichiers modifiés :**
+- `lib/pages/LiveAgora/livePage.dart`
+
+---
+
+### L7 — Bouton partage live : bottom sheet avec 2 options ✅
+
+**Problème :** `_shareLive()` appelait directement `AppLinkService.shareContent()` sans proposer l'option "Envoyer dans un chat".
+
+**Correction :**
+- `_shareLive()` → affiche un `ModalBottomSheet` avec 2 tuiles :
+  - **Envoyer dans un chat** → `_shareLiveToChat()` → ouvre `GenericShareSheet(itemType: 'live', ...)`
+  - **Partager le lien** → `_shareLiveExternally()` → appelle `AppLinkService` (lien externe)
+- Import `generic_share_sheet.dart` ajouté dans `livePage.dart`
+- `_incrementShareCount()` appelé dans les 2 cas
+
+**Session 60 :** L7 ✅
+
+---
+
+## Session 63 — Messenger groupe : badges, droits, non-lu + transactions live
+
+**Date :** 2026-06-20
+**Fichiers modifiés :**
+- `lib/pages/chat/group/group_chat_page.dart`
+- `lib/pages/chat/group/group_info_page.dart`
+- `lib/pages/user/conversation/listUserConv.dart`
+- `lib/widgets/chat/generic_share_sheet.dart`
+
+**Ce qui a été fait :**
+
+### Badges utilisateurs dans le chat groupe
+- `_senderBadgeCache` : Map en mémoire par userId pour stocker badge/type/premium
+- `_loadBadgesFor(Set<String>)` : chargement en lots de 10 via `whereIn`, stocké dans cache
+- `_subscribeMessages` : appel `_loadBadgesFor` après chaque mise à jour des messages
+- `_buildUserBadge(userId)` : retourne le widget badge selon le type :
+  - Orange cercle → comptes personnels (`influencer`, `artist`, `publicFigure`, `entrepreneur`)
+  - Bleu carré → comptes institutionnels (`company`, `stateInstitution`, `media`, `journalist`, `ngo`, `association`, `other`)
+  - Or cercle → utilisateur premium (sans badge officiel)
+- `_badgeDot({color, icon, isRound})` : container 14×14 avec bordure blanche 1.5px
+
+### Profil au clic sur avatar
+- `_showSenderProfile(userId)` : fetch Firestore Users + `showUserDetailsModalDialog(UserData, w, h, ctx)`
+- Avatar dans `_buildMessageBubble` : `GestureDetector` → `_showSenderProfile` + `Stack` avec badge en `Positioned(bottom: -2, right: -2)`
+
+### Droits et permissions dans les groupes
+- `_hasPermission(right)` : si admin/owner → true, sinon vérifie `_myPermissions[right] == true`
+- Utilisé dans `_showMessageOptions` : `canDelete = isMe || _hasPermission('can_delete_others')`
+- `_loadGroup` : lit `permissions` depuis `GroupChats/{id}/members/{myId}` → stocke dans `_myPermissions`
+- `group_info_page.dart` — `_showMemberOptions` : nouveau tile "Gérer les droits"
+- `_showPermissionsDialog(userId, pseudo)` : bottom sheet `StatefulBuilder` avec `SwitchListTile` pour 4 droits :
+  - `can_share` — Partager des contenus
+  - `can_delete_others` — Supprimer les messages des autres
+  - `can_pin` — Épingler des messages
+  - `can_invite` — Inviter des membres
+  - Chaque toggle met à jour `GroupChats/{id}/members/{userId}.permissions.{key}` en temps réel
+
+### Restriction de partage dans les groupes
+- `generic_share_sheet.dart` — `_sendToGroup` : avant envoi, lit le doc membre, vérifie `role` + `permissions.can_share`
+- Si non autorisé → SnackBar "Vous n'avez pas le droit de partager dans ce groupe."
+
+### Compteur de messages non-lus (groupes)
+- `_sendTextMessage` + `_sendImageMessage` : incrémentent `unread_counts.{memberId}` pour tous les autres membres via `FieldValue.increment(1)`
+- `_markMessagesRead` : reset `unread_counts.{myId}` à 0 en parallel avec mise à jour `reads`
+- `listUserConv.dart` — `_buildGroupTile` : lit `group['unread_counts'][myId]`, affiche badge nombre (même style que 1-1), met le texte + heure en gras/primary si non-lu > 0
+
+---
+
+## Session 61 — Refonte UI complète livePage.dart
+
+**Date :** 2026-06-19
+**Fichiers modifiés :**
+- `lib/pages/LiveAgora/livePage.dart`
+
+**Ce qui a été fait :**
+- `_buildCommentsSection()` : suppression header "Commentaires", bulles glassmorphism premium (`black.withOpacity(0.45)`, `borderRadius: 16`), gift comments or (left border `Color(0xFFF9A825)`, fond doré, username doré)
+- `_buildToggleCommentsButton()` : déplacé en haut à droite (`right: 16, bottom: 90`), cercle 34px cohérent avec le reste
+- `_buildTypingIndicator()` : style minimal (`black.withOpacity(0.4)`, texte blanc60 taille 10.5), animation 3 points via `_TypingDots` widget
+- `_buildParticipantControls()` : cercles 44px par bouton via `_buildCtrlBtn()` helper, fond glassmorphism, style actif/inactif (rouge si désactivé)
+- `_buildPausedOverlay()` : fond dégradé sombre `0xFF0D0D1A → 0xFF1A1430`, icône dans cercle or semi-transparent, spinner or fin
+- `_TypingDots` : nouveau widget `StatefulWidget` avec animation répétitive, 3 points de taille 4px
+- Correction `Colors.white50` → `Colors.white54` (getter non défini)
+
+**Résultat :** Refonte UI livePage.dart ✅ complète (L8)
+
+**Session 61 :** L8 ✅
+
+---
+
+## Session 58 — Partage produits, contenu VIP et lives dans les chats
+
+**Date :** 2026-06-19
+**Fichiers créés :**
+- `lib/widgets/chat/generic_share_sheet.dart`
+
+**Fichiers modifiés :**
+- `lib/pages/afroshop/marketPlace/acceuil/produit_details.dart`
+- `lib/pages/contenuPayant/contentDetails.dart`
+- `lib/pages/LiveAgora/live_list_page.dart`
+- `lib/pages/chat/group/group_chat_page.dart`
+- `lib/pages/chat/myChat.dart`
+
+---
+
+### P1 — Partager produits Afroshop et contenu VIP dans les chats ✅
+
+**`lib/widgets/chat/generic_share_sheet.dart`** (nouveau fichier) :
+- Widget `GenericShareSheet` — prend `itemId`, `itemType`, `title`, `subtitle`, `thumbnail`, `icon`
+- Même structure que `PostShareSheet` : deux onglets Conversations + Groupes
+- Écrit `message_type: 'link_share'` en Firestore avec tous les champs `item_*`
+- `message` = titre (utilisé par `message.message`), `imageText` = thumbnail (pour affichage sans fetch)
+- Après envoi dans un groupe → navigate vers `GroupChatPage` (même comportement U1)
+
+**`produit_details.dart`** :
+- Import `generic_share_sheet.dart` ajouté
+- `_shareProduct()` modifiée : affiche d'abord un bottom sheet avec 2 options : "Partager (lien externe)" et "Envoyer dans un chat"
+- "Envoyer dans un chat" → `_shareProductToChat()` → ouvre `GenericShareSheet(itemType: 'product', ...)`
+
+**`contentDetails.dart`** :
+- Import `generic_share_sheet.dart` ajouté
+- `_handleShare()` modifiée : même pattern — bottom sheet 2 options
+- "Envoyer dans un chat" → `_shareContentToChat()` → ouvre `GenericShareSheet(itemType: 'vip', ...)`
+
+---
+
+### P2 — Partager les lives dans les chats ✅
+
+**`live_list_page.dart`** :
+- Import `generic_share_sheet.dart` ajouté
+- Nouvelle méthode `_shareLiveToChat(PostLive live)` → ouvre `GenericShareSheet(itemType: 'live', ...)`
+- Icône `ios_share_rounded` ajoutée dans la ligne statistiques de chaque `_buildLiveGridItem`
+
+---
+
+### Affichage des `link_share` dans les chats
+
+**`group_chat_page.dart`** :
+- Imports `produit_details.dart` + `contentDetails.dart` ajoutés
+- `_buildMessageBubble` : nouveau cas `link_share` → `_buildLinkShareCard(msg, isMe)`
+- `_buildLinkShareCard` : card avec miniature + label type + titre + "Voir"
+- `_openSharedItem(msg)` : navigation selon `item_type` — product → `ProduitDetail`, vip → charge `ContentPaie` depuis Firestore → `ContentDetailScreen`, live → snackbar
+
+**`myChat.dart`** :
+- Imports `produit_details.dart` + `contentDetails.dart` ajoutés
+- Switch `message.messageType` : nouveau cas `link_share` → `_buildLinkShareBubble(message, isMe)`
+- `_buildLinkShareBubble` : bulle avec miniature + titre + "Appuyer pour voir"
+- `_openSharedItem(messageId)` : fetch Firestore → navigation identique au groupe
 **Sessions 59-60 :** R1 (refonte pages vente contenu), R2 (refonte lives + cadeaux directs)
+
+---
+
+## Session 59 — Refonte système live : pièces, stats, UI premium
+
+**Date :** 2026-06-19
+
+**Fichiers créés :**
+- `lib/pages/LiveAgora/live_ended_page.dart`
+
+**Fichiers modifiés :**
+- `lib/pages/LiveAgora/livePage.dart`
+- `lib/pages/LiveAgora/live_widgets.dart`
+- `lib/pages/LiveAgora/mesLives.dart`
+- `lib/pages/LiveAgora/livesAgora.dart`
+- `lib/pages/chat/myChat.dart`
+- `lib/pages/chat/group/group_chat_page.dart`
+
+---
+
+### L1 — Système cadeaux : passage FCFA → pièces ✅
+
+**`livePage.dart` — `_sendGift`** remplacée intégralement :
+- Lit `giftCoinsBalance` Firestore du sender pour vérifier solde
+- Firestore transaction : -100% sender, +70% host (`giftCoinsBalance`), +30% app (`solde_gain_pieces`)
+- Parrainage sender : -2.5% de `solde_gain_pieces` → `giftCoinsBalance` du parrain (via `code_parrain`)
+- Parrainage host : idem
+- Incrémente `giftCoinsTotal` + `giftCount` + `giftLeaderboard.${userId}` + `giftLeaderboardMeta.${userId}` sur le live
+- Méthode `_payCommission()` ajoutée (fire-and-forget pour parrainage)
+- Méthode `_showInsufficientCoinsDialog()` ajoutée
+
+**`live_widgets.dart` — `GiftPanelWidget`** :
+- Prix affiché : `${gift.price.toInt()} pcs` au lieu de `FCFA`
+
+---
+
+### L2 — Affichage stats pièces ✅
+
+**`livePage.dart` — `_buildViewerInfo`** :
+- Chip cadeaux : `$_giftCoinsTotal pcs` (icône `Icons.stars_rounded`) au lieu de FCFA
+
+**`livePage.dart` — `_showLiveEndStats`** :
+- Dialogue redesigné (fond dégradé sombre, coins dorés, bordure or)
+- Affiche `$_giftCoinsTotal pcs` au lieu de FCFA
+- Section top donateurs avec médailles 🥇🥈🥉 si `_topDonors` non vide
+
+---
+
+### L3 — Leaderboard top donateurs ✅
+
+**`livesAgora.dart` — `PostLive`** :
+- Champ `giftCoinsTotal` ajouté (field + constructeur + `toMap` + `fromMap` + `copyWith`)
+
+**`livePage.dart` — `_setupFirestoreListeners`** :
+- Lit `giftLeaderboard` + `giftLeaderboardMeta`, trie par total décroissant, construit `_topDonors` (top 3)
+
+**`livePage.dart` — `_buildLeaderboard()`** (nouveau widget) :
+- Positionné en haut à droite (sous les chips stats)
+- Affiche jusqu'à 3 donateurs avec médaille, avatar, pseudo, total pcs
+
+---
+
+### L4 — UI footer améliorée ✅
+
+**`livePage.dart` — `_buildFooter()`** :
+- Ligne de raccourcis cadeaux rapides (3 premiers cadeaux de la liste) avec solde pièces affiché
+- Barre principale redesignée : fond semi-transparent avec bordure, icônes uniformisées (rounded)
+- Méthode helper `_buildFooterAction()` extraite
+
+---
+
+### L5 — Suppression encaissement dans mesLives ✅
+
+**`mesLives.dart`** :
+- Supprimés : `_withdrawEarnings`, `_showWithdrawalConfirmation`, `_processingWithdrawal`
+- Section gains → remplacée : affiche `X pcs` (cadeaux reçus) + FCFA entrées payantes séparés
+- Dialog `_showLiveDetailsDialog` : section revenus → `X pcs` au lieu de FCFA
+
+---
+
+### L6 — Page live terminé depuis les chats ✅
+
+**`lib/pages/LiveAgora/live_ended_page.dart`** (nouveau) :
+- Page stats pour un live terminé : hôte, titre, date, durée, grid 6 stats (spectateurs, likes, pièces, partages, durée, participants)
+- Bannière rouge "Ce live est terminé"
+- Section entrées payantes séparée (FCFA)
+
+**`myChat.dart` + `group_chat_page.dart`** :
+- `case 'live'` dans `_openSharedItem` : fetch live depuis Firestore
+  - `isLive == true` → push `LivePage` (spectateur)
+  - `isLive == false` → push `LiveEndedPage`
+- Imports `livesAgora.dart`, `livePage.dart`, `live_ended_page.dart` ajoutés dans les 2 fichiers
+
+---
+
+**Session 59 :** L1 ✅, L2 ✅, L3 ✅, L4 ✅, L5 ✅, L6 ✅
+
+---
+
+## Session 57 — Groupe : vues messages, ajout membre, notif départ, lecture seule
+
+**Date :** 2026-06-19
+**Fichiers modifiés :**
+- `lib/pages/chat/group/group_chat_page.dart`
+- `lib/pages/chat/group/group_info_page.dart`
+
+---
+
+### U3 — Vues des messages dans les groupes (qui a lu, sauf incognito) ✅
+
+**`group_chat_page.dart`** :
+- Champ état `String _myRole = 'member'` — chargé depuis `GroupChats/{id}/members/{myId}.role`
+- `_markMessagesRead()` : écrit `GroupChats/{groupId}/reads/{myId}` avec `last_read_at: now` (1 seule écriture à chaque ouverture/nouveau message, pas une écriture par message)
+- Appelé dans `_subscribeMessages()` à chaque snapshot
+- Message bubble : icône `done_all` + GestureDetector sur l'heure (messages envoyés par moi uniquement)
+- `_showMessageReaders(msg)` : charge `reads` subcollection, compare `last_read_at >= msg.create_at_time_spam`, exclude `myId` et users avec `incognitoMode == true` → bottom sheet avec liste des lecteurs
+
+---
+
+### G2 — Ajouter un membre au groupe + notification ✅
+
+**`group_info_page.dart`** :
+- Import `userProvider.dart` ajouté
+- Bouton `Icons.person_add_alt_1_rounded` dans AppBar (owner/admin uniquement)
+- `_showAddMemberSheet()` : bottom sheet avec champ de recherche, appelle `userProvider.searchUsersByPseudo(q)`, filtre les membres déjà présents
+- `_addMember(userId, pseudo, imageUrl, oneSignalId)` : écrit dans `members` subcollection + `FieldValue.arrayUnion` sur `member_ids` + `FieldValue.increment(1)` sur `member_count`, envoie notification OneSignal "Vous avez été ajouté au groupe [nom]"
+
+---
+
+### G3 — Notification au propriétaire quand quelqu'un quitte ✅
+
+**`group_info_page.dart`** :
+- `_leaveGroup()` : après suppression Firestore, appelle `_notifyOwnerMemberLeft(myId, myPseudo)`
+- `_notifyOwnerMemberLeft()` : récupère `owner_id` de `_groupData`, charge `oneIgnalUserid`, envoie notification "@pseudo a quitté le groupe [nom]"
+
+---
+
+### G4 — Mode lecture seule (admin peut désactiver l'envoi des messages) ✅
+
+**`group_info_page.dart`** :
+- Section "PARAMÈTRES ADMIN" avec `SwitchListTile` pour `is_read_only` (owner/admin uniquement)
+- `_toggleReadOnly(bool)` : met à jour `GroupChats/{groupId}.is_read_only` Firestore
+
+**`group_chat_page.dart`** :
+- `_isReadOnly` chargé depuis `is_read_only` dans `_loadGroup()`
+- Getter `_isAdminOrOwner` : `_myRole == 'owner' || _myRole == 'admin'`
+- `_sendTextMessage()` / `_sendImageMessage()` : bloqués si `_isReadOnly && !_isAdminOrOwner`
+- Bannière `_buildReadOnlyBanner()` + placeholder `_buildReadOnlyInputPlaceholder()` pour les membres en lecture seule
+
+---
+
+## Session 56 — UX Messenger : redirection groupe, archives AppBar, mute notifications
+
+**Date :** 2026-06-19
+**Fichiers modifiés :**
+- `lib/widgets/chat/post_share_sheet.dart`
+- `lib/pages/user/conversation/listUserConv.dart`
+- `lib/pages/chat/group/group_chat_page.dart`
+
+---
+
+### U1 — Redirection vers le groupe après partage d'un post ✅
+
+**Comportement avant :** après envoi d'un post dans un groupe via `PostShareSheet`, la bottom sheet se fermait mais l'utilisateur restait sur la page courante.
+
+**Fix `lib/widgets/chat/post_share_sheet.dart`** :
+- Import `group_chat_page.dart` ajouté
+- `_sendToGroup(Map group)` extrait maintenant `groupName` et `groupImage` du map
+- Appel `_done()` remplacé par `_doneAndOpenGroup(groupId, groupName, groupImage)`
+- Nouvelle méthode `_doneAndOpenGroup` : capture `Navigator` + `ScaffoldMessenger` + couleur avant `pop`, ferme la sheet, affiche le snackbar, puis pousse `GroupChatPage` directement
+
+---
+
+### U2 — Menu 3 points dans AppBar conversations → accès aux archives ✅
+
+**Comportement avant :** les conversations archivées étaient accessibles uniquement via une tile en bas de la liste (visible uniquement si on scrollait jusqu'en bas).
+
+**Fix `lib/pages/user/conversation/listUserConv.dart`** :
+- `_buildAppBar()` : ajout d'un `PopupMenuButton` (icône `more_vert`) dans la `Row` des actions, après l'icône `people`
+- MenuItem "Archives" avec icône `archive_outlined` → appelle `_showArchivedChats()`
+
+---
+
+### G1 — Mute/unmute notifications d'un groupe en 1 clic ✅
+
+**Comportement avant :** aucun moyen de couper les notifications d'un groupe sans désactiver toutes les notifications.
+
+**Fix `lib/pages/chat/group/group_chat_page.dart`** :
+- État `bool _isMuted = false` ajouté
+- `_loadGroup()` lit `Users/{myId}.muted_groups` (array) et vérifie si `widget.groupId` est dedans → initialise `_isMuted`
+- Nouvelle méthode `_toggleMute()` : met à jour Firestore via `FieldValue.arrayUnion/arrayRemove` sur `muted_groups`, affiche un snackbar de confirmation
+- AppBar : nouvelle icône cloche (`notifications_none_rounded` si actif, `notifications_off_outlined` si muted, couleur `textSecondary`) avant l'icône info
+- `_sendGroupNotification()` : pour chaque membre, si `data['muted_groups']` contient `widget.groupId` → `continue` (skip la notification OneSignal)
+
+---
+
+## Session 57 — 4 corrections Messenger critiques + système Influenceur
+
+**Date :** 2026-06-19
+**Fichiers modifiés :**
+- `lib/pages/chat/group/group_info_page.dart`
+- `lib/widgets/chat/post_share_sheet.dart`
+- `lib/widgets/chat/generic_share_sheet.dart`
+- `lib/pages/chat/myChat.dart`
+- `lib/pages/admin/influencer_requests_page.dart` *(nouveau fichier)*
+- `lib/pages/user/profile/profile.dart`
+
+**Analyse :** `flutter analyze` → 0 erreur (166 info/warnings, tous pré-existants)
+
+---
+
+### M1 — Mode lecture seule : gate Premium ✅
+
+**Problème :** n'importe quel owner/admin pouvait activer le mode lecture seule, même sans abonnement Premium.
+
+**Fix `lib/pages/chat/group/group_info_page.dart`** :
+- `_toggleReadOnly(bool value)` : vérifie `_auth.loginUserData.abonnement?.estPremium == true` avant d'écrire Firestore
+- Si non-Premium → appel `_showPremiumGate()` (return immédiat, pas d'écriture)
+- `_showPremiumGate()` : bottom sheet avec icône gradient or, texte explicatif, bouton "Devenir Premium" → navigation `/abonnement`
+
+---
+
+### M2 — Notifications partage groupe ✅
+
+**Problème :** partager un post/live/article/contenu payant dans un groupe n'envoyait aucune notification aux membres.
+
+**Fix `lib/widgets/chat/post_share_sheet.dart`** :
+- Ajout méthode `_notifyGroupMembers({group, now, notifTitre, notifDesc, postId})`
+- Itère `member_ids` du groupe, chunks de 10 (limite `whereIn` Firestore)
+- Pour chaque membre : enregistre un document `NotificationData` dans `Notifications/` + collecte `oneIgnalUserid`
+- Après les chunks : envoie une notification OneSignal groupée via `_auth.sendNotification(...)`
+- `_sendToGroup()` appelle `_notifyGroupMembers()` après l'écriture du message
+
+**Fix `lib/widgets/chat/generic_share_sheet.dart`** (même pattern) :
+- Même méthode `_notifyGroupMembers` adaptée (paramètre `itemId` au lieu de `postId`, `post_type: widget.itemType`)
+- Titre notif : `'${me.pseudo ?? ''} a partagé ${widget.subtitle}'`
+
+---
+
+### M3 — Messages chiffrés affichés en brut ✅
+
+**Problème :** quand `_chatKey == null` (clé de déchiffrement absente), les messages avec `is_encrypted: true` s'affichaient tels quels : `enc:v1:AAAA...` (base64 brut).
+
+**Fix `lib/pages/chat/myChat.dart`** — méthode `_buildTextMessage(message, isMe)` :
+- Détection en tête de méthode : `message.is_encrypted == true && message.message.startsWith('enc:v1:')`
+- Si vrai → retourne une bulle visuelle avec `Icons.lock_outline_rounded` + texte `'Message chiffré'` en italique
+- Couleurs adaptées : fond `_colors.primary.withOpacity(0.85)` (moi) ou `_colors.surfaceVariant` (autre)
+- Texte couleur `Colors.white70` (moi) ou `_colors.textSecondary` (autre)
+- Si la condition n'est pas vraie → `TextBubble` habituel
+
+---
+
+### I1 — Système Influenceur : page admin + demande profil ✅
+
+**Problème :** pas de distinction entre profil standard et profil influenceur. Pas de workflow de demande.
+
+**Nouveau fichier `lib/pages/admin/influencer_requests_page.dart`** :
+- Page admin avec 3 onglets (`TabController`) : En attente / Approuvées / Refusées
+- `_streamRequests(status)` : Stream Firestore sur `InfluenceurRequests where status == X, orderBy createdAt desc`
+- `_buildRequestCard(doc)` : carte avec avatar, @pseudo, nombre d'abonnés, badge statut coloré, note admin, bouton "Traiter" (pending seulement)
+- `_showActionDialog(data, docId)` : AlertDialog avec champ note + boutons Refuser (rouge) / Approuver (vert)
+- `_processRequest(data, docId, approve, note)` : met à jour `InfluenceurRequests/{id}` (status, adminNote, processedAt, processedBy) + si approuvé → `Users/{userId}.update({'is_influencer': true})`
+- Snackbar de confirmation vert/rouge selon le résultat
+
+**Fix `lib/pages/user/profile/profile.dart`** :
+- Import ajouté : `influencer_requests_page.dart`
+- État `String? _influencerStatus` (null = chargement, 'none' = aucune demande, 'pending' | 'approved' | 'rejected')
+- `initState` ajouté avec `WidgetsBinding.instance.addPostFrameCallback(() => _loadInfluencerStatus())`
+- `_loadInfluencerStatus()` : query `InfluenceurRequests where userId == myId, limit 1`
+- `_submitInfluencerRequest()` : crée document dans `InfluenceurRequests` (id, userId, pseudo, imageUrl, followerCount, status: 'pending', createdAt)
+- `_buildInfluencerButton(status)` : bouton gradient "Devenir Influenceur" (si 'none' ou 'rejected'), texte "En attente" (si 'pending')
+- `_showInfluencerRequestDialog()` : bottom sheet confirmation avec gradient or, nombre d'abonnés affiché
+- Condition d'affichage : `followers >= 10 && _influencerStatus != null && _influencerStatus != 'approved'`
+- Section admin : ajout bouton "Influenceurs" (amber, `Icons.star_rounded`) → `InfluencerRequestsPage`
+
+**Collection Firestore `InfluenceurRequests`** (créée à la volée) :
+```
+{
+  id: String,
+  userId: String,
+  pseudo: String,
+  imageUrl: String,
+  followerCount: int,
+  status: 'pending' | 'approved' | 'rejected',
+  adminNote: String?,
+  createdAt: int (ms),
+  processedAt: int? (ms),
+  processedBy: String? (admin userId),
+}
+```
+
+
+---
+
+## SESSION 62 — Système "Compte officiel" (refonte complète du système influenceur)
+
+### I2 — Refonte complète : Influenceur → Compte Officiel ✅
+
+**Objectif :** remplacer le système minimal "Devenir Influenceur" par un système générique, évolutif et administrable de Comptes Officiels.
+
+---
+
+#### Nouveaux fichiers créés
+
+**`lib/models/official_account/official_account_enums.dart`**
+- `OfficialAccountCategory` (11 valeurs) : `influencer` (requiresIdVerification: true, canMonetize: true), `media`, `journalist`, `stateInstitution`, `company`, `ngo`, `association`, `artist`, `publicFigure`, `entrepreneur`, `other`
+- `OfficialAccountStatus` (6 valeurs) : `pending`, `underReview`, `moreInfoNeeded`, `approved`, `rejected`, `suspended` — chacun avec label + couleur ARGB
+- `SocialNetworkType` (11 valeurs) : Facebook, Instagram, TikTok, LinkedIn, Threads, X, YouTube, Snapchat, Telegram, WhatsApp Channel, Autre
+- `BroadcastDomain` (23 valeurs) : Actualités, Politique, Économie, Business, Entrepreneuriat, Sport, Culture, Musique, Cinéma, Humour, Éducation, Santé, Agriculture, Technologie, IA, Environnement, Religion, Mode, Lifestyle, Jeux vidéo, Cuisine, Science, Autres
+- `IdDocumentType` (4 valeurs) : CNI, Passeport, Permis de conduire, Titre de séjour
+
+**`lib/models/official_account/official_account_request.dart`**
+- `OfficialAccountAction` : historique des actions admin (action, note, adminId, timestamp)
+- `SocialNetworkEntry` : entrée réseau social (type, handle, url, followerCount)
+- `OfficialAccountRequest` : modèle complet avec `toMap()`, `fromMap(docId)`, `copyWith()`
+
+**`lib/services/official_account/official_account_service.dart`**
+- Singleton `OfficialAccountService.instance`
+- Collection Firestore : `OfficialAccountRequests`
+- `submitRequest()` : soumet une demande
+- `getMyRequest(userId)` : demande la plus récente d'un utilisateur
+- `watchMyRequest(userId)` : stream temps-réel
+- `watchByStatus(status)` / `watchFiltered({status, category})` : streams admin
+- `updateStatus()` : change le statut + historise + met à jour le profil `Users/{id}` atomiquement
+  - `approved` → pose `officialBadge: true`, `officialAccountType`, `officialName`, `broadcastDomains`, `canMonetize`, `canReceiveGiftCommission`, `canDoParrainage` (uniquement `influencer`)
+  - `suspended` → `officialBadge: false`
+  - `rejected` → `officialAccountStatus: 'rejected'` (badge préservé si déjà approuvé)
+
+**`lib/pages/user/official_account/request_official_account_page.dart`**
+- Formulaire multi-étapes `PageController` (5 ou 6 étapes selon catégorie)
+- Étape 1 — `_StepCategory` : grille de 11 catégories (icône + label)
+- Étape 2 — `_StepInfo` : nom officiel, description, pays, ville, téléphone, email, site web
+- Étape 3 — `_StepDomains` : chips filtrables (23 domaines), sélection multiple
+- Étape 4 — `_StepSocialNetworks` : liste dynamique de réseaux avec type, handle, url, followers
+- Étape 5 — `_StepIdentity` (influenceur seulement) : date de naissance (vérification ≥ 18 ans), type pièce, numéro pièce
+- Étape 6 — `_StepTerms` : conditions d'utilisation + checkbox acceptation ; bouton "Contacter le service" pour catégories non-influenceur
+- `_StepIndicator` : indicateur de progression horizontal scrollable (pills animés)
+- Validation par étape via `_canProceed()`
+
+**`lib/pages/admin/official_accounts_page.dart`**
+- `OfficialAccountsPage` : 6 onglets (un par statut `OfficialAccountStatus`)
+- Filtre par catégorie via bottom sheet
+- `_RequestList` : StreamBuilder + `watchFiltered()`
+- `_RequestCard` : carte avec badge statut, catégorie, domaines en chips
+- `_RequestDetailPage` : vue détail complète (demandeur, informations, domaines, réseaux sociaux, identité si influenceur, avertissement monétisation, historique des actions)
+- `_AdminActions` : boutons contextuels selon statut (approuver, refuser, demander infos, suspendre, reprendre l'analyse)
+- `_promptNote()` : AlertDialog saisie de note (obligatoire pour refus/suspension/infos)
+
+---
+
+#### Fichiers modifiés
+
+**`lib/models/model_data.dart`** — `UserData` :
+Ajout des champs après `postViewsMigrationDone` :
+```dart
+String? officialAccountType;
+String? officialAccountStatus;
+bool? officialBadge = false;
+String? officialAccountRequestId;
+String? officialName;
+String? officialDescription;
+String? officialCountry;
+String? officialCity;
+String? officialWebsite;
+List<String>? broadcastDomains = [];
+List<Map<String, dynamic>>? officialSocialLinks = [];
+bool? canMonetize = false;
+bool? canReceiveGiftCommission = false;
+bool? canDoParrainage = false;
+bool get isOfficialAccount => officialBadge == true && officialAccountStatus == 'approved';
+```
+
+**`lib/pages/user/profile/profile.dart`** :
+- Anciens imports `influencer_requests_page.dart` + état `_influencerStatus` supprimés
+- Nouveaux imports : `official_accounts_page.dart`, `request_official_account_page.dart`, `official_account_enums.dart`, `official_account_request.dart`, `official_account_service.dart`
+- État remplacé : `OfficialAccountRequest? _officialRequest` + `bool _officialRequestLoaded`
+- `_loadOfficialRequest()` remplace `_loadInfluencerStatus()` + `_submitInfluencerRequest()`
+- `_buildOfficialAccountButton(req)` remplace `_buildInfluencerButton(status)` : 5 états (null=créer, pending, underReview, moreInfoNeeded, rejected, suspended)
+- `_buildOfficialBadge(me)` : bandeau gradient violet affiché si `me.isOfficialAccount`
+- Menu admin : "Influenceurs" (`InfluencerRequestsPage`) → "Comptes officiels" (`OfficialAccountsPage`, `Icons.verified_rounded`)
+
+**`lib/models/chatmodels/message.dart`** :
+- Ajout `itemType` et `itemSubtitle` pour les messages `link_share`
+
+**`lib/pages/chat/myChat.dart`** + **`lib/pages/chat/group/group_chat_page.dart`** :
+- `_buildLinkShareBubble()` différencie par `itemType` : `live` (badge ● LIVE rouge + "Visiter le live"), `product`, `vip`, défaut
+
+---
+
+#### Règles de monétisation
+- Seul `OfficialAccountCategory.influencer` a `canMonetize: true`
+- Toutes les autres catégories → cadeaux 100% plateforme (`canMonetize: false`, `canReceiveGiftCommission: false`, `canDoParrainage: false`)
+- **RÈGLE SÉCURITÉ** : les 25% de commission plateforme ne s'affichent jamais dans l'UI
+
+---
+
+#### Collection Firestore `OfficialAccountRequests`
+```
+{
+  id: String,
+  userId: String,
+  pseudo: String,
+  profilePhotoUrl: String,
+  coverPhotoUrl: String,
+  category: String (OfficialAccountCategory.id),
+  officialName: String,
+  description: String,
+  country: String,
+  city: String,
+  phone: String,
+  email: String,
+  website: String?,
+  broadcastDomains: List<String>,
+  socialNetworks: List<Map>,
+  birthDate: String? (yyyy-MM-dd, influenceur seulement),
+  idDocumentType: String? (influenceur seulement),
+  idNumber: String? (influenceur seulement),
+  status: String (OfficialAccountStatus.id),
+  adminNote: String?,
+  actionHistory: List<Map>,
+  createdAt: int (ms),
+  updatedAt: int (ms),
+  processedAt: int? (ms),
+  processedBy: String? (admin userId),
+}
+```
+
+---
+
+#### À faire (optionnel/futur)
+- Bouton "Contacter le service" dans `_StepTerms` → naviguer vers la vraie page Contact
+- Badge officiel sur les profils `OtherUser` et résultats de recherche
+- `broadcastDomains` intégré dans l'algorithme de recommandation
+
+---
+
+## Session 65 — Comptes officiels : abonnement mensuel + refonte formulaire
+
+**Date :** 2026-06-20
+
+**Fichiers modifiés :**
+- `lib/models/model_data.dart` — `OfficialSubscription` class, `isMonetized` getter, `officialSubscription` field, `ABONNEMENT_OFFICIEL` dans `TypeTransaction`
+- `lib/models/official_account/official_account_enums.dart` — `canMonetize` (influencer, artist, entrepreneur), `isPersonal` getter
+- `lib/pages/user/official_account/request_official_account_page.dart` — `_StepCategory` groupé (personnels/institutionnels + tags), `_StepInfo` avec pays africains + IntlPhoneField, `_StepTerms` avec bloc frais, état parent adapté
+- `lib/services/official_account/official_account_service.dart` — `paySubscription()`, `getSubscription()`
+
+**Fichiers créés :**
+- `lib/pages/user/official_account/official_subscription_page.dart` — page statut abonnement + bouton paiement + modal solde insuffisant
+
+**Ce qui a été fait :**
+
+### Modèles
+- `OfficialSubscription` : `active`, `lastPaidAt`, `nextDueAt`, `autoPayEnabled`, `daysLate`, `isLate`, `isSuspendable`, `fromJson/toJson/copyWith`
+- `isMonetized` getter sur `UserData` : `true` si non officiel OU si type parmi `{influencer, artist, entrepreneur}`
+- `ABONNEMENT_OFFICIEL` ajouté à `TypeTransaction`
+
+### Formulaire de demande
+- `_StepCategory` : 2 groupes "Comptes personnels" et "Comptes institutionnels" avec tags (Monétisable, Vérif. identité), bandeau info frais 5 000 FCFA
+- `_StepInfo` : dropdown 54 pays africains + `IntlPhoneField` (indicatif auto)
+- `_StepTerms` : bloc jaune "Frais d'abonnement mensuel 5 000 FCFA/mois"
+
+### Service
+- `paySubscription(userId)` : Firestore transaction — vérifie solde ≥ 5 000, débite `votre_solde_principal`, crée `TransactionSolde` type `ABONNEMENT_OFFICIEL`, met à jour `officialSubscription`
+- `getSubscription(userId)` : lecture du champ `officialSubscription`
+
+### Page abonnement
+- Carte statut (actif / en retard / suspendable) avec date dernier paiement et prochain renouvellement
+- Affichage du solde actuel
+- Bouton paiement avec feedback loading
+- Modal solde insuffisant avec bouton "Recharger"
+- Bloc info (auto-pay, notification, suspension 30j)
+
+**Prochaines sessions planifiées :**
+- **Session 66** : ✅ fait (voir ci-dessous)
+- **Session 64** : `MonetizationService`, page monétisation verrouillée pour comptes non monétisés
+- **Session 67** : Dashboard admin complet (5 onglets)
+
+---
+
+## Session 66 — Badge officiel : fix isVerify, widget unifié + bouton AppData admin
+
+**Date :** 2026-06-20
+
+**Fichiers modifiés :**
+- `lib/services/official_account/official_account_service.dart`
+- `lib/pages/admin/admin_dashboard_page.dart`
+- `lib/services/utils/abonnement_utils.dart`
+- `lib/widgets/user_badge_widget.dart` *(nouveau)*
+- `lib/pages/postComments.dart`
+- `lib/pages/vibe/vibesPage.dart`
+- `lib/pages/post_video_format_tel_details.dart`
+- `lib/pages/postDetails.dart`
+- `lib/pages/chat/myChat.dart`
+- `lib/pages/chat/group/group_chat_page.dart`
+- `lib/pages/home/homeScreen.dart`
+- `lib/pages/userPosts/youTube_video_card.dart`
+- `lib/pages/user/detailsOtherUser.dart`
+- `lib/pages/userPosts/postWidgets/postWidgetPage.dart`
+- `lib/pages/home/HomeConstPost.dart`
+- `lib/pages/postDetailsVideo.dart`
+
+---
+
+### Bug 1 — Badge officiel invisible partout sauf sur le profil ✅
+
+**Cause racine :** `OfficialAccountService.updateStatus()` écrivait `officialBadge: true` lors de l'approbation, mais **pas** `isVerify: true`. Or tous les widgets d'affichage de badge dans l'app (cartes posts, commentaires, etc.) lisent `user.isVerify`. Le profil affichait le badge via `officialBadge`, mais les autres widgets ne le voyaient pas.
+
+**Fix `lib/services/official_account/official_account_service.dart`** :
+- Bloc `isApproved` : ajout `'isVerify': true` dans `userUpdate`
+- Bloc `isSuspended` : ajout `'isVerify': false` dans `userUpdate`
+- Méthode `paySubscription()` : ajout `'isVerify': true` dans la transaction
+
+**Note :** les comptes approuvés **avant** ce correctif ont `officialBadge: true` mais `isVerify: false`. Ils nécessitent une mise à jour manuelle Firestore ou une ré-approbation admin pour afficher le badge partout.
+
+---
+
+### Bug 2 — Bouton AppData absent du tableau de bord admin ✅
+
+**Cause :** la session 62 avait regroupé les boutons admin éparpillés dans une page tableau de bord (`AdminDashboardPage`), mais la page `AdminHubPage` (statistiques globales de l'application) n'avait pas été incluse comme module.
+
+**Fix `lib/pages/admin/admin_dashboard_page.dart`** :
+- Import `'../user/profile/adminprofil.dart'` ajouté
+- Nouveau widget `_AppDataButton` (full-width, dégradé bleu foncé, icône `bar_chart_rounded`) inséré entre le header et les stats
+- Navigation : `Navigator.push → AdminHubPage()`
+
+---
+
+### Unification du widget badge (UserBadgeWidget) ✅
+
+**Contexte :** les call sites utilisaient `AbonnementUtils.getUserBadge(abonnement: ..., isVerified: ...)` sans passer `officialBadge` ni `officialAccountType`, donc même si `isVerify` était true, le badge officiel (orange/bleu carré) ne s'affichait jamais correctement.
+
+**`lib/services/utils/abonnement_utils.dart`** :
+- Ajout du paramètre `bool withBackground = false` à `getUserBadge()`
+- Refactoring interne : passage du pattern early-return à une variable `Widget? badge` nullable
+- Quand `withBackground: true` : le badge est enveloppé dans un `Container` cercle blanc avec ombre (`boxShadow`, `withOpacity(0.12)`)
+
+**Nouveau fichier `lib/widgets/user_badge_widget.dart`** :
+- `UserBadgeWidget extends StatelessWidget` — widget unique pour toute l'app
+- Accepte `UserData? user` (lit automatiquement `isVerify`, `officialBadge`, `officialAccountType`, `abonnement`)
+- OU paramètres individuels (pour les contextes cache comme le chat groupe)
+- `withBackground: true` par défaut (fond blanc circulaire derrière le badge)
+- Paramètre `size` pour ajuster la taille selon le contexte
+
+**Remplacement de tous les call sites (12 fichiers) :**
+
+| Fichier | Ancienne syntaxe | Nouvelle syntaxe |
+|---|---|---|
+| `postComments.dart` | `getUserBadge(abonnement: ..., isVerified: ...)` × 2 | `UserBadgeWidget(user: ..., size: 14)` |
+| `vibesPage.dart` | `getUserBadge(abonnement: ..., isVerified: ...)` × 2 | `UserBadgeWidget(user: user, size: 14)` |
+| `post_video_format_tel_details.dart` | `getUserBadge(...)` × 2 | `UserBadgeWidget(user: user, size: 14)` |
+| `postDetails.dart` | `getUserBadge(abonnement: ..., isVerified: user.isVerify!)` | `UserBadgeWidget(user: user, size: 15)` |
+| `myChat.dart` | `getUserBadge(abonnement: ..., isVerified: ..., size: 14)` | `UserBadgeWidget(user: user, size: 14)` |
+| `group_chat_page.dart` | méthode `_buildUserBadge()` avec `_badgeDot()` | `UserBadgeWidget(isVerified: ..., officialBadge: ..., officialAccountType: ..., size: 12)` |
+| `homeScreen.dart` | `getUserBadge(abonnement: ..., isVerified: ..!)` | `UserBadgeWidget(user: loginUserData, size: 15)` |
+| `youTube_video_card.dart` | `if (_creatorUser?.abonnement != null) getUserBadge(...)` | `if (_creatorUser != null) UserBadgeWidget(user: _creatorUser, size: 14)` |
+| `detailsOtherUser.dart` | `getUserBadge(abonnement: ..., isVerified: ..!)` | `UserBadgeWidget(user: widget.user, size: 18)` |
+| `postWidgetPage.dart` | `getUserBadge(...)` × 2 | `UserBadgeWidget(user: widget.post.user, size: 14)` |
+| `HomeConstPost.dart` | `if (user.isVerify ?? false) Icon(Icons.verified, ...)` | `UserBadgeWidget(user: user, size: 12)` |
+| `postDetailsVideo.dart` | `if (canal?.isVerify == true \|\| user?.isVerify == true) Icon(...)` | `if (user != null) UserBadgeWidget(user: user, size: 15)` |
+
+**Résultat :** un seul widget centralise l'affichage des badges dans toute l'application. Toute évolution future (nouveau type de badge, changement visuel) se fait en un seul endroit.
+

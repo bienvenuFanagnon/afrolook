@@ -51,37 +51,85 @@ class AbonnementUtils {
     return abonnement?.estPremium == true;
   }
 
-  // Obtenir le badge utilisateur
+  static const _personalOfficialTypes = {
+    'influencer', 'artist', 'publicFigure', 'entrepreneur'
+  };
+  static const _institutionalOfficialTypes = {
+    'company', 'stateInstitution', 'media', 'journalist', 'ngo', 'association', 'other'
+  };
+
+  // Obtenir le badge utilisateur — source unique pour toute l'app
+  // Priorité : isVerify > officialBadge (personnel = orange, institutionnel = bleu carré) > premium (or)
   static Widget getUserBadge({
-    required AfrolookAbonnement? abonnement,
+    AfrolookAbonnement? abonnement,
     required bool isVerified,
+    bool officialBadge = false,
+    String? officialAccountType,
+    bool? isPremiumOverride,
     double size = 16,
+    bool withBackground = false,
   }) {
+    final isPremium = isPremiumOverride ?? abonnement?.estPremium == true;
 
+    Widget? badge;
 
+    // 1. Badge bleu admin : utilisateur vérifié par l'administrateur
     if (isVerified) {
-      return Icon(Icons.verified,
-          color: Colors.blue,
-          size: size);
-    }else
-    if (abonnement?.estPremium == true) {
-      return Container(
+      badge = Icon(Icons.verified, color: Colors.blue, size: size);
+    }
+    // 2. Badge orange cercle : compte officiel personnel (influenceur, artiste…)
+    else if (officialBadge && _personalOfficialTypes.contains(officialAccountType)) {
+      badge = Icon(Icons.verified, color: Colors.orange, size: size);
+    }
+    // 3. Badge bleu carré : compte officiel institutionnel (entreprise, média…)
+    else if (officialBadge && _institutionalOfficialTypes.contains(officialAccountType)) {
+      badge = Container(
         width: size,
         height: size,
         decoration: BoxDecoration(
-          gradient: LinearGradient(
+          color: Colors.blue,
+          borderRadius: BorderRadius.circular(size * 0.2),
+        ),
+        child: Icon(Icons.verified, color: Colors.white, size: size * 0.75),
+      );
+    }
+    // 4. Badge or : utilisateur premium (sans badge officiel)
+    else if (isPremium) {
+      badge = Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
             colors: [Color(0xFFFDB813), Color(0xFFFF416C)],
           ),
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 2),
+          border: Border.all(color: Colors.white, width: 1.5),
         ),
-        child: Icon(Icons.workspace_premium,
-            color: Colors.white,
-            size: size * 0.6),
+        child: Icon(Icons.workspace_premium, color: Colors.white, size: size * 0.6),
       );
     }
 
-    return SizedBox();
+    if (badge == null) return const SizedBox.shrink();
+
+    if (!withBackground) return badge;
+
+    // Fond rond blanc derrière le badge
+    return Container(
+      width: size + 6,
+      height: size + 6,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.12),
+            blurRadius: 3,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Center(child: badge),
+    );
   }
 
   // Vérifier si l'abonnement expire bientôt

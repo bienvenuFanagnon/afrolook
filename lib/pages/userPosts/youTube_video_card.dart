@@ -38,6 +38,7 @@ import '../postComments.dart';
 import '../postDetailsVideo.dart';
 
 import '../../services/utils/abonnement_utils.dart';
+import '../../widgets/user_badge_widget.dart';
 import '../../theme/app_colors.dart';
 import '../../providers/locale_provider.dart';
 import 'postWidgets/translatable_description.dart';
@@ -1252,8 +1253,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                         ),
                         const SizedBox(width: 4),
 
-                        if (_creatorUser?.abonnement != null)
-                          AbonnementUtils.getUserBadge(abonnement: _creatorUser?.abonnement, isVerified: _creatorUser?.isVerify ?? false),
+                        if (_creatorUser != null)
+                          UserBadgeWidget(user: _creatorUser, size: 14),
                       ],
                     ),
                   ),
