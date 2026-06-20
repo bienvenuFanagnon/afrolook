@@ -1,16 +1,10 @@
-// ebook_reader_screen.dart
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import 'package:afrotok/models/model_data.dart';
 
-// ebook_reader_screen.dart
-import 'package:flutter/material.dart';
-import 'package:webview_flutter/webview_flutter.dart';
-import 'package:webview_flutter_android/webview_flutter_android.dart';
-import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
-import 'package:afrotok/models/model_data.dart';
+import '../../theme/app_colors.dart';
 
 class EbookReaderScreen extends StatefulWidget {
   final ContentPaie content;
@@ -27,6 +21,7 @@ class EbookReaderScreen extends StatefulWidget {
 }
 
 class _EbookReaderScreenState extends State<EbookReaderScreen> {
+  late AppColors _colors;
   late final WebViewController _webViewController;
   bool _isLoading = true;
   bool _hasError = false;
@@ -165,7 +160,7 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
 
   Widget _buildLoadingIndicator() {
     return Container(
-      color: _afroBlack,
+      color: _colors.background,
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -178,14 +173,14 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
                   width: 120,
                   height: 120,
                   decoration: BoxDecoration(
-                    color: Colors.grey[800]!.withOpacity(0.3),
+                    color: _colors.surfaceVariant.withOpacity(0.5),
                     shape: BoxShape.circle,
                   ),
                 ),
                 Icon(
                   Icons.menu_book_rounded,
                   size: 60,
-                  color: _afroGreen,
+                  color: _colors.primary,
                 ),
                 SizedBox(
                   width: 120,
@@ -193,8 +188,8 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
                   child: CircularProgressIndicator(
                     value: _loadingProgress / 100,
                     strokeWidth: 4,
-                    backgroundColor: Colors.grey[600],
-                    valueColor: AlwaysStoppedAnimation<Color>(_afroGreen),
+                    backgroundColor: _colors.border,
+                    valueColor: AlwaysStoppedAnimation<Color>(_colors.primary),
                   ),
                 ),
               ],
@@ -204,7 +199,7 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
             Text(
               'Préparation de votre ebook',
               style: TextStyle(
-                color: _afroWhite,
+                color: _colors.textPrimary,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
@@ -214,7 +209,7 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
             Text(
               '$_loadingProgress%',
               style: TextStyle(
-                color: _afroGreen,
+                color: _colors.primary,
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
@@ -225,8 +220,8 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
               width: 200,
               child: LinearProgressIndicator(
                 value: _loadingProgress / 100,
-                backgroundColor: Colors.grey[700],
-                valueColor: AlwaysStoppedAnimation<Color>(_afroGreen),
+                backgroundColor: _colors.border,
+                valueColor: AlwaysStoppedAnimation<Color>(_colors.primary),
                 minHeight: 6,
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -236,7 +231,7 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
             Text(
               _getLoadingMessage(),
               style: TextStyle(
-                color: Colors.white70,
+                color: _colors.textSecondary,
                 fontSize: 14,
               ),
               textAlign: TextAlign.center,
@@ -261,7 +256,7 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
 
   Widget _buildErrorWidget() {
     return Container(
-      color: _afroBlack,
+      color: _colors.background,
       child: Center(
         child: Padding(
           padding: EdgeInsets.all(20),
@@ -270,7 +265,7 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
             children: [
               Icon(
                 Icons.error_outline_rounded,
-                color: Colors.red,
+                color: _colors.danger,
                 size: 60,
               ),
               SizedBox(height: 24),
@@ -278,7 +273,7 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
               Text(
                 'Impossible d\'afficher l\'ebook',
                 style: TextStyle(
-                  color: _afroWhite,
+                  color: _colors.textPrimary,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
@@ -288,7 +283,7 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
               Text(
                 _errorMessage,
                 style: TextStyle(
-                  color: Colors.white70,
+                  color: _colors.textSecondary,
                   fontSize: 16,
                 ),
                 textAlign: TextAlign.center,
@@ -297,8 +292,8 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
 
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  foregroundColor: _afroBlack,
-                  backgroundColor: _afroGreen,
+                  foregroundColor: _colors.background,
+                  backgroundColor: _colors.primary,
                   padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(25),
@@ -322,7 +317,7 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
                 child: Text(
                   'Retour à la fiche',
                   style: TextStyle(
-                    color: _afroWhite,
+                    color: _colors.textPrimary,
                     fontSize: 16,
                   ),
                 ),
@@ -350,7 +345,7 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
           margin: EdgeInsets.symmetric(horizontal: 20),
           padding: EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: _afroGreen.withOpacity(0.9),
+            color: _colors.primary.withOpacity(0.9),
             borderRadius: BorderRadius.circular(25),
           ),
           child: Row(
@@ -374,13 +369,14 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    _colors = AppColors.of(context);
     return Scaffold(
-      backgroundColor: _afroBlack,
+      backgroundColor: _colors.background,
       appBar: AppBar(
-        backgroundColor: _afroBlack,
+        backgroundColor: _colors.background,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_rounded, color: _afroWhite),
+          icon: Icon(Icons.arrow_back_rounded, color: _colors.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -388,7 +384,7 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
               ? '${widget.episode!.title}'
               : '${widget.content.title}',
           style: TextStyle(
-            color: _afroWhite,
+            color: _colors.textPrimary,
             fontSize: 16,
           ),
           maxLines: 1,
@@ -404,13 +400,13 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(_afroGreen),
+                    valueColor: AlwaysStoppedAnimation<Color>(_colors.primary),
                   ),
                 ),
               ),
             ),
           IconButton(
-            icon: Icon(Icons.refresh_rounded, color: _afroWhite),
+            icon: Icon(Icons.refresh_rounded, color: _colors.textPrimary),
             onPressed: () {
               _webViewController.reload();
               setState(() {
@@ -447,7 +443,3 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
   }
 }
 
-// Couleurs thématiques
-const Color _afroBlack = Color(0xFF121212);
-const Color _afroWhite = Color(0xFFFFFFFF);
-const Color _afroGreen = Color(0xFF00C853);

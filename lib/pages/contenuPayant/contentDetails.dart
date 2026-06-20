@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:afrotok/pages/contenuPayant/userAbonnerInfos.dart';
 import 'package:flutter/material.dart';
@@ -12,8 +12,10 @@ import '../../models/model_data.dart';
 import '../../providers/contenuPayantProvider.dart';
 import '../../providers/userProvider.dart';
 import '../../providers/authProvider.dart';
+import '../../widgets/chat/generic_share_sheet.dart';
 
 import '../../services/linkService.dart';
+import '../../theme/app_colors.dart';
 import '../pub/native_ad_widget.dart';
 
 import 'dart:async';
@@ -31,6 +33,8 @@ class ContentDetailScreen extends StatefulWidget {
 }
 
 class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTickerProviderStateMixin {
+  AppColors get _colors => AppColors.of(context);
+
   // Lecteur vidéo principal (NE SERT QUE POUR LES ACHETEURS)
   VideoPlayerController? _videoPlayerController;
   ChewieController? _chewieController;
@@ -132,14 +136,14 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
       aspectRatio: _videoPlayerController!.value.aspectRatio,
       showControls: true,
       materialProgressColors: ChewieProgressColors(
-        playedColor: _afroGreen,
-        handleColor: _afroGreen,
+        playedColor: _colors.primary,
+        handleColor: _colors.primary,
         backgroundColor: Colors.grey[700]!,
         bufferedColor: Colors.grey[500]!,
       ),
       placeholder: Container(
-        color: _afroBlack,
-        child: Center(child: CircularProgressIndicator(color: _afroGreen)),
+        color: _colors.background,
+        child: Center(child: CircularProgressIndicator(color: _colors.primary)),
       ),
     );
     setState(() {
@@ -220,8 +224,8 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
       aspectRatio: selected.value.aspectRatio,
       showControls: true,
       materialProgressColors: ChewieProgressColors(
-        playedColor: _afroGreen,
-        handleColor: _afroGreen,
+        playedColor: _colors.primary,
+        handleColor: _colors.primary,
         backgroundColor: Colors.grey[700]!,
         bufferedColor: Colors.grey[500]!,
       ),
@@ -276,23 +280,23 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
         child: Container(
           margin: EdgeInsets.symmetric(horizontal: 20),
           decoration: BoxDecoration(
-            color: _afroBlack,
+            color: _colors.background,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: _afroYellow, width: 2),
+            border: Border.all(color: _colors.accent, width: 2),
           ),
           padding: EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.play_circle_filled, color: _afroYellow, size: 60),
+              Icon(Icons.play_circle_filled, color: _colors.accent, size: 60),
               SizedBox(height: 16),
-              Text('✨ Extrait visionné ! ✨', style: TextStyle(color: _afroYellow, fontSize: 20, fontWeight: FontWeight.bold)),
+              Text('✨ Extrait visionné ! ✨', style: TextStyle(color: _colors.accent, fontSize: 20, fontWeight: FontWeight.bold)),
               SizedBox(height: 12),
               Text('Vous avez vu ${_capsuleDuration.toInt()} secondes de l\'extrait "${selectedCapsule.label}".', style: TextStyle(color: Colors.white70, fontSize: 14), textAlign: TextAlign.center),
               SizedBox(height: 20),
               Text('Convaincu ? Débloquez l\'intégralité de ce contenu !', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500), textAlign: TextAlign.center),
               SizedBox(height: 8),
-              Text('💰 ${widget.content.price.toInt()} FCFA seulement', style: TextStyle(color: _afroYellow, fontSize: 20, fontWeight: FontWeight.bold)),
+              Text('💰 ${widget.content.price.toInt()} FCFA seulement', style: TextStyle(color: _colors.accent, fontSize: 20, fontWeight: FontWeight.bold)),
               SizedBox(height: 8),
               Text('Votre soutien permet aux artistes de créer plus de contenu', style: TextStyle(color: Colors.white54, fontSize: 11, fontStyle: FontStyle.italic), textAlign: TextAlign.center),
               SizedBox(height: 24),
@@ -308,7 +312,7 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
                   SizedBox(width: 8),
                   Expanded(
                     child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(foregroundColor: _afroBlack, backgroundColor: _afroYellow),
+                      style: ElevatedButton.styleFrom(foregroundColor: _colors.background, backgroundColor: _colors.accent),
                       onPressed: _isPurchasing ? null : () { Navigator.pop(context); _handlePurchase(); },
                       child: _isPurchasing ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : Text('ACHETER', style: TextStyle(fontWeight: FontWeight.bold,fontSize: 11)),
                     ),
@@ -470,12 +474,12 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
         return Dialog(
           backgroundColor: Colors.transparent,
           child: Container(
-            decoration: BoxDecoration(color: _afroBlack, borderRadius: BorderRadius.circular(20)),
+            decoration: BoxDecoration(color: _colors.background, borderRadius: BorderRadius.circular(20)),
             padding: EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.check_circle, color: _afroGreen, size: 60),
+                Icon(Icons.check_circle, color: _colors.primary, size: 60),
                 SizedBox(height: 20),
                 Text('Achat Réussi!', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
                 SizedBox(height: 12),
@@ -484,7 +488,7 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     foregroundColor: Colors.white,
-                    backgroundColor: _afroGreen,
+                    backgroundColor: _colors.primary,
                     padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
@@ -510,12 +514,12 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
         return Dialog(
           backgroundColor: Colors.transparent,
           child: Container(
-            decoration: BoxDecoration(color: _afroBlack, borderRadius: BorderRadius.circular(20)),
+            decoration: BoxDecoration(color: _colors.background, borderRadius: BorderRadius.circular(20)),
             padding: EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.info_outline, color: _afroYellow, size: 60),
+                Icon(Icons.info_outline, color: _colors.accent, size: 60),
                 SizedBox(height: 20),
                 Text('Déjà Acheté', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
                 SizedBox(height: 12),
@@ -524,7 +528,7 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     foregroundColor: Colors.white,
-                    backgroundColor: _afroYellow,
+                    backgroundColor: _colors.accent,
                     padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
@@ -607,12 +611,12 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(widget.content.title!, style: TextStyle(color: _afroWhite, fontSize: 28, fontWeight: FontWeight.bold)),
+        Text(widget.content.title!, style: TextStyle(color: _colors.textPrimary, fontSize: 28, fontWeight: FontWeight.bold)),
         SizedBox(height: 8),
-        Text('Série', style: TextStyle(color: _afroYellow, fontSize: 16, fontWeight: FontWeight.w500)),
+        Text('Série', style: TextStyle(color: _colors.accent, fontSize: 16, fontWeight: FontWeight.w500)),
         SizedBox(height: 16),
         if (_currentEpisode != null) ...[
-          Text('Épisode: ${_currentEpisode!.title}', style: TextStyle(color: _afroWhite, fontSize: 20, fontWeight: FontWeight.bold)),
+          Text('Épisode: ${_currentEpisode!.title}', style: TextStyle(color: _colors.textPrimary, fontSize: 20, fontWeight: FontWeight.bold)),
           SizedBox(height: 8),
           Text('Épisode ${_currentEpisode!.episodeNumber}', style: TextStyle(color: Colors.white70, fontSize: 14)),
         ],
@@ -625,7 +629,7 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(widget.content.title!, style: TextStyle(color: _afroWhite, fontSize: 28, fontWeight: FontWeight.bold)),
+        Text(widget.content.title!, style: TextStyle(color: _colors.textPrimary, fontSize: 28, fontWeight: FontWeight.bold)),
         SizedBox(height: 12),
       ],
     );
@@ -637,41 +641,88 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
 
   void _handleShare() async {
     if (_isSharing) return;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        margin: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 10),
+                width: 36, height: 4,
+                decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+              ),
+              ListTile(
+                leading: const Icon(Icons.share_rounded),
+                title: const Text('Partager (lien externe)'),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  setState(() => _isSharing = true);
+                  try {
+                    final contentProvider = Provider.of<ContentProvider>(context, listen: false);
+                    final svc = AppLinkService();
+                    if (widget.episode == null) {
+                      svc.shareContent(
+                        type: AppLinkType.contentpaie,
+                        id: widget.content.id!,
+                        message: widget.content.description,
+                        mediaUrl: widget.content.thumbnailUrl ?? '',
+                      );
+                    } else {
+                      svc.shareContent(
+                        type: AppLinkType.contentpaie,
+                        id: widget.content.id!,
+                        message: widget.episode!.description ?? '',
+                        mediaUrl: widget.episode!.thumbnailUrl ?? '',
+                      );
+                    }
+                    unawaited((widget.content.isSeries && _currentEpisode != null)
+                        ? contentProvider.incrementShares(_currentEpisode!.id!, isEpisode: true)
+                        : contentProvider.incrementShares(widget.content.id!));
+                    await Future.delayed(const Duration(milliseconds: 500));
+                  } catch (_) {}
+                  finally { if (mounted) setState(() => _isSharing = false); }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.chat_bubble_outline_rounded),
+                title: const Text('Envoyer dans un chat'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _shareContentToChat();
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-    setState(() => _isSharing = true);
-
-    try {
-      final contentProvider = Provider.of<ContentProvider>(context, listen: false);
-      final _appLinkService = AppLinkService();
-
-      if (widget.episode == null) {
-        _appLinkService.shareContent(
-          type: AppLinkType.contentpaie,
-          id: widget.content.id!,
-          message: "${widget.content.description}",
-          mediaUrl: widget.content.thumbnailUrl!.isNotEmpty ? widget.content.thumbnailUrl! : "",
-        );
-      } else {
-        _appLinkService.shareContent(
-          type: AppLinkType.contentpaie,
-          id: widget.content.id!,
-          message: "${widget.episode!.description}",
-          mediaUrl: widget.episode!.thumbnailUrl!.isNotEmpty ? widget.episode!.thumbnailUrl! : "",
-        );
-      }
-
-      unawaited(
-          (widget.content.isSeries && _currentEpisode != null)
-              ? contentProvider.incrementShares(_currentEpisode!.id!, isEpisode: true)
-              : contentProvider.incrementShares(widget.content.id!)
-      );
-
-      await Future.delayed(Duration(milliseconds: 500));
-    } catch (e) {
-      print('Erreur lors du partage: $e');
-    } finally {
-      if (mounted) setState(() => _isSharing = false);
-    }
+  void _shareContentToChat() {
+    final thumb = widget.content.thumbnailUrl ?? '';
+    final typeLabel = widget.content.isSeries ? 'Série VIP' : 'Contenu VIP';
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => GenericShareSheet(
+        itemId: widget.content.id ?? '',
+        itemType: 'vip',
+        title: widget.content.title,
+        subtitle: typeLabel,
+        thumbnail: thumb,
+        icon: Icons.star_rounded,
+      ),
+    );
   }
 
   @override
@@ -694,14 +745,14 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
       margin: EdgeInsets.symmetric(vertical: 16),
       padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       decoration: BoxDecoration(
-        color: _afroBlack.withOpacity(0.8),
+        color: _colors.background.withOpacity(0.8),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _afroYellow.withOpacity(0.3)),
+        border: Border.all(color: _colors.accent.withOpacity(0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [Icon(Icons.visibility, color: _afroYellow, size: 18), SizedBox(width: 8), Text('🔍 Aperçu gratuit (5 secondes par extrait)', style: TextStyle(color: _afroYellow, fontSize: 14, fontWeight: FontWeight.bold))]),
+          Row(children: [Icon(Icons.visibility, color: _colors.accent, size: 18), SizedBox(width: 8), Text('🔍 Aperçu gratuit (5 secondes par extrait)', style: TextStyle(color: _colors.accent, fontSize: 14, fontWeight: FontWeight.bold))]),
           SizedBox(height: 12),
           Text('Cliquez sur un extrait pour voir un aperçu - Lecture instantanée', style: TextStyle(color: Colors.white70, fontSize: 12)),
           SizedBox(height: 12),
@@ -717,16 +768,16 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
                     margin: EdgeInsets.symmetric(horizontal: 4),
                     padding: EdgeInsets.symmetric(vertical: 12),
                     decoration: BoxDecoration(
-                      gradient: isLoading ? LinearGradient(colors: [_afroGreen, _afroGreen.withOpacity(0.7)]) : null,
-                      color: !isReady ? Colors.grey[800] : (isLoading ? null : _afroBlack.withOpacity(0.5)),
+                      gradient: isLoading ? LinearGradient(colors: [_colors.primary, _colors.primary.withOpacity(0.7)]) : null,
+                      color: !isReady ? Colors.grey[800] : (isLoading ? null : _colors.background.withOpacity(0.5)),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: isLoading ? _afroGreen : (isReady ? _afroYellow.withOpacity(0.5) : Colors.grey[700]!), width: 1),
+                      border: Border.all(color: isLoading ? _colors.primary : (isReady ? _colors.accent.withOpacity(0.5) : Colors.grey[700]!), width: 1),
                     ),
                     child: !isReady
-                        ? Column(children: [SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: _afroYellow, strokeWidth: 2)), SizedBox(height: 8), Text('Chargement...', style: TextStyle(color: _afroYellow, fontSize: 11))])
+                        ? Column(children: [SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: _colors.accent, strokeWidth: 2)), SizedBox(height: 8), Text('Chargement...', style: TextStyle(color: _colors.accent, fontSize: 11))])
                         : isLoading
-                        ? Column(children: [SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: _afroYellow, strokeWidth: 2)), SizedBox(height: 8), Text('Lecture...', style: TextStyle(color: _afroYellow, fontSize: 11))])
-                        : Column(children: [Icon(capsule.icon, color: _afroYellow, size: 28), SizedBox(height: 8), Text(capsule.label, style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500)), SizedBox(height: 4), Text('${_capsuleDuration.toInt()} sec', style: TextStyle(color: Colors.white54, fontSize: 10))]),
+                        ? Column(children: [SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: _colors.accent, strokeWidth: 2)), SizedBox(height: 8), Text('Lecture...', style: TextStyle(color: _colors.accent, fontSize: 11))])
+                        : Column(children: [Icon(capsule.icon, color: _colors.accent, size: 28), SizedBox(height: 8), Text(capsule.label, style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500)), SizedBox(height: 4), Text('${_capsuleDuration.toInt()} sec', style: TextStyle(color: Colors.white54, fontSize: 10))]),
                   ),
                 ),
               );
@@ -752,7 +803,7 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
     );
 
     return Scaffold(
-      backgroundColor: _afroBlack,
+      backgroundColor: _colors.background,
       body: Stack(
         children: [
           CustomScrollView(
@@ -761,7 +812,7 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
                 expandedHeight: 400,
                 floating: false,
                 pinned: true,
-                backgroundColor: _afroBlack,
+                backgroundColor: _colors.background,
                 flexibleSpace: FlexibleSpaceBar(
                   background: Stack(
                     children: [
@@ -777,7 +828,7 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
                           gradient: LinearGradient(
                             begin: Alignment.bottomCenter,
                             end: Alignment.topCenter,
-                            colors: [_afroBlack.withOpacity(0.9), _afroBlack.withOpacity(0.3), Colors.transparent],
+                            colors: [_colors.background.withOpacity(0.9), _colors.background.withOpacity(0.3), Colors.transparent],
                             stops: [0.0, 0.5, 1.0],
                           ),
                         ),
@@ -788,14 +839,14 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
                       else if (!canWatch && _isPreviewMode)
                         Positioned.fill(
                           child: Container(
-                            color: _afroBlack.withOpacity(0.85),
+                            color: _colors.background.withOpacity(0.85),
                             child: Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.lock_outline, size: 60, color: _afroWhite),
+                                  Icon(Icons.lock_outline, size: 60, color: _colors.textPrimary),
                                   SizedBox(height: 16),
-                                  Text('Contenu premium', style: TextStyle(color: _afroWhite, fontSize: 24, fontWeight: FontWeight.bold)),
+                                  Text('Contenu premium', style: TextStyle(color: _colors.textPrimary, fontSize: 24, fontWeight: FontWeight.bold)),
                                   SizedBox(height: 8),
                                   Text('Débloquez ce contenu pour le regarder', style: TextStyle(color: Colors.white70, fontSize: 16)),
                                   SizedBox(height: 8),
@@ -806,19 +857,19 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
                           ),
                         )
                       else if (canWatch && !_isFullVideoReady)
-                          Positioned.fill(child: Center(child: CircularProgressIndicator(color: _afroYellow))),
+                          Positioned.fill(child: Center(child: CircularProgressIndicator(color: _colors.accent))),
                       // Superposition temporaire de la capsule en cours de lecture
                       if (_isPreviewMode && _isCapsulePlaying && _activeCapsuleChewie != null)
                         Positioned.fill(
                           child: Container(
-                            color: _afroBlack,
+                            color: _colors.background,
                             child: Chewie(controller: _activeCapsuleChewie!),
                           ),
                         ),
                     ],
                   ),
                 ),
-                leading: IconButton(icon: Icon(Icons.arrow_back, color: _afroWhite), onPressed: () => Navigator.pop(context)),
+                leading: IconButton(icon: Icon(Icons.arrow_back, color: _colors.textPrimary), onPressed: () => Navigator.pop(context)),
                 actions: [
                   if (isAdminOrOwner) IconButton(icon: Icon(Icons.delete_outline, color: Colors.red), onPressed: _showDeleteModal),
                 ],
@@ -843,7 +894,7 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
                           _buildStatButton(Icons.visibility, null, widget.content.views, false),
                           Spacer(),
                           if (!widget.content.isFree && (!widget.content.isSeries || (widget.content.isSeries && _currentEpisode != null && !_currentEpisode!.isFree)))
-                            Container(padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: _afroYellow.withOpacity(0.2), borderRadius: BorderRadius.circular(4), border: Border.all(color: _afroYellow)), child: Text('PREMIUM', style: TextStyle(color: _afroYellow, fontSize: 12, fontWeight: FontWeight.bold))),
+                            Container(padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: _colors.accent.withOpacity(0.2), borderRadius: BorderRadius.circular(4), border: Border.all(color: _colors.accent)), child: Text('PREMIUM', style: TextStyle(color: _colors.accent, fontSize: 12, fontWeight: FontWeight.bold))),
                         ],
                       ),
                       SizedBox(height: 20),
@@ -855,11 +906,11 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
                       Container(
                         width: double.infinity,
                         padding: EdgeInsets.all(16),
-                        decoration: BoxDecoration(color: _afroGreen.withOpacity(0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: _afroGreen.withOpacity(0.3))),
+                        decoration: BoxDecoration(color: _colors.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: _colors.primary.withOpacity(0.3))),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(children: [Icon(Icons.favorite, color: _afroGreen, size: 16), SizedBox(width: 8), Text('Soutenez les créateurs', style: TextStyle(color: _afroGreen, fontSize: 16, fontWeight: FontWeight.bold))]),
+                            Row(children: [Icon(Icons.favorite, color: _colors.primary, size: 16), SizedBox(width: 8), Text('Soutenez les créateurs', style: TextStyle(color: _colors.primary, fontSize: 16, fontWeight: FontWeight.bold))]),
                             SizedBox(height: 8),
                             Text('En achetant ce contenu, vous soutenez directement les artistes et leur permettez de créer plus de vidéos de qualité.', style: TextStyle(color: Colors.white70, fontSize: 14)),
                           ],
@@ -870,16 +921,16 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
                         Container(
                           width: double.infinity,
                           child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(foregroundColor: _afroBlack, backgroundColor: _afroYellow, padding: EdgeInsets.symmetric(vertical: 18), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                            style: ElevatedButton.styleFrom(foregroundColor: _colors.background, backgroundColor: _colors.accent, padding: EdgeInsets.symmetric(vertical: 18), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
                             onPressed: _isPurchasing ? null : _handlePurchase,
-                            child: _isPurchasing ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: _afroBlack, strokeWidth: 2)) : Text('SOUTENIR LES CRÉATEURS - ${widget.content.price.toInt()} F', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            child: _isPurchasing ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: _colors.background, strokeWidth: 2)) : Text('SOUTENIR LES CRÉATEURS - ${widget.content.price.toInt()} F', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                           ),
                         )
                       else if (canWatch && _isFullVideoReady && _chewieController != null)
                         Container(
                           width: double.infinity,
                           child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(foregroundColor: _afroWhite, backgroundColor: _afroGreen, padding: EdgeInsets.symmetric(vertical: 18), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                            style: ElevatedButton.styleFrom(foregroundColor: _colors.textPrimary, backgroundColor: _colors.primary, padding: EdgeInsets.symmetric(vertical: 18), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
                             onPressed: () {
                               if (_chewieController!.isPlaying) _chewieController!.pause();
                               else _chewieController!.play();
@@ -892,12 +943,12 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Tags:', style: TextStyle(color: _afroWhite, fontSize: 16, fontWeight: FontWeight.bold)),
+                            Text('Tags:', style: TextStyle(color: _colors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
                             SizedBox(height: 8),
                             Wrap(
                               spacing: 8,
                               runSpacing: 4,
-                              children: widget.content.hashtags!.map((hashtag) => Container(padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: _afroGreen.withOpacity(0.2), borderRadius: BorderRadius.circular(16), border: Border.all(color: _afroGreen)), child: Text('#$hashtag', style: TextStyle(color: _afroGreen)))).toList(),
+                              children: widget.content.hashtags!.map((hashtag) => Container(padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: _colors.primary.withOpacity(0.2), borderRadius: BorderRadius.circular(16), border: Border.all(color: _colors.primary)), child: Text('#$hashtag', style: TextStyle(color: _colors.primary)))).toList(),
                             ),
                           ],
                         ),
@@ -934,12 +985,12 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
           onTap: onTap,
           child: Container(
             padding: EdgeInsets.all(8),
-            decoration: BoxDecoration(color: _afroBlack.withOpacity(0.5), shape: BoxShape.circle),
-            child: isLoading ? SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: _afroYellow, strokeWidth: 2)) : Icon(icon, color: isActive ? activeColor : _afroWhite, size: 24),
+            decoration: BoxDecoration(color: _colors.background.withOpacity(0.5), shape: BoxShape.circle),
+            child: isLoading ? SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: _colors.accent, strokeWidth: 2)) : Icon(icon, color: isActive ? activeColor : _colors.textPrimary, size: 24),
           ),
         ),
         SizedBox(height: 1),
-        Text('$count', style: TextStyle(color: isActive ? activeColor : _afroWhite, fontSize: 12)),
+        Text('$count', style: TextStyle(color: isActive ? activeColor : _colors.textPrimary, fontSize: 12)),
       ],
     );
   }
@@ -954,10 +1005,6 @@ class PreviewCapsule {
   PreviewCapsule({required this.index, required this.label, required this.icon, required this.duration, required this.position});
 }
 
-const Color _afroBlack = Color(0xFF121212);
-const Color _afroWhite = Color(0xFFFFFFFF);
-const Color _afroGreen = Color(0xFF00C853);
-const Color _afroYellow = Color(0xFFFFD600);
 enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 
 //
@@ -1344,15 +1391,15 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //         aspectRatio: _videoPlayerController.value.aspectRatio,
 //         showControls: true,
 //         materialProgressColors: ChewieProgressColors(
-//           playedColor: _afroGreen,
-//           handleColor: _afroGreen,
+//           playedColor: _colors.primary,
+//           handleColor: _colors.primary,
 //           backgroundColor: Colors.grey[700]!,
 //           bufferedColor: Colors.grey[500]!,
 //         ),
 //         placeholder: Container(
-//           color: _afroBlack,
+//           color: _colors.background,
 //           child: Center(
-//             child: CircularProgressIndicator(color: _afroGreen),
+//             child: CircularProgressIndicator(color: _colors.primary),
 //           ),
 //         ),
 //       );
@@ -1440,7 +1487,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //           backgroundColor: Colors.transparent,
 //           child: Container(
 //             decoration: BoxDecoration(
-//               color: _afroBlack,
+//               color: _colors.background,
 //               borderRadius: BorderRadius.circular(20),
 //             ),
 //             padding: EdgeInsets.all(24),
@@ -1449,7 +1496,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //               children: [
 //                 Icon(
 //                   Icons.check_circle,
-//                   color: _afroGreen,
+//                   color: _colors.primary,
 //                   size: 60,
 //                 ),
 //                 SizedBox(height: 20),
@@ -1474,7 +1521,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                 ElevatedButton(
 //                   style: ElevatedButton.styleFrom(
 //                     foregroundColor: Colors.white,
-//                     backgroundColor: _afroGreen,
+//                     backgroundColor: _colors.primary,
 //                     padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
 //                     shape: RoundedRectangleBorder(
 //                       borderRadius: BorderRadius.circular(12),
@@ -1503,7 +1550,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //           backgroundColor: Colors.transparent,
 //           child: Container(
 //             decoration: BoxDecoration(
-//               color: _afroBlack,
+//               color: _colors.background,
 //               borderRadius: BorderRadius.circular(20),
 //             ),
 //             padding: EdgeInsets.all(24),
@@ -1512,7 +1559,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //               children: [
 //                 Icon(
 //                   Icons.info_outline,
-//                   color: _afroYellow,
+//                   color: _colors.accent,
 //                   size: 60,
 //                 ),
 //                 SizedBox(height: 20),
@@ -1537,7 +1584,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                 ElevatedButton(
 //                   style: ElevatedButton.styleFrom(
 //                     foregroundColor: Colors.white,
-//                     backgroundColor: _afroYellow,
+//                     backgroundColor: _colors.accent,
 //                     padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
 //                     shape: RoundedRectangleBorder(
 //                       borderRadius: BorderRadius.circular(12),
@@ -1575,7 +1622,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //         Text(
 //           widget.content.title!,
 //           style: TextStyle(
-//             color: _afroWhite,
+//             color: _colors.textPrimary,
 //             fontSize: 28,
 //             fontWeight: FontWeight.bold,
 //           ),
@@ -1584,7 +1631,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //         Text(
 //           'Série',
 //           style: TextStyle(
-//             color: _afroYellow,
+//             color: _colors.accent,
 //             fontSize: 16,
 //             fontWeight: FontWeight.w500,
 //           ),
@@ -1594,7 +1641,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //           Text(
 //             'Épisode: ${_currentEpisode!.title}',
 //             style: TextStyle(
-//               color: _afroWhite,
+//               color: _colors.textPrimary,
 //               fontSize: 20,
 //               fontWeight: FontWeight.bold,
 //             ),
@@ -1621,7 +1668,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //         Text(
 //           widget.content.title!,
 //           style: TextStyle(
-//             color: _afroWhite,
+//             color: _colors.textPrimary,
 //             fontSize: 28,
 //             fontWeight: FontWeight.bold,
 //           ),
@@ -1642,7 +1689,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //   //       Text(
 //   //         'Épisodes:',
 //   //         style: TextStyle(
-//   //           color: _afroWhite,
+//   //           color: _colors.textPrimary,
 //   //           fontSize: 18,
 //   //           fontWeight: FontWeight.bold,
 //   //         ),
@@ -1663,10 +1710,10 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //   //                 width: 160,
 //   //                 margin: EdgeInsets.only(right: 12),
 //   //                 decoration: BoxDecoration(
-//   //                   color: isSelected ? _afroGreen.withOpacity(0.2) : _afroBlack.withOpacity(0.5),
+//   //                   color: isSelected ? _colors.primary.withOpacity(0.2) : _colors.background.withOpacity(0.5),
 //   //                   borderRadius: BorderRadius.circular(8),
 //   //                   border: Border.all(
-//   //                     color: isSelected ? _afroGreen : Colors.transparent,
+//   //                     color: isSelected ? _colors.primary : Colors.transparent,
 //   //                     width: 2,
 //   //                   ),
 //   //                 ),
@@ -1698,7 +1745,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //   //                       child: Text(
 //   //                         'E${episode.episodeNumber}: ${episode.title}',
 //   //                         style: TextStyle(
-//   //                           color: _afroWhite,
+//   //                           color: _colors.textPrimary,
 //   //                           fontSize: 12,
 //   //                           fontWeight: FontWeight.w500,
 //   //                         ),
@@ -1742,7 +1789,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //         : widget.content.thumbnailUrl ?? '';
 //
 //     return Scaffold(
-//       backgroundColor: _afroBlack,
+//       backgroundColor: _colors.background,
 //       body: Stack(
 //         children: [
 //           CustomScrollView(
@@ -1751,7 +1798,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                 expandedHeight: 400,
 //                 floating: false,
 //                 pinned: true,
-//                 backgroundColor: _afroBlack,
+//                 backgroundColor: _colors.background,
 //                 flexibleSpace: FlexibleSpaceBar(
 //                   background: Stack(
 //                     children: [
@@ -1773,8 +1820,8 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                             begin: Alignment.bottomCenter,
 //                             end: Alignment.topCenter,
 //                             colors: [
-//                               _afroBlack.withOpacity(0.9),
-//                               _afroBlack.withOpacity(0.3),
+//                               _colors.background.withOpacity(0.9),
+//                               _colors.background.withOpacity(0.3),
 //                               Colors.transparent,
 //                             ],
 //                             stops: [0.0, 0.5, 1.0],
@@ -1788,7 +1835,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                       else if (!canWatch && !isAdminOrOwner) // Modifié ici
 //                         Positioned.fill(
 //                           child: Container(
-//                             color: _afroBlack.withOpacity(0.7),
+//                             color: _colors.background.withOpacity(0.7),
 //                             child: Center(
 //                               child: Column(
 //                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -1796,13 +1843,13 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                                   Icon(
 //                                     Icons.lock_outline,
 //                                     size: 60,
-//                                     color: _afroWhite,
+//                                     color: _colors.textPrimary,
 //                                   ),
 //                                   SizedBox(height: 16),
 //                                   Text(
 //                                     'Contenu verrouillé',
 //                                     style: TextStyle(
-//                                       color: _afroWhite,
+//                                       color: _colors.textPrimary,
 //                                       fontSize: 24,
 //                                       fontWeight: FontWeight.bold,
 //                                     ),
@@ -1833,7 +1880,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                       else if (isAdminOrOwner) // Nouveau bloc pour admin/propriétaire
 //                           Positioned.fill(
 //                             child: Container(
-//                               color: _afroBlack.withOpacity(0.5),
+//                               color: _colors.background.withOpacity(0.5),
 //                               child: Center(
 //                                 child: Text(
 //                                   'Vous pouvez visionner ce contenu gratuitement (Admin/Propriétaire)',
@@ -1852,7 +1899,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                   ),
 //                 ),
 //                 leading: IconButton(
-//                   icon: Icon(Icons.arrow_back, color: _afroWhite),
+//                   icon: Icon(Icons.arrow_back, color: _colors.textPrimary),
 //                   onPressed: () => Navigator.pop(context),
 //                 ),
 //                 actions: [
@@ -1863,11 +1910,11 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                     ),
 //
 //                   // IconButton(
-//                   //   icon: Icon(Icons.share, color: _afroWhite),
+//                   //   icon: Icon(Icons.share, color: _colors.textPrimary),
 //                   //   onPressed: () {},
 //                   // ),
 //                   // IconButton(
-//                   //   icon: Icon(Icons.bookmark_border, color: _afroWhite),
+//                   //   icon: Icon(Icons.bookmark_border, color: _colors.textPrimary),
 //                   //   onPressed: () {},
 //                   // ),
 //                 ],
@@ -1901,7 +1948,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                                 child: Container(
 //                                   padding: EdgeInsets.all(8),
 //                                   decoration: BoxDecoration(
-//                                     color: _afroBlack.withOpacity(0.5),
+//                                     color: _colors.background.withOpacity(0.5),
 //                                     shape: BoxShape.circle,
 //                                   ),
 //                                   child: _isSharing
@@ -1909,7 +1956,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                                     width: 24,
 //                                     height: 24,
 //                                     child: CircularProgressIndicator(
-//                                       color: _afroYellow,
+//                                       color: _colors.accent,
 //                                       strokeWidth: 2,
 //                                     ),
 //                                   )
@@ -1930,7 +1977,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                                       : widget.content.shares;
 //                                   return Text(
 //                                     '$shares',
-//                                     style: TextStyle(color: _afroWhite, fontSize: 16),
+//                                     style: TextStyle(color: _colors.textPrimary, fontSize: 16),
 //                                   );
 //                                 },
 //                               ),
@@ -1948,12 +1995,12 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                                 child: Container(
 //                                   padding: EdgeInsets.all(8),
 //                                   decoration: BoxDecoration(
-//                                     color: _afroBlack.withOpacity(0.5),
+//                                     color: _colors.background.withOpacity(0.5),
 //                                     shape: BoxShape.circle,
 //                                   ),
 //                                   child: Icon(
 //                                     _isDisliked ? Icons.thumb_down : Icons.thumb_down_outlined,
-//                                     color: _isDisliked ? Colors.blue : _afroWhite,
+//                                     color: _isDisliked ? Colors.blue : _colors.textPrimary,
 //                                     size: 24,
 //                                   ),
 //                                 ),
@@ -1967,7 +2014,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                                   return Text(
 //                                     '$dislikes',
 //                                     style: TextStyle(
-//                                       color: _isDisliked ? Colors.blue : _afroWhite,
+//                                       color: _isDisliked ? Colors.blue : _colors.textPrimary,
 //                                       fontSize: 12,
 //                                     ),
 //                                   );
@@ -1986,12 +2033,12 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                                 child: Container(
 //                                   padding: EdgeInsets.all(8),
 //                                   decoration: BoxDecoration(
-//                                     color: _afroBlack.withOpacity(0.5),
+//                                     color: _colors.background.withOpacity(0.5),
 //                                     shape: BoxShape.circle,
 //                                   ),
 //                                   child: Icon(
 //                                     _isLiked ? Icons.favorite : Icons.favorite_border,
-//                                     color: _isLiked ? Colors.red : _afroWhite,
+//                                     color: _isLiked ? Colors.red : _colors.textPrimary,
 //                                     size: 24,
 //                                   ),
 //                                 ),
@@ -2005,7 +2052,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                                   return Text(
 //                                     '$likes',
 //                                     style: TextStyle(
-//                                       color: _isLiked ? Colors.red : _afroWhite,
+//                                       color: _isLiked ? Colors.red : _colors.textPrimary,
 //                                       fontSize: 12,
 //                                     ),
 //                                   );
@@ -2019,7 +2066,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                           Column(
 //                             mainAxisSize: MainAxisSize.min,
 //                             children: [
-//                               Icon(Icons.visibility, color: _afroWhite, size: 24),
+//                               Icon(Icons.visibility, color: _colors.textPrimary, size: 24),
 //                               SizedBox(height: 1),
 //                               Consumer<ContentProvider>(
 //                                 builder: (context, contentProvider, child) {
@@ -2028,7 +2075,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                                       : widget.content.views;
 //                                   return Text(
 //                                     '$views',
-//                                     style: TextStyle(color: _afroWhite, fontSize: 12),
+//                                     style: TextStyle(color: _colors.textPrimary, fontSize: 12),
 //                                   );
 //                                 },
 //                               ),
@@ -2041,14 +2088,14 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                             Container(
 //                               padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
 //                               decoration: BoxDecoration(
-//                                 color: _afroYellow.withOpacity(0.2),
+//                                 color: _colors.accent.withOpacity(0.2),
 //                                 borderRadius: BorderRadius.circular(4),
-//                                 border: Border.all(color: _afroYellow),
+//                                 border: Border.all(color: _colors.accent),
 //                               ),
 //                               child: Text(
 //                                 'PREMIUM',
 //                                 style: TextStyle(
-//                                   color: _afroYellow,
+//                                   color: _colors.accent,
 //                                   fontSize: 12,
 //                                   fontWeight: FontWeight.bold,
 //                                 ),
@@ -2078,21 +2125,21 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                         width: double.infinity,
 //                         padding: EdgeInsets.all(16),
 //                         decoration: BoxDecoration(
-//                           color: _afroGreen.withOpacity(0.1),
+//                           color: _colors.primary.withOpacity(0.1),
 //                           borderRadius: BorderRadius.circular(8),
-//                           border: Border.all(color: _afroGreen.withOpacity(0.3)),
+//                           border: Border.all(color: _colors.primary.withOpacity(0.3)),
 //                         ),
 //                         child: Column(
 //                           crossAxisAlignment: CrossAxisAlignment.start,
 //                           children: [
 //                             Row(
 //                               children: [
-//                                 Icon(Icons.favorite, color: _afroGreen, size: 16),
+//                                 Icon(Icons.favorite, color: _colors.primary, size: 16),
 //                                 SizedBox(width: 8),
 //                                 Text(
 //                                   'Soutenez les créateurs',
 //                                   style: TextStyle(
-//                                     color: _afroGreen,
+//                                     color: _colors.primary,
 //                                     fontSize: 16,
 //                                     fontWeight: FontWeight.bold,
 //                                   ),
@@ -2117,8 +2164,8 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                           width: double.infinity,
 //                           child: ElevatedButton(
 //                             style: ElevatedButton.styleFrom(
-//                               foregroundColor: _afroBlack,
-//                               backgroundColor: _afroYellow,
+//                               foregroundColor: _colors.background,
+//                               backgroundColor: _colors.accent,
 //                               padding: EdgeInsets.symmetric(vertical: 18),
 //                               shape: RoundedRectangleBorder(
 //                                 borderRadius: BorderRadius.circular(8),
@@ -2131,7 +2178,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                               width: 20,
 //                               height: 20,
 //                               child: CircularProgressIndicator(
-//                                 color: _afroBlack,
+//                                 color: _colors.background,
 //                                 strokeWidth: 2,
 //                               ),
 //                             )
@@ -2149,8 +2196,8 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                           width: double.infinity,
 //                           child: ElevatedButton(
 //                             style: ElevatedButton.styleFrom(
-//                               foregroundColor: _afroWhite,
-//                               backgroundColor: _afroGreen,
+//                               foregroundColor: _colors.textPrimary,
+//                               backgroundColor: _colors.primary,
 //                               padding: EdgeInsets.symmetric(vertical: 18),
 //                               shape: RoundedRectangleBorder(
 //                                 borderRadius: BorderRadius.circular(8),
@@ -2183,7 +2230,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                             Text(
 //                               'Tags:',
 //                               style: TextStyle(
-//                                 color: _afroWhite,
+//                                 color: _colors.textPrimary,
 //                                 fontSize: 16,
 //                                 fontWeight: FontWeight.bold,
 //                               ),
@@ -2198,13 +2245,13 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                                 return Container(
 //                                   padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
 //                                   decoration: BoxDecoration(
-//                                     color: _afroGreen.withOpacity(0.2),
+//                                     color: _colors.primary.withOpacity(0.2),
 //                                     borderRadius: BorderRadius.circular(16),
-//                                     border: Border.all(color: _afroGreen),
+//                                     border: Border.all(color: _colors.primary),
 //                                   ),
 //                                   child: Text(
 //                                     '#$hashtag',
-//                                     style: TextStyle(color: _afroGreen),
+//                                     style: TextStyle(color: _colors.primary),
 //                                   ),
 //                                 );
 //                               }).toList(),
@@ -2249,18 +2296,18 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //               child: Container(
 //                 padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
 //                 decoration: BoxDecoration(
-//                   color: _afroBlack.withOpacity(0.7),
+//                   color: _colors.background.withOpacity(0.7),
 //                   borderRadius: BorderRadius.circular(12),
 //                 ),
 //                 child: Row(
 //                   children: [
-//                     Icon(Icons.visibility, color: _afroWhite, size: 14),
+//                     Icon(Icons.visibility, color: _colors.textPrimary, size: 14),
 //                     SizedBox(width: 4),
 //                     Text(
 //                       widget.content.isSeries && _currentEpisode != null
 //                           ? '${_currentEpisode!.views}'
 //                           : '${widget.content.views}',
-//                       style: TextStyle(color: _afroWhite, fontSize: 12),
+//                       style: TextStyle(color: _colors.textPrimary, fontSize: 12),
 //                     ),
 //                   ],
 //                 ),
@@ -2273,11 +2320,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //   }
 // }
 //
-// // Couleurs thématiques (à adapter selon votre thème)
-// const Color _afroBlack = Color(0xFF121212);
-// const Color _afroWhite = Color(0xFFFFFFFF);
-// const Color _afroGreen = Color(0xFF00C853);
-// const Color _afroYellow = Color(0xFFFFD600);
+// // Couleurs thématiques — via AppColors.of(context)
 //
 // enum PurchaseResult {
 //   success,

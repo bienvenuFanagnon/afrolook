@@ -7,6 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../providers/contenuPayantProvider.dart';
 import '../../providers/authProvider.dart';
+import '../../theme/app_colors.dart';
 import 'contentDetailsEbook.dart';
 
 class SeriesEpisodesScreen extends StatefulWidget {
@@ -19,7 +20,6 @@ class SeriesEpisodesScreen extends StatefulWidget {
 }
 
 class _SeriesEpisodesScreenState extends State<SeriesEpisodesScreen> {
-  // Méthode utilitaire pour optimiser les URLs de médias via le CDN
   String _cdnUrl(String? url) {
     if (url == null || url.isEmpty) return '';
     final userProvider = Provider.of<UserAuthProvider>(context, listen: false);
@@ -39,110 +39,75 @@ class _SeriesEpisodesScreenState extends State<SeriesEpisodesScreen> {
 
   Future<void> _loadEpisodes() async {
     try {
-      setState(() {
-        _isLoading = true;
-        _hasError = false;
-      });
-
-      // Récupérer les épisodes depuis Firebase Firestore
+      setState(() { _isLoading = true; _hasError = false; });
       final QuerySnapshot snapshot = await FirebaseFirestore.instance
           .collection('episodes')
           .where('seriesId', isEqualTo: widget.series.id)
           .orderBy('episodeNumber', descending: false)
           .get();
-
-      List<Episode> loadedEpisodes = [];
-
-      for (var doc in snapshot.docs) {
-        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-        loadedEpisodes.add(Episode.fromJson({
-          ...data,
-          'id': doc.id,
-        }));
-      }
-
       setState(() {
-        _episodes = loadedEpisodes;
+        _episodes = snapshot.docs.map((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return Episode.fromJson({...data, 'id': doc.id});
+        }).toList();
         _isLoading = false;
       });
     } catch (e) {
-      print('Erreur lors du chargement des épisodes: $e');
-      setState(() {
-        _isLoading = false;
-        _hasError = true;
-        _errorMessage = 'Erreur de chargement: ${e.toString()}';
-      });
+      setState(() { _isLoading = false; _hasError = true; _errorMessage = 'Erreur: ${e.toString()}'; });
     }
   }
 
   String _formatDuration(int seconds) {
-    final duration = Duration(seconds: seconds);
-    final hours = duration.inHours;
-    final minutes = duration.inMinutes.remainder(60);
-
-    if (hours > 0) {
-      return '${hours}h ${minutes}min';
-    } else {
-      return '${minutes}min';
-    }
+    final d = Duration(seconds: seconds);
+    final h = d.inHours;
+    final m = d.inMinutes.remainder(60);
+    return h > 0 ? '${h}h ${m}min' : '${m}min';
   }
 
-  String _formatPageCount(int pageCount) {
-    return '$pageCount page${pageCount > 1 ? 's' : ''}';
-  }
+  String _formatPageCount(int pageCount) => '$pageCount page${pageCount > 1 ? 's' : ''}';
 
-  Widget _buildContentTypeBadge(ContentType contentType) {
+  // VIDEO = info (bleu), EBOOK = warning (orange) — couleurs sémantiques intentionnelles
+  Color _typeColor(ContentType t, AppColors colors) =>
+      t == ContentType.VIDEO ? colors.info : colors.warning;
+
+  Widget _buildContentTypeBadge(ContentType contentType, AppColors colors) {
+    final color = _typeColor(contentType, colors);
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: contentType == ContentType.VIDEO ? Colors.blue.withOpacity(0.2) : Colors.orange.withOpacity(0.2),
+        color: color.withOpacity(0.15),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(
-          color: contentType == ContentType.VIDEO ? Colors.blue : Colors.orange,
-        ),
+        border: Border.all(color: color),
       ),
       child: Text(
         contentType == ContentType.VIDEO ? 'VIDÉO' : 'EBOOK',
-        style: TextStyle(
-          color: contentType == ContentType.VIDEO ? Colors.blue : Colors.orange,
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-        ),
+        style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
       ),
     );
   }
 
-  Widget _buildEpisodeItem(Episode episode, int index) {
+  Widget _buildEpisodeItem(Episode episode, int index, AppColors colors) {
+    final typeColor = _typeColor(episode.contentType, colors);
     return Container(
-      margin: EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Numéro de l'épisode
+          // Numéro
           Container(
-            width: 40,
-            height: 40,
+            width: 40, height: 40,
             decoration: BoxDecoration(
-              color: Colors.black,
-              border: Border.all(
-                color: episode.isVideo ? Colors.blue : Colors.orange,
-                width: 2,
-              ),
+              color: colors.background,
+              border: Border.all(color: typeColor, width: 2),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Center(
-              child: Text(
-                '${episode.episodeNumber}',
-                style: TextStyle(
-                  color: episode.isVideo ? Colors.blue : Colors.orange,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
+              child: Text('${episode.episodeNumber}',
+                  style: TextStyle(color: typeColor, fontWeight: FontWeight.bold, fontSize: 16)),
             ),
           ),
-          SizedBox(width: 12),
-          // Image de l'épisode
+          const SizedBox(width: 12),
+          // Thumbnail
           Expanded(
             flex: 2,
             child: ClipRRect(
@@ -151,152 +116,69 @@ class _SeriesEpisodesScreenState extends State<SeriesEpisodesScreen> {
                 children: [
                   episode.thumbnailUrl != null && episode.thumbnailUrl!.isNotEmpty
                       ? CachedNetworkImage(
-                    imageUrl: _cdnUrl(episode.thumbnailUrl),
-                    width: double.infinity,
-                    height: 90,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(
-                      color: Colors.grey[800],
-                      height: 90,
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: episode.isVideo ? Colors.blue : Colors.orange,
-                        ),
-                      ),
-                    ),
-                    errorWidget: (context, url, error) => Container(
-                      color: Colors.grey[800],
-                      height: 90,
-                      child: Icon(
-                        episode.isVideo ? Icons.videocam : Icons.book,
-                        color: Colors.grey[600],
-                        size: 30,
-                      ),
-                    ),
-                  )
+                          imageUrl: _cdnUrl(episode.thumbnailUrl),
+                          width: double.infinity, height: 90, fit: BoxFit.cover,
+                          placeholder: (_, __) => Container(
+                            color: colors.surfaceVariant, height: 90,
+                            child: Center(child: CircularProgressIndicator(color: typeColor)),
+                          ),
+                          errorWidget: (_, __, ___) => Container(
+                            color: colors.surfaceVariant, height: 90,
+                            child: Icon(episode.isVideo ? Icons.videocam : Icons.book, color: colors.textSecondary, size: 30),
+                          ),
+                        )
                       : Container(
-                    color: Colors.grey[800],
-                    height: 90,
-                    child: Icon(
-                      episode.isVideo ? Icons.videocam : Icons.book,
-                      color: Colors.grey[600],
-                      size: 30,
-                    ),
-                  ),
-                  // Badge de durée ou pages
-                  // Positioned(
-                  //   bottom: 4,
-                  //   right: 4,
-                  //   child: Container(
-                  //     padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  //     decoration: BoxDecoration(
-                  //       color: Colors.black.withOpacity(0.7),
-                  //       borderRadius: BorderRadius.circular(4),
-                  //     ),
-                  //     child: Text(
-                  //       episode.isVideo ? _formatDuration(episode.duration) : _formatPageCount(episode.pageCount),
-                  //       style: TextStyle(
-                  //         color: Colors.white,
-                  //         fontSize: 12,
-                  //         fontWeight: FontWeight.bold,
-                  //       ),
-                  //     ),
-                  //   ),
-                  // ),
-                  // Badge pour contenu payant
+                          color: colors.surfaceVariant, height: 90,
+                          child: Icon(episode.isVideo ? Icons.videocam : Icons.book, color: colors.textSecondary, size: 30),
+                        ),
                   if (!episode.isFree)
                     Positioned(
-                      top: 4,
-                      right: 4,
+                      top: 4, right: 4,
                       child: Container(
-                        padding: EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.7),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(Icons.monetization_on, color: Colors.yellow, size: 16),
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(color: Colors.black.withOpacity(0.7), shape: BoxShape.circle),
+                        child: Icon(Icons.monetization_on, color: colors.accent, size: 16),
                       ),
                     ),
-                  // Badge type de contenu
                   Positioned(
-                    top: 4,
-                    left: 4,
-                    child: _buildContentTypeBadge(episode.contentType),
+                    top: 4, left: 4,
+                    child: _buildContentTypeBadge(episode.contentType, colors),
                   ),
                 ],
               ),
             ),
           ),
-          SizedBox(width: 12),
-          // Informations de l'épisode
+          const SizedBox(width: 12),
+          // Infos
           Expanded(
             flex: 3,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  episode.title,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: 4),
-                Text(
-                  episode.description,
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 14,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: 8),
+                Text(episode.title,
+                    style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
+                    maxLines: 2, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 4),
+                Text(episode.description,
+                    style: TextStyle(color: colors.textSecondary, fontSize: 14),
+                    maxLines: 2, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     if (!episode.isFree)
-                      Text(
-                        '${episode.price} F',
-                        style: TextStyle(
-                          color: Colors.yellow,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      )
+                      Text('${episode.price} F',
+                          style: TextStyle(color: colors.accent, fontWeight: FontWeight.bold, fontSize: 14))
                     else
-                      Text(
-                        'Gratuit',
-                        style: TextStyle(
-                          color: Colors.green,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                    SizedBox(width: 16),
-                    Row(
-                      children: [
-                        Icon(Icons.visibility, color: Colors.grey, size: 16),
-                        SizedBox(width: 4),
-                        Text(
-                          '${episode.views}',
-                          style: TextStyle(color: Colors.grey, fontSize: 14),
-                        ),
-                      ],
-                    ),
-                    SizedBox(width: 16),
-                    Row(
-                      children: [
-                        Icon(Icons.thumb_up, color: Colors.grey, size: 16),
-                        SizedBox(width: 4),
-                        Text(
-                          '${episode.likes}',
-                          style: TextStyle(color: Colors.grey, fontSize: 14),
-                        ),
-                      ],
-                    ),
+                      Text('Gratuit',
+                          style: TextStyle(color: colors.primary, fontWeight: FontWeight.bold, fontSize: 14)),
+                    const SizedBox(width: 16),
+                    Icon(Icons.visibility, color: colors.textSecondary, size: 16),
+                    const SizedBox(width: 4),
+                    Text('${episode.views}', style: TextStyle(color: colors.textSecondary, fontSize: 14)),
+                    const SizedBox(width: 16),
+                    Icon(Icons.thumb_up, color: colors.textSecondary, size: 16),
+                    const SizedBox(width: 4),
+                    Text('${episode.likes}', style: TextStyle(color: colors.textSecondary, fontSize: 14)),
                   ],
                 ),
               ],
@@ -309,229 +191,116 @@ class _SeriesEpisodesScreenState extends State<SeriesEpisodesScreen> {
 
   void _navigateToEpisodeDetail(Episode episode) {
     if (episode.isVideo) {
-      // Naviguer vers la page de détail vidéo
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ContentDetailScreen(content: widget.series, episode: episode),
-        ),
-      );
+      Navigator.push(context, MaterialPageRoute(builder: (_) => ContentDetailScreen(content: widget.series, episode: episode)));
     } else {
-      // Naviguer vers la page de détail ebook
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => EbookDetailScreen(content: widget.series, episode: episode),
-        ),
-      );
+      Navigator.push(context, MaterialPageRoute(builder: (_) => EbookDetailScreen(content: widget.series, episode: episode)));
     }
   }
 
-  Widget _buildSeriesHeader() {
-    final isVideoSeries = widget.series.isVideo;
-    final isEbookSeries = widget.series.isEbook;
-
+  Widget _buildSeriesHeader(AppColors colors) {
+    final typeColor = _typeColor(widget.series.contentType, colors);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Bannière de la série
         Container(
-          width: double.infinity,
-          height: 200,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: Colors.grey[900],
-          ),
-          child: widget.series.thumbnailUrl != null && widget.series.thumbnailUrl!.isNotEmpty
+          width: double.infinity, height: 200,
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: colors.surfaceVariant),
+          child: widget.series.thumbnailUrl.isNotEmpty
               ? ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: CachedNetworkImage(
-              imageUrl: _cdnUrl(widget.series.thumbnailUrl),
-              fit: BoxFit.cover,
-              placeholder: (context, url) => Container(
-                color: Colors.grey[800],
-                child: Center(
-                  child: CircularProgressIndicator(
-                    color: isVideoSeries ? Colors.blue : Colors.orange,
+                  borderRadius: BorderRadius.circular(12),
+                  child: CachedNetworkImage(
+                    imageUrl: _cdnUrl(widget.series.thumbnailUrl), fit: BoxFit.cover,
+                    placeholder: (_, __) => Container(color: colors.shimmerBase, child: Center(child: CircularProgressIndicator(color: typeColor))),
+                    errorWidget: (_, __, ___) => Center(child: Icon(widget.series.isVideo ? Icons.videocam : Icons.book, color: colors.textSecondary, size: 50)),
                   ),
-                ),
-              ),
-              errorWidget: (context, url, error) => Container(
-                color: Colors.grey[800],
-                child: Icon(
-                  isVideoSeries ? Icons.videocam : Icons.book,
-                  color: Colors.grey[600],
-                  size: 50,
-                ),
-              ),
-            ),
-          )
-              : Center(
-            child: Icon(
-              isVideoSeries ? Icons.videocam : Icons.book,
-              color: Colors.grey[600],
-              size: 50,
-            ),
-          ),
+                )
+              : Center(child: Icon(widget.series.isVideo ? Icons.videocam : Icons.book, color: colors.textSecondary, size: 50)),
         ),
-        SizedBox(height: 16),
-
-        // Type de série
+        const SizedBox(height: 16),
         Row(
           children: [
-            _buildContentTypeBadge(widget.series.contentType),
-            SizedBox(width: 8),
-            Text(
-              widget.series.isVideoSeries ? 'Série Vidéo' : 'Série Ebook',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            _buildContentTypeBadge(widget.series.contentType, colors),
+            const SizedBox(width: 8),
+            Text(widget.series.isVideoSeries ? 'Série Vidéo' : 'Série Ebook',
+                style: TextStyle(color: colors.textSecondary, fontSize: 14, fontWeight: FontWeight.bold)),
           ],
         ),
-        SizedBox(height: 8),
-
-        // Titre et description de la série
-        Text(
-          widget.series.title,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        SizedBox(height: 8),
-        Text(
-          widget.series.description,
-          style: TextStyle(
-            color: Colors.grey,
-            fontSize: 16,
-          ),
-        ),
-        SizedBox(height: 16),
-
-        // Statistiques de la série
+        const SizedBox(height: 8),
+        Text(widget.series.title,
+            style: TextStyle(color: colors.textPrimary, fontSize: 24, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        Text(widget.series.description, style: TextStyle(color: colors.textSecondary, fontSize: 16)),
+        const SizedBox(height: 16),
         Row(
           children: [
-            Row(
-              children: [
-                Icon(
-                  widget.series.isVideo ? Icons.playlist_play : Icons.library_books,
-                  color: widget.series.isVideo ? Colors.blue : Colors.orange,
-                  size: 20,
-                ),
-                SizedBox(width: 4),
-                Text(
-                  '${_episodes.length} épisode${_episodes.length > 1 ? 's' : ''}',
-                  style: TextStyle(
-                    color: widget.series.isVideo ? Colors.blue : Colors.orange,
-                    fontSize: 16,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(width: 20),
-            Row(
-              children: [
-                Icon(Icons.visibility, color: Colors.grey, size: 20),
-                SizedBox(width: 4),
-                Text(
-                  '${widget.series.views} vues',
-                  style: TextStyle(color: Colors.grey, fontSize: 16),
-                ),
-              ],
-            ),
-            SizedBox(width: 20),
-            Row(
-              children: [
-                Icon(Icons.thumb_up, color: Colors.grey, size: 20),
-                SizedBox(width: 4),
-                Text(
-                  '${widget.series.likes} likes',
-                  style: TextStyle(color: Colors.grey, fontSize: 16),
-                ),
-              ],
-            ),
+            Icon(widget.series.isVideo ? Icons.playlist_play : Icons.library_books, color: typeColor, size: 20),
+            const SizedBox(width: 4),
+            Text('${_episodes.length} épisode${_episodes.length > 1 ? 's' : ''}',
+                style: TextStyle(color: typeColor, fontSize: 16)),
+            const SizedBox(width: 20),
+            Icon(Icons.visibility, color: colors.textSecondary, size: 20),
+            const SizedBox(width: 4),
+            Text('${widget.series.views} vues', style: TextStyle(color: colors.textSecondary, fontSize: 16)),
+            const SizedBox(width: 20),
+            Icon(Icons.thumb_up, color: colors.textSecondary, size: 20),
+            const SizedBox(width: 4),
+            Text('${widget.series.likes} likes', style: TextStyle(color: colors.textSecondary, fontSize: 16)),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildErrorWidget() {
+  Widget _buildErrorWidget(AppColors colors) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error_outline, color: Colors.red, size: 64),
-          SizedBox(height: 16),
-          Text(
-            'Erreur de chargement',
-            style: TextStyle(color: Colors.white, fontSize: 18),
-          ),
-          SizedBox(height: 8),
-          Text(
-            _errorMessage,
-            style: TextStyle(color: Colors.grey, fontSize: 14),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: 16),
+          Icon(Icons.error_outline, color: colors.danger, size: 64),
+          const SizedBox(height: 16),
+          Text('Erreur de chargement', style: TextStyle(color: colors.textPrimary, fontSize: 18)),
+          const SizedBox(height: 8),
+          Text(_errorMessage, style: TextStyle(color: colors.textSecondary, fontSize: 14), textAlign: TextAlign.center),
+          const SizedBox(height: 16),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              foregroundColor: Colors.white,
-              backgroundColor: Colors.green,
-            ),
+            style: ElevatedButton.styleFrom(foregroundColor: colors.onPrimary, backgroundColor: colors.primary),
             onPressed: _loadEpisodes,
-            child: Text('Réessayer'),
+            child: const Text('Réessayer'),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildLoadingWidget() {
-    final isVideoSeries = widget.series.isVideo;
-
+  Widget _buildLoadingWidget(AppColors colors) {
+    final typeColor = _typeColor(widget.series.contentType, colors);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(color: isVideoSeries ? Colors.blue : Colors.orange),
-          SizedBox(height: 16),
-          Text(
-            'Chargement des épisodes...',
-            style: TextStyle(color: Colors.white),
-          ),
+          CircularProgressIndicator(color: typeColor),
+          const SizedBox(height: 16),
+          Text('Chargement des épisodes...', style: TextStyle(color: colors.textPrimary)),
         ],
       ),
     );
   }
 
-  Widget _buildEmptyWidget() {
-    final isVideoSeries = widget.series.isVideo;
-
+  Widget _buildEmptyWidget(AppColors colors) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            isVideoSeries ? Icons.playlist_play : Icons.library_books,
-            size: 64,
-            color: Colors.grey,
-          ),
-          SizedBox(height: 16),
+          Icon(widget.series.isVideo ? Icons.playlist_play : Icons.library_books,
+              size: 64, color: colors.textSecondary),
+          const SizedBox(height: 16),
+          Text('Aucun épisode disponible', style: TextStyle(color: colors.textSecondary, fontSize: 18)),
+          const SizedBox(height: 8),
           Text(
-            'Aucun épisode disponible',
-            style: TextStyle(color: Colors.white70, fontSize: 18),
-          ),
-          SizedBox(height: 8),
-          Text(
-            isVideoSeries
+            widget.series.isVideo
                 ? 'Les épisodes vidéo seront bientôt disponibles'
                 : 'Les chapitres ebook seront bientôt disponibles',
-            style: TextStyle(color: Colors.grey, fontSize: 14),
+            style: TextStyle(color: colors.textSecondary, fontSize: 14),
             textAlign: TextAlign.center,
           ),
         ],
@@ -541,542 +310,55 @@ class _SeriesEpisodesScreenState extends State<SeriesEpisodesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     final contentProvider = Provider.of<ContentProvider>(context, listen: false);
     contentProvider.incrementViews(widget.series.id!);
 
-    final isVideoSeries = widget.series.isVideo;
-    final appBarColor = isVideoSeries ? Colors.blue : Colors.orange;
+    final typeColor = _typeColor(widget.series.contentType, colors);
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colors.background,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        title: Text(
-          widget.series.title,
-          style: TextStyle(color: appBarColor, fontWeight: FontWeight.bold),
-        ),
-        iconTheme: IconThemeData(color: appBarColor),
+        backgroundColor: colors.background,
+        title: Text(widget.series.title,
+            style: TextStyle(color: typeColor, fontWeight: FontWeight.bold)),
+        iconTheme: IconThemeData(color: typeColor),
         actions: [
-          IconButton(
-            icon: Icon(Icons.refresh, color: appBarColor),
-            onPressed: _loadEpisodes,
-          ),
-          IconButton(
-            icon: Icon(Icons.share, color: appBarColor),
-            onPressed: () {
-              // Action de partage
-            },
-          ),
+          IconButton(icon: Icon(Icons.refresh, color: typeColor), onPressed: _loadEpisodes),
+          IconButton(icon: Icon(Icons.share, color: typeColor), onPressed: () {}),
         ],
       ),
       body: _isLoading
-          ? _buildLoadingWidget()
+          ? _buildLoadingWidget(colors)
           : _hasError
-          ? _buildErrorWidget()
-          : SingleChildScrollView(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // En-tête de la série
-            _buildSeriesHeader(),
-            SizedBox(height: 24),
-
-            // Liste des épisodes
-            Text(
-              widget.series.isVideo ? 'Épisodes Vidéo' : 'Chapitres Ebook',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: 16),
-
-            if (_episodes.isEmpty)
-              _buildEmptyWidget()
-            else
-              Column(
-                children: List.generate(_episodes.length, (index) {
-                  final episode = _episodes[index];
-                  return GestureDetector(
-                    onTap: () => _navigateToEpisodeDetail(episode),
-                    child: _buildEpisodeItem(episode, index),
-                  );
-                }),
-              ),
-          ],
-        ),
-      ),
+              ? _buildErrorWidget(colors)
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSeriesHeader(colors),
+                      const SizedBox(height: 24),
+                      Text(
+                        widget.series.isVideo ? 'Épisodes Vidéo' : 'Chapitres Ebook',
+                        style: TextStyle(color: colors.textPrimary, fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 16),
+                      if (_episodes.isEmpty)
+                        _buildEmptyWidget(colors)
+                      else
+                        Column(
+                          children: List.generate(_episodes.length, (index) {
+                            final ep = _episodes[index];
+                            return GestureDetector(
+                              onTap: () => _navigateToEpisodeDetail(ep),
+                              child: _buildEpisodeItem(ep, index, colors),
+                            );
+                          }),
+                        ),
+                    ],
+                  ),
+                ),
     );
   }
 }
-
-// import 'package:flutter/material.dart';
-// import 'package:cached_network_image/cached_network_image.dart';
-// import 'package:afrotok/models/model_data.dart';
-// import 'package:afrotok/pages/contenuPayant/contentDetails.dart';
-// import 'package:provider/provider.dart';
-// import 'package:cloud_firestore/cloud_firestore.dart';
-//
-// import '../../providers/contenuPayantProvider.dart';
-//
-// class SeriesEpisodesScreen extends StatefulWidget {
-//   final ContentPaie series;
-//
-//   const SeriesEpisodesScreen({Key? key, required this.series}) : super(key: key);
-//
-//   @override
-//   _SeriesEpisodesScreenState createState() => _SeriesEpisodesScreenState();
-// }
-//
-// class _SeriesEpisodesScreenState extends State<SeriesEpisodesScreen> {
-//   List<Episode> _episodes = [];
-//   bool _isLoading = true;
-//   bool _hasError = false;
-//   String _errorMessage = '';
-//
-//   @override
-//   void initState() {
-//     super.initState();
-//     _loadEpisodes();
-//   }
-//
-//   Future<void> _loadEpisodes() async {
-//     try {
-//       setState(() {
-//         _isLoading = true;
-//         _hasError = false;
-//       });
-//
-//       // Récupérer les épisodes depuis Firebase Firestore
-//       final QuerySnapshot snapshot = await FirebaseFirestore.instance
-//           .collection('episodes')
-//           .where('seriesId', isEqualTo: widget.series.id)
-//           .orderBy('episodeNumber', descending: false)
-//           .get();
-//
-//       List<Episode> loadedEpisodes = [];
-//
-//       for (var doc in snapshot.docs) {
-//         Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-//         loadedEpisodes.add(Episode.fromJson({
-//           ...data,
-//           'id': doc.id,
-//         }));
-//       }
-//
-//       setState(() {
-//         _episodes = loadedEpisodes;
-//         _isLoading = false;
-//       });
-//     } catch (e) {
-//       print('Erreur lors du chargement des épisodes: $e');
-//       setState(() {
-//         _isLoading = false;
-//         _hasError = true;
-//         _errorMessage = 'Erreur de chargement: ${e.toString()}';
-//       });
-//     }
-//   }
-//
-//   String _formatDuration(int seconds) {
-//     final duration = Duration(seconds: seconds);
-//     final hours = duration.inHours;
-//     final minutes = duration.inMinutes.remainder(60);
-//
-//     if (hours > 0) {
-//       return '${hours}h ${minutes}min';
-//     } else {
-//       return '${minutes}min';
-//     }
-//   }
-//
-//   Widget _buildEpisodeItem(Episode episode, int index) {
-//     return Container(
-//       margin: EdgeInsets.only(bottom: 16),
-//       child: Row(
-//         crossAxisAlignment: CrossAxisAlignment.start,
-//         children: [
-//           // Numéro de l'épisode
-//           Container(
-//             width: 40,
-//             height: 40,
-//             decoration: BoxDecoration(
-//               color: Colors.black,
-//               border: Border.all(color: Colors.green, width: 2),
-//               borderRadius: BorderRadius.circular(20),
-//             ),
-//             child: Center(
-//               child: Text(
-//                 '${episode.episodeNumber}',
-//                 style: TextStyle(
-//                   color: Colors.green,
-//                   fontWeight: FontWeight.bold,
-//                   fontSize: 16,
-//                 ),
-//               ),
-//             ),
-//           ),
-//           SizedBox(width: 12),
-//           // Image de l'épisode
-//           Expanded(
-//             flex: 2,
-//             child: ClipRRect(
-//               borderRadius: BorderRadius.circular(8),
-//               child: Stack(
-//                 children: [
-//                   episode.thumbnailUrl != null && episode.thumbnailUrl!.isNotEmpty
-//                       ? CachedNetworkImage(
-//                     imageUrl: episode.thumbnailUrl!,
-//                     width: double.infinity,
-//                     height: 90,
-//                     fit: BoxFit.cover,
-//                     placeholder: (context, url) => Container(
-//                       color: Colors.grey[800],
-//                       height: 90,
-//                       child: Center(child: CircularProgressIndicator(color: Colors.green)),
-//                     ),
-//                     errorWidget: (context, url, error) => Container(
-//                       color: Colors.grey[800],
-//                       height: 90,
-//                       child: Icon(Icons.error, color: Colors.white),
-//                     ),
-//                   )
-//                       : Container(
-//                     color: Colors.grey[800],
-//                     height: 90,
-//                     child: Icon(Icons.videocam, color: Colors.grey[600], size: 30),
-//                   ),
-//                   // Badge de durée
-//                   Positioned(
-//                     bottom: 4,
-//                     right: 4,
-//                     child: Container(
-//                       padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-//                       decoration: BoxDecoration(
-//                         color: Colors.black.withOpacity(0.7),
-//                         borderRadius: BorderRadius.circular(4),
-//                       ),
-//                       child: Text(
-//                         _formatDuration(episode.duration),
-//                         style: TextStyle(
-//                           color: Colors.white,
-//                           fontSize: 12,
-//                           fontWeight: FontWeight.bold,
-//                         ),
-//                       ),
-//                     ),
-//                   ),
-//                   // Badge pour contenu payant
-//                   if (!episode.isFree)
-//                     Positioned(
-//                       top: 4,
-//                       right: 4,
-//                       child: Container(
-//                         padding: EdgeInsets.all(4),
-//                         decoration: BoxDecoration(
-//                           color: Colors.black.withOpacity(0.7),
-//                           shape: BoxShape.circle,
-//                         ),
-//                         child: Icon(Icons.monetization_on, color: Colors.yellow, size: 16),
-//                       ),
-//                     ),
-//                 ],
-//               ),
-//             ),
-//           ),
-//           SizedBox(width: 12),
-//           // Informations de l'épisode
-//           Expanded(
-//             flex: 3,
-//             child: Column(
-//               crossAxisAlignment: CrossAxisAlignment.start,
-//               children: [
-//                 Text(
-//                   episode.title,
-//                   style: TextStyle(
-//                     color: Colors.white,
-//                     fontWeight: FontWeight.bold,
-//                     fontSize: 16,
-//                   ),
-//                   maxLines: 2,
-//                   overflow: TextOverflow.ellipsis,
-//                 ),
-//                 SizedBox(height: 4),
-//                 Text(
-//                   episode.description,
-//                   style: TextStyle(
-//                     color: Colors.grey,
-//                     fontSize: 14,
-//                   ),
-//                   maxLines: 2,
-//                   overflow: TextOverflow.ellipsis,
-//                 ),
-//                 SizedBox(height: 8),
-//                 Row(
-//                   children: [
-//                     if (!episode.isFree)
-//                       Text(
-//                         '${episode.price} F',
-//                         style: TextStyle(
-//                           color: Colors.yellow,
-//                           fontWeight: FontWeight.bold,
-//                           fontSize: 14,
-//                         ),
-//                       )
-//                     else
-//                       Text(
-//                         'Gratuit',
-//                         style: TextStyle(
-//                           color: Colors.green,
-//                           fontWeight: FontWeight.bold,
-//                           fontSize: 14,
-//                         ),
-//                       ),
-//                     SizedBox(width: 16),
-//                     Row(
-//                       children: [
-//                         Icon(Icons.visibility, color: Colors.grey, size: 16),
-//                         SizedBox(width: 4),
-//                         Text(
-//                           '${episode.views}',
-//                           style: TextStyle(color: Colors.grey, fontSize: 14),
-//                         ),
-//                       ],
-//                     ),
-//                     SizedBox(width: 16),
-//                     Row(
-//                       children: [
-//                         Icon(Icons.thumb_up, color: Colors.grey, size: 16),
-//                         SizedBox(width: 4),
-//                         Text(
-//                           '${episode.likes}',
-//                           style: TextStyle(color: Colors.grey, fontSize: 14),
-//                         ),
-//                       ],
-//                     ),
-//                   ],
-//                 ),
-//               ],
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-//
-//   Widget _buildErrorWidget() {
-//     return Center(
-//       child: Column(
-//         mainAxisAlignment: MainAxisAlignment.center,
-//         children: [
-//           Icon(Icons.error_outline, color: Colors.red, size: 64),
-//           SizedBox(height: 16),
-//           Text(
-//             'Erreur de chargement',
-//             style: TextStyle(color: Colors.white, fontSize: 18),
-//           ),
-//           SizedBox(height: 8),
-//           Text(
-//             _errorMessage,
-//             style: TextStyle(color: Colors.grey, fontSize: 14),
-//             textAlign: TextAlign.center,
-//           ),
-//           SizedBox(height: 16),
-//           ElevatedButton(
-//             style: ElevatedButton.styleFrom(
-//               foregroundColor: Colors.white,
-//               backgroundColor: Colors.green,
-//             ),
-//             onPressed: _loadEpisodes,
-//             child: Text('Réessayer'),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-//
-//   Widget _buildLoadingWidget() {
-//     return Center(
-//       child: Column(
-//         mainAxisAlignment: MainAxisAlignment.center,
-//         children: [
-//           CircularProgressIndicator(color: Colors.green),
-//           SizedBox(height: 16),
-//           Text(
-//             'Chargement des épisodes...',
-//             style: TextStyle(color: Colors.white),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-//
-//   Widget _buildEmptyWidget() {
-//     return Center(
-//       child: Column(
-//         mainAxisAlignment: MainAxisAlignment.center,
-//         children: [
-//           Icon(Icons.playlist_play, size: 64, color: Colors.grey),
-//           SizedBox(height: 16),
-//           Text(
-//             'Aucun épisode disponible',
-//             style: TextStyle(color: Colors.white70, fontSize: 18),
-//           ),
-//           SizedBox(height: 8),
-//           Text(
-//             'Les épisodes seront bientôt disponibles',
-//             style: TextStyle(color: Colors.grey, fontSize: 14),
-//             textAlign: TextAlign.center,
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     final contentProvider = Provider.of<ContentProvider>(context, listen: false);
-//     contentProvider.incrementViews(widget.series.id!);
-//
-//     return Scaffold(
-//       backgroundColor: Colors.black,
-//       appBar: AppBar(
-//         backgroundColor: Colors.black,
-//         title: Text(
-//           widget.series.title,
-//           style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
-//         ),
-//         iconTheme: IconThemeData(color: Colors.green),
-//         actions: [
-//           IconButton(
-//             icon: Icon(Icons.refresh, color: Colors.green),
-//             onPressed: _loadEpisodes,
-//           ),
-//           IconButton(
-//             icon: Icon(Icons.share, color: Colors.green),
-//             onPressed: () {
-//               // Action de partage
-//             },
-//           ),
-//         ],
-//       ),
-//       body: _isLoading
-//           ? _buildLoadingWidget()
-//           : _hasError
-//           ? _buildErrorWidget()
-//           : SingleChildScrollView(
-//         padding: EdgeInsets.all(16),
-//         child: Column(
-//           crossAxisAlignment: CrossAxisAlignment.start,
-//           children: [
-//             // Bannière de la série
-//             Container(
-//               width: double.infinity,
-//               height: 200,
-//               decoration: BoxDecoration(
-//                 borderRadius: BorderRadius.circular(12),
-//                 color: Colors.grey[900],
-//               ),
-//               child: widget.series.thumbnailUrl != null && widget.series.thumbnailUrl!.isNotEmpty
-//                   ? ClipRRect(
-//                 borderRadius: BorderRadius.circular(12),
-//                 child: CachedNetworkImage(
-//                   imageUrl: widget.series.thumbnailUrl!,
-//                   fit: BoxFit.cover,
-//                   placeholder: (context, url) => Container(
-//                     color: Colors.grey[800],
-//                     child: Center(child: CircularProgressIndicator(color: Colors.green)),
-//                   ),
-//                   errorWidget: (context, url, error) => Container(
-//                     color: Colors.grey[800],
-//                     child: Icon(Icons.error, color: Colors.white),
-//                   ),
-//                 ),
-//               )
-//                   : Center(
-//                 child: Icon(Icons.videocam, color: Colors.grey[600], size: 50),
-//               ),
-//             ),
-//             SizedBox(height: 16),
-//             // Titre et description de la série
-//             Text(
-//               widget.series.title,
-//               style: TextStyle(
-//                 color: Colors.white,
-//                 fontSize: 24,
-//                 fontWeight: FontWeight.bold,
-//               ),
-//             ),
-//             SizedBox(height: 8),
-//             Text(
-//               widget.series.description,
-//               style: TextStyle(
-//                 color: Colors.grey,
-//                 fontSize: 16,
-//               ),
-//             ),
-//             SizedBox(height: 16),
-//             // Statistiques de la série
-//             Row(
-//               children: [
-//                 Row(
-//                   children: [
-//                     Icon(Icons.playlist_play, color: Colors.green, size: 20),
-//                     SizedBox(width: 4),
-//                     Text(
-//                       '${_episodes.length} épisode${_episodes.length > 1 ? 's' : ''}',
-//                       style: TextStyle(color: Colors.green, fontSize: 16),
-//                     ),
-//                   ],
-//                 ),
-//                 SizedBox(width: 20),
-//                 Row(
-//                   children: [
-//                     Icon(Icons.visibility, color: Colors.grey, size: 20),
-//                     SizedBox(width: 4),
-//                     Text(
-//                       '${widget.series.views} vues',
-//                       style: TextStyle(color: Colors.grey, fontSize: 16),
-//                     ),
-//                   ],
-//                 ),
-//               ],
-//             ),
-//             SizedBox(height: 24),
-//             // Liste des épisodes
-//             Text(
-//               'Épisodes',
-//               style: TextStyle(
-//                 color: Colors.white,
-//                 fontSize: 20,
-//                 fontWeight: FontWeight.bold,
-//               ),
-//             ),
-//             SizedBox(height: 16),
-//             if (_episodes.isEmpty)
-//               _buildEmptyWidget()
-//             else
-//               Column(
-//                 children: List.generate(_episodes.length, (index) {
-//                   final episode = _episodes[index];
-//                   return GestureDetector(
-//                     onTap: () {
-//                       Navigator.push(
-//                         context,
-//                         MaterialPageRoute(
-//                           builder: (_) => ContentDetailScreen(content: widget.series, episode: episode),
-//                         ),
-//                       );
-//                     },
-//                     child: _buildEpisodeItem(episode, index),
-//                   );
-//                 }),
-//               ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }

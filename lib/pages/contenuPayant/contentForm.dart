@@ -1,25 +1,23 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'dart:io';
-import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:video_compress/video_compress.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
-import 'package:path_provider/path_provider.dart';
 
 import '../../providers/authProvider.dart';
 import '../../providers/contenuPayantProvider.dart';
-
-import 'package:file_picker/file_picker.dart';
-
-import 'package:path/path.dart' as path;
+import '../../theme/app_colors.dart';
 
 
 class ContentFormScreen extends StatefulWidget {
@@ -40,7 +38,8 @@ class ContentFormScreen extends StatefulWidget {
 }
 
 class _ContentFormScreenState extends State<ContentFormScreen> {
-  // Méthode utilitaire pour optimiser les URLs de médias via le CDN
+  late AppColors _colors;
+
   String _cdnUrl(String? url) {
     if (url == null || url.isEmpty) return '';
     final userProvider = Provider.of<UserAuthProvider>(context, listen: false);
@@ -121,7 +120,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('La vidéo ne doit pas dépasser 50 Mo'),
-              backgroundColor: Colors.red,
+              backgroundColor: _colors.danger,
             ),
           );
           return;
@@ -140,7 +139,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erreur lors de la sélection de la vidéo: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: _colors.danger,
         ),
       );
     }
@@ -164,7 +163,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Le PDF ne doit pas dépasser 20 Mo'),
-              backgroundColor: Colors.red,
+              backgroundColor: _colors.danger,
             ),
           );
           return;
@@ -179,7 +178,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erreur lors de la sélection du PDF: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: _colors.danger,
         ),
       );
     }
@@ -205,7 +204,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erreur lors de la sélection de l\'image: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: _colors.danger,
         ),
       );
     }
@@ -395,9 +394,9 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
       final price = double.tryParse(_priceController.text);
       if (price == null || price < 50) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Le prix minimum est de 50 FCFA'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: const Text('Le prix minimum est de 50 FCFA'),
+            backgroundColor: _colors.danger,
           ),
         );
         return;
@@ -407,27 +406,27 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
     // Validation selon le type de contenu
     if (_contentType == ContentType.VIDEO && _videoUrl == null && _videoFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez sélectionner une vidéo'),
-          backgroundColor: Colors.red,
+        SnackBar(
+          content: const Text('Veuillez sélectionner une vidéo'),
+          backgroundColor: _colors.danger,
         ),
       );
       return;
     } else if (_contentType == ContentType.EBOOK) {
       if (_pdfUrl == null && _pdfFile == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Veuillez sélectionner un PDF'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: const Text('Veuillez sélectionner un PDF'),
+            backgroundColor: _colors.danger,
           ),
         );
         return;
       }
       if (_thumbnailUrl == null && _thumbnailFile == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Une image de couverture est obligatoire pour les ebooks'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: const Text('Une image de couverture est obligatoire pour les ebooks'),
+            backgroundColor: _colors.danger,
           ),
         );
         return;
@@ -437,9 +436,9 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
     // Validation catégories
     if (!widget.isEpisode && _selectedCategories.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez sélectionner au moins une catégorie'),
-          backgroundColor: Colors.red,
+        SnackBar(
+          content: const Text('Veuillez sélectionner au moins une catégorie'),
+          backgroundColor: _colors.danger,
         ),
       );
       return;
@@ -448,9 +447,9 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
     // Validation nom de série
     if (_isSeries && !widget.isEpisode && _seriesNameController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez entrer un nom de série'),
-          backgroundColor: Colors.red,
+        SnackBar(
+          content: const Text('Veuillez entrer un nom de série'),
+          backgroundColor: _colors.danger,
         ),
       );
       return;
@@ -565,15 +564,15 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
                 : widget.content == null
                 ? 'Contenu créé avec succès'
                 : 'Contenu mis à jour'),
-            backgroundColor: Colors.green,
+            backgroundColor: _colors.primary,
           ),
         );
         Navigator.pop(context);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Erreur lors de la sauvegarde'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: const Text('Erreur lors de la sauvegarde'),
+            backgroundColor: _colors.danger,
           ),
         );
       }
@@ -587,7 +586,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erreur: ${e.toString()}'),
-          backgroundColor: Colors.red,
+          backgroundColor: _colors.danger,
         ),
       );
     }
@@ -626,20 +625,20 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
     return Container(
       padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: _colors.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.red[100]!),
+        border: Border.all(color: _colors.border),
       ),
       child: Row(
         children: [
           CircleAvatar(
             radius: 25,
-            backgroundColor: Colors.red[800],
+            backgroundColor: _colors.primary,
             backgroundImage: user?.imageUrl != null && user!.imageUrl!.isNotEmpty
                 ? NetworkImage(_cdnUrl(user.imageUrl))
                 : null,
             child: user?.imageUrl == null || user!.imageUrl!.isEmpty
-                ? Icon(Icons.person, color: Colors.white)
+                ? Icon(Icons.person, color: _colors.onPrimary)
                 : null,
           ),
           SizedBox(width: 12),
@@ -650,7 +649,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
                 Text(
                   user?.pseudo ?? 'Utilisateur',
                   style: TextStyle(
-                    color: Colors.black,
+                    color: _colors.textPrimary,
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
@@ -659,7 +658,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
                 Text(
                   '${user?.abonnes ?? 0} abonnés',
                   style: TextStyle(
-                    color: Colors.red[800],
+                    color: _colors.primary,
                     fontSize: 14,
                   ),
                 ),
@@ -677,7 +676,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
       children: [
         Text(
           'Type de contenu *',
-          style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
+          style: TextStyle(color: _colors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 8),
         Wrap(
@@ -697,7 +696,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
       label: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: isSelected ? Colors.white : Colors.black),
+          Icon(icon, size: 16, color: isSelected ? _colors.onPrimary : _colors.textPrimary),
           SizedBox(width: 4),
           Text(label),
         ],
@@ -712,9 +711,9 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
           }
         });
       },
-      selectedColor: Colors.red[800],
+      selectedColor: _colors.primary,
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : Colors.black,
+        color: isSelected ? _colors.onPrimary : _colors.textPrimary,
       ),
     );
   }
@@ -726,7 +725,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
         children: [
           Text(
             'Type de série *',
-            style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(color: _colors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
           ),
           SizedBox(height: 8),
           Row(
@@ -741,9 +740,9 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
                       _contentType = ContentType.VIDEO;
                     });
                   },
-                  selectedColor: Colors.red[800],
+                  selectedColor: _colors.primary,
                   labelStyle: TextStyle(
-                    color: !_isSeries && _contentType == ContentType.VIDEO ? Colors.white : Colors.black,
+                    color: !_isSeries && _contentType == ContentType.VIDEO ? _colors.onPrimary : _colors.textPrimary,
                   ),
                 ),
               ),
@@ -758,9 +757,9 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
                       _contentType = ContentType.VIDEO;
                     });
                   },
-                  selectedColor: Colors.red[800],
+                  selectedColor: _colors.primary,
                   labelStyle: TextStyle(
-                    color: _isSeries && _contentType == ContentType.VIDEO ? Colors.white : Colors.black,
+                    color: _isSeries && _contentType == ContentType.VIDEO ? _colors.onPrimary : _colors.textPrimary,
                   ),
                 ),
               ),
@@ -779,9 +778,9 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
                       _contentType = ContentType.EBOOK;
                     });
                   },
-                  selectedColor: Colors.red[800],
+                  selectedColor: _colors.primary,
                   labelStyle: TextStyle(
-                    color: !_isSeries && _contentType == ContentType.EBOOK ? Colors.white : Colors.black,
+                    color: !_isSeries && _contentType == ContentType.EBOOK ? _colors.onPrimary : _colors.textPrimary,
                   ),
                 ),
               ),
@@ -796,9 +795,9 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
                       _contentType = ContentType.EBOOK;
                     });
                   },
-                  selectedColor: Colors.red[800],
+                  selectedColor: _colors.primary,
                   labelStyle: TextStyle(
-                    color: _isSeries && _contentType == ContentType.EBOOK ? Colors.white : Colors.black,
+                    color: _isSeries && _contentType == ContentType.EBOOK ? _colors.onPrimary : _colors.textPrimary,
                   ),
                 ),
               ),
@@ -825,18 +824,18 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
       children: [
         Text(
           'Vidéo *',
-          style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
+          style: TextStyle(color: _colors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 8),
         Text(
           'Taille maximale: 50 Mo',
-          style: TextStyle(color: Colors.grey, fontSize: 12),
+          style: TextStyle(color: _colors.textSecondary, fontSize: 12),
         ),
         SizedBox(height: 8),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            foregroundColor: Colors.white,
-            backgroundColor: Colors.red[800],
+            foregroundColor: _colors.onPrimary,
+            backgroundColor: _colors.primary,
             padding: EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
@@ -862,18 +861,18 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
       children: [
         Text(
           'Fichier PDF *',
-          style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
+          style: TextStyle(color: _colors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 8),
         Text(
           'Taille maximale: 20 Mo',
-          style: TextStyle(color: Colors.grey, fontSize: 12),
+          style: TextStyle(color: _colors.textSecondary, fontSize: 12),
         ),
         SizedBox(height: 8),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            foregroundColor: Colors.white,
-            backgroundColor: Colors.red[800],
+            foregroundColor: _colors.onPrimary,
+            backgroundColor: _colors.primary,
             padding: EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
@@ -899,19 +898,19 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
       children: [
         Text(
           'Image de couverture ${_contentType == ContentType.EBOOK ? '*' : ''}',
-          style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
+          style: TextStyle(color: _colors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 8),
         if (_contentType == ContentType.EBOOK)
           Text(
             'Obligatoire pour les ebooks',
-            style: TextStyle(color: Colors.red, fontSize: 12),
+            style: TextStyle(color: _colors.danger, fontSize: 12),
           ),
         SizedBox(height: 8),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            foregroundColor: Colors.white,
-            backgroundColor: Colors.black,
+            foregroundColor: _colors.onPrimary,
+            backgroundColor: _colors.background,
             padding: EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
@@ -949,14 +948,14 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
           SizedBox(height: 16),
           Text(
             'Aperçu de la vidéo:',
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+            style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold),
           ),
           SizedBox(height: 8),
           Container(
             height: 200,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: Colors.black,
+              color: _colors.textPrimary,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Stack(
@@ -976,8 +975,8 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
                       );
                     }
                     return Container(
-                      color: Colors.grey[300],
-                      child: Icon(Icons.videocam, size: 50, color: Colors.grey),
+                      color: _colors.surfaceVariant,
+                      child: Icon(Icons.videocam, size: 50, color: _colors.textSecondary),
                     );
                   },
                 ),
@@ -985,7 +984,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
                   child: Icon(
                     Icons.play_circle_filled,
                     size: 50,
-                    color: Colors.white.withOpacity(0.8),
+                    color: _colors.surface.withOpacity(0.9),
                   ),
                 ),
               ],
@@ -1000,24 +999,24 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
           SizedBox(height: 16),
           Text(
             'Vidéo déjà uploadée:',
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+            style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold),
           ),
           SizedBox(height: 8),
           Container(
             height: 150,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: Colors.grey[300],
+              color: _colors.surfaceVariant,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.video_library, size: 40, color: Colors.grey),
+                Icon(Icons.video_library, size: 40, color: _colors.textSecondary),
                 SizedBox(height: 8),
                 Text(
                   'Vidéo disponible',
-                  style: TextStyle(color: Colors.grey),
+                  style: TextStyle(color: _colors.textSecondary),
                 ),
               ],
             ),
@@ -1036,19 +1035,19 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
           SizedBox(height: 16),
           Text(
             'Fichier PDF sélectionné:',
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+            style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold),
           ),
           SizedBox(height: 8),
           Container(
             padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              color: _colors.surface,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.red),
+              border: Border.all(color: _colors.primary),
             ),
             child: Row(
               children: [
-                Icon(Icons.picture_as_pdf, color: Colors.red, size: 40),
+                Icon(Icons.picture_as_pdf, color: _colors.primary, size: 40),
                 SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -1066,10 +1065,10 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
                             final sizeMB = snapshot.data! / (1024 * 1024);
                             return Text(
                               '${sizeMB.toStringAsFixed(2)} Mo',
-                              style: TextStyle(color: Colors.grey),
+                              style: TextStyle(color: _colors.textSecondary),
                             );
                           }
-                          return Text('Calcul...', style: TextStyle(color: Colors.grey));
+                          return Text('Calcul...', style: TextStyle(color: _colors.textSecondary));
                         },
                       ),
                     ],
@@ -1087,25 +1086,25 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
           SizedBox(height: 16),
           Text(
             'PDF déjà uploadé:',
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+            style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold),
           ),
           SizedBox(height: 8),
           Container(
             height: 100,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              color: _colors.surface,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey),
+              border: Border.all(color: _colors.textSecondary),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.picture_as_pdf, size: 40, color: Colors.grey),
+                Icon(Icons.picture_as_pdf, size: 40, color: _colors.textSecondary),
                 SizedBox(height: 8),
                 Text(
                   'PDF disponible',
-                  style: TextStyle(color: Colors.grey),
+                  style: TextStyle(color: _colors.textSecondary),
                 ),
               ],
             ),
@@ -1124,7 +1123,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
           SizedBox(height: 16),
           Text(
             'Aperçu de la miniature:',
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+            style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold),
           ),
           SizedBox(height: 8),
           Container(
@@ -1132,7 +1131,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
             width: double.infinity,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey),
+              border: Border.all(color: _colors.textSecondary),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
@@ -1143,8 +1142,8 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
-                    color: Colors.grey[300],
-                    child: Icon(Icons.image, size: 50, color: Colors.grey),
+                    color: _colors.surfaceVariant,
+                    child: Icon(Icons.image, size: 50, color: _colors.textSecondary),
                   );
                 },
               ),
@@ -1159,7 +1158,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
           SizedBox(height: 16),
           Text(
             'Miniature déjà uploadée:',
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+            style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold),
           ),
           SizedBox(height: 8),
           Container(
@@ -1167,7 +1166,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
             width: double.infinity,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey),
+              border: Border.all(color: _colors.textSecondary),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
@@ -1178,15 +1177,15 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
-                    color: Colors.grey[300],
+                    color: _colors.surfaceVariant,
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.broken_image, size: 40, color: Colors.grey),
+                        Icon(Icons.broken_image, size: 40, color: _colors.textSecondary),
                         SizedBox(height: 8),
                         Text(
                           'Erreur de chargement',
-                          style: TextStyle(color: Colors.grey),
+                          style: TextStyle(color: _colors.textSecondary),
                         ),
                       ],
                     ),
@@ -1206,13 +1205,13 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
       children: [
         LinearProgressIndicator(
           value: _uploadProgress,
-          backgroundColor: Colors.grey[300],
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+          backgroundColor: _colors.surfaceVariant,
+          valueColor: AlwaysStoppedAnimation<Color>(_colors.primary),
         ),
         SizedBox(height: 8),
         Text(
           _uploadMessage,
-          style: TextStyle(color: Colors.black, fontSize: 12),
+          style: TextStyle(color: _colors.textPrimary, fontSize: 12),
           textAlign: TextAlign.center,
         ),
       ],
@@ -1228,7 +1227,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
         return FilterChip(
           label: Text(
             category.name,
-            style: TextStyle(color: isSelected ? Colors.white : Colors.black),
+            style: TextStyle(color: isSelected ? _colors.onPrimary : _colors.textPrimary),
           ),
           selected: isSelected,
           onSelected: (selected) {
@@ -1240,9 +1239,9 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
               }
             });
           },
-          selectedColor: Colors.red[800],
-          backgroundColor: Colors.grey[200],
-          checkmarkColor: Colors.white,
+          selectedColor: _colors.primary,
+          backgroundColor: _colors.surfaceVariant,
+          checkmarkColor: _colors.onPrimary,
         );
       }).toList(),
     );
@@ -1250,11 +1249,12 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    _colors = AppColors.of(context);
     final contentProvider = Provider.of<ContentProvider>(context);
     final userAuthProvider = Provider.of<UserAuthProvider>(context);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: _colors.background,
       appBar: AppBar(
         title: Text(
           widget.isEpisode
@@ -1262,11 +1262,11 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
               : widget.content == null
               ? 'Créer du contenu payant'
               : 'Modifier le contenu',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: _colors.onPrimary),
         ),
-        backgroundColor: Colors.red[800],
+        backgroundColor: _colors.primary,
         elevation: 0,
-        iconTheme: IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: _colors.onPrimary),
         actions: [
           if (_isSaving)
             Padding(
@@ -1277,14 +1277,14 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    valueColor: AlwaysStoppedAnimation<Color>(_colors.onPrimary),
                   ),
                 ),
               ),
             )
           else
             IconButton(
-              icon: Icon(Icons.save, color: Colors.white),
+              icon: Icon(Icons.save, color: _colors.onPrimary),
               onPressed: _saveContent,
             ),
         ],
@@ -1310,16 +1310,16 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
                   if (_isSeries && !widget.isEpisode) ...[
                     TextFormField(
                       controller: _seriesNameController,
-                      style: TextStyle(color: Colors.black),
+                      style: TextStyle(color: _colors.textPrimary),
                       decoration: InputDecoration(
                         labelText: 'Nom de la série *',
-                        labelStyle: TextStyle(color: Colors.red),
+                        labelStyle: TextStyle(color: _colors.primary),
                         border: OutlineInputBorder(),
                         enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.grey),
+                          borderSide: BorderSide(color: _colors.border),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.red),
+                          borderSide: BorderSide(color: _colors.primary),
                         ),
                       ),
                       validator: (value) {
@@ -1337,16 +1337,16 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
                     SizedBox(height: 16),
                     TextFormField(
                       controller: _episodeNumberController,
-                      style: TextStyle(color: Colors.black),
+                      style: TextStyle(color: _colors.textPrimary),
                       decoration: InputDecoration(
                         labelText: 'Numéro d\'épisode *',
-                        labelStyle: TextStyle(color: Colors.red),
+                        labelStyle: TextStyle(color: _colors.primary),
                         border: OutlineInputBorder(),
                         enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.grey),
+                          borderSide: BorderSide(color: _colors.border),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.red),
+                          borderSide: BorderSide(color: _colors.primary),
                         ),
                       ),
                       keyboardType: TextInputType.number,
@@ -1367,16 +1367,16 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
 
                   TextFormField(
                     controller: _titleController,
-                    style: TextStyle(color: Colors.black),
+                    style: TextStyle(color: _colors.textPrimary),
                     decoration: InputDecoration(
                       labelText: widget.isEpisode ? 'Titre de l\'épisode *' : 'Titre *',
-                      labelStyle: TextStyle(color: Colors.red),
+                      labelStyle: TextStyle(color: _colors.primary),
                       border: OutlineInputBorder(),
                       enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.grey),
+                        borderSide: BorderSide(color: _colors.border),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.red),
+                        borderSide: BorderSide(color: _colors.primary),
                       ),
                     ),
                     validator: (value) {
@@ -1390,16 +1390,16 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
 
                   TextFormField(
                     controller: _descriptionController,
-                    style: TextStyle(color: Colors.black),
+                    style: TextStyle(color: _colors.textPrimary),
                     decoration: InputDecoration(
                       labelText: 'Description *',
-                      labelStyle: TextStyle(color: Colors.red),
+                      labelStyle: TextStyle(color: _colors.primary),
                       border: OutlineInputBorder(),
                       enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.grey),
+                        borderSide: BorderSide(color: _colors.border),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.red),
+                        borderSide: BorderSide(color: _colors.primary),
                       ),
                     ),
                     maxLines: 3,
@@ -1421,9 +1421,9 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
                             _isFree = value!;
                           });
                         },
-                        activeColor: Colors.red,
+                        activeColor: _colors.primary,
                       ),
-                      Text('Contenu gratuit', style: TextStyle(color: Colors.black)),
+                      Text('Contenu gratuit', style: TextStyle(color: _colors.textPrimary)),
                     ],
                   ),
 
@@ -1431,16 +1431,16 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
                     SizedBox(height: 16),
                     TextFormField(
                       controller: _priceController,
-                      style: TextStyle(color: Colors.black),
+                      style: TextStyle(color: _colors.textPrimary),
                       decoration: InputDecoration(
                         labelText: 'Prix (FCFA) *',
-                        labelStyle: TextStyle(color: Colors.red),
+                        labelStyle: TextStyle(color: _colors.primary),
                         border: OutlineInputBorder(),
                         enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.grey),
+                          borderSide: BorderSide(color: _colors.border),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.red),
+                          borderSide: BorderSide(color: _colors.primary),
                         ),
                         suffixText: 'FCFA',
                       ),
@@ -1465,7 +1465,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
                   if (!widget.isEpisode) ...[
                     Text(
                       'Catégories *',
-                      style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: _colors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     SizedBox(height: 8),
                     _buildCategoriesSelector(contentProvider),
@@ -1474,16 +1474,16 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
 
                   TextFormField(
                     controller: _hashtagsController,
-                    style: TextStyle(color: Colors.black),
+                    style: TextStyle(color: _colors.textPrimary),
                     decoration: InputDecoration(
                       labelText: 'Hashtags (séparés par des virgules)',
-                      labelStyle: TextStyle(color: Colors.red),
+                      labelStyle: TextStyle(color: _colors.primary),
                       border: OutlineInputBorder(),
                       enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.grey),
+                        borderSide: BorderSide(color: _colors.border),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.red),
+                        borderSide: BorderSide(color: _colors.primary),
                       ),
                     ),
                   ),
@@ -1509,8 +1509,8 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
                     width: double.infinity,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        backgroundColor: Colors.red[800],
+                        foregroundColor: _colors.onPrimary,
+                        backgroundColor: _colors.primary,
                         padding: EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -1534,19 +1534,19 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
 
           if (_isSaving)
             Container(
-              color: Colors.black.withOpacity(0.5),
+              color: _colors.background.withOpacity(0.5),
               child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                      valueColor: AlwaysStoppedAnimation<Color>(_colors.primary),
                     ),
                     SizedBox(height: 16),
                     Text(
                       'Upload en cours...',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: _colors.textPrimary,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -1554,7 +1554,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
                     SizedBox(height: 8),
                     Text(
                       _uploadMessage,
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: _colors.onPrimary),
                       textAlign: TextAlign.center,
                     ),
                   ],

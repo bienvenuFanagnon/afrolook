@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/contenuPayant/profileScreenContent.dart';
@@ -9,39 +10,10 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:path_provider/path_provider.dart';
-import 'dart:typed_data';
 
 import '../../providers/contenuPayantProvider.dart';
 import '../../providers/userProvider.dart';
-import '../pub/native_ad_widget.dart';
-import 'contentDetails.dart';
-import 'contentDetailsEbook.dart';
-import 'contentForm.dart';
-import 'contentSerie.dart';
-
-import 'dart:io';
-
-import 'package:afrotok/models/model_data.dart';
-import 'package:afrotok/pages/contenuPayant/profileScreenContent.dart';
-import 'package:afrotok/providers/authProvider.dart';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-
-import 'dart:async';
-import 'dart:typed_data';
-
-import 'package:afrotok/models/model_data.dart';
-import 'package:afrotok/pages/contenuPayant/profileScreenContent.dart';
-import 'package:afrotok/providers/authProvider.dart';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:video_thumbnail/video_thumbnail.dart';
-
-import '../../providers/contenuPayantProvider.dart';
-import '../../providers/userProvider.dart';
+import '../../theme/app_colors.dart';
 import '../pub/native_ad_widget.dart';
 import 'contentDetails.dart';
 import 'contentDetailsEbook.dart';
@@ -64,6 +36,7 @@ class DashboardContentScreen extends StatefulWidget {
 }
 
 class _DashboardContentScreenState extends State<DashboardContentScreen> {
+  late AppColors _colors;
   final Map<String, Uint8List?> _videoThumbnails = {};
   int _currentTabIndex = 0; // 0: Accueil, 1: Séries, 2: À la demande, 3: Ebooks
 
@@ -150,7 +123,7 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
     return Stack(
       children: [
         Container(
-          color: Colors.grey[900],
+          color: _colors.surface,
           child: content.thumbnailUrl != null && content.thumbnailUrl!.isNotEmpty
               ? ClipRRect(
             borderRadius: BorderRadius.circular(4),
@@ -158,36 +131,36 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
               imageUrl: _optimizeUrl(content.thumbnailUrl),
               fit: BoxFit.cover,
               width: double.infinity,
-              placeholder: (_, __) => Container(color: Colors.grey[800], child: Center(child: CircularProgressIndicator(color: Colors.green))),
-              errorWidget: (_, __, ___) => Container(color: Colors.grey[800], child: content.isEbook ? Icon(Icons.book, color: Colors.grey[600], size: 40) : Icon(Icons.videocam, color: Colors.grey[600], size: 40)),
+              placeholder: (_, __) => Container(color: _colors.surfaceVariant, child: Center(child: CircularProgressIndicator(color: _colors.primary))),
+              errorWidget: (_, __, ___) => Container(color: _colors.surfaceVariant, child: content.isEbook ? Icon(Icons.book, color: _colors.textSecondary, size: 40) : Icon(Icons.videocam, color: _colors.textSecondary, size: 40)),
             ),
           )
-              : Center(child: content.isEbook ? Icon(Icons.book, color: Colors.grey[600], size: 40) : Icon(Icons.videocam, color: Colors.grey[600], size: 40)),
+              : Center(child: content.isEbook ? Icon(Icons.book, color: _colors.textSecondary, size: 40) : Icon(Icons.videocam, color: _colors.textSecondary, size: 40)),
         ),
         if (!content.isFree)
           Positioned(
             top: 8, right: 8,
-            child: Container(padding: EdgeInsets.all(4), decoration: BoxDecoration(color: Colors.black.withOpacity(0.7), borderRadius: BorderRadius.circular(4)), child: Text('${content.price} F', style: TextStyle(color: Colors.yellow, fontSize: 12, fontWeight: FontWeight.bold))),
+            child: Container(padding: EdgeInsets.all(4), decoration: BoxDecoration(color: Colors.black.withOpacity(0.7), borderRadius: BorderRadius.circular(4)), child: Text('${content.price} F', style: TextStyle(color: _colors.accent, fontSize: 12, fontWeight: FontWeight.bold))),
           ),
         if (content.isSeries)
           Positioned(
             top: 8, left: 8,
-            child: Container(padding: EdgeInsets.all(4), decoration: BoxDecoration(color: Colors.black.withOpacity(0.7), borderRadius: BorderRadius.circular(4)), child: Row(children: [Icon(Icons.playlist_play, color: Colors.blue, size: 14), SizedBox(width: 4), Text('Série', style: TextStyle(color: Colors.blue, fontSize: 12, fontWeight: FontWeight.bold))])),
+            child: Container(padding: EdgeInsets.all(4), decoration: BoxDecoration(color: Colors.black.withOpacity(0.7), borderRadius: BorderRadius.circular(4)), child: Row(children: [Icon(Icons.playlist_play, color: _colors.info, size: 14), SizedBox(width: 4), Text('Série', style: TextStyle(color: _colors.info, fontSize: 12, fontWeight: FontWeight.bold))])),
           ),
         if (content.isEbook)
           Positioned(
             top: 8, left: content.isSeries ? 50 : 8,
-            child: Container(padding: EdgeInsets.all(4), decoration: BoxDecoration(color: Colors.black.withOpacity(0.7), borderRadius: BorderRadius.circular(4)), child: Row(children: [Icon(Icons.book, color: Colors.purple, size: 14), SizedBox(width: 4), Text('Ebook', style: TextStyle(color: Colors.purple, fontSize: 12, fontWeight: FontWeight.bold))])),
+            child: Container(padding: EdgeInsets.all(4), decoration: BoxDecoration(color: Colors.black.withOpacity(0.7), borderRadius: BorderRadius.circular(4)), child: Row(children: [Icon(Icons.book, color: _colors.warning, size: 14), SizedBox(width: 4), Text('Ebook', style: TextStyle(color: _colors.warning, fontSize: 12, fontWeight: FontWeight.bold))])),
           ),
         if (content.isVideo && content.views != null)
           Positioned(
             bottom: 8, right: 8,
-            child: Container(padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2), decoration: BoxDecoration(color: Colors.black.withOpacity(0.7), borderRadius: BorderRadius.circular(4)), child: Row(children: [Icon(Icons.remove_red_eye, color: Colors.white, size: 15), SizedBox(width: 2), Text(content.views!.toString(), style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold))])),
+            child: Container(padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2), decoration: BoxDecoration(color: Colors.black.withOpacity(0.7), borderRadius: BorderRadius.circular(4)), child: Row(children: [Icon(Icons.remove_red_eye, color: _colors.onPrimary, size: 15), SizedBox(width: 2), Text(content.views!.toString(), style: TextStyle(color: _colors.onPrimary, fontSize: 12, fontWeight: FontWeight.bold))])),
           ),
         if (content.isEbook && content.pageCount > 0)
           Positioned(
             bottom: 8, left: 8,
-            child: Container(padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2), decoration: BoxDecoration(color: Colors.black.withOpacity(0.7), borderRadius: BorderRadius.circular(4)), child: Row(children: [Icon(Icons.menu_book, color: Colors.white, size: 12), SizedBox(width: 2), Text('${content.pageCount} p.', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold))])),
+            child: Container(padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2), decoration: BoxDecoration(color: Colors.black.withOpacity(0.7), borderRadius: BorderRadius.circular(4)), child: Row(children: [Icon(Icons.menu_book, color: _colors.onPrimary, size: 12), SizedBox(width: 2), Text('${content.pageCount} p.', style: TextStyle(color: _colors.onPrimary, fontSize: 12, fontWeight: FontWeight.bold))])),
           ),
       ],
     );
@@ -222,34 +195,35 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
 
   @override
   Widget build(BuildContext context) {
+    _colors = AppColors.of(context);
     final contentProvider = Provider.of<ContentProvider>(context);
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: _colors.background,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: _colors.background,
         elevation: 0,
         automaticallyImplyLeading: true,
-        iconTheme: IconThemeData(color: Colors.white),
-        title: Text('Contenus', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        iconTheme: IconThemeData(color: _colors.textPrimary),
+        title: Text('Contenus', style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
-            icon: Icon(Icons.search, color: Colors.white),
+            icon: Icon(Icons.search, color: _colors.textPrimary),
             onPressed: () => showSearch(context: context, delegate: ContentSearchDelegate()),
           ),
           IconButton(
-            icon: Icon(Icons.person, color: Colors.white),
+            icon: Icon(Icons.person, color: _colors.textPrimary),
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProfileScreenContenu())),
           ),
           IconButton(
-            icon: Icon(Icons.arrow_upward, color: Colors.white),
+            icon: Icon(Icons.arrow_upward, color: _colors.textPrimary),
             onPressed: _scrollToTop,
             tooltip: 'Remonter en haut',
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.red,
+        backgroundColor: _colors.primary,
         onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ContentFormScreen())),
         child: Icon(Icons.add, size: 28),
       ),
@@ -260,17 +234,17 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
           SliverToBoxAdapter(
             child: Container(
               padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.red.withOpacity(0.2), Colors.transparent])),
+              decoration: BoxDecoration(gradient: LinearGradient(colors: [_colors.primary.withOpacity(0.15), Colors.transparent])),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('🎬 Créez et vendez vos contenus !', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text('🎬 Créez et vendez vos contenus !', style: TextStyle(color: _colors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
                   SizedBox(height: 6),
                   Text(
                     'Partagez vos histoires, vidéos, ebooks, formations…\n'
                         'Gagnez de l\'argent grâce à votre créativité. Publiez du contenu viral, '
                         'des formations exclusives, des séries captivantes, et touchez directement vos fans.',
-                    style: TextStyle(color: Colors.white70, fontSize: 13),
+                    style: TextStyle(color: _colors.textSecondary, fontSize: 13),
                   ),
                 ],
               ),
@@ -283,19 +257,19 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Rechercher un créateur', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500)),
+                  Text('Rechercher un créateur', style: TextStyle(color: _colors.textPrimary, fontSize: 14, fontWeight: FontWeight.w500)),
                   SizedBox(height: 8),
                   Container(
-                    decoration: BoxDecoration(color: Colors.grey[900], borderRadius: BorderRadius.circular(30)),
+                    decoration: BoxDecoration(color: _colors.surface, borderRadius: BorderRadius.circular(30)),
                     child: TextField(
                       controller: _creatorSearchController,
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: _colors.textPrimary),
                       decoration: InputDecoration(
                         hintText: 'Entrez le pseudo du créateur...',
-                        hintStyle: TextStyle(color: Colors.grey),
-                        prefixIcon: Icon(Icons.search, color: Colors.white),
+                        hintStyle: TextStyle(color: _colors.textSecondary),
+                        prefixIcon: Icon(Icons.search, color: _colors.textPrimary),
                         suffixIcon: _creatorSearchController.text.isNotEmpty
-                            ? IconButton(icon: Icon(Icons.clear, color: Colors.grey), onPressed: () => _creatorSearchController.clear())
+                            ? IconButton(icon: Icon(Icons.clear, color: _colors.textSecondary), onPressed: () => _creatorSearchController.clear())
                             : null,
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.symmetric(vertical: 12),
@@ -303,16 +277,16 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
                     ),
                   ),
                   if (_isSearchingCreator)
-                    Padding(padding: EdgeInsets.all(8), child: Center(child: CircularProgressIndicator(color: Colors.red))),
+                    Padding(padding: EdgeInsets.all(8), child: Center(child: CircularProgressIndicator(color: _colors.primary))),
                   if (_searchResults.isNotEmpty)
                     Container(
                       margin: EdgeInsets.only(top: 8),
-                      decoration: BoxDecoration(color: Colors.grey[900], borderRadius: BorderRadius.circular(12)),
+                      decoration: BoxDecoration(color: _colors.surface, borderRadius: BorderRadius.circular(12)),
                       child: ListView.separated(
                         shrinkWrap: true,
                         physics: NeverScrollableScrollPhysics(),
                         itemCount: _searchResults.length,
-                        separatorBuilder: (_, __) => Divider(color: Colors.grey[800], height: 1),
+                        separatorBuilder: (_, __) => Divider(color: _colors.border, height: 1),
                         itemBuilder: (context, index) {
                           final user = _searchResults[index];
                           return ListTile(
@@ -322,9 +296,9 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
                                   : null,
                               child: (user.imageUrl == null || user.imageUrl!.isEmpty) ? Icon(Icons.person) : null,
                             ),
-                            title: Text(user.pseudo ?? 'Sans pseudo', style: TextStyle(color: Colors.white)),
-                            subtitle: Text('${user.userAbonnesIds?.length ?? 0} abonnés', style: TextStyle(color: Colors.grey)),
-                            trailing: Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 16),
+                            title: Text(user.pseudo ?? 'Sans pseudo', style: TextStyle(color: _colors.textPrimary)),
+                            subtitle: Text('${user.userAbonnesIds?.length ?? 0} abonnés', style: TextStyle(color: _colors.textSecondary)),
+                            trailing: Icon(Icons.arrow_forward_ios, color: _colors.textSecondary, size: 16),
                             onTap: () => _navigateToCreatorProfile(user.id!),
                           );
                         },
@@ -341,7 +315,7 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
             pinned: true,
             delegate: _StickyTabBarDelegate(
               child: Container(
-                color: Colors.black,
+                color: _colors.background,
                 height: 50,
                 child: Row(
                   children: [
@@ -378,12 +352,12 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          border: isSelected ? Border(bottom: BorderSide(color: Colors.red, width: 2)) : null,
+          border: isSelected ? Border(bottom: BorderSide(color: _colors.primary, width: 2)) : null,
         ),
         child: Text(
           title,
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.grey,
+            color: isSelected ? _colors.textPrimary : _colors.textSecondary,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
         ),
@@ -442,9 +416,9 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
             children: [
               Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(8), child: _buildContentImage(content))),
               SizedBox(height: 8),
-              Text(content.title, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis),
+              Text(content.title, style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis),
               SizedBox(height: 4),
-              Text('${_getContentTypeLabel(content)} épisodes', style: TextStyle(color: Colors.grey, fontSize: 12)),
+              Text('${_getContentTypeLabel(content)} épisodes', style: TextStyle(color: _colors.textSecondary, fontSize: 12)),
             ],
           ),
         );
@@ -470,11 +444,11 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
             children: [
               Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(8), child: _buildContentImage(content))),
               SizedBox(height: 8),
-              Text(content.title, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis),
+              Text(content.title, style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis),
               SizedBox(height: 4),
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                Text(_getContentTypeLabel(content), style: TextStyle(color: Colors.grey, fontSize: 12)),
-                Text('${content.price} F', style: TextStyle(color: Colors.yellow, fontWeight: FontWeight.bold)),
+                Text(_getContentTypeLabel(content), style: TextStyle(color: _colors.textSecondary, fontSize: 12)),
+                Text('${content.price} F', style: TextStyle(color: _colors.accent, fontWeight: FontWeight.bold)),
               ]),
             ],
           ),
@@ -501,13 +475,13 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
             children: [
               Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(8), child: _buildContentImage(content))),
               SizedBox(height: 8),
-              Text(content.title, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis),
+              Text(content.title, style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis),
               SizedBox(height: 4),
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                Text(content.isSeries ? 'Série Ebook' : 'Ebook', style: TextStyle(color: Colors.grey, fontSize: 12)),
-                Text(content.isFree ? 'Gratuit' : '${content.price} F', style: TextStyle(color: content.isFree ? Colors.green : Colors.yellow, fontSize: 12, fontWeight: FontWeight.bold)),
+                Text(content.isSeries ? 'Série Ebook' : 'Ebook', style: TextStyle(color: _colors.textSecondary, fontSize: 12)),
+                Text(content.isFree ? 'Gratuit' : '${content.price} F', style: TextStyle(color: content.isFree ? _colors.primary : _colors.accent, fontSize: 12, fontWeight: FontWeight.bold)),
               ]),
-              if (content.pageCount > 0) ...[SizedBox(height: 2), Text('${content.pageCount} pages', style: TextStyle(color: Colors.grey, fontSize: 11))],
+              if (content.pageCount > 0) ...[SizedBox(height: 2), Text('${content.pageCount} pages', style: TextStyle(color: _colors.textSecondary, fontSize: 11))],
             ],
           ),
         );
@@ -556,16 +530,16 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
                     ),
                   ),
                   SizedBox(height: 8),
-                  Padding(padding: EdgeInsets.symmetric(horizontal: 4), child: Text(content.title, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                  Padding(padding: EdgeInsets.symmetric(horizontal: 4), child: Text(content.title, style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16), maxLines: 1, overflow: TextOverflow.ellipsis)),
                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: 4),
                     child: Row(
                       children: [
-                        Text(_getContentTypeLabel(content), style: TextStyle(color: Colors.grey, fontSize: 12)),
+                        Text(_getContentTypeLabel(content), style: TextStyle(color: _colors.textSecondary, fontSize: 12)),
                         SizedBox(width: 8),
-                        Text(content.isFree ? 'Gratuit' : '${content.price} F', style: TextStyle(color: content.isFree ? Colors.green : Colors.yellow, fontSize: 12, fontWeight: FontWeight.bold)),
-                        if (content.views > 0 && content.isVideo) ...[SizedBox(width: 8), Text('${content.views} vues', style: TextStyle(color: Colors.grey, fontSize: 12))],
-                        if (content.pageCount > 0 && content.isEbook) ...[SizedBox(width: 8), Text('${content.pageCount} pages', style: TextStyle(color: Colors.grey, fontSize: 12))],
+                        Text(content.isFree ? 'Gratuit' : '${content.price} F', style: TextStyle(color: content.isFree ? _colors.primary : _colors.accent, fontSize: 12, fontWeight: FontWeight.bold)),
+                        if (content.views > 0 && content.isVideo) ...[SizedBox(width: 8), Text('${content.views} vues', style: TextStyle(color: _colors.textSecondary, fontSize: 12))],
+                        if (content.pageCount > 0 && content.isEbook) ...[SizedBox(width: 8), Text('${content.pageCount} pages', style: TextStyle(color: _colors.textSecondary, fontSize: 12))],
                       ],
                     ),
                   ),
@@ -586,7 +560,7 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('Nouveautés', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))),
+          Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('Nouveautés', style: TextStyle(color: _colors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold))),
           SizedBox(height: 12),
           Container(
             height: 180,
@@ -606,14 +580,14 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
                       children: [
                         Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(8), child: _buildContentImage(content))),
                         SizedBox(height: 8),
-                        Padding(padding: EdgeInsets.symmetric(horizontal: 4), child: Text(content.title, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis)),
+                        Padding(padding: EdgeInsets.symmetric(horizontal: 4), child: Text(content.title, style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis)),
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: 4),
                           child: Row(
                             children: [
-                              Text(_getContentTypeLabel(content), style: TextStyle(color: Colors.grey, fontSize: 12)),
+                              Text(_getContentTypeLabel(content), style: TextStyle(color: _colors.textSecondary, fontSize: 12)),
                               SizedBox(width: 8),
-                              Text(content.isFree ? 'Gratuit' : '${content.price} F', style: TextStyle(color: content.isFree ? Colors.green : Colors.yellow, fontSize: 12, fontWeight: FontWeight.bold)),
+                              Text(content.isFree ? 'Gratuit' : '${content.price} F', style: TextStyle(color: content.isFree ? _colors.primary : _colors.accent, fontSize: 12, fontWeight: FontWeight.bold)),
                             ],
                           ),
                         ),
@@ -640,7 +614,7 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
             padding: EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                Text(title, style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(title, style: TextStyle(color: _colors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
                 Spacer(),
                 GestureDetector(
                   onTap: () {
@@ -648,9 +622,9 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
                   },
                   child: Row(
                     children: [
-                      Text('Tout voir', style: TextStyle(color: Colors.red, fontSize: 14)),
+                      Text('Tout voir', style: TextStyle(color: _colors.primary, fontSize: 14)),
                       SizedBox(width: 4),
-                      Icon(Icons.arrow_forward_ios, color: Colors.red, size: 14),
+                      Icon(Icons.arrow_forward_ios, color: _colors.primary, size: 14),
                     ],
                   ),
                 ),
@@ -676,13 +650,13 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
                       children: [
                         Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(8), child: _buildContentImage(content))),
                         SizedBox(height: 8),
-                        Text(content.title, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis),
+                        Text(content.title, style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis),
                         SizedBox(height: 4),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(_getContentTypeLabel(content), style: TextStyle(color: Colors.grey, fontSize: 10)),
-                            Text(content.isFree ? 'Gratuit' : '${content.price} F', style: TextStyle(color: content.isFree ? Colors.green : Colors.yellow, fontSize: 10, fontWeight: FontWeight.bold)),
+                            Text(_getContentTypeLabel(content), style: TextStyle(color: _colors.textSecondary, fontSize: 10)),
+                            Text(content.isFree ? 'Gratuit' : '${content.price} F', style: TextStyle(color: content.isFree ? _colors.primary : _colors.accent, fontSize: 10, fontWeight: FontWeight.bold)),
                           ],
                         ),
                       ],
@@ -702,16 +676,16 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 60, color: Colors.grey),
+          Icon(icon, size: 60, color: _colors.textSecondary),
           SizedBox(height: 16),
-          Text(text, style: TextStyle(color: Colors.white70, fontSize: 18)),
-          if (sub.isNotEmpty) ...[SizedBox(height: 8), Text(sub, style: TextStyle(color: Colors.grey, fontSize: 14))],
+          Text(text, style: TextStyle(color: _colors.textSecondary, fontSize: 18)),
+          if (sub.isNotEmpty) ...[SizedBox(height: 8), Text(sub, style: TextStyle(color: _colors.textSecondary, fontSize: 14))],
         ],
       ),
     );
   }
 
-  Widget _buildNoDataSection() => Center(child: Padding(padding: EdgeInsets.all(40), child: Text('Aucun contenu disponible', style: TextStyle(color: Colors.white70, fontSize: 18))));
+  Widget _buildNoDataSection() => Center(child: Padding(padding: EdgeInsets.all(40), child: Text('Aucun contenu disponible', style: TextStyle(color: _colors.textSecondary, fontSize: 18))));
 
   @override
   void dispose() {
@@ -759,17 +733,18 @@ class CategoryContentScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     final sortedContents = List<ContentPaie>.from(contents)..sort((a, b) => b.createdAt!.compareTo(a.createdAt!));
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colors.background,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        title: Text(categoryTitle, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        iconTheme: IconThemeData(color: Colors.white),
+        backgroundColor: colors.background,
+        title: Text(categoryTitle, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold)),
+        iconTheme: IconThemeData(color: colors.textPrimary),
       ),
       body: sortedContents.isEmpty
-          ? Center(child: Text('Aucun contenu disponible', style: TextStyle(color: Colors.white70, fontSize: 18)))
+          ? Center(child: Text('Aucun contenu disponible', style: TextStyle(color: colors.textSecondary, fontSize: 18)))
           : Padding(
         padding: const EdgeInsets.all(12),
         child: GridView.builder(
@@ -782,6 +757,7 @@ class CategoryContentScreen extends StatelessWidget {
           itemCount: sortedContents.length,
           itemBuilder: (context, index) {
             final content = sortedContents[index];
+            final colors = AppColors.of(context);
             return GestureDetector(
               onTap: () {
                 if (content.isSeries) {
@@ -792,7 +768,7 @@ class CategoryContentScreen extends StatelessWidget {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => ContentDetailScreen(content: content)));
                 }
               },
-              child: _buildThumbnail(context, content),
+              child: _buildThumbnail(context, content, colors),
             );
           },
         ),
@@ -800,11 +776,11 @@ class CategoryContentScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildThumbnail(BuildContext context, ContentPaie content) {
+  Widget _buildThumbnail(BuildContext context, ContentPaie content, AppColors colors) {
     return Stack(
       children: [
         Container(
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: Colors.grey[900]),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: colors.surface),
           child: content.thumbnailUrl != null && content.thumbnailUrl!.isNotEmpty
               ? ClipRRect(
             borderRadius: BorderRadius.circular(8),
@@ -813,16 +789,16 @@ class CategoryContentScreen extends StatelessWidget {
               fit: BoxFit.cover,
               width: double.infinity,
               height: double.infinity,
-              placeholder: (_, __) => Container(color: Colors.grey[800], child: Center(child: CircularProgressIndicator(color: Colors.green))),
-              errorWidget: (_, __, ___) => Container(color: Colors.grey[800], child: content.isEbook ? Icon(Icons.book, color: Colors.grey[600], size: 40) : Icon(Icons.videocam, color: Colors.grey[600], size: 40)),
+              placeholder: (_, __) => Container(color: colors.surfaceVariant, child: Center(child: CircularProgressIndicator(color: colors.primary))),
+              errorWidget: (_, __, ___) => Container(color: colors.surfaceVariant, child: content.isEbook ? Icon(Icons.book, color: colors.textSecondary, size: 40) : Icon(Icons.videocam, color: colors.textSecondary, size: 40)),
             ),
           )
-              : Center(child: content.isEbook ? Icon(Icons.book, color: Colors.grey[600], size: 40) : Icon(Icons.videocam, color: Colors.grey[600], size: 40)),
+              : Center(child: content.isEbook ? Icon(Icons.book, color: colors.textSecondary, size: 40) : Icon(Icons.videocam, color: colors.textSecondary, size: 40)),
         ),
         if (!content.isFree)
           Positioned(
             top: 6, right: 6,
-            child: Container(padding: EdgeInsets.all(4), decoration: BoxDecoration(color: Colors.black54, shape: BoxShape.circle), child: Icon(Icons.monetization_on, color: Colors.yellow, size: 16)),
+            child: Container(padding: EdgeInsets.all(4), decoration: BoxDecoration(color: Colors.black54, shape: BoxShape.circle), child: Icon(Icons.monetization_on, color: colors.accent, size: 16)),
           ),
         Positioned(
           bottom: 4, left: 4, right: 4,
@@ -832,13 +808,13 @@ class CategoryContentScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(content.title, style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis),
+                Text(content.title, style: TextStyle(color: colors.textPrimary, fontSize: 12, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis),
                 SizedBox(height: 2),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(content.isEbook ? 'Ebook' : 'Vidéo', style: TextStyle(color: Colors.green, fontSize: 10)),
-                    Text(content.isFree ? 'Gratuit' : '${content.price} F', style: TextStyle(color: content.isFree ? Colors.green : Colors.yellow, fontSize: 10, fontWeight: FontWeight.bold)),
+                    Text(content.isEbook ? 'Ebook' : 'Vidéo', style: TextStyle(color: colors.primary, fontSize: 10)),
+                    Text(content.isFree ? 'Gratuit' : '${content.price} F', style: TextStyle(color: content.isFree ? colors.primary : colors.accent, fontSize: 10, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ],
@@ -850,29 +826,36 @@ class CategoryContentScreen extends StatelessWidget {
   }
 }
 
-// Delegate de recherche de contenu (inchangé)
+// Delegate de recherche de contenu
 class ContentSearchDelegate extends SearchDelegate {
   @override
-  List<Widget> buildActions(BuildContext context) => [IconButton(icon: Icon(Icons.clear, color: Colors.white), onPressed: () => query = '')];
+  List<Widget> buildActions(BuildContext context) {
+    final colors = AppColors.of(context);
+    return [IconButton(icon: Icon(Icons.clear, color: colors.textPrimary), onPressed: () => query = '')];
+  }
   @override
-  Widget buildLeading(BuildContext context) => IconButton(icon: Icon(Icons.arrow_back, color: Colors.white), onPressed: () => close(context, null));
+  Widget buildLeading(BuildContext context) {
+    final colors = AppColors.of(context);
+    return IconButton(icon: Icon(Icons.arrow_back, color: colors.textPrimary), onPressed: () => close(context, null));
+  }
   @override
   Widget buildResults(BuildContext context) {
+    final colors = AppColors.of(context);
     final contentProvider = Provider.of<ContentProvider>(context, listen: false);
     return Container(
-      color: Colors.black,
+      color: colors.background,
       child: FutureBuilder<List<ContentPaie>>(
         future: contentProvider.searchContentPaies(query),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) return Center(child: CircularProgressIndicator(color: Colors.red));
+          if (snapshot.connectionState == ConnectionState.waiting) return Center(child: CircularProgressIndicator(color: colors.primary));
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return Center(
               child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                Icon(Icons.search_off, size: 60, color: Colors.grey),
+                Icon(Icons.search_off, size: 60, color: colors.textSecondary),
                 SizedBox(height: 16),
-                Text('Aucun résultat trouvé pour "$query"', style: TextStyle(color: Colors.white, fontSize: 18)),
+                Text('Aucun résultat trouvé pour "$query"', style: TextStyle(color: colors.textPrimary, fontSize: 18)),
                 SizedBox(height: 8),
-                Text('Essayez avec d\'autres termes', style: TextStyle(color: Colors.grey, fontSize: 14)),
+                Text('Essayez avec d\'autres termes', style: TextStyle(color: colors.textSecondary, fontSize: 14)),
               ]),
             );
           }
@@ -882,26 +865,27 @@ class ContentSearchDelegate extends SearchDelegate {
             itemCount: results.length,
             itemBuilder: (context, index) {
               final content = results[index];
+              final colors = AppColors.of(context);
               return ListTile(
                 leading: ClipRRect(
                   borderRadius: BorderRadius.circular(6),
                   child: CachedNetworkImage(
                     imageUrl: _cdnUrl(context, content.thumbnailUrl),
                     width: 50, height: 50, fit: BoxFit.cover,
-                    placeholder: (_, __) => Container(color: Colors.grey[800], child: Center(child: content.isEbook ? Icon(Icons.book, color: Colors.grey[600]) : Icon(Icons.videocam, color: Colors.grey[600]))),
-                    errorWidget: (_, __, ___) => Container(color: Colors.grey[800], child: Center(child: content.isEbook ? Icon(Icons.book, color: Colors.grey[600]) : Icon(Icons.videocam, color: Colors.grey[600]))),
+                    placeholder: (_, __) => Container(color: colors.surfaceVariant, child: Center(child: content.isEbook ? Icon(Icons.book, color: colors.textSecondary) : Icon(Icons.videocam, color: colors.textSecondary))),
+                    errorWidget: (_, __, ___) => Container(color: colors.surfaceVariant, child: Center(child: content.isEbook ? Icon(Icons.book, color: colors.textSecondary) : Icon(Icons.videocam, color: colors.textSecondary))),
                   ),
                 ),
-                title: Text(content.title, style: TextStyle(color: Colors.white)),
+                title: Text(content.title, style: TextStyle(color: colors.textPrimary)),
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(content.description, style: TextStyle(color: Colors.white70), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    Text(content.description, style: TextStyle(color: colors.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
                     SizedBox(height: 2),
-                    Text(content.isEbook ? 'Ebook' : 'Vidéo', style: TextStyle(color: Colors.green, fontSize: 12)),
+                    Text(content.isEbook ? 'Ebook' : 'Vidéo', style: TextStyle(color: colors.primary, fontSize: 12)),
                   ],
                 ),
-                trailing: !content.isFree ? Text('${content.price} F', style: TextStyle(color: Colors.yellow, fontWeight: FontWeight.bold)) : Text('Gratuit', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                trailing: !content.isFree ? Text('${content.price} F', style: TextStyle(color: colors.accent, fontWeight: FontWeight.bold)) : Text('Gratuit', style: TextStyle(color: colors.primary, fontWeight: FontWeight.bold)),
                 onTap: () {
                   if (content.isSeries) {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => SeriesEpisodesScreen(series: content)));
@@ -920,17 +904,18 @@ class ContentSearchDelegate extends SearchDelegate {
   }
   @override
   Widget buildSuggestions(BuildContext context) {
+    final colors = AppColors.of(context);
     return Container(
-      color: Colors.black,
+      color: colors.background,
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.search, size: 60, color: Colors.grey),
+            Icon(Icons.search, size: 60, color: colors.textSecondary),
             SizedBox(height: 16),
-            Text('Recherchez des contenus par titre ou hashtag', style: TextStyle(color: Colors.white70, fontSize: 16)),
+            Text('Recherchez des contenus par titre ou hashtag', style: TextStyle(color: colors.textSecondary, fontSize: 16)),
             SizedBox(height: 8),
-            Text('Vidéos, ebooks, séries...', style: TextStyle(color: Colors.grey, fontSize: 14)),
+            Text('Vidéos, ebooks, séries...', style: TextStyle(color: colors.textSecondary, fontSize: 14)),
           ],
         ),
       ),
@@ -939,11 +924,12 @@ class ContentSearchDelegate extends SearchDelegate {
   @override
   ThemeData appBarTheme(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = AppColors.of(context);
     return theme.copyWith(
-      scaffoldBackgroundColor: Colors.black,
-      appBarTheme: AppBarTheme(backgroundColor: Colors.black, iconTheme: IconThemeData(color: Colors.white)),
-      inputDecorationTheme: InputDecorationTheme(hintStyle: TextStyle(color: Colors.white70), border: InputBorder.none),
-      textTheme: TextTheme(titleLarge: TextStyle(color: Colors.white)),
+      scaffoldBackgroundColor: colors.background,
+      appBarTheme: AppBarTheme(backgroundColor: colors.background, iconTheme: IconThemeData(color: colors.textPrimary)),
+      inputDecorationTheme: InputDecorationTheme(hintStyle: TextStyle(color: colors.textSecondary), border: InputBorder.none),
+      textTheme: TextTheme(titleLarge: TextStyle(color: colors.textPrimary)),
     );
   }
 }
@@ -973,7 +959,7 @@ class ContentSearchDelegate extends SearchDelegate {
 //     return Stack(
 //       children: [
 //         Container(
-//           color: Colors.grey[900],
+//           color: _colors.surface,
 //           child: content.thumbnailUrl != null && content.thumbnailUrl!.isNotEmpty
 //               ? ClipRRect(
 //             borderRadius: BorderRadius.circular(4),
@@ -982,11 +968,11 @@ class ContentSearchDelegate extends SearchDelegate {
 //               fit: BoxFit.cover,
 //               width: double.infinity,
 //               placeholder: (context, url) => Container(
-//                 color: Colors.grey[800],
+//                 color: _colors.surfaceVariant,
 //                 child: Center(child: CircularProgressIndicator(color: Colors.green)),
 //               ),
 //               errorWidget: (context, url, error) => Container(
-//                 color: Colors.grey[800],
+//                 color: _colors.surfaceVariant,
 //                 child: Icon(Icons.error, color: Colors.white),
 //               ),
 //             ),
@@ -1630,7 +1616,7 @@ class ContentSearchDelegate extends SearchDelegate {
 //                             children: [
 //                               Text(
 //                                 _getContentTypeLabel(content),
-//                                 style: TextStyle(color: Colors.grey, fontSize: 12),
+//                                 style: TextStyle(color: _colors.textSecondary, fontSize: 12),
 //                               ),
 //                               SizedBox(width: 8),
 //                               Text(
@@ -1714,7 +1700,7 @@ class ContentSearchDelegate extends SearchDelegate {
 //                       children: [
 //                         Text(
 //                           _getContentTypeLabel(content),
-//                           style: TextStyle(color: Colors.grey, fontSize: 12),
+//                           style: TextStyle(color: _colors.textSecondary, fontSize: 12),
 //                         ),
 //                         SizedBox(width: 8),
 //                         Text(
@@ -1729,14 +1715,14 @@ class ContentSearchDelegate extends SearchDelegate {
 //                           SizedBox(width: 8),
 //                           Text(
 //                             '${content.views} vues',
-//                             style: TextStyle(color: Colors.grey, fontSize: 12),
+//                             style: TextStyle(color: _colors.textSecondary, fontSize: 12),
 //                           ),
 //                         ],
 //                         if (content.pageCount > 0 && content.isEbook) ...[
 //                           SizedBox(width: 8),
 //                           Text(
 //                             '${content.pageCount} pages',
-//                             style: TextStyle(color: Colors.grey, fontSize: 12),
+//                             style: TextStyle(color: _colors.textSecondary, fontSize: 12),
 //                           ),
 //                         ],
 //                       ],
@@ -1913,7 +1899,7 @@ class ContentSearchDelegate extends SearchDelegate {
 //         Container(
 //           decoration: BoxDecoration(
 //             borderRadius: BorderRadius.circular(8),
-//             color: Colors.grey[900],
+//             color: _colors.surface,
 //           ),
 //           child: content.thumbnailUrl != null && content.thumbnailUrl!.isNotEmpty
 //               ? ClipRRect(
@@ -1924,11 +1910,11 @@ class ContentSearchDelegate extends SearchDelegate {
 //               width: double.infinity,
 //               height: double.infinity,
 //               placeholder: (context, url) => Container(
-//                 color: Colors.grey[800],
+//                 color: _colors.surfaceVariant,
 //                 child: Center(child: CircularProgressIndicator(color: Colors.green)),
 //               ),
 //               errorWidget: (context, url, error) => Container(
-//                 color: Colors.grey[800],
+//                 color: _colors.surfaceVariant,
 //                 child: content.isEbook
 //                     ? Icon(Icons.book, color: Colors.grey[600], size: 40)
 //                     : Icon(Icons.videocam, color: Colors.grey[600], size: 40),
@@ -2134,7 +2120,7 @@ class ContentSearchDelegate extends SearchDelegate {
 //                     height: 50,
 //                     fit: BoxFit.cover,
 //                     placeholder: (context, url) => Container(
-//                       color: Colors.grey[800],
+//                       color: _colors.surfaceVariant,
 //                       child: Center(
 //                           child: content.isEbook
 //                               ? Icon(Icons.book, color: Colors.grey[600])
@@ -2142,7 +2128,7 @@ class ContentSearchDelegate extends SearchDelegate {
 //                       ),
 //                     ),
 //                     errorWidget: (context, url, error) => Container(
-//                       color: Colors.grey[800],
+//                       color: _colors.surfaceVariant,
 //                       child: Center(
 //                           child: content.isEbook
 //                               ? Icon(Icons.book, color: Colors.grey[600])

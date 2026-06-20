@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/authProvider.dart';
 import '../../models/model_data.dart';
+import '../../theme/app_colors.dart';
 import '../component/showUserDetails.dart';
 
 class ContentOwnerInfo extends StatefulWidget {
@@ -15,7 +16,6 @@ class ContentOwnerInfo extends StatefulWidget {
 }
 
 class _ContentOwnerInfoState extends State<ContentOwnerInfo> {
-  // Méthode utilitaire pour optimiser les URLs de médias via le CDN
   String _cdnUrl(String? url) {
     if (url == null || url.isEmpty) return '';
     final userProvider = Provider.of<UserAuthProvider>(context, listen: false);
@@ -36,21 +36,13 @@ class _ContentOwnerInfoState extends State<ContentOwnerInfo> {
   Future<void> _loadOwnerInfo() async {
     final userProvider = Provider.of<UserAuthProvider>(context, listen: false);
     _currentUser = userProvider.loginUserData;
-
-    // Récupération des infos de l'utilisateur propriétaire
-     await userProvider.getUserById(widget.ownerId).then((value) {
-      if(value.isNotEmpty){
-        _owner = value.first;
-      }
-    },);
-
-    // Vérification si l'utilisateur courant est abonné
+    await userProvider.getUserById(widget.ownerId).then((value) {
+      if (value.isNotEmpty) _owner = value.first;
+    });
     _isSubscribed = _checkIfSubscribed(_currentUser, _owner);
-
     setState(() => _isLoading = false);
   }
 
-  // Fonction de vérification d'abonnement
   bool _checkIfSubscribed(UserData? currentUser, UserData? owner) {
     if (currentUser == null || owner == null) return false;
     return owner.userAbonnesIds?.contains(currentUser.id) ?? false;
@@ -60,73 +52,56 @@ class _ContentOwnerInfoState extends State<ContentOwnerInfo> {
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
     final userProvider = Provider.of<UserAuthProvider>(context, listen: false);
-
-    await userProvider.getUserById(widget.ownerId!).then((users) async {
-      if (users.isNotEmpty) {
-        showUserDetailsModalDialog(users.first, width, height, context);
-      }
+    await userProvider.getUserById(widget.ownerId).then((users) async {
+      if (users.isNotEmpty) showUserDetailsModalDialog(users.first, width, height, context);
     });
-    // final userProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    // setState(() => _isLoading = true);
-
-    // if (_isSubscribed) {
-    //   await userProvider.unsubscribe(widget.ownerId);
-    //   _owner?.userAbonnesIds?.remove(_currentUser?.id);
-    // } else {
-    //   await userProvider.subscribe(widget.ownerId);
-    //   _owner?.userAbonnesIds?.add(_currentUser!.id!);
-    // }
-
-    // _isSubscribed = !_isSubscribed;
-    // setState(() => _isLoading = false);
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) return Center(child: CircularProgressIndicator(color: Colors.green));
-    if (_owner == null) return SizedBox();
+    final colors = AppColors.of(context);
+    if (_isLoading) return Center(child: CircularProgressIndicator(color: colors.primary));
+    if (_owner == null) return const SizedBox();
 
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[900],
+        color: colors.surface,
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: colors.border),
       ),
       child: Row(
         children: [
           GestureDetector(
-            onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => ProfileScreenContenu(userId: _owner!.id!,)));
-
-            },
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProfileScreenContenu(userId: _owner!.id!))),
             child: CircleAvatar(
               radius: 30,
               backgroundImage: NetworkImage(_cdnUrl(_owner!.imageUrl)),
-              backgroundColor: Colors.grey[800],
+              backgroundColor: colors.surfaceVariant,
             ),
           ),
-          SizedBox(width: 12),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("@${_owner!.pseudo?? 'Utilisateur' }",
-                    style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 16)),
-                SizedBox(height: 4),
+                Text('@${_owner!.pseudo ?? 'Utilisateur'}',
+                    style: TextStyle(color: colors.primary, fontWeight: FontWeight.bold, fontSize: 16)),
+                const SizedBox(height: 4),
                 Text('${_owner!.abonnes ?? 0} abonné(s)',
-                    style: TextStyle(color: Colors.white70, fontSize: 14)),
+                    style: TextStyle(color: colors.textSecondary, fontSize: 14)),
               ],
             ),
           ),
           ElevatedButton(
             onPressed: _toggleSubscribe,
             style: ElevatedButton.styleFrom(
-              backgroundColor: _isSubscribed ? Colors.grey : Colors.green,
-              foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              backgroundColor: _isSubscribed ? colors.textSecondary : colors.primary,
+              foregroundColor: _isSubscribed ? colors.textPrimary : colors.onPrimary,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
-            child: Text(_isSubscribed ? 'Abonné' : 'S’abonner'),
+            child: Text(_isSubscribed ? 'Abonné' : 'S\'abonner'),
           ),
         ],
       ),

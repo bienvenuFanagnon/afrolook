@@ -1,56 +1,30 @@
+import 'dart:async';
+import 'dart:io';
+import 'dart:isolate';
 import 'dart:typed_data';
+import 'dart:ui';
 
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/contenuPayant/userAbonnerInfos.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:http/http.dart' as http;
-import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:pdfx/pdfx.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
 
 import '../../models/model_data.dart';
-import '../../providers/contenuPayantProvider.dart';
 import '../../providers/authProvider.dart';
+import '../../providers/contenuPayantProvider.dart';
 import '../../services/linkService.dart';
+import '../../theme/app_colors.dart';
 import '../pub/native_ad_widget.dart';
 import 'contentDetails.dart';
 import 'ebookPadReader.dart';
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:flutter_downloader/flutter_downloader.dart';
-import 'dart:async';
-import 'dart:isolate';
-import 'dart:ui';
-
-import 'dart:typed_data';
-
-import 'package:afrotok/pages/component/consoleWidget.dart';
-import 'package:afrotok/pages/contenuPayant/userAbonnerInfos.dart';
-import 'package:device_info_plus/device_info_plus.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:pdfx/pdfx.dart';
-
-import '../../models/model_data.dart';
-import '../../providers/contenuPayantProvider.dart';
-import '../../providers/authProvider.dart';
-import '../../services/linkService.dart';
-import '../pub/native_ad_widget.dart';
-import 'contentDetails.dart';
-import 'ebookPadReader.dart';
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:flutter_downloader/flutter_downloader.dart';
-import 'dart:async';
-import 'dart:isolate';
-import 'dart:ui';
 
 
 class EbookDetailScreen extends StatefulWidget {
@@ -64,6 +38,8 @@ class EbookDetailScreen extends StatefulWidget {
 }
 
 class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTickerProviderStateMixin {
+  late AppColors _colors;
+
   // Lecteur PDF principal (ne sera utilisé que si acheté)
   PdfControllerPinch? _pdfController;
   bool _isFullPdfReady = false;
@@ -244,7 +220,7 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
       print('Erreur préparation capsules: $e');
       setState(() => _isDownloadingPdf = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur chargement aperçu'), backgroundColor: Colors.red),
+        SnackBar(content: Text('Erreur chargement aperçu'), backgroundColor: _colors.danger),
       );
     }
   }
@@ -314,31 +290,31 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
         child: Container(
           margin: EdgeInsets.symmetric(horizontal: 20),
           decoration: BoxDecoration(
-            color: _afroBlack,
+            color: _colors.background,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: _afroYellow, width: 2),
+            border: Border.all(color: _colors.accent, width: 2),
           ),
           padding: EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.menu_book, color: _afroYellow, size: 60),
+              Icon(Icons.menu_book, color: _colors.accent, size: 60),
               SizedBox(height: 16),
-              Text('✨ Extrait visionné ! ✨', style: TextStyle(color: _afroYellow, fontSize: 20, fontWeight: FontWeight.bold)),
+              Text('✨ Extrait visionné ! ✨', style: TextStyle(color: _colors.accent, fontSize: 20, fontWeight: FontWeight.bold)),
               SizedBox(height: 12),
-              Text('Vous avez vu la page "${selectedCapsule.label}" pendant $_capsuleDurationSeconds secondes.', style: TextStyle(color: Colors.white70, fontSize: 14), textAlign: TextAlign.center),
+              Text('Vous avez vu la page "${selectedCapsule.label}" pendant $_capsuleDurationSeconds secondes.', style: TextStyle(color: _colors.textSecondary, fontSize: 14), textAlign: TextAlign.center),
               SizedBox(height: 20),
-              Text('Convaincu ? Débloquez l\'intégralité de cet ebook !', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500), textAlign: TextAlign.center),
+              Text('Convaincu ? Débloquez l\'intégralité de cet ebook !', style: TextStyle(color: _colors.textPrimary, fontSize: 14, fontWeight: FontWeight.w500), textAlign: TextAlign.center),
               SizedBox(height: 8),
-              Text('💰 ${widget.content.price.toInt()} FCFA seulement', style: TextStyle(color: _afroYellow, fontSize: 20, fontWeight: FontWeight.bold)),
+              Text('💰 ${widget.content.price.toInt()} FCFA seulement', style: TextStyle(color: _colors.accent, fontSize: 20, fontWeight: FontWeight.bold)),
               SizedBox(height: 8),
-              Text('Votre soutien permet aux auteurs de créer plus de contenu', style: TextStyle(color: Colors.white54, fontSize: 11, fontStyle: FontStyle.italic), textAlign: TextAlign.center),
+              Text('Votre soutien permet aux auteurs de créer plus de contenu', style: TextStyle(color: _colors.textSecondary, fontSize: 11, fontStyle: FontStyle.italic), textAlign: TextAlign.center),
               SizedBox(height: 24),
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(foregroundColor: Colors.white, side: BorderSide(color: Colors.grey)),
+                      style: OutlinedButton.styleFrom(foregroundColor: _colors.textPrimary, side: BorderSide(color: _colors.border)),
                       onPressed: () => Navigator.pop(context),
                       child: Text('Plus tard'),
                     ),
@@ -346,7 +322,7 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
                   SizedBox(width: 16),
                   Expanded(
                     child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(foregroundColor: _afroBlack, backgroundColor: _afroYellow),
+                      style: ElevatedButton.styleFrom(foregroundColor: _colors.background, backgroundColor: _colors.accent),
                       onPressed: _isPurchasing ? null : () { Navigator.pop(context); _handlePurchase(); },
                       child: _isPurchasing ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : Text('ACHETER', style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
@@ -477,7 +453,7 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: Text('Annuler')),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: _colors.danger),
             onPressed: () async {
               Navigator.pop(context);
               bool success = false;
@@ -490,7 +466,7 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
                 success = await contentProvider.deleteContentPaie(widget.content.id!);
               }
               if (success) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Suppression réussie !'), backgroundColor: Colors.green));
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Suppression réussie !'), backgroundColor: _colors.primary));
                 Navigator.pop(context);
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur lors de la suppression.'), backgroundColor: Colors.red));
@@ -526,19 +502,19 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
       builder: (_) => Dialog(
         backgroundColor: Colors.transparent,
         child: Container(
-          decoration: BoxDecoration(color: _afroBlack, borderRadius: BorderRadius.circular(20)),
+          decoration: BoxDecoration(color: _colors.background, borderRadius: BorderRadius.circular(20)),
           padding: EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.check_circle, color: _afroGreen, size: 60),
+              Icon(Icons.check_circle, color: _colors.primary, size: 60),
               SizedBox(height: 20),
-              Text('Achat Réussi!', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+              Text('Achat Réussi!', style: TextStyle(color: _colors.textPrimary, fontSize: 24, fontWeight: FontWeight.bold)),
               SizedBox(height: 12),
-              Text('L\'ebook a été débloqué avec succès.', style: TextStyle(color: Colors.white70, fontSize: 16), textAlign: TextAlign.center),
+              Text('L\'ebook a été débloqué avec succès.', style: TextStyle(color: _colors.textSecondary, fontSize: 16), textAlign: TextAlign.center),
               SizedBox(height: 24),
               ElevatedButton(
-                style: ElevatedButton.styleFrom(foregroundColor: Colors.white, backgroundColor: _afroGreen),
+                style: ElevatedButton.styleFrom(foregroundColor: Colors.white, backgroundColor: _colors.primary),
                 onPressed: () { Navigator.pop(context); setState(() {}); },
                 child: Text('Lire maintenant'),
               ),
@@ -556,19 +532,19 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
       builder: (_) => Dialog(
         backgroundColor: Colors.transparent,
         child: Container(
-          decoration: BoxDecoration(color: _afroBlack, borderRadius: BorderRadius.circular(20)),
+          decoration: BoxDecoration(color: _colors.background, borderRadius: BorderRadius.circular(20)),
           padding: EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.info_outline, color: _afroYellow, size: 60),
+              Icon(Icons.info_outline, color: _colors.accent, size: 60),
               SizedBox(height: 20),
-              Text('Déjà Acheté', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+              Text('Déjà Acheté', style: TextStyle(color: _colors.textPrimary, fontSize: 24, fontWeight: FontWeight.bold)),
               SizedBox(height: 12),
-              Text('Vous avez déjà acheté cet ebook.', style: TextStyle(color: Colors.white70, fontSize: 16), textAlign: TextAlign.center),
+              Text('Vous avez déjà acheté cet ebook.', style: TextStyle(color: _colors.textSecondary, fontSize: 16), textAlign: TextAlign.center),
               SizedBox(height: 24),
               ElevatedButton(
-                style: ElevatedButton.styleFrom(foregroundColor: Colors.white, backgroundColor: _afroYellow),
+                style: ElevatedButton.styleFrom(foregroundColor: Colors.white, backgroundColor: _colors.accent),
                 onPressed: () {
                   Navigator.pop(context);
                   final contentProvider = Provider.of<ContentProvider>(context, listen: false);
@@ -586,28 +562,28 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
   void _showReadingOptions() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: _afroBlack,
+      backgroundColor: _colors.background,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
       builder: (context) => Container(
         padding: EdgeInsets.all(16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Options de lecture', style: TextStyle(color: _afroWhite, fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('Options de lecture', style: TextStyle(color: _colors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
             SizedBox(height: 16),
             ListTile(
-              leading: Icon(Icons.visibility, color: _afroGreen),
-              title: Text('Lire en ligne', style: TextStyle(color: _afroWhite)),
-              subtitle: Text('Lire directement dans l\'application', style: TextStyle(color: Colors.white70)),
+              leading: Icon(Icons.visibility, color: _colors.primary),
+              title: Text('Lire en ligne', style: TextStyle(color: _colors.textPrimary)),
+              subtitle: Text('Lire directement dans l\'application', style: TextStyle(color: _colors.textSecondary)),
               onTap: () {
                 Navigator.pop(context);
                 _openFullPdfViewer();
               },
             ),
             ListTile(
-              leading: Icon(Icons.download, color: _afroYellow),
-              title: Text('Télécharger', style: TextStyle(color: _afroWhite)),
-              subtitle: Text('Télécharger l\'ebook sur votre appareil', style: TextStyle(color: Colors.white70)),
+              leading: Icon(Icons.download, color: _colors.accent),
+              title: Text('Télécharger', style: TextStyle(color: _colors.textPrimary)),
+              subtitle: Text('Télécharger l\'ebook sur votre appareil', style: TextStyle(color: _colors.textSecondary)),
               onTap: () {
                 Navigator.pop(context);
                 _downloadEbook();
@@ -699,16 +675,16 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
       builder: (context) => Dialog(
         backgroundColor: Colors.transparent,
         child: Container(
-          decoration: BoxDecoration(color: _afroBlack, borderRadius: BorderRadius.circular(20)),
+          decoration: BoxDecoration(color: _colors.background, borderRadius: BorderRadius.circular(20)),
           padding: EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircularProgressIndicator(color: _afroGreen),
+              CircularProgressIndicator(color: _colors.primary),
               SizedBox(height: 20),
-              Text('Téléchargement en cours', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+              Text('Téléchargement en cours', style: TextStyle(color: _colors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
               SizedBox(height: 12),
-              Text('Votre ebook est en cours de téléchargement...', style: TextStyle(color: Colors.white70, fontSize: 14), textAlign: TextAlign.center),
+              Text('Votre ebook est en cours de téléchargement...', style: TextStyle(color: _colors.textSecondary, fontSize: 14), textAlign: TextAlign.center),
             ],
           ),
         ),
@@ -724,16 +700,16 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
       builder: (context) => Dialog(
         backgroundColor: Colors.transparent,
         child: Container(
-          decoration: BoxDecoration(color: _afroBlack, borderRadius: BorderRadius.circular(20)),
+          decoration: BoxDecoration(color: _colors.background, borderRadius: BorderRadius.circular(20)),
           padding: EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.check_circle, color: _afroGreen, size: 60),
+              Icon(Icons.check_circle, color: _colors.primary, size: 60),
               SizedBox(height: 20),
-              Text('Téléchargement Réussi!', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+              Text('Téléchargement Réussi!', style: TextStyle(color: _colors.textPrimary, fontSize: 22, fontWeight: FontWeight.bold)),
               SizedBox(height: 12),
-              Text('Votre ebook a été téléchargé avec succès.', style: TextStyle(color: Colors.white70, fontSize: 16), textAlign: TextAlign.center),
+              Text('Votre ebook a été téléchargé avec succès.', style: TextStyle(color: _colors.textSecondary, fontSize: 16), textAlign: TextAlign.center),
               SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -768,16 +744,16 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
       builder: (context) => Dialog(
         backgroundColor: Colors.transparent,
         child: Container(
-          decoration: BoxDecoration(color: _afroBlack, borderRadius: BorderRadius.circular(20)),
+          decoration: BoxDecoration(color: _colors.background, borderRadius: BorderRadius.circular(20)),
           padding: EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.error_outline, color: Colors.red, size: 60),
+              Icon(Icons.error_outline, color: _colors.danger, size: 60),
               SizedBox(height: 20),
-              Text('Échec du Téléchargement', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+              Text('Échec du Téléchargement', style: TextStyle(color: _colors.textPrimary, fontSize: 22, fontWeight: FontWeight.bold)),
               SizedBox(height: 12),
-              Text('Une erreur est survenue.', style: TextStyle(color: Colors.white70, fontSize: 16), textAlign: TextAlign.center),
+              Text('Une erreur est survenue.', style: TextStyle(color: _colors.textSecondary, fontSize: 16), textAlign: TextAlign.center),
               SizedBox(height: 24),
               ElevatedButton(onPressed: () => Navigator.pop(context), child: Text('Fermer')),
             ],
@@ -831,27 +807,27 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
       margin: EdgeInsets.symmetric(vertical: 16),
       padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       decoration: BoxDecoration(
-        color: _afroBlack.withOpacity(0.8),
+        color: _colors.background.withOpacity(0.8),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _afroYellow.withOpacity(0.3)),
+        border: Border.all(color: _colors.accent.withOpacity(0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            Icon(Icons.visibility, color: _afroYellow, size: 18),
+            Icon(Icons.visibility, color: _colors.accent, size: 18),
             SizedBox(width: 8),
-            Text('🔍 Aperçu gratuit (5 secondes par extrait)', style: TextStyle(color: _afroYellow, fontSize: 14, fontWeight: FontWeight.bold)),
+            Text('🔍 Aperçu gratuit (5 secondes par extrait)', style: TextStyle(color: _colors.accent, fontSize: 14, fontWeight: FontWeight.bold)),
           ]),
           SizedBox(height: 12),
-          Text('Cliquez sur un extrait pour voir une page de l\'ebook', style: TextStyle(color: Colors.white70, fontSize: 12)),
+          Text('Cliquez sur un extrait pour voir une page de l\'ebook', style: TextStyle(color: _colors.textSecondary, fontSize: 12)),
           SizedBox(height: 12),
           if (_isDownloadingPdf)
             Column(
               children: [
-                LinearProgressIndicator(value: _downloadProgress, color: _afroGreen),
+                LinearProgressIndicator(value: _downloadProgress, color: _colors.primary),
                 SizedBox(height: 8),
-                Text('Téléchargement de l\'aperçu... ${(_downloadProgress * 100).toStringAsFixed(0)}%', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                Text('Téléchargement de l\'aperçu... ${(_downloadProgress * 100).toStringAsFixed(0)}%', style: TextStyle(color: _colors.textSecondary, fontSize: 12)),
               ],
             )
           else
@@ -872,16 +848,16 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
                       margin: EdgeInsets.symmetric(horizontal: 4),
                       padding: EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
-                        gradient: isLoading ? LinearGradient(colors: [_afroGreen, _afroGreen.withOpacity(0.7)]) : null,
-                        color: !isReady ? Colors.grey[800] : (isLoading ? null : _afroBlack.withOpacity(0.5)),
+                        gradient: isLoading ? LinearGradient(colors: [_colors.primary, _colors.primary.withOpacity(0.7)]) : null,
+                        color: !isReady ? _colors.surfaceVariant : (isLoading ? null : _colors.background.withOpacity(0.5)),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: isLoading ? _afroGreen : (isReady ? _afroYellow.withOpacity(0.5) : Colors.grey[700]!), width: 1),
+                        border: Border.all(color: isLoading ? _colors.primary : (isReady ? _colors.accent.withOpacity(0.5) : _colors.border), width: 1),
                       ),
                       child: !isReady
-                          ? Column(children: [SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: _afroYellow, strokeWidth: 2)), SizedBox(height: 8), Text('Chargement...', style: TextStyle(color: _afroYellow, fontSize: 11))])
+                          ? Column(children: [SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: _colors.accent, strokeWidth: 2)), SizedBox(height: 8), Text('Chargement...', style: TextStyle(color: _colors.accent, fontSize: 11))])
                           : isLoading
-                          ? Column(children: [SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: _afroYellow, strokeWidth: 2)), SizedBox(height: 8), Text('Lecture...', style: TextStyle(color: _afroYellow, fontSize: 11))])
-                          : Column(children: [Icon(capsule.icon, color: _afroYellow, size: 28), SizedBox(height: 8), Text(capsule.label, style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500)), SizedBox(height: 4), Text('5 sec', style: TextStyle(color: Colors.white54, fontSize: 10))]),
+                          ? Column(children: [SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: _colors.accent, strokeWidth: 2)), SizedBox(height: 8), Text('Lecture...', style: TextStyle(color: _colors.accent, fontSize: 11))])
+                          : Column(children: [Icon(capsule.icon, color: _colors.accent, size: 28), SizedBox(height: 8), Text(capsule.label, style: TextStyle(color: _colors.textPrimary, fontSize: 13, fontWeight: FontWeight.w500)), SizedBox(height: 4), Text('5 sec', style: TextStyle(color: _colors.textSecondary, fontSize: 10))]),
                     ),
                   ),
                 );
@@ -904,14 +880,14 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(widget.content.title!, style: TextStyle(color: _afroWhite, fontSize: 28, fontWeight: FontWeight.bold)),
+        Text(widget.content.title!, style: TextStyle(color: _colors.textPrimary, fontSize: 28, fontWeight: FontWeight.bold)),
         SizedBox(height: 8),
-        Text('Série Ebook', style: TextStyle(color: _afroYellow, fontSize: 16, fontWeight: FontWeight.w500)),
+        Text('Série Ebook', style: TextStyle(color: _colors.accent, fontSize: 16, fontWeight: FontWeight.w500)),
         SizedBox(height: 16),
         if (_currentEpisode != null) ...[
-          Text('Épisode: ${_currentEpisode!.title}', style: TextStyle(color: _afroWhite, fontSize: 20, fontWeight: FontWeight.bold)),
+          Text('Épisode: ${_currentEpisode!.title}', style: TextStyle(color: _colors.textPrimary, fontSize: 20, fontWeight: FontWeight.bold)),
           SizedBox(height: 8),
-          Text('Épisode ${_currentEpisode!.episodeNumber}', style: TextStyle(color: Colors.white70, fontSize: 14)),
+          Text('Épisode ${_currentEpisode!.episodeNumber}', style: TextStyle(color: _colors.textSecondary, fontSize: 14)),
         ],
         SizedBox(height: 16),
       ],
@@ -922,13 +898,13 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(widget.content.title!, style: TextStyle(color: _afroWhite, fontSize: 28, fontWeight: FontWeight.bold)),
+        Text(widget.content.title!, style: TextStyle(color: _colors.textPrimary, fontSize: 28, fontWeight: FontWeight.bold)),
         SizedBox(height: 12),
       ],
     );
   }
 
-  Widget _buildStatButton(IconData icon, VoidCallback? onTap, int count, bool isLoading, {bool isActive = false, Color activeColor = Colors.red}) {
+  Widget _buildStatButton(IconData icon, VoidCallback? onTap, int count, bool isLoading, {bool isActive = false, Color? activeColor}) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -936,19 +912,19 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
           onTap: onTap,
           child: Container(
             padding: EdgeInsets.all(8),
-            decoration: BoxDecoration(color: _afroBlack.withOpacity(0.5), shape: BoxShape.circle),
-            child: isLoading ? SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: _afroYellow, strokeWidth: 2)) : Icon(icon, color: isActive ? activeColor : _afroWhite, size: 24),
+            decoration: BoxDecoration(color: _colors.background.withOpacity(0.5), shape: BoxShape.circle),
+            child: isLoading ? SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: _colors.accent, strokeWidth: 2)) : Icon(icon, color: isActive ? (activeColor ?? _colors.primary) : _colors.textPrimary, size: 24),
           ),
         ),
         SizedBox(height: 1),
-        Text('$count', style: TextStyle(color: isActive ? activeColor : _afroWhite, fontSize: 12)),
+        Text('$count', style: TextStyle(color: isActive ? (activeColor ?? _colors.primary) : _colors.textPrimary, fontSize: 12)),
       ],
     );
   }
 
   Widget _buildPdfViewer() {
-    if (_isLoadingPdf) return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [CircularProgressIndicator(color: _afroGreen), SizedBox(height: 16), Text('Chargement du PDF...', style: TextStyle(color: _afroWhite))]));
-    if (!_isFullPdfReady || _pdfController == null) return Center(child: Text('Erreur de chargement du PDF', style: TextStyle(color: _afroWhite)));
+    if (_isLoadingPdf) return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [CircularProgressIndicator(color: _colors.primary), SizedBox(height: 16), Text('Chargement du PDF...', style: TextStyle(color: _colors.textPrimary))]));
+    if (!_isFullPdfReady || _pdfController == null) return Center(child: Text('Erreur de chargement du PDF', style: TextStyle(color: _colors.textPrimary)));
     return Column(
       children: [
         Container(
@@ -956,9 +932,9 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              IconButton(icon: Icon(Icons.arrow_back_ios, color: _afroWhite), onPressed: _currentPage > 1 ? () => _pdfController!.previousPage(curve: Curves.easeInOut, duration: Duration(milliseconds: 300)) : null),
-              PdfPageNumber(controller: _pdfController!, builder: (_, __, page, pagesCount) => Container(alignment: Alignment.center, child: Text('${page ?? 0}/${pagesCount ?? 0}', style: TextStyle(color: _afroWhite, fontWeight: FontWeight.bold, fontSize: 16)))),
-              IconButton(icon: Icon(Icons.arrow_forward_ios, color: _afroWhite), onPressed: _currentPage < _totalPages ? () => _pdfController!.nextPage(curve: Curves.easeInOut, duration: Duration(milliseconds: 300)) : null),
+              IconButton(icon: Icon(Icons.arrow_back_ios, color: _colors.textPrimary), onPressed: _currentPage > 1 ? () => _pdfController!.previousPage(curve: Curves.easeInOut, duration: Duration(milliseconds: 300)) : null),
+              PdfPageNumber(controller: _pdfController!, builder: (_, __, page, pagesCount) => Container(alignment: Alignment.center, child: Text('${page ?? 0}/${pagesCount ?? 0}', style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)))),
+              IconButton(icon: Icon(Icons.arrow_forward_ios, color: _colors.textPrimary), onPressed: _currentPage < _totalPages ? () => _pdfController!.nextPage(curve: Curves.easeInOut, duration: Duration(milliseconds: 300)) : null),
             ],
           ),
         ),
@@ -966,9 +942,9 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
           child: PdfViewPinch(
             builders: PdfViewPinchBuilders<DefaultBuilderOptions>(
               options: DefaultBuilderOptions(),
-              documentLoaderBuilder: (_) => Center(child: CircularProgressIndicator(color: _afroGreen)),
-              pageLoaderBuilder: (_) => Center(child: CircularProgressIndicator(color: _afroGreen)),
-              errorBuilder: (_, error) => Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.error_outline, color: Colors.red, size: 60), SizedBox(height: 16), Text('Erreur: $error', style: TextStyle(color: _afroWhite))])),
+              documentLoaderBuilder: (_) => Center(child: CircularProgressIndicator(color: _colors.primary)),
+              pageLoaderBuilder: (_) => Center(child: CircularProgressIndicator(color: _colors.primary)),
+              errorBuilder: (_, error) => Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.error_outline, color: _colors.danger, size: 60), SizedBox(height: 16), Text('Erreur: $error', style: TextStyle(color: _colors.textPrimary))])),
             ),
             controller: _pdfController!,
           ),
@@ -976,7 +952,7 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
         Container(
           padding: EdgeInsets.all(16),
           child: ElevatedButton(
-            style: ElevatedButton.styleFrom(foregroundColor: _afroBlack, backgroundColor: _afroGreen, padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12)),
+            style: ElevatedButton.styleFrom(foregroundColor: _colors.background, backgroundColor: _colors.primary, padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12)),
             onPressed: () => setState(() => _showPdfViewer = false),
             child: Text('Retour aux détails'),
           ),
@@ -1000,6 +976,7 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
 
   @override
   Widget build(BuildContext context) {
+    _colors = AppColors.of(context);
     final contentProvider = Provider.of<ContentProvider>(context, listen: false);
     final userProvider = Provider.of<UserAuthProvider>(context, listen: false);
     final isAdminOrOwner = userProvider.loginUserData?.role == UserRole.ADM.name ||
@@ -1015,14 +992,14 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
 
     if (_showPdfViewer) {
       return Scaffold(
-        backgroundColor: _afroBlack,
-        appBar: AppBar(backgroundColor: _afroBlack, leading: IconButton(icon: Icon(Icons.arrow_back, color: _afroWhite), onPressed: () => setState(() => _showPdfViewer = false)), title: Text('Lecture de l\'ebook', style: TextStyle(color: _afroWhite))),
+        backgroundColor: _colors.background,
+        appBar: AppBar(backgroundColor: _colors.background, leading: IconButton(icon: Icon(Icons.arrow_back, color: _colors.textPrimary), onPressed: () => setState(() => _showPdfViewer = false)), title: Text('Lecture de l\'ebook', style: TextStyle(color: _colors.textPrimary))),
         body: _buildPdfViewer(),
       );
     }
 
     return Scaffold(
-      backgroundColor: _afroBlack,
+      backgroundColor: _colors.background,
       body: Stack(
         children: [
           CustomScrollView(
@@ -1031,7 +1008,7 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
                 expandedHeight: 400,
                 floating: false,
                 pinned: true,
-                backgroundColor: _afroBlack,
+                backgroundColor: _colors.background,
                 flexibleSpace: FlexibleSpaceBar(
                   background: Stack(
                     children: [
@@ -1039,15 +1016,15 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
                         imageUrl: thumbnailUrl,
                         fit: BoxFit.cover,
                         width: double.infinity,
-                        placeholder: (_, __) => Container(color: Colors.grey[900]),
-                        errorWidget: (_, __, ___) => Container(color: Colors.grey[900], child: Icon(Icons.book, color: Colors.white, size: 60)),
+                        placeholder: (_, __) => Container(color: _colors.surfaceVariant),
+                        errorWidget: (_, __, ___) => Container(color: _colors.surfaceVariant, child: Icon(Icons.book, color: _colors.textSecondary, size: 60)),
                       ),
                       Container(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.bottomCenter,
                             end: Alignment.topCenter,
-                            colors: [_afroBlack.withOpacity(0.9), _afroBlack.withOpacity(0.3), Colors.transparent],
+                            colors: [_colors.background.withOpacity(0.9), _colors.background.withOpacity(0.3), Colors.transparent],
                             stops: [0.0, 0.5, 1.0],
                           ),
                         ),
@@ -1055,18 +1032,18 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
                       if (!canRead && !isAdminOrOwner && _isPreviewMode)
                         Positioned.fill(
                           child: Container(
-                            color: _afroBlack.withOpacity(0.85),
+                            color: _colors.background.withOpacity(0.85),
                             child: Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.lock_outline, size: 60, color: _afroWhite),
+                                  Icon(Icons.lock_outline, size: 60, color: _colors.textPrimary),
                                   SizedBox(height: 16),
-                                  Text('Ebook premium', style: TextStyle(color: _afroWhite, fontSize: 24, fontWeight: FontWeight.bold)),
+                                  Text('Ebook premium', style: TextStyle(color: _colors.textPrimary, fontSize: 24, fontWeight: FontWeight.bold)),
                                   SizedBox(height: 8),
-                                  Text('Débloquez cet ebook pour le lire', style: TextStyle(color: Colors.white70, fontSize: 16)),
+                                  Text('Débloquez cet ebook pour le lire', style: TextStyle(color: _colors.textSecondary, fontSize: 16)),
                                   SizedBox(height: 8),
-                                  Text('Utilisez les aperçus ci-dessous pour juger de la qualité', style: TextStyle(color: Colors.white70, fontSize: 14, fontStyle: FontStyle.italic), textAlign: TextAlign.center),
+                                  Text('Utilisez les aperçus ci-dessous pour juger de la qualité', style: TextStyle(color: _colors.textSecondary, fontSize: 14, fontStyle: FontStyle.italic), textAlign: TextAlign.center),
                                 ],
                               ),
                             ),
@@ -1075,21 +1052,21 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
                       else if (isAdminOrOwner)
                         Positioned.fill(
                           child: Container(
-                            color: _afroBlack.withOpacity(0.5),
+                            color: _colors.background.withOpacity(0.5),
                             child: Center(
-                              child: Text('Vous pouvez lire cet ebook gratuitement (Admin/Propriétaire)', style: TextStyle(color: Colors.white70, fontSize: 16, fontStyle: FontStyle.italic), textAlign: TextAlign.center),
+                              child: Text('Vous pouvez lire cet ebook gratuitement (Admin/Propriétaire)', style: TextStyle(color: _colors.textSecondary, fontSize: 16, fontStyle: FontStyle.italic), textAlign: TextAlign.center),
                             ),
                           ),
                         ),
                       if (_isPreviewMode && _isCapsulePlaying && _activeCapsuleController != null)
                         Positioned.fill(
                           child: Container(
-                            color: _afroBlack,
+                            color: _colors.background,
                             child: PdfViewPinch(
                               builders: PdfViewPinchBuilders<DefaultBuilderOptions>(
                                 options: DefaultBuilderOptions(),
-                                documentLoaderBuilder: (_) => Center(child: CircularProgressIndicator(color: _afroGreen)),
-                                pageLoaderBuilder: (_) => Center(child: CircularProgressIndicator(color: _afroGreen)),
+                                documentLoaderBuilder: (_) => Center(child: CircularProgressIndicator(color: _colors.primary)),
+                                pageLoaderBuilder: (_) => Center(child: CircularProgressIndicator(color: _colors.primary)),
                               ),
                               controller: _activeCapsuleController!,
                             ),
@@ -1098,9 +1075,9 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
                     ],
                   ),
                 ),
-                leading: IconButton(icon: Icon(Icons.arrow_back, color: _afroWhite), onPressed: () => Navigator.pop(context)),
+                leading: IconButton(icon: Icon(Icons.arrow_back, color: _colors.textPrimary), onPressed: () => Navigator.pop(context)),
                 actions: [
-                  if (isAdminOrOwner) IconButton(icon: Icon(Icons.delete_outline, color: Colors.red), onPressed: _showDeleteModal),
+                  if (isAdminOrOwner) IconButton(icon: Icon(Icons.delete_outline, color: _colors.danger), onPressed: _showDeleteModal),
                 ],
               ),
               SliverToBoxAdapter(
@@ -1118,30 +1095,30 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
                       Row(
                         children: [
                           _buildStatButton(Icons.share, _isSharing ? null : _handleShare, widget.content.shares, _isSharing),
-                          _buildStatButton(Icons.thumb_down, _handleDislike, widget.content.dislikes, false, isActive: _isDisliked, activeColor: Colors.blue),
-                          _buildStatButton(Icons.favorite, _handleLike, widget.content.likes, false, isActive: _isLiked, activeColor: Colors.red),
+                          _buildStatButton(Icons.thumb_down, _handleDislike, widget.content.dislikes, false, isActive: _isDisliked, activeColor: _colors.info),
+                          _buildStatButton(Icons.favorite, _handleLike, widget.content.likes, false, isActive: _isLiked, activeColor: _colors.danger),
                           _buildStatButton(Icons.visibility, null, widget.content.views, false),
                           Spacer(),
                           if (!widget.content.isFree && (!widget.content.isSeries || (widget.content.isSeries && _currentEpisode != null && !_currentEpisode!.isFree)))
-                            Container(padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: _afroYellow.withOpacity(0.2), borderRadius: BorderRadius.circular(4), border: Border.all(color: _afroYellow)), child: Text('PREMIUM', style: TextStyle(color: _afroYellow, fontSize: 12, fontWeight: FontWeight.bold))),
+                            Container(padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: _colors.accent.withOpacity(0.2), borderRadius: BorderRadius.circular(4), border: Border.all(color: _colors.accent)), child: Text('PREMIUM', style: TextStyle(color: _colors.accent, fontSize: 12, fontWeight: FontWeight.bold))),
                         ],
                       ),
                       SizedBox(height: 20),
                       // SECTION CAPSULES (uniquement pour non-acheteurs)
                       _buildCapsulesSection(),
                       SizedBox(height: 10),
-                      Text(widget.content.description ?? '', style: TextStyle(color: Colors.white70, fontSize: 16, height: 1.5)),
+                      Text(widget.content.description ?? '', style: TextStyle(color: _colors.textSecondary, fontSize: 16, height: 1.5)),
                       SizedBox(height: 20),
                       Container(
                         width: double.infinity,
                         padding: EdgeInsets.all(16),
-                        decoration: BoxDecoration(color: _afroGreen.withOpacity(0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: _afroGreen.withOpacity(0.3))),
+                        decoration: BoxDecoration(color: _colors.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: _colors.primary.withOpacity(0.3))),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(children: [Icon(Icons.favorite, color: _afroGreen, size: 16), SizedBox(width: 8), Text('Soutenez les auteurs', style: TextStyle(color: _afroGreen, fontSize: 16, fontWeight: FontWeight.bold))]),
+                            Row(children: [Icon(Icons.favorite, color: _colors.primary, size: 16), SizedBox(width: 8), Text('Soutenez les auteurs', style: TextStyle(color: _colors.primary, fontSize: 16, fontWeight: FontWeight.bold))]),
                             SizedBox(height: 8),
-                            Text('En achetant cet ebook, vous soutenez directement les auteurs et leur permettez de créer plus de contenu de qualité.', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                            Text('En achetant cet ebook, vous soutenez directement les auteurs et leur permettez de créer plus de contenu de qualité.', style: TextStyle(color: _colors.textSecondary, fontSize: 14)),
                           ],
                         ),
                       ),
@@ -1150,9 +1127,9 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
                         Container(
                           width: double.infinity,
                           child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(foregroundColor: _afroBlack, backgroundColor: _afroYellow, padding: EdgeInsets.symmetric(vertical: 18), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                            style: ElevatedButton.styleFrom(foregroundColor: _colors.background, backgroundColor: _colors.accent, padding: EdgeInsets.symmetric(vertical: 18), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
                             onPressed: _isPurchasing ? null : _handlePurchase,
-                            child: _isPurchasing ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: _afroBlack, strokeWidth: 2)) : Text('SOUTENIR LES AUTEURS - ${widget.content.price} F', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            child: _isPurchasing ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: _colors.background, strokeWidth: 2)) : Text('SOUTENIR LES AUTEURS - ${widget.content.price} F', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                           ),
                         )
                       else if (canRead)
@@ -1161,7 +1138,7 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
                             Container(
                               width: double.infinity,
                               child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(foregroundColor: _afroWhite, backgroundColor: _afroGreen, padding: EdgeInsets.symmetric(vertical: 18), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                                style: ElevatedButton.styleFrom(foregroundColor: _colors.textPrimary, backgroundColor: _colors.primary, padding: EdgeInsets.symmetric(vertical: 18), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
                                 onPressed: _showReadingOptions,
                                 child: Text('LIRE L\'EBOOK', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                               ),
@@ -1169,7 +1146,7 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
                             SizedBox(height: 12),
                             if (canRead)
                               OutlinedButton(
-                                style: OutlinedButton.styleFrom(foregroundColor: _afroYellow, side: BorderSide(color: _afroYellow), padding: EdgeInsets.symmetric(vertical: 16)),
+                                style: OutlinedButton.styleFrom(foregroundColor: _colors.accent, side: BorderSide(color: _colors.accent), padding: EdgeInsets.symmetric(vertical: 16)),
                                 onPressed: _downloadEbook,
                                 child: Text('TÉLÉCHARGER L\'EBOOK', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                               ),
@@ -1180,12 +1157,12 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Tags:', style: TextStyle(color: _afroWhite, fontSize: 16, fontWeight: FontWeight.bold)),
+                            Text('Tags:', style: TextStyle(color: _colors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
                             SizedBox(height: 8),
                             Wrap(
                               spacing: 8,
                               runSpacing: 4,
-                              children: widget.content.hashtags!.map((hashtag) => Container(padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: _afroGreen.withOpacity(0.2), borderRadius: BorderRadius.circular(16), border: Border.all(color: _afroGreen)), child: Text('#$hashtag', style: TextStyle(color: _afroGreen)))).toList(),
+                              children: widget.content.hashtags!.map((hashtag) => Container(padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: _colors.primary.withOpacity(0.2), borderRadius: BorderRadius.circular(16), border: Border.all(color: _colors.primary)), child: Text('#$hashtag', style: TextStyle(color: _colors.primary)))).toList(),
                             ),
                           ],
                         ),
@@ -1204,7 +1181,7 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
                     scale: _isLikedAnimation ? 1.5 : 1.0,
                     duration: Duration(milliseconds: 300),
                     curve: Curves.easeOutBack,
-                    child: Icon(Icons.favorite, color: Colors.red, size: 100),
+                    child: Icon(Icons.favorite, color: _colors.danger, size: 100),
                   ),
                 ),
               ),
@@ -1223,10 +1200,6 @@ class PreviewCapsule {
   PreviewCapsule({required this.index, required this.label, required this.icon, required this.pageType});
 }
 
-const Color _afroBlack = Color(0xFF121212);
-const Color _afroWhite = Color(0xFFFFFFFF);
-const Color _afroGreen = Color(0xFF00C853);
-const Color _afroYellow = Color(0xFFFFD600);
 enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //
 // class EbookDetailScreen extends StatefulWidget {
@@ -1455,7 +1428,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //             child: Text('Annuler'),
 //           ),
 //           ElevatedButton(
-//             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+//             style: ElevatedButton.styleFrom(backgroundColor: _colors.danger),
 //             onPressed: () async {
 //               Navigator.pop(context);
 //
@@ -1889,7 +1862,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //           backgroundColor: Colors.transparent,
 //           child: Container(
 //             decoration: BoxDecoration(
-//               color: _afroBlack,
+//               color: _colors.background,
 //               borderRadius: BorderRadius.circular(20),
 //             ),
 //             padding: EdgeInsets.all(24),
@@ -1897,7 +1870,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //               mainAxisSize: MainAxisSize.min,
 //               children: [
 //                 CircularProgressIndicator(
-//                   color: _afroGreen,
+//                   color: _colors.primary,
 //                   strokeWidth: 3,
 //                 ),
 //                 SizedBox(height: 20),
@@ -1913,7 +1886,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                 Text(
 //                   'Votre ebook est en cours de téléchargement...',
 //                   style: TextStyle(
-//                     color: Colors.white70,
+//                     color: _colors.textSecondary,
 //                     fontSize: 14,
 //                   ),
 //                   textAlign: TextAlign.center,
@@ -1946,7 +1919,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //           backgroundColor: Colors.transparent,
 //           child: Container(
 //             decoration: BoxDecoration(
-//               color: _afroBlack,
+//               color: _colors.background,
 //               borderRadius: BorderRadius.circular(20),
 //             ),
 //             padding: EdgeInsets.all(24),
@@ -1955,7 +1928,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //               children: [
 //                 Icon(
 //                   Icons.check_circle,
-//                   color: _afroGreen,
+//                   color: _colors.primary,
 //                   size: 60,
 //                 ),
 //                 SizedBox(height: 20),
@@ -1971,7 +1944,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                 Text(
 //                   'Votre ebook a été téléchargé avec succès.',
 //                   style: TextStyle(
-//                     color: Colors.white70,
+//                     color: _colors.textSecondary,
 //                     fontSize: 16,
 //                   ),
 //                   textAlign: TextAlign.center,
@@ -1980,16 +1953,16 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                 Container(
 //                   padding: EdgeInsets.all(12),
 //                   decoration: BoxDecoration(
-//                     color: _afroGreen.withOpacity(0.1),
+//                     color: _colors.primary.withOpacity(0.1),
 //                     borderRadius: BorderRadius.circular(8),
-//                     border: Border.all(color: _afroGreen.withOpacity(0.3)),
+//                     border: Border.all(color: _colors.primary.withOpacity(0.3)),
 //                   ),
 //                   child: Column(
 //                     children: [
 //                       Text(
 //                         'Emplacement du fichier:',
 //                         style: TextStyle(
-//                           color: _afroGreen,
+//                           color: _colors.primary,
 //                           fontSize: 14,
 //                           fontWeight: FontWeight.bold,
 //                         ),
@@ -1998,7 +1971,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                       Text(
 //                         _downloadPath,
 //                         style: TextStyle(
-//                           color: Colors.white70,
+//                           color: _colors.textSecondary,
 //                           fontSize: 12,
 //                         ),
 //                         textAlign: TextAlign.center,
@@ -2013,8 +1986,8 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                     Expanded(
 //                       child: OutlinedButton(
 //                         style: OutlinedButton.styleFrom(
-//                           foregroundColor: _afroWhite,
-//                           side: BorderSide(color: _afroWhite),
+//                           foregroundColor: _colors.textPrimary,
+//                           side: BorderSide(color: _colors.textPrimary),
 //                           padding: EdgeInsets.symmetric(vertical: 12),
 //                           shape: RoundedRectangleBorder(
 //                             borderRadius: BorderRadius.circular(8),
@@ -2030,8 +2003,8 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                     Expanded(
 //                       child: ElevatedButton(
 //                         style: ElevatedButton.styleFrom(
-//                           foregroundColor: _afroBlack,
-//                           backgroundColor: _afroGreen,
+//                           foregroundColor: _colors.background,
+//                           backgroundColor: _colors.primary,
 //                           padding: EdgeInsets.symmetric(vertical: 12),
 //                           shape: RoundedRectangleBorder(
 //                             borderRadius: BorderRadius.circular(8),
@@ -2068,7 +2041,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //           backgroundColor: Colors.transparent,
 //           child: Container(
 //             decoration: BoxDecoration(
-//               color: _afroBlack,
+//               color: _colors.background,
 //               borderRadius: BorderRadius.circular(20),
 //             ),
 //             padding: EdgeInsets.all(24),
@@ -2093,7 +2066,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                 Text(
 //                   'Une erreur est survenue lors du téléchargement de l\'ebook.',
 //                   style: TextStyle(
-//                     color: Colors.white70,
+//                     color: _colors.textSecondary,
 //                     fontSize: 16,
 //                   ),
 //                   textAlign: TextAlign.center,
@@ -2124,7 +2097,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //   void _showReadingOptions() {
 //     showModalBottomSheet(
 //       context: context,
-//       backgroundColor: _afroBlack,
+//       backgroundColor: _colors.background,
 //       shape: RoundedRectangleBorder(
 //         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
 //       ),
@@ -2136,16 +2109,16 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //             Text(
 //               'Options de lecture',
 //               style: TextStyle(
-//                 color: _afroWhite,
+//                 color: _colors.textPrimary,
 //                 fontSize: 18,
 //                 fontWeight: FontWeight.bold,
 //               ),
 //             ),
 //             SizedBox(height: 16),
 //             ListTile(
-//               leading: Icon(Icons.visibility, color: _afroGreen),
-//               title: Text('Lire en ligne', style: TextStyle(color: _afroWhite)),
-//               subtitle: Text('Lire directement dans l\'application', style: TextStyle(color: Colors.white70)),
+//               leading: Icon(Icons.visibility, color: _colors.primary),
+//               title: Text('Lire en ligne', style: TextStyle(color: _colors.textPrimary)),
+//               subtitle: Text('Lire directement dans l\'application', style: TextStyle(color: _colors.textSecondary)),
 //               onTap: () {
 //                 Navigator.pop(context);
 //                 Navigator.push(
@@ -2160,9 +2133,9 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //               },
 //             ),
 //             ListTile(
-//               leading: Icon(Icons.download, color: _afroYellow),
-//               title: Text('Télécharger', style: TextStyle(color: _afroWhite)),
-//               subtitle: Text('Télécharger l\'ebook sur votre appareil', style: TextStyle(color: Colors.white70)),
+//               leading: Icon(Icons.download, color: _colors.accent),
+//               title: Text('Télécharger', style: TextStyle(color: _colors.textPrimary)),
+//               subtitle: Text('Télécharger l\'ebook sur votre appareil', style: TextStyle(color: _colors.textSecondary)),
 //               onTap: () {
 //                 Navigator.pop(context);
 //                 _downloadEbook();
@@ -2238,7 +2211,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //           backgroundColor: Colors.transparent,
 //           child: Container(
 //             decoration: BoxDecoration(
-//               color: _afroBlack,
+//               color: _colors.background,
 //               borderRadius: BorderRadius.circular(20),
 //             ),
 //             padding: EdgeInsets.all(24),
@@ -2247,7 +2220,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //               children: [
 //                 Icon(
 //                   Icons.check_circle,
-//                   color: _afroGreen,
+//                   color: _colors.primary,
 //                   size: 60,
 //                 ),
 //                 SizedBox(height: 20),
@@ -2263,7 +2236,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                 Text(
 //                   'L\'ebook a été débloqué avec succès.',
 //                   style: TextStyle(
-//                     color: Colors.white70,
+//                     color: _colors.textSecondary,
 //                     fontSize: 16,
 //                   ),
 //                   textAlign: TextAlign.center,
@@ -2272,7 +2245,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                 ElevatedButton(
 //                   style: ElevatedButton.styleFrom(
 //                     foregroundColor: Colors.white,
-//                     backgroundColor: _afroGreen,
+//                     backgroundColor: _colors.primary,
 //                     padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
 //                     shape: RoundedRectangleBorder(
 //                       borderRadius: BorderRadius.circular(12),
@@ -2303,7 +2276,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //           backgroundColor: Colors.transparent,
 //           child: Container(
 //             decoration: BoxDecoration(
-//               color: _afroBlack,
+//               color: _colors.background,
 //               borderRadius: BorderRadius.circular(20),
 //             ),
 //             padding: EdgeInsets.all(24),
@@ -2312,7 +2285,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //               children: [
 //                 Icon(
 //                   Icons.info_outline,
-//                   color: _afroYellow,
+//                   color: _colors.accent,
 //                   size: 60,
 //                 ),
 //                 SizedBox(height: 20),
@@ -2328,7 +2301,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                 Text(
 //                   'Vous avez déjà acheté cet ebook.',
 //                   style: TextStyle(
-//                     color: Colors.white70,
+//                     color: _colors.textSecondary,
 //                     fontSize: 16,
 //                   ),
 //                   textAlign: TextAlign.center,
@@ -2337,7 +2310,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                 ElevatedButton(
 //                   style: ElevatedButton.styleFrom(
 //                     foregroundColor: Colors.white,
-//                     backgroundColor: _afroYellow,
+//                     backgroundColor: _colors.accent,
 //                     padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
 //                     shape: RoundedRectangleBorder(
 //                       borderRadius: BorderRadius.circular(12),
@@ -2376,7 +2349,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //         Text(
 //           widget.content.title!,
 //           style: TextStyle(
-//             color: _afroWhite,
+//             color: _colors.textPrimary,
 //             fontSize: 28,
 //             fontWeight: FontWeight.bold,
 //           ),
@@ -2385,7 +2358,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //         Text(
 //           'Série Ebook',
 //           style: TextStyle(
-//             color: _afroYellow,
+//             color: _colors.accent,
 //             fontSize: 16,
 //             fontWeight: FontWeight.w500,
 //           ),
@@ -2395,7 +2368,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //           Text(
 //             'Épisode: ${_currentEpisode!.title}',
 //             style: TextStyle(
-//               color: _afroWhite,
+//               color: _colors.textPrimary,
 //               fontSize: 20,
 //               fontWeight: FontWeight.bold,
 //             ),
@@ -2404,7 +2377,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //           Text(
 //             'Épisode ${_currentEpisode!.episodeNumber}',
 //             style: TextStyle(
-//               color: Colors.white70,
+//               color: _colors.textSecondary,
 //               fontSize: 14,
 //             ),
 //           ),
@@ -2421,7 +2394,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //         Text(
 //           widget.content.title!,
 //           style: TextStyle(
-//             color: _afroWhite,
+//             color: _colors.textPrimary,
 //             fontSize: 28,
 //             fontWeight: FontWeight.bold,
 //           ),
@@ -2439,11 +2412,11 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //           child: Column(
 //             mainAxisAlignment: MainAxisAlignment.center,
 //             children: [
-//               CircularProgressIndicator(color: _afroGreen),
+//               CircularProgressIndicator(color: _colors.primary),
 //               SizedBox(height: 16),
 //               Text(
 //                 'Chargement du PDF...',
-//                 style: TextStyle(color: _afroWhite),
+//                 style: TextStyle(color: _colors.textPrimary),
 //               ),
 //             ],
 //           ),
@@ -2458,11 +2431,11 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //           child: Column(
 //             mainAxisAlignment: MainAxisAlignment.center,
 //             children: [
-//               Icon(Icons.error_outline, color: Colors.red, size: 60),
+//               Icon(Icons.error_outline, color: _colors.danger, size: 60),
 //               SizedBox(height: 16),
 //               Text(
 //                 'Erreur de chargement du PDF',
-//                 style: TextStyle(color: _afroWhite),
+//                 style: TextStyle(color: _colors.textPrimary),
 //               ),
 //             ],
 //           ),
@@ -2475,12 +2448,12 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //         // Contrôles de navigation
 //         Container(
 //           padding: EdgeInsets.all(16),
-//           color: _afroBlack,
+//           color: _colors.background,
 //           child: Row(
 //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
 //             children: [
 //               IconButton(
-//                 icon: Icon(Icons.arrow_back_ios, color: _afroWhite),
+//                 icon: Icon(Icons.arrow_back_ios, color: _colors.textPrimary),
 //                 onPressed: _currentPage > 1
 //                     ? () {
 //                   _pdfController!.previousPage(
@@ -2497,13 +2470,13 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                   alignment: Alignment.center,
 //                   child: Text(
 //                     '${page ?? 0}/${pagesCount ?? 0}',
-//                     style: TextStyle(color: _afroWhite, fontWeight: FontWeight.bold, fontSize: 16),
+//                     style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
 //                   ),
 //                 ),
 //               ),
 //
 //               IconButton(
-//                 icon: Icon(Icons.arrow_forward_ios, color: _afroWhite),
+//                 icon: Icon(Icons.arrow_forward_ios, color: _colors.textPrimary),
 //                 onPressed: _currentPage < _totalPages
 //                     ? () {
 //                   _pdfController!.nextPage(
@@ -2523,20 +2496,20 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //             builders: PdfViewPinchBuilders<DefaultBuilderOptions>(
 //               options: const DefaultBuilderOptions(),
 //               documentLoaderBuilder: (_) => Center(
-//                 child: CircularProgressIndicator(color: _afroGreen),
+//                 child: CircularProgressIndicator(color: _colors.primary),
 //               ),
 //               pageLoaderBuilder: (_) => Center(
-//                 child: CircularProgressIndicator(color: _afroGreen),
+//                 child: CircularProgressIndicator(color: _colors.primary),
 //               ),
 //               errorBuilder: (_, error) => Center(
 //                 child: Column(
 //                   mainAxisAlignment: MainAxisAlignment.center,
 //                   children: [
-//                     Icon(Icons.error_outline, color: Colors.red, size: 60),
+//                     Icon(Icons.error_outline, color: _colors.danger, size: 60),
 //                     SizedBox(height: 16),
 //                     Text(
 //                       'Erreur: $error',
-//                       style: TextStyle(color: _afroWhite),
+//                       style: TextStyle(color: _colors.textPrimary),
 //                       textAlign: TextAlign.center,
 //                     ),
 //                   ],
@@ -2552,8 +2525,8 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //           padding: EdgeInsets.all(16),
 //           child: ElevatedButton(
 //             style: ElevatedButton.styleFrom(
-//               foregroundColor: _afroBlack,
-//               backgroundColor: _afroGreen,
+//               foregroundColor: _colors.background,
+//               backgroundColor: _colors.primary,
 //               padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
 //             ),
 //             onPressed: () {
@@ -2594,11 +2567,11 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //
 //     if (_showPdfViewer) {
 //       return Scaffold(
-//         backgroundColor: _afroBlack,
+//         backgroundColor: _colors.background,
 //         appBar: AppBar(
-//           backgroundColor: _afroBlack,
+//           backgroundColor: _colors.background,
 //           leading: IconButton(
-//             icon: Icon(Icons.arrow_back, color: _afroWhite),
+//             icon: Icon(Icons.arrow_back, color: _colors.textPrimary),
 //             onPressed: () {
 //               setState(() {
 //                 _showPdfViewer = false;
@@ -2607,7 +2580,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //           ),
 //           title: Text(
 //             'Lecture de l\'ebook',
-//             style: TextStyle(color: _afroWhite),
+//             style: TextStyle(color: _colors.textPrimary),
 //           ),
 //         ),
 //         body: _buildPdfViewer(),
@@ -2615,7 +2588,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //     }
 //
 //     return Scaffold(
-//       backgroundColor: _afroBlack,
+//       backgroundColor: _colors.background,
 //       body: Stack(
 //         children: [
 //           CustomScrollView(
@@ -2624,7 +2597,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                 expandedHeight: 400,
 //                 floating: false,
 //                 pinned: true,
-//                 backgroundColor: _afroBlack,
+//                 backgroundColor: _colors.background,
 //                 flexibleSpace: FlexibleSpaceBar(
 //                   background: Stack(
 //                     children: [
@@ -2646,8 +2619,8 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                             begin: Alignment.bottomCenter,
 //                             end: Alignment.topCenter,
 //                             colors: [
-//                               _afroBlack.withOpacity(0.9),
-//                               _afroBlack.withOpacity(0.3),
+//                               _colors.background.withOpacity(0.9),
+//                               _colors.background.withOpacity(0.3),
 //                               Colors.transparent,
 //                             ],
 //                             stops: [0.0, 0.5, 1.0],
@@ -2657,7 +2630,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                       if (!canRead && !isAdminOrOwner)
 //                         Positioned.fill(
 //                           child: Container(
-//                             color: _afroBlack.withOpacity(0.7),
+//                             color: _colors.background.withOpacity(0.7),
 //                             child: Center(
 //                               child: Column(
 //                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -2665,13 +2638,13 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                                   Icon(
 //                                     Icons.lock_outline,
 //                                     size: 60,
-//                                     color: _afroWhite,
+//                                     color: _colors.textPrimary,
 //                                   ),
 //                                   SizedBox(height: 16),
 //                                   Text(
 //                                     'Ebook verrouillé',
 //                                     style: TextStyle(
-//                                       color: _afroWhite,
+//                                       color: _colors.textPrimary,
 //                                       fontSize: 24,
 //                                       fontWeight: FontWeight.bold,
 //                                     ),
@@ -2680,7 +2653,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                                   Text(
 //                                     'Débloquez cet ebook pour le lire',
 //                                     style: TextStyle(
-//                                       color: Colors.white70,
+//                                       color: _colors.textSecondary,
 //                                       fontSize: 16,
 //                                     ),
 //                                   ),
@@ -2688,7 +2661,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                                   Text(
 //                                     'Votre soutien aide les auteurs à créer plus de contenu',
 //                                     style: TextStyle(
-//                                       color: Colors.white70,
+//                                       color: _colors.textSecondary,
 //                                       fontSize: 14,
 //                                       fontStyle: FontStyle.italic,
 //                                     ),
@@ -2702,12 +2675,12 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                       else if (isAdminOrOwner)
 //                         Positioned.fill(
 //                           child: Container(
-//                             color: _afroBlack.withOpacity(0.5),
+//                             color: _colors.background.withOpacity(0.5),
 //                             child: Center(
 //                               child: Text(
 //                                 'Vous pouvez lire cet ebook gratuitement (Admin/Propriétaire)',
 //                                 style: TextStyle(
-//                                   color: Colors.white70,
+//                                   color: _colors.textSecondary,
 //                                   fontSize: 16,
 //                                   fontStyle: FontStyle.italic,
 //                                 ),
@@ -2720,7 +2693,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                   ),
 //                 ),
 //                 leading: IconButton(
-//                   icon: Icon(Icons.arrow_back, color: _afroWhite),
+//                   icon: Icon(Icons.arrow_back, color: _colors.textPrimary),
 //                   onPressed: () => Navigator.pop(context),
 //                 ),
 //                 actions: [
@@ -2761,7 +2734,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                                 child: Container(
 //                                   padding: EdgeInsets.all(8),
 //                                   decoration: BoxDecoration(
-//                                     color: _afroBlack.withOpacity(0.5),
+//                                     color: _colors.background.withOpacity(0.5),
 //                                     shape: BoxShape.circle,
 //                                   ),
 //                                   child: _isSharing
@@ -2769,7 +2742,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                                     width: 24,
 //                                     height: 24,
 //                                     child: CircularProgressIndicator(
-//                                       color: _afroYellow,
+//                                       color: _colors.accent,
 //                                       strokeWidth: 2,
 //                                     ),
 //                                   )
@@ -2790,7 +2763,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                                       : widget.content.shares;
 //                                   return Text(
 //                                     '$shares',
-//                                     style: TextStyle(color: _afroWhite, fontSize: 16),
+//                                     style: TextStyle(color: _colors.textPrimary, fontSize: 16),
 //                                   );
 //                                 },
 //                               ),
@@ -2807,12 +2780,12 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                                 child: Container(
 //                                   padding: EdgeInsets.all(8),
 //                                   decoration: BoxDecoration(
-//                                     color: _afroBlack.withOpacity(0.5),
+//                                     color: _colors.background.withOpacity(0.5),
 //                                     shape: BoxShape.circle,
 //                                   ),
 //                                   child: Icon(
 //                                     _isDisliked ? Icons.thumb_down : Icons.thumb_down_outlined,
-//                                     color: _isDisliked ? Colors.blue : _afroWhite,
+//                                     color: _isDisliked ? Colors.blue : _colors.textPrimary,
 //                                     size: 24,
 //                                   ),
 //                                 ),
@@ -2826,7 +2799,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                                   return Text(
 //                                     '$dislikes',
 //                                     style: TextStyle(
-//                                       color: _isDisliked ? Colors.blue : _afroWhite,
+//                                       color: _isDisliked ? Colors.blue : _colors.textPrimary,
 //                                       fontSize: 12,
 //                                     ),
 //                                   );
@@ -2845,12 +2818,12 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                                 child: Container(
 //                                   padding: EdgeInsets.all(8),
 //                                   decoration: BoxDecoration(
-//                                     color: _afroBlack.withOpacity(0.5),
+//                                     color: _colors.background.withOpacity(0.5),
 //                                     shape: BoxShape.circle,
 //                                   ),
 //                                   child: Icon(
 //                                     _isLiked ? Icons.favorite : Icons.favorite_border,
-//                                     color: _isLiked ? Colors.red : _afroWhite,
+//                                     color: _isLiked ? Colors.red : _colors.textPrimary,
 //                                     size: 24,
 //                                   ),
 //                                 ),
@@ -2864,7 +2837,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                                   return Text(
 //                                     '$likes',
 //                                     style: TextStyle(
-//                                       color: _isLiked ? Colors.red : _afroWhite,
+//                                       color: _isLiked ? Colors.red : _colors.textPrimary,
 //                                       fontSize: 12,
 //                                     ),
 //                                   );
@@ -2878,7 +2851,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                           Column(
 //                             mainAxisSize: MainAxisSize.min,
 //                             children: [
-//                               Icon(Icons.visibility, color: _afroWhite, size: 24),
+//                               Icon(Icons.visibility, color: _colors.textPrimary, size: 24),
 //                               SizedBox(height: 1),
 //                               Consumer<ContentProvider>(
 //                                 builder: (context, contentProvider, child) {
@@ -2887,7 +2860,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                                       : widget.content.views;
 //                                   return Text(
 //                                     '$views',
-//                                     style: TextStyle(color: _afroWhite, fontSize: 12),
+//                                     style: TextStyle(color: _colors.textPrimary, fontSize: 12),
 //                                   );
 //                                 },
 //                               ),
@@ -2900,14 +2873,14 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                             Container(
 //                               padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
 //                               decoration: BoxDecoration(
-//                                 color: _afroYellow.withOpacity(0.2),
+//                                 color: _colors.accent.withOpacity(0.2),
 //                                 borderRadius: BorderRadius.circular(4),
-//                                 border: Border.all(color: _afroYellow),
+//                                 border: Border.all(color: _colors.accent),
 //                               ),
 //                               child: Text(
 //                                 'PREMIUM',
 //                                 style: TextStyle(
-//                                   color: _afroYellow,
+//                                   color: _colors.accent,
 //                                   fontSize: 12,
 //                                   fontWeight: FontWeight.bold,
 //                                 ),
@@ -2924,7 +2897,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                             ? _currentEpisode!.description
 //                             : widget.content.description!,
 //                         style: TextStyle(
-//                           color: Colors.white70,
+//                           color: _colors.textSecondary,
 //                           fontSize: 16,
 //                           height: 1.5,
 //                         ),
@@ -2936,21 +2909,21 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                         width: double.infinity,
 //                         padding: EdgeInsets.all(16),
 //                         decoration: BoxDecoration(
-//                           color: _afroGreen.withOpacity(0.1),
+//                           color: _colors.primary.withOpacity(0.1),
 //                           borderRadius: BorderRadius.circular(8),
-//                           border: Border.all(color: _afroGreen.withOpacity(0.3)),
+//                           border: Border.all(color: _colors.primary.withOpacity(0.3)),
 //                         ),
 //                         child: Column(
 //                           crossAxisAlignment: CrossAxisAlignment.start,
 //                           children: [
 //                             Row(
 //                               children: [
-//                                 Icon(Icons.favorite, color: _afroGreen, size: 16),
+//                                 Icon(Icons.favorite, color: _colors.primary, size: 16),
 //                                 SizedBox(width: 8),
 //                                 Text(
 //                                   'Soutenez les auteurs',
 //                                   style: TextStyle(
-//                                     color: _afroGreen,
+//                                     color: _colors.primary,
 //                                     fontSize: 16,
 //                                     fontWeight: FontWeight.bold,
 //                                   ),
@@ -2961,7 +2934,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                             Text(
 //                               'En achetant cet ebook, vous soutenez directement les auteurs et leur permettez de créer plus de contenu de qualité.',
 //                               style: TextStyle(
-//                                 color: Colors.white70,
+//                                 color: _colors.textSecondary,
 //                                 fontSize: 14,
 //                               ),
 //                             ),
@@ -2975,8 +2948,8 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                           width: double.infinity,
 //                           child: ElevatedButton(
 //                             style: ElevatedButton.styleFrom(
-//                               foregroundColor: _afroBlack,
-//                               backgroundColor: _afroYellow,
+//                               foregroundColor: _colors.background,
+//                               backgroundColor: _colors.accent,
 //                               padding: EdgeInsets.symmetric(vertical: 18),
 //                               shape: RoundedRectangleBorder(
 //                                 borderRadius: BorderRadius.circular(8),
@@ -2989,7 +2962,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                               width: 20,
 //                               height: 20,
 //                               child: CircularProgressIndicator(
-//                                 color: _afroBlack,
+//                                 color: _colors.background,
 //                                 strokeWidth: 2,
 //                               ),
 //                             )
@@ -3009,8 +2982,8 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                               width: double.infinity,
 //                               child: ElevatedButton(
 //                                 style: ElevatedButton.styleFrom(
-//                                   foregroundColor: _afroWhite,
-//                                   backgroundColor: _afroGreen,
+//                                   foregroundColor: _colors.textPrimary,
+//                                   backgroundColor: _colors.primary,
 //                                   padding: EdgeInsets.symmetric(vertical: 18),
 //                                   shape: RoundedRectangleBorder(
 //                                     borderRadius: BorderRadius.circular(8),
@@ -3031,8 +3004,8 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                             if (canRead && (widget.content.isFree || hasPurchased || isAdminOrOwner))
 //                               OutlinedButton(
 //                                 style: OutlinedButton.styleFrom(
-//                                   foregroundColor: _afroYellow,
-//                                   side: BorderSide(color: _afroYellow),
+//                                   foregroundColor: _colors.accent,
+//                                   side: BorderSide(color: _colors.accent),
 //                                   padding: EdgeInsets.symmetric(vertical: 16),
 //                                   shape: RoundedRectangleBorder(
 //                                     borderRadius: BorderRadius.circular(8),
@@ -3059,7 +3032,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                             Text(
 //                               'Tags:',
 //                               style: TextStyle(
-//                                 color: _afroWhite,
+//                                 color: _colors.textPrimary,
 //                                 fontSize: 16,
 //                                 fontWeight: FontWeight.bold,
 //                               ),
@@ -3074,13 +3047,13 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                                 return Container(
 //                                   padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
 //                                   decoration: BoxDecoration(
-//                                     color: _afroGreen.withOpacity(0.2),
+//                                     color: _colors.primary.withOpacity(0.2),
 //                                     borderRadius: BorderRadius.circular(16),
-//                                     border: Border.all(color: _afroGreen),
+//                                     border: Border.all(color: _colors.primary),
 //                                   ),
 //                                   child: Text(
 //                                     '#$hashtag',
-//                                     style: TextStyle(color: _afroGreen),
+//                                     style: TextStyle(color: _colors.primary),
 //                                   ),
 //                                 );
 //                               }).toList(),
@@ -3125,18 +3098,18 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //               child: Container(
 //                 padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
 //                 decoration: BoxDecoration(
-//                   color: _afroBlack.withOpacity(0.7),
+//                   color: _colors.background.withOpacity(0.7),
 //                   borderRadius: BorderRadius.circular(12),
 //                 ),
 //                 child: Row(
 //                   children: [
-//                     Icon(Icons.visibility, color: _afroWhite, size: 14),
+//                     Icon(Icons.visibility, color: _colors.textPrimary, size: 14),
 //                     SizedBox(width: 4),
 //                     Text(
 //                       widget.content.isSeries && _currentEpisode != null
 //                           ? '${_currentEpisode!.views}'
 //                           : '${widget.content.views}',
-//                       style: TextStyle(color: _afroWhite, fontSize: 12),
+//                       style: TextStyle(color: _colors.textPrimary, fontSize: 12),
 //                     ),
 //                   ],
 //                 ),
@@ -3150,7 +3123,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 // }
 //
 // // Couleurs thématiques
-// const Color _afroBlack = Color(0xFF121212);
-// const Color _afroWhite = Color(0xFFFFFFFF);
-// const Color _afroGreen = Color(0xFF00C853);
-// const Color _afroYellow = Color(0xFFFFD600);
+// const Color _colors.background = Color(0xFF121212);
+// const Color _colors.textPrimary = Color(0xFFFFFFFF);
+// const Color _colors.primary = Color(0xFF00C853);
+// const Color _colors.accent = Color(0xFFFFD600);
