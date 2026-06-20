@@ -1,5 +1,5 @@
 # SUIVI REFONTE UI — AFROLOOK V2
-_Dernière mise à jour : 20 juin 2026 (session 67)_
+_Dernière mise à jour : 20 juin 2026 (session 68)_
 
 ---
 
@@ -51,7 +51,14 @@ Tout est fait en **français**.
 
 | Fichier | Notes |
 |---|---|
-| `lib/pages/contenuPayant/contentDetails.dart` | ✅ R1 session 59 — 63 couleurs hardcodées migrées vers AppColors |
+| `lib/pages/contenuPayant/contentDetails.dart` | ✅ Session 59 — 63 couleurs hardcodées migrées vers AppColors |
+| `lib/pages/contenuPayant/contentDetailsEbook.dart` | ✅ Session 68 — AppColors complet, consts supprimées |
+| `lib/pages/contenuPayant/contentForm.dart` | ✅ Session 68 — AppColors complet, const SnackBar corrigés |
+| `lib/pages/contenuPayant/contentSerie.dart` | ✅ Session 68 — AppColors + helper `_typeColor()` VIDEO/EBOOK |
+| `lib/pages/contenuPayant/ebookPadReader.dart` | ✅ Session 68 — AppColors, imports dupliqués nettoyés |
+| `lib/pages/contenuPayant/seriesDetailScreenContenu.dart` | ✅ Session 68 — AppColors |
+| `lib/pages/contenuPayant/TableauDeBord.dart` | ✅ Session 68 — AppColors, 3 blocs imports → 1, CategoryContentScreen + SearchDelegate |
+| `lib/pages/contenuPayant/userAbonnerInfos.dart` | ✅ Session 68 — AppColors |
 | `lib/pages/LiveAgora/livePage.dart` | ✅ R2 session 59-60 — suppression système encaissement, stats fin de live |
 | `lib/pages/home/homeScreen.dart` | Page principale — déjà importé AppColors + ThemeProvider |
 | `lib/pages/home/HomeConstPost.dart` | Feed principal — AppColors + toggle thème dans UI |
