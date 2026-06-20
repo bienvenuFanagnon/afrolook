@@ -1,51 +1,16 @@
-// pages/lives/live_list_page.dart
 import 'dart:async';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
-import 'package:intl/intl.dart';
-import '../../models/model_data.dart';
+
 import '../../providers/authProvider.dart';
+import '../../theme/app_colors.dart';
+import '../../widgets/chat/generic_share_sheet.dart';
 import '../pub/native_ad_widget.dart';
 import 'create_live_page.dart';
-import 'livePage.dart';
-import 'livesAgora.dart';
-import 'mesLives.dart';
-
-// pages/lives/live_list_page.dart
-import 'dart:async';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:pull_to_refresh/pull_to_refresh.dart';
-import 'package:intl/intl.dart';
-import '../../models/model_data.dart';
-import '../../providers/authProvider.dart';
-import 'create_live_page.dart';
-import 'livesAgora.dart';
-import 'mesLives.dart';
-
-// pages/lives/live_list_page.dart
-import 'dart:async';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:pull_to_refresh/pull_to_refresh.dart';
-import 'package:intl/intl.dart';
-import '../../models/model_data.dart';
-import '../../providers/authProvider.dart';
-import 'create_live_page.dart';
-import 'livesAgora.dart';
-import 'mesLives.dart';
-
-// pages/lives/live_list_page.dart
-import 'dart:async';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:pull_to_refresh/pull_to_refresh.dart';
-import 'package:intl/intl.dart';
-import '../../models/model_data.dart';
-import '../../providers/authProvider.dart';
-import 'create_live_page.dart';
+import 'live_ended_page.dart';
 import 'livePage.dart';
 import 'livesAgora.dart';
 import 'mesLives.dart';
@@ -56,22 +21,20 @@ class LiveListPage extends StatefulWidget {
 }
 
 class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderStateMixin {
-  final RefreshController _allLivesController = RefreshController(initialRefresh: false);
-  final RefreshController _activeLivesController = RefreshController(initialRefresh: false);
-
+  final RefreshController _refreshController = RefreshController(initialRefresh: false);
   late TabController _tabController;
-  int _selectedTab = 0; // 0 = tous, 1 = actifs
+  int _selectedTab = 0;
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _tabController.addListener(_handleTabSelection);
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(_handleTab);
     _loadLives(reset: true);
   }
 
-  void _handleTabSelection() {
+  void _handleTab() {
     if (_tabController.indexIsChanging) {
       setState(() {
         _selectedTab = _tabController.index;
@@ -84,1105 +47,644 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
   @override
   void dispose() {
     _tabController.dispose();
+    _refreshController.dispose();
     super.dispose();
   }
 
   Future<void> _loadLives({bool reset = false}) async {
-    final liveProvider = context.read<LiveProvider>();
+    final lp = context.read<LiveProvider>();
     setState(() => _isLoading = true);
-
     try {
-      if (_selectedTab == 0) {
-        // await liveProvider.fetchEndedLivesBatch(reset: reset);
-        await liveProvider.fetchAllLivesBatch(reset: reset);
+      if (_selectedTab == 1) {
+        await lp.fetchActiveLivesBatch(reset: reset);
       } else {
-        await liveProvider.fetchActiveLivesBatch(reset: reset);
+        await lp.fetchAllLivesBatch(reset: reset);
       }
-    } catch (e) {
-      print("Erreur lors du chargement des lives: $e");
-    }
-
-    if (mounted) {
-      setState(() => _isLoading = false);
-    }
+    } catch (_) {}
+    if (mounted) setState(() => _isLoading = false);
   }
 
-  Future<void> _loadMoreLives() async {
-    final liveProvider = context.read<LiveProvider>();
+  Future<void> _loadMore() async {
+    final lp = context.read<LiveProvider>();
     try {
-      if (_selectedTab == 0) {
-        await liveProvider.fetchAllLivesBatch();
-        _allLivesController.loadComplete();
+      if (_selectedTab == 1) {
+        await lp.fetchActiveLivesBatch();
       } else {
-        await liveProvider.fetchActiveLivesBatch();
-        _activeLivesController.loadComplete();
+        await lp.fetchAllLivesBatch();
       }
-    } catch (e) {
-      print("Erreur lors du chargement supplémentaire: $e");
-      if (_selectedTab == 0) {
-        _allLivesController.loadFailed();
-      } else {
-        _activeLivesController.loadFailed();
-      }
+      _refreshController.loadComplete();
+    } catch (_) {
+      _refreshController.loadFailed();
     }
   }
 
   void _onRefresh() async {
     await _loadLives(reset: true);
-    if (_selectedTab == 0) {
-      _allLivesController.refreshCompleted();
-    } else {
-      _activeLivesController.refreshCompleted();
-    }
+    _refreshController.refreshCompleted();
+  }
+
+  List<PostLive> _organizedLives(LiveProvider lp) {
+    final actifs = lp.activeLives.isNotEmpty
+        ? List<PostLive>.from(lp.activeLives)
+        : lp.allLives.where((l) => l.isLive).toList();
+    final termines = lp.endedLives.isNotEmpty
+        ? List<PostLive>.from(lp.endedLives)
+        : lp.allLives.where((l) => !l.isLive).toList();
+    actifs.sort((a, b) => b.giftTotal.compareTo(a.giftTotal));
+    termines.sort((a, b) => b.startTime.compareTo(a.startTime));
+    return [...actifs, ...termines];
+  }
+
+  void _shareLive(PostLive live) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => GenericShareSheet(
+        itemId: live.liveId ?? '',
+        itemType: 'live',
+        title: live.title,
+        subtitle: live.isLive ? '🔴 Live en cours' : 'Live terminé',
+        thumbnail: live.hostImage ?? '',
+        icon: Icons.live_tv_rounded,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = context.watch<UserAuthProvider>();
-    final liveProvider = context.watch<LiveProvider>();
+    final auth = context.watch<UserAuthProvider>();
+    final lp = context.watch<LiveProvider>();
 
-    // Récupérer les listes appropriées selon l'onglet
-    final displayedLives = _selectedTab == 0
-        ? _getAllLivesWithActiveFirst(liveProvider)
-        : liveProvider.activeLives;
+    final all = _organizedLives(lp);
+    final actifs = all.where((l) => l.isLive).toList();
+    final termines = all.where((l) => !l.isLive).toList();
 
+    List<PostLive> displayed;
+    if (_selectedTab == 1) {
+      displayed = actifs;
+    } else if (_selectedTab == 2) {
+      displayed = all.where((l) => l.hostId == auth.userId).toList();
+    } else {
+      displayed = all;
+    }
+
+    final colors = AppColors.of(context);
     return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: Text('Lives Afrolook', style: TextStyle(fontSize: 20, color: Color(0xFFF9A825))),
-        backgroundColor: Colors.black,
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: [
-            Tab(text: 'Tous les lives'),
-            Tab(text: 'En cours'),
-          ],
-          indicatorColor: Color(0xFFF9A825),
-          labelColor: Color(0xFFF9A825),
-          unselectedLabelColor: Colors.grey,
-        ),
-        actions: [
-          IconButton(
-            icon: CircleAvatar(
-              radius: 16,
-              backgroundImage: authProvider.loginUserData.imageUrl != null &&
-                  authProvider.loginUserData.imageUrl!.isNotEmpty
-                  ? NetworkImage(authProvider.loginUserData.imageUrl!)
-                  : AssetImage('assets/default_avatar.png') as ImageProvider,
+      backgroundColor: colors.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(auth, colors),
+            _buildTabs(colors),
+            Expanded(
+              child: _isLoading
+                  ? Center(child: CircularProgressIndicator(color: colors.accent))
+                  : SmartRefresher(
+                      controller: _refreshController,
+                      enablePullDown: true,
+                      enablePullUp: displayed.length >= 10,
+                      onRefresh: _onRefresh,
+                      onLoading: _loadMore,
+                      header: WaterDropHeader(
+                        waterDropColor: colors.accent,
+                        complete: Icon(Icons.check, color: colors.accent),
+                      ),
+                      child: _selectedTab == 0
+                          ? _buildAllTab(actifs, termines, colors)
+                          : _buildSimpleList(displayed, colors),
+                    ),
             ),
-            onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => UserLivesPage()));
-            },
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: colors.accent,
+        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CreateLivePage())),
+        child: Icon(Icons.videocam_rounded, color: colors.onAccent),
+      ),
+    );
+  }
+
+  Widget _buildHeader(UserAuthProvider auth, AppColors colors) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Row(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Lives', style: TextStyle(color: colors.textPrimary, fontSize: 22, fontWeight: FontWeight.w700)),
+              Text('Afrolook', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
+            ],
           ),
-          IconButton(
-            icon: Icon(Icons.refresh, color: Color(0xFFF9A825)),
-            onPressed: () => _loadLives(reset: true),
+          const Spacer(),
+          GestureDetector(
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserLivesPage())),
+            child: CircleAvatar(
+              radius: 18,
+              backgroundColor: colors.surfaceVariant,
+              backgroundImage: (auth.loginUserData.imageUrl?.isNotEmpty == true)
+                  ? CachedNetworkImageProvider(auth.loginUserData.imageUrl!)
+                  : null,
+              child: auth.loginUserData.imageUrl?.isNotEmpty != true
+                  ? Icon(Icons.person, color: colors.textSecondary, size: 18)
+                  : null,
+            ),
           ),
-          IconButton(
-            icon: Icon(Icons.add, color: Color(0xFFF9A825)),
-            onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => CreateLivePage()));
-            },
+          const SizedBox(width: 10),
+          GestureDetector(
+            onTap: () => _loadLives(reset: true),
+            child: Container(
+              width: 36, height: 36,
+              decoration: BoxDecoration(
+                color: colors.surface,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: colors.border),
+              ),
+              child: Icon(Icons.refresh_rounded, color: colors.textSecondary, size: 18),
+            ),
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Message accrocheur
-          Container(
-            width: double.infinity,
-            color: Colors.yellow[800],
-            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            child: Text(
-              "🎥 Créez votre live pour présenter vos produits, formations ou sujets ! "
-                  "Gagnez jusqu'à 50 000 FCFA par cadeaux et 70% des montants récoltés grâce aux cadeaux. "
-                  "Le secret ? Créez votre live et partagez le lien sur vos réseaux pour attirer le maximum de monde ! "
-                  "Pas besoin d'abonnés pour commencer.",
-              style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
+    );
+  }
+
+  Widget _buildTabs(AppColors colors) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      height: 36,
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: colors.border),
+      ),
+      child: TabBar(
+        controller: _tabController,
+        tabs: const [
+          Tab(text: 'Tous'),
+          Tab(text: 'En cours'),
+          Tab(text: 'Mes lives'),
+        ],
+        indicator: BoxDecoration(
+          color: colors.accent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        indicatorSize: TabBarIndicatorSize.tab,
+        dividerColor: Colors.transparent,
+        labelColor: colors.onAccent,
+        unselectedLabelColor: colors.textSecondary,
+        labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+        unselectedLabelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w400),
+      ),
+    );
+  }
+
+  Widget _buildAllTab(List<PostLive> actifs, List<PostLive> termines, AppColors colors) {
+    return CustomScrollView(
+      slivers: [
+        if (actifs.isNotEmpty) ...[
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 14),
+              child: Row(
+                children: [
+                  Container(
+                    width: 8, height: 8,
+                    decoration: BoxDecoration(color: colors.danger, shape: BoxShape.circle),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${actifs.length} live${actifs.length > 1 ? 's' : ''} en cours',
+                    style: TextStyle(color: colors.textPrimary, fontSize: 15, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
             ),
           ),
-          Expanded(
-            child: _isLoading
-                ? Center(child: CircularProgressIndicator(color: Color(0xFFF9A825)))
-                : TabBarView(
-              controller: _tabController,
-              physics: NeverScrollableScrollPhysics(),
+          SliverToBoxAdapter(child: _buildActiveCarousel(actifs, colors)),
+        ],
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(16, actifs.isNotEmpty ? 28 : 20, 16, 14),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Tab 1: Tous les lives (actifs en premier)
-                _buildLivesTab(displayedLives, authProvider, _allLivesController),
-                // Tab 2: Seulement les lives actifs
-                _buildLivesTab(displayedLives, authProvider, _activeLivesController),
+                Text('Récents', style: TextStyle(color: colors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600)),
+                Text('${termines.length} lives', style: TextStyle(color: colors.textSecondary.withOpacity(0.6), fontSize: 12)),
               ],
             ),
           ),
+        ),
+        if (termines.isEmpty) const SliverToBoxAdapter(child: SizedBox()),
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (ctx, i) {
+                final live = termines[i];
+                if (i > 0 && i % 4 == 0) {
+                  return Column(
+                    children: [
+                      const SizedBox(height: 10),
+                      Container(
+                        margin: const EdgeInsets.symmetric(vertical: 4),
+                        decoration: BoxDecoration(
+                          color: colors.surface,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: colors.border),
+                        ),
+                        child: MrecAdWidget(key: ValueKey('ad_$i'), useBanner: true),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                  );
+                }
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _buildEndedCard(live, colors),
+                );
+              },
+              childCount: termines.length,
+            ),
+          ),
+        ),
+        if (termines.isEmpty && actifs.isEmpty)
+          SliverFillRemaining(child: _buildEmptyState(colors)),
+      ],
+    );
+  }
+
+  Widget _buildSimpleList(List<PostLive> lives, AppColors colors) {
+    if (lives.isEmpty) return _buildEmptyState(colors);
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 100),
+      itemCount: lives.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (_, i) {
+        final live = lives[i];
+        final colors = AppColors.of(context);
+        return live.isLive ? _buildActiveListCard(live, colors) : _buildEndedCard(live, colors);
+      },
+    );
+  }
+
+  Widget _buildActiveCarousel(List<PostLive> actifs, AppColors colors) {
+    return SizedBox(
+      height: 240,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: actifs.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (_, i) => _buildActiveCard(actifs[i], colors),
+      ),
+    );
+  }
+
+  Widget _buildActiveCard(PostLive live, AppColors colors) {
+    final auth = context.read<UserAuthProvider>();
+    final isHost = live.hostId == auth.userId;
+    final isInvited = live.invitedUsers.contains(auth.userId);
+    final cardImage = (live.coverImage?.isNotEmpty == true) ? live.coverImage! : (live.hostImage ?? '');
+
+    return GestureDetector(
+      onTap: () => Navigator.push(context, MaterialPageRoute(
+        builder: (_) => LivePage(
+          liveId: live.liveId!, isHost: isHost,
+          hostName: live.hostName!, hostImage: live.hostImage!,
+          isInvited: isInvited, postLive: live,
+        ),
+      )),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: 148,
+          color: colors.surface,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (cardImage.isNotEmpty)
+                CachedNetworkImage(
+                  imageUrl: cardImage, fit: BoxFit.cover,
+                  errorWidget: (_, __, ___) => Container(color: colors.surfaceVariant),
+                ),
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                    colors: [Colors.transparent, Color(0xCC000000)], stops: [0.45, 1.0],
+                  ),
+                ),
+              ),
+              Positioned(top: 10, left: 10, child: _liveBadge()),
+              if (live.isPaidLive)
+                Positioned(
+                  top: 10, right: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(color: Colors.purple.withOpacity(0.85), borderRadius: BorderRadius.circular(20)),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.lock_rounded, color: Colors.white, size: 9),
+                        SizedBox(width: 3),
+                        Text('PRIVÉ', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700)),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                Positioned(
+                  top: 10, right: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(20)),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.remove_red_eye_rounded, color: Colors.white70, size: 10),
+                        const SizedBox(width: 3),
+                        Text(_formatCount(live.viewerCount), style: const TextStyle(color: Colors.white70, fontSize: 10)),
+                      ],
+                    ),
+                  ),
+                ),
+              Positioned(
+                bottom: 10, left: 10, right: 10,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 12,
+                          backgroundImage: live.hostImage?.isNotEmpty == true ? CachedNetworkImageProvider(live.hostImage!) : null,
+                          backgroundColor: colors.surfaceVariant,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(child: Text(live.hostName ?? '', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis)),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Text(live.title, style: const TextStyle(color: Color(0xCCFFFFFF), fontSize: 10), maxLines: 2, overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(Icons.favorite_rounded, color: Color(0xFFFF6B6B), size: 11),
+                        const SizedBox(width: 3),
+                        Text(_formatCount(live.likeCount ?? 0), style: const TextStyle(color: Colors.white60, fontSize: 10)),
+                        const SizedBox(width: 8),
+                        Icon(Icons.card_giftcard_rounded, color: colors.accent, size: 11),
+                        const SizedBox(width: 3),
+                        Text('${_formatCount(live.giftCoinsTotal)} pcs', style: const TextStyle(color: Colors.white60, fontSize: 10)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActiveListCard(PostLive live, AppColors colors) {
+    final auth = context.read<UserAuthProvider>();
+    final isHost = live.hostId == auth.userId;
+    final isInvited = live.invitedUsers.contains(auth.userId);
+    final cardImage = (live.coverImage?.isNotEmpty == true) ? live.coverImage! : (live.hostImage ?? '');
+
+    return GestureDetector(
+      onTap: () => Navigator.push(context, MaterialPageRoute(
+        builder: (_) => LivePage(
+          liveId: live.liveId!, isHost: isHost,
+          hostName: live.hostName!, hostImage: live.hostImage!,
+          isInvited: isInvited, postLive: live,
+        ),
+      )),
+      child: Container(
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: colors.danger.withOpacity(0.25)),
+        ),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.horizontal(left: Radius.circular(14)),
+              child: Stack(
+                children: [
+                  SizedBox(
+                    width: 72, height: 90,
+                    child: cardImage.isNotEmpty
+                        ? CachedNetworkImage(imageUrl: cardImage, fit: BoxFit.cover)
+                        : Container(color: colors.surfaceVariant),
+                  ),
+                  Positioned(top: 6, left: 6, child: _liveBadge(small: true)),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(radius: 9,
+                          backgroundImage: live.hostImage?.isNotEmpty == true ? CachedNetworkImageProvider(live.hostImage!) : null,
+                          backgroundColor: colors.surfaceVariant),
+                        const SizedBox(width: 6),
+                        Expanded(child: Text(live.hostName ?? '', style: TextStyle(color: colors.textSecondary, fontSize: 11), overflow: TextOverflow.ellipsis)),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(live.title, style: TextStyle(color: colors.textPrimary, fontSize: 13, fontWeight: FontWeight.w600), maxLines: 2, overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        _statChip(Icons.remove_red_eye_rounded, _formatCount(live.viewerCount), colors.textSecondary),
+                        const SizedBox(width: 10),
+                        _statChip(Icons.favorite_rounded, _formatCount(live.likeCount ?? 0), const Color(0xFFFF6B6B)),
+                        const SizedBox(width: 10),
+                        _statChip(Icons.card_giftcard_rounded, '${_formatCount(live.giftCoinsTotal)} pcs', colors.accent),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Icon(Icons.chevron_right_rounded, color: colors.border, size: 20),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEndedCard(PostLive live, AppColors colors) {
+    final duration = _formatDuration(live.startTime, live.endTime);
+    final ago = _formatAgo(live.startTime);
+    final cardImage = (live.coverImage?.isNotEmpty == true) ? live.coverImage! : (live.hostImage ?? '');
+
+    return GestureDetector(
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => LiveEndedPage(live: live))),
+      child: Container(
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: colors.border),
+        ),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.horizontal(left: Radius.circular(14)),
+              child: Stack(
+                children: [
+                  Container(
+                    width: 80, height: 80,
+                    color: colors.surfaceVariant,
+                    child: cardImage.isNotEmpty
+                        ? ColorFiltered(
+                            colorFilter: const ColorFilter.mode(Colors.black45, BlendMode.darken),
+                            child: CachedNetworkImage(imageUrl: cardImage, fit: BoxFit.cover),
+                          )
+                        : null,
+                  ),
+                  Positioned(
+                    top: 6, left: 6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                      decoration: BoxDecoration(color: colors.textSecondary.withOpacity(0.7), borderRadius: BorderRadius.circular(10)),
+                      child: const Text('FIN', style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                  if (live.isPaidLive)
+                    const Positioned(top: 6, right: 6, child: Icon(Icons.lock_rounded, color: Colors.purpleAccent, size: 12)),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(radius: 9,
+                          backgroundImage: live.hostImage?.isNotEmpty == true ? CachedNetworkImageProvider(live.hostImage!) : null,
+                          backgroundColor: colors.surfaceVariant),
+                        const SizedBox(width: 6),
+                        Expanded(child: Text(live.hostName ?? '', style: TextStyle(color: colors.textSecondary, fontSize: 11), overflow: TextOverflow.ellipsis)),
+                        Text(ago, style: TextStyle(color: colors.textSecondary.withOpacity(0.5), fontSize: 10)),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(live.title, style: TextStyle(color: colors.textPrimary, fontSize: 13, fontWeight: FontWeight.w600), maxLines: 2, overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        _statChip(Icons.remove_red_eye_rounded, _formatCount(live.totalspectateurs.length), colors.textSecondary.withOpacity(0.6)),
+                        const SizedBox(width: 8),
+                        _statChip(Icons.favorite_rounded, _formatCount(live.likeCount ?? 0), const Color(0xFFFF6B6B).withOpacity(0.7)),
+                        const SizedBox(width: 8),
+                        _statChip(Icons.card_giftcard_rounded, '${_formatCount(live.giftCoinsTotal)} pcs', colors.accent.withOpacity(0.7)),
+                        const Spacer(),
+                        Text(duration, style: TextStyle(color: colors.textSecondary.withOpacity(0.4), fontSize: 10)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            GestureDetector(
+              onTap: () => _shareLive(live),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Icon(Icons.ios_share_rounded, color: colors.border, size: 16),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _liveBadge({bool small = false}) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: small ? 5 : 8, vertical: small ? 2 : 3),
+      decoration: BoxDecoration(color: const Color(0xFFFF3B30), borderRadius: BorderRadius.circular(20)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(width: small ? 4 : 5, height: small ? 4 : 5, decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle)),
+          SizedBox(width: small ? 3 : 4),
+          Text('LIVE', style: TextStyle(color: Colors.white, fontSize: small ? 8 : 10, fontWeight: FontWeight.w700)),
         ],
       ),
     );
   }
 
-  // Fonction pour organiser tous les lives avec les actifs en premier
-  List<PostLive> _getAllLivesWithActiveFirst(LiveProvider liveProvider) {
-    // Vérifier d'abord si les données sont disponibles
-    if (liveProvider.allLives.isEmpty && liveProvider.activeLives.isEmpty) {
-      print("⚠️ Aucun live disponible dans le provider");
-      return [];
-    }
-
-    // Si on a des lives actifs spécifiques, on les utilise
-    final activeLives = liveProvider.activeLives.isNotEmpty
-        ? List<PostLive>.from(liveProvider.activeLives)
-        : liveProvider.allLives.where((live) => live.isLive).toList();
-
-    // Pour les lives terminés, utiliser la liste dédiée ou filtrer
-// Pour les lives terminés, utiliser la liste dédiée ou filtrer
-    final endedLives = liveProvider.endedLives.isNotEmpty
-        ? List<PostLive>.from(liveProvider.endedLives)
-        : liveProvider.allLives.where((live) => !live.isLive).toList();
-
-    print("📊 Organisation des lives:");
-    print("   - Lives actifs: ${activeLives.length}");
-    print("   - Lives terminés: ${endedLives.length}");
-
-    // Trier les lives actifs par giftTotal (décroissant)
-    if (activeLives.isNotEmpty) {
-      activeLives.sort((a, b) => b.giftTotal.compareTo(a.giftTotal));
-      print("   ✅ Lives actifs triés par giftTotal");
-    }
-
-    // Trier les lives terminés par date de création (décroissant)
-    if (endedLives.isNotEmpty) {
-      endedLives.sort((a, b) => b.startTime.compareTo(a.startTime));
-      print("   ✅ Lives terminés triés par date");
-    }
-
-    // Combiner: actifs d'abord, puis terminés
-    final result = [...activeLives, ...endedLives];
-    print("   🎯 Total lives organisés: ${result.length}");
-
-    return result;
-  }
-// Ajoutez cette fonction dans votre classe _LiveListPageState
-  Widget _buildAdBanner({required String key}) {
-    print('Native Ad en chargement dans LivePage: $key');
-
-    return Container(
-      key: ValueKey(key),
-      margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.grey[900],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[800]!),
-      ),
-      child: MrecAdWidget(
-        key: ValueKey("ad_v2"),
-        useBanner: false,
-        // // templateType: TemplateType.small, // Utilisez small pour les lives
-        onAdLoaded: () {
-          print('✅ Native Ad chargée dans LivePage: $key');
-        },
-      ),
-    );
-  }
-  Widget _buildLivesTab(List<PostLive> lives, UserAuthProvider authProvider, RefreshController controller) {
-    if (lives.isEmpty) return _buildEmptyState();
-
-    // Séparer les lives actifs et terminés pour le tab "Tous les lives"
-    final List<PostLive> activeLives = _selectedTab == 0 ? lives.where((live) => live.isLive).toList() : [];
-    final List<PostLive> endedLives = _selectedTab == 0 ? lives.where((live) => !live.isLive).toList() : [];
-
-    // Pour le tab "En cours", utiliser directement la liste
-    final List<PostLive> displayLives = _selectedTab == 1 ? lives : [];
-
-    return SmartRefresher(
-      controller: controller,
-      enablePullDown: true,
-      enablePullUp: lives.length < 30,
-      onRefresh: _onRefresh,
-      onLoading: _loadMoreLives,
-      header: WaterDropHeader(
-        waterDropColor: Color(0xFFF9A825),
-        complete: Icon(Icons.check, color: Color(0xFFF9A825)),
-      ),
-      footer: CustomFooter(
-        builder: (context, mode) {
-          if (mode == LoadStatus.loading) {
-            return Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Center(child: CircularProgressIndicator(color: Color(0xFFF9A825))),
-            );
-          } else {
-            return SizedBox.shrink();
-          }
-        },
-      ),
-      child: CustomScrollView(
-        slivers: _buildSliverListWithAds( // ✅ Utilisez cette nouvelle fonction
-          activeLives,
-          endedLives,
-          displayLives,
-          authProvider,
-          selectedTab: _selectedTab, // Passez l'onglet sélectionné
-        ),
-      ),
+  Widget _statChip(IconData icon, String value, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: color, size: 11),
+        const SizedBox(width: 3),
+        Text(value, style: TextStyle(color: color, fontSize: 10)),
+      ],
     );
   }
 
-// ✅ Nouvelle fonction avec intégration des pubs
-  List<Widget> _buildSliverListWithAds(
-      List<PostLive> activeLives,
-      List<PostLive> endedLives,
-      List<PostLive> displayLives,
-      UserAuthProvider authProvider, {
-        required int selectedTab,
-      }) {
-    final slivers = <Widget>[];
-
-    // Pour le tab "En cours" - afficher avec pub en première position
-    if (selectedTab == 1) {
-      // ✅ Ajouter la pub en première position
-      slivers.add(
-        SliverToBoxAdapter(
-          child: _buildAdBanner(key: 'live_tab_active_first'),
-        ),
-      );
-
-      // Ajouter un espacement
-      slivers.add(
-        SliverToBoxAdapter(
-          child: SizedBox(height: 8),
-        ),
-      );
-
-      // Ensuite la grille des lives
-      if (displayLives.isNotEmpty) {
-        slivers.add(
-          SliverPadding(
-            padding: EdgeInsets.all(16),
-            sliver: SliverGrid(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 0.85,
-              ),
-              delegate: SliverChildBuilderDelegate(
-                    (context, index) => _buildLiveGridItem(displayLives[index], authProvider),
-                childCount: displayLives.length,
-              ),
-            ),
-          ),
-        );
-      } else {
-        slivers.add(
-          SliverFillRemaining(
-            child: _buildEmptyState(),
-          ),
-        );
-      }
-
-      return slivers;
-    }
-
-    // Pour le tab "Tous les lives" avec sections séparées
-
-    // ✅ Ajouter la pub en première position
-    slivers.add(
-      SliverToBoxAdapter(
-        child: _buildAdBanner(key: 'live_tab_all_first'),
-      ),
-    );
-
-    // Ajouter un espacement
-    slivers.add(
-      SliverToBoxAdapter(
-        child: SizedBox(height: 8),
-      ),
-    );
-
-    // Section Lives Actifs
-    if (activeLives.isNotEmpty) {
-      slivers.addAll([
-        SliverPadding(
-          padding: EdgeInsets.only(top: 16, left: 16, right: 16),
-          sliver: SliverToBoxAdapter(
-            child: Text(
-              '🔴 Lives en cours (${activeLives.length})',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-        SliverPadding(
-          padding: EdgeInsets.all(16),
-          sliver: SliverGrid(
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 0.85,
-            ),
-            delegate: SliverChildBuilderDelegate(
-                  (context, index) => _buildLiveGridItem(activeLives[index], authProvider),
-              childCount: activeLives.length,
-            ),
-          ),
-        ),
-      ]);
-    }
-
-    // Section Lives Terminés
-    if (endedLives.isNotEmpty) {
-      slivers.addAll([
-        SliverPadding(
-          padding: EdgeInsets.only(top: activeLives.isNotEmpty ? 32 : 16, left: 16, right: 16),
-          sliver: SliverToBoxAdapter(
-            child: Text(
-              '📁 Lives terminés (${endedLives.length})',
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-        SliverPadding(
-          padding: EdgeInsets.all(16),
-          sliver: SliverGrid(
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 0.85,
-            ),
-            delegate: SliverChildBuilderDelegate(
-                  (context, index) => _buildLiveGridItem(endedLives[index], authProvider),
-              childCount: endedLives.length,
-            ),
-          ),
-        ),
-      ]);
-    }
-
-    // Si aucune vie
-    if (activeLives.isEmpty && endedLives.isEmpty) {
-      slivers.add(
-        SliverFillRemaining(
-          child: _buildEmptyState(),
-        ),
-      );
-    }
-
-    return slivers;
-  }
-  List<Widget> _buildSliverList(
-      List<PostLive> activeLives,
-      List<PostLive> endedLives,
-      List<PostLive> displayLives,
-      UserAuthProvider authProvider
-      ) {
-    // Pour le tab "En cours" - afficher simplement la grille
-    if (_selectedTab == 1) {
-      return [
-        SliverPadding(
-          padding: EdgeInsets.all(16),
-          sliver: SliverGrid(
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 0.85,
-            ),
-            delegate: SliverChildBuilderDelegate(
-                  (context, index) => _buildLiveGridItem(displayLives[index], authProvider),
-              childCount: displayLives.length,
-            ),
-          ),
-        ),
-      ];
-    }
-
-    // Pour le tab "Tous les lives" avec sections séparées
-    final slivers = <Widget>[];
-
-    // Section Lives Actifs
-    if (activeLives.isNotEmpty) {
-      slivers.addAll([
-        SliverPadding(
-          padding: EdgeInsets.only(top: 16, left: 16, right: 16),
-          sliver: SliverToBoxAdapter(
-            child: Text(
-              '🔴 Lives en cours (${activeLives.length})',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-        SliverPadding(
-          padding: EdgeInsets.all(16),
-          sliver: SliverGrid(
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 0.85,
-            ),
-            delegate: SliverChildBuilderDelegate(
-                  (context, index) => _buildLiveGridItem(activeLives[index], authProvider),
-              childCount: activeLives.length,
-            ),
-          ),
-        ),
-      ]);
-    }
-
-    // Section Lives Terminés
-    if (endedLives.isNotEmpty) {
-      slivers.addAll([
-        SliverPadding(
-          padding: EdgeInsets.only(top: activeLives.isNotEmpty ? 32 : 16, left: 16, right: 16),
-          sliver: SliverToBoxAdapter(
-            child: Text(
-              '📁 Lives terminés (${endedLives.length})',
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-        SliverPadding(
-          padding: EdgeInsets.all(16),
-          sliver: SliverGrid(
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 0.85,
-            ),
-            delegate: SliverChildBuilderDelegate(
-                  (context, index) => _buildLiveGridItem(endedLives[index], authProvider),
-              childCount: endedLives.length,
-            ),
-          ),
-        ),
-      ]);
-    }
-
-    // Si aucune vie
-    if (activeLives.isEmpty && endedLives.isEmpty) {
-      slivers.add(
-        SliverFillRemaining(
-          child: _buildEmptyState(),
-        ),
-      );
-    }
-
-    return slivers;
-  }
-
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(AppColors colors) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _buildAdBanner(key: 'live_tab_active_first'),
-          Icon(Icons.videocam_off, size: 64, color: Colors.grey),
-          SizedBox(height: 16),
-          Text(
-            _selectedTab == 0 ? 'Aucun live' : 'Aucun live en cours',
-            style: TextStyle(color: Colors.white, fontSize: 18),
-          ),
-          SizedBox(height: 8),
-          Text(
-            _selectedTab == 0
-                ? 'Soyez le premier à créer un live!'
-                : 'Aucun live ne diffuse en ce moment',
-            style: TextStyle(color: Colors.grey, fontSize: 14),
-          ),
-          SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => CreateLivePage()));
-            },
-            child: Text('Créer un live', style: TextStyle(color: Colors.black)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFFF9A825),
-              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            ),
+          Icon(Icons.videocam_off_rounded, size: 56, color: colors.textSecondary.withOpacity(0.4)),
+          const SizedBox(height: 16),
+          Text('Aucun live', style: TextStyle(color: colors.textPrimary, fontSize: 17, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          Text('Soyez le premier à lancer un live !', style: TextStyle(color: colors.textSecondary, fontSize: 13)),
+          const SizedBox(height: 24),
+          TextButton.icon(
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CreateLivePage())),
+            icon: Icon(Icons.add_rounded, color: colors.accent),
+            label: Text('Créer un live', style: TextStyle(color: colors.accent, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildLiveGridItem(PostLive live, UserAuthProvider authProvider) {
-    final isInvited = live.invitedUsers.contains(authProvider.userId);
-    final isHost = live.hostId == authProvider.userId;
-    final isLive = live.isLive;
-    final isPaidLive = live.isPaidLive;
-    final hasPinnedText = live.pinnedText != null && live.pinnedText!.isNotEmpty;
-
-    // Calcul du total des spectateurs (spectateurs + participants)
-    final totalSpectateurs = live.totalspectateurs.length;
-    final currentViewers = live.viewerCount; // Spectateurs actuels pour les lives en cours
-
-    return GestureDetector(
-      onTap: () {
-        if (isLive) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => LivePage(
-                liveId: live.liveId!,
-                isHost: isHost,
-                hostName: live.hostName!,
-                hostImage: live.hostImage!,
-                isInvited: isInvited,
-                postLive: live,
-              ),
-            ),
-          );
-        } else {
-          _showLiveDetailsDialog(live);
-        }
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.grey[900],
-          borderRadius: BorderRadius.circular(12),
-          border: isLive
-              ? Border.all(color: Colors.red, width: 2)
-              : Border.all(color: Colors.grey[700]!, width: 1),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Section image avec badges
-            Expanded(
-              child: Stack(
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-                      image: DecorationImage(
-                        image: NetworkImage(live.hostImage!),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-
-                  // Badge LIVE/TERMINÉ
-                  Positioned(
-                    top: 8,
-                    left: 8,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                          color: isLive ? Colors.red : Colors.grey[700],
-                          borderRadius: BorderRadius.circular(12)
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            isLive ? Icons.circle : Icons.check_circle,
-                            color: Colors.white,
-                            size: 8,
-                          ),
-                          SizedBox(width: 4),
-                          Text(
-                            isLive ? 'LIVE' : 'TERMINÉ',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // Badge Live Privé
-                  if (isPaidLive)
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                        decoration: BoxDecoration(
-                            color: Colors.purple,
-                            borderRadius: BorderRadius.circular(12)
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.lock, color: Colors.white, size: 10),
-                            SizedBox(width: 2),
-                            Text(
-                              'PRIVÉ',
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 8,
-                                  fontWeight: FontWeight.bold
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                  // Badge Invitation
-                  if (isInvited && !isPaidLive)
-                    Positioned(
-                      top: 40,
-                      right: 8,
-                      child: Container(
-                        padding: EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                            color: Color(0xFFF9A825),
-                            shape: BoxShape.circle
-                        ),
-                        child: Icon(Icons.mail, color: Colors.black, size: 12),
-                      ),
-                    ),
-
-                  // Overlay pour lives terminés
-                  if (!isLive)
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black54,
-                        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-
-            // Section informations
-            Padding(
-              padding: EdgeInsets.all(8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Titre avec badge texte épinglé
-                  Row(
-                    children: [
-                      if (hasPinnedText)
-                        Icon(Icons.push_pin, color: Color(0xFFF9A825), size: 10),
-                      SizedBox(width: hasPinnedText ? 4 : 0),
-                      Expanded(
-                        child: Text(
-                          live.title,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  SizedBox(height: 6),
-
-                  // Informations hôte
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 10,
-                        backgroundImage: NetworkImage(live.hostImage!),
-                      ),
-                      SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          live.hostName!,
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 10,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  SizedBox(height: 6),
-
-                  // Statistiques
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Spectateurs (différent selon live actif ou terminé)
-                      Row(
-                        children: [
-                          Icon(Icons.people, size: 12, color: Colors.grey),
-                          SizedBox(width: 2),
-                          Text(
-                            isLive ? '$currentViewers' : '$totalSpectateurs',
-                            style: TextStyle(color: Colors.grey, fontSize: 10),
-                          ),
-                        ],
-                      ),
-
-                      // Likes
-                      Row(
-                        children: [
-                          Icon(Icons.favorite, size: 12, color: Colors.pink),
-                          SizedBox(width: 2),
-                          Text(
-                            '${live.likeCount ?? 0}',
-                            style: TextStyle(color: Colors.grey, fontSize: 10),
-                          ),
-                        ],
-                      ),
-
-                      // Cadeaux
-                      Row(
-                        children: [
-                          Icon(Icons.card_giftcard, size: 12, color: Color(0xFFF9A825)),
-                          SizedBox(width: 2),
-                          Text(
-                            '${live.gifts.length}',
-                            style: TextStyle(color: Colors.grey, fontSize: 10),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-
-                  SizedBox(height: 4),
-
-                  // Montant et durée
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        isLive ? 'En cours' : _formatDuration(live.startTime, live.endTime),
-                        style: TextStyle(
-                          color: isLive ? Colors.green : Colors.grey,
-                          fontSize: 9,
-                        ),
-                      ),
-                      Text(
-                        '${live.giftTotal.toStringAsFixed(0)} FCFA',
-                        style: TextStyle(
-                          color: Color(0xFFF9A825),
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  String _formatCount(int n) {
+    if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
+    if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}k';
+    return '$n';
   }
 
   String _formatDuration(DateTime start, DateTime? end) {
     if (end == null) return 'En cours';
-
-    final duration = end.difference(start);
-    final hours = duration.inHours;
-    final minutes = duration.inMinutes.remainder(60);
-
-    if (hours > 0) {
-      return '${hours}h${minutes}min';
-    } else {
-      return '${minutes}min';
-    }
+    final d = end.difference(start);
+    final h = d.inHours;
+    final m = d.inMinutes % 60;
+    if (h > 0) return '${h}h ${m}m';
+    return '${m}m';
   }
 
-  void _showLiveDetailsDialog(PostLive live) {
-    final duration = _formatDuration(live.startTime, live.endTime);
-    final dateFormat = DateFormat('dd/MM/yyyy à HH:mm');
-
-    // Calcul des totaux
-    final totalSpectateurs = live.totalspectateurs.length;
-    final totalParticipants = live.participants.length;
-    final totalSpectateursSeuls = live.spectators.length;
-
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (_) => Dialog(
-        backgroundColor: Colors.black,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: Colors.grey[700]!, width: 1)
-        ),
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // En-tête
-              Center(
-                child: Text(
-                  '📊 Détails du Live',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-
-              SizedBox(height: 20),
-
-              // Titre
-              Text(
-                live.title,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.center,
-              ),
-
-              SizedBox(height: 15),
-
-              // Informations hôte
-              _buildDetailRow('👤 Hôte:', live.hostName!),
-              _buildDetailRow('📅 Début:', dateFormat.format(live.startTime)),
-              if (live.endTime != null)
-                _buildDetailRow('⏱️ Durée:', duration),
-
-              SizedBox(height: 15),
-
-              // Statistiques d'audience
-              Text(
-                '👥 Audience',
-                style: TextStyle(
-                  color: Colors.blue,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-
-              SizedBox(height: 10),
-
-              GridView.count(
-                shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                childAspectRatio: 2.5,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
-                children: [
-                  _buildStatCard('👥 Total spectateurs', '$totalSpectateurs', Icons.people, Colors.blue),
-                  // _buildStatCard('🎤 Participants', '$totalParticipants', Icons.mic, Colors.green),
-                  _buildStatCard('👀 Spectateurs', '$totalSpectateursSeuls', Icons.visibility, Colors.orange),
-                  _buildStatCard('❤️ Likes', '${live.likeCount ?? 0}', Icons.favorite, Colors.pink),
-                ],
-              ),
-
-              SizedBox(height: 15),
-
-              // Autres statistiques
-              GridView.count(
-                shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                childAspectRatio: 2.5,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
-                children: [
-                  _buildStatCard('🎁 Cadeaux', '${live.gifts.length}', Icons.card_giftcard, Color(0xFFF9A825)),
-                  _buildStatCard('📤 Partages', '${live.shareCount}', Icons.share, Colors.green),
-                  if (live.isPaidLive)
-                    _buildStatCard('💰 Participations', '${live.paidParticipationTotal.toStringAsFixed(0)} FCFA', Icons.payment, Colors.purple),
-                  // _buildStatCard('👥 Invités', '${live.invitedUsers.length}', Icons.mail, Colors.cyan),
-                ],
-              ),
-
-              SizedBox(height: 15),
-
-              // Revenus
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.green[900]!.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.green),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      '💰 Revenus générés',
-                      style: TextStyle(
-                        color: Colors.green,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 5),
-                    Text(
-                      '${live.giftTotal.toStringAsFixed(0)} FCFA',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    if (live.paidParticipationTotal > 0)
-                      Padding(
-                        padding: EdgeInsets.only(top: 5),
-                        child: Text(
-                          '+ ${live.paidParticipationTotal.toStringAsFixed(0)} FCFA (participations)',
-                          style: TextStyle(
-                            color: Colors.greenAccent,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-
-              SizedBox(height: 15),
-
-              // Type de live
-              if (live.isPaidLive)
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.purple[900]!.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.purple),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.lock, color: Colors.purpleAccent, size: 16),
-                      SizedBox(width: 8),
-                      Text(
-                        'Live Privé - Accès payant',
-                        style: TextStyle(
-                          color: Colors.purpleAccent,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-              SizedBox(height: 20),
-
-              // Bouton fermer
-              Center(
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey[800],
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
-                  ),
-                  child: Text(
-                    'Fermer',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  String _formatAgo(DateTime date) {
+    final diff = DateTime.now().difference(date);
+    if (diff.inDays >= 7) return DateFormat('dd/MM').format(date);
+    if (diff.inDays >= 1) return 'il y a ${diff.inDays}j';
+    if (diff.inHours >= 1) return 'il y a ${diff.inHours}h';
+    if (diff.inMinutes >= 1) return 'il y a ${diff.inMinutes}m';
+    return "à l'instant";
   }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-        padding: EdgeInsets.symmetric(vertical: 4),
-    child: Row(
-    children: [
-    Text(
-    label,
-    style: TextStyle(
-    color: Colors.grey,
-    fontSize: 14,
-    fontWeight: FontWeight.w500,
-    ),
-    ),
-    SizedBox(width: 8),
-    Expanded(
-    child: Text(
-    value,
-    style: TextStyle(
-    color: Colors.white,
-    fontSize: 14,
-    ),
-    ),
-    ),
-    ],)
-    );
-  }
-
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey[800],
-        borderRadius: BorderRadius.circular(8),
-      ),
-      padding: EdgeInsets.all(8),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: color, size: 14),
-              SizedBox(width: 4),
-              Text(
-                value,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 2),
-          Text(
-            title,
-            style: TextStyle(
-              color: Colors.grey,
-              fontSize: 10,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatDate(DateTime date) => '${date.day}/${date.month}/${date.year}';
 }
-

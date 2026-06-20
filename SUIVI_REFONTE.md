@@ -1,5 +1,5 @@
 # SUIVI REFONTE UI — AFROLOOK V2
-_Dernière mise à jour : 20 juin 2026 (session 66)_
+_Dernière mise à jour : 20 juin 2026 (session 67)_
 
 ---
 
@@ -2979,4 +2979,42 @@ bool get isOfficialAccount => officialBadge == true && officialAccountStatus == 
 | `postDetailsVideo.dart` | `if (canal?.isVerify == true \|\| user?.isVerify == true) Icon(...)` | `if (user != null) UserBadgeWidget(user: user, size: 15)` |
 
 **Résultat :** un seul widget centralise l'affichage des badges dans toute l'application. Toute évolution future (nouveau type de badge, changement visuel) se fait en un seul endroit.
+
+### Session 67 (20 juin 2026 — refonte UI thème clair/sombre : contenu payant + lives)
+
+**Demande :** Refaire l'UI de la page home du contenu payant, de la liste des lives et de la page mes lives pour utiliser `AppColors` (support mode clair/sombre).
+
+**3 fichiers refactorisés :**
+
+#### `lib/pages/contenuPayant/profileScreenContent.dart` ✅ RÉÉCRITURE COMPLÈTE
+- Fichier avait 3 blocs d'imports dupliqués et ~1400 lignes avec du code commenté en fin — réécriture propre
+- Import inutile `contentSerie.dart` supprimé
+- Couleur marque `Color(0xFFC62828)` (rouge) remplacée par `colors.primary` (vert thème) sur tous les éléments
+- Gradient header : `[Color(0xFFC62828), Color(0xFFFFD600)]` → `[colors.primary, colors.accent]`
+- `Colors.grey.shade50` background → `colors.background`
+- `Colors.white` cartes → `colors.surface`
+- `Colors.grey.*` textes → `colors.textSecondary`
+- Badge officiel : `if (user.isVerify ?? false) Positioned(...)` → `UserBadgeWidget(user: user, size: 18, withBackground: true)`
+- `UserBadgeWidget` utilisé en `Positioned` sur l'avatar
+- `shimmerBase` d'AppColors utilisé pour les placeholders de chargement d'images
+- Code commenté legacy (lignes 1356+) supprimé — code mort non pertinent
+- `flutter analyze` : 0 erreur, 1 warning (import inutile corrigé), infos pré-existants
+
+#### `lib/pages/LiveAgora/live_list_page.dart` ✅ REFACTORISÉ
+- Champs `static const _bg`, `_surface`, `_gold` supprimés
+- `final colors = AppColors.of(context)` dans `build()`, passé en paramètre à toutes les méthodes
+- `backgroundColor: colors.background`, FAB `colors.accent`, `WaterDropHeader` `colors.accent`
+- Tabs : fond `colors.surface`, bordure `colors.border`, indicateur `colors.accent`, label `colors.onAccent`/`colors.textSecondary`
+- Cartes lives : `colors.surface`, `colors.border`, textes `colors.textPrimary`/`colors.textSecondary`
+- Badge LIVE (rouge) conservé comme `Color(0xFFFF3B30)` — couleur sémantique intentionnelle
+- Icône cœur `Color(0xFFFF6B6B)` conservée — couleur sémantique
+
+#### `lib/pages/LiveAgora/mesLives.dart` ✅ RÉÉCRITURE COMPLÈTE
+- Imports dupliqués (2 blocs identiques) supprimés — bloc unique propre
+- Extension morte `PostLiveExtension` supprimée
+- Toutes les couleurs hardcodées remplacées : `Colors.black` → `colors.background`, `Colors.grey[900]` → `colors.surface`, `Colors.grey[800]` → `colors.surfaceVariant`, `Color(0xFFF9A825)` → `colors.accent`, textes blancs → `colors.textPrimary`, gris → `colors.textSecondary`, rouge LIVE → `colors.danger`
+- Toutes les méthodes acceptent `AppColors colors` en paramètre
+- Dialogs utilisent `AppColors.of(context)` directement
+
+**Commit :** à pusher sur `refonte_claude`
 
