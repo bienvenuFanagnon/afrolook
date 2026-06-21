@@ -28,7 +28,15 @@ class StartupCacheService {
   static Future<void> saveAppData(AppDefaultData data) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_keyAppData, jsonEncode(data.toJson()));
+      final map = data.toJson();
+      // Correction du mismatch de clé dans AppDefaultData :
+      // toJson() écrit 'one_signal_api_url' mais fromJson() lit 'one_signal_app_url'
+      map['one_signal_app_url'] = data.one_signal_app_url;
+      // Les champs late String ne supportent pas null → valeur par défaut
+      map['app_logo'] ??= '';
+      map['one_signal_api_key'] ??= '';
+      map['one_signal_app_id'] ??= '';
+      await prefs.setString(_keyAppData, jsonEncode(map));
       await prefs.setInt(_keyAppTime, DateTime.now().millisecondsSinceEpoch);
     } catch (e) {
       print('⚠️ [StartupCache] saveAppData échoué: $e');
@@ -60,7 +68,13 @@ class StartupCacheService {
       if (age > _appTtl.inMilliseconds) return null;
       final raw = prefs.getString(_keyAppData);
       if (raw == null) return null;
-      return AppDefaultData.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+      final map = jsonDecode(raw) as Map<String, dynamic>;
+      // Filet de sécurité : compatibilité avec des caches enregistrés avant la correction
+      map['one_signal_app_url'] ??= map['one_signal_api_url'] ?? '';
+      map['app_logo'] ??= '';
+      map['one_signal_api_key'] ??= '';
+      map['one_signal_app_id'] ??= '';
+      return AppDefaultData.fromJson(map);
     } catch (e) {
       print('⚠️ [StartupCache] loadAppData échoué: $e');
       return null;

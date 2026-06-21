@@ -1351,7 +1351,7 @@ class _MyHomePageState extends State<MyHomePage>
 
 
     // _tabController = TabController(length: _tabs.length, vsync: this);
-    _tabController = TabController(length: 6, vsync: this);
+    _tabController = TabController(length: 8, vsync: this);
     // Écouter le changement d'onglet
     _tabController!.addListener(() {
       if (_tabController!.indexIsChanging) return;
