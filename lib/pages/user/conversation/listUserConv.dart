@@ -441,7 +441,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
         // Mettre à jour le timestamp du chat
         _chats[chatIndex].chat.updatedAt = message.create_at_time_spam;
         _chats[chatIndex].chat.lastMessage = message.messageType == 'text'
-            ? message.message
+            ? (message.message.startsWith('enc:v1:') ? '🔒 Message ancien' : message.message)
             : (message.messageType == 'image' ? '📷 Image' : '🎤 Audio');
 
         // Mettre à jour le compteur de non-lus
@@ -879,6 +879,25 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
                 Navigator.pushNamed(context, '/amis');
               },
             ),
+            PopupMenuButton<String>(
+              icon: Icon(Icons.more_vert, color: _colors.accent),
+              color: _colors.surface,
+              onSelected: (value) {
+                if (value == 'archives') _showArchivedChats();
+              },
+              itemBuilder: (_) => [
+                PopupMenuItem(
+                  value: 'archives',
+                  child: Row(
+                    children: [
+                      Icon(Icons.archive_outlined, color: _colors.textSecondary, size: 20),
+                      const SizedBox(width: 10),
+                      Text('Archives', style: TextStyle(color: _colors.textPrimary)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ],
@@ -1097,6 +1116,9 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     final lastMsgAt = group['last_message_at'] as int? ?? 0;
     final isFrozen = group['is_frozen'] == true;
     final memberCount = group['member_count'] as int? ?? 0;
+    final myId = authProvider.loginUserData.id ?? '';
+    final unreadCounts = group['unread_counts'] as Map<String, dynamic>? ?? {};
+    final unreadCount = (unreadCounts[myId] as int?) ?? 0;
 
     String timeStr = '';
     if (lastMsgAt > 0) {
@@ -1142,7 +1164,14 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
             ),
           ),
           if (timeStr.isNotEmpty)
-            Text(timeStr, style: TextStyle(color: _colors.textSecondary, fontSize: 11)),
+            Text(
+              timeStr,
+              style: TextStyle(
+                color: unreadCount > 0 ? _colors.primary : _colors.textSecondary,
+                fontSize: 11,
+                fontWeight: unreadCount > 0 ? FontWeight.w700 : FontWeight.normal,
+              ),
+            ),
         ],
       ),
       subtitle: Row(
@@ -1152,7 +1181,11 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
           Expanded(
             child: Text(
               lastMsg.isNotEmpty ? lastMsg : '$memberCount membres',
-              style: TextStyle(color: _colors.textSecondary, fontSize: 12),
+              style: TextStyle(
+                color: unreadCount > 0 ? _colors.textPrimary : _colors.textSecondary,
+                fontSize: 12,
+                fontWeight: unreadCount > 0 ? FontWeight.w600 : FontWeight.normal,
+              ),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -1165,6 +1198,22 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
               ),
               child: const Text('Gelé', style: TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.w700)),
             ),
+          if (unreadCount > 0) ...[
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+              constraints: const BoxConstraints(minWidth: 20),
+              decoration: BoxDecoration(
+                color: _colors.primary,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                unreadCount > 99 ? '99+' : '$unreadCount',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
         ],
       ),
       onTap: () => Navigator.push(
@@ -1722,8 +1771,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
 
     switch (lastMessage.messageType) {
       case 'text':
-        // Si le déchiffrement a échoué, on affiche un indicateur discret
-        if (lastMessage.message.startsWith('enc:v1:')) return '🔒 Message';
+        if (lastMessage.message.startsWith('enc:v1:')) return '🔒 Message ancien';
         return lastMessage.message;
       case 'image':
         final hasMulti = lastMessage.imageText != null && lastMessage.imageText!.contains('|');

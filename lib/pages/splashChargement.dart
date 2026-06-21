@@ -14,7 +14,9 @@ import '../providers/chroniqueProvider.dart';
 import '../providers/contenuPayantProvider.dart';
 import '../providers/postProvider.dart';
 import '../providers/userProvider.dart';
+import '../providers/feed_provider.dart';
 import '../services/cache/startup_cache_service.dart';
+import '../services/feed/feed_repository.dart';
 import '../services/nav_cache_service.dart';
 import '../services/sessions/session_service.dart';
 import 'auth/authTest/Screens/Login/loginPageUser.dart';
@@ -190,17 +192,25 @@ class _SplashChargementState extends State<SplashChargement> {
       final chatDoc = await FirebaseFirestore.instance.collection('Chats').doc(_pendingChatId).get();
       if (!chatDoc.exists) return;
       final chat = Chat.fromJson(chatDoc.data() as Map<String, dynamic>);
-      final userDoc = await FirebaseFirestore.instance.collection('Users').doc(_pendingSendUserId).get();
+
+      // User + messages en parallèle (indépendants)
+      final results = await Future.wait([
+        FirebaseFirestore.instance.collection('Users').doc(_pendingSendUserId).get(),
+        FirebaseFirestore.instance
+            .collection('Messages')
+            .where('chat_id', isEqualTo: _pendingChatId)
+            .orderBy('createdAt', descending: true)
+            .limit(25)
+            .get(),
+      ]);
+
+      final userDoc = results[0] as DocumentSnapshot;
+      final messagesSnapshot = results[1] as QuerySnapshot;
+
       if (userDoc.exists) {
         chat.chatFriend = UserData.fromJson(userDoc.data() as Map<String, dynamic>);
         chat.receiver = chat.chatFriend;
       }
-      final messagesSnapshot = await FirebaseFirestore.instance
-          .collection('Messages')
-          .where('chat_id', isEqualTo: _pendingChatId)
-          .orderBy('createdAt', descending: true)
-          .limit(25)
-          .get();
       chat.messages = messagesSnapshot.docs.map((d) => Message.fromJson(d.data() as Map<String, dynamic>)).toList();
       _loadedChat = chat;
     } catch (e) { print("❌ Erreur chargement chat : $e"); }
@@ -418,6 +428,35 @@ class _SplashChargementState extends State<SplashChargement> {
         print("✅ [SPLASH] Background refresh terminé");
       } catch (e) {
         print("⚠️ [SPLASH] Background refresh échoué (ignoré): $e");
+      }
+
+      // Préchargement silencieux du feed home + contenu global pour que
+      // HomeScreen affiche les données instantanément à l'arrivée.
+      try {
+        final feedProvider = Provider.of<FeedProvider>(context, listen: false);
+        final user = authProvider.loginUserData;
+        final country = user.countryData?['countryCode']?.toUpperCase() ?? '';
+        feedProvider.loadGlobalContent();
+        feedProvider.preload(
+          FeedType.home,
+          userId: user.id ?? '',
+          countryCode: country,
+          subscriptionPostIds: user.newPostsFromSubscriptions,
+        );
+        feedProvider.preload(
+          FeedType.sport,
+          userId: user.id ?? '',
+          countryCode: country,
+          subscriptionPostIds: user.newPostsFromSubscriptions,
+        );
+        feedProvider.preload(
+          FeedType.vibes,
+          userId: user.id ?? '',
+          countryCode: country,
+          subscriptionPostIds: user.newPostsFromSubscriptions,
+        );
+      } catch (e) {
+        print("⚠️ [SPLASH] Preload feed échoué (ignoré): $e");
       }
     });
   }

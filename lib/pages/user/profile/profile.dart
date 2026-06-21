@@ -1,4 +1,5 @@
 import 'package:afrotok/models/model_data.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:provider/provider.dart';
@@ -8,12 +9,12 @@ import '../../../providers/authProvider.dart';
 import '../../../providers/postProvider.dart';
 import '../../../providers/userProvider.dart';
 import '../../../theme/app_colors.dart';
-import '../../admin/AfrolookPub/afrolookAdminPubPage.dart';
-import '../../admin/admin_email_screen.dart';
-import '../../admin/dating/admin_dating_profiles_page.dart';
+import '../../admin/admin_dashboard_page.dart';
+import '../official_account/request_official_account_page.dart';
+import '../../../models/official_account/official_account_enums.dart';
+import '../../../models/official_account/official_account_request.dart';
+import '../../../services/official_account/official_account_service.dart';
 import '../../canaux/listCanauxByUser.dart';
-import '../../challenge/challengeDashbord.dart';
-import '../../pronostics/admin_pronostics_page.dart';
 import '../../userPosts/favorites_posts.dart';
 import '../otherUser/otherUser.dart';
 import '../remuneration_home_page.dart';
@@ -36,6 +37,27 @@ class _UserProfilState extends State<UserProfil> {
   Provider.of<UserProvider>(context, listen: false);
   late PostProvider postProvider =
   Provider.of<PostProvider>(context, listen: false);
+
+  /// Demande de compte officiel en cours.
+  OfficialAccountRequest? _officialRequest;
+  bool _officialRequestLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadOfficialRequest());
+  }
+
+  Future<void> _loadOfficialRequest() async {
+    try {
+      final myId = Provider.of<UserAuthProvider>(context, listen: false).loginUserData.id;
+      if (myId == null) return;
+      final req = await OfficialAccountService.instance.getMyRequest(myId);
+      if (mounted) setState(() { _officialRequest = req; _officialRequestLoaded = true; });
+    } catch (_) {
+      if (mounted) setState(() => _officialRequestLoaded = true);
+    }
+  }
 
   String formatNumber(int number) {
     if (number < 1000) {
@@ -467,90 +489,58 @@ class _UserProfilState extends State<UserProfil> {
                       ],
                     ),
 
+                    // Bouton Compte officiel
+                    if (_officialRequestLoaded) Builder(builder: (_) {
+                      final me = authProvider.loginUserData;
+                      if (me.isOfficialAccount) {
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 15),
+                          child: _buildOfficialBadge(me),
+                        );
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 15),
+                        child: _buildOfficialAccountButton(_officialRequest),
+                      );
+                    }),
+
                     SizedBox(height: 15),
 
-                    // Options admin (si applicable)
+                    // Tableau de bord admin
                     if (authProvider.loginUserData.role == UserRole.ADM.name) ...[
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _buildMenuButton(
-                            icon: Icons.build_circle,
-                            label: l10n.profileMenuAppData,
-                            color: Colors.blue,
-                            onTap: () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => AdminHubPage()));
-                            },
+                      GestureDetector(
+                        onTap: () => Navigator.push(context,
+                            MaterialPageRoute(builder: (_) => const AdminDashboardPage())),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 18),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF534AB7), Color(0xFF185FA5)],
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                            ),
+                            borderRadius: BorderRadius.circular(14),
                           ),
-                          _buildMenuButton(
-                            icon: Icons.emoji_events,
-                            label: l10n.profileMenuChallenge,
-                            color: primaryYellow,
-                            onTap: () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => ChallengeDashboardPage()));
-                            },
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.admin_panel_settings_rounded,
+                                  color: Colors.white, size: 20),
+                              SizedBox(width: 10),
+                              Text('Tableau de bord admin',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 14)),
+                              Spacer(),
+                              Icon(Icons.arrow_forward_ios_rounded,
+                                  color: Colors.white54, size: 14),
+                            ],
                           ),
-                          _buildMenuButton(
-                            icon: Icons.business,
-                            label: l10n.profileMenuContacts,
-                            color: Colors.purple,
-                            onTap: () {
-                              Navigator.pushNamed(context, '/list_conversation_user_entreprise');
-                            },
-                          ),
-                        ],
+                        ),
                       ),
                       SizedBox(height: 15),
-                    ],
-                    if (authProvider.loginUserData.role == UserRole.ADM.name) ...[
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _buildMenuButton(
-                            icon: Icons.add_card_outlined,
-                            label: l10n.profileMenuPub,
-                            color: Colors.deepPurple,
-                            onTap: () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => AdvertisementManagementPage()));
-                            },
-                          ),        _buildMenuButton(
-                            icon: Icons.email,
-                            label: l10n.profileMenuEmailing,
-                            color: Colors.blue,
-                            onTap: () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => AdminEmailScreen()));
-                            },
-                          ),
-                          _buildMenuButton(
-                            icon: MaterialIcons.sports_soccer,
-                            label: l10n.profileMenuPronostic,
-                            color: Colors.green,
-                            onTap: () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => AdminPronosticsPage()));
-                            },
-                          ),
-
-                        ],
-                      ),
-                      SizedBox(height: 15),
-
-                    ],     if (authProvider.loginUserData.role == UserRole.ADM.name) ...[
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _buildMenuButton(
-                            icon: Fontisto.tinder,
-                            label: l10n.profileMenuAfrolove,
-                            color: Colors.red,
-                            onTap: () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => AdminDatingProfilesPage()));
-                            },
-                          ),
-
-                        ],
-                      ),
-                      SizedBox(height: 15),
-
                     ],
 
                   ],
@@ -561,6 +551,296 @@ class _UserProfilState extends State<UserProfil> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildOfficialAccountButton(OfficialAccountRequest? req) {
+    if (req == null) {
+      return GestureDetector(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const RequestOfficialAccountPage()),
+        ).then((_) => _loadOfficialRequest()),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF7B2FBE), Color(0xFF4A90D9)],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.verified_rounded, color: Colors.white, size: 20),
+              SizedBox(width: 8),
+              Text(
+                'Demander un compte officiel',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final status = req.status;
+
+    // Cas spécial : informations complémentaires — affiche le message admin complet
+    if (status == OfficialAccountStatus.moreInfoNeeded) {
+      const fg = Color(0xFFE65100);
+      const bg = Color(0xFFFFF3E0);
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: fg.withOpacity(0.3)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.info_outline_rounded, color: fg, size: 18),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Informations complémentaires requises',
+                    style: TextStyle(color: fg, fontWeight: FontWeight.w700, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+            if (req.adminNote?.isNotEmpty == true) ...[
+              const SizedBox(height: 10),
+              GestureDetector(
+                onTap: () => _showAdminNoteDialog(context, req.adminNote!),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: fg.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: fg.withOpacity(0.25)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.message_outlined, color: fg, size: 15),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          'Voir le message de l\'administrateur',
+                          style: TextStyle(
+                              color: fg, fontWeight: FontWeight.w600, fontSize: 13),
+                        ),
+                      ),
+                      const Icon(Icons.arrow_forward_ios_rounded, color: fg, size: 13),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 10),
+            GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => RequestOfficialAccountPage(existingRequest: req)),
+              ).then((_) => _loadOfficialRequest()),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                decoration: BoxDecoration(
+                  color: _colors.primary,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.edit_rounded, color: Colors.white, size: 15),
+                    SizedBox(width: 8),
+                    Text('Mettre à jour ma demande',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final (IconData icon, String label, Color bg, Color fg, bool tappable) = switch (status) {
+      OfficialAccountStatus.pending => (
+          Icons.hourglass_top_rounded,
+          'Demande en cours d\'examen...',
+          _colors.surfaceVariant,
+          _colors.textSecondary,
+          false,
+        ),
+      OfficialAccountStatus.underReview => (
+          Icons.manage_search_rounded,
+          'En cours d\'analyse par l\'équipe',
+          _colors.surfaceVariant,
+          Colors.blue,
+          false,
+        ),
+      OfficialAccountStatus.rejected => (
+          Icons.refresh_rounded,
+          'Renouveler ma demande',
+          _colors.surfaceVariant,
+          _colors.textSecondary,
+          true,
+        ),
+      OfficialAccountStatus.suspended => (
+          Icons.block_rounded,
+          'Compte officiel suspendu',
+          _colors.surfaceVariant,
+          Colors.red,
+          false,
+        ),
+      _ => (Icons.verified_rounded, '', Colors.transparent, Colors.transparent, false),
+    };
+
+    if (label.isEmpty) return const SizedBox.shrink();
+
+    return GestureDetector(
+      onTap: tappable
+          ? () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const RequestOfficialAccountPage()),
+              ).then((_) => _loadOfficialRequest())
+          : null,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _colors.border),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: fg, size: 20),
+            const SizedBox(width: 8),
+            Text(label, style: TextStyle(color: fg, fontWeight: FontWeight.w600, fontSize: 14)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAdminNoteDialog(BuildContext context, String note) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: _colors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE65100).withOpacity(0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.info_rounded,
+                        color: Color(0xFFE65100), size: 18),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Message de l\'administrateur',
+                      style: TextStyle(
+                          color: _colors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF3E0),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE65100).withOpacity(0.2)),
+                ),
+                child: Text(
+                  note,
+                  style: const TextStyle(
+                      color: Color(0xFFBF360C), fontSize: 14, height: 1.6),
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE65100),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text('Fermer',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOfficialBadge(UserData me) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1A237E), Color(0xFF7B2FBE)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.verified_rounded, color: Colors.white, size: 20),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              me.officialName?.isNotEmpty == true ? me.officialName! : 'Compte officiel vérifié',
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ),
     );
   }

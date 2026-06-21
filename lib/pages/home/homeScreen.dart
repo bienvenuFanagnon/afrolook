@@ -83,6 +83,8 @@ import '../mes_notifications.dart';
 import '../postDetails.dart';
 import '../postDetailsVideo.dart';
 import '../post_video_format_tel_details.dart';
+import '../feed/unified_feed_page.dart';
+import '../../services/feed/feed_repository.dart' show FeedType;
 import '../pronostics/pronostics_feed_page.dart';
 import '../splashChargement.dart';
 import '../user/amis/addListAmis.dart';
@@ -1443,7 +1445,7 @@ class _MyHomePageState extends State<MyHomePage>
     if (post.dataType == PostDataType.VIDEO.name) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => VideoYoutubePageDetails(initialPost: post)),
+        MaterialPageRoute(builder: (context) => PostDetailsVideoFormatTel(initialPost: post, isIn: false)),
       );
     } else {
       Navigator.push(
@@ -1867,15 +1869,15 @@ class _MyHomePageState extends State<MyHomePage>
         controller: _tabController,
         children: [
           LooksPage(type: TabBarType.LOOKS.name,sortType: 'recent', feedKey: _looksRecentKey,),
-          SizedBox.shrink(), // Widget invisible pour l'onglet Sport
-          SizedBox.shrink(), // Widget invisible pour l'onglet Sport
+          SizedBox.shrink(), // tabSport — navigation via initState → HomeSportPostPage
+          SizedBox.shrink(), // tabVibe — navigation via initState → PostDetailsVideoFormatTel
 
           // LooksPage(type: TabBarType.SPORT.name,sortType: 'popular',),
           // SportPage(type: TabBarType.SPORT.name),
           // HomeConstPostTypePage(type: TabBarType.SPORT.name),
           // HomeSportPostPage(type: TabBarType.SPORT.name),
           HomeConstPostTypePage(key: _discoverKey, type: TabBarType.EVENEMENT.name,sortType: 'recent',),
-          SizedBox.shrink(), // Widget invisible pour l'onglet Sport
+          SizedBox.shrink(), // tabVip — navigation via initState → DashboardContentScreen
           ChallengesListPage(),
           ChroniqueHomePage(),
           LooksPage(type: TabBarType.LOOKS.name,sortType: 'popular', feedKey: _looksPopularKey,),

@@ -249,8 +249,9 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
           context,
           MaterialPageRoute(
             builder: (context) => ChroniqueDetailPage(
-              // userChroniques: userChroniques,
               initialChroniqueId: firstChronique.id!,
+              allGroups: widget.groupedChroniques.values.toList(),
+              startUserId: firstChronique.userId,
             ),
           ),
         );

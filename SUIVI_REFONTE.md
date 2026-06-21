@@ -1,5 +1,5 @@
 # SUIVI REFONTE UI — AFROLOOK V2
-_Dernière mise à jour : 21 juin 2026 (session 70)_
+_Dernière mise à jour : 21 juin 2026 (session 73)_
 
 ---
 
@@ -134,6 +134,10 @@ Tout est fait en **français**.
 | Compression/resize images avant upload | À vérifier |
 | Cache CDN Cloudflare | Commit "cdn cloudflare" — déjà fait côté backend |
 | **Cache-first au démarrage (session 70)** | ✅ FAIT — `StartupCacheService` + splash instantané |
+| **Centralisation feed — Phase 1 (session 71)** | ✅ FAIT — `FeedRepository` + `FeedProvider` créés |
+| **Centralisation feed — Phase 2 (session 71)** | ✅ FAIT — `PostRenderer` + `FeedList` créés |
+| **Centralisation feed — Phase 3 (session 71)** | ✅ FAIT — `UnifiedFeedPage` + onglets Sport/Vibes + preload splash |
+| **Centralisation feed — Phase 4 (session 71 suite)** | ✅ FAIT — widgets `_build*` extraits en 6 composants partagés (`lib/widgets/feed/sections/`) + `FeedRepository` câblé dans `HomeConstPost`, `homeSportPost`, `PostDetailsVideoFormatTel` |
 
 ---
 
@@ -181,6 +185,132 @@ Le bouton de basculement clair/sombre est à exposer clairement dans l'UI.
   - Cache miss → chemin Firestore classique + sauvegarde cache avec `unawaited`
 - `lib/services/sessions/session_service.dart` : `clearSession()` appelle `StartupCacheService.clear()`
 - Résultat : 2e lancement et suivants = **0ms de Firestore** avant affichage du Home
+- 0 erreur `dart analyze`
+
+### Session 71 (21 juin 2026)
+- **Centralisation feed — Phase 1 : infrastructure centrale**
+- `lib/services/feed/feed_repository.dart` créé :
+  - `enum FeedType { home, looks, sport, events, video, vibes, challenges }`
+  - Composition algorithmique home : 30% abo + 25% pays + 20% score + 15% découverte + 10% résurgence
+  - Score composite : engagement×0.35 + fraîcheur×0.25 + pays×0.20 + boost_nouveau_créateur×0.15 + viralité×0.05
+  - Boost nouveau créateur : `abonnes < 200` ET post < 30 jours → +0.15
+  - Filtrage pays client-side : deux requêtes (`available_countries` contains countryCode + 'ALL'), merge
+  - Résurgence : posts 2-6 mois avec feedScore ≥ 0.5
+  - Fault-tolerant : chaque méthode a try/catch, retourne `[]` en cas d'erreur
+  - `fetchChroniques/fetchCanaux/fetchArticles` : contenu global partagé
+- `lib/providers/feed_provider.dart` créé :
+  - `FeedState` immuable par `FeedType` (posts, mixedContent, isLoading, hasMore, isFromCache)
+  - `Set<String> _globalSeenIds` : déduplication globale inter-feeds
+  - Cache-first (TTL 30min via `FeedCacheService`) + background refresh silencieux
+  - `loadGlobalContent()` : charge chroniques/canaux/articles en parallèle (une seule fois)
+  - `preload(FeedType)` : préchargement en arrière-plan sans bloquer l'UI
+  - `_buildMixed()` : contenu mixé standard pour feed home
+- `lib/main.dart` : `FeedProvider` enregistré dans `MultiProvider`
+- Aucune page existante modifiée — migration progressive possible
+- 0 erreur `dart analyze` (11 infos avoid_print pré-existants)
+
+### Session 71 suite — Phase 2 : widgets universels
+- `lib/widgets/feed/post_renderer.dart` créé :
+  - Dispatch par `post.type` + `post.dataType` : CHALLENGEPARTICIPATION → `LookChallengePostWidget`, VIDEO → `YouTubeVideoCard`, AUDIO → `AudioPostCard`, PRONOSTIC → invisible, défaut → `HomePostUsersWidget`
+  - Transmet `filterCountry` et `index` aux widgets existants (pas de refactor)
+- `lib/widgets/feed/feed_list.dart` créé :
+  - Rendu de `List<dynamic>` (mixedContent de FeedProvider)
+  - Pagination auto : détecte scroll à 85% → déclenche `onLoadMore`
+  - Sections avec builders optionnels : `chroniqueBuilder`, `canauxBuilder`, `articlesBuilder` (les pages injectent leurs propres renderers le temps de la migration)
+  - Fallback minimal pour chroniques (rangée d'avatars circulaires)
+  - Footer dynamique : spinner si chargement, "Fin du feed" si hasMore=false
+- 0 erreur `dart analyze`
+
+### Session 71 suite — Phase 4 : extraction widgets + intégration FeedRepository
+- **6 composants partagés créés** dans `lib/widgets/feed/sections/` :
+  - `feed_articles_section.dart` : `FeedArticlesSection` (produits boostés horizontaux)
+  - `feed_canaux_section.dart` : `FeedCanauxSection` (canaux horizontaux)
+  - `feed_profiles_section.dart` : `FeedProfilesSection` + `_ProfileCard` (profils suggérés)
+  - `feed_ad_widgets.dart` : `FeedAdBanner`, `FeedAdMrec`, `FeedAdCarousel`
+  - `feed_filter_bar.dart` : `FeedFilterBar` + `FeedFilterChip` (filtres pays)
+  - `feed_state_widgets.dart` : `FeedSectionLoader`, `FeedLoadingShimmer`, `FeedErrorWidget`, `FeedEmptyWidget`
+- **`HomeConstPost.dart`** : tous les `_build*` remplacés par délégations aux 6 composants ; méthodes de chargement remplacées par `FeedRepository` ; variables cursor (`_lastAllDocument`, `_lastCountryDocument`, `_lastOtherDocument`) supprimées ; code mort `_loadCountrySpecificPosts2` supprimé ; cas EVENEMENT conservé en Firestore direct (tri par `eventDate`)
+- **`homeSportPost.dart`** : même traitement — `_loadPostsWithTypeAndCountry` et `_loadChroniquesInBackground` remplacés par `FeedRepository` ; cursors supprimés ; helper `_addFetchedToList` ajouté
+- **`PostDetailsVideoFormatTel`** : stratégie 1 de `_fetchSuggestedVideosBatch` remplacée par `FeedRepository().fetchByMediaType()` avec fallback Firestore direct si résultat vide
+- 0 erreur `flutter analyze`
+
+### Session 72 — Pubs au format post standard
+
+**Objectif** : Les posts sponsorisés s'affichent avec le même format visuel que les posts ordinaires (`HomePostUsersWidget`), plus 3 éléments distinctifs : badge "SPONSORISÉ", bouton CTA, stats (vues + CTR).
+
+**Fichiers modifiés** :
+- `lib/pages/admin/AfrolookPub/advertisementPostImageWidget.dart` :
+  - Supprimé : tous les builders d'images (`_buildImageGrid`, `_buildSingleImage`, etc.), `_buildVideoContent`, `_buildHeaderCompact`, `_loadUserData`, `_loadCanalData`, `_calculatePostHeight`, `_navigateToDetails`, variables user/canal
+  - Ajouté import `HomePostUsersWidget`
+  - Nouveau `build()` : `Stack(HomePostUsersWidget + badge Positioned top-right) + _buildAdExtras()`
+  - Conservé : `_handleVisibilityChanged`, `_recordAdView`, `_handleActionButtonClick`, `_formatCount`
+- `lib/pages/admin/AfrolookPub/advertisement_video_widget.dart` :
+  - Même refactoring que l'image widget
+  - Supprimé : `VideoPlayerController`, `SoundProvider`, toute la logique vidéo manuelle (gérée par `HomePostUsersWidget` en interne)
+  - Badge, CTA, stats identiques
+
+**Résultat** : 0 erreur `flutter analyze`, seulement 4 infos `deprecated_member_use` (withOpacity) pré-existantes dans le projet.
+
+**Format visuel** :
+- Pub = post ordinaire à 100% (même dimensions, même header avatar/nom, même zone média)
+- Overlay badge "SPONSORISÉ" en haut à droite (semi-transparent, petite police)
+- Rangée stats compacte (vues + CTR) + bouton CTA gradient rouge en dessous du post
+
+### Session 73 — WorkManager notifications réelles + fix crash chroniques + pub vidéo
+
+**WorkManager — notifications Firestore réelles**
+- `lib/services/workManagerService.dart` :
+  - Fréquence : `Duration(hours: 3)` → `Duration(minutes: 15)` (minimum Android), policy `replace` pour mise à jour immédiate
+  - Supprimé : `_sendAfrolookNotification()` et tous les messages statiques marketing (12 variantes)
+  - Ajouté : `_fetchAndShowUserNotifications(userId, prefs)` :
+    - Lit l'userId depuis `SharedPreferences['token']` (clé `SessionUserFirebaseService`)
+    - Si pas d'userId → skip silencieux (utilisateur non connecté)
+    - Requête Firestore `Notifications` : `where('receiver_id', isEqualTo: userId)`, limit 50
+    - Filtre client-side : `users_id_view` ne contient pas l'userId + `created_at` < 7 jours + pas dans cache local
+    - Tri client-side : plus récentes en premier
+    - Affiche max 3 notifications par run
+    - Après affichage : `arrayUnion([userId])` sur `users_id_view` Firestore + cache local `wm_shown_notif_ids`
+    - Cache local limité à 500 entrées pour éviter croissance infinie
+  - Conservé : `sendTestAfrolookNotification()` (tâche manuelle test uniquement)
+  - Résultat : 0 message static jamais envoyé — uniquement les vraies notifications Firestore de l'utilisateur
+
+**Fix RangeError crash chroniques (scroll en fin de liste)**
+- `lib/pages/chronique/chroniquedetails.dart` :
+  - **Cause** : `onPageChanged` appelait `_virtualToChronique(virtualIndex)` même pour les pages pub, retournant `_allChroniques.length` quand la dernière pub suit le dernier item → `setState(() => _currentPage = _allChroniques.length)` → crash `RangeError` à la ligne `_allChroniques[_currentPage]`
+  - **Fix 1** : `onPageChanged` ne met à jour `_currentPage` que si `!_isVirtualAd(virtualIndex)` + guard `chroniqueIdx < _allChroniques.length`
+  - **Fix 2** : clamp de sécurité `_allChroniques[_currentPage.clamp(0, _allChroniques.length - 1)]` dans `build()`
+
+**Pub vidéo — format YouTubeVideoCard + auto-play muted**
+- `lib/pages/admin/AfrolookPub/advertisement_video_widget.dart` — réécrit :
+  - Supprimé : `HomePostUsersWidget` (trop générique, sans auto-play)
+  - Ajouté : `VideoPlayerController` + `VideoPreloadManager.claimController()` (même mécanisme que le feed)
+  - Hauteur vidéo : `(screenWidth * 1.15).clamp(320.0, 500.0)` — identique à `YouTubeVideoCard._buildVideoContent()`
+  - **Auto-play muted** dès que `VisibilityDetector` détecte > 50% visible
+  - Pause automatique quand le widget sort du viewport
+  - Bouton son bas-droite (toggle mute/unmute) identique au style YouTubeVideoCard
+  - Badge SPONSORISÉ haut-droite superposé sur la vidéo
+  - Miniature (`widget.post.thumbnail`) affichée pendant le chargement
+  - Stats (vues + CTR) + bouton CTA gradient rouge conservés en dessous
+  - Container design identique à YouTubeVideoCard (même `borderRadius: 16`, `border: colors.border`)
+  - 0 erreur `flutter analyze`
+
+### Session 71 suite — Phase 3 : UnifiedFeedPage + preload splash
+- **Approche révisée** : `HomeConstPost.dart` (4000+ lignes, pagination par curseurs, timers, ads) trop complexe pour migration directe — les onglets Sport/Vibes étaient `SizedBox.shrink()` → cibles idéales
+- `lib/pages/feed/unified_feed_page.dart` créé :
+  - Prend `FeedType feedType` en paramètre
+  - `Consumer<FeedProvider>` → `FeedList` → `PostRenderer` (stack complet Phase 1-2-3)
+  - Pull-to-refresh, shimmer skeleton, état vide et erreur avec retry
+  - `AutomaticKeepAliveClientMixin` : state conservé entre onglets
+  - Expose `refreshFeed()` pour compatibilité avec le mécanisme `GlobalKey` de `homeScreen.dart`
+- `lib/pages/home/homeScreen.dart` :
+  - Tab 1 (`tabSport`) : `SizedBox.shrink()` → `UnifiedFeedPage(FeedType.sport)`
+  - Tab 2 (`tabVibe`) : `SizedBox.shrink()` → `UnifiedFeedPage(FeedType.vibes)`
+  - Tab 4 (`tabVip`) : reste `SizedBox.shrink()` (contenu premium à définir)
+  - Import `feed_repository.dart show FeedType` + `unified_feed_page.dart`
+- `lib/pages/splashChargement.dart` — `_backgroundRefresh()` étendu :
+  - `feedProvider.loadGlobalContent()` → chroniques + canaux + articles chargés pendant le splash
+  - `feedProvider.preload(FeedType.home/sport/vibes, ...)` → données disponibles avant HomeScreen
+  - Bénéfice : l'utilisateur voit les onglets Sport et Vibes instantanément dès la 1ère ouverture
 - 0 erreur `dart analyze`
 
 ---

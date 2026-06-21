@@ -1,18 +1,15 @@
 import 'dart:async';
 import 'dart:math';
-import 'package:afrotok/pages/canaux/listCanal.dart';
 import 'package:afrotok/pages/challenge/postChallengeWidget.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/home/unitePostPage/chronique_section.dart';
 import 'package:afrotok/providers/contenuPayantProvider.dart';
 import 'package:flutter/material.dart';
 import 'package:afrotok/providers/postProvider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/providers/userProvider.dart';
-import 'package:badges/badges.dart' as badges;
 import 'package:flutter/services.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 
@@ -23,13 +20,6 @@ import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../providers/sound_provider.dart';
 import '../../services/utils/abonnement_utils.dart';
-import '../../widgets/user_badge_widget.dart';
-import '../UserServices/ServiceWidget.dart';
-
-import '../admin/AfrolookPub/advertisementCarouselWidget.dart';
-import '../afroshop/marketPlace/acceuil/home_afroshop.dart';
-import '../afroshop/marketPlace/component.dart';
-
 import '../auth/authTest/Screens/updateUserData.dart';
 import '../chronique/chroniqueform.dart';
 import '../component/showUserDetails.dart';
@@ -39,11 +29,8 @@ import '../../providers/authProvider.dart';
 import 'package:shimmer/shimmer.dart';
 import '../contenuPayant/recent_vip_content_widget.dart';
 import '../dating/widgets/top_dating_profiles_widget.dart';
-import '../listeUserLikepage.dart';
 import '../postDetailsVideo.dart';
 import '../pronostics/pronostics_carousel_widget.dart';
-import '../pub/banner_ad_widget.dart';
-import '../pub/native_ad_widget.dart';
 import '../pub/rewarded_interstitial_ad_widget.dart';
 import '../user/userAbonnementPage.dart';
 import '../userPosts/postWidgets/postWidgetPage.dart';
@@ -58,7 +45,13 @@ import '../../services/postService/post_view_service.dart';
 import '../../theme/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 import '../../theme/theme_provider.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+import '../../widgets/feed/sections/feed_articles_section.dart';
+import '../../widgets/feed/sections/feed_canaux_section.dart';
+import '../../widgets/feed/sections/feed_profiles_section.dart';
+import '../../widgets/feed/sections/feed_state_widgets.dart';
+import '../../widgets/feed/sections/feed_filter_bar.dart';
+import '../../widgets/feed/sections/feed_ad_widgets.dart';
+import '../../services/feed/feed_repository.dart';
 
 
 // Constantes de couleur
@@ -111,9 +104,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   bool _isLoadingBackground = false;
 
   // Système hybride de chargement
-  DocumentSnapshot? _lastCountryDocument;
-  DocumentSnapshot? _lastAllDocument;
-  DocumentSnapshot? _lastOtherDocument;
   Set<String> _loadedPostIds = Set();
   int _totalPostsLoaded = 0;
   int _backgroundPostsLoaded = 0; // Compteur des posts chargés en background
@@ -925,9 +915,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       _posts.clear();
       _loadedPostIds.clear();
     }
-    _lastCountryDocument = null;
-    _lastAllDocument = null;
-    _lastOtherDocument = null;
     _totalPostsLoaded = 0;
     _backgroundPostsLoaded = 0;
     _hasMorePosts = true;
@@ -1711,274 +1698,88 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       String countryCode, {
         bool isInitialLoad = false,
         int limit = 5,
-      }) async
-  {
+      }) async {
     if (limit <= 0) return;
 
+    // EVENEMENT : tri spécial par eventDate — query directe conservée
+    if (widget.type == TabBarType.EVENEMENT.name) {
+      await _loadEventsByDate(loadedIds, newPosts, countryCode, limit: limit);
+      return;
+    }
+
     try {
-      print('🎯 Chargement posts pays: $countryCode - limite: $limit');
-
-      Query query = _firestore.collection('Posts');
-
-      // 🔥 FILTRE ET TRI SPÉCIAL POUR ÉVÉNEMENTS
-      if (widget.type == TabBarType.EVENEMENT.name) {
-        query = query.where("typeTabbar", isEqualTo: "EVENEMENT");
-
-        // Récupérer plus d'événements pour le tri
-        query = query.orderBy("eventDate", descending: false); // Ordre croissant = dates proches d'abord
-      } else {
-        // Comportement normal
-        if (widget.isVideoPage) {
-          query = query.where("dataType", isEqualTo: PostDataType.VIDEO.name);
-        }
-        query = query.orderBy("created_at", descending: true);
-      }
-
-      // Filtre pays
-      try {
-        query = query.where("available_countries", arrayContains: countryCode);
-      } catch (e) {
-        try {
-          query = query.where("availableCountries", arrayContains: countryCode);
-        } catch (e2) {
-          query = query.where("country", isEqualTo: countryCode);
-        }
-      }
-
-      if (!isInitialLoad && _lastCountryDocument != null && widget.type != TabBarType.EVENEMENT.name) {
-        query = query.startAfterDocument(_lastCountryDocument!);
-      }
-
-      // 1.5x au lieu de 2x : la déduplication/filtrage client (pubs, doublons)
-      // ne réduit que rarement le set de plus de moitié.
-      query = query.limit((limit * 1.5).ceil());
-
-      final snapshot = await query.get();
-
-      if (snapshot.docs.isNotEmpty && widget.type != TabBarType.EVENEMENT.name) {
-        _lastCountryDocument = snapshot.docs.last;
-      }
-
-      int added = 0;
-      List<Post> tempEvents = []; // Pour stocker temporairement les événements
-
-      for (var doc in snapshot.docs) {
-        if (added >= limit) break;
-
-        try {
-          final post = Post.fromJson(doc.data() as Map<String, dynamic>);
-          post.id = doc.id;
-
-          if (post.isAdvertisement == true) continue;
-
-          if (!loadedIds.contains(post.id) && !_loadedPostIds.contains(post.id)) {
-            post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
-            loadedIds.add(post.id!);
-            added++;
-
-            if (widget.type == TabBarType.EVENEMENT.name) {
-              // Pour les événements, on stocke temporairement
-              tempEvents.add(post);
-            } else {
-              // Comportement original
-              final now = DateTime.now().millisecondsSinceEpoch;
-              final postTime = post.createdAt ?? 0;
-              final differenceInHours = (now - postTime) ~/ (1000 * 60 * 60);
-
-              if (differenceInHours < 24) {
-                newPosts.insert(0, post);
-              } else {
-                newPosts.add(post);
-              }
-            }
-          }
-        } catch (e) {
-          print('Erreur parsing post: $e');
-        }
-      }
-
-      // 🔥 POUR ÉVÉNEMENTS : Tri spécial par date d'événement
-      if (widget.type == TabBarType.EVENEMENT.name) {
-        // Trier par eventDate (les plus proches d'abord)
-        tempEvents.sort((a, b) {
-          // Si pas de date, mettre à la fin
-          if (a.eventDate == null && b.eventDate == null) return 0;
-          if (a.eventDate == null) return 1;
-          if (b.eventDate == null) return -1;
-
-          return a.eventDate!.compareTo(b.eventDate!);
-        });
-
-        // Ajouter dans l'ordre trié
-        newPosts.addAll(tempEvents);
-
-        print('✅ ${tempEvents.length} événements triés par date (plus proches d\'abord)');
-      } else if (widget.type != TabBarType.EVENEMENT.name) {
-        // Mélange normal pour les autres types
-        final now = DateTime.now().millisecondsSinceEpoch;
-        List<Post> recentPosts = [];
-        List<Post> oldPosts = [];
-
-        for (var p in newPosts) {
-          final pTime = p.createdAt ?? 0;
-          final diffHours = (now - pTime) ~/ (1000 * 60 * 60);
-
-          if (diffHours < 24) {
-            recentPosts.add(p);
-          } else {
-            oldPosts.add(p);
-          }
-        }
-
-        recentPosts.shuffle();
-        oldPosts.shuffle();
-
-        newPosts
-          ..clear()
-          ..addAll(recentPosts)
-          ..addAll(oldPosts);
-      }
-
-      print('✅ $added posts du pays $countryCode ajoutés');
-
+      final excluded = {...loadedIds, ..._loadedPostIds};
+      final posts = await FeedRepository().fetchCountryPosts(
+        countryCode,
+        excluded,
+        limit: limit,
+        mediaType: widget.isVideoPage ? PostDataType.VIDEO.name : null,
+        tabbarType: widget.type.isNotEmpty ? widget.type : null,
+      );
+      _addFetchedToList(posts, loadedIds, newPosts, limit);
     } catch (e) {
       print('❌ Erreur chargement pays $countryCode: $e');
     }
   }
-  Future<void> _loadCountrySpecificPosts2(
+
+  /// Query directe Firestore pour les événements (tri par eventDate requis).
+  Future<void> _loadEventsByDate(
       Set<String> loadedIds,
       List<Post> newPosts,
       String countryCode, {
-        bool isInitialLoad = false,
         int limit = 5,
-      }) async
-  {
-    if (limit <= 0) return;
-
+      }) async {
     try {
-      print('🎯 Chargement posts pays: $countryCode - limite: $limit');
-
-      Query query = _firestore.collection('Posts');
-
-      // Essayer différents noms de champs
-      try {
+      Query query = _firestore
+          .collection('Posts')
+          .where("typeTabbar", isEqualTo: "EVENEMENT")
+          .orderBy("eventDate", descending: false);
+      if (countryCode.isNotEmpty) {
         query = query.where("available_countries", arrayContains: countryCode);
-      } catch (e) {
-        try {
-          query = query.where("availableCountries", arrayContains: countryCode);
-        } catch (e2) {
-          query = query.where("country", isEqualTo: countryCode);
-        }
       }
-
-      // 🔥 AJOUT : filtre vidéo si nécessaire
-      if (widget.isVideoPage) {
-        query = query.where("dataType", isEqualTo: PostDataType.VIDEO.name);
-      }
-// 🔹 Filtrer uniquement les posts non publicitaires
-//       query = query.where("isAdvertisement", isEqualTo: false);
-      query = query.orderBy("created_at", descending: true);
-
-      if (!isInitialLoad && _lastCountryDocument != null) {
-        query = query.startAfterDocument(_lastCountryDocument!);
-      }
-
-      // 1.5x au lieu de 2x : la déduplication/filtrage client (pubs, doublons)
-      // ne réduit que rarement le set de plus de moitié.
       query = query.limit((limit * 1.5).ceil());
-
       final snapshot = await query.get();
-
-      if (snapshot.docs.isNotEmpty) {
-        _lastCountryDocument = snapshot.docs.last;
-      }
-
-      int added = 0;
-      for (var doc in snapshot.docs) {
-        if (added >= limit) break;
-
+      final tempEvents = <Post>[];
+      for (final doc in snapshot.docs) {
+        if (tempEvents.length >= limit) break;
         try {
           final post = Post.fromJson(doc.data() as Map<String, dynamic>);
           post.id = doc.id;
-
-          // ❌ Ignorer les pubs
           if (post.isAdvertisement == true) continue;
-
-          if (!loadedIds.contains(post.id) && !_loadedPostIds.contains(post.id)) {
-            post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
-            loadedIds.add(post.id!);
-            added++;
-
-            // Séparer récents et anciens
-            final now = DateTime.now().millisecondsSinceEpoch;
-            final postTime = post.createdAt ?? 0;
-            final differenceInHours = (now - postTime) ~/ (1000 * 60 * 60);
-
-            if (differenceInHours < 24) {
-              // Post récent (<24h) -> reste en tête
-              newPosts.insert(0, post);
-            } else {
-              // Post ancien -> ajouter à la fin
-              newPosts.add(post);
-            }
-          }
-        } catch (e) {
-          print('Erreur parsing post: $e');
-        }
+          if (loadedIds.contains(post.id) || _loadedPostIds.contains(post.id)) continue;
+          post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
+          loadedIds.add(post.id!);
+          tempEvents.add(post);
+        } catch (_) {}
       }
-
-// 🔀 Mélange séparé après ajout de tous les posts
-      final now = DateTime.now().millisecondsSinceEpoch;
-      List<Post> recentPosts = [];
-      List<Post> oldPosts = [];
-
-      for (var p in newPosts) {
-        final pTime = p.createdAt ?? 0;
-        final diffHours = (now - pTime) ~/ (1000 * 60 * 60);
-
-        if (diffHours < 24) {
-          recentPosts.add(p);
-        } else {
-          oldPosts.add(p);
-        }
-      }
-
-// Mélanger chaque groupe
-      recentPosts.shuffle();
-      oldPosts.shuffle();
-
-// Recomposer la liste finale
-      newPosts
-        ..clear()
-        ..addAll(recentPosts)
-        ..addAll(oldPosts);
-      // for (var doc in snapshot.docs) {
-      //   if (added >= limit) break;
-      //
-      //   try {
-      //     final post = Post.fromJson(doc.data() as Map<String, dynamic>);
-      //     post.id = doc.id;
-      //
-      //     if (!loadedIds.contains(post.id) && !_loadedPostIds.contains(post.id)) {
-      //       post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
-      //       newPosts.add(post);
-      //       loadedIds.add(post.id!);
-      //       added++;
-      //       newPosts.shuffle();
-      //
-      //     }
-      //   } catch (e) {
-      //     print('Erreur parsing post: $e');
-      //   }
-      // }
-
-      print('✅ $added posts du pays $countryCode ajoutés');
-
+      tempEvents.sort((a, b) {
+        if (a.eventDate == null && b.eventDate == null) return 0;
+        if (a.eventDate == null) return 1;
+        if (b.eventDate == null) return -1;
+        return a.eventDate!.compareTo(b.eventDate!);
+      });
+      newPosts.addAll(tempEvents);
     } catch (e) {
-      print('❌ Erreur chargement pays $countryCode: $e');
+      print('❌ Erreur chargement événements: $e');
     }
   }
 
+  /// Ajoute les posts récupérés à [newPosts] avec dédup et mélange final.
+  void _addFetchedToList(
+      List<Post> fetched, Set<String> loadedIds, List<Post> newPosts, int limit) {
+    int added = 0;
+    for (final post in fetched) {
+      if (added >= limit) break;
+      if (post.id == null) continue;
+      if (loadedIds.contains(post.id) || _loadedPostIds.contains(post.id)) continue;
+      if (post.isAdvertisement == true) continue;
+      post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
+      loadedIds.add(post.id!);
+      newPosts.add(post);
+      added++;
+    }
+    if (newPosts.length > 1) newPosts.shuffle();
+  }
   Future<void> _loadAllCountriesPosts(
       Set<String> loadedIds,
       List<Post> newPosts, {
@@ -1986,91 +1787,15 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         int limit = 5,
       }) async {
     if (limit <= 0) return;
-
     try {
-      print('🌐 Chargement posts ALL - limite: $limit');
-
-      Query query = _firestore.collection('Posts')
-          // .where("isAdvertisement", isEqualTo: false) // jamais récupérer les pubs
-          .orderBy("created_at", descending: true);
-      if (widget.isVideoPage) {
-        query = query.where("dataType", isEqualTo: PostDataType.VIDEO.name);
-      }
-      if (!isInitialLoad && _lastAllDocument != null) {
-        query = query.startAfterDocument(_lastAllDocument!);
-      }
-
-      // 1.5x au lieu de 2x : la déduplication/filtrage client (pubs, doublons)
-      // ne réduit que rarement le set de plus de moitié.
-      query = query.limit((limit * 1.5).ceil());
-
-      final snapshot = await query.get();
-
-      if (snapshot.docs.isNotEmpty) {
-        _lastAllDocument = snapshot.docs.last;
-      }
-
-      int added = 0;
-
-      for (var doc in snapshot.docs) {
-        if (added >= limit) break;
-
-        try {
-          final post = Post.fromJson(doc.data() as Map<String, dynamic>);
-          post.id = doc.id;
-
-          // ❌ Ne pas ajouter si déjà chargé
-          if (loadedIds.contains(post.id) || _loadedPostIds.contains(post.id)) continue;
-
-          // ❌ Ne jamais ajouter une pub même si le champ manquait
-          if (post.isAdvertisement == true) continue;
-
-          post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
-          loadedIds.add(post.id!);
-          added++;
-
-          // 🔹 Séparer récents et anciens
-          final now = DateTime.now().millisecondsSinceEpoch;
-          final postTime = post.createdAt ?? 0;
-          final differenceInHours = (now - postTime) ~/ (1000 * 60 * 60);
-
-          if (differenceInHours < 24) {
-            newPosts.insert(0, post); // récent <24h en tête
-          } else {
-            newPosts.add(post); // ancien
-          }
-
-        } catch (e) {
-          print('Erreur parsing post: $e');
-        }
-      }
-
-      // 🔀 Mélange séparé des récents et anciens
-      final now = DateTime.now().millisecondsSinceEpoch;
-      List<Post> recentPosts = [];
-      List<Post> oldPosts = [];
-
-      for (var p in newPosts) {
-        final pTime = p.createdAt ?? 0;
-        final diffHours = (now - pTime) ~/ (1000 * 60 * 60);
-
-        if (diffHours < 24) {
-          recentPosts.add(p);
-        } else {
-          oldPosts.add(p);
-        }
-      }
-
-      recentPosts.shuffle();
-      oldPosts.shuffle();
-
-      newPosts
-        ..clear()
-        ..addAll(recentPosts)
-        ..addAll(oldPosts);
-
-      print('✅ $added posts ALL ajoutés');
-
+      final excluded = {...loadedIds, ..._loadedPostIds};
+      final posts = await FeedRepository().fetchRecentPosts(
+        excluded,
+        limit: limit,
+        mediaType: widget.isVideoPage ? PostDataType.VIDEO.name : null,
+        tabbarType: widget.type.isNotEmpty ? widget.type : null,
+      );
+      _addFetchedToList(posts, loadedIds, newPosts, limit);
     } catch (e) {
       print('❌ Erreur chargement posts ALL: $e');
     }
@@ -2081,174 +1806,22 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         required String excludeCountry,
         bool isInitialLoad = false,
         int limit = 5,
-      })
-  async {
+      }) async {
     if (limit <= 0) return;
-
     try {
-      print('🌍 Chargement autres pays (exclure: $excludeCountry) - limite: $limit');
-
-      // 🔹 Base query
-      Query query = _firestore.collection('Posts')
-          .orderBy("created_at", descending: true);
-          // .where("isAdvertisement", isEqualTo: false); // jamais récupérer les pubs
-      if (widget.isVideoPage) {
-        query = query.where("dataType", isEqualTo: PostDataType.VIDEO.name);
-      }
-      if (!isInitialLoad && _lastOtherDocument != null) {
-        query = query.startAfterDocument(_lastOtherDocument!);
-      }
-
-      query = query.limit(limit * 4);
-
-      final snapshot = await query.get();
-
-      if (snapshot.docs.isNotEmpty) {
-        _lastOtherDocument = snapshot.docs.last;
-      }
-
-      int added = 0;
-
-      for (var doc in snapshot.docs) {
-        if (added >= limit) break;
-
-        try {
-          final post = Post.fromJson(doc.data() as Map<String, dynamic>);
-          post.id = doc.id;
-
-          // ❌ Ne pas ajouter si déjà chargé
-          if (loadedIds.contains(post.id) || _loadedPostIds.contains(post.id)) continue;
-
-          // ❌ Ne jamais ajouter une pub même si le champ manquait
-          if (post.isAdvertisement == true) continue;
-
-          // ❌ Filtrer le pays exclu
-          if (post.availableCountries.contains(excludeCountry)) continue;
-
-          post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
-          loadedIds.add(post.id!);
-          added++;
-
-          // 🔹 Séparer récents et anciens
-          final now = DateTime.now().millisecondsSinceEpoch;
-          final postTime = post.createdAt ?? 0;
-          final differenceInHours = (now - postTime) ~/ (1000 * 60 * 60);
-
-          if (differenceInHours < 24) {
-            newPosts.insert(0, post); // récent <24h en tête
-          } else {
-            newPosts.add(post); // ancien
-          }
-
-        } catch (e) {
-          print('Erreur parsing post: $e');
-        }
-      }
-
-      // 🔀 Mélange séparé des récents et anciens
-      final now = DateTime.now().millisecondsSinceEpoch;
-      List<Post> recentPosts = [];
-      List<Post> oldPosts = [];
-
-      for (var p in newPosts) {
-        final pTime = p.createdAt ?? 0;
-        final diffHours = (now - pTime) ~/ (1000 * 60 * 60);
-
-        if (diffHours < 24) {
-          recentPosts.add(p);
-        } else {
-          oldPosts.add(p);
-        }
-      }
-
-      recentPosts.shuffle();
-      oldPosts.shuffle();
-
-      newPosts
-        ..clear()
-        ..addAll(recentPosts)
-        ..addAll(oldPosts);
-
-      print('✅ $added posts autres pays ajoutés');
-
+      final excluded = {...loadedIds, ..._loadedPostIds};
+      final posts = await FeedRepository().fetchOtherCountriesPosts(
+        excludeCountry,
+        excluded,
+        limit: limit,
+        mediaType: widget.isVideoPage ? PostDataType.VIDEO.name : null,
+        tabbarType: widget.type.isNotEmpty ? widget.type : null,
+      );
+      _addFetchedToList(posts, loadedIds, newPosts, limit);
     } catch (e) {
       print('❌ Erreur chargement autres pays: $e');
     }
   }
-  // Future<void> _loadOtherCountriesPosts(
-  //     Set<String> loadedIds,
-  //     List<Post> newPosts, {
-  //       required String excludeCountry,
-  //       bool isInitialLoad = false,
-  //       int limit = 5,
-  //     }) async
-  // {
-  //   if (limit <= 0) return;
-  //
-  //   try {
-  //     print('🌍 Chargement autres pays (exclure: $excludeCountry) - limite: $limit');
-  //
-  //     Query query = _firestore.collection('Posts')
-  //         .orderBy("created_at", descending: true);
-  //
-  //     if (!isInitialLoad && _lastOtherDocument != null) {
-  //       query = query.startAfterDocument(_lastOtherDocument!);
-  //     }
-  //
-  //     query = query.limit(limit * 4);
-  //
-  //     final snapshot = await query.get();
-  //
-  //     if (snapshot.docs.isNotEmpty) {
-  //       _lastOtherDocument = snapshot.docs.last;
-  //     }
-  //
-  //     int added = 0;
-  //     for (var doc in snapshot.docs) {
-  //       if (added >= limit) break;
-  //
-  //       try {
-  //         final post = Post.fromJson(doc.data() as Map<String, dynamic>);
-  //         post.id = doc.id;
-  //
-  //         if (loadedIds.contains(post.id) || _loadedPostIds.contains(post.id)) {
-  //           continue;
-  //         }
-  //
-  //         // Filtrer manuellement
-  //         bool isExcluded = false;
-  //
-  //         // if (post.availableCountries.contains(excludeCountry)) {
-  //         //   isExcluded = true;
-  //         // }
-  //         //
-  //         // if (post.availableCountries.contains("ALL")) {
-  //         //   isExcluded = true;
-  //         // }
-  //         //
-  //         // if (post.availableCountries.isEmpty) {
-  //         //   isExcluded = true;
-  //         // }
-  //
-  //         if (!isExcluded) {
-  //           post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
-  //           newPosts.add(post);
-  //           loadedIds.add(post.id!);
-  //           added++;
-  //           newPosts.shuffle();
-  //
-  //         }
-  //       } catch (e) {
-  //         print('Erreur parsing post: $e');
-  //       }
-  //     }
-  //
-  //     print('✅ $added posts autres pays ajoutés');
-  //
-  //   } catch (e) {
-  //     print('❌ Erreur chargement autres pays: $e');
-  //   }
-  // }
 
   // ===========================================================================
   // PAGINATION - CHARGEMENT MANUEL (Après les 20 posts background)
@@ -2507,49 +2080,18 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
   Future<void> _loadChroniquesInBackground() async {
     if (_isLoadingChroniques) return;
-
-    setState(() {
-      _isLoadingChroniques = true;
-    });
-
+    setState(() => _isLoadingChroniques = true);
     try {
-      final snapshot = await _firestore.collection('chroniques')
-          .orderBy('createdAt', descending: true)
-          .limit(6)
-          .get();
-
-      final now = DateTime.now();
-      final List<Chronique> validChroniques = [];
-
-      for (final doc in snapshot.docs) {
-        try {
-          final chronique = Chronique.fromMap(doc.data(), doc.id);
-          if (!chronique.isExpired) {
-            validChroniques.add(chronique);
-          }
-        } catch (e) {
-          print('❌ Erreur parsing chronique: $e');
-        }
-      }
-
-      setState(() {
-        _chroniques = validChroniques;
-      });
-
-      // Charger les données utilisateurs en arrière-plan
+      final validChroniques = await FeedRepository().fetchChroniques(limit: 6);
+      setState(() => _chroniques = validChroniques);
       if (validChroniques.isNotEmpty) {
         await _loadChroniqueUserDataInBackground(validChroniques);
       }
-
-      // 🔥 Mettre à jour le cache local (chroniques + auteurs résolus)
       _saveFeedToCache();
-
     } catch (e) {
       print('❌ Erreur chargement chroniques: $e');
     } finally {
-      setState(() {
-        _isLoadingChroniques = false;
-      });
+      setState(() => _isLoadingChroniques = false);
     }
   }
 
@@ -2713,74 +2255,12 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   // ===========================================================================
 
   Widget _buildFilterChips() {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            _buildFilterChip(
-              label: '🌍 Tous',
-              isSelected: _currentFilter == 'ALL',
-              color: primaryGreen,
-              onTap: () => _applyFilter(filterType: 'ALL', countryCode: null),
-            ),
-            SizedBox(width: 8),
-            if (_selectedCountryCode != null)
-              _buildFilterChip(
-                label: '📍Mon pays ${_selectedCountryCode}',
-                isSelected: _currentFilter == 'COUNTRY',
-                color: Colors.blue,
-                onTap: () => _applyFilter(filterType: 'COUNTRY', countryCode: _selectedCountryCode),
-              ),
-            if (_selectedCountryCode != null) SizedBox(width: 8),
-            if (_selectedCountryCode != null)
-              _buildFilterChip(
-                label: '🔄 Mix',
-                isSelected: _currentFilter == 'MIXED',
-                color: Colors.purple,
-                onTap: () => _applyFilter(filterType: 'MIXED', countryCode: _selectedCountryCode),
-              ),
-            SizedBox(width: 8),
-            _buildFilterChip(
-              label: '⚙️ Autre',
-              isSelected: _currentFilter == 'CUSTOM',
-              color: Colors.orange,
-              onTap: _showCountryFilterModal,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFilterChip({
-    required String label,
-    required bool isSelected,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected ? color : Colors.grey[800],
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? Colors.white : Colors.transparent,
-            width: 1,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : Colors.grey[300],
-            fontWeight: FontWeight.w500,
-            fontSize: 11,
-          ),
-        ),
-      ),
+    return FeedFilterBar(
+      currentFilter: _currentFilter,
+      selectedCountryCode: _selectedCountryCode,
+      onApplyFilter: ({required String filterType, String? countryCode}) =>
+          _applyFilter(filterType: filterType, countryCode: countryCode),
+      onShowCountryModal: _showCountryFilterModal,
     );
   }
 
@@ -2820,205 +2300,21 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
   Widget _buildProfilesSection() {
     final l10n = AppLocalizations.of(context);
-    if (_isLoadingSuggestedUsers) {
-      return _buildLoadingSection(l10n.sectionDiscoverProfiles);
-    }
-
-    if (_suggestedUsers.isEmpty) {
-      return SizedBox.shrink();
-    }
-
-    double height = MediaQuery.of(context).size.height;
-    double width = MediaQuery.of(context).size.width;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  l10n.sectionDiscoverProfiles,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.of(context).textPrimary,
-                  ),
-                ),
-              ),
-              Container(
-                height: 32,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFFFFD700), Color(0xFF8B0000)],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => UsersListPage(),
-                      ),
-                    );
-                  },
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(l10n.commonSeeAll, style: TextStyle(color: Colors.white, fontSize: 11)),
-                      SizedBox(width: 4),
-                      Icon(Icons.arrow_forward, color: Colors.white, size: 12),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(
-          height: height * 0.25,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: _suggestedUsers.length,
-            itemBuilder: (context, index) => Container(
-              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              width: width * 0.35,
-              child: _buildProfileCard(_suggestedUsers[index], width, height),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildProfileCard(UserData user, double width, double height) {
-    final colors = AppColors.of(context);
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.surfaceVariant,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.primary.withOpacity(0.25)),
-      ),
-      child: Column(
-        children: [
-          GestureDetector(
-            onTap: () => _showUserDetails(user),
-            child: Stack(
-              alignment: Alignment.bottomCenter,
-              children: [
-                Container(
-                  width: width * 0.4,
-                  height: height * 0.18,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(12),
-                      topRight: Radius.circular(12),
-                    ),
-                    child: CachedNetworkImage(
-                      fit: BoxFit.cover,
-                      imageUrl: user.imageUrl ?? '',
-                      placeholder: (context, url) => Container(
-                        color: colors.surfaceVariant,
-                        child: Center(child: CircularProgressIndicator(color: colors.primary)),
-                      ),
-                      errorWidget: (context, url, error) => Container(
-                        color: colors.surfaceVariant,
-                        child: Icon(Icons.person, color: colors.textSecondary),
-                      ),
-                    ),
-                  ),
-                ),
-                Container(
-                  width: width * 0.4,
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.black87, Colors.transparent],
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              '@${user.pseudo?.replaceAll("@", "") ?? "user"}',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ),
-                          UserBadgeWidget(user: user, size: 12),
-                        ],
-                      ),
-                      SizedBox(height: 2),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.group, size: 9, color: colors.accent),
-                              SizedBox(width: 2),
-                              Text(
-                                _formatNumber(user.userAbonnesIds?.length ?? 0),
-                                style: TextStyle(
-                                  color: colors.accent,
-                                  fontSize: 9,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            width: double.infinity,
-            height: 30,
-            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            child: ElevatedButton(
-              onPressed: () => _showUserDetails(user),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primaryGreen,
-                foregroundColor: darkBackground,
-                padding: EdgeInsets.symmetric(vertical: 4),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: Text(
-                'S\'abonner',
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
-        ],
-      ),
+    return FeedProfilesSection(
+      users: _suggestedUsers,
+      isLoading: _isLoadingSuggestedUsers,
+      title: l10n.sectionDiscoverProfiles,
+      seeAllLabel: l10n.commonSeeAll,
+      onShowProfile: _showUserDetails,
     );
   }
 
   void _showUserDetails(UserData user) async {
     final users = await authProvider.getUserById(user.id!);
     if (users.isNotEmpty && mounted) {
-      // Utiliser votre fonction showUserDetailsModalDialog
-     double  width = MediaQuery.of(context).size.width;
-     double height = MediaQuery.of(context).size.height;
-      showUserDetailsModalDialog(users.first, width, height, context);
+      final w = MediaQuery.of(context).size.width;
+      final h = MediaQuery.of(context).size.height;
+      showUserDetailsModalDialog(users.first, w, h, context);
     }
   }
 
@@ -3028,66 +2324,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
   Widget _buildArticlesSection() {
     final l10n = AppLocalizations.of(context);
-    if (_isLoadingArticles) {
-      return _buildLoadingSection(l10n.sectionBoostedProducts);
-    }
-
-    if (_articles.isEmpty) {
-      return SizedBox.shrink();
-    }
-
-    double height = MediaQuery.of(context).size.height;
-    double width = MediaQuery.of(context).size.width;
-
-    final colors = AppColors.of(context);
-    return Container(
-      margin: EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(l10n.sectionBoostedProducts,
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: colors.textPrimary)),
-                GestureDetector(
-                  onTap: () => Navigator.push(context,
-                      MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: ''))),
-                  child: Row(
-                    children: [
-                      Text(l10n.sectionBoutiques, style: TextStyle(color: primaryGreen, fontWeight: FontWeight.bold, fontSize: 12)),
-                      SizedBox(width: 4),
-                      Icon(Icons.arrow_forward, color: primaryGreen, size: 14),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(
-            height: height * 0.22,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _articles.length,
-              itemBuilder: (context, index) => Container(
-                margin: EdgeInsets.symmetric(horizontal: 8),
-                width: width * 0.55,
-                child: ProductWidget(
-                  article: _articles[index],
-                  width: width * 0.55,
-                  height: height * 0.22,
-                  isOtherPage: true,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+    return FeedArticlesSection(
+      articles: _articles,
+      isLoading: _isLoadingArticles,
+      title: l10n.sectionBoostedProducts,
+      seeMoreLabel: l10n.sectionBoutiques,
     );
   }
 
@@ -3097,107 +2338,15 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
   Widget _buildCanauxSection() {
     final l10n = AppLocalizations.of(context);
-    if (_isLoadingCanaux) {
-      return _buildLoadingSection(l10n.sectionAfrolookCanal);
-    }
-
-    if (_canaux.isEmpty) {
-      return SizedBox.shrink();
-    }
-
-    double height = MediaQuery.of(context).size.height;
-    double width = MediaQuery.of(context).size.width;
-
-    final colors = AppColors.of(context);
-    return Container(
-      margin: EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(l10n.sectionAfrolookCanal,
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green)),
-                GestureDetector(
-                  onTap: () => Navigator.push(context,
-                      MaterialPageRoute(builder: (context) => CanalListPage(isUserCanals: false))),
-                  child: Row(
-                    children: [
-                      Text(l10n.vipSeeMore, style: TextStyle(color: primaryGreen, fontWeight: FontWeight.bold, fontSize: 12)),
-                      SizedBox(width: 4),
-                      Icon(Icons.arrow_forward, color: primaryGreen, size: 14),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(
-            height: height * 0.22,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _canaux.length,
-              itemBuilder: (context, index) => Container(
-                margin: EdgeInsets.symmetric(horizontal: 2),
-                width: width * 0.28,
-                child: channelWidget(
-                  _canaux[index],
-                  height * 0.25,
-                  width * 0.3,
-                  context,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+    return FeedCanauxSection(
+      canaux: _canaux,
+      isLoading: _isLoadingCanaux,
+      title: l10n.sectionAfrolookCanal,
+      seeMoreLabel: l10n.vipSeeMore,
     );
   }
 
-  Widget _buildLoadingSection(String title) {
-    return Container(
-        margin: EdgeInsets.symmetric(vertical: 8),
-    decoration: BoxDecoration(
-    color: darkBackground,
-    borderRadius: BorderRadius.circular(12),
-    ),
-    child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-    Padding(
-    padding: EdgeInsets.all(12),
-    child: Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: [
-    Text(
-    title,
-    style: TextStyle(
-    color: textColor,
-    fontSize: 16,
-    fontWeight: FontWeight.bold,
-    ),
-    ),
-    SizedBox(
-    width: 18,
-    height: 18,
-    child: CircularProgressIndicator(
-    strokeWidth: 2,
-    color: primaryGreen,
-    ),
-    ),
-    ],
-    ),
-    ),
-    SizedBox(height: 8),
-    ],
-    ));
-  }
+  Widget _buildLoadingSection(String title) => FeedSectionLoader(title: title);
 
   // ===========================================================================
   // CONTENU PRINCIPAL
@@ -3645,69 +2794,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   }
 
   // 🎯 Widget pour afficher une bannière AdMob
-  Widget _buildAdBanner({required String key}) {
-    // return SizedBox.shrink();
-
-    return Container(
-      key: ValueKey(key),
-      margin: EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.transparent),
-      ),
-      // child: NativeAdWidget(
-      //   key: ValueKey(key),
-      //   // templateType: TemplateType.small, // ou TemplateType.small
-      //
-      //   onAdLoaded: () {
-      //     print('✅ Native Ad Afrolook chargée: $key');
-      //   },
-      // ),
-      child: BannerAdWidget(
-        onAdLoaded: () {
-          print('✅ Bannière Afrolook chargée: $key');
-        },
-      ),
-    );
-  }
-  Widget _buildAdMrec({required String key}) {
-    // return SizedBox.shrink();
-
-    return Container(
-      key: ValueKey(key),
-      margin: EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.transparent),
-      ),
-      child: MrecAdWidget(
-        key: ValueKey(key),
-        // templateType: TemplateType.medium, // ou TemplateType.small
-
-        onAdLoaded: () {
-          print('✅ Native Ad Afrolook chargée: $key');
-        },
-      ),
-      // child: BannerAdWidget(
-      //   onAdLoaded: () {
-      //     print('✅ Bannière Afrolook chargée: $key');
-      //   },
-      // ),
-    );
-  }
-  Widget _buildAdAdvertisement({required String key}) {
-    // return SizedBox.shrink();
-    final height = MediaQuery.of(context).size.height;
-    final width = MediaQuery.of(context).size.width;
-    return  AdvertisementCarouselWidget(
-      height: height,
-      width: width,
-      // autoPlayDuration: Duration(seconds: 5),
-      showIndicators: true,
-    );
-  }
+  Widget _buildAdBanner({required String key}) => FeedAdBanner(adKey: key);
+  Widget _buildAdMrec({required String key}) => FeedAdMrec(adKey: key);
+  Widget _buildAdAdvertisement({required String key}) => FeedAdCarousel(adKey: key);
   String _getEndMessage() {
     switch (_currentFilter) {
       case 'ALL':

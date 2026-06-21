@@ -19,8 +19,14 @@ FlutterLocalNotificationsPlugin();
 const String afrolookTask = "afrolookTask";
 const String afrolookTestTask = "afrolookTestTask";
 
-/// Heures EXACTES de notifications (4 fois / jour)
-const List<int> notificationHours = [9, 12, 18, 21];
+/// Clé SharedPreferences où SessionUserFirebaseService stocke l'userId
+const String _sessionTokenKey = 'token';
+
+/// Clé locale pour éviter de re-montrer des notifs déjà affichées
+const String _shownNotifIdsKey = 'wm_shown_notif_ids';
+
+/// Nombre max de notifications affichées par run WorkManager
+const int _maxNotifsPerRun = 3;
 
 /// =======================================================
 /// WORKMANAGER CALLBACK
@@ -30,15 +36,27 @@ const List<int> notificationHours = [9, 12, 18, 21];
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
     try {
-      print('WORKMANAGER EXECUTÉ: $task à ${DateTime.now()}');
+      debugPrint('WORKMANAGER EXECUTÉ: $task à ${DateTime.now()}');
 
       WidgetsFlutterBinding.ensureInitialized();
       await Firebase.initializeApp();
+
       if (task == afrolookTestTask) {
         printVm('registerOneOffTask est lancé ...');
         await sendTestAfrolookNotification();
+        return true;
       }
-      await _handleAfrolookNotification();
+
+      // Récupère l'userId de la session active
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString(_sessionTokenKey);
+
+      if (userId == null || userId.isEmpty) {
+        debugPrint('⏭ WorkManager: aucun utilisateur connecté, skip');
+        return true;
+      }
+
+      await _fetchAndShowUserNotifications(userId, prefs);
       return true;
     } catch (e, stack) {
       debugPrint("❌ WorkManager error: $e");
@@ -61,148 +79,96 @@ Future<void> registerAfrolookWorkManager() async {
   await Workmanager().registerPeriodicTask(
     afrolookTask,
     afrolookTask,
-    frequency: const Duration(hours: 3),
+    frequency: const Duration(minutes: 15),
     initialDelay: const Duration(seconds: 10),
-    existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
+    existingWorkPolicy: ExistingPeriodicWorkPolicy.replace,
   );
 }
 
 /// =======================================================
-/// CORE LOGIC (4x / DAY GUARANTEED)
+/// CORE LOGIC — Notifications Firestore de l'utilisateur
 /// =======================================================
 
-Future<void> _handleAfrolookNotification() async {
-  final prefs = await SharedPreferences.getInstance();
-  final now = DateTime.now();
+/// Récupère les notifications non vues de [userId] depuis Firestore,
+/// affiche jusqu'à [_maxNotifsPerRun] notifications locales,
+/// puis marque chacune comme vue (users_id_view + cache local).
+Future<void> _fetchAndShowUserNotifications(
+  String userId,
+  SharedPreferences prefs,
+) async {
+  final firestore = FirebaseFirestore.instance;
 
-  // final int? hourToNotify = _getValidHour(now, prefs);
-  //
-  // if (hourToNotify == null) {
-  //   debugPrint("⏭ No notification for this slot");
-  //   return;
-  // }
+  // Cache local des IDs déjà affichés (backup si l'update Firestore échoue)
+  final shownIds = (prefs.getStringList(_shownNotifIdsKey) ?? []).toSet();
 
-  await _sendAfrolookNotification();
-  //
-  // final key = _buildDailyKey(now, hourToNotify);
-  // await prefs.setBool(key, true);
-}
+  // Notifications destinées à cet utilisateur (requête simple, 1 seul where = pas d'index composite)
+  final sinceMs = DateTime.now().subtract(const Duration(days: 7)).millisecondsSinceEpoch;
+  QuerySnapshot snapshot;
+  try {
+    snapshot = await firestore
+        .collection('Notifications')
+        .where('receiver_id', isEqualTo: userId)
+        .limit(50)
+        .get();
+  } catch (e) {
+    debugPrint('❌ WorkManager Firestore query error: $e');
+    return;
+  }
 
-/// =======================================================
-/// TIME CONTROL
-/// =======================================================
+  // Filtre côté client : non vues + moins de 7 jours + pas encore affichées localement
+  final unread = snapshot.docs.where((doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    final notifId = (data['id'] as String?) ?? doc.id;
+    if (shownIds.contains(notifId)) return false;
+    final viewers = List<String>.from(data['users_id_view'] ?? []);
+    if (viewers.contains(userId)) return false;
+    final createdAt = (data['created_at'] as int?) ?? 0;
+    return createdAt > sinceMs;
+  }).toList()
 
-int? _getValidHour(DateTime now, SharedPreferences prefs) {
-  for (final hour in notificationHours) {
-    if (now.hour == hour) {
-      final key = _buildDailyKey(now, hour);
-      if (!prefs.containsKey(key)) {
-        return hour;
-      }
+  // Tri côté client : plus récentes en premier
+  ..sort((a, b) {
+    final aTs = ((a.data() as Map)['created_at'] as int?) ?? 0;
+    final bTs = ((b.data() as Map)['created_at'] as int?) ?? 0;
+    return bTs.compareTo(aTs);
+  });
+
+  if (unread.isEmpty) {
+    debugPrint('⏭ WorkManager: aucune nouvelle notification pour $userId');
+    return;
+  }
+
+  final toShow = unread.take(_maxNotifsPerRun).toList();
+  final newShownIds = <String>[];
+
+  for (final doc in toShow) {
+    final data = doc.data() as Map<String, dynamic>;
+    final notifId = (data['id'] as String?) ?? doc.id;
+    final titre = (data['titre'] as String?)?.isNotEmpty == true
+        ? data['titre'] as String
+        : 'Afrolook';
+    final description = (data['description'] as String?) ?? '';
+
+    await _showNotification(title: titre, body: description);
+
+    // Marquer comme vu dans Firestore
+    try {
+      await doc.reference.update({
+        'users_id_view': FieldValue.arrayUnion([userId]),
+      });
+    } catch (e) {
+      debugPrint('⚠️ WorkManager: impossible de marquer la notif $notifId: $e');
     }
-  }
-  return null;
-}
 
-String _buildDailyKey(DateTime now, int hour) {
-  return "afrolook_${now.year}_${now.month}_${now.day}_$hour";
-}
-
-/// =======================================================
-/// NOTIFICATION CONTENT
-/// =======================================================
-
-
-Future<void> _sendAfrolookNotification() async {
-  final random = Random();
-  final prefs = await SharedPreferences.getInstance();
-
-  final countries = [
-    "Togo", "Bénin", "Sénégal", "Côte d'Ivoire", "Cameroun", "Burkina Faso",
-    "Mali", "Gabon", "Ghana", "Nigeria", "Rwanda", "Kenya", "Afrique du Sud",
-    "Égypte", "Maroc", "Tunisie", "Algérie", "Maurice", "Sierra Leone",
-    "Guinée", "Libéria", "Congo", "RD Congo", "Mozambique", "Zambie",
-    "Zimbabwe", "Ouganda", "Tanzanie", "Éthiopie", "Namibie"
-  ];
-
-  final amounts = [
-    "10 000", "20 000", "30 000", "50 000", "75 000", "100 000", "150 000", "200 000"
-  ];
-
-  final List<Map<String, String>> notifications = [
-    {
-      "title": "🔥 Afrolook s’anime",
-      "body": "Des contenus africains explosent en ce moment. Connecte-toi !"
-    },
-    {
-      "title": "💰 Ton contenu a de la valeur",
-      "body": "Sur Afrolook, certains gagnent plus de {amount} FCFA par semaine"
-    },
-    {
-      "title": "📺 Live gratuit",
-      "body": "Lance ou regarde des lives sans abonnement, partout en Afrique"
-    },
-    {
-      "title": "🌍 Actu africaine",
-      "body": "Les infos de {country} font le buzz aujourd’hui"
-    },
-    {
-      "title": "🚀 Crée ton média",
-      "body": "Canaux, pages et contenus premium sont monétisables maintenant"
-    },
-    {
-      "title": "✨ Tu es différent",
-      "body": "Ton style mérite visibilité et reconnaissance sur toute l’Afrique"
-    },
-    {
-      "title": "📈 Popularité en hausse",
-      "body": "Les profils actifs gagnent visibilité et revenus rapidement"
-    },
-    {
-      "title": "🛍 Vends ton contenu",
-      "body": "Photos, vidéos, infos : transforme ton talent en argent"
-    },
-    {
-      "title": "🎉 Buzz du jour",
-      "body": "Le contenu de {country} fait le buzz sur Afrolook !"
-    },
-    {
-      "title": "🏆 Deviens célèbre",
-      "body": "Les créateurs africains montent en flèche grâce à leur contenu"
-    },
-    {
-      "title": "💎 Contenu premium",
-      "body": "Les utilisateurs paient pour accéder à tes contenus exclusifs"
-    },
-    {
-      "title": "📢 Notifications instant",
-      "body": "Reste au courant des tendances de {country} dès maintenant"
-    },
-  ];
-
-  // ✅ Éviter répétition jusqu'à ce que tous les messages aient été montrés
-  final shown = prefs.getStringList("afrolookShown") ?? [];
-  List<Map<String, String>> remaining =
-  notifications.where((n) => !shown.contains(n['title'])).toList();
-
-  if (remaining.isEmpty) {
-    shown.clear();
-    remaining = notifications;
+    newShownIds.add(notifId);
   }
 
-  final notif = remaining[random.nextInt(remaining.length)];
+  // Mettre à jour le cache local (conserver max 500 entrées)
+  final updated = {...shownIds, ...newShownIds}.toList();
+  if (updated.length > 500) updated.removeRange(0, updated.length - 500);
+  await prefs.setStringList(_shownNotifIdsKey, updated);
 
-  String title = notif['title']!;
-  String body = notif['body']!;
-
-  body = body
-      .replaceAll("{amount}", amounts[random.nextInt(amounts.length)])
-      .replaceAll("{country}", countries[random.nextInt(countries.length)]);
-
-  await _showNotification(title: title, body: body);
-
-  shown.add(title);
-  await prefs.setStringList("afrolookShown", shown);
+  debugPrint('✅ WorkManager: ${toShow.length} notifications affichées pour $userId');
 }
 
 /// =======================================================

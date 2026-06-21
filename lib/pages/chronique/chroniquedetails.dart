@@ -85,15 +85,24 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/chroniqueProvider.dart';
+import '../../providers/sound_provider.dart';
 import '../component/showUserDetails.dart';
+import '../userPosts/video_preload_manager.dart';
 import 'chroniqueform.dart';
 
 class ChroniqueDetailPage extends StatefulWidget {
   final String initialChroniqueId;
+  /// Groupes pré-chargés par la section (évite un rechargement Firestore).
+  /// Clé = userId, valeur = chroniques de cet utilisateur.
+  final List<List<Chronique>>? allGroups;
+  /// userId de l'utilisateur sur lequel on a cliqué — son groupe passe en 1er.
+  final String? startUserId;
 
   const ChroniqueDetailPage({
     Key? key,
     required this.initialChroniqueId,
+    this.allGroups,
+    this.startUserId,
   }) : super(key: key);
 
   @override
@@ -128,7 +137,15 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
 
   // Publicités injectées entre les chroniques
   List<Advertisement> _activeAds = [];
+  List<Advertisement> _shuffledAds = [];
   final Map<String, String?> _adImageUrls = {};
+  final Map<String, Post> _adPosts = {};
+
+  // Lecteur vidéo pour les pubs vidéo
+  VideoPlayerController? _adVideoController;
+  bool _adVideoInitialized = false;
+  bool _adVideoMuted = true;
+  String? _currentAdId;
 
   Map<String, bool> _likesMap = {};
   Map<String, int> _likesCountMap = {};
@@ -195,6 +212,12 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
     print('🔄 Refresh likes - hasLiked: $hasLiked, likesCount: $likesCount, likers: ${currentChronique.likers}');
   }
   Future<void> _loadInitialChroniques() async {
+    // Chemin rapide : données déjà chargées par la section (pas de requête Firestore)
+    if (widget.allGroups != null) {
+      _buildFromPreloadedGroups();
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _allChroniques.clear();
@@ -224,13 +247,14 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
           _hasMore = result.length == _batchSize;
         });
 
-        // 🔥 AJOUTER CET APPEL - Initialiser les likes à partir des données chargées
-        _initializeLikesData();  // ← AJOUTEZ CETTE LIGNE
+        _initializeLikesData();
 
         int initialIndex = _allChroniques.indexWhere((c) => c.id == widget.initialChroniqueId);
         if (initialIndex != -1 && initialIndex != 0) {
           _currentPage = initialIndex;
-          WidgetsBinding.instance.addPostFrameCallback((_) => _pageController.jumpToPage(_chroniqueToVirtual(initialIndex)));
+          WidgetsBinding.instance.addPostFrameCallback(
+            (_) => _pageController.jumpToPage(_chroniqueToVirtual(initialIndex)),
+          );
         }
 
         if (_allChroniques.isNotEmpty) {
@@ -242,6 +266,37 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
     } catch (e) {
       print('Erreur chargement chroniques: $e');
       setState(() => _isLoading = false);
+    }
+  }
+
+  /// Construit la liste à plat depuis les groupes pré-chargés.
+  /// Le groupe de [widget.startUserId] passe toujours en tête.
+  void _buildFromPreloadedGroups() {
+    final groups = List<List<Chronique>>.from(widget.allGroups!);
+
+    // Remettre le groupe du user cliqué en premier
+    List<Chronique>? startGroup;
+    groups.removeWhere((g) {
+      if (g.isNotEmpty && g.first.userId == widget.startUserId) {
+        startGroup = g;
+        return true;
+      }
+      return false;
+    });
+    if (startGroup != null) groups.insert(0, startGroup!);
+
+    final flat = groups.expand((g) => g).toList();
+
+    setState(() {
+      _allChroniques = flat;
+      _isLoading = false;
+      _hasMore = false;
+    });
+
+    if (flat.isNotEmpty) {
+      _initializeLikesData();
+      _initializeCurrentMedia();
+      _loadChroniqueOwner();
     }
   }
   Future<void> _loadMoreChroniques() async {
@@ -822,13 +877,25 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
           futures.add(
             FirebaseFirestore.instance.collection('Posts').doc(ad.postId).get().then((postDoc) {
               if (!postDoc.exists) return;
-              final data = postDoc.data()!;
-              final images = data['images'] as List?;
+              final post = Post.fromJson(postDoc.data()!);
+              post.id = postDoc.id;
+              _adPosts[ad.id!] = post;
+
+              // URL de miniature (image ou première frame)
+              final images = post.images;
               final url = (images != null && images.isNotEmpty)
-                  ? images.first as String?
-                  : data['url_media'] as String?;
+                  ? images.first
+                  : post.url_media;
               if (url != null && url.isNotEmpty) {
                 _adImageUrls[ad.id!] = url;
+              }
+
+              // Précharger la vidéo si c'est une pub vidéo
+              final isVideo = post.dataType == PostDataType.VIDEO.name ||
+                  (post.url_media ?? '').contains('.mp4') ||
+                  (post.url_media ?? '').contains('.mov');
+              if (isVideo && post.url_media != null) {
+                VideoPreloadManager.preload(post.id ?? ad.id!, post.url_media);
               }
             }).catchError((_) {}),
           );
@@ -838,9 +905,75 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
       await Future.wait(futures);
 
       if (mounted && ads.isNotEmpty) {
-        setState(() => _activeAds = ads);
+        ads.shuffle();
+        // Sauvegarder l'index chronique courant avant que _displayItems change
+        final currentChroniqueIdx = _currentPage;
+        setState(() {
+          _activeAds = ads;
+          _shuffledAds = List.from(ads);
+        });
+        // Après le rebuild, repositionner sur la même chronique
+        // (l'insertion des pubs décale les index virtuels)
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _pageController.hasClients) {
+            final newVirtual = _chroniqueToVirtual(currentChroniqueIdx);
+            _pageController.jumpToPage(newVirtual);
+          }
+        });
       }
     } catch (_) {}
+  }
+
+  void _initializeAdVideo(Advertisement ad) {
+    final post = _adPosts[ad.id ?? ''];
+    if (post == null) return;
+
+    final isVideo = post.dataType == PostDataType.VIDEO.name ||
+        (post.url_media ?? '').contains('.mp4') ||
+        (post.url_media ?? '').contains('.mov');
+    if (!isVideo || post.url_media == null) return;
+    if (_currentAdId == ad.id && _adVideoController != null) {
+      _adVideoController?.play();
+      return;
+    }
+
+    _adVideoController?.pause();
+    _adVideoController?.dispose();
+    _adVideoController = null;
+    _adVideoInitialized = false;
+    _currentAdId = ad.id;
+
+    final soundProvider = Provider.of<SoundProvider>(context, listen: false);
+
+    // Réutiliser le contrôleur préchargé si disponible
+    final preloaded = VideoPreloadManager.claimController(post.id ?? '');
+    if (preloaded != null) {
+      preloaded.setVolume(_adVideoMuted ? 0.0 : (soundProvider.isMuted ? 0.0 : 1.0));
+      preloaded.setLooping(true);
+      preloaded.play();
+      if (mounted) setState(() { _adVideoController = preloaded; _adVideoInitialized = true; });
+    } else {
+      final url = VideoPreloadManager.urlResolver != null
+          ? VideoPreloadManager.urlResolver!(post.url_media!)
+          : post.url_media!;
+      final controller = VideoPlayerController.network(url);
+      controller.initialize().then((_) {
+        if (!mounted || _currentAdId != ad.id) {
+          controller.dispose();
+          return;
+        }
+        controller.setVolume(_adVideoMuted ? 0.0 : (soundProvider.isMuted ? 0.0 : 1.0));
+        controller.setLooping(true);
+        controller.play();
+        setState(() { _adVideoController = controller; _adVideoInitialized = true; });
+      }).catchError((_) {});
+    }
+  }
+
+  void _stopAdVideo() {
+    _adVideoController?.pause();
+    _adVideoInitialized = false;
+    _currentAdId = null;
   }
 
   Future<void> _recordAdView(Advertisement ad) async {
@@ -870,15 +1003,18 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
   }
 
   /// Liste mixte Chronique + Advertisement pour le PageView.
-  /// Règle : après la 1ère chronique, puis toutes les 3.
+  /// Pub après la 1ère, 3ème, 6ème, 9ème chronique… (positions 1,3,6,9 en base-1).
+  /// S'arrête quand toutes les pubs sont affichées — pas de cycle.
   List<dynamic> get _displayItems {
-    if (_activeAds.isEmpty) return _allChroniques;
+    final ads = _shuffledAds.isNotEmpty ? _shuffledAds : _activeAds;
+    if (ads.isEmpty) return _allChroniques;
     final result = <dynamic>[];
+    int adCursor = 0;
     for (int i = 0; i < _allChroniques.length; i++) {
       result.add(_allChroniques[i]);
-      if (i % 3 == 0) {
-        final adIndex = (i ~/ 3) % _activeAds.length;
-        result.add(_activeAds[adIndex]);
+      final isAdSlot = i == 0 || (i >= 2 && (i - 2) % 3 == 0);
+      if (isAdSlot && adCursor < ads.length) {
+        result.add(ads[adCursor++]);
       }
     }
     return result;
@@ -911,40 +1047,78 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
   Widget _buildAdSlide(Advertisement ad) {
     WidgetsBinding.instance.addPostFrameCallback((_) => _recordAdView(ad));
 
+    final post = _adPosts[ad.id ?? ''];
     final imageUrl = _adImageUrls[ad.id ?? ''];
-    // Bouton au-dessus du bottom bar :
-    //   sans messages : ~40px toggle + 8 + 40px input + 15px bottom = ~103px
-    //   avec messages : ~40 + 8 + 150 + 8 + 40 + 15 = ~261px
+    final isVideoAd = post != null && (
+        post.dataType == PostDataType.VIDEO.name ||
+        (post.url_media ?? '').contains('.mp4') ||
+        (post.url_media ?? '').contains('.mov'));
+
     final actionBottomOffset = _showMessages ? 280.0 : 120.0;
 
     return Stack(
       fit: StackFit.expand,
       children: [
-        // ── Fond flouté (BoxFit.cover pour remplir l'écran) ──
-        if (imageUrl != null)
-          CachedNetworkImage(
-            imageUrl: imageUrl,
+        // ── Fond (vidéo ou image) ──
+        if (isVideoAd && _adVideoInitialized && _adVideoController != null) ...[
+          // Fond flouté (cover) pour remplir les bandes noires
+          FittedBox(
             fit: BoxFit.cover,
-            color: Colors.black.withOpacity(0.55),
-            colorBlendMode: BlendMode.darken,
-            placeholder: (_, __) => Container(color: Colors.black),
-            errorWidget: (_, __, ___) => Container(color: Colors.black),
-          )
-        else
-          Container(color: Colors.black87),
-
-        // ── Image principale (BoxFit.contain → respecte le format paysage/portrait) ──
-        if (imageUrl != null)
-          Positioned.fill(
-            child: CachedNetworkImage(
-              imageUrl: imageUrl,
-              fit: BoxFit.contain,
-              placeholder: (_, __) => const SizedBox.shrink(),
-              errorWidget: (_, __, ___) => const SizedBox.shrink(),
+            child: SizedBox(
+              width: _adVideoController!.value.size.width,
+              height: _adVideoController!.value.size.height,
+              child: VideoPlayer(_adVideoController!),
             ),
           ),
+          // Filtre assombri
+          Positioned.fill(child: ColoredBox(color: Colors.black.withOpacity(0.35))),
+          // Vidéo principale (contain) au centre
+          Center(
+            child: AspectRatio(
+              aspectRatio: _adVideoController!.value.aspectRatio,
+              child: VideoPlayer(_adVideoController!),
+            ),
+          ),
+        ] else if (isVideoAd && !_adVideoInitialized) ...[
+          // Placeholder pendant le chargement vidéo
+          Container(color: Colors.black),
+          if (imageUrl != null)
+            Positioned.fill(
+              child: CachedNetworkImage(
+                imageUrl: imageUrl,
+                fit: BoxFit.cover,
+                color: Colors.black.withOpacity(0.5),
+                colorBlendMode: BlendMode.darken,
+                placeholder: (_, __) => const SizedBox.shrink(),
+                errorWidget: (_, __, ___) => const SizedBox.shrink(),
+              ),
+            ),
+          const Center(child: CircularProgressIndicator(color: Color(0xFFFFD700), strokeWidth: 2)),
+        ] else ...[
+          // Pub image : fond flouté + image contain
+          if (imageUrl != null)
+            CachedNetworkImage(
+              imageUrl: imageUrl,
+              fit: BoxFit.cover,
+              color: Colors.black.withOpacity(0.55),
+              colorBlendMode: BlendMode.darken,
+              placeholder: (_, __) => Container(color: Colors.black),
+              errorWidget: (_, __, ___) => Container(color: Colors.black),
+            )
+          else
+            Container(color: Colors.black87),
+          if (imageUrl != null)
+            Positioned.fill(
+              child: CachedNetworkImage(
+                imageUrl: imageUrl,
+                fit: BoxFit.contain,
+                placeholder: (_, __) => const SizedBox.shrink(),
+                errorWidget: (_, __, ___) => const SizedBox.shrink(),
+              ),
+            ),
+        ],
 
-        // ── Dégradés haut et bas ──
+        // ── Dégradés haut / bas ──
         Positioned.fill(
           child: DecoratedBox(
             decoration: BoxDecoration(
@@ -983,57 +1157,79 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
           ),
         ),
 
-        // ── Bouton d'action — positionné au-dessus du bottom bar ──
+        // ── Bouton son (vidéo uniquement) ──
+        if (isVideoAd)
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 56,
+            right: 16,
+            child: GestureDetector(
+              onTap: () {
+                setState(() => _adVideoMuted = !_adVideoMuted);
+                final vol = _adVideoMuted ? 0.0 : 1.0;
+                _adVideoController?.setVolume(vol);
+              },
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.6),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  _adVideoMuted ? Icons.volume_off : Icons.volume_up,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+            ),
+          ),
+
+        // ── Bouton d'action CTA ──
         if (ad.actionType != null || ad.actionButtonText != null)
           Positioned(
             bottom: actionBottomOffset,
             left: 16,
             right: 16,
-            child: Row(
-              children: [
-                GestureDetector(
-                  onTap: () async {
-                    _recordAdClick(ad);
-                    if (ad.actionUrl != null && ad.actionUrl!.isNotEmpty) {
-                      final url = Uri.parse(ad.actionUrl!);
-                      if (await canLaunchUrl(url)) {
-                        await launchUrl(url, mode: LaunchMode.externalApplication);
-                      }
-                    }
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFE21221), Color(0xFFFF5252)],
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                      ),
-                      borderRadius: BorderRadius.circular(30),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 8, offset: const Offset(0, 4))],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          ad.actionType == 'download' ? Icons.download
-                              : ad.actionType == 'visit' ? Icons.language
-                              : Icons.info_outline,
-                          color: Colors.white,
-                          size: 17,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          ad.getActionButtonText(),
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                        ),
-                        const SizedBox(width: 6),
-                        const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 12),
-                      ],
-                    ),
+            child: GestureDetector(
+              onTap: () async {
+                _recordAdClick(ad);
+                if (ad.actionUrl != null && ad.actionUrl!.isNotEmpty) {
+                  final url = Uri.parse(ad.actionUrl!);
+                  if (await canLaunchUrl(url)) {
+                    await launchUrl(url, mode: LaunchMode.externalApplication);
+                  }
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFE21221), Color(0xFFFF5252)],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
                   ),
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 8, offset: const Offset(0, 4))],
                 ),
-              ],
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      ad.actionType == 'download' ? Icons.download
+                          : ad.actionType == 'visit' ? Icons.language
+                          : Icons.info_outline,
+                      color: Colors.white,
+                      size: 17,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      ad.getActionButtonText(),
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    const SizedBox(width: 6),
+                    const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 12),
+                  ],
+                ),
+              ),
             ),
           ),
       ],
@@ -1081,7 +1277,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
       );
     }
 
-    final currentChronique = _allChroniques[_currentPage];
+    final currentChronique = _allChroniques[_currentPage.clamp(0, _allChroniques.length - 1)];
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -1092,9 +1288,18 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
               controller: _pageController,
               itemCount: _displayItems.length,
               onPageChanged: (virtualIndex) {
-                final chroniqueIdx = _virtualToChronique(virtualIndex);
-                setState(() => _currentPage = chroniqueIdx);
-                if (!_isVirtualAd(virtualIndex)) {
+                if (_isVirtualAd(virtualIndex)) {
+                  // Page pub : on ne touche pas à _currentPage (garder le dernier index chronique valide)
+                  _videoController?.pause();
+                  final item = _displayItems[virtualIndex];
+                  if (item is Advertisement) _initializeAdVideo(item);
+                } else {
+                  final chroniqueIdx = _virtualToChronique(virtualIndex);
+                  // Sécurité : ne jamais dépasser les bornes de _allChroniques
+                  if (chroniqueIdx < _allChroniques.length) {
+                    setState(() => _currentPage = chroniqueIdx);
+                  }
+                  _stopAdVideo();
                   _initializeCurrentMedia();
                   _loadChroniqueOwner();
                 }
@@ -1459,6 +1664,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
   void dispose() {
     _pageController.dispose();
     _videoController?.dispose();
+    _adVideoController?.dispose();
     _messageController.dispose();
     _messageScrollController.dispose();
     _heartAnimationController.dispose();

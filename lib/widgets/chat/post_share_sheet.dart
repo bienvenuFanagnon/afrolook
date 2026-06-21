@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/model_data.dart';
+import '../../pages/chat/group/group_chat_page.dart';
 import '../../providers/authProvider.dart';
 import '../../theme/app_colors.dart';
 
@@ -151,6 +152,8 @@ class _PostShareSheetState extends State<PostShareSheet>
 
   Future<void> _sendToGroup(Map<String, dynamic> group) async {
     final groupId = group['id'] as String;
+    final groupName = group['name'] as String? ?? '';
+    final groupImage = group['image_url'] as String?;
     if (_sendingId != null) return;
     setState(() => _sendingId = groupId);
     try {
@@ -188,20 +191,118 @@ class _PostShareSheetState extends State<PostShareSheet>
         'last_message': _lastMsgLabel(post),
         'last_message_at': now,
       });
-      _done();
+      // Notifier chaque membre du groupe
+      _notifyGroupMembers(
+        group: group,
+        now: now,
+        notifTitre: '${me.pseudo ?? ''} a partagé un post',
+        notifDesc: post.description?.isNotEmpty == true ? post.description! : _lastMsgLabel(post),
+        postId: post.id ?? '',
+      );
+      _doneAndOpenGroup(groupId: groupId, groupName: groupName, groupImage: groupImage);
     } catch (_) {
       if (mounted) setState(() => _sendingId = null);
     }
   }
 
+  /// Enregistre une NotificationData + envoie un push OneSignal à chaque membre (sauf moi).
+  Future<void> _notifyGroupMembers({
+    required Map<String, dynamic> group,
+    required int now,
+    required String notifTitre,
+    required String notifDesc,
+    required String postId,
+  }) async {
+    try {
+      final myId = _auth.loginUserData.id!;
+      final memberIds = List<String>.from(group['member_ids'] as List? ?? []);
+      final others = memberIds.where((id) => id != myId).toList();
+      if (others.isEmpty) return;
+
+      final firestore = FirebaseFirestore.instance;
+      final oneSignalIds = <String>[];
+
+      // Récupérer les IDs OneSignal en chunks de 10 (limite Firestore whereIn)
+      for (var i = 0; i < others.length; i += 10) {
+        final chunk = others.sublist(i, i + 10 > others.length ? others.length : i + 10);
+        final snap = await firestore.collection('Users').where(FieldPath.documentId, whereIn: chunk).get();
+        for (final doc in snap.docs) {
+          final data = doc.data();
+          final osId = data['oneIgnalUserid'] as String?;
+          if (osId != null && osId.length > 5) oneSignalIds.add(osId);
+          // Enregistrer une NotificationData pour chaque membre
+          final notifId = firestore.collection('Notifications').doc().id;
+          final notif = NotificationData(
+            id: notifId,
+            titre: notifTitre,
+            description: notifDesc,
+            user_id: myId,
+            receiver_id: doc.id,
+            post_id: postId,
+            type: NotificationType.MESSAGE.name,
+            status: PostStatus.VALIDE.name,
+            is_open: false,
+            users_id_view: [],
+            createdAt: now,
+            updatedAt: now,
+          );
+          firestore.collection('Notifications').doc(notifId).set(notif.toJson());
+        }
+      }
+
+      // Push OneSignal groupé
+      if (oneSignalIds.isNotEmpty) {
+        _auth.sendNotification(
+          userIds: oneSignalIds,
+          smallImage: _auth.loginUserData.imageUrl ?? '',
+          send_user_id: myId,
+          recever_user_id: group['id'] as String,
+          message: notifTitre,
+          type_notif: NotificationType.MESSAGE.name,
+          post_id: postId,
+          post_type: 'post',
+          chat_id: group['id'] as String,
+        );
+      }
+    } catch (_) {}
+  }
+
   void _done() {
     if (!mounted) return;
     setState(() => _sendingId = null);
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: const Text('Post envoye !'),
-      backgroundColor: AppColors.of(context).primary,
+    final nav = Navigator.of(context);
+    final msg = ScaffoldMessenger.of(context);
+    final color = AppColors.of(context).primary;
+    nav.pop();
+    msg.showSnackBar(SnackBar(
+      content: const Text('Post envoyé !'),
+      backgroundColor: color,
       duration: const Duration(seconds: 2),
+    ));
+  }
+
+  void _doneAndOpenGroup({
+    required String groupId,
+    required String groupName,
+    String? groupImage,
+  }) {
+    if (!mounted) return;
+    setState(() => _sendingId = null);
+    final nav = Navigator.of(context);
+    final msg = ScaffoldMessenger.of(context);
+    final color = AppColors.of(context).primary;
+    nav.pop();
+    msg.showSnackBar(SnackBar(
+      content: const Text('Post envoyé !'),
+      backgroundColor: color,
+      duration: const Duration(seconds: 2),
+    ));
+    nav.push(MaterialPageRoute(
+      builder: (_) => GroupChatPage(
+        groupId: groupId,
+        groupName: groupName,
+        groupImageUrl: groupImage,
+      ),
     ));
   }
 

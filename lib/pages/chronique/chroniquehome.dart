@@ -130,18 +130,18 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
     }
 
     if (targetChronique != null && ownerId != null) {
-      // Ouvrir directement la page de détail
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => ChroniqueDetailPage(
-            // userChroniques: _groupedChroniques[ownerId]!,
             initialChroniqueId: chroniqueId,
+            allGroups: _groupedChroniques.values.toList(),
+            startUserId: ownerId,
           ),
         ),
       );
     } else {
-      // Si non trouvée, la charger depuis Firestore
+      // Si non trouvée dans le cache, charger depuis Firestore
       final provider = Provider.of<ChroniqueProvider>(context, listen: false);
       final chronique = await provider.getChroniqueById(chroniqueId);
       if (chronique != null && mounted) {
@@ -446,6 +446,8 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
           MaterialPageRoute(
             builder: (context) => ChroniqueDetailPage(
               initialChroniqueId: newestChronique.id!,
+              allGroups: _groupedChroniques.values.toList(),
+              startUserId: newestChronique.userId,
             ),
           ),
         );
