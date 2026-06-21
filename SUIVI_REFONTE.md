@@ -1,5 +1,5 @@
 # SUIVI REFONTE UI — AFROLOOK V2
-_Dernière mise à jour : 20 juin 2026 (session 68)_
+_Dernière mise à jour : 21 juin 2026 (session 69)_
 
 ---
 
@@ -51,6 +51,14 @@ Tout est fait en **français**.
 
 | Fichier | Notes |
 |---|---|
+| `lib/pages/canaux/listCanal.dart` | ✅ Session 69 — AppColors + l10n (8 langues), imports dupliqués nettoyés |
+| `lib/pages/canaux/listCanauxByUser.dart` | ✅ Session 69 — AppColors + l10n, réécriture complète |
+| `lib/pages/canaux/detailsCanal.dart` | ✅ Session 69 — AppColors + l10n, AppBar titre dynamique |
+| `lib/pages/canaux/listCanalfollowers.dart` | ✅ Session 69 — AppColors + l10n, pagination conservée |
+| `lib/pages/canaux/canalPostNew.dart` | ✅ Session 69 — AppColors + l10n |
+| `lib/pages/canaux/newCanal.dart` | ✅ Session 69 — AppColors + l10n, fix `_buildPrivacyOption` (bool isPrivateOption) |
+| `lib/pages/canaux/editCanal.dart` | ✅ Session 69 — AppColors + l10n, imports dupliqués nettoyés |
+| `lib/pages/canaux/canal_manage_admins.dart` | ✅ Session 69 — AppColors + l10n, l10n clés admin/membre/poster |
 | `lib/pages/contenuPayant/contentDetails.dart` | ✅ Session 59 — 63 couleurs hardcodées migrées vers AppColors |
 | `lib/pages/contenuPayant/contentDetailsEbook.dart` | ✅ Session 68 — AppColors complet, consts supprimées |
 | `lib/pages/contenuPayant/contentForm.dart` | ✅ Session 68 — AppColors complet, const SnackBar corrigés |
@@ -159,6 +167,17 @@ Le bouton de basculement clair/sombre est à exposer clairement dans l'UI.
 ---
 
 ## HISTORIQUE DES SESSIONS
+
+### Session 69 (21 juin 2026)
+- **AppColors + AppLocalizations (8 langues) appliqués aux 8 pages canaux**
+- `app_localizations.dart` : ~60 nouvelles clés canal (canalExplore, canalSearch, canalCreate, canalEdit, canalAdminList, etc.)
+- `listCanal.dart`, `listCanauxByUser.dart`, `detailsCanal.dart`, `listCanalfollowers.dart`, `canalPostNew.dart` : AppColors + l10n
+- `newCanal.dart` : fix logique `_buildPrivacyOption` (comparaison `title == 'Privé'` → paramètre `bool isPrivateOption`)
+- `editCanal.dart` : AppColors + l10n, imports dupliqués nettoyés
+- `canal_manage_admins.dart` : AppColors + l10n (rôles admin/membre/propriétaire, permissions poster)
+- 0 erreur `dart analyze` sur les 8 fichiers
+
+---
 
 ### Session 1 (agent précédent — date inconnue)
 - Création du système de thème complet (`lib/theme/`)
