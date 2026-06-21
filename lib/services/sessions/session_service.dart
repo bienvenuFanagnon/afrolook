@@ -1,5 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../cache/startup_cache_service.dart';
 
 class SessionUserFirebaseService {
   static const String TOKEN_KEY = 'token';
@@ -49,7 +50,8 @@ class SessionUserFirebaseService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(TOKEN_KEY);
     await prefs.remove(LAST_ACTIVE_KEY);
-    print('🗑️ Session effacée');
+    await StartupCacheService.clear();
+    print('🗑️ Session et cache effacés');
   }
 
   /// Vérifie si l'utilisateur est inactif depuis plus de 3 jours (Firestore)

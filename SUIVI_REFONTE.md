@@ -1,5 +1,5 @@
 # SUIVI REFONTE UI — AFROLOOK V2
-_Dernière mise à jour : 21 juin 2026 (session 69)_
+_Dernière mise à jour : 21 juin 2026 (session 70)_
 
 ---
 
@@ -133,6 +133,7 @@ Tout est fait en **français**.
 | Preloading vidéos hors écran | À implémenter |
 | Compression/resize images avant upload | À vérifier |
 | Cache CDN Cloudflare | Commit "cdn cloudflare" — déjà fait côté backend |
+| **Cache-first au démarrage (session 70)** | ✅ FAIT — `StartupCacheService` + splash instantané |
 
 ---
 
@@ -167,6 +168,22 @@ Le bouton de basculement clair/sombre est à exposer clairement dans l'UI.
 ---
 
 ## HISTORIQUE DES SESSIONS
+
+### Session 70 (21 juin 2026)
+- **Architecture cache-first au démarrage (lancement instantané)**
+- `lib/services/cache/startup_cache_service.dart` créé :
+  - Cache `UserData` (TTL 24h) + `AppDefaultData` (TTL 6h) dans SharedPreferences
+  - Sérialisation/désérialisation manuelle incluant `countryData` (absent du `toJson()` natif)
+  - `clear()` intégré dans `SessionUserFirebaseService.clearSession()` → cache vidé à la déconnexion
+- `lib/pages/splashChargement.dart` :
+  - `_handleAuthenticatedUserById` : cache-first — si cache valide → populate providers → navigate IMMÉDIATEMENT
+  - Background refresh silencieux via `_backgroundRefresh()` (`Future.microtask`) après navigation
+  - Cache miss → chemin Firestore classique + sauvegarde cache avec `unawaited`
+- `lib/services/sessions/session_service.dart` : `clearSession()` appelle `StartupCacheService.clear()`
+- Résultat : 2e lancement et suivants = **0ms de Firestore** avant affichage du Home
+- 0 erreur `dart analyze`
+
+---
 
 ### Session 69 (21 juin 2026)
 - **AppColors + AppLocalizations (8 langues) appliqués aux 8 pages canaux**

@@ -14,6 +14,7 @@ import '../providers/chroniqueProvider.dart';
 import '../providers/contenuPayantProvider.dart';
 import '../providers/postProvider.dart';
 import '../providers/userProvider.dart';
+import '../services/cache/startup_cache_service.dart';
 import '../services/nav_cache_service.dart';
 import '../services/sessions/session_service.dart';
 import 'auth/authTest/Screens/Login/loginPageUser.dart';
@@ -340,12 +341,40 @@ class _SplashChargementState extends State<SplashChargement> {
     );
   }
 
-  // Gérer l'authentification avec l'ID stocké
+  // Gérer l'authentification avec l'ID stocké (cache-first)
   Future<void> _handleAuthenticatedUserById(String userId) async {
     if (_authHandled || _isAuthCompleted || _hasNavigated) return;
     _authHandled = true;
     print("🔐 [SPLASH] _handleAuthenticatedUserById start for $userId");
 
+    // ── Cache-first : tenter de servir depuis le cache local ────────────────
+    final cachedUser = await StartupCacheService.loadUserData();
+    final cachedApp = await StartupCacheService.loadAppData();
+
+    if (cachedUser != null && cachedUser.id == userId) {
+      print("⚡ [SPLASH] Cache hit — navigation immédiate");
+      authProvider.loginUserData = cachedUser;
+      if (cachedApp != null) authProvider.appDefaultData = cachedApp;
+
+      final countryCode = cachedUser.countryData?["countryCode"]?.toString();
+      if (countryCode == null || countryCode.isEmpty) {
+        if (mounted && !_hasNavigated) {
+          _hasNavigated = true;
+          Navigator.push(context, MaterialPageRoute(builder: (_) => UpdateUserData(title: "Mise à jour d'adresse")));
+        }
+        return;
+      }
+
+      setState(() => _isAuthCompleted = true);
+      await _prepareDestination();
+
+      // Rafraîchissement silencieux en arrière-plan
+      _backgroundRefresh(userId);
+      return;
+    }
+
+    // ── Cache miss : chargement Firestore séquentiel ─────────────────────────
+    print("🌐 [SPLASH] Cache miss — chargement Firestore pour $userId");
     try {
       setState(() => _loadingText = "Chargement des données...");
       await authProvider.getAppData();
@@ -356,6 +385,10 @@ class _SplashChargementState extends State<SplashChargement> {
         _redirectToLogin();
         return;
       }
+
+      // Sauvegarder en cache pour les prochains lancements
+      unawaited(StartupCacheService.saveUserData(authProvider.loginUserData));
+      unawaited(StartupCacheService.saveAppData(authProvider.appDefaultData));
 
       final countryCode = authProvider.loginUserData.countryData?["countryCode"]?.toString();
       if (countryCode == null || countryCode.isEmpty) {
@@ -373,6 +406,20 @@ class _SplashChargementState extends State<SplashChargement> {
       print("❌ [AUTH] Erreur : $e");
       if (mounted) setState(() { _hasError = true; _errorMessage = e.toString(); });
     }
+  }
+
+  /// Rafraîchit les données utilisateur en arrière-plan après navigation immédiate.
+  void _backgroundRefresh(String userId) {
+    Future.microtask(() async {
+      try {
+        await authProvider.getLoginUser(userId);
+        await StartupCacheService.saveUserData(authProvider.loginUserData);
+        await StartupCacheService.saveAppData(authProvider.appDefaultData);
+        print("✅ [SPLASH] Background refresh terminé");
+      } catch (e) {
+        print("⚠️ [SPLASH] Background refresh échoué (ignoré): $e");
+      }
+    });
   }
 
   Future<void> _updateUserLastActive(String userId) async {
