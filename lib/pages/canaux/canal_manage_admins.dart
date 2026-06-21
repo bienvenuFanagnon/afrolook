@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/userProvider.dart';
 import '../../models/model_data.dart';
+import '../../theme/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 
 class CanalManageAdminsPage extends StatefulWidget {
   final Canal canal;
@@ -25,15 +27,8 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
   bool _isSearching = false;
   bool _searchByEmail = true;
 
-  // Couleurs du thème
-  final Color _backgroundColor = Color(0xFF0A0A0A);
-  final Color _cardColor = Color(0xFF1A1A1A);
-  final Color _primaryColor = Color(0xFF2E7D32);
-  final Color _accentColor = Color(0xFF4CAF50);
-  final Color _textColor = Colors.white;
-  final Color _subtextColor = Colors.grey[400]!;
-  final Color _warningColor = Colors.orange;
-  final Color _errorColor = Colors.red;
+  late AppColors _colors;
+  late AppLocalizations _l10n;
 
   bool _isOwner = false;
   List<UserData> _currentAdmins = [];
@@ -127,7 +122,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('❌ Erreur lors de la recherche'),
-          backgroundColor: _errorColor,
+          backgroundColor: _colors.danger,
         ),
       );
     }
@@ -163,7 +158,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('✅ ${user.pseudo} est maintenant administrateur'),
-            backgroundColor: _accentColor,
+            backgroundColor: _colors.primary,
             duration: Duration(seconds: 2),
           ),
         );
@@ -173,7 +168,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('❌ Erreur lors de l\'ajout'),
-          backgroundColor: _errorColor,
+          backgroundColor: _colors.danger,
         ),
       );
     }
@@ -186,7 +181,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('❌ Le propriétaire ne peut pas être retiré'),
-            backgroundColor: _errorColor,
+            backgroundColor: _colors.danger,
           ),
         );
         return;
@@ -210,7 +205,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('✅ ${user.pseudo} n\'est plus administrateur'),
-          backgroundColor: _accentColor,
+          backgroundColor: _colors.primary,
           duration: Duration(seconds: 2),
         ),
       );
@@ -219,7 +214,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('❌ Erreur lors du retrait'),
-          backgroundColor: _errorColor,
+          backgroundColor: _colors.danger,
         ),
       );
     }
@@ -245,7 +240,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
           content: Text(widget.canal.allowedPostersIds!.contains(user.id)
               ? '✅ ${user.pseudo} peut maintenant poster'
               : '✅ ${user.pseudo} ne peut plus poster'),
-          backgroundColor: _accentColor,
+          backgroundColor: _colors.primary,
           duration: Duration(seconds: 2),
         ),
       );
@@ -254,7 +249,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('❌ Erreur lors de la mise à jour'),
-          backgroundColor: _errorColor,
+          backgroundColor: _colors.danger,
         ),
       );
     }
@@ -276,7 +271,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
           content: Text(widget.canal.allowAllMembersToPost!
               ? '✅ Tous les membres peuvent maintenant poster'
               : '✅ Seuls les utilisateurs autorisés peuvent poster'),
-          backgroundColor: _accentColor,
+          backgroundColor: _colors.primary,
           duration: Duration(seconds: 2),
         ),
       );
@@ -285,7 +280,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('❌ Erreur lors de la mise à jour'),
-          backgroundColor: _errorColor,
+          backgroundColor: _colors.danger,
         ),
       );
     }
@@ -352,11 +347,11 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
 
   Widget _buildAccessDenied() {
     return Scaffold(
-      backgroundColor: _backgroundColor,
+      backgroundColor: _colors.background,
       appBar: AppBar(
-        title: Text('Accès refusé', style: TextStyle(color: _textColor)),
-        backgroundColor: _backgroundColor,
-        iconTheme: IconThemeData(color: _textColor),
+        title: Text(_l10n.canalManageAdmins, style: TextStyle(color: _colors.textPrimary)),
+        backgroundColor: _colors.background,
+        iconTheme: IconThemeData(color: _colors.textPrimary),
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -371,32 +366,32 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
               Container(
                 padding: EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: _errorColor.withOpacity(0.1),
+                  color: _colors.danger.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: _errorColor),
+                  border: Border.all(color: _colors.danger),
                 ),
-                child: Icon(Icons.lock, size: 80, color: _errorColor),
+                child: Icon(Icons.lock, size: 80, color: _colors.danger),
               ),
               SizedBox(height: 30),
               Text(
-                'Accès restreint ⚠️',
+                _l10n.canalAdminRestricted,
                 style: TextStyle(
-                  color: _textColor,
+                  color: _colors.textPrimary,
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               SizedBox(height: 16),
               Text(
-                'Seul le créateur du canal peut gérer les administrateurs.',
+                _l10n.canalAdminRestricted,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: _subtextColor, fontSize: 16),
+                style: TextStyle(color: _colors.textSecondary, fontSize: 16),
               ),
               SizedBox(height: 10),
               Text(
-                'Contactez le créateur pour toute modification.',
+                _l10n.canalAdminContactOwner,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: _subtextColor, fontSize: 14),
+                style: TextStyle(color: _colors.textSecondary, fontSize: 14),
               ),
             ],
           ),
@@ -409,21 +404,21 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: _colors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _primaryColor.withOpacity(0.3)),
+        border: Border.all(color: _colors.primary.withOpacity(0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.search, color: _primaryColor),
+              Icon(Icons.search, color: _colors.primary),
               SizedBox(width: 8),
               Text(
-                'Rechercher un membre',
+                _l10n.canalSearchMember,
                 style: TextStyle(
-                  color: _textColor,
+                  color: _colors.textPrimary,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
@@ -437,7 +432,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
             children: [
               Expanded(
                 child: ChoiceChip(
-                  label: Text('Par email'),
+                  label: Text(_l10n.canalSearchByEmail),
                   selected: _searchByEmail,
                   onSelected: (selected) {
                     setState(() {
@@ -447,17 +442,17 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
                       _pseudoController.clear();
                     });
                   },
-                  selectedColor: _primaryColor,
-                  backgroundColor: _backgroundColor,
+                  selectedColor: _colors.primary,
+                  backgroundColor: _colors.surfaceVariant,
                   labelStyle: TextStyle(
-                    color: _searchByEmail ? Colors.white : _subtextColor,
+                    color: _searchByEmail ? _colors.onPrimary : _colors.textSecondary,
                   ),
                 ),
               ),
               SizedBox(width: 8),
               Expanded(
                 child: ChoiceChip(
-                  label: Text('Par pseudo'),
+                  label: Text(_l10n.canalSearchByPseudo),
                   selected: !_searchByEmail,
                   onSelected: (selected) {
                     setState(() {
@@ -467,10 +462,10 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
                       _pseudoController.clear();
                     });
                   },
-                  selectedColor: _primaryColor,
-                  backgroundColor: _backgroundColor,
+                  selectedColor: _colors.primary,
+                  backgroundColor: _colors.surfaceVariant,
                   labelStyle: TextStyle(
-                    color: !_searchByEmail ? Colors.white : _subtextColor,
+                    color: !_searchByEmail ? _colors.onPrimary : _colors.textSecondary,
                   ),
                 ),
               ),
@@ -482,36 +477,36 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
           // Champ de recherche
           TextField(
             controller: _searchByEmail ? _emailController : _pseudoController,
-            style: TextStyle(color: _textColor),
+            style: TextStyle(color: _colors.textPrimary),
             decoration: InputDecoration(
               hintText: _searchByEmail
                   ? 'Entrez l\'email du membre...'
                   : 'Entrez le pseudo du membre...',
-              hintStyle: TextStyle(color: _subtextColor),
+              hintStyle: TextStyle(color: _colors.textSecondary),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey[700]!),
+                borderSide: BorderSide(color: _colors.border),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey[700]!),
+                borderSide: BorderSide(color: _colors.border),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: _primaryColor),
+                borderSide: BorderSide(color: _colors.primary),
               ),
               filled: true,
-              fillColor: _backgroundColor,
+              fillColor: _colors.surfaceVariant,
               suffixIcon: _isSearching
                   ? Padding(
                 padding: EdgeInsets.all(12.0),
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: _primaryColor,
+                  color: _colors.primary,
                 ),
               )
                   : IconButton(
-                icon: Icon(Icons.search, color: _primaryColor),
+                icon: Icon(Icons.search, color: _colors.primary),
                 onPressed: _searchUsers,
               ),
             ),
@@ -529,8 +524,8 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
 
           SizedBox(height: 8),
           Text(
-            'Seuls les membres du canal peuvent être ajoutés',
-            style: TextStyle(color: _subtextColor, fontSize: 12),
+            _l10n.canalMembers,
+            style: TextStyle(color: _colors.textSecondary, fontSize: 12),
           ),
         ],
       ),
@@ -545,9 +540,9 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
       children: [
         SizedBox(height: 16),
         Text(
-          'Résultats de recherche (${_searchResults.length})',
+          '${_l10n.canalAdminResults} (${_searchResults.length})',
           style: TextStyle(
-            color: _textColor,
+            color: _colors.textPrimary,
             fontSize: 14,
             fontWeight: FontWeight.bold,
           ),
@@ -564,9 +559,9 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
       children: [
         SizedBox(height: 16),
         Text(
-          'Administrateurs du canal (${_currentAdmins.length})',
+          '${_l10n.canalAdminList} (${_currentAdmins.length})',
           style: TextStyle(
-            color: _textColor,
+            color: _colors.textPrimary,
             fontSize: 16,
             fontWeight: FontWeight.bold,
           ),
@@ -575,19 +570,19 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
 
         if (_isLoadingAdmins)
           Center(
-            child: CircularProgressIndicator(color: _primaryColor),
+            child: CircularProgressIndicator(color: _colors.primary),
           )
         else if (_currentAdmins.isEmpty)
           Container(
             padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: _backgroundColor,
+              color: _colors.surfaceVariant,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Center(
               child: Text(
-                'Aucun administrateur',
-                style: TextStyle(color: _subtextColor),
+                _l10n.canalAdminNone,
+                style: TextStyle(color: _colors.textSecondary),
               ),
             ),
           )
@@ -603,7 +598,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
     final bool isCreator = user.id == widget.canal.userId;
 
     return Card(
-      color: _cardColor,
+      color: _colors.surface,
       margin: EdgeInsets.only(bottom: 8),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -625,11 +620,11 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
                 child: Container(
                   padding: EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: Colors.orange,
+                    color: _colors.warning,
                     shape: BoxShape.circle,
-                    border: Border.all(color: _cardColor, width: 2),
+                    border: Border.all(color: _colors.surface, width: 2),
                   ),
-                  child: Icon(Icons.star, size: 12, color: Colors.white),
+                  child: Icon(Icons.star, size: 12, color: _colors.onAccent),
                 ),
               ),
           ],
@@ -638,9 +633,9 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
           children: [
             Expanded(
               child: Text(
-                user.pseudo ?? 'Utilisateur',
+                user.pseudo ?? _l10n.canalUser,
                 style: TextStyle(
-                  color: _textColor,
+                  color: _colors.textPrimary,
                   fontWeight: isCreator ? FontWeight.bold : FontWeight.normal,
                 ),
                 overflow: TextOverflow.ellipsis,
@@ -651,13 +646,13 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
                 padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 margin: EdgeInsets.only(left: 8),
                 decoration: BoxDecoration(
-                  color: Colors.orange,
+                  color: _colors.warning,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  'PROPRIÉTAIRE',
+                  _l10n.canalOwnerLabel,
                   style: TextStyle(
-                    color: Colors.white,
+                    color: _colors.onAccent,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
@@ -670,7 +665,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
           children: [
             Text(
               user.email ?? 'Pas d\'email',
-              style: TextStyle(color: _subtextColor, fontSize: 12),
+              style: TextStyle(color: _colors.textSecondary, fontSize: 12),
               overflow: TextOverflow.ellipsis,
             ),
             SizedBox(height: 4),
@@ -679,16 +674,16 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: isAdmin ? _primaryColor.withOpacity(0.2) : Colors.grey.withOpacity(0.2),
+                    color: isAdmin ? _colors.primary.withOpacity(0.2) : _colors.textSecondary.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(4),
                     border: Border.all(
-                      color: isAdmin ? _primaryColor : Colors.grey,
+                      color: isAdmin ? _colors.primary : _colors.textSecondary,
                     ),
                   ),
                   child: Text(
-                    isAdmin ? 'ADMIN' : 'MEMBRE',
+                    isAdmin ? _l10n.canalAdminLabel : _l10n.canalMemberLabel,
                     style: TextStyle(
-                      color: isAdmin ? _primaryColor : Colors.grey,
+                      color: isAdmin ? _colors.primary : _colors.textSecondary,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),
@@ -698,16 +693,16 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: canPost ? _accentColor.withOpacity(0.2) : Colors.grey.withOpacity(0.2),
+                    color: canPost ? _colors.primary.withOpacity(0.2) : _colors.textSecondary.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(4),
                     border: Border.all(
-                      color: canPost ? _accentColor : Colors.grey,
+                      color: canPost ? _colors.primary : _colors.textSecondary,
                     ),
                   ),
                   child: Text(
-                    canPost ? 'PEUT POSTER' : 'NE POSTE PAS',
+                    canPost ? _l10n.canalCanPost : _l10n.canalCannotPost,
                     style: TextStyle(
-                      color: canPost ? _accentColor : Colors.grey,
+                      color: canPost ? _colors.primary : _colors.textSecondary,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),
@@ -719,14 +714,14 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
         ),
         trailing: isSearchResult
             ? IconButton(
-          icon: Icon(Icons.add_circle, color: _primaryColor),
+          icon: Icon(Icons.add_circle, color: _colors.primary),
           onPressed: () => _addAdmin(user),
           tooltip: 'Ajouter comme administrateur',
         )
             : isCreator
             ? Tooltip(
           message: 'Le propriétaire ne peut pas être modifié',
-          child: Icon(Icons.lock, color: Colors.grey),
+          child: Icon(Icons.lock, color: _colors.textSecondary),
         )
             : Row(
           mainAxisSize: MainAxisSize.min,
@@ -734,7 +729,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
             IconButton(
               icon: Icon(
                 canPost ? Icons.create : Icons.create_outlined,
-                color: canPost ? _accentColor : _subtextColor,
+                color: canPost ? _colors.primary : _colors.textSecondary,
                 size: 20,
               ),
               onPressed: () => _togglePostingPermission(user),
@@ -745,7 +740,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
             IconButton(
               icon: Icon(
                 Icons.remove_circle,
-                color: _errorColor,
+                color: _colors.danger,
                 size: 20,
               ),
               onPressed: () => _removeAdmin(user),
@@ -762,21 +757,21 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
       padding: EdgeInsets.all(16),
       margin: EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: _colors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _primaryColor.withOpacity(0.3)),
+        border: Border.all(color: _colors.primary.withOpacity(0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.settings, color: _primaryColor),
+              Icon(Icons.settings, color: _colors.primary),
               SizedBox(width: 8),
               Text(
-                'Paramètres de publication',
+                _l10n.canalPublishSettings,
                 style: TextStyle(
-                  color: _textColor,
+                  color: _colors.textPrimary,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
@@ -788,23 +783,23 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
           // Option pour autoriser tous les membres
           SwitchListTile(
             title: Text(
-              'Autoriser tous les membres à poster',
-              style: TextStyle(color: _textColor),
+              _l10n.canalAllowAllToPost,
+              style: TextStyle(color: _colors.textPrimary),
             ),
             subtitle: Text(
               widget.canal.allowAllMembersToPost!
-                  ? 'Tous les membres du canal peuvent publier'
-                  : 'Seuls les administrateurs et utilisateurs autorisés peuvent publier',
-              style: TextStyle(color: _subtextColor, fontSize: 12),
+                  ? _l10n.canalAllowAllToPost
+                  : _l10n.canalMembersOnlyCanAdd,
+              style: TextStyle(color: _colors.textSecondary, fontSize: 12),
             ),
             value: widget.canal.allowAllMembersToPost!,
             onChanged: (value) => _toggleAllowAllMembersToPost(),
-            activeColor: _accentColor,
-            inactiveTrackColor: Colors.grey[700],
+            activeColor: _colors.primary,
+            inactiveTrackColor: _colors.border,
           ),
 
           SizedBox(height: 8),
-          Divider(color: Colors.grey[800]),
+          Divider(color: _colors.border),
           SizedBox(height: 8),
 
           // Statistiques
@@ -816,14 +811,14 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
                   Text(
                     widget.canal.adminIds!.length.toString(),
                     style: TextStyle(
-                      color: _primaryColor,
+                      color: _colors.primary,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   Text(
-                    'Administrateurs',
-                    style: TextStyle(color: _subtextColor, fontSize: 12),
+                    _l10n.canalAdminLabel,
+                    style: TextStyle(color: _colors.textSecondary, fontSize: 12),
                   ),
                 ],
               ),
@@ -832,14 +827,14 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
                   Text(
                     widget.canal.allowedPostersIds!.length.toString(),
                     style: TextStyle(
-                      color: _accentColor,
+                      color: _colors.primary,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   Text(
-                    'Peuvent poster',
-                    style: TextStyle(color: _subtextColor, fontSize: 12),
+                    _l10n.canalCanPost,
+                    style: TextStyle(color: _colors.textSecondary, fontSize: 12),
                   ),
                 ],
               ),
@@ -848,14 +843,14 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
                   Text(
                     widget.canal.usersSuiviId?.length.toString() ?? '0',
                     style: TextStyle(
-                      color: Colors.blue,
+                      color: _colors.info,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   Text(
-                    'Membres total',
-                    style: TextStyle(color: _subtextColor, fontSize: 12),
+                    _l10n.canalMembers,
+                    style: TextStyle(color: _colors.textSecondary, fontSize: 12),
                   ),
                 ],
               ),
@@ -868,20 +863,23 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
 
   @override
   Widget build(BuildContext context) {
+    _colors = AppColors.of(context);
+    _l10n = AppLocalizations.of(context);
+
     // Vérifier l'accès
     if (!_isOwner) {
       return _buildAccessDenied();
     }
 
     return Scaffold(
-      backgroundColor: _backgroundColor,
+      backgroundColor: _colors.background,
       appBar: AppBar(
         title: Text(
-          'Gérer les administrateurs',
-          style: TextStyle(color: _textColor, fontWeight: FontWeight.bold),
+          _l10n.canalManageAdmins,
+          style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold),
         ),
-        backgroundColor: _backgroundColor,
-        iconTheme: IconThemeData(color: _textColor),
+        backgroundColor: _colors.background,
+        iconTheme: IconThemeData(color: _colors.textPrimary),
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -896,9 +894,9 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
             Container(
               padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: _cardColor,
+                color: _colors.surface,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _primaryColor),
+                border: Border.all(color: _colors.primary),
               ),
               child: Row(
                 children: [
@@ -916,16 +914,16 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
                         Text(
                           widget.canal.titre!,
                           style: TextStyle(
-                            color: _textColor,
+                            color: _colors.textPrimary,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         SizedBox(height: 4),
                         Text(
-                          'Vous êtes le propriétaire',
+                          _l10n.canalOwner,
                           style: TextStyle(
-                            color: Colors.orange,
+                            color: _colors.warning,
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                           ),
@@ -957,18 +955,18 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
             Container(
               padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: _warningColor.withOpacity(0.1),
+                color: _colors.warning.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: _warningColor),
+                border: Border.all(color: _colors.warning),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.info, color: _warningColor, size: 20),
+                  Icon(Icons.info, color: _colors.warning, size: 20),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Les administrateurs peuvent gérer les membres mais seul le propriétaire peut modifier le canal ou ajouter/retirer des administrateurs.',
-                      style: TextStyle(color: _warningColor, fontSize: 12),
+                      style: TextStyle(color: _colors.warning, fontSize: 12),
                     ),
                   ),
                 ],

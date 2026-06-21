@@ -9,19 +9,8 @@ import 'package:provider/provider.dart';
 import 'package:path/path.dart' as Path;
 import '../../../providers/authProvider.dart';
 import '../../../providers/userProvider.dart';
-
-
-import 'dart:io';
-import 'package:afrotok/models/model_data.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:loading_animation_widget/loading_animation_widget.dart';
-import 'package:provider/provider.dart';
-import 'package:path/path.dart' as Path;
-import '../../../providers/authProvider.dart';
-import '../../../providers/userProvider.dart';
+import '../../theme/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 
 class NewCanal extends StatefulWidget {
   @override
@@ -40,15 +29,8 @@ class _NewCanalState extends State<NewCanal> {
   bool onTapCreatePro = false;
   bool _isPrivate = false;
 
-  // Couleurs personnalisées
-  final Color _primaryBlack = Colors.black;
-  final Color _primaryGreen = Color(0xFF2E7D32);
-  final Color _primaryYellow = Color(0xFFFFD600);
-  final Color _accentGreen = Color(0xFF4CAF50);
-  final Color _accentYellow = Color(0xFFFFEB3B);
-  final Color _backgroundColor = Color(0xFF0A0A0A);
-  final Color _cardColor = Color(0xFF1A1A1A);
-  final Color _textColor = Colors.white;
+  late AppColors _colors;
+  late AppLocalizations _l10n;
 
   XFile? imageProfile;
   XFile? imageCouverture;
@@ -80,8 +62,8 @@ class _NewCanalState extends State<NewCanal> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Le titre existe déjà", style: TextStyle(color: Colors.red)),
-          backgroundColor: _primaryYellow,
+          content: Text("Le titre existe déjà", style: TextStyle(color: _colors.danger)),
+          backgroundColor: _colors.accent,
         ),
       );
       return true;
@@ -92,16 +74,16 @@ class _NewCanalState extends State<NewCanal> {
     return Container(
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: _colors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _primaryGreen.withOpacity(0.3)),
+        border: Border.all(color: _colors.primary.withOpacity(0.3)),
       ),
       child: Column(
         children: [
           Text(
-            'Images du Canal',
+            _l10n.canalFieldProfile + ' & ' + _l10n.canalFieldCover,
             style: TextStyle(
-              color: _primaryYellow,
+              color: _colors.accent,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -116,30 +98,30 @@ class _NewCanalState extends State<NewCanal> {
                       width: 100,
                       height: 100,
                       decoration: BoxDecoration(
-                        color: _primaryBlack,
+                        color: _colors.surfaceVariant,
                         borderRadius: BorderRadius.circular(15),
-                        border: Border.all(color: _primaryGreen),
+                        border: Border.all(color: _colors.primary),
                       ),
                       child: imageProfile != null
                           ? ClipRRect(
                         borderRadius: BorderRadius.circular(15),
                         child: Image.file(File(imageProfile!.path), fit: BoxFit.cover),
                       )
-                          : Icon(Icons.person, color: _primaryGreen, size: 40),
+                          : Icon(Icons.person, color: _colors.primary, size: 40),
                     ),
                     SizedBox(height: 10),
                     ElevatedButton(
                       onPressed: _getImageProfile,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _primaryGreen,
+                        backgroundColor: _colors.primary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
                         padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       ),
                       child: Text(
-                        'Profil',
-                        style: TextStyle(color: _textColor, fontSize: 12),
+                        _l10n.canalFieldProfile,
+                        style: TextStyle(color: _colors.onPrimary, fontSize: 12),
                       ),
                     ),
                   ],
@@ -153,30 +135,30 @@ class _NewCanalState extends State<NewCanal> {
                       width: 100,
                       height: 100,
                       decoration: BoxDecoration(
-                        color: _primaryBlack,
+                        color: _colors.surfaceVariant,
                         borderRadius: BorderRadius.circular(15),
-                        border: Border.all(color: _primaryYellow),
+                        border: Border.all(color: _colors.accent),
                       ),
                       child: imageCouverture != null
                           ? ClipRRect(
                         borderRadius: BorderRadius.circular(15),
                         child: Image.file(File(imageCouverture!.path), fit: BoxFit.cover),
                       )
-                          : Icon(Icons.photo_library, color: _primaryYellow, size: 40),
+                          : Icon(Icons.photo_library, color: _colors.accent, size: 40),
                     ),
                     SizedBox(height: 10),
                     ElevatedButton(
                       onPressed: _getImageCouverture,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _primaryYellow,
+                        backgroundColor: _colors.accent,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
                         padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       ),
                       child: Text(
-                        'Couverture',
-                        style: TextStyle(color: _primaryBlack, fontSize: 12),
+                        _l10n.canalFieldCover,
+                        style: TextStyle(color: _colors.onAccent, fontSize: 12),
                       ),
                     ),
                   ],
@@ -193,21 +175,21 @@ class _NewCanalState extends State<NewCanal> {
     return Container(
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: _colors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _primaryYellow.withOpacity(0.3)),
+        border: Border.all(color: _colors.accent.withOpacity(0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.security, color: _primaryGreen),
+              Icon(Icons.security, color: _colors.primary),
               SizedBox(width: 10),
               Text(
-                'Type de Canal',
+                _l10n.canalTypeTitle,
                 style: TextStyle(
-                  color: _textColor,
+                  color: _colors.textPrimary,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -219,21 +201,23 @@ class _NewCanalState extends State<NewCanal> {
             children: [
               Expanded(
                 child: _buildPrivacyOption(
-                  title: 'Public',
-                  subtitle: 'Gratuit pour tous',
+                  title: _l10n.canalPublic,
+                  subtitle: _l10n.canalPublicSubtitle,
                   icon: Icons.public,
                   isSelected: !_isPrivate,
-                  color: _primaryGreen,
+                  isPrivateOption: false,
+                  color: _colors.primary,
                 ),
               ),
               SizedBox(width: 15),
               Expanded(
                 child: _buildPrivacyOption(
-                  title: 'Privé',
-                  subtitle: 'Abonnement payant',
+                  title: _l10n.canalPrivate,
+                  subtitle: _l10n.canalPrivateSubtitle,
                   icon: Icons.lock,
                   isSelected: _isPrivate,
-                  color: _primaryYellow,
+                  isPrivateOption: true,
+                  color: _colors.accent,
                 ),
               ),
             ],
@@ -243,33 +227,33 @@ class _NewCanalState extends State<NewCanal> {
             TextFormField(
               controller: _priceController,
               keyboardType: TextInputType.numberWithOptions(decimal: true),
-              style: TextStyle(color: _textColor),
+              style: TextStyle(color: _colors.textPrimary),
               decoration: InputDecoration(
-                labelText: 'Prix d\'abonnement (FCFA)',
-                labelStyle: TextStyle(color: _primaryYellow),
-                prefixIcon: Icon(Icons.attach_money, color: _primaryYellow),
+                labelText: _l10n.canalSubscriptionPrice,
+                labelStyle: TextStyle(color: _colors.accent),
+                prefixIcon: Icon(Icons.attach_money, color: _colors.accent),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: _primaryYellow),
+                  borderSide: BorderSide(color: _colors.accent),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: _primaryYellow.withOpacity(0.5)),
+                  borderSide: BorderSide(color: _colors.accent.withOpacity(0.5)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: _primaryYellow),
+                  borderSide: BorderSide(color: _colors.accent),
                 ),
                 filled: true,
-                fillColor: _primaryBlack,
+                fillColor: _colors.surfaceVariant,
               ),
               validator: _isPrivate ? (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Veuillez entrer un prix';
+                  return _l10n.canalValidPrice;
                 }
                 final price = double.tryParse(value);
                 if (price == null || price <= 0) {
-                  return 'Prix invalide';
+                  return _l10n.canalValidPriceInvalid;
                 }
                 return null;
               } : null,
@@ -285,12 +269,13 @@ class _NewCanalState extends State<NewCanal> {
     required String subtitle,
     required IconData icon,
     required bool isSelected,
+    required bool isPrivateOption,
     required Color color,
   }) {
     return GestureDetector(
       onTap: () {
         setState(() {
-          _isPrivate = title == 'Privé';
+          _isPrivate = isPrivateOption;
           if (!_isPrivate) {
             _priceController.clear();
           }
@@ -302,18 +287,18 @@ class _NewCanalState extends State<NewCanal> {
           color: isSelected ? color.withOpacity(0.2) : Colors.transparent,
           borderRadius: BorderRadius.circular(15),
           border: Border.all(
-            color: isSelected ? color : Colors.grey[700]!,
+            color: isSelected ? color : _colors.border,
             width: 2,
           ),
         ),
         child: Column(
           children: [
-            Icon(icon, color: isSelected ? color : Colors.grey[600], size: 30),
+            Icon(icon, color: isSelected ? color : _colors.textSecondary, size: 30),
             SizedBox(height: 8),
             Text(
               title,
               style: TextStyle(
-                color: isSelected ? color : Colors.grey[600],
+                color: isSelected ? color : _colors.textSecondary,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
@@ -322,7 +307,7 @@ class _NewCanalState extends State<NewCanal> {
             Text(
               subtitle,
               style: TextStyle(
-                color: isSelected ? color : Colors.grey[600],
+                color: isSelected ? color : _colors.textSecondary,
                 fontSize: 12,
               ),
               textAlign: TextAlign.center,
@@ -337,36 +322,36 @@ class _NewCanalState extends State<NewCanal> {
     return Container(
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: _colors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _primaryGreen.withOpacity(0.3)),
+        border: Border.all(color: _colors.primary.withOpacity(0.3)),
       ),
       child: Column(
         children: [
           TextFormField(
-            style: TextStyle(color: _textColor),
+            style: TextStyle(color: _colors.textPrimary),
             decoration: InputDecoration(
-              labelText: 'Titre du Canal',
-              labelStyle: TextStyle(color: _primaryGreen),
-              prefixIcon: Icon(Icons.title, color: _primaryGreen),
+              labelText: _l10n.canalFieldTitle,
+              labelStyle: TextStyle(color: _colors.primary),
+              prefixIcon: Icon(Icons.title, color: _colors.primary),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: _primaryGreen),
+                borderSide: BorderSide(color: _colors.primary),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: _primaryGreen.withOpacity(0.5)),
+                borderSide: BorderSide(color: _colors.primary.withOpacity(0.5)),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: _primaryGreen),
+                borderSide: BorderSide(color: _colors.primary),
               ),
               filled: true,
-              fillColor: _primaryBlack,
+              fillColor: _colors.surfaceVariant,
             ),
             validator: (value) {
               if (value!.isEmpty) {
-                return 'Veuillez entrer un titre';
+                return _l10n.canalValidTitle;
               }
               return null;
             },
@@ -376,32 +361,32 @@ class _NewCanalState extends State<NewCanal> {
           TextFormField(
             controller: _descriptionController,
             maxLines: 4,
-            style: TextStyle(color: _textColor),
+            style: TextStyle(color: _colors.textPrimary),
             decoration: InputDecoration(
-              labelText: 'Description',
-              labelStyle: TextStyle(color: _primaryYellow),
+              labelText: _l10n.canalFieldDescription,
+              labelStyle: TextStyle(color: _colors.accent),
               alignLabelWithHint: true,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: _primaryYellow),
+                borderSide: BorderSide(color: _colors.accent),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: _primaryYellow.withOpacity(0.5)),
+                borderSide: BorderSide(color: _colors.accent.withOpacity(0.5)),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: _primaryYellow),
+                borderSide: BorderSide(color: _colors.accent),
               ),
               filled: true,
-              fillColor: _primaryBlack,
+              fillColor: _colors.surfaceVariant,
             ),
             validator: (value) {
               if (value!.isEmpty) {
-                return 'Veuillez entrer une description';
+                return _l10n.canalValidDescription;
               }
               if (value.length < 10) {
-                return 'La description doit faire au moins 10 caractères';
+                return _l10n.canalValidDescriptionMin;
               }
               return null;
             },
@@ -417,14 +402,14 @@ class _NewCanalState extends State<NewCanal> {
       height: 60,
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [_primaryGreen, _primaryYellow],
+          colors: [_colors.primary, _colors.accent],
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
         ),
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: _primaryGreen.withOpacity(0.3),
+            color: _colors.primary.withOpacity(0.3),
             blurRadius: 10,
             offset: Offset(0, 5),
           ),
@@ -434,24 +419,23 @@ class _NewCanalState extends State<NewCanal> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(15),
-
           onTap: onTapCreatePro ? null : _createCanal,
           child: Center(
             child: onTapCreatePro
                 ? LoadingAnimationWidget.flickr(
               size: 30,
-              leftDotColor: _primaryGreen,
-              rightDotColor: _primaryBlack,
+              leftDotColor: _colors.primary,
+              rightDotColor: _colors.background,
             )
                 : Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.add_circle, color: _primaryBlack),
+                Icon(Icons.add_circle, color: _colors.onAccent),
                 SizedBox(width: 10),
                 Text(
-                  'CRÉER LE CANAL',
+                  _l10n.canalCreateBtn,
                   style: TextStyle(
-                    color: _primaryBlack,
+                    color: _colors.onAccent,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.2,
@@ -471,10 +455,10 @@ class _NewCanalState extends State<NewCanal> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Veuillez choisir les images de profil et de couverture',
-              style: TextStyle(color: Colors.white),
+              _l10n.canalValidImages,
+              style: TextStyle(color: _colors.onPrimary),
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: _colors.danger,
           ),
         );
         return;
@@ -545,10 +529,10 @@ class _NewCanalState extends State<NewCanal> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Canal créé avec succès ! 🎉',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                _l10n.canalCreatedSuccess,
+                style: TextStyle(color: _colors.onPrimary, fontWeight: FontWeight.bold),
               ),
-              backgroundColor: _primaryGreen,
+              backgroundColor: _colors.primary,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
@@ -576,9 +560,9 @@ class _NewCanalState extends State<NewCanal> {
             SnackBar(
               content: Text(
                 'Erreur lors de la création du canal',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: _colors.onPrimary),
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: _colors.danger,
             ),
           );
           setState(() {
@@ -591,25 +575,27 @@ class _NewCanalState extends State<NewCanal> {
 
   @override
   Widget build(BuildContext context) {
+    _colors = AppColors.of(context);
+    _l10n = AppLocalizations.of(context);
     return Scaffold(
-      backgroundColor: _backgroundColor,
+      backgroundColor: _colors.background,
       appBar: AppBar(
-        iconTheme: IconThemeData(color: _textColor),
+        iconTheme: IconThemeData(color: _colors.textPrimary),
         title: Text(
-          'Créer un Canal',
+          _l10n.canalCreateTitle,
           style: TextStyle(
-            color: _textColor,
+            color: _colors.textPrimary,
             fontWeight: FontWeight.bold,
             fontSize: 20,
           ),
         ),
-        backgroundColor: _primaryBlack,
+        backgroundColor: _colors.surface,
         elevation: 0,
         centerTitle: true,
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
-            child: Icon(Icons.group_work, color: _primaryYellow),
+            child: Icon(Icons.group_work, color: _colors.accent),
           ),
         ],
       ),
@@ -639,19 +625,19 @@ class _NewCanalState extends State<NewCanal> {
               Container(
                 padding: EdgeInsets.all(15),
                 decoration: BoxDecoration(
-                  color: _primaryBlack,
+                  color: _colors.surfaceVariant,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: _primaryGreen.withOpacity(0.3)),
+                  border: Border.all(color: _colors.primary.withOpacity(0.3)),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.info, color: _primaryYellow, size: 20),
+                    Icon(Icons.info, color: _colors.accent, size: 20),
                     SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Les canaux privés nécessitent un abonnement payant pour accéder au contenu',
+                        _l10n.canalPrivateSubtitle,
                         style: TextStyle(
-                          color: _textColor.withOpacity(0.7),
+                          color: _colors.textSecondary,
                           fontSize: 12,
                         ),
                       ),

@@ -8,6 +8,8 @@ import 'package:provider/provider.dart';
 import '../../constant/logo.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/userProvider.dart';
+import '../../theme/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 import '../component/consoleWidget.dart';
 import '../userPosts/postTabs/userPostAudioTab.dart';
 import '../userPosts/postTabs/userPostImageTab.dart';
@@ -30,31 +32,25 @@ class _CanalPostFormState extends State<CanalPostForm> {
   Provider.of<UserProvider>(context, listen: false);
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-  // Couleurs personnalisées
-  final Color _primaryColor = Color(0xFFE21221); // Rouge
-  final Color _secondaryColor = Color(0xFFFFD600); // Jaune
-  final Color _backgroundColor = Color(0xFF121212); // Noir
-  final Color _cardColor = Color(0xFF1E1E1E);
-  final Color _textColor = Colors.white;
-  final Color _hintColor = Colors.grey[400]!;
-
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context);
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      backgroundColor: _backgroundColor,
+      backgroundColor: colors.background,
       appBar: AppBar(
         title: Text(
-          "Publication Canal",
+          l10n.canalNewPost,
           style: TextStyle(
-            color: _textColor,
+            color: colors.textPrimary,
             fontWeight: FontWeight.bold,
             fontSize: 20,
           ),
         ),
-        backgroundColor: _cardColor,
+        backgroundColor: colors.surface,
         elevation: 0,
         centerTitle: true,
         actions: [
@@ -63,7 +59,7 @@ class _CanalPostFormState extends State<CanalPostForm> {
             child: Logo(),
           )
         ],
-        iconTheme: IconThemeData(color: _textColor),
+        iconTheme: IconThemeData(color: colors.textPrimary),
       ),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
@@ -75,7 +71,7 @@ class _CanalPostFormState extends State<CanalPostForm> {
                 padding: EdgeInsets.all(16),
                 margin: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 decoration: BoxDecoration(
-                  color: _cardColor,
+                  color: colors.surface,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
@@ -93,10 +89,10 @@ class _CanalPostFormState extends State<CanalPostForm> {
                       height: 70,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: _primaryColor, width: 3),
+                        border: Border.all(color: colors.primary, width: 3),
                         boxShadow: [
                           BoxShadow(
-                            color: _primaryColor.withOpacity(0.3),
+                            color: colors.primary.withOpacity(0.3),
                             blurRadius: 8,
                             offset: Offset(0, 2),
                           ),
@@ -110,12 +106,12 @@ class _CanalPostFormState extends State<CanalPostForm> {
                           errorBuilder: (context, error, stackTrace) {
                             return Container(
                               decoration: BoxDecoration(
-                                color: _primaryColor.withOpacity(0.2),
+                                color: colors.primary.withOpacity(0.2),
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
                                 Icons.group,
-                                color: _primaryColor,
+                                color: colors.primary,
                                 size: 30,
                               ),
                             );
@@ -131,7 +127,7 @@ class _CanalPostFormState extends State<CanalPostForm> {
                           Text(
                             "#${widget.canal!.titre ?? 'Canal'}",
                             style: TextStyle(
-                              color: _textColor,
+                              color: colors.textPrimary,
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
@@ -143,19 +139,19 @@ class _CanalPostFormState extends State<CanalPostForm> {
                               Container(
                                 padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: _primaryColor.withOpacity(0.2),
+                                  color: colors.primary.withOpacity(0.2),
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: _primaryColor),
+                                  border: Border.all(color: colors.primary),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.people, size: 14, color: _primaryColor),
+                                    Icon(Icons.people, size: 14, color: colors.primary),
                                     SizedBox(width: 4),
                                     Text(
-                                      "${widget.canal!.usersSuiviId?.length ?? 0} abonnés",
+                                      "${widget.canal!.usersSuiviId?.length ?? 0} ${l10n.canalFollowers}",
                                       style: TextStyle(
-                                        color: _primaryColor,
+                                        color: colors.primary,
                                         fontSize: 12,
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -167,19 +163,19 @@ class _CanalPostFormState extends State<CanalPostForm> {
                               Container(
                                 padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: _secondaryColor.withOpacity(0.2),
+                                  color: colors.accent.withOpacity(0.2),
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: _secondaryColor),
+                                  border: Border.all(color: colors.accent),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.star, size: 14, color: _secondaryColor),
+                                    Icon(Icons.star, size: 14, color: colors.accent),
                                     SizedBox(width: 4),
                                     Text(
                                       "Canal",
                                       style: TextStyle(
-                                        color: _secondaryColor,
+                                        color: colors.accent,
                                         fontSize: 12,
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -194,7 +190,7 @@ class _CanalPostFormState extends State<CanalPostForm> {
                             Text(
                               widget.canal!.description!,
                               style: TextStyle(
-                                color: _hintColor,
+                                color: colors.textSecondary,
                                 fontSize: 12,
                               ),
                               maxLines: 2,
@@ -215,7 +211,7 @@ class _CanalPostFormState extends State<CanalPostForm> {
                 height: height * 0.78,
                 margin: EdgeInsets.symmetric(horizontal: 8),
                 decoration: BoxDecoration(
-                  color: _cardColor,
+                  color: colors.surface,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
@@ -231,7 +227,7 @@ class _CanalPostFormState extends State<CanalPostForm> {
                     Container(
                       padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: _cardColor,
+                        color: colors.surface,
                         borderRadius: BorderRadius.only(
                           topLeft: Radius.circular(20),
                           topRight: Radius.circular(20),
@@ -242,10 +238,10 @@ class _CanalPostFormState extends State<CanalPostForm> {
                           Container(
                             padding: EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: _primaryColor,
+                              color: colors.primary,
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: Icon(Icons.add_circle, color: Colors.white, size: 24),
+                            child: Icon(Icons.add_circle, color: colors.onPrimary, size: 24),
                           ),
                           SizedBox(width: 12),
                           Expanded(
@@ -253,17 +249,17 @@ class _CanalPostFormState extends State<CanalPostForm> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Nouvelle Publication',
+                                  l10n.canalNewPost,
                                   style: TextStyle(
-                                    color: _textColor,
+                                    color: colors.textPrimary,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 18,
                                   ),
                                 ),
                                 Text(
-                                  'Choisissez le type de contenu à publier',
+                                  l10n.canalPostChooseType,
                                   style: TextStyle(
-                                    color: _hintColor,
+                                    color: colors.textSecondary,
                                     fontSize: 12,
                                   ),
                                 ),
@@ -282,12 +278,12 @@ class _CanalPostFormState extends State<CanalPostForm> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.audiotrack, size: 20, color: _textColor),
+                                Icon(Icons.audiotrack, size: 20, color: colors.textPrimary),
                                 SizedBox(width: 8),
                                 Text(
                                   "Audio",
                                   style: TextStyle(
-                                    color: _textColor,
+                                    color: colors.textPrimary,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -299,12 +295,12 @@ class _CanalPostFormState extends State<CanalPostForm> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.text_fields, size: 20, color: _textColor),
+                                Icon(Icons.text_fields, size: 20, color: colors.textPrimary),
                                 SizedBox(width: 8),
                                 Text(
                                   "Texte",
                                   style: TextStyle(
-                                    color: _textColor,
+                                    color: colors.textPrimary,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -315,12 +311,12 @@ class _CanalPostFormState extends State<CanalPostForm> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.photo, size: 20, color: _textColor),
+                                Icon(Icons.photo, size: 20, color: colors.textPrimary),
                                 SizedBox(width: 8),
                                 Text(
                                   "Image",
                                   style: TextStyle(
-                                    color: _textColor,
+                                    color: colors.textPrimary,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -331,12 +327,12 @@ class _CanalPostFormState extends State<CanalPostForm> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.videocam, size: 20, color: _textColor),
+                                Icon(Icons.videocam, size: 20, color: colors.textPrimary),
                                 SizedBox(width: 8),
                                 Text(
                                   "Vidéo",
                                   style: TextStyle(
-                                    color: _textColor,
+                                    color: colors.textPrimary,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -346,12 +342,12 @@ class _CanalPostFormState extends State<CanalPostForm> {
                         ],
                         tabBarProperties: TabBarProperties(
                           height: 50.0,
-                          indicatorColor: _primaryColor,
+                          indicatorColor: colors.primary,
                           indicatorWeight: 3.0,
-                          labelColor: _textColor,
-                          unselectedLabelColor: _hintColor,
+                          labelColor: colors.textPrimary,
+                          unselectedLabelColor: colors.textSecondary,
                           background: Container(
-                            color: _cardColor,
+                            color: colors.surface,
                           ),
                         ),
                         views: [
@@ -389,19 +385,19 @@ class _CanalPostFormState extends State<CanalPostForm> {
                 padding: EdgeInsets.all(16),
                 margin: EdgeInsets.symmetric(horizontal: 8),
                 decoration: BoxDecoration(
-                  color: _cardColor,
+                  color: colors.surface,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: _primaryColor.withOpacity(0.3)),
+                  border: Border.all(color: colors.primary.withOpacity(0.3)),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.info, color: _primaryColor, size: 20),
+                    Icon(Icons.info, color: colors.primary, size: 20),
                     SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Votre publication sera visible par tous les abonnés du canal',
+                        l10n.canalPostVisible,
                         style: TextStyle(
-                          color: _hintColor,
+                          color: colors.textSecondary,
                           fontSize: 12,
                         ),
                       ),

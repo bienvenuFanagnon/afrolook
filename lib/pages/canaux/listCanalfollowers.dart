@@ -2,6 +2,8 @@ import 'package:afrotok/pages/component/showUserDetails.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/model_data.dart';
+import '../../theme/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 
 class ChannelFollowersPage extends StatefulWidget {
   final List<String> userIds;
@@ -25,14 +27,9 @@ class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
   bool _hasMore = true;
   bool _initialLoadComplete = false;
 
-  // Firebase
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Vos couleurs
-  final Color _primaryColor = Color(0xFFD32F2F); // Rouge
-  final Color _secondaryColor = Color(0xFF212121); // Noir
-  final Color _accentColor = Color(0xFFFFD600); // Jaune
-  final Color _backgroundColor = Color(0xFFFAFAFA); // Gris clair
+  late AppColors _colors;
 
   @override
   void initState() {
@@ -50,37 +47,22 @@ class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
   Future<List<UserData>> _getUsersBatch(List<String> userIds) async {
     List<UserData> listUsers = [];
 
-    print('🔍 _getUsersBatch appelé avec ${userIds.length} userIds');
-
-    if (userIds.isEmpty) {
-      print('⚠️ Liste userIds vide');
-      return listUsers;
-    }
+    if (userIds.isEmpty) return listUsers;
 
     try {
       CollectionReference userCollect = _firestore.collection('Users');
       const batchSize = 10;
-      int batchCount = 0;
 
       for (int i = 0; i < userIds.length; i += batchSize) {
-        batchCount++;
         final end = i + batchSize < userIds.length ? i + batchSize : userIds.length;
         final batchIds = userIds.sublist(i, end);
-
-        print('\n📦 Batch $batchCount (${batchIds.length} IDs)');
 
         if (batchIds.isEmpty) continue;
 
         try {
-          // QuerySnapshot querySnapshotUser = await userCollect
-          //     .where('id', whereIn: batchIds)
-          //     .get();
-
           QuerySnapshot querySnapshotUser = await userCollect
               .where(FieldPath.documentId, whereIn: batchIds)
               .get();
-
-          print('📊 Documents trouvés: ${querySnapshotUser.docs.length}');
 
           for (var doc in querySnapshotUser.docs) {
             try {
@@ -88,23 +70,18 @@ class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
               final user = UserData.fromJson(data);
               listUsers.add(user);
             } catch (e) {
-              print('❌ Erreur création UserData: $e');
+              print('Erreur création UserData: $e');
             }
           }
 
-          // Petite pause pour éviter les timeouts
           if (i + batchSize < userIds.length) {
             await Future.delayed(Duration(milliseconds: 50));
           }
-
         } catch (e) {
-          print('❌ Erreur batch $batchCount: $e');
+          print('Erreur batch: $e');
         }
       }
 
-      print('✅ Total utilisateurs récupérés: ${listUsers.length} sur ${userIds.length}');
-
-      // Trier par popularité
       listUsers.sort((a, b) {
         final aFollowers = a.userAbonnesIds?.length ?? 0;
         final bFollowers = b.userAbonnesIds?.length ?? 0;
@@ -112,108 +89,51 @@ class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
       });
 
     } catch (e) {
-      print('❌ Erreur globale _getUsersBatch: $e');
+      print('Erreur globale _getUsersBatch: $e');
     }
 
     return listUsers;
   }
 
   Future<void> _loadInitialUsers() async {
-    print('🚀 _loadInitialUsers appelé');
-
     if (widget.userIds.isEmpty) {
-      print('📭 Liste userIds vide');
-      if (mounted) {
-        setState(() {
-          _initialLoadComplete = true;
-        });
-      }
+      if (mounted) setState(() { _initialLoadComplete = true; });
       return;
     }
 
-    if (mounted) {
-      setState(() {
-        _isLoading = true;
-      });
-    }
+    if (mounted) setState(() { _isLoading = true; });
 
     try {
-      // Charger la première page
       await _loadNextPage();
     } catch (e) {
-      print('❌ Erreur _loadInitialUsers: $e');
+      print('Erreur _loadInitialUsers: $e');
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _initialLoadComplete = true;
-          print('🏁 Initialisation terminée');
-        });
-      }
+      if (mounted) setState(() { _isLoading = false; _initialLoadComplete = true; });
     }
   }
 
   Future<void> _loadNextPage() async {
-    print('\n📄 _loadNextPage appelé');
-    print('   Page: $_currentPage');
-    print('   _hasMore: $_hasMore');
-    print('   _isLoading: $_isLoading');
+    if (!_hasMore) return;
 
-    if (!_hasMore) {
-      print('❌ _loadNextPage: _hasMore = false');
-      return;
-    }
-
-    // if (_isLoading) {
-    //   print('⚠️ _loadNextPage: _isLoading = true');
-    //   return;
-    // }
-
-    if (mounted) {
-      setState(() {
-        _isLoading = true;
-      });
-    }
+    if (mounted) setState(() { _isLoading = true; });
 
     try {
-      // Calculer les indices pour cette page
       final startIndex = _currentPage * _pageSize;
       final endIndex = startIndex + _pageSize;
       final end = endIndex > widget.userIds.length ? widget.userIds.length : endIndex;
 
-      print('📊 Chargement indices: $startIndex à $end');
-      print('📊 Total users disponibles: ${widget.userIds.length}');
-
       if (startIndex >= widget.userIds.length) {
-        print('📊 Déjà tout chargé');
-        if (mounted) {
-          setState(() {
-            _hasMore = false;
-            _isLoading = false;
-          });
-        }
+        if (mounted) setState(() { _hasMore = false; _isLoading = false; });
         return;
       }
 
-      // Récupérer les IDs pour cette page
       final pageUserIds = widget.userIds.sublist(startIndex, end);
-      print('📊 IDs à charger: ${pageUserIds.length}');
-
       if (pageUserIds.isEmpty) {
-        print('❌ Aucun ID à charger');
-        if (mounted) {
-          setState(() {
-            _hasMore = false;
-            _isLoading = false;
-          });
-        }
+        if (mounted) setState(() { _hasMore = false; _isLoading = false; });
         return;
       }
 
-      // Récupérer les utilisateurs depuis Firebase
       final List<UserData> newUsers = await _getUsersBatch(pageUserIds);
-
-      print('✅ ${newUsers.length} utilisateurs récupérés');
 
       if (mounted) {
         setState(() {
@@ -221,21 +141,11 @@ class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
           _currentPage++;
           _hasMore = endIndex < widget.userIds.length;
           _isLoading = false;
-
-          print('📊 État mis à jour:');
-          print('   _displayedUsers: ${_displayedUsers.length}');
-          print('   _currentPage: $_currentPage');
-          print('   _hasMore: $_hasMore');
         });
       }
-
     } catch (e) {
-      print('❌ Erreur _loadNextPage: $e');
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      print('Erreur _loadNextPage: $e');
+      if (mounted) setState(() { _isLoading = false; });
     }
   }
 
@@ -245,7 +155,6 @@ class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
         !_scrollController.position.outOfRange &&
         _hasMore &&
         !_isLoading) {
-      print('🔄 Déclenchement du scroll infini');
       _loadNextPage();
     }
   }
@@ -263,52 +172,45 @@ class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
 
     await _loadNextPage();
 
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-        _initialLoadComplete = true;
-      });
-    }
+    if (mounted) setState(() { _isLoading = false; _initialLoadComplete = true; });
   }
 
   @override
   Widget build(BuildContext context) {
+    _colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context);
     final width = MediaQuery.of(context).size.width;
     final height = MediaQuery.of(context).size.height;
 
     return Scaffold(
-      backgroundColor: _backgroundColor,
+      backgroundColor: _colors.background,
       appBar: AppBar(
         title: Text(
-          'Abonnés - ${widget.channelName}',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-            fontSize: 16,
-          ),
+          '${l10n.canalFollowers} - ${widget.channelName}',
+          style: TextStyle(fontWeight: FontWeight.bold, color: _colors.onPrimary, fontSize: 16),
         ),
         centerTitle: true,
-        backgroundColor: _primaryColor,
+        backgroundColor: _colors.primary,
         elevation: 0,
-        iconTheme: IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: _colors.onPrimary),
       ),
-      body: _buildBody(width, height),
+      body: _buildBody(width, height, l10n),
     );
   }
 
-  Widget _buildBody(double width, double height) {
+  Widget _buildBody(double width, double height, AppLocalizations l10n) {
     if (_isLoading && !_initialLoadComplete) {
-      return _buildLoading();
+      return _buildLoading(l10n);
     }
 
     if (_displayedUsers.isEmpty && _initialLoadComplete) {
-      return _buildEmptyState();
+      return _buildEmptyState(l10n);
     }
 
     return RefreshIndicator(
       onRefresh: _refreshData,
-      backgroundColor: _primaryColor,
-      color: _accentColor,
+      backgroundColor: _colors.primary,
+      color: _colors.accent,
       child: ListView.builder(
         controller: _scrollController,
         physics: AlwaysScrollableScrollPhysics(),
@@ -317,22 +219,21 @@ class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
           if (index == _displayedUsers.length) {
             return _buildLoadingMore();
           }
-
           final user = _displayedUsers[index];
-          return _buildUserItem(user, width, height, context);
+          return _buildUserItem(user, width, height, context, l10n);
         },
       ),
     );
   }
 
-  Widget _buildUserItem(UserData user, double width, double height, BuildContext context) {
+  Widget _buildUserItem(UserData user, double width, double height, BuildContext context, AppLocalizations l10n) {
     final followerCount = user.abonnes ?? 0;
     final isVerified = user.isVerify ?? false;
 
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _colors.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -345,15 +246,12 @@ class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {
-            _showUserDetails(user, width, height, context);
-          },
+          onTap: () => showUserDetailsModalDialog(user, width, height, context),
           borderRadius: BorderRadius.circular(12),
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                // Avatar avec badge vérifié
                 Stack(
                   children: [
                     Container(
@@ -362,7 +260,7 @@ class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: _primaryColor.withOpacity(0.3),
+                          color: _colors.primary.withOpacity(0.3),
                           width: 2,
                         ),
                       ),
@@ -376,12 +274,11 @@ class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
                             return Center(
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation(_primaryColor),
+                                valueColor: AlwaysStoppedAnimation(_colors.primary),
                               ),
                             );
                           },
-                          errorBuilder: (context, error, stackTrace) =>
-                              _buildDefaultAvatar(),
+                          errorBuilder: (context, error, stackTrace) => _buildDefaultAvatar(),
                         )
                             : _buildDefaultAvatar(),
                       ),
@@ -393,20 +290,13 @@ class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
                         child: Container(
                           padding: EdgeInsets.all(2),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: _colors.surface,
                             shape: BoxShape.circle,
                             boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 2,
-                              ),
+                              BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 2),
                             ],
                           ),
-                          child: Icon(
-                            Icons.verified,
-                            color: _accentColor,
-                            size: 16,
-                          ),
+                          child: Icon(Icons.verified, color: _colors.accent, size: 16),
                         ),
                       ),
                   ],
@@ -414,7 +304,6 @@ class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
 
                 SizedBox(width: 16),
 
-                // Informations utilisateur
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -423,11 +312,11 @@ class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
                         children: [
                           Expanded(
                             child: Text(
-                              user.pseudo ?? 'Utilisateur',
+                              user.pseudo ?? l10n.canalUser,
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: _secondaryColor,
+                                color: _colors.textPrimary,
                               ),
                               overflow: TextOverflow.ellipsis,
                               maxLines: 1,
@@ -438,10 +327,7 @@ class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
                             Container(
                               width: 8,
                               height: 8,
-                              decoration: BoxDecoration(
-                                color: Colors.green,
-                                shape: BoxShape.circle,
-                              ),
+                              decoration: BoxDecoration(color: Colors.green, shape: BoxShape.circle),
                             ),
                         ],
                       ),
@@ -450,59 +336,38 @@ class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
 
                       Row(
                         children: [
-                          Icon(
-                            Icons.people,
-                            size: 14,
-                            color: Colors.grey[600],
-                          ),
+                          Icon(Icons.people, size: 14, color: _colors.textSecondary),
                           SizedBox(width: 4),
                           Text(
                             _formatNumber(followerCount),
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey[700],
-                            ),
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: _colors.textSecondary),
                           ),
                           SizedBox(width: 2),
                           Text(
-                            followerCount <= 1 ? 'abonné' : 'abonnés',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey[600],
-                            ),
+                            l10n.canalFollowers,
+                            style: TextStyle(fontSize: 13, color: _colors.textSecondary),
                           ),
                         ],
                       ),
 
-                      // Indicateur de popularité (optionnel)
                       if ((user.userAbonnesIds?.length ?? 0) > 1000)
                         Container(
                           margin: EdgeInsets.only(top: 6),
                           padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: _primaryColor.withOpacity(0.1),
+                            color: _colors.primary.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
-                            'Populaire',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: _primaryColor,
-                            ),
+                            l10n.canalPopular,
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: _colors.primary),
                           ),
                         ),
                     ],
                   ),
                 ),
 
-                // Flèche d'indication
-                Icon(
-                  Icons.chevron_right,
-                  color: Colors.grey[400],
-                  size: 20,
-                ),
+                Icon(Icons.chevron_right, color: _colors.textSecondary, size: 20),
               ],
             ),
           ),
@@ -511,51 +376,32 @@ class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
     );
   }
 
-  void _showUserDetails(UserData user, double width, double height, BuildContext context) {
-    // Remplacer par votre fonction de détail
-    showUserDetailsModalDialog(user, width, height, context);
-  }
-
   Widget _buildDefaultAvatar() {
     return Container(
-      color: _primaryColor.withOpacity(0.1),
+      color: _colors.primary.withOpacity(0.1),
       child: Center(
-        child: Icon(
-          Icons.person,
-          color: _primaryColor.withOpacity(0.6),
-          size: 28,
-        ),
+        child: Icon(Icons.person, color: _colors.primary.withOpacity(0.6), size: 28),
       ),
     );
   }
 
   String _formatNumber(int number) {
-    if (number >= 1000000) {
-      return '${(number / 1000000).toStringAsFixed(1)}M';
-    }
-    if (number >= 1000) {
-      return '${(number / 1000).toStringAsFixed(1)}K';
-    }
+    if (number >= 1000000) return '${(number / 1000000).toStringAsFixed(1)}M';
+    if (number >= 1000) return '${(number / 1000).toStringAsFixed(1)}K';
     return number.toString();
   }
 
-  Widget _buildLoading() {
+  Widget _buildLoading(AppLocalizations l10n) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation(_primaryColor),
+            valueColor: AlwaysStoppedAnimation(_colors.primary),
             strokeWidth: 3,
           ),
           SizedBox(height: 16),
-          Text(
-            'Chargement des abonnés...',
-            style: TextStyle(
-              color: _secondaryColor,
-              fontSize: 14,
-            ),
-          ),
+          Text(l10n.canalLoadingFollowers, style: TextStyle(color: _colors.textSecondary, fontSize: 14)),
         ],
       ),
     );
@@ -566,53 +412,40 @@ class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
       padding: const EdgeInsets.symmetric(vertical: 20),
       child: Center(
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation(_primaryColor),
+          valueColor: AlwaysStoppedAnimation(_colors.primary),
           strokeWidth: 2,
         ),
       ),
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(AppLocalizations l10n) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.people_outline,
-              size: 80,
-              color: Colors.grey[300],
-            ),
+            Icon(Icons.people_outline, size: 80, color: _colors.textSecondary),
             SizedBox(height: 16),
             Text(
-              'Aucun abonné',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: _secondaryColor,
-              ),
+              l10n.canalNoFollowers,
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: _colors.textPrimary),
             ),
             SizedBox(height: 8),
             Text(
-              'Ce canal n\'a pas encore d\'abonnés',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
+              l10n.canalNoFollowersDesc,
+              style: TextStyle(fontSize: 14, color: _colors.textSecondary),
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: _refreshData,
               style: ElevatedButton.styleFrom(
-                backgroundColor: _primaryColor,
-                foregroundColor: Colors.white,
+                backgroundColor: _colors.primary,
+                foregroundColor: _colors.onPrimary,
                 padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(25),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
                 elevation: 0,
               ),
               child: Text('Rafraîchir'),

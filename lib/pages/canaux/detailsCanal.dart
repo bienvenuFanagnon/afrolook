@@ -10,6 +10,8 @@ import 'package:provider/provider.dart';
 import '../../../providers/authProvider.dart';
 import '../../../providers/userProvider.dart';
 import 'package:afrotok/models/model_data.dart';
+import '../../theme/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 import '../component/showImage.dart';
 import '../paiement/newDepot.dart';
 import '../userPosts/postWidgets/postWidgetPage.dart';
@@ -27,16 +29,7 @@ class CanalDetails extends StatefulWidget {
 }
 
 class _CanalDetailsState extends State<CanalDetails> {
-  // Couleurs du thème
-  final Color _backgroundColor = Color(0xFF0A0A0A);
-  final Color _cardColor = Color(0xFF1A1A1A);
-  final Color _primaryGreen = Color(0xFF2E7D32);
-  final Color _primaryYellow = Color(0xFFFFD600);
-  final Color _accentGreen = Color(0xFF4CAF50);
-  final Color _accentYellow = Color(0xFFFFEB3B);
-  final Color _textColor = Colors.white;
-  final Color _subtextColor = Colors.grey[400]!;
-  final Color _verifiedColor = Color(0xFF1DA1F2);
+  late AppColors _colors;
 
   // CONFIGURATION - Paiement pour abonnés existants
   final bool _requirePaymentForExistingSubscribers = false;
@@ -166,11 +159,13 @@ class _CanalDetailsState extends State<CanalDetails> {
         final isPrivate = widget.canal.isPrivate == true;
         final subscriptionPrice = widget.canal.subscriptionPrice ?? 0;
 
+        final colors = AppColors.of(context);
+        final l10n = AppLocalizations.of(context);
         return AlertDialog(
-          backgroundColor: _cardColor,
+          backgroundColor: colors.surface,
           title: Text(
-            'Se désabonner',
-            style: TextStyle(color: _textColor, fontWeight: FontWeight.bold),
+            l10n.canalUnsubscribe,
+            style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -178,14 +173,14 @@ class _CanalDetailsState extends State<CanalDetails> {
             children: [
               Text(
                 'Êtes-vous sûr de vouloir vous désabonner de ce canal?',
-                style: TextStyle(color: _subtextColor),
+                style: TextStyle(color: colors.textSecondary),
               ),
               SizedBox(height: 8),
               if (isPrivate)
                 Text(
                   '⚠️ Attention: Si vous vous désabonnez, vous devrez repayer l\'abonnement de ${subscriptionPrice}FCFA pour y accéder à nouveau.',
                   style: TextStyle(
-                    color: _primaryYellow,
+                    color: colors.accent,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -195,14 +190,12 @@ class _CanalDetailsState extends State<CanalDetails> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: Text('Annuler', style: TextStyle(color: _subtextColor)),
+              child: Text('Annuler', style: TextStyle(color: colors.textSecondary)),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-              ),
-              child: Text('Se désabonner', style: TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(backgroundColor: colors.danger),
+              child: Text(l10n.canalUnsubscribe, style: TextStyle(color: colors.onPrimary)),
             ),
           ],
         );
@@ -237,9 +230,9 @@ class _CanalDetailsState extends State<CanalDetails> {
         SnackBar(
           content: Text(
             '✅ Vous vous êtes désabonné de ce canal.',
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: _colors.onPrimary),
           ),
-          backgroundColor: _accentGreen,
+          backgroundColor: _colors.primary,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -250,9 +243,9 @@ class _CanalDetailsState extends State<CanalDetails> {
         SnackBar(
           content: Text(
             '❌ Erreur lors du désabonnement',
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: _colors.onPrimary),
           ),
-          backgroundColor: Colors.red,
+          backgroundColor: _colors.danger,
         ),
       );
     } finally {
@@ -273,9 +266,9 @@ class _CanalDetailsState extends State<CanalDetails> {
         SnackBar(
           content: Text(
             '✅ Vous avez déjà accès à ce canal privé!',
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: _colors.onPrimary),
           ),
-          backgroundColor: _accentGreen,
+          backgroundColor: _colors.primary,
         ),
       );
       return;
@@ -305,27 +298,28 @@ class _CanalDetailsState extends State<CanalDetails> {
     final bool? confirm = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
+        final colors = AppColors.of(context);
         return AlertDialog(
-          backgroundColor: _cardColor,
+          backgroundColor: colors.surface,
           title: Text(
             isAlreadySubscribed && _requirePaymentForExistingSubscribers
                 ? 'Mise à jour d\'abonnement'
                 : 'Abonnement Privé',
-            style: TextStyle(color: _textColor, fontWeight: FontWeight.bold),
+            style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold),
           ),
           content: Text(
             confirmationMessage,
-            style: TextStyle(color: _subtextColor),
+            style: TextStyle(color: colors.textSecondary),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: Text('Annuler', style: TextStyle(color: _subtextColor)),
+              child: Text('Annuler', style: TextStyle(color: colors.textSecondary)),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(true),
-              style: ElevatedButton.styleFrom(backgroundColor: _primaryGreen),
-              child: Text('Confirmer', style: TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(backgroundColor: colors.primary),
+              child: Text('Confirmer', style: TextStyle(color: colors.onPrimary)),
             ),
           ],
         );
@@ -390,9 +384,9 @@ class _CanalDetailsState extends State<CanalDetails> {
         SnackBar(
           content: Text(
             successMessage,
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: _colors.onPrimary),
           ),
-          backgroundColor: _accentGreen,
+          backgroundColor: _colors.primary,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -403,9 +397,9 @@ class _CanalDetailsState extends State<CanalDetails> {
         SnackBar(
           content: Text(
             '❌ Erreur lors de l\'abonnement',
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: _colors.onPrimary),
           ),
-          backgroundColor: Colors.red,
+          backgroundColor: _colors.danger,
         ),
       );
     } finally {
@@ -474,10 +468,10 @@ class _CanalDetailsState extends State<CanalDetails> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          '✅ Vous suivez maintenant ce canal!',
-          style: TextStyle(color: Colors.white),
+          '✅ ${AppLocalizations.of(context).canalNowFollowing}!',
+          style: TextStyle(color: _colors.onPrimary),
         ),
-        backgroundColor: _accentGreen,
+        backgroundColor: _colors.primary,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -547,15 +541,17 @@ class _CanalDetailsState extends State<CanalDetails> {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
+        final colors = AppColors.of(context);
+        final l10n = AppLocalizations.of(context);
         return Dialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          backgroundColor: Colors.black,
+          backgroundColor: colors.background,
           child: Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
               gradient: LinearGradient(
-                colors: [Colors.black, Colors.grey.shade900],
+                colors: [colors.background, colors.surface],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -563,47 +559,43 @@ class _CanalDetailsState extends State<CanalDetails> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // 🟡 Icône en haut
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.yellow.shade600,
+                    color: colors.accent,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.warning_amber_rounded, color: Colors.black, size: 40),
+                  child: Icon(Icons.warning_amber_rounded, color: colors.onAccent, size: 40),
                 ),
                 const SizedBox(height: 16),
 
-                // 🟢 Titre
                 Text(
-                  'Solde insuffisant 💰',
+                  l10n.canalInsufficientBalance,
                   style: TextStyle(
-                    color: Colors.greenAccent.shade400,
+                    color: colors.primary,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 12),
 
-                // 🖤 Message
                 Text(
                   'Votre solde actuel est de ${userBalance.toStringAsFixed(0)} FCFA.\n'
                       'Il vous manque ${missingAmount.toStringAsFixed(0)} FCFA pour vous abonner '
                       'à ce canal privé coûtant ${subscriptionPrice.toStringAsFixed(0)} FCFA.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white70, height: 1.5, fontSize: 15),
+                  style: TextStyle(color: colors.textSecondary, height: 1.5, fontSize: 15),
                 ),
                 const SizedBox(height: 20),
 
-                // 🔘 Boutons
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     TextButton(
                       onPressed: () => Navigator.of(context).pop(),
                       child: Text(
-                        'Plus tard',
-                        style: TextStyle(color: Colors.yellow.shade600, fontWeight: FontWeight.w500),
+                        l10n.canalLater,
+                        style: TextStyle(color: colors.accent, fontWeight: FontWeight.w500),
                       ),
                     ),
                     ElevatedButton(
@@ -612,23 +604,18 @@ class _CanalDetailsState extends State<CanalDetails> {
                         Navigator.push(context, MaterialPageRoute(builder: (context) => DepositScreen()));
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.greenAccent.shade400,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        backgroundColor: colors.primary,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                         elevation: 3,
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.account_balance_wallet, color: Colors.black),
+                          Icon(Icons.account_balance_wallet, color: colors.onPrimary),
                           const SizedBox(width: 8),
                           Text(
-                            'Recharger',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            l10n.canalRecharge,
+                            style: TextStyle(color: colors.onPrimary, fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
@@ -703,7 +690,7 @@ class _CanalDetailsState extends State<CanalDetails> {
                     Container(
                       padding: EdgeInsets.all(3),
                       decoration: BoxDecoration(
-                        color: _cardColor,
+                        color: _colors.surface,
                         shape: BoxShape.circle,
                       ),
                       child: CircleAvatar(
@@ -720,12 +707,12 @@ class _CanalDetailsState extends State<CanalDetails> {
                         child: Container(
                           padding: EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: _primaryYellow,
+                            color: _colors.accent,
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
                             Icons.lock,
-                            color: Colors.black,
+                            color: _colors.onAccent,
                             size: 16,
                           ),
                         ),
@@ -743,13 +730,13 @@ class _CanalDetailsState extends State<CanalDetails> {
                 child: Container(
                   padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: _primaryGreen,
+                    color: _colors.primary,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    'Propriétaire',
+                    AppLocalizations.of(context).canalOwner,
                     style: TextStyle(
-                      color: Colors.white,
+                      color: _colors.onPrimary,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),
@@ -788,7 +775,7 @@ class _CanalDetailsState extends State<CanalDetails> {
                             child: Text(
                               "#${widget.canal.titre!}",
                               style: TextStyle(
-                                color: _textColor,
+                                color: _colors.textPrimary,
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -798,7 +785,7 @@ class _CanalDetailsState extends State<CanalDetails> {
                           ),
                           SizedBox(width: 8),
                           if (widget.canal.isVerify == true)
-                            Icon(Icons.verified, color: _verifiedColor, size: 24),
+                            Icon(Icons.verified, color: _colors.info, size: 24),
                         ],
                       ),
                       SizedBox(height: 8),
@@ -809,13 +796,13 @@ class _CanalDetailsState extends State<CanalDetails> {
                           _buildStatItem(
                             icon: Icons.people,
                             value: subscribersCount.toString(),
-                            label: 'Abonnés',
+                            label: AppLocalizations.of(context).canalFollowers,
                           ),
                           SizedBox(width: 16),
                           _buildStatItem(
                             icon: Icons.post_add,
                             value: postsCount.toString(),
-                            label: 'Publications',
+                            label: AppLocalizations.of(context).canalPublications,
                           ),
                           if (isPrivate) ...[
                             SizedBox(width: 16),
@@ -823,7 +810,7 @@ class _CanalDetailsState extends State<CanalDetails> {
                               icon: Icons.attach_money,
                               value: '${widget.canal.subscriptionPrice?.toStringAsFixed(0) ?? '0'}',
                               label: 'FCFA',
-                              color: _primaryYellow,
+                              color: _colors.accent,
                             ),
                           ],
                         ],
@@ -849,11 +836,11 @@ class _CanalDetailsState extends State<CanalDetails> {
                         onPressed: (_isProcessingSubscription || _isProcessingUnfollow) ? null : _handleFollowAction,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: isFollowing
-                              ? Colors.red
-                              : (isPrivate ? _primaryYellow : _primaryGreen),
+                              ? _colors.danger
+                              : (isPrivate ? _colors.accent : _colors.primary),
                           foregroundColor: isFollowing
-                              ? Colors.white
-                              : (isPrivate ? Colors.black : Colors.white),
+                              ? _colors.onPrimary
+                              : (isPrivate ? _colors.onAccent : _colors.onPrimary),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(25),
                           ),
@@ -864,13 +851,13 @@ class _CanalDetailsState extends State<CanalDetails> {
                           width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: isFollowing ? Colors.white : (isPrivate ? Colors.black : Colors.white),
+                            color: isFollowing ? _colors.onPrimary : (isPrivate ? _colors.onAccent : _colors.onPrimary),
                           ),
                         )
                             : Text(
                           isFollowing
-                              ? 'SE DÉSABONNER'
-                              : (isPrivate ? 'S\'ABONNER' : 'SUIVRE'),
+                              ? AppLocalizations.of(context).canalUnsubscribeBtn
+                              : (isPrivate ? AppLocalizations.of(context).canalSubscribeBtn : AppLocalizations.of(context).canalFollowBtn),
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
@@ -892,8 +879,8 @@ class _CanalDetailsState extends State<CanalDetails> {
                           );
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
+                          backgroundColor: _colors.primary,
+                          foregroundColor: _colors.onPrimary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(25),
                           ),
@@ -932,8 +919,8 @@ class _CanalDetailsState extends State<CanalDetails> {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
-                    foregroundColor: Colors.white,
+                    backgroundColor: _colors.warning,
+                    foregroundColor: _colors.onPrimary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(25),
                     ),
@@ -943,7 +930,7 @@ class _CanalDetailsState extends State<CanalDetails> {
                     children: [
                       Icon(Icons.admin_panel_settings, size: 18),
                       SizedBox(width: 6),
-                      Text('GÉRER LES ADMINS', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                      Text(AppLocalizations.of(context).canalManageAdmins, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),
@@ -962,8 +949,8 @@ class _CanalDetailsState extends State<CanalDetails> {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _primaryGreen,
-                    foregroundColor: Colors.white,
+                    backgroundColor: _colors.primary,
+                    foregroundColor: _colors.onPrimary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(25),
                     ),
@@ -996,8 +983,8 @@ class _CanalDetailsState extends State<CanalDetails> {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _primaryGreen,
-                    foregroundColor: Colors.white,
+                    backgroundColor: _colors.primary,
+                    foregroundColor: _colors.onPrimary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(25),
                     ),
@@ -1158,21 +1145,21 @@ class _CanalDetailsState extends State<CanalDetails> {
               width: double.infinity,
               padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: _cardColor,
+                color: _colors.surface,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _primaryGreen.withOpacity(0.3)),
+                border: Border.all(color: _colors.primary.withOpacity(0.3)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.description, color: _primaryGreen, size: 20),
+                      Icon(Icons.description, color: _colors.primary, size: 20),
                       SizedBox(width: 8),
                       Text(
-                        'Description',
+                        AppLocalizations.of(context).canalDescription,
                         style: TextStyle(
-                          color: _textColor,
+                          color: _colors.textPrimary,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -1181,9 +1168,9 @@ class _CanalDetailsState extends State<CanalDetails> {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    widget.canal.description ?? 'Aucune description',
+                    widget.canal.description ?? AppLocalizations.of(context).canalNoDescription,
                     style: TextStyle(
-                      color: _subtextColor,
+                      color: _colors.textSecondary,
                       fontSize: 14,
                     ),
                   ),
@@ -1196,12 +1183,12 @@ class _CanalDetailsState extends State<CanalDetails> {
             // Section Posts
             Row(
               children: [
-                Icon(Icons.dynamic_feed, color: _primaryYellow, size: 24),
+                Icon(Icons.dynamic_feed, color: _colors.accent, size: 24),
                 SizedBox(width: 8),
                 Text(
-                  'Publications',
+                  AppLocalizations.of(context).canalPublications,
                   style: TextStyle(
-                    color: _textColor,
+                    color: _colors.textPrimary,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
@@ -1224,12 +1211,12 @@ class _CanalDetailsState extends State<CanalDetails> {
       children: [
         Row(
           children: [
-            Icon(icon, color: color ?? _subtextColor, size: 16),
+            Icon(icon, color: color ?? _colors.textSecondary, size: 16),
             SizedBox(width: 4),
             Text(
               value,
               style: TextStyle(
-                color: _textColor,
+                color: _colors.textPrimary,
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
               ),
@@ -1239,7 +1226,7 @@ class _CanalDetailsState extends State<CanalDetails> {
         Text(
           label,
           style: TextStyle(
-            color: _subtextColor,
+            color: _colors.textSecondary,
             fontSize: 12,
           ),
         ),
@@ -1256,7 +1243,7 @@ class _CanalDetailsState extends State<CanalDetails> {
             child: Container(
               height: 200,
               child: Center(
-                child: CircularProgressIndicator(color: _primaryGreen),
+                child: CircularProgressIndicator(color: _colors.primary),
               ),
             ),
           );
@@ -1268,11 +1255,11 @@ class _CanalDetailsState extends State<CanalDetails> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.error, color: Colors.red, size: 50),
+                    Icon(Icons.error, color: _colors.danger, size: 50),
                     SizedBox(height: 16),
                     Text(
                       'Erreur de chargement',
-                      style: TextStyle(color: _subtextColor),
+                      style: TextStyle(color: _colors.textSecondary),
                     ),
                   ],
                 ),
@@ -1287,16 +1274,16 @@ class _CanalDetailsState extends State<CanalDetails> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.feed, color: _subtextColor, size: 50),
+                    Icon(Icons.feed, color: _colors.textSecondary, size: 50),
                     SizedBox(height: 16),
                     Text(
                       'Aucune publication',
-                      style: TextStyle(color: _subtextColor, fontSize: 16),
+                      style: TextStyle(color: _colors.textSecondary, fontSize: 16),
                     ),
                     SizedBox(height: 8),
                     Text(
                       'Soyez le premier à publier dans ce canal!',
-                      style: TextStyle(color: _subtextColor, fontSize: 12),
+                      style: TextStyle(color: _colors.textSecondary, fontSize: 12),
                     ),
                   ],
                 ),
@@ -1317,7 +1304,7 @@ class _CanalDetailsState extends State<CanalDetails> {
                   margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: HomePostUsersWidget(
                     post: post,
-                    color: _primaryGreen,
+                    color: _colors.primary,
                     height: MediaQuery.of(context).size.height,
                     width: MediaQuery.of(context).size.width,
                   ),
@@ -1340,18 +1327,18 @@ class _CanalDetailsState extends State<CanalDetails> {
       padding: EdgeInsets.all(16),
       child: Center(
         child: _isLoadingMorePosts
-            ? CircularProgressIndicator(color: _primaryGreen)
+            ? CircularProgressIndicator(color: _colors.primary)
             : _hasMorePosts
             ? Text(
           'Charger plus...',
-          style: TextStyle(color: _subtextColor),
+          style: TextStyle(color: _colors.textSecondary),
         )
             : Container(
           padding: EdgeInsets.all(16),
           child: Text(
             '🎉 Vous avez vu toutes les publications!',
             style: TextStyle(
-              color: _subtextColor,
+              color: _colors.textSecondary,
               fontSize: 14,
             ),
             textAlign: TextAlign.center,
@@ -1363,22 +1350,24 @@ class _CanalDetailsState extends State<CanalDetails> {
 
   @override
   Widget build(BuildContext context) {
+    _colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      backgroundColor: _backgroundColor,
+      backgroundColor: _colors.background,
       appBar: AppBar(
-        iconTheme: IconThemeData(color: _textColor),
+        iconTheme: IconThemeData(color: _colors.textPrimary),
         title: Text(
-          'Détails du Canal',
+          '#${widget.canal.titre ?? ''}',
           style: TextStyle(
-            color: _textColor,
+            color: _colors.textPrimary,
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: _backgroundColor,
+        backgroundColor: _colors.background,
         elevation: 0,
         actions: [
           IconButton(
-            icon: Icon(Icons.refresh, color: _primaryGreen),
+            icon: Icon(Icons.refresh, color: _colors.primary),
             onPressed: _loadInitialPosts,
           ),
         ],

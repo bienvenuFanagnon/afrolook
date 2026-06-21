@@ -5,28 +5,9 @@ import 'package:provider/provider.dart';
 import '../../../providers/authProvider.dart';
 import '../../../providers/userProvider.dart';
 import '../../providers/postProvider.dart';
+import '../../theme/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 import '../paiement/newDepot.dart';
-import 'detailsCanal.dart';
-import 'newCanal.dart';
-
-
-import 'package:afrotok/models/model_data.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../../providers/authProvider.dart';
-import '../../../providers/userProvider.dart';
-import '../../providers/postProvider.dart';
-import 'detailsCanal.dart';
-import 'newCanal.dart';
-
-import 'package:afrotok/models/model_data.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../../providers/authProvider.dart';
-import '../../../providers/userProvider.dart';
-import '../../providers/postProvider.dart';
 import 'detailsCanal.dart';
 import 'newCanal.dart';
 
@@ -40,15 +21,7 @@ class CanalListPage extends StatefulWidget {
 }
 
 class _CanalListPageState extends State<CanalListPage> {
-  // Couleurs du thème Twitter-like
-  final Color _backgroundColor = Color(0xFF15202B);
-  final Color _cardColor = Color(0xFF192734);
-  final Color _primaryColor = Color(0xFF1DA1F2);
-  final Color _textColor = Colors.white;
-  final Color _subtextColor = Colors.grey[400]!;
-  final Color _verifiedColor = Color(0xFF1DA1F2);
-  final Color _privateColor = Color(0xFFFFD600);
-  final Color _successColor = Color(0xFF00BA7C);
+  late AppColors _colors;
 
   // CONFIGURATION - Activer/Désactiver le paiement pour les abonnés existants
   // Changez cette valeur selon vos besoins:
@@ -178,10 +151,10 @@ class _CanalListPageState extends State<CanalListPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Vous suivez déjà ce canal.',
-            style: TextStyle(color: Colors.white),
+            AppLocalizations.of(context).canalAlreadyFollowing,
+            style: TextStyle(color: _colors.onPrimary),
           ),
-          backgroundColor: Colors.orange,
+          backgroundColor: _colors.warning,
         ),
       );
       return;
@@ -206,9 +179,9 @@ class _CanalListPageState extends State<CanalListPage> {
         SnackBar(
           content: Text(
             '✅ Vous avez déjà accès à ce canal!',
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: _colors.onPrimary),
           ),
-          backgroundColor: _successColor,
+          backgroundColor: _colors.primary,
         ),
       );
       return;
@@ -242,26 +215,26 @@ class _CanalListPageState extends State<CanalListPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: _cardColor,
+          backgroundColor: _colors.surface,
           title: Text(
             isAlreadySubscribed && _requirePaymentForExistingSubscribers
                 ? 'Mise à jour d\'abonnement'
                 : 'Abonnement Privé',
-            style: TextStyle(color: _textColor, fontWeight: FontWeight.bold),
+            style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold),
           ),
           content: Text(
             confirmationMessage,
-            style: TextStyle(color: _subtextColor),
+            style: TextStyle(color: _colors.textSecondary),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: Text('Annuler', style: TextStyle(color: _subtextColor)),
+              child: Text('Annuler', style: TextStyle(color: _colors.textSecondary)),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(true),
-              style: ElevatedButton.styleFrom(backgroundColor: _primaryColor),
-              child: Text('Confirmer', style: TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(backgroundColor: _colors.primary),
+              child: Text('Confirmer', style: TextStyle(color: _colors.onPrimary)),
             ),
           ],
         );
@@ -333,9 +306,9 @@ class _CanalListPageState extends State<CanalListPage> {
         SnackBar(
           content: Text(
             successMessage,
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: _colors.onPrimary),
           ),
-          backgroundColor: _successColor,
+          backgroundColor: _colors.primary,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -346,9 +319,9 @@ class _CanalListPageState extends State<CanalListPage> {
         SnackBar(
           content: Text(
             '❌ Erreur lors de l\'abonnement',
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: _colors.onPrimary),
           ),
-          backgroundColor: Colors.red,
+          backgroundColor: _colors.danger,
         ),
       );
     } finally {
@@ -417,10 +390,10 @@ class _CanalListPageState extends State<CanalListPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          '✅ Vous suivez maintenant ce canal!',
-          style: TextStyle(color: Colors.white),
+          '✅ ${AppLocalizations.of(context).canalNowFollowing}!',
+          style: TextStyle(color: _colors.onPrimary),
         ),
-        backgroundColor: _successColor,
+        backgroundColor: _colors.primary,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -486,15 +459,17 @@ class _CanalListPageState extends State<CanalListPage> {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
+        final colors = AppColors.of(context);
+        final l10n = AppLocalizations.of(context);
         return Dialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          backgroundColor: Colors.black,
+          backgroundColor: colors.background,
           child: Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
               gradient: LinearGradient(
-                colors: [Colors.black, Colors.grey.shade900],
+                colors: [colors.background, colors.surface],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -506,43 +481,43 @@ class _CanalListPageState extends State<CanalListPage> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.yellow.shade600,
+                    color: colors.accent,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.warning_amber_rounded, color: Colors.black, size: 40),
+                  child: Icon(Icons.warning_amber_rounded, color: colors.onAccent, size: 40),
                 ),
                 const SizedBox(height: 16),
 
-                // 🟢 Titre
+                // Titre
                 Text(
-                  'Solde insuffisant 💰',
+                  l10n.canalInsufficientBalance,
                   style: TextStyle(
-                    color: Colors.greenAccent.shade400,
+                    color: colors.primary,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 12),
 
-                // 🖤 Message
+                // Message
                 Text(
                   'Votre solde actuel est de ${userBalance.toStringAsFixed(0)} FCFA.\n'
                       'Il vous manque ${missingAmount.toStringAsFixed(0)} FCFA pour vous abonner '
                       'à ce canal privé coûtant ${subscriptionPrice.toStringAsFixed(0)} FCFA.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white70, height: 1.5, fontSize: 15),
+                  style: TextStyle(color: colors.textSecondary, height: 1.5, fontSize: 15),
                 ),
                 const SizedBox(height: 20),
 
-                // 🔘 Boutons
+                // Boutons
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     TextButton(
                       onPressed: () => Navigator.of(context).pop(),
                       child: Text(
-                        'Plus tard',
-                        style: TextStyle(color: Colors.yellow.shade600, fontWeight: FontWeight.w500),
+                        l10n.canalLater,
+                        style: TextStyle(color: colors.accent, fontWeight: FontWeight.w500),
                       ),
                     ),
                     ElevatedButton(
@@ -551,7 +526,7 @@ class _CanalListPageState extends State<CanalListPage> {
                         Navigator.push(context, MaterialPageRoute(builder: (context) => DepositScreen()));
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.greenAccent.shade400,
+                        backgroundColor: colors.primary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -560,12 +535,12 @@ class _CanalListPageState extends State<CanalListPage> {
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.account_balance_wallet, color: Colors.black),
+                          Icon(Icons.account_balance_wallet, color: colors.onPrimary),
                           const SizedBox(width: 8),
                           Text(
-                            'Recharger',
+                            l10n.canalRecharge,
                             style: TextStyle(
-                              color: Colors.black,
+                              color: colors.onPrimary,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -586,11 +561,12 @@ class _CanalListPageState extends State<CanalListPage> {
     final isFollowing = canal.usersSuiviId!.contains(authProvider.loginUserData.id);
     final isPrivate = canal.isPrivate == true;
     final subscribersCount = canal.usersSuiviId?.length ?? 0;
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       margin: EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: _colors.surface,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Material(
@@ -629,12 +605,12 @@ class _CanalListPageState extends State<CanalListPage> {
                             child: Container(
                               padding: EdgeInsets.all(4),
                               decoration: BoxDecoration(
-                                color: _privateColor,
+                                color: _colors.accent,
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
                                 Icons.lock,
-                                color: Colors.black,
+                                color: _colors.onAccent,
                                 size: 12,
                               ),
                             ),
@@ -655,7 +631,7 @@ class _CanalListPageState extends State<CanalListPage> {
                                 child: Text(
                                   "#${(canal.titre != null && canal.titre!.length > 12) ? '${canal.titre!.substring(0, 12)}...' : canal.titre ?? ''}",
                                   style: TextStyle(
-                                    color: _textColor,
+                                    color: _colors.textPrimary,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,
                                   ),
@@ -665,11 +641,11 @@ class _CanalListPageState extends State<CanalListPage> {
                               ),
                               const SizedBox(width: 6),
                               if (canal.isVerify == true)
-                                Icon(Icons.verified, color: _verifiedColor, size: 16),
+                                Icon(Icons.verified, color: _colors.primary, size: 16),
                               if (isPrivate)
                                 Padding(
                                   padding: const EdgeInsets.only(left: 6),
-                                  child: Icon(Icons.attach_money, color: _privateColor, size: 14),
+                                  child: Icon(Icons.attach_money, color: _colors.accent, size: 14),
                                 ),
                             ],
                           ),
@@ -681,7 +657,7 @@ class _CanalListPageState extends State<CanalListPage> {
                             Text(
                               canal.description!,
                               style: TextStyle(
-                                color: _subtextColor,
+                                color: _colors.textSecondary,
                                 fontSize: 14,
                               ),
                               maxLines: 2,
@@ -693,26 +669,26 @@ class _CanalListPageState extends State<CanalListPage> {
                           // Statistiques
                           Row(
                             children: [
-                              Icon(Icons.people, color: _subtextColor, size: 14),
+                              Icon(Icons.people, color: _colors.textSecondary, size: 14),
                               SizedBox(width: 4),
                               Text(
                                 '$subscribersCount',
-                                style: TextStyle(color: _subtextColor, fontSize: 12),
+                                style: TextStyle(color: _colors.textSecondary, fontSize: 12),
                               ),
                               SizedBox(width: 16),
-                              Icon(Icons.post_add, color: _subtextColor, size: 14),
+                              Icon(Icons.post_add, color: _colors.textSecondary, size: 14),
                               SizedBox(width: 4),
                               Text(
                                 '${canal.publication ?? 0}',
-                                style: TextStyle(color: _subtextColor, fontSize: 12),
+                                style: TextStyle(color: _colors.textSecondary, fontSize: 12),
                               ),
                               if (isPrivate) ...[
                                 SizedBox(width: 16),
-                                Icon(Icons.attach_money, color: _privateColor, size: 14),
+                                Icon(Icons.attach_money, color: _colors.accent, size: 14),
                                 SizedBox(width: 4),
                                 Text(
                                   '${canal.subscriptionPrice?.toStringAsFixed(0) ?? '0'} FCFA',
-                                  style: TextStyle(color: _privateColor, fontSize: 12),
+                                  style: TextStyle(color: _colors.accent, fontSize: 12),
                                 ),
                               ],
                             ],
@@ -728,15 +704,15 @@ class _CanalListPageState extends State<CanalListPage> {
                         child: ElevatedButton(
                           onPressed: _isLoading ? null : () => _handleFollowCanal(canal),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: isPrivate ? _privateColor : _primaryColor,
-                            foregroundColor: isPrivate ? Colors.black : Colors.white,
+                            backgroundColor: isPrivate ? _colors.accent : _colors.primary,
+                            foregroundColor: isPrivate ? _colors.onAccent : _colors.onPrimary,
                             padding: EdgeInsets.symmetric(horizontal: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20),
                             ),
                           ),
                           child: Text(
-                            isPrivate ? 'S\'abonner' : 'Suivre',
+                            isPrivate ? l10n.canalSubscribe : l10n.canalFollow,
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
@@ -750,15 +726,15 @@ class _CanalListPageState extends State<CanalListPage> {
                         child: OutlinedButton(
                           onPressed: null,
                           style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: _subtextColor),
+                            side: BorderSide(color: _colors.textSecondary),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20),
                             ),
                           ),
                           child: Text(
-                            'Suivi',
+                            l10n.canalFollowing,
                             style: TextStyle(
-                              color: _subtextColor,
+                              color: _colors.textSecondary,
                               fontSize: 12,
                             ),
                           ),
@@ -775,25 +751,26 @@ class _CanalListPageState extends State<CanalListPage> {
   }
 
   Widget _buildSearchBar() {
+    final l10n = AppLocalizations.of(context);
     return Container(
       margin: EdgeInsets.only(bottom: 16),
       padding: EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: _colors.surface,
         borderRadius: BorderRadius.circular(25),
       ),
       child: TextField(
         controller: _searchController,
         onChanged: _searchCanals,
-        style: TextStyle(color: _textColor),
+        style: TextStyle(color: _colors.textPrimary),
         decoration: InputDecoration(
-          hintText: 'Rechercher un canal...',
-          hintStyle: TextStyle(color: _subtextColor),
+          hintText: l10n.canalSearch,
+          hintStyle: TextStyle(color: _colors.textSecondary),
           border: InputBorder.none,
-          prefixIcon: Icon(Icons.search, color: _subtextColor),
+          prefixIcon: Icon(Icons.search, color: _colors.textSecondary),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
-            icon: Icon(Icons.clear, color: _subtextColor),
+            icon: Icon(Icons.clear, color: _colors.textSecondary),
             onPressed: () {
               _searchController.clear();
               _searchCanals('');
@@ -807,23 +784,25 @@ class _CanalListPageState extends State<CanalListPage> {
 
   @override
   Widget build(BuildContext context) {
+    _colors = AppColors.of(context);
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      backgroundColor: _backgroundColor,
+      backgroundColor: _colors.background,
       appBar: AppBar(
-        iconTheme: IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: _colors.textPrimary),
         automaticallyImplyLeading: true,
         title: Text(
-          'Explorer les Canaux',
+          l10n.canalExplore,
           style: TextStyle(
-            color: _textColor,
+            color: _colors.textPrimary,
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: _backgroundColor,
+        backgroundColor: _colors.background,
         elevation: 0,
         actions: [
           IconButton(
-            icon: Icon(Icons.refresh, color: _primaryColor),
+            icon: Icon(Icons.refresh, color: _colors.primary),
             onPressed: _loadInitialCanals,
           ),
         ],
@@ -837,7 +816,7 @@ class _CanalListPageState extends State<CanalListPage> {
           Expanded(
             child: _isLoading
                 ? Center(
-              child: CircularProgressIndicator(color: _primaryColor),
+              child: CircularProgressIndicator(color: _colors.primary),
             )
                 : _filteredCanals.isEmpty
                 ? Center(
@@ -846,16 +825,16 @@ class _CanalListPageState extends State<CanalListPage> {
                 children: [
                   Icon(
                     Icons.search_off,
-                    color: _subtextColor,
+                    color: _colors.textSecondary,
                     size: 64,
                   ),
                   SizedBox(height: 16),
                   Text(
                     _searchQuery.isEmpty
-                        ? 'Aucun canal disponible'
-                        : 'Aucun canal trouvé',
+                        ? l10n.canalNone
+                        : l10n.canalNotFound,
                     style: TextStyle(
-                      color: _subtextColor,
+                      color: _colors.textSecondary,
                       fontSize: 16,
                     ),
                   ),
@@ -863,8 +842,8 @@ class _CanalListPageState extends State<CanalListPage> {
               ),
             )
                 : RefreshIndicator(
-              color: _primaryColor,
-              backgroundColor: _backgroundColor,
+              color: _colors.primary,
+              backgroundColor: _colors.background,
               onRefresh: _loadInitialCanals,
               child: ListView.builder(
                 controller: _scrollController,
@@ -875,7 +854,7 @@ class _CanalListPageState extends State<CanalListPage> {
                     return Center(
                       child: Padding(
                         padding: EdgeInsets.all(16),
-                        child: CircularProgressIndicator(color: _primaryColor),
+                        child: CircularProgressIndicator(color: _colors.primary),
                       ),
                     );
                   }
@@ -893,8 +872,8 @@ class _CanalListPageState extends State<CanalListPage> {
             MaterialPageRoute(builder: (context) => NewCanal()),
           );
         },
-        backgroundColor: _primaryColor,
-        child: Icon(Icons.add, color: Colors.white),
+        backgroundColor: _colors.primary,
+        child: Icon(Icons.add, color: _colors.onPrimary),
       ),
     );
   }
