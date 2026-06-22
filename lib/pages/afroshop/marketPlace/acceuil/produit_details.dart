@@ -26,6 +26,7 @@ import '../../../../constant/constColors.dart';
 import '../../../../constant/custom_theme.dart';
 
 import '../../../../models/model_data.dart';
+import '../../../../widgets/chat/generic_share_sheet.dart';
 import '../../../../providers/afroshop/categorie_produits_provider.dart';
 import '../../../../providers/authProvider.dart';
 import '../../../../providers/postProvider.dart';
@@ -667,31 +668,75 @@ class _ProduitDetailState extends State<ProduitDetail> {
 
   Future<void> _shareProduct() async {
     if (article == null) return;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        margin: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 10),
+                width: 36, height: 4,
+                decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+              ),
+              ListTile(
+                leading: const Icon(Icons.share_rounded),
+                title: const Text('Partager (lien externe)'),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  try {
+                    final url = await authProvider.createArticleLink(true, article!);
+                    await Share.share(
+                      'Découvrez ce produit sur Afroshop: ${article!.titre}\nPrix: ${article!.prix} FCFA\n$url',
+                      subject: 'Produit Afroshop - ${article!.titre}',
+                    );
+                    await firestore.collection('Articles').doc(article!.id!).update({
+                      'partage': FieldValue.increment(1),
+                      'updatedAt': DateTime.now().millisecondsSinceEpoch,
+                    });
+                    if (mounted) setState(() => article!.partage = (article!.partage ?? 0) + 1);
+                  } catch (_) {}
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.chat_bubble_outline_rounded),
+                title: const Text('Envoyer dans un chat'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _shareProductToChat();
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-    try {
-      final urlArticle = await authProvider.createArticleLink(true, article!);
-
-      await Share.share(
-        'Découvrez ce produit sur Afroshop: ${article!.titre}\nPrix: ${article!.prix} FCFA\n$urlArticle',
-        subject: 'Produit Afroshop - ${article!.titre}',
-      );
-
-      // Incrémenter les partages
-      await firestore.collection('Articles').doc(article!.id!).update({
-        'partage': FieldValue.increment(1),
-        'updatedAt': DateTime.now().millisecondsSinceEpoch,
-      });
-
-      setState(() {
-        article!.partage = (article!.partage ?? 0) + 1;
-      });
-
-    } catch (e) {
-      print("Erreur partage: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Erreur lors du partage")),
-      );
-    }
+  void _shareProductToChat() {
+    if (article == null) return;
+    final thumb = (article!.images?.isNotEmpty == true) ? article!.images!.first : '';
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => GenericShareSheet(
+        itemId: article!.id ?? '',
+        itemType: 'product',
+        title: article!.titre ?? '',
+        subtitle: 'Produit Afroshop — ${article!.prix ?? 0} FCFA',
+        thumbnail: thumb,
+        icon: Icons.shopping_bag_outlined,
+      ),
+    );
   }
 
   Future<void> _toggleFollowEntreprise() async {

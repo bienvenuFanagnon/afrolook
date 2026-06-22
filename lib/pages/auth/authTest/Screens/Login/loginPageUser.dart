@@ -119,7 +119,7 @@ class _LoginPageUserState extends State<LoginPageUser> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(_errorMessage!, textAlign: TextAlign.center),
-            backgroundColor: Colors.red,
+            backgroundColor: _colors.danger,
             duration: Duration(seconds: 3),
           ),
         );
@@ -140,7 +140,7 @@ class _LoginPageUserState extends State<LoginPageUser> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.email, size: 60, color: Colors.orange),
+                Icon(Icons.email, size: 60, color: _colors.warning),
                 SizedBox(height: 10),
                 Text(
                   "Vérification de l'email requise",
@@ -156,7 +156,7 @@ class _LoginPageUserState extends State<LoginPageUser> {
                 SizedBox(height: 20),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
+                    backgroundColor: _colors.warning,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -197,7 +197,7 @@ class _LoginPageUserState extends State<LoginPageUser> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.mark_email_read, size: 60, color: Colors.green),
+                Icon(Icons.mark_email_read, size: 60, color: _colors.primary),
                 SizedBox(height: 10),
                 Text(
                   "Lien envoyé !",
@@ -213,7 +213,7 @@ class _LoginPageUserState extends State<LoginPageUser> {
                 SizedBox(height: 20),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
+                    backgroundColor: _colors.primary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -406,7 +406,7 @@ class _LoginPageUserState extends State<LoginPageUser> {
               filled: true,
               fillColor: _colors.surfaceVariant,
               hintText: l10n.authEmail,
-              hintStyle: TextStyle(color: Colors.grey[500]),
+              hintStyle: TextStyle(color: _colors.textSecondary),
               prefixIcon: Icon(Icons.email_outlined, color: _colors.primary),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(15),
@@ -436,7 +436,7 @@ class _LoginPageUserState extends State<LoginPageUser> {
               filled: true,
               fillColor: _colors.surfaceVariant,
               hintText: l10n.authPassword,
-              hintStyle: TextStyle(color: Colors.grey[500]),
+              hintStyle: TextStyle(color: _colors.textSecondary),
               prefixIcon: Icon(Icons.lock_outline, color: _colors.primary),
               suffixIcon: IconButton(
                 icon: Icon(
@@ -500,7 +500,7 @@ class _LoginPageUserState extends State<LoginPageUser> {
               ),
               child: _isLoading
                   ? LoadingAnimationWidget.threeRotatingDots(
-                color: Colors.white,
+                color: _colors.onPrimary,
                 size: 24,
               )
                   : Text(
@@ -508,7 +508,7 @@ class _LoginPageUserState extends State<LoginPageUser> {
                 style: TextStyle(
                   fontSize: min(16, MediaQuery.of(context).size.width * 0.04),
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: _colors.onPrimary,
                 ),
               ),
             ),
@@ -526,7 +526,7 @@ class _LoginPageUserState extends State<LoginPageUser> {
           children: [
             Expanded(
               child: Divider(
-                color: Colors.grey[700],
+                color: _colors.border,
                 thickness: 1,
               ),
             ),
@@ -535,13 +535,13 @@ class _LoginPageUserState extends State<LoginPageUser> {
               child: Text(
                 "Ou",
                 style: TextStyle(
-                  color: Colors.grey[500],
+                  color: _colors.textSecondary,
                 ),
               ),
             ),
             Expanded(
               child: Divider(
-                color: Colors.grey[700],
+                color: _colors.border,
                 thickness: 1,
               ),
             ),
@@ -587,7 +587,7 @@ class _LoginPageUserState extends State<LoginPageUser> {
           children: [
             Expanded(
               child: Divider(
-                color: Colors.grey[700],
+                color: _colors.border,
                 thickness: 1,
               ),
             ),
@@ -596,14 +596,14 @@ class _LoginPageUserState extends State<LoginPageUser> {
               child: Text(
                 "Besoin d'aide?",
                 style: TextStyle(
-                  color: Colors.grey[500],
+                  color: _colors.textSecondary,
                   fontSize: min(14, MediaQuery.of(context).size.width * 0.035),
                 ),
               ),
             ),
             Expanded(
               child: Divider(
-                color: Colors.grey[700],
+                color: _colors.border,
                 thickness: 1,
               ),
             ),
@@ -623,14 +623,14 @@ class _LoginPageUserState extends State<LoginPageUser> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(25),
               ),
-              side: BorderSide(color: Colors.grey[600]!),
+              side: BorderSide(color: _colors.border),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
                   Icons.help_outline,
-                  color: Colors.grey[400],
+                  color: _colors.textSecondary,
                   size: 20,
                 ),
                 SizedBox(width: 10),
@@ -639,7 +639,7 @@ class _LoginPageUserState extends State<LoginPageUser> {
                   style: TextStyle(
                     fontSize: min(16, MediaQuery.of(context).size.width * 0.04),
                     fontWeight: FontWeight.bold,
-                    color: Colors.grey[400],
+                    color: _colors.textSecondary,
                   ),
                 ),
               ],

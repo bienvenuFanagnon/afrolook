@@ -8,7 +8,9 @@ import 'package:provider/provider.dart';
 import '../../../providers/authProvider.dart';
 import '../../../providers/postProvider.dart';
 import '../../../providers/userProvider.dart';
+import '../../../theme/app_colors.dart';
 import '../../../services/postService/massNotificationService.dart';
+import '../../../services/postService/post_cooldown_service.dart';
 import '../../../services/utils/abonnement_utils.dart';
 import '../../pub/rewarded_ad_widget.dart';
 import '../../user/userAbonnementPage.dart';
@@ -63,14 +65,7 @@ class _UserPubTextState extends State<UserPubText> {
     'GAMER': {'label': 'Games story', 'icon': Icons.gamepad},
   };
 
-  // Couleurs personnalisées
-  final Color _primaryColor = Color(0xFFE21221); // Rouge
-  final Color _secondaryColor = Color(0xFFFFD600); // Jaune
-  final Color _backgroundColor = Color(0xFF121212); // Noir
-  final Color _cardColor = Color(0xFF1E1E1E);
-  final Color _textColor = Colors.white;
-  final Color _hintColor = Colors.grey[400]!;
-  final Color _successColor = Color(0xFF4CAF50);
+  late AppColors _c;
   late MassNotificationService _notificationService;
 
 
@@ -109,18 +104,18 @@ class _UserPubTextState extends State<UserPubText> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: _cardColor,
+        backgroundColor: _c.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
         title: Row(
           children: [
-            Icon(Icons.timer, color: _secondaryColor),
+            Icon(Icons.timer, color: _c.accent),
             SizedBox(width: 10),
             Text(
               'Temps d\'attente',
               style: TextStyle(
-                color: _textColor,
+                color: _c.textPrimary,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -131,24 +126,24 @@ class _UserPubTextState extends State<UserPubText> {
           children: [
             Text(
               'Vous devez attendre $_timeRemaining avant de pouvoir publier.',
-              style: TextStyle(color: _hintColor),
+              style: TextStyle(color: _c.textSecondary),
             ),
             SizedBox(height: 20),
             Container(
               padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: _secondaryColor.withOpacity(0.1),
+                color: _c.accent.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _secondaryColor),
+                border: Border.all(color: _c.accent),
               ),
               child: Column(
                 children: [
-                  Icon(Icons.play_circle_filled, color: _secondaryColor, size: 40),
+                  Icon(Icons.play_circle_filled, color: _c.accent, size: 40),
                   SizedBox(height: 8),
                   Text(
                     'Regardez une publicité',
                     style: TextStyle(
-                      color: _textColor,
+                      color: _c.textPrimary,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
@@ -157,7 +152,7 @@ class _UserPubTextState extends State<UserPubText> {
                   Text(
                     'et publiez immédiatement !',
                     style: TextStyle(
-                      color: _secondaryColor,
+                      color: _c.accent,
                       fontSize: 14,
                     ),
                   ),
@@ -171,7 +166,7 @@ class _UserPubTextState extends State<UserPubText> {
             onPressed: () => Navigator.pop(context),
             child: Text(
               'ATTENDRE',
-              style: TextStyle(color: _hintColor),
+              style: TextStyle(color: _c.textSecondary),
             ),
           ),
           ElevatedButton(
@@ -184,8 +179,8 @@ class _UserPubTextState extends State<UserPubText> {
               RewardedAdWidget.showAd(_rewardedAdKey);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: _secondaryColor,
-              foregroundColor: Colors.black,
+              backgroundColor: _c.accent,
+              foregroundColor: _c.onAccent,
             ),
             child: Text('REGARDER LA PUB'),
           ),
@@ -193,6 +188,12 @@ class _UserPubTextState extends State<UserPubText> {
       ),
     );
   }
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _c = AppColors.of(context);
+  }
+
   @override
   void dispose() {
     _countrySearchController.removeListener(_filterCountries);
@@ -398,18 +399,18 @@ class _UserPubTextState extends State<UserPubText> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: _cardColor,
+        backgroundColor: _c.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
         title: Row(
           children: [
-            Icon(Icons.lock, color: _primaryColor),
+            Icon(Icons.lock, color: _c.primary),
             SizedBox(width: 10),
             Text(
               'Limite de pays atteinte',
               style: TextStyle(
-                color: _textColor,
+                color: _c.textPrimary,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -422,7 +423,7 @@ class _UserPubTextState extends State<UserPubText> {
             Text(
               'L\'abonnement gratuit est limité à 2 pays maximum.\n'
                   'Passez à Afrolook Premium pour sélectionner tous les pays africains.',
-              style: TextStyle(color: _hintColor),
+              style: TextStyle(color: _c.textSecondary),
             ),
             SizedBox(height: 20),
             Container(
@@ -430,11 +431,11 @@ class _UserPubTextState extends State<UserPubText> {
               decoration: BoxDecoration(
                 color: Colors.black.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _secondaryColor),
+                border: Border.all(color: _c.accent),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.workspace_premium, color: _secondaryColor),
+                  Icon(Icons.workspace_premium, color: _c.accent),
                   SizedBox(width: 10),
                   Expanded(
                     child: Column(
@@ -443,14 +444,14 @@ class _UserPubTextState extends State<UserPubText> {
                         Text(
                           'Afrolook Premium',
                           style: TextStyle(
-                            color: _textColor,
+                            color: _c.textPrimary,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         Text(
                           'Pays illimités • 3000 caractères • Pas de cooldown',
                           style: TextStyle(
-                            color: _hintColor,
+                            color: _c.textSecondary,
                             fontSize: 12,
                           ),
                         ),
@@ -467,7 +468,7 @@ class _UserPubTextState extends State<UserPubText> {
             onPressed: () => Navigator.pop(context),
             child: Text(
               'COMPRENDRE',
-              style: TextStyle(color: _hintColor),
+              style: TextStyle(color: _c.textSecondary),
             ),
           ),
           ElevatedButton(
@@ -481,8 +482,8 @@ class _UserPubTextState extends State<UserPubText> {
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: _secondaryColor,
-              foregroundColor: Colors.black,
+              backgroundColor: _c.accent,
+              foregroundColor: _c.onAccent,
             ),
             child: Text('PASSER À PREMIUM'),
           ),
@@ -498,7 +499,7 @@ class _UserPubTextState extends State<UserPubText> {
     return Container(
       height: MediaQuery.of(context).size.height * 0.8,
       decoration: BoxDecoration(
-        color: _backgroundColor,
+        color: _c.background,
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(25),
           topRight: Radius.circular(25),
@@ -510,7 +511,7 @@ class _UserPubTextState extends State<UserPubText> {
           Container(
             padding: EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: _cardColor,
+              color: _c.surface,
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(25),
                 topRight: Radius.circular(25),
@@ -524,13 +525,13 @@ class _UserPubTextState extends State<UserPubText> {
                     Text(
                       'Sélection des pays',
                       style: TextStyle(
-                        color: _textColor,
+                        color: _c.textPrimary,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     IconButton(
-                      icon: Icon(Icons.close, color: _textColor),
+                      icon: Icon(Icons.close, color: _c.textPrimary),
                       onPressed: () {
                         setState(() {
                           _showCountrySelection = false;
@@ -547,10 +548,10 @@ class _UserPubTextState extends State<UserPubText> {
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: isPremium || isAdmin ? _secondaryColor.withOpacity(0.2) : _primaryColor.withOpacity(0.2),
+                        color: isPremium || isAdmin ? _c.accent.withOpacity(0.2) : _c.primary.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: isPremium || isAdmin ? _secondaryColor : _primaryColor,
+                          color: isPremium || isAdmin ? _c.accent : _c.primary,
                         ),
                       ),
                       child: Row(
@@ -558,13 +559,13 @@ class _UserPubTextState extends State<UserPubText> {
                           Icon(
                             isPremium || isAdmin ? Icons.workspace_premium : Icons.lock,
                             size: 14,
-                            color: isPremium || isAdmin ? _secondaryColor : _primaryColor,
+                            color: isPremium || isAdmin ? _c.accent : _c.primary,
                           ),
                           SizedBox(width: 6),
                           Text(
                             isPremium || isAdmin ? 'Pays illimités' : 'Max 2 pays',
                             style: TextStyle(
-                              color: isPremium || isAdmin ? _secondaryColor : _primaryColor,
+                              color: isPremium || isAdmin ? _c.accent : _c.primary,
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                             ),
@@ -581,8 +582,8 @@ class _UserPubTextState extends State<UserPubText> {
                           : '${_selectedCountries.length} pays sélectionné(s)',
                       style: TextStyle(
                         color: _selectedCountries.isEmpty && !_selectAllCountries
-                            ? Colors.orange
-                            : _hintColor,
+                            ? _c.warning
+                            : _c.textSecondary,
                         fontSize: 14,
                       ),
                     ),
@@ -592,18 +593,18 @@ class _UserPubTextState extends State<UserPubText> {
                 // Barre de recherche
                 Container(
                   decoration: BoxDecoration(
-                    color: _cardColor,
+                    color: _c.surface,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[700]!),
+                    border: Border.all(color: _c.border),
                   ),
                   child: TextField(
                     controller: _countrySearchController,
                     focusNode: _countrySearchFocus,
-                    style: TextStyle(color: _textColor),
+                    style: TextStyle(color: _c.textPrimary),
                     decoration: InputDecoration(
                       hintText: 'Rechercher un pays...',
-                      hintStyle: TextStyle(color: _hintColor),
-                      prefixIcon: Icon(Icons.search, color: _primaryColor),
+                      hintStyle: TextStyle(color: _c.textSecondary),
+                      prefixIcon: Icon(Icons.search, color: _c.primary),
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.symmetric(horizontal: 16),
                     ),
@@ -615,19 +616,19 @@ class _UserPubTextState extends State<UserPubText> {
 
           // Option "Tous les pays"
           Material(
-            color: _cardColor,
+            color: _c.surface,
             child: ListTile(
               onTap: _toggleSelectAllCountries,
               leading: Container(
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: _selectAllCountries ? _secondaryColor : Colors.grey[800],
+                  color: _selectAllCountries ? _c.accent : _c.surfaceVariant,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   Icons.workspace_premium,
-                  color: _selectAllCountries ? Colors.white : _hintColor,
+                  color: _selectAllCountries ? Colors.white : _c.textSecondary,
                 ),
               ),
               title: Row(
@@ -635,7 +636,7 @@ class _UserPubTextState extends State<UserPubText> {
                   Text(
                     'Tous les pays africains',
                     style: TextStyle(
-                      color: _textColor,
+                      color: _c.textPrimary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -643,13 +644,13 @@ class _UserPubTextState extends State<UserPubText> {
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: _secondaryColor.withOpacity(0.2),
+                      color: _c.accent.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
                       'PREMIUM',
                       style: TextStyle(
-                        color: _secondaryColor,
+                        color: _c.accent,
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                       ),
@@ -659,13 +660,13 @@ class _UserPubTextState extends State<UserPubText> {
               ),
               subtitle: Text(
                 'Fonctionnalité Premium - Votre post sera visible dans toute l\'Afrique',
-                style: TextStyle(color: _hintColor),
+                style: TextStyle(color: _c.textSecondary),
               ),
               trailing: _selectAllCountries
                   ? Container(
                 padding: EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: _successColor,
+                  color: _c.primary,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -683,20 +684,20 @@ class _UserPubTextState extends State<UserPubText> {
             Container(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: _primaryColor.withOpacity(0.1),
+                color: _c.primary.withOpacity(0.1),
                 border: Border(
-                  left: BorderSide(color: _primaryColor, width: 3),
+                  left: BorderSide(color: _c.primary, width: 3),
                 ),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.info, size: 16, color: _primaryColor),
+                  Icon(Icons.info, size: 16, color: _c.primary),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Abonnement gratuit : Sélectionnez 1 ou 2 pays maximum',
                       style: TextStyle(
-                        color: _textColor,
+                        color: _c.textPrimary,
                         fontSize: 12,
                       ),
                     ),
@@ -705,7 +706,7 @@ class _UserPubTextState extends State<UserPubText> {
               ),
             ),
 
-          Divider(color: Colors.grey[800], height: 1),
+          Divider(color: _c.surfaceVariant, height: 1),
 
           // Liste des pays
           Expanded(
@@ -720,14 +721,14 @@ class _UserPubTextState extends State<UserPubText> {
                     !isSelected;
 
                 return Material(
-                  color: isSelected ? _primaryColor.withOpacity(0.1) : _cardColor,
+                  color: isSelected ? _c.primary.withOpacity(0.1) : _c.surface,
                   child: ListTile(
                     onTap: isDisabled ? null : () => _toggleCountrySelection(country),
                     leading: Container(
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: isSelected ? _primaryColor : Colors.grey[800],
+                        color: isSelected ? _c.primary : _c.surfaceVariant,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Center(
@@ -740,21 +741,21 @@ class _UserPubTextState extends State<UserPubText> {
                     title: Text(
                       country.name,
                       style: TextStyle(
-                        color: isDisabled ? Colors.grey[600] : _textColor,
+                        color: isDisabled ? _c.textSecondary : _c.textPrimary,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                       ),
                     ),
                     subtitle: Text(
                       'Code: ${country.code}',
                       style: TextStyle(
-                        color: isDisabled ? Colors.grey[600] : _hintColor,
+                        color: isDisabled ? _c.textSecondary : _c.textSecondary,
                       ),
                     ),
                     trailing: isSelected
                         ? Container(
                       padding: EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: _primaryColor,
+                        color: _c.primary,
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -766,7 +767,7 @@ class _UserPubTextState extends State<UserPubText> {
                         : isDisabled
                         ? Icon(
                       Icons.lock,
-                      color: Colors.grey[600],
+                      color: _c.textSecondary,
                       size: 16,
                     )
                         : null,
@@ -780,8 +781,8 @@ class _UserPubTextState extends State<UserPubText> {
           Container(
             padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: _cardColor,
-              border: Border(top: BorderSide(color: Colors.grey[800]!)),
+              color: _c.surface,
+              border: Border(top: BorderSide(color: _c.border)),
             ),
             child: Row(
               children: [
@@ -794,8 +795,8 @@ class _UserPubTextState extends State<UserPubText> {
                       });
                     },
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: _hintColor,
-                      side: BorderSide(color: Colors.grey[700]!),
+                      foregroundColor: _c.textSecondary,
+                      side: BorderSide(color: _c.border),
                       padding: EdgeInsets.symmetric(vertical: 15),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -814,8 +815,8 @@ class _UserPubTextState extends State<UserPubText> {
                       });
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _primaryColor,
-                      foregroundColor: Colors.white,
+                      backgroundColor: _c.primary,
+                      foregroundColor: _c.onPrimary,
                       padding: EdgeInsets.symmetric(vertical: 15),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -850,7 +851,7 @@ class _UserPubTextState extends State<UserPubText> {
       padding: EdgeInsets.all(16),
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: _c.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -861,7 +862,7 @@ class _UserPubTextState extends State<UserPubText> {
         ],
         border: Border.all(
           color: _selectedCountries.isEmpty && !_selectAllCountries
-              ? Colors.orange // Avertissement si aucun pays
+              ? _c.warning // Avertissement si aucun pays
               : Colors.transparent,
           width: 1,
         ),
@@ -877,7 +878,7 @@ class _UserPubTextState extends State<UserPubText> {
                   Container(
                     padding: EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: _selectAllCountries ? _secondaryColor : _primaryColor,
+                      color: _selectAllCountries ? _c.accent : _c.primary,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
@@ -895,7 +896,7 @@ class _UserPubTextState extends State<UserPubText> {
                       Text(
                         'Visibilité du post',
                         style: TextStyle(
-                          color: _textColor,
+                          color: _c.textPrimary,
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
@@ -904,8 +905,8 @@ class _UserPubTextState extends State<UserPubText> {
                         displayMessage,
                         style: TextStyle(
                           color: _selectedCountries.isEmpty && !_selectAllCountries
-                              ? Colors.orange
-                              : _hintColor,
+                              ? _c.warning
+                              : _c.textSecondary,
                           fontSize: 14,
                         ),
                       ),
@@ -916,16 +917,16 @@ class _UserPubTextState extends State<UserPubText> {
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: isPremium || isAdmin ? _secondaryColor.withOpacity(0.2) : _primaryColor.withOpacity(0.2),
+                  color: isPremium || isAdmin ? _c.accent.withOpacity(0.2) : _c.primary.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: isPremium || isAdmin ? _secondaryColor : _primaryColor,
+                    color: isPremium || isAdmin ? _c.accent : _c.primary,
                   ),
                 ),
                 child: Text(
                   isPremium || isAdmin ? 'PREMIUM' : 'GRATUIT',
                   style: TextStyle(
-                    color: isPremium || isAdmin ? _secondaryColor : _primaryColor,
+                    color: isPremium || isAdmin ? _c.accent : _c.primary,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
@@ -940,19 +941,19 @@ class _UserPubTextState extends State<UserPubText> {
               margin: EdgeInsets.only(top: 12),
               padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.1),
+                color: _c.warning.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange),
+                border: Border.all(color: _c.warning),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.warning, size: 16, color: Colors.orange),
+                  Icon(Icons.warning, size: 16, color: _c.warning),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Vous devez sélectionner au moins un pays',
                       style: TextStyle(
-                        color: Colors.orange,
+                        color: _c.warning,
                         fontSize: 12,
                       ),
                     ),
@@ -973,9 +974,9 @@ class _UserPubTextState extends State<UserPubText> {
                     return Container(
                       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: _primaryColor.withOpacity(0.2),
+                        color: _c.primary.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: _primaryColor),
+                        border: Border.all(color: _c.primary),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -985,7 +986,7 @@ class _UserPubTextState extends State<UserPubText> {
                           Text(
                             country.name,
                             style: TextStyle(
-                              color: _textColor,
+                              color: _c.textPrimary,
                               fontSize: 12,
                             ),
                           ),
@@ -1000,7 +1001,7 @@ class _UserPubTextState extends State<UserPubText> {
                     child: Text(
                       '+ ${_selectedCountries.length - 3} autres pays...',
                       style: TextStyle(
-                        color: _hintColor,
+                        color: _c.textSecondary,
                         fontSize: 12,
                       ),
                     ),
@@ -1021,8 +1022,8 @@ class _UserPubTextState extends State<UserPubText> {
             icon: Icon(Icons.edit_location, size: 18),
             label: Text('SÉLECTIONNER LES PAYS'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: _primaryColor.withOpacity(0.2),
-              foregroundColor: _primaryColor,
+              backgroundColor: _c.primary.withOpacity(0.2),
+              foregroundColor: _c.primary,
               minimumSize: Size(double.infinity, 45),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -1040,9 +1041,9 @@ class _UserPubTextState extends State<UserPubText> {
       padding: EdgeInsets.all(16),
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: _c.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _secondaryColor),
+        border: Border.all(color: _c.accent),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.3),
@@ -1053,7 +1054,7 @@ class _UserPubTextState extends State<UserPubText> {
       ),
       child: Row(
         children: [
-          Icon(Icons.timer, color: _secondaryColor, size: 24),
+          Icon(Icons.timer, color: _c.accent, size: 24),
           SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -1062,7 +1063,7 @@ class _UserPubTextState extends State<UserPubText> {
                 Text(
                   'Temps d\'attente',
                   style: TextStyle(
-                    color: _textColor,
+                    color: _c.textPrimary,
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
@@ -1071,7 +1072,7 @@ class _UserPubTextState extends State<UserPubText> {
                 Text(
                   'Prochain post dans: $_timeRemaining',
                   style: TextStyle(
-                    color: _hintColor,
+                    color: _c.textSecondary,
                     fontSize: 14,
                   ),
                 ),
@@ -1081,13 +1082,13 @@ class _UserPubTextState extends State<UserPubText> {
           Container(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: _secondaryColor.withOpacity(0.2),
+              color: _c.accent.withOpacity(0.2),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
               _timeRemaining,
               style: TextStyle(
-                color: _secondaryColor,
+                color: _c.accent,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
@@ -1103,9 +1104,9 @@ class _UserPubTextState extends State<UserPubText> {
       padding: EdgeInsets.all(16),
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: _c.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _secondaryColor),
+        border: Border.all(color: _c.accent),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.3),
@@ -1119,7 +1120,7 @@ class _UserPubTextState extends State<UserPubText> {
           // Ligne du timer
           Row(
             children: [
-              Icon(Icons.timer, color: _secondaryColor, size: 24),
+              Icon(Icons.timer, color: _c.accent, size: 24),
               SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -1128,7 +1129,7 @@ class _UserPubTextState extends State<UserPubText> {
                     Text(
                       'Temps d\'attente',
                       style: TextStyle(
-                        color: _textColor,
+                        color: _c.textPrimary,
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
@@ -1137,7 +1138,7 @@ class _UserPubTextState extends State<UserPubText> {
                     Text(
                       'Prochain post dans: $_timeRemaining',
                       style: TextStyle(
-                        color: _hintColor,
+                        color: _c.textSecondary,
                         fontSize: 14,
                       ),
                     ),
@@ -1147,13 +1148,13 @@ class _UserPubTextState extends State<UserPubText> {
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: _secondaryColor.withOpacity(0.2),
+                  color: _c.accent.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   _timeRemaining,
                   style: TextStyle(
-                    color: _secondaryColor,
+                    color: _c.accent,
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
@@ -1169,12 +1170,12 @@ class _UserPubTextState extends State<UserPubText> {
             width: double.infinity,
             child: Column(
               children: [
-                Divider(color: Colors.grey[800]),
+                Divider(color: _c.surfaceVariant),
                 SizedBox(height: 12),
                 Text(
                   'OU',
                   style: TextStyle(
-                    color: _hintColor,
+                    color: _c.textSecondary,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
@@ -1191,7 +1192,7 @@ class _UserPubTextState extends State<UserPubText> {
                       _timeRemaining = '';
                       _showRewardedAd = false;
                     });
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Merci ! Vous pouvez poster maintenant !', style: TextStyle(color: Colors.green)), backgroundColor: _cardColor, behavior: SnackBarBehavior.floating));
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Merci ! Vous pouvez poster maintenant !', style: TextStyle(color: _c.primary)), backgroundColor: _c.surface, behavior: SnackBarBehavior.floating));
 
                   },
                   // onUserEarnedReward: (reward) {
@@ -1204,9 +1205,9 @@ class _UserPubTextState extends State<UserPubText> {
                   //     SnackBar(
                   //       content: Text(
                   //         'Merci ! Vous pouvez maintenant poster sans attendre !',
-                  //         style: TextStyle(color: Colors.green),
+                  //         style: TextStyle(color: _c.primary),
                   //       ),
-                  //       backgroundColor: _cardColor,
+                  //       backgroundColor: _c.surface,
                   //       behavior: SnackBarBehavior.floating,
                   //     ),
                   //   );
@@ -1219,7 +1220,7 @@ class _UserPubTextState extends State<UserPubText> {
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      color: _secondaryColor,
+                      color: _c.accent,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -1257,7 +1258,7 @@ class _UserPubTextState extends State<UserPubText> {
                   'Regardez une courte publicité pour\npublier immédiatement sans attendre',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: _hintColor,
+                    color: _c.textSecondary,
                     fontSize: 11,
                   ),
                 ),
@@ -1274,7 +1275,7 @@ class _UserPubTextState extends State<UserPubText> {
       padding: EdgeInsets.all(16),
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: _c.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -1289,12 +1290,12 @@ class _UserPubTextState extends State<UserPubText> {
         children: [
           Row(
             children: [
-              Icon(Icons.category, color: _primaryColor, size: 20),
+              Icon(Icons.category, color: _c.primary, size: 20),
               SizedBox(width: 8),
               Text(
                 'Type de publication',
                 style: TextStyle(
-                  color: _textColor,
+                  color: _c.textPrimary,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),
@@ -1305,25 +1306,25 @@ class _UserPubTextState extends State<UserPubText> {
           DropdownButtonFormField<String>(
             decoration: InputDecoration(
               hintText: 'Choisir un type de publication',
-              hintStyle: TextStyle(color: _hintColor),
+              hintStyle: TextStyle(color: _c.textSecondary),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey[700]!),
+                borderSide: BorderSide(color: _c.border),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey[700]!),
+                borderSide: BorderSide(color: _c.border),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: _primaryColor),
+                borderSide: BorderSide(color: _c.primary),
               ),
               filled: true,
-              fillColor: _backgroundColor,
+              fillColor: _c.background,
               contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             ),
-            dropdownColor: _cardColor,
-            style: TextStyle(color: _textColor, fontSize: 14),
+            dropdownColor: _c.surface,
+            style: TextStyle(color: _c.textPrimary, fontSize: 14),
             value: _selectedPostType,
             onChanged: (String? newValue) {
               setState(() {
@@ -1337,11 +1338,11 @@ class _UserPubTextState extends State<UserPubText> {
                 child: Row(
                   children: [
                     Icon(_postTypes[entry.key]!['icon'] as IconData,
-                        color: _primaryColor, size: 18),
+                        color: _c.primary, size: 18),
                     SizedBox(width: 12),
                     Text(
                       _postTypes[entry.key]!['label'],
-                      style: TextStyle(color: _textColor),
+                      style: TextStyle(color: _c.textPrimary),
                     ),
                   ],
                 ),
@@ -1368,11 +1369,11 @@ class _UserPubTextState extends State<UserPubText> {
     Color counterColor;
 
     if (textLength > _maxCharacters) {
-      counterColor = Colors.red;
+      counterColor = _c.danger;
     } else if (percentage > 0.8) {
-      counterColor = Colors.orange;
+      counterColor = _c.warning;
     } else {
-      counterColor = Colors.green;
+      counterColor = _c.primary;
     }
 
     String statusText;
@@ -1398,7 +1399,7 @@ class _UserPubTextState extends State<UserPubText> {
         SizedBox(height: 4),
         LinearProgressIndicator(
           value: percentage.clamp(0.0, 1.0),
-          backgroundColor: Colors.grey[800],
+          backgroundColor: _c.surfaceVariant,
           valueColor: AlwaysStoppedAnimation<Color>(counterColor),
           minHeight: 3,
         ),
@@ -1415,7 +1416,7 @@ class _UserPubTextState extends State<UserPubText> {
     IconData badgeIcon;
 
     if (isAdmin) {
-      badgeColor = Colors.green;
+      badgeColor = _c.primary;
       badgeText = 'ADMIN';
       badgeIcon = Icons.admin_panel_settings;
     } else if (isPremium) {
@@ -1461,7 +1462,7 @@ class _UserPubTextState extends State<UserPubText> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: _cardColor,
+        backgroundColor: _c.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
@@ -1484,7 +1485,7 @@ class _UserPubTextState extends State<UserPubText> {
           children: [
             Text(
               message,
-              style: TextStyle(color: Colors.grey[400]),
+              style: TextStyle(color: _c.textSecondary),
             ),
             SizedBox(height: 8),
             Text(
@@ -1525,7 +1526,7 @@ class _UserPubTextState extends State<UserPubText> {
                         Text(
                           'Pays illimités • 3000 caractères • Pas de cooldown',
                           style: TextStyle(
-                            color: Colors.grey[400],
+                            color: _c.textSecondary,
                             fontSize: 12,
                           ),
                         ),
@@ -1554,7 +1555,7 @@ class _UserPubTextState extends State<UserPubText> {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Color(0xFFFDB813),
-              foregroundColor: Colors.black,
+              foregroundColor: _c.onAccent,
             ),
             child: Text(actionText),
           ),
@@ -1574,7 +1575,7 @@ class _UserPubTextState extends State<UserPubText> {
             child: Text(
               text,
               style: TextStyle(
-                color: Colors.grey[400],
+                color: _c.textSecondary,
                 fontSize: 14,
               ),
             ),
@@ -1601,7 +1602,7 @@ class _UserPubTextState extends State<UserPubText> {
               content: Text(
                 '❌ Vous n\'êtes pas autorisé à poster dans ce canal',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.red),
+                style: TextStyle(color: _c.danger),
               ),
             ),
           );
@@ -1615,7 +1616,7 @@ class _UserPubTextState extends State<UserPubText> {
               content: Text(
                 '❌ Vous devez être abonné au canal pour poster',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.red),
+                style: TextStyle(color: _c.danger),
               ),
             ),
           );
@@ -1623,22 +1624,24 @@ class _UserPubTextState extends State<UserPubText> {
         }
       }
     }
-    // Vérifier cooldown
+    // Vérifier cooldown local
     if (!_canPost && _cooldownMinutes > 0) {
-      if (!_canPost && _cooldownMinutes > 0) {
-        // ✅ Proposer la pub récompensée
-        _showRewardedAdOption();
-        return;
+      _showRewardedAdOption();
+      return;
+    }
+
+    // Vérification serveur : cooldown 5 min universel (anti-fraude)
+    final cooldown = await PostCooldownService.check();
+    if (!cooldown.canPost) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+            '⏳ Attendez ${PostCooldownService.formatRemaining(cooldown.remainingSeconds)} avant de publier à nouveau.',
+            textAlign: TextAlign.center,
+          ),
+          duration: const Duration(seconds: 4),
+        ));
       }
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   SnackBar(
-      //     content: Text(
-      //       'Veuillez attendre $_timeRemaining avant de poster à nouveau',
-      //       textAlign: TextAlign.center,
-      //       style: TextStyle(color: Colors.red),
-      //     ),
-      //   ),
-      // );
       return;
     }
 
@@ -1663,7 +1666,7 @@ class _UserPubTextState extends State<UserPubText> {
             content: Text(
               'Veuillez sélectionner au moins un pays',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.red),
+              style: TextStyle(color: _c.danger),
             ),
           ),
         );
@@ -1678,7 +1681,7 @@ class _UserPubTextState extends State<UserPubText> {
               content: Text(
                 'Veuillez sélectionner 1 ou 2 pays maximum',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.red),
+                style: TextStyle(color: _c.danger),
               ),
             ),
           );
@@ -1702,25 +1705,25 @@ class _UserPubTextState extends State<UserPubText> {
           barrierDismissible: false,
           builder: (BuildContext context) {
             return AlertDialog(
-              backgroundColor: _cardColor,
+              backgroundColor: _c.surface,
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   LoadingAnimationWidget.flickr(
                     size: 50,
-                    leftDotColor: _primaryColor,
-                    rightDotColor: _secondaryColor,
+                    leftDotColor: _c.primary,
+                    rightDotColor: _c.accent,
                   ),
                   SizedBox(height: 16),
                   Text(
                     'Publication en cours...',
-                    style: TextStyle(color: _textColor),
+                    style: TextStyle(color: _c.textPrimary),
                   ),
                   SizedBox(height: 8),
                   Text(
                     '${textLength} caractères • ${_selectAllCountries ? 'Toute l\'Afrique' : '${_selectedCountries.length} pays'}',
                     style: TextStyle(
-                      color: _hintColor,
+                      color: _c.textSecondary,
                       fontSize: 12,
                     ),
                   ),
@@ -1837,12 +1840,12 @@ class _UserPubTextState extends State<UserPubText> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.check_circle, color: Colors.green, size: 20),
+                    Icon(Icons.check_circle, color: _c.primary, size: 20),
                     SizedBox(width: 8),
                     Text(
                       successMessage,
                       style: TextStyle(
-                        color: Colors.green,
+                        color: _c.primary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -1858,7 +1861,7 @@ class _UserPubTextState extends State<UserPubText> {
                 ),
               ],
             ),
-            backgroundColor: _cardColor,
+            backgroundColor: _c.surface,
             duration: Duration(seconds: 4),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -1884,7 +1887,7 @@ class _UserPubTextState extends State<UserPubText> {
             content: Text(
               'Erreur lors de la publication. Veuillez réessayer.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.red),
+              style: TextStyle(color: _c.danger),
             ),
           ),
         );
@@ -1951,7 +1954,7 @@ class _UserPubTextState extends State<UserPubText> {
 
     if (isAdmin) {
       infoText = 'Mode Admin : Pas de restrictions';
-      infoColor = Colors.green;
+      infoColor = _c.primary;
     } else if (isPremium) {
       infoText = 'Mode Premium : Tous pays • 3000 caractères • Pas d\'attente';
       infoColor = Color(0xFFFDB813);
@@ -2017,7 +2020,7 @@ class _UserPubTextState extends State<UserPubText> {
     return Stack(
       children: [
         Container(
-          color: _backgroundColor,
+          color: _c.background,
           child: SingleChildScrollView(
             child: Column(
               children: [
@@ -2025,7 +2028,7 @@ class _UserPubTextState extends State<UserPubText> {
                 Container(
                   padding: EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: _cardColor,
+                    color: _c.surface,
                     borderRadius: BorderRadius.only(
                       bottomLeft: Radius.circular(20),
                       bottomRight: Radius.circular(20),
@@ -2043,7 +2046,7 @@ class _UserPubTextState extends State<UserPubText> {
                       Container(
                         padding: EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: _primaryColor,
+                          color: _c.primary,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(Icons.text_fields, color: Colors.white, size: 24),
@@ -2056,7 +2059,7 @@ class _UserPubTextState extends State<UserPubText> {
                             Text(
                               'Publication Texte',
                               style: TextStyle(
-                                color: _textColor,
+                                color: _c.textPrimary,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 18,
                               ),
@@ -2090,7 +2093,7 @@ class _UserPubTextState extends State<UserPubText> {
                   margin: EdgeInsets.all(16),
                   padding: EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: _cardColor,
+                    color: _c.surface,
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
@@ -2107,7 +2110,7 @@ class _UserPubTextState extends State<UserPubText> {
                         Text(
                           'Partagez vos pensées',
                           style: TextStyle(
-                            color: _textColor,
+                            color: _c.textPrimary,
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                           ),
@@ -2116,7 +2119,7 @@ class _UserPubTextState extends State<UserPubText> {
                         Text(
                           'Écrivez librement, mais dans les limites de votre abonnement',
                           style: TextStyle(
-                            color: _hintColor,
+                            color: _c.textSecondary,
                             fontSize: 14,
                           ),
                           textAlign: TextAlign.center,
@@ -2128,17 +2131,17 @@ class _UserPubTextState extends State<UserPubText> {
                           height: 250,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.grey[700]!),
+                            border: Border.all(color: _c.border),
                           ),
                           child: Column(
                             children: [
                               Expanded(
                                 child: TextFormField(
                                   controller: _descriptionController,
-                                  style: TextStyle(color: _textColor, fontSize: 16),
+                                  style: TextStyle(color: _c.textPrimary, fontSize: 16),
                                   decoration: InputDecoration(
                                     hintText: 'Exprimez-vous... Partagez vos pensées, vos idées, vos moments...',
-                                    hintStyle: TextStyle(color: _hintColor),
+                                    hintStyle: TextStyle(color: _c.textSecondary),
                                     border: InputBorder.none,
                                     contentPadding: EdgeInsets.all(16),
                                   ),
@@ -2181,14 +2184,14 @@ class _UserPubTextState extends State<UserPubText> {
                             gradient: LinearGradient(
                               colors: onTap || (!_canPost && _cooldownMinutes > 0)
                                   ? [Colors.grey, Colors.grey]
-                                  : [_primaryColor, Color(0xFFFF5252)],
+                                  : [_c.primary, Color(0xFFFF5252)],
                               begin: Alignment.centerLeft,
                               end: Alignment.centerRight,
                             ),
                             borderRadius: BorderRadius.circular(25),
                             boxShadow: [
                               BoxShadow(
-                                color: _primaryColor.withOpacity(0.3),
+                                color: _c.primary.withOpacity(0.3),
                                 blurRadius: 10,
                                 offset: Offset(0, 4),
                               ),
@@ -2206,7 +2209,7 @@ class _UserPubTextState extends State<UserPubText> {
                                     ? LoadingAnimationWidget.flickr(
                                   size: 30,
                                   leftDotColor: Colors.white,
-                                  rightDotColor: _secondaryColor,
+                                  rightDotColor: _c.accent,
                                 )
                                     : (!_canPost && _cooldownMinutes > 0)
                                     ? Row(
@@ -2226,7 +2229,7 @@ class _UserPubTextState extends State<UserPubText> {
                                     Container(
                                       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: _secondaryColor,
+                                        color: _c.accent,
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: InkWell(

@@ -59,6 +59,8 @@ class PostLive {
 
   final bool isPaused;              // ← NOUVEAU
   final String? pauseMessage;       // ← NOUVEAU
+  final int giftCoinsTotal;         // Pièces reçues en cadeaux
+  final String? coverImage;         // Image de couverture du live
 
   PostLive({
     // Champs existants
@@ -70,6 +72,7 @@ class PostLive {
     required this.hostName,
     required this.hostImage,
     required this.title,
+    this.coverImage,
     this.viewerCount = 0,
     this.giftCount = 0,
     required this.startTime,
@@ -114,6 +117,7 @@ class PostLive {
 
     this.isPaused = false,          // ← NOUVEAU (valeur par défaut)
     this.pauseMessage,              // ← NOUVEAU (peut être null)
+    this.giftCoinsTotal = 0,
   });
 
   // Méthode utilitaire pour obtenir la durée (gestion des null)
@@ -168,6 +172,8 @@ class PostLive {
       // ⭐ AJOUTER LES 2 NOUVEAUX CHAMPS
       'isPaused': isPaused,
       'pauseMessage': pauseMessage,
+      'giftCoinsTotal': giftCoinsTotal,
+      'coverImage': coverImage,
     };
   }
 
@@ -233,6 +239,8 @@ class PostLive {
       // ⭐ AJOUTER LES 2 NOUVEAUX CHAMPS
       isPaused: map['isPaused'] ?? false,
       pauseMessage: map['pauseMessage'],
+      giftCoinsTotal: (map['giftCoinsTotal'] as num?)?.toInt() ?? 0,
+      coverImage: map['coverImage'] as String?,
     );
   }
 
@@ -293,6 +301,7 @@ class PostLive {
       // ⭐ AJOUTER LES 2 NOUVEAUX CHAMPS
       isPaused: isPaused ?? this.isPaused,
       pauseMessage: pauseMessage ?? this.pauseMessage,
+      giftCoinsTotal: giftCoinsTotal,
     );
   }
 }

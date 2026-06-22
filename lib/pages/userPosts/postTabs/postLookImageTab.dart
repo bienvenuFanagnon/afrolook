@@ -41,6 +41,7 @@ import '../../../providers/authProvider.dart';
 import '../../../providers/postProvider.dart';
 import '../../../providers/userProvider.dart';
 import '../../../services/postService/massNotificationService.dart';
+import '../../../services/postService/post_cooldown_service.dart';
 import '../hashtag/textHashTag/views/view_models/home_view_model.dart';
 import '../hashtag/textHashTag/views/view_models/search_view_model.dart';
 import '../hashtag/textHashTag/views/widgets/comment_text_field.dart';
@@ -86,6 +87,7 @@ import '../../../constant/sizeText.dart';
 import '../../../constant/textCustom.dart';
 import '../../../models/model_data.dart';
 import '../../../providers/authProvider.dart';
+import '../../../theme/app_colors.dart';
 import '../../../providers/postProvider.dart';
 import '../../../providers/userProvider.dart';
 import '../hashtag/textHashTag/views/view_models/search_view_model.dart';
@@ -156,6 +158,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
   late Animation<Offset> _animation;
   late final searchViewModel = SearchViewModel();
   late final FlutterTaggerController _taggerController = FlutterTaggerController(text: "");
+  late AppColors _c;
   late MassNotificationService _notificationService;
   @override
   void initState() {
@@ -294,10 +297,25 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
           content: Text(
             'Veuillez attendre $_timeRemaining avant de poster à nouveau',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.red),
+            style: TextStyle(color: _c.danger),
           ),
         ),
       );
+      return;
+    }
+
+    // Vérification serveur : cooldown 5 min universel (anti-fraude)
+    final cooldown = await PostCooldownService.check();
+    if (!cooldown.canPost) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+            '⏳ Attendez ${PostCooldownService.formatRemaining(cooldown.remainingSeconds)} avant de publier à nouveau.',
+            textAlign: TextAlign.center,
+          ),
+          duration: const Duration(seconds: 4),
+        ));
+      }
       return;
     }
 
@@ -308,7 +326,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
             content: Text(
               'Veuillez choisir une image.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.red),
+              style: TextStyle(color: _c.danger),
             ),
           ),
         );
@@ -435,7 +453,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
           content: Text(
             'Post publié avec succès ! Vos abonnés seront notifiés.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.green),
+            style: TextStyle(color: _c.primary),
           ),
           duration: Duration(seconds: 3),
         ),
@@ -454,7 +472,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
           content: Text(
             'Erreur lors de la publication. Veuillez réessayer.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.red),
+            style: TextStyle(color: _c.danger),
           ),
         ),
       );
@@ -528,7 +546,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
   //         content: Text(
   //           'Veuillez attendre $_timeRemaining avant de poster à nouveau',
   //           textAlign: TextAlign.center,
-  //           style: TextStyle(color: Colors.red),
+  //           style: TextStyle(color: _c.danger),
   //         ),
   //       ),
   //     );
@@ -542,7 +560,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
   //           content: Text(
   //             'Veuillez choisir une image.',
   //             textAlign: TextAlign.center,
-  //             style: TextStyle(color: Colors.red),
+  //             style: TextStyle(color: _c.danger),
   //           ),
   //         ),
   //       );
@@ -647,7 +665,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
   //         content: Text(
   //           'Post publié avec succès !',
   //           textAlign: TextAlign.center,
-  //           style: TextStyle(color: Colors.green),
+  //           style: TextStyle(color: _c.primary),
   //         ),
   //       ),
   //     );
@@ -659,7 +677,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
   //         content: Text(
   //           'Erreur lors de la publication. Veuillez réessayer.',
   //           textAlign: TextAlign.center,
-  //           style: TextStyle(color: Colors.red),
+  //           style: TextStyle(color: _c.danger),
   //         ),
   //       ),
   //     );
@@ -669,6 +687,12 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
   //     });
   //   }
   // }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _c = AppColors.of(context);
+  }
 
   @override
   void dispose() {
@@ -685,15 +709,15 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
     double width = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      backgroundColor: ConstColors.backgroundColor,
+      backgroundColor: _c.background,
       appBar: AppBar(
         title: TextCustomerPageTitle(
           titre: "Poster un look",
           fontSize: SizeText.homeProfileTextSize,
-          couleur: ConstColors.textColors,
+          couleur: _c.textPrimary,
           fontWeight: FontWeight.bold,
         ),
-        backgroundColor: Colors.green,
+        backgroundColor: _c.primary,
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8.0),
@@ -717,18 +741,18 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
                         padding: EdgeInsets.all(12),
                         margin: EdgeInsets.only(bottom: 16),
                         decoration: BoxDecoration(
-                          color: Colors.orange[100],
+                          color: _c.warning.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.orange),
+                          border: Border.all(color: _c.warning),
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.timer, color: Colors.orange),
+                            Icon(Icons.timer, color: _c.warning),
                             SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 'Prochain post dans: $_timeRemaining',
-                                style: TextStyle(color: Colors.orange[800]),
+                                style: TextStyle(color: _c.warning),
                               ),
                             ),
                           ],
@@ -775,7 +799,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
                           value: entry.key,
                           child: Row(
                             children: [
-                              Icon(entry.value['icon'], color: Colors.green),
+                              Icon(entry.value['icon'], color: _c.primary),
                               SizedBox(width: 10),
                               Text(entry.value['label']),
                             ],
@@ -806,8 +830,8 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
                                 isSwitched = value;
                               });
                             },
-                            activeColor: Colors.green,
-                            inactiveThumbColor: Colors.grey,
+                            activeColor: _c.primary,
+                            inactiveThumbColor: _c.textSecondary,
                           ),
                           Text("Activé"),
                         ],
@@ -827,8 +851,8 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
                                 isChallenge = value;
                               });
                             },
-                            activeColor: Colors.green,
-                            inactiveThumbColor: Colors.grey,
+                            activeColor: _c.primary,
+                            inactiveThumbColor: _c.textSecondary,
                           ),
                           Text("Activé"),
                         ],
@@ -936,8 +960,8 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
             searchViewModel.searchHashtag(query);
           }
         },
-        triggerCharacterAndStyles: const {
-          "#": TextStyle(color: Colors.green),
+        triggerCharacterAndStyles: {
+          "#": TextStyle(color: _c.primary),
         },
         tagTextFormatter: (id, tag, triggerCharacter) {
           return "$triggerCharacter$id#$tag#";

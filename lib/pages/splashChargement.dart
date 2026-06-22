@@ -563,7 +563,7 @@ class _SplashChargementState extends State<SplashChargement> {
   Widget _buildLoadingStatus() {
     if (_isLoadingTarget) {
       return Column(children: [
-        const Icon(Icons.downloading, color: Colors.orange, size: 30),
+        Icon(Icons.downloading, color: _colors.warning, size: 30),
         const SizedBox(height: 8),
         Text("Chargement du contenu...", style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w600, fontSize: 14)),
       ]);

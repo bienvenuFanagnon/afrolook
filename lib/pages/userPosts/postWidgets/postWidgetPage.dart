@@ -59,16 +59,6 @@ import 'audioPostWidget.dart';
 import '../../../services/postService/post_view_service.dart';
 
 
-// Couleurs style AfroTok
-const _afroDarkBg = Color(0xFF000000);
-const _afroCardBg = Color(0xFF1A1A1A);
-const _afroTextPrimary = Color(0xFFFFFFFF);
-const _afroTextSecondary = Color(0xFF71767B);
-const _afroGreen = Color(0xFF2E7D32);
-const _afroYellow = Color(0xFFFFD600);
-const _afroRed = Color(0xFFF91880);
-const _afroBlue = Color(0xFF1D9BF0);
-
 
 class HomePostUsersWidget extends StatefulWidget {
   late Post post;
@@ -159,24 +149,25 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     final now = DateTime.now();
     final difference = eventDateTime.difference(now).inDays;
 
+    final colors = AppColors.of(context);
     String badgeText = '';
-    Color badgeColor = Color(0xFFE21221);
+    Color badgeColor = colors.danger;
 
     if (difference < 0) {
       badgeText = '📅 PASSÉ';
-      badgeColor = Colors.grey;
+      badgeColor = colors.textSecondary;
     } else if (difference == 0) {
       badgeText = '🔴 AUJOURD\'HUI';
-      badgeColor = Colors.red;
+      badgeColor = colors.danger;
     } else if (difference == 1) {
       badgeText = '⭐ DEMAIN';
-      badgeColor = Colors.orange;
+      badgeColor = colors.warning;
     } else if (difference <= 7) {
       badgeText = '📅 DANS $difference JOURS';
-      badgeColor = Color(0xFFE21221);
+      badgeColor = colors.danger;
     } else {
       badgeText = '📅 À VENIR';
-      badgeColor = Colors.blue;
+      badgeColor = colors.info;
     }
 
     return Container(
@@ -372,7 +363,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
               _startSupportAd();
             },
             style: ElevatedButton.styleFrom(backgroundColor: colors.supportAccent),
-            child: Text(l10n.postSupportWatchAdButton, style: TextStyle(color: Colors.black)),
+            child: Text(l10n.postSupportWatchAdButton, style: TextStyle(color: colors.onAccent)),
           ),
         ],
       ),
@@ -384,7 +375,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     final currentUserId = authProvider.loginUserData.id;
     if (currentUserId == widget.post.user_id) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context).postSupportCannotSelf), backgroundColor: Colors.orange),
+        SnackBar(content: Text(AppLocalizations.of(context).postSupportCannotSelf), backgroundColor: AppColors.of(context).warning),
       );
       return;
     }
@@ -395,7 +386,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(AppLocalizations.of(context).postSupportAlreadyToday),
-          backgroundColor: Colors.orange,
+          backgroundColor: AppColors.of(context).warning,
           duration: Duration(seconds: 2),
         ),
       );
@@ -460,7 +451,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(AppLocalizations.of(context).postSupportThanks),
-        backgroundColor: Colors.green,
+        backgroundColor: AppColors.of(context).primary,
         duration: Duration(seconds: 2),
       ),
     );
@@ -605,9 +596,9 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
             _isFavorite
                 ? '✅ Post ajouté aux favoris'
                 : '🗑️ Post retiré des favoris',
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: AppColors.of(context).onPrimary),
           ),
-          backgroundColor: _isFavorite ? _afroGreen : Colors.grey,
+          backgroundColor: _isFavorite ? AppColors.of(context).primary : AppColors.of(context).surfaceVariant,
           duration: Duration(seconds: 2),
         ),
       );
@@ -618,9 +609,9 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         SnackBar(
           content: Text(
             '❌ Erreur lors de la modification',
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: AppColors.of(context).onPrimary),
           ),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.of(context).danger,
         ),
       );
     } finally {
@@ -1212,6 +1203,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     );
   }
   Widget _buildCountryBadge(Post post) {
+    final colors = AppColors.of(context);
     final isAllCountries = post.isAvailableInAllCountries == true;
     var countryCodes = post.availableCountries ?? [];
 
@@ -1266,13 +1258,11 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     IconData? icon;
 
     if (isAllCountries) {
-      // "Tous pays" : jaune/or
-      backgroundColor = Color(0xFFFFD700).withOpacity(0.9); // Jaune
-      textColor = Colors.black;
+      backgroundColor = colors.accent.withOpacity(0.9);
+      textColor = colors.onAccent;
       icon = Icons.public;
     } else if (countryCodes.isNotEmpty) {
-      // Pays spécifique : rouge
-      backgroundColor = Color(0xFFE21221).withOpacity(0.9); // Rouge
+      backgroundColor = colors.danger.withOpacity(0.9);
       textColor = Colors.white;
     } else {
       // Par défaut : gris
@@ -2544,7 +2534,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                     content: Text(
                       value ? 'Post signalé !' : 'Échec du signalement !',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: value ? Colors.green : Colors.red),
+                      style: TextStyle(color: value ? AppColors.of(context).primary : AppColors.of(context).danger),
                     ),
                   );
                   ScaffoldMessenger.of(context).showSnackBar(snackBar);
@@ -2570,7 +2560,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                     content: Text(
                       'Post supprimé !',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.green),
+                      style: TextStyle(color: AppColors.of(context).primary),
                     ),
                   );
                   ScaffoldMessenger.of(context).showSnackBar(snackBar);
@@ -2650,7 +2640,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
             content: Text(
               '+ de points ajoutés à votre compte',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.green),
+              style: TextStyle(color: AppColors.of(context).primary),
             ),
           ),
         );
@@ -2731,70 +2721,73 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   void _showInsufficientCoinsForLikeDialog() {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          '💡 Soutenez le créateur !',
-          style: TextStyle(color: Color(0xFFFFD700), fontWeight: FontWeight.bold),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Chaque like que vous envoyez offre 1 pièce au créateur du post !',
-              style: TextStyle(color: Colors.white70),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFD700).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3)),
+      builder: (ctx) {
+        final dc = AppColors.of(ctx);
+        return AlertDialog(
+          backgroundColor: dc.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(
+            '💡 Soutenez le créateur !',
+            style: TextStyle(color: dc.accent, fontWeight: FontWeight.bold),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Chaque like que vous envoyez offre 1 pièce au créateur du post !',
+                style: TextStyle(color: dc.textSecondary),
               ),
-              child: const Row(
-                children: [
-                  Text('🪙', style: TextStyle(fontSize: 20)),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Le like coûte 2 pièces :\n• Pour soutenir le créateur',
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: dc.accent.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: dc.accent.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Text('🪙', style: TextStyle(fontSize: 20)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Le like coûte 2 pièces :\n• Pour soutenir le créateur',
+                        style: TextStyle(color: dc.textSecondary, fontSize: 12),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(height: 16),
+              Text(
+                'Rechargez votre compte pour continuer à soutenir vos créateurs préférés !',
+                style: TextStyle(color: dc.textSecondary, fontSize: 12),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Annuler', style: TextStyle(color: dc.textSecondary)),
             ),
-            const SizedBox(height: 16),
-            const Text(
-              'Rechargez votre compte pour continuer à soutenir vos créateurs préférés !',
-              style: TextStyle(color: Colors.white54, fontSize: 12),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CoinRechargeScreen()),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: dc.accent,
+                foregroundColor: dc.onAccent,
+              ),
+              child: const Text('Recharger', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Annuler', style: TextStyle(color: Colors.white70)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const CoinRechargeScreen()),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFFD700),
-              foregroundColor: Colors.black,
-            ),
-            child: const Text('Recharger', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -2963,9 +2956,9 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                 content: Text(
                   '👍 Like ajouté (notification dans ${minutesRemaining} min)',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.orange),
+                  style: TextStyle(color: AppColors.of(context).warning),
                 ),
-                backgroundColor: Colors.orange.shade900,
+                backgroundColor: AppColors.of(context).warning,
                 duration: Duration(seconds: 2),
               ),
             );
@@ -2991,7 +2984,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
             content: Text(
               '+ de points ajoutés à votre compte',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.green),
+              style: TextStyle(color: AppColors.of(context).primary),
             ),
           ),
         );
@@ -3040,10 +3033,10 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
           // Afficher un snackbar de confirmation
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('🎁 Cadeau envoyé avec succès !'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
+            SnackBar(
+              content: const Text('🎁 Cadeau envoyé avec succès !'),
+              backgroundColor: AppColors.of(context).primary,
+              duration: const Duration(seconds: 2),
             ),
           );
 
@@ -3114,7 +3107,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
             content: Text(
               '+ de points ajoutés à votre compte',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.green),
+              style: TextStyle(color: AppColors.of(context).primary),
             ),
           ),
         );
@@ -3165,39 +3158,39 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   void _showInsufficientBalanceDialog() {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (BuildContext ctx) {
+        final dc = AppColors.of(ctx);
         return AlertDialog(
-          backgroundColor: Colors.black,
+          backgroundColor: dc.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: Colors.yellow, width: 2),
+            side: BorderSide(color: dc.accent, width: 2),
           ),
           title: Text(
             'Solde Insuffisant',
             style: TextStyle(
-              color: Colors.yellow,
+              color: dc.accent,
               fontWeight: FontWeight.bold,
             ),
           ),
           content: Text(
             'Votre solde est insuffisant pour effectuer cette action. Veuillez recharger votre compte.',
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: dc.textPrimary),
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Annuler', style: TextStyle(color: Colors.white)),
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Annuler', style: TextStyle(color: dc.textSecondary)),
             ),
             ElevatedButton(
               onPressed: () {
-                Navigator.pop(context);
-                // Naviguer vers la page de recharge
-                Navigator.push(context, MaterialPageRoute(builder: (context) => DepositScreen()));
+                Navigator.pop(ctx);
+                Navigator.push(ctx, MaterialPageRoute(builder: (context) => DepositScreen()));
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
+                backgroundColor: dc.primary,
               ),
-              child: Text('Recharger', style: TextStyle(color: Colors.black)),
+              child: Text('Recharger', style: TextStyle(color: dc.onPrimary)),
             ),
           ],
         );
@@ -3293,10 +3286,10 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.of(context).primary,
             content: Text(
               '🎁 Cadeau de ${amount.toInt()} FCFA envoyé avec succès!',
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: AppColors.of(context).onPrimary),
             ),
           ),
         );
@@ -3318,10 +3311,10 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       print("Erreur envoi cadeau: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.of(context).danger,
           content: Text(
               "Erreur lors de l'envoi du cadeau",
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: AppColors.of(context).onPrimary),
         ),
       ),
     );
@@ -3332,15 +3325,16 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   void _showGiftDialog(Post post) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        final height = MediaQuery.of(context).size.height * 0.6; // 60% de l'écran
+      builder: (BuildContext ctx) {
+        final dc = AppColors.of(ctx);
+        final height = MediaQuery.of(ctx).size.height * 0.6;
         return StatefulBuilder(
           builder: (context, setState) {
             return Dialog(
-              backgroundColor: Colors.black,
+              backgroundColor: dc.surface,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
-                side: BorderSide(color: Colors.yellow, width: 2),
+                side: BorderSide(color: dc.accent, width: 2),
               ),
               child: Container(
                 height: height,
@@ -3350,7 +3344,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                     Text(
                       'Envoyer un Cadeau',
                       style: TextStyle(
-                        color: Colors.yellow,
+                        color: dc.accent,
                         fontWeight: FontWeight.bold,
                         fontSize: 20,
                       ),
@@ -3359,7 +3353,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                     SizedBox(height: 12),
                     Text(
                       'Choisissez le montant en FCFA',
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: dc.textSecondary),
                     ),
                     SizedBox(height: 12),
                     // -----------------------------
@@ -3368,7 +3362,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                       child: GridView.builder(
                         physics: BouncingScrollPhysics(),
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3, // 3 colonnes
+                          crossAxisCount: 3,
                           crossAxisSpacing: 10,
                           mainAxisSpacing: 10,
                           childAspectRatio: 0.8,
@@ -3381,14 +3375,13 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                               padding: EdgeInsets.all(10),
                               decoration: BoxDecoration(
                                 color: _selectedGiftIndex == index
-                                    ? Colors.green
-                                    : Colors.grey[800],
+                                    ? dc.primary
+                                    : dc.surfaceVariant,
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
                                   color: _selectedGiftIndex == index
-                                      ? Colors.yellow
+                                      ? dc.accent
                                       : Colors.transparent,
-
                                   width: 1,
                                 ),
                               ),
@@ -3404,7 +3397,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                                     '${giftPrices[index].toInt()} FCFA',
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: Colors.white,
+                                      color: dc.textPrimary,
                                       fontWeight: FontWeight.bold,
                                     ),
                                     textAlign: TextAlign.center,
@@ -3420,7 +3413,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                     Text(
                       'Votre solde: ${authProvider.loginUserData.votre_solde_principal?.toInt() ?? 0} FCFA',
                       style: TextStyle(
-                        color: Colors.yellow,
+                        color: dc.accent,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -3430,7 +3423,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                       children: [
                         TextButton(
                           onPressed: () => Navigator.pop(context),
-                          child: Text('Annuler', style: TextStyle(color: Colors.white)),
+                          child: Text('Annuler', style: TextStyle(color: dc.textSecondary)),
                         ),
                         ElevatedButton(
                           onPressed: () {
@@ -3438,14 +3431,14 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                             _sendGiftFcfa(giftPrices[_selectedGiftIndex]);
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
+                            backgroundColor: dc.primary,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
                           child: Text(
                             'Envoyer',
-                            style: TextStyle(color: Colors.black),
+                            style: TextStyle(color: dc.onPrimary),
                           ),
                         ),
                       ],

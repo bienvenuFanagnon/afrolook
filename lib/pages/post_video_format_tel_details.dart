@@ -41,6 +41,7 @@ import 'coins/coin_recharge_screen.dart';
 import 'coins/post_gifts_list.dart';
 
 import '../theme/app_colors.dart';
+import '../services/feed/feed_repository.dart';
 import 'userPosts/postWidgets/translatable_description.dart';
 import '../providers/locale_provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -906,7 +907,13 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
       List<Post> candidates = [];
       if (attempts == 1) {
-        candidates = await fetchOrdered('created_at', true, limit * 2);
+        // Stratégie principale via FeedRepository (centralisé)
+        candidates = await FeedRepository().fetchByMediaType(
+          PostDataType.VIDEO.name, '', ids, limit: limit * 2,
+        );
+        if (candidates.isEmpty) {
+          candidates = await fetchOrdered('created_at', true, limit * 2);
+        }
       } else if (attempts == 2) {
         if (strategy == 0) candidates = await fetchOrdered('popularity', true, limit * 2);
         else if (strategy == 1) candidates = await fetchOrdered('popularity', false, limit * 2);
@@ -1572,10 +1579,10 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
           // Afficher un snackbar de confirmation
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('🎁 Cadeau envoyé avec succès !'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
+            SnackBar(
+              content: const Text('🎁 Cadeau envoyé avec succès !'),
+              backgroundColor: AppColors.of(context).primary,
+              duration: const Duration(seconds: 2),
             ),
           );
 
@@ -1659,7 +1666,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       });
       await _createTransaction(TypeTransaction.DEPENSE.name, amount, "Cadeau envoyé à @${post.user!.pseudo}", authProvider.loginUserData.id!);
       await _createTransaction(TypeTransaction.GAIN.name, gainDestinataire, "Cadeau reçu de @${authProvider.loginUserData.pseudo}", post.user_id!);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.green, content: Text('🎁 Cadeau envoyé!')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: AppColors.of(context).primary, content: const Text('🎁 Cadeau envoyé!')));
     } catch (e) { print('Erreur envoi cadeau: $e'); }
   }
 
@@ -1709,7 +1716,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         post.partage = (widget.initialPost!.partage ?? 0) + 1;
         post.users_partage_id!.add(authProvider.loginUserData.id!);
       });
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Partagé !'), backgroundColor: Colors.green));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Partagé !'), backgroundColor: AppColors.of(context).primary));
     } catch (e) { print('Erreur partage: $e'); } finally { setState(() => _isSharing = false); }
   }
 

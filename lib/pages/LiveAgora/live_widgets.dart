@@ -255,7 +255,7 @@ class GiftPanelWidget extends StatelessWidget {
                                   style: TextStyle(color: Colors.white, fontSize: 10),
                                   textAlign: TextAlign.center),
                               SizedBox(height: 2),
-                              Text('${gift.price.toInt()} FCFA',
+                              Text('${gift.price.toInt()} pcs',
                                   style: TextStyle(color: Color(0xFFF9A825), fontSize: 10)),
                             ],
                           ),
@@ -537,208 +537,111 @@ class _LikeAnimationState extends State<LikeAnimation> with SingleTickerProvider
   }
 }
 
-// EFFET TIKTOK LIKE
-// VERSION SIMPLIFIÉE ET SÉCURISÉE
+// EFFET TIKTOK LIKE — style TikTok fluide, cœurs montant depuis le bas droit
 class TikTokLikeEffect extends StatefulWidget {
   final LikeEffect effect;
-
   const TikTokLikeEffect({Key? key, required this.effect}) : super(key: key);
-
   @override
-  _TikTokLikeEffectState createState() => _TikTokLikeEffectState();
+  State<TikTokLikeEffect> createState() => _TikTokLikeEffectState();
 }
 
 class _TikTokLikeEffectState extends State<TikTokLikeEffect>
     with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  final Random _random = Random();
+  late final AnimationController _ctrl;
+  late final Animation<double> _scale;
+  late final Animation<double> _opacity;
+  final _rng = Random();
+  late final double _dx;
+  late final Color _color;
 
-  // Variables de contrôle
-  late double _targetX;
-  late double _targetY;
-  late double _rotation;
-  late double _finalScale;
-
-  // État de l'animation
-  double _currentOpacity = 1.0;
-  double _currentScale = 1.0;
-  double _currentRotation = 0.0;
-  Offset _currentPosition = Offset.zero;
-  bool _isDisposed = false;
+  static const _palette = [
+    Colors.red,
+    Colors.pinkAccent,
+    Color(0xFFFF6B6B),
+    Colors.redAccent,
+    Color(0xFFE91E63),
+  ];
 
   @override
   void initState() {
     super.initState();
+    // Léger décalage horizontal aléatoire pour que les cœurs ne se superposent pas
+    _dx = (_rng.nextDouble() - 0.5) * 36;
+    _color = _palette[_rng.nextInt(_palette.length)];
 
-    // Initialisation des valeurs
-    _targetX = _random.nextDouble() * 0.875;
-    _targetY = _random.nextDouble() * 0.7;
-    _rotation = _random.nextDouble() * 0.8 - 0.4;
-    _finalScale = 0.8 + _random.nextDouble() * 0.4; // Réduit la taille
-
-    _controller = AnimationController(
-      duration: Duration(milliseconds: 2000), // Légèrement plus rapide
+    _ctrl = AnimationController(
       vsync: this,
-    );
+      duration: const Duration(milliseconds: 1700),
+    )..forward();
 
-    // Contrôle manuel de l'animation
-    _controller.addListener(_updateAnimation);
-    _controller.forward().whenComplete(() {
-      _safeDispose();
-    });
-  }
-
-  void _updateAnimation() {
-    if (_isDisposed || !mounted) return;
-
-    final double progress = _controller.value;
-
-    // CONTRÔLE MANUEL STRICT - TOUTES LES VALEURS DOIVENT ÊTRE VALIDES
-    final double safeProgress = progress.clamp(0.0, 1.0);
-
-    // Calcul des valeurs avec contrôles
-    _currentPosition = _calculateTrajectory(safeProgress);
-    _currentScale = _calculateExplosiveScale(safeProgress);
-    _currentOpacity = _calculateOpacity(safeProgress);
-    _currentRotation = _calculateRotation(safeProgress);
-
-    // FORÇAGE DES LIMITES
-    _currentOpacity = _currentOpacity.clamp(0.0, 1.0);
-    _currentScale = _currentScale.clamp(0.1, 2.0);
-
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  void _safeDispose() {
-    if (!_isDisposed) {
-      _isDisposed = true;
-      _controller.dispose();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_isDisposed) {
-      return SizedBox.shrink();
-    }
-
-    return Positioned(
-      left: _currentPosition.dx,
-      top: _currentPosition.dy,
-      child: Transform.rotate(
-        angle: _currentRotation,
-        child: Transform.scale(
-          scale: _currentScale,
-          child: Opacity(
-            opacity: _currentOpacity, // Garanti entre 0.0 et 1.0
-            child: Container(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.favorite,
-                    color: Colors.red,
-                    size: 28, // Réduit: 28 au lieu de 40
-                  ),
-                  SizedBox(height: 2), // Réduit
-                  Text(
-                    widget.effect.username,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 8, // Réduit: 8 au lieu de 10
-                      fontWeight: FontWeight.bold,
-                      shadows: [
-                        Shadow(blurRadius: 2, color: Colors.black), // Réduit
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+    // Pop élastique à l'apparition → légère réduction → disparition
+    _scale = TweenSequence([
+      TweenSequenceItem(
+        tween: Tween(begin: 0.0, end: 1.35)
+            .chain(CurveTween(curve: Curves.elasticOut)),
+        weight: 28,
       ),
-    );
-  }
+      TweenSequenceItem(
+        tween: Tween(begin: 1.35, end: 1.0)
+            .chain(CurveTween(curve: Curves.easeOut)),
+        weight: 12,
+      ),
+      TweenSequenceItem(
+        tween: ConstantTween(1.0),
+        weight: 60,
+      ),
+    ]).animate(_ctrl);
 
-  // FONCTIONS DE CALCUL AVEC CONTRÔLES RENFORCÉS
-
-  Offset _calculateTrajectory(double progress) {
-    final double startX = 0.85;
-    final double startY = 0.9;
-
-    if (progress < 0.3) {
-      final double curveProgress = _easeOut(progress / 0.3);
-      final double x = startX;
-      final double y = startY - curveProgress * 0.2;
-      return Offset(
-        (x * MediaQuery.of(context).size.width).clamp(0.0, MediaQuery.of(context).size.width),
-        (y * MediaQuery.of(context).size.height).clamp(0.0, MediaQuery.of(context).size.height),
-      );
-    } else {
-      final double curveProgress = _easeInOut((progress - 0.3) / 0.7);
-      final double currentX = startX + (_targetX - startX) * curveProgress;
-      final double currentY = startY + (_targetY - startY) * curveProgress;
-      final double oscillation = sin(progress * 15) * 0.02;
-
-      return Offset(
-        ((currentX + oscillation) * MediaQuery.of(context).size.width)
-            .clamp(0.0, MediaQuery.of(context).size.width),
-        (currentY * MediaQuery.of(context).size.height)
-            .clamp(0.0, MediaQuery.of(context).size.height),
-      );
-    }
-  }
-
-  double _calculateExplosiveScale(double progress) {
-    if (progress < 0.2) {
-      return _elasticOut(progress / 0.2) * 1.2; // Réduit
-    } else if (progress < 0.5) {
-      return 1.2 - (progress - 0.2) / 0.3 * 0.4; // Réduit
-    } else if (progress < 0.8) {
-      return 0.8 + (progress - 0.5) / 0.3 * (_finalScale - 0.8); // Réduit
-    } else {
-      double result = _finalScale - (progress - 0.8) / 0.2 * (_finalScale - 0.8);
-      return result.clamp(0.1, 2.0); // Limite stricte
-    }
-  }
-
-  double _calculateRotation(double progress) {
-    if (progress < 0.3) return 0;
-    return _rotation * _easeInOut((progress - 0.3) / 0.7);
-  }
-
-  double _calculateOpacity(double progress) {
-    if (progress < 0.7) return 1.0;
-    double result = 1.0 - (progress - 0.7) / 0.3;
-    return result.clamp(0.0, 1.0); // GARANTI entre 0 et 1
-  }
-
-  // IMPLÉMENTATIONS MANUELLES DES COURBES (évite les problèmes de Curves)
-
-  double _easeOut(double t) {
-    double safeT = t.clamp(0.0, 1.0);
-    return 1 - pow(1 - safeT, 3).toDouble();
-  }
-
-  double _easeInOut(double t) {
-    double safeT = t.clamp(0.0, 1.0);
-    return safeT < 0.5
-        ? 4 * safeT * safeT * safeT
-        : 1 - pow(-2 * safeT + 2, 3) / 2;
-  }
-
-  double _elasticOut(double t) {
-    double safeT = t.clamp(0.0, 1.0);
-    return sin(-13.0 * (safeT + 1.0) * pi / 2) * pow(2.0, -10.0 * safeT) + 1.0;
+    // Reste pleinement visible jusqu'à 65 %, puis fondu rapide
+    _opacity = TweenSequence([
+      TweenSequenceItem(tween: ConstantTween(1.0), weight: 65),
+      TweenSequenceItem(
+        tween: Tween(begin: 1.0, end: 0.0)
+            .chain(CurveTween(curve: Curves.easeIn)),
+        weight: 35,
+      ),
+    ]).animate(_ctrl);
   }
 
   @override
   void dispose() {
-    _safeDispose();
+    _ctrl.dispose();
     super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    // Toujours en bas à droite, comme TikTok
+    final baseX = size.width * 0.81 + _dx;
+    final baseY = size.height * 0.76;
+
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (_, __) {
+        final rise = _ctrl.value * 220;
+        // Légère courbe sinusoïdale horizontale
+        final wobble = sin(_ctrl.value * pi * 2.5) * 10;
+        return Positioned(
+          left: baseX + wobble,
+          top: baseY - rise,
+          child: Opacity(
+            opacity: _opacity.value.clamp(0.0, 1.0),
+            child: Transform.scale(
+              scale: _scale.value,
+              child: Icon(
+                Icons.favorite_rounded,
+                color: _color,
+                size: 32,
+                shadows: const [
+                  Shadow(blurRadius: 4, color: Colors.black26),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 }
 

@@ -17,13 +17,16 @@ import 'package:iconsax/iconsax.dart';
 import '../../../providers/authProvider.dart';
 import '../../../providers/postProvider.dart';
 import '../../../providers/userProvider.dart';
+import '../../../theme/app_colors.dart';
 import '../../../services/postService/massNotificationService.dart';
+import '../../../services/postService/post_cooldown_service.dart';
 import '../../../services/utils/abonnement_utils.dart';
 import '../../pub/rewarded_ad_widget.dart';
 import '../../user/userAbonnementPage.dart';
 import '../../user/userPubs/user_my_advertisements_page.dart';
 
 class UserPostLookImageTab extends StatefulWidget {
+
   final Canal? canal;
   const UserPostLookImageTab({
     super.key,
@@ -83,14 +86,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
     'learn_more': {'label': 'En savoir plus', 'icon': Icons.info, 'hint': 'https://...'},
   };
 
-  // Couleurs personnalisées
-  final Color _primaryColor = Color(0xFFE21221); // Rouge
-  final Color _secondaryColor = Color(0xFFFFD600); // Jaune
-  final Color _backgroundColor = Color(0xFF121212); // Noir
-  final Color _cardColor = Color(0xFF1E1E1E);
-  final Color _textColor = Colors.white;
-  final Color _hintColor = Colors.grey[400]!;
-  final Color _successColor = Color(0xFF4CAF50);
+  late AppColors _c;
   late MassNotificationService _notificationService;
 
   // Variables pour restrictions
@@ -113,6 +109,12 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
     _checkPostCooldown();
 
     _countrySearchController.addListener(_filterCountries);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _c = AppColors.of(context);
   }
 
   @override
@@ -145,10 +147,10 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: _c.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: _isEventDatePast ? Colors.red : _primaryColor,
+          color: _isEventDatePast ? _c.danger : _c.primary,
           width: 1,
         ),
       ),
@@ -157,23 +159,23 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
         children: [
           Row(
             children: [
-              Icon(Icons.event, color: _primaryColor, size: 20),
+              Icon(Icons.event, color: _c.primary, size: 20),
               SizedBox(width: 8),
               Text(
                 'Date de l\'événement',
-                style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
               ),
               if (_isEventDatePast)
                 Container(
                   margin: EdgeInsets.only(left: 8),
                   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.2),
+                    color: _c.danger.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     'DATE PASSÉE',
-                    style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: _c.danger, fontSize: 10, fontWeight: FontWeight.bold),
                   ),
                 ),
             ],
@@ -190,10 +192,10 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                   return Theme(
                     data: ThemeData.dark().copyWith(
                       colorScheme: ColorScheme.dark(
-                        primary: _primaryColor,
-                        onPrimary: Colors.white,
-                        surface: _cardColor,
-                        onSurface: _textColor,
+                        primary: _c.primary,
+                        onPrimary: _c.onPrimary,
+                        surface: _c.surface,
+                        onSurface: _c.textPrimary,
                       ),
                     ),
                     child: child!,
@@ -210,13 +212,13 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
             child: Container(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
-                color: _backgroundColor,
+                color: _c.background,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[700]!),
+                border: Border.all(color: _c.border),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.calendar_today, color: _primaryColor, size: 20),
+                  Icon(Icons.calendar_today, color: _c.primary, size: 20),
                   SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -224,12 +226,12 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                           ? '${_selectedEventDate!.day}/${_selectedEventDate!.month}/${_selectedEventDate!.year}'
                           : 'Sélectionnez la date de l\'événement',
                       style: TextStyle(
-                        color: _selectedEventDate != null ? _textColor : _hintColor,
+                        color: _selectedEventDate != null ? _c.textPrimary : _c.textSecondary,
                         fontSize: 14,
                       ),
                     ),
                   ),
-                  Icon(Icons.arrow_drop_down, color: _hintColor),
+                  Icon(Icons.arrow_drop_down, color: _c.textSecondary),
                 ],
               ),
             ),
@@ -239,7 +241,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
               padding: EdgeInsets.only(top: 8),
               child: Text(
                 '📅 ${_formatEventDate(_selectedEventDate!)}',
-                style: TextStyle(color: _primaryColor, fontSize: 12),
+                style: TextStyle(color: _c.primary, fontSize: 12),
               ),
             ),
         ],
@@ -386,7 +388,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
         print("Erreur lors de la compression: $e");
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur lors du traitement de l\'image', textAlign: TextAlign.center, style: TextStyle(color: Colors.red)),
+            content: Text('Erreur lors du traitement de l\'image', textAlign: TextAlign.center, style: TextStyle(color: _c.danger)),
           ),
         );
       }
@@ -459,13 +461,13 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: _cardColor,
+        backgroundColor: _c.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            Icon(Icons.lock, color: _primaryColor),
+            Icon(Icons.lock, color: _c.primary),
             SizedBox(width: 10),
-            Text('Limite de pays atteinte', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
+            Text('Limite de pays atteinte', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Column(
@@ -473,25 +475,25 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('L\'abonnement gratuit est limité à 2 pays maximum.\nPassez à Afrolook Premium pour sélectionner tous les pays africains.',
-                style: TextStyle(color: _hintColor)),
+                style: TextStyle(color: _c.textSecondary)),
             SizedBox(height: 20),
             Container(
               padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Colors.black.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _secondaryColor),
+                border: Border.all(color: _c.accent),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.workspace_premium, color: _secondaryColor),
+                  Icon(Icons.workspace_premium, color: _c.accent),
                   SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Afrolook Premium', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
-                        Text('Pays illimités • 3 images • Pas de cooldown', style: TextStyle(color: _hintColor, fontSize: 12)),
+                        Text('Afrolook Premium', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
+                        Text('Pays illimités • 3 images • Pas de cooldown', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
                       ],
                     ),
                   ),
@@ -503,14 +505,14 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('COMPRENDRE', style: TextStyle(color: _hintColor)),
+            child: Text('COMPRENDRE', style: TextStyle(color: _c.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               Navigator.push(context, MaterialPageRoute(builder: (context) => AbonnementScreen()));
             },
-            style: ElevatedButton.styleFrom(backgroundColor: _secondaryColor, foregroundColor: Colors.black),
+            style: ElevatedButton.styleFrom(backgroundColor: _c.accent, foregroundColor: _c.onAccent),
             child: Text('PASSER À PREMIUM'),
           ),
         ],
@@ -525,7 +527,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
     return Container(
       height: MediaQuery.of(context).size.height * 0.8,
       decoration: BoxDecoration(
-        color: _backgroundColor,
+        color: _c.background,
         borderRadius: BorderRadius.only(topLeft: Radius.circular(25), topRight: Radius.circular(25)),
       ),
       child: Column(
@@ -533,7 +535,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
           Container(
             padding: EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: _cardColor,
+              color: _c.surface,
               borderRadius: BorderRadius.only(topLeft: Radius.circular(25), topRight: Radius.circular(25)),
             ),
             child: Column(
@@ -541,9 +543,9 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Sélection des pays', style: TextStyle(color: _textColor, fontSize: 20, fontWeight: FontWeight.bold)),
+                    Text('Sélection des pays', style: TextStyle(color: _c.textPrimary, fontSize: 20, fontWeight: FontWeight.bold)),
                     IconButton(
-                      icon: Icon(Icons.close, color: _textColor),
+                      icon: Icon(Icons.close, color: _c.textPrimary),
                       onPressed: () {
                         setState(() {
                           _showCountrySelection = false;
@@ -559,42 +561,42 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: isPremium || isAdmin ? _secondaryColor.withOpacity(0.2) : _primaryColor.withOpacity(0.2),
+                        color: isPremium || isAdmin ? _c.accent.withOpacity(0.2) : _c.primary.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: isPremium || isAdmin ? _secondaryColor : _primaryColor),
+                        border: Border.all(color: isPremium || isAdmin ? _c.accent : _c.primary),
                       ),
                       child: Row(
                         children: [
                           Icon(isPremium || isAdmin ? Icons.workspace_premium : Icons.lock, size: 14,
-                              color: isPremium || isAdmin ? _secondaryColor : _primaryColor),
+                              color: isPremium || isAdmin ? _c.accent : _c.primary),
                           SizedBox(width: 6),
                           Text(isPremium || isAdmin ? 'Pays illimités' : 'Max 2 pays',
-                              style: TextStyle(color: isPremium || isAdmin ? _secondaryColor : _primaryColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                              style: TextStyle(color: isPremium || isAdmin ? _c.accent : _c.primary, fontSize: 12, fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
                     SizedBox(width: 10),
                     Text(
                       _selectAllCountries ? '🌍 Tous les pays' : '${_selectedCountries.length} pays sélectionné(s)',
-                      style: TextStyle(color: _hintColor, fontSize: 14),
+                      style: TextStyle(color: _c.textSecondary, fontSize: 14),
                     ),
                   ],
                 ),
                 SizedBox(height: 15),
                 Container(
                   decoration: BoxDecoration(
-                    color: _cardColor,
+                    color: _c.surface,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[700]!),
+                    border: Border.all(color: _c.border),
                   ),
                   child: TextField(
                     controller: _countrySearchController,
                     focusNode: _countrySearchFocus,
-                    style: TextStyle(color: _textColor),
+                    style: TextStyle(color: _c.textPrimary),
                     decoration: InputDecoration(
                       hintText: 'Rechercher un pays...',
-                      hintStyle: TextStyle(color: _hintColor),
-                      prefixIcon: Icon(Icons.search, color: _primaryColor),
+                      hintStyle: TextStyle(color: _c.textSecondary),
+                      prefixIcon: Icon(Icons.search, color: _c.primary),
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.symmetric(horizontal: 16),
                     ),
@@ -604,40 +606,40 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
             ),
           ),
           Material(
-            color: _cardColor,
+            color: _c.surface,
             child: ListTile(
               onTap: _toggleSelectAllCountries,
               leading: Container(
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: _selectAllCountries ? _primaryColor : Colors.grey[800],
+                  color: _selectAllCountries ? _c.primary : _c.surfaceVariant,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(Icons.workspace_premium, color: _selectAllCountries ? Colors.white : _hintColor),
+                child: Icon(Icons.workspace_premium, color: _selectAllCountries ? Colors.white : _c.textSecondary),
               ),
               title: Row(
                 children: [
-                  Text('Tous les pays africains', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
+                  Text('Tous les pays africains', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
                   SizedBox(width: 8),
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(color: _secondaryColor.withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
-                    child: Text('PREMIUM', style: TextStyle(color: _secondaryColor, fontSize: 10, fontWeight: FontWeight.bold)),
+                    decoration: BoxDecoration(color: _c.accent.withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
+                    child: Text('PREMIUM', style: TextStyle(color: _c.accent, fontSize: 10, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
-              subtitle: Text('Votre post sera visible dans toute l\'Afrique', style: TextStyle(color: _hintColor)),
+              subtitle: Text('Votre post sera visible dans toute l\'Afrique', style: TextStyle(color: _c.textSecondary)),
               trailing: _selectAllCountries
                   ? Container(
                 padding: EdgeInsets.all(8),
-                decoration: BoxDecoration(color: _successColor, shape: BoxShape.circle),
+                decoration: BoxDecoration(color: _c.primary, shape: BoxShape.circle),
                 child: Icon(Icons.check, color: Colors.white, size: 20),
               )
                   : null,
             ),
           ),
-          Divider(color: Colors.grey[800], height: 1),
+          Divider(color: _c.surfaceVariant, height: 1),
           Expanded(
             child: ListView.builder(
               padding: EdgeInsets.zero,
@@ -648,28 +650,28 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                 final isDisabled = !isPremium && !isAdmin && _selectedCountries.length >= _maxCountriesForFree && !isSelected;
 
                 return Material(
-                  color: isSelected ? _primaryColor.withOpacity(0.1) : _cardColor,
+                  color: isSelected ? _c.primary.withOpacity(0.1) : _c.surface,
                   child: ListTile(
                     onTap: isDisabled ? null : () => _toggleCountrySelection(country),
                     leading: Container(
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: isSelected ? _primaryColor : Colors.grey[800],
+                        color: isSelected ? _c.primary : _c.surfaceVariant,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Center(child: Text(country.flag, style: TextStyle(fontSize: 20))),
                     ),
-                    title: Text(country.name, style: TextStyle(color: isDisabled ? Colors.grey[600] : _textColor, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
-                    subtitle: Text('Code: ${country.code}', style: TextStyle(color: isDisabled ? Colors.grey[600] : _hintColor)),
+                    title: Text(country.name, style: TextStyle(color: isDisabled ? _c.textSecondary : _c.textPrimary, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+                    subtitle: Text('Code: ${country.code}', style: TextStyle(color: isDisabled ? _c.textSecondary : _c.textSecondary)),
                     trailing: isSelected
                         ? Container(
                       padding: EdgeInsets.all(8),
-                      decoration: BoxDecoration(color: _primaryColor, shape: BoxShape.circle),
+                      decoration: BoxDecoration(color: _c.primary, shape: BoxShape.circle),
                       child: Icon(Icons.check, color: Colors.white, size: 16),
                     )
                         : isDisabled
-                        ? Icon(Icons.lock, color: Colors.grey[600], size: 16)
+                        ? Icon(Icons.lock, color: _c.textSecondary, size: 16)
                         : null,
                   ),
                 );
@@ -679,8 +681,8 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
           Container(
             padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: _cardColor,
-              border: Border(top: BorderSide(color: Colors.grey[800]!)),
+              color: _c.surface,
+              border: Border(top: BorderSide(color: _c.border)),
             ),
             child: Row(
               children: [
@@ -693,8 +695,8 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                       });
                     },
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: _hintColor,
-                      side: BorderSide(color: Colors.grey[700]!),
+                      foregroundColor: _c.textSecondary,
+                      side: BorderSide(color: _c.border),
                       padding: EdgeInsets.symmetric(vertical: 15),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
@@ -711,8 +713,8 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                       });
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _primaryColor,
-                      foregroundColor: Colors.white,
+                      backgroundColor: _c.primary,
+                      foregroundColor: _c.onPrimary,
                       padding: EdgeInsets.symmetric(vertical: 15),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
@@ -732,20 +734,20 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: _c.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _secondaryColor, width: 1),
+        border: Border.all(color: _c.accent, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.phone_android, color: _secondaryColor, size: 24),
+              Icon(Icons.phone_android, color: _c.accent, size: 24),
               SizedBox(width: 12),
               Text(
                 'Faites la promotion de votre contenu !',
-                style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
               ),
             ],
           ),
@@ -754,7 +756,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
             'Vous pouvez créer des publicités pour vos événements, produits ou services. '
                 'Atteignez plus de 100 000 utilisateurs en Afrique, ciblez des pays spécifiques '
                 'et suivez vos statistiques en temps réel.',
-            style: TextStyle(color: _hintColor, fontSize: 13),
+            style: TextStyle(color: _c.textSecondary, fontSize: 13),
           ),
           SizedBox(height: 16),
           ElevatedButton.icon(
@@ -767,8 +769,8 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
             icon: Icon(Icons.add_circle),
             label: Text('CRÉER UNE PUBLICITÉ'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: _primaryColor,
-              foregroundColor: Colors.white,
+              backgroundColor: _c.primary,
+              foregroundColor: _c.onPrimary,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
           ),
@@ -793,10 +795,10 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
       padding: EdgeInsets.all(16),
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: _c.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))],
-        border: Border.all(color: _selectedCountries.isEmpty && !_selectAllCountries ? Colors.orange : Colors.transparent, width: 1),
+        border: Border.all(color: _selectedCountries.isEmpty && !_selectAllCountries ? _c.warning : Colors.transparent, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -808,15 +810,15 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                 children: [
                   Container(
                     padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: _selectAllCountries ? _secondaryColor : _primaryColor, borderRadius: BorderRadius.circular(10)),
+                    decoration: BoxDecoration(color: _selectAllCountries ? _c.accent : _c.primary, borderRadius: BorderRadius.circular(10)),
                     child: Icon(_selectAllCountries ? Icons.workspace_premium : Icons.public, color: Colors.white, size: 20),
                   ),
                   SizedBox(width: 12),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Visibilité du post', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
-                      Text(displayMessage, style: TextStyle(color: _selectedCountries.isEmpty && !_selectAllCountries ? Colors.orange : _hintColor, fontSize: 14)),
+                      Text('Visibilité du post', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
+                      Text(displayMessage, style: TextStyle(color: _selectedCountries.isEmpty && !_selectAllCountries ? _c.warning : _c.textSecondary, fontSize: 14)),
                     ],
                   ),
                 ],
@@ -824,13 +826,13 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: isPremium || isAdmin ? _secondaryColor.withOpacity(0.2) : _primaryColor.withOpacity(0.2),
+                  color: isPremium || isAdmin ? _c.accent.withOpacity(0.2) : _c.primary.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: isPremium || isAdmin ? _secondaryColor : _primaryColor),
+                  border: Border.all(color: isPremium || isAdmin ? _c.accent : _c.primary),
                 ),
                 child: Text(
                   isPremium || isAdmin ? 'PREMIUM' : 'GRATUIT',
-                  style: TextStyle(color: isPremium || isAdmin ? _secondaryColor : _primaryColor, fontSize: 12, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: isPremium || isAdmin ? _c.accent : _c.primary, fontSize: 12, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -839,12 +841,12 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
             Container(
               margin: EdgeInsets.only(top: 12),
               padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.orange)),
+              decoration: BoxDecoration(color: _c.warning.withOpacity(0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: _c.warning)),
               child: Row(
                 children: [
-                  Icon(Icons.warning, size: 16, color: Colors.orange),
+                  Icon(Icons.warning, size: 16, color: _c.warning),
                   SizedBox(width: 8),
-                  Expanded(child: Text('Vous devez sélectionner au moins un pays', style: TextStyle(color: Colors.orange, fontSize: 12))),
+                  Expanded(child: Text('Vous devez sélectionner au moins un pays', style: TextStyle(color: _c.warning, fontSize: 12))),
                 ],
               ),
             ),
@@ -858,13 +860,13 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                   children: _selectedCountries.take(3).map((country) {
                     return Container(
                       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(color: _primaryColor.withOpacity(0.2), borderRadius: BorderRadius.circular(20), border: Border.all(color: _primaryColor)),
+                      decoration: BoxDecoration(color: _c.primary.withOpacity(0.2), borderRadius: BorderRadius.circular(20), border: Border.all(color: _c.primary)),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(country.flag),
                           SizedBox(width: 6),
-                          Text(country.name, style: TextStyle(color: _textColor, fontSize: 12)),
+                          Text(country.name, style: TextStyle(color: _c.textPrimary, fontSize: 12)),
                         ],
                       ),
                     );
@@ -873,7 +875,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                 if (_selectedCountries.length > 3)
                   Padding(
                     padding: EdgeInsets.only(top: 8),
-                    child: Text('+ ${_selectedCountries.length - 3} autres pays...', style: TextStyle(color: _hintColor, fontSize: 12)),
+                    child: Text('+ ${_selectedCountries.length - 3} autres pays...', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
                   ),
               ],
             ),
@@ -888,8 +890,8 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
             icon: Icon(Icons.edit_location, size: 18),
             label: Text('SÉLECTIONNER LES PAYS'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: _primaryColor.withOpacity(0.2),
-              foregroundColor: _primaryColor,
+              backgroundColor: _c.primary.withOpacity(0.2),
+              foregroundColor: _c.primary,
               minimumSize: Size(double.infinity, 45),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
@@ -905,30 +907,30 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
       padding: EdgeInsets.all(16),
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: _c.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _secondaryColor),
+        border: Border.all(color: _c.accent),
       ),
       child: Column(
         children: [
           Row(
             children: [
-              Icon(Icons.timer, color: _secondaryColor, size: 24),
+              Icon(Icons.timer, color: _c.accent, size: 24),
               SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Temps d\'attente', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text('Temps d\'attente', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
                     SizedBox(height: 4),
-                    Text('Prochain post dans: $_timeRemaining', style: TextStyle(color: _hintColor, fontSize: 14)),
+                    Text('Prochain post dans: $_timeRemaining', style: TextStyle(color: _c.textSecondary, fontSize: 14)),
                   ],
                 ),
               ),
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(color: _secondaryColor.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
-                child: Text(_timeRemaining, style: TextStyle(color: _secondaryColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                decoration: BoxDecoration(color: _c.accent.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
+                child: Text(_timeRemaining, style: TextStyle(color: _c.accent, fontWeight: FontWeight.bold, fontSize: 16)),
               ),
             ],
           ),
@@ -937,9 +939,9 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
             width: double.infinity,
             child: Column(
               children: [
-                Divider(color: Colors.grey[800]),
+                Divider(color: _c.surfaceVariant),
                 SizedBox(height: 12),
-                Text('OU', style: TextStyle(color: _hintColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                Text('OU', style: TextStyle(color: _c.textSecondary, fontSize: 12, fontWeight: FontWeight.bold)),
                 SizedBox(height: 12),
                 RewardedAdWidget(
                   key: _rewardedAdKey,
@@ -950,7 +952,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                       _timeRemaining = '';
                       _showRewardedAd = false;
                     });
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Merci ! Vous pouvez poster maintenant !', style: TextStyle(color: Colors.green)), backgroundColor: _cardColor, behavior: SnackBarBehavior.floating));
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Merci ! Vous pouvez poster maintenant !', style: TextStyle(color: _c.primary)), backgroundColor: _c.surface, behavior: SnackBarBehavior.floating));
 
                   },
                   // onUserEarnedReward: (reward) {
@@ -961,8 +963,8 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                   //   });
                   //   ScaffoldMessenger.of(context).showSnackBar(
                   //     SnackBar(
-                  //       content: Text('Merci ! Vous pouvez poster maintenant !', style: TextStyle(color: Colors.green)),
-                  //       backgroundColor: _cardColor,
+                  //       content: Text('Merci ! Vous pouvez poster maintenant !', style: TextStyle(color: _c.primary)),
+                  //       backgroundColor: _c.surface,
                   //       behavior: SnackBarBehavior.floating,
                   //     ),
                   //   );
@@ -970,7 +972,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                   onAdDismissed: () => setState(() => _showRewardedAd = false),
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(color: _secondaryColor, borderRadius: BorderRadius.circular(12)),
+                    decoration: BoxDecoration(color: _c.accent, borderRadius: BorderRadius.circular(12)),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -989,7 +991,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                 ),
                 SizedBox(height: 8),
                 Text('Regardez une courte publicité pour\npublier immédiatement sans attendre',
-                    textAlign: TextAlign.center, style: TextStyle(color: _hintColor, fontSize: 11)),
+                    textAlign: TextAlign.center, style: TextStyle(color: _c.textSecondary, fontSize: 11)),
               ],
             ),
           ),
@@ -1003,7 +1005,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
       padding: EdgeInsets.all(16),
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: _c.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))],
       ),
@@ -1012,25 +1014,25 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
         children: [
           Row(
             children: [
-              Icon(Icons.category, color: _primaryColor, size: 20),
+              Icon(Icons.category, color: _c.primary, size: 20),
               SizedBox(width: 8),
-              Text('Type de publication', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
+              Text('Type de publication', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
             ],
           ),
           SizedBox(height: 12),
           DropdownButtonFormField<String>(
             decoration: InputDecoration(
               hintText: 'Choisir un type de publication',
-              hintStyle: TextStyle(color: _hintColor),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[700]!)),
-              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[700]!)),
-              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _primaryColor)),
+              hintStyle: TextStyle(color: _c.textSecondary),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _c.border)),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _c.border)),
+              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _c.primary)),
               filled: true,
-              fillColor: _backgroundColor,
+              fillColor: _c.background,
               contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             ),
-            dropdownColor: _cardColor,
-            style: TextStyle(color: _textColor, fontSize: 14),
+            dropdownColor: _c.surface,
+            style: TextStyle(color: _c.textPrimary, fontSize: 14),
             value: _selectedPostType,
             onChanged: (String? newValue) => setState(() => _selectedPostType = newValue),
             items: _postTypes.entries.map<DropdownMenuItem<String>>((entry) {
@@ -1038,9 +1040,9 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                 value: entry.key,
                 child: Row(
                   children: [
-                    Icon(entry.value['icon'] as IconData, color: _primaryColor, size: 18),
+                    Icon(entry.value['icon'] as IconData, color: _c.primary, size: 18),
                     SizedBox(width: 12),
-                    Text(entry.value['label'], style: TextStyle(color: _textColor)),
+                    Text(entry.value['label'], style: TextStyle(color: _c.textPrimary)),
                   ],
                 ),
               );
@@ -1061,7 +1063,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
 
     if (isAdmin) {
       statusText = 'Admin • Images illimitées';
-      statusColor = Colors.green;
+      statusColor = _c.primary;
     } else if (isPremium) {
       statusText = 'Premium • ${_selectedImages.length}/3 images';
       statusColor = Color(0xFFFDB813);
@@ -1094,7 +1096,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
 
     double percentage = textLength / _maxCharacters;
-    Color counterColor = textLength > _maxCharacters ? Colors.red : (percentage > 0.8 ? Colors.orange : Colors.green);
+    Color counterColor = textLength > _maxCharacters ? _c.danger : (percentage > 0.8 ? _c.warning : _c.primary);
 
     String statusText;
     if (isAdmin) {
@@ -1112,7 +1114,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
         SizedBox(height: 4),
         LinearProgressIndicator(
           value: percentage.clamp(0.0, 1.0),
-          backgroundColor: Colors.grey[800],
+          backgroundColor: _c.surfaceVariant,
           valueColor: AlwaysStoppedAnimation<Color>(counterColor),
           minHeight: 3,
         ),
@@ -1124,7 +1126,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: _cardColor,
+        backgroundColor: _c.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
@@ -1137,7 +1139,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(message, style: TextStyle(color: Colors.grey[400])),
+            Text(message, style: TextStyle(color: _c.textSecondary)),
             SizedBox(height: 20),
             Container(
               padding: EdgeInsets.all(12),
@@ -1155,7 +1157,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('Afrolook Premium', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                        Text('Pays illimités • 3 images • 3000 caractères', style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+                        Text('Pays illimités • 3 images • 3000 caractères', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
                       ],
                     ),
                   ),
@@ -1171,7 +1173,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
               Navigator.pop(context);
               Navigator.push(context, MaterialPageRoute(builder: (context) => AbonnementScreen()));
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Color(0xFFFDB813), foregroundColor: Colors.black),
+            style: ElevatedButton.styleFrom(backgroundColor: Color(0xFFFDB813), foregroundColor: _c.onAccent),
             child: Text(actionText),
           ),
         ],
@@ -1183,48 +1185,48 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: _cardColor,
+        backgroundColor: _c.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            Icon(Icons.timer, color: _secondaryColor),
+            Icon(Icons.timer, color: _c.accent),
             SizedBox(width: 10),
-            Text('Temps d\'attente', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
+            Text('Temps d\'attente', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Vous devez attendre $_timeRemaining avant de pouvoir publier.', style: TextStyle(color: _hintColor)),
+            Text('Vous devez attendre $_timeRemaining avant de pouvoir publier.', style: TextStyle(color: _c.textSecondary)),
             SizedBox(height: 20),
             Container(
               padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: _secondaryColor.withOpacity(0.1),
+                color: _c.accent.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _secondaryColor),
+                border: Border.all(color: _c.accent),
               ),
               child: Column(
                 children: [
-                  Icon(Icons.play_circle_filled, color: _secondaryColor, size: 40),
+                  Icon(Icons.play_circle_filled, color: _c.accent, size: 40),
                   SizedBox(height: 8),
-                  Text('Regardez une publicité', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                  Text('Regardez une publicité', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
                   SizedBox(height: 4),
-                  Text('et publiez immédiatement !', style: TextStyle(color: _secondaryColor, fontSize: 14)),
+                  Text('et publiez immédiatement !', style: TextStyle(color: _c.accent, fontSize: 14)),
                 ],
               ),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text('ATTENDRE', style: TextStyle(color: _hintColor))),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('ATTENDRE', style: TextStyle(color: _c.textSecondary))),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               setState(() => _showRewardedAd = true);
               RewardedAdWidget.showAd(_rewardedAdKey);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: _secondaryColor, foregroundColor: Colors.black),
+            style: ElevatedButton.styleFrom(backgroundColor: _c.accent, foregroundColor: _c.onAccent),
             child: Text('REGARDER LA PUB'),
           ),
         ],
@@ -1238,6 +1240,21 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
       return;
     }
 
+    // Vérification serveur : cooldown 5 min universel (anti-fraude)
+    final cooldown = await PostCooldownService.check();
+    if (!cooldown.canPost) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+            '⏳ Attendez ${PostCooldownService.formatRemaining(cooldown.remainingSeconds)} avant de publier à nouveau.',
+            textAlign: TextAlign.center,
+          ),
+          duration: const Duration(seconds: 4),
+        ));
+      }
+      return;
+    }
+
     if (widget.canal != null) {
       final currentUserId = authProvider.loginUserData.id;
       final isOwner = currentUserId == widget.canal!.userId;
@@ -1247,13 +1264,13 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
 
       if (!isAdmin && !canPost) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Vous n\'êtes pas autorisé à poster dans ce canal', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))),
+          SnackBar(content: Text('❌ Vous n\'êtes pas autorisé à poster dans ce canal', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))),
         );
         return;
       }
       if (!isMember) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Vous devez être abonné au canal pour poster', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))),
+          SnackBar(content: Text('❌ Vous devez être abonné au canal pour poster', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))),
         );
         return;
       }
@@ -1262,7 +1279,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
     if (_formKey.currentState!.validate()) {
       if (_selectedImages.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Veuillez sélectionner au moins une image', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))),
+          SnackBar(content: Text('Veuillez sélectionner au moins une image', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))),
         );
         return;
       }
@@ -1285,7 +1302,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
 
       if (!_selectAllCountries && _selectedCountries.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Veuillez sélectionner au moins un pays', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))),
+          SnackBar(content: Text('Veuillez sélectionner au moins un pays', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))),
         );
         return;
       }
@@ -1293,13 +1310,13 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
       if (_selectedPostType == 'EVENEMENT') {
         if (_selectedEventDate == null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Veuillez sélectionner la date de l\'événement', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))),
+            SnackBar(content: Text('Veuillez sélectionner la date de l\'événement', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))),
           );
           return;
         }
         if (_selectedEventDate!.isBefore(DateTime.now())) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('La date de l\'événement ne peut pas être dans le passé', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))),
+            SnackBar(content: Text('La date de l\'événement ne peut pas être dans le passé', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))),
           );
           return;
         }
@@ -1315,19 +1332,19 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
       if (_isAdvertisement) {
         if (_selectedActionType == null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Veuillez sélectionner un type d\'action pour la publicité', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))),
+            SnackBar(content: Text('Veuillez sélectionner un type d\'action pour la publicité', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))),
           );
           return;
         }
         if (_actionUrlController.text.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Veuillez saisir le lien de la publicité', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))),
+            SnackBar(content: Text('Veuillez saisir le lien de la publicité', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))),
           );
           return;
         }
         if (_selectedDurationDays == null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Veuillez sélectionner la durée de la publicité', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))),
+            SnackBar(content: Text('Veuillez sélectionner la durée de la publicité', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))),
           );
           return;
         }
@@ -1341,17 +1358,17 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
           barrierDismissible: false,
           builder: (BuildContext context) {
             return AlertDialog(
-              backgroundColor: _cardColor,
+              backgroundColor: _c.surface,
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  LoadingAnimationWidget.flickr(size: 50, leftDotColor: _primaryColor, rightDotColor: _secondaryColor),
+                  LoadingAnimationWidget.flickr(size: 50, leftDotColor: _c.primary, rightDotColor: _c.accent),
                   SizedBox(height: 16),
-                  Text('Publication en cours...', style: TextStyle(color: _textColor)),
+                  Text('Publication en cours...', style: TextStyle(color: _c.textPrimary)),
                   SizedBox(height: 8),
                   Text(
                     '${_selectedImages.length} image(s) • ${_selectAllCountries ? 'Toute l\'Afrique' : '${_selectedCountries.length} pays'}${_isAdvertisement ? ' • Publicité' : ''}',
-                    style: TextStyle(color: _hintColor, fontSize: 12),
+                    style: TextStyle(color: _c.textSecondary, fontSize: 12),
                   ),
                 ],
               ),
@@ -1510,16 +1527,16 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.check_circle, color: Colors.green, size: 20),
+                    Icon(Icons.check_circle, color: _c.primary, size: 20),
                     SizedBox(width: 8),
-                    Text(successMessage, style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                    Text(successMessage, style: TextStyle(color: _c.primary, fontWeight: FontWeight.bold)),
                   ],
                 ),
                 SizedBox(height: 4),
                 Text('${_selectedImages.length} image(s) • $countryMessage', style: TextStyle(color: Colors.white, fontSize: 12)),
               ],
             ),
-            backgroundColor: _cardColor,
+            backgroundColor: _c.surface,
             duration: Duration(seconds: 4),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1538,7 +1555,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
         setState(() => onTap = false);
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur lors de la publication. Veuillez réessayer.', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))),
+          SnackBar(content: Text('Erreur lors de la publication. Veuillez réessayer.', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))),
         );
       }
     }
@@ -1552,18 +1569,18 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
           width: double.infinity,
           height: 200,
           decoration: BoxDecoration(
-            color: _backgroundColor,
+            color: _c.background,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey[700]!, width: 2, style: BorderStyle.solid),
+            border: Border.all(color: _c.border, width: 2, style: BorderStyle.solid),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.add_photo_alternate, size: 60, color: _hintColor),
+              Icon(Icons.add_photo_alternate, size: 60, color: _c.textSecondary),
               SizedBox(height: 16),
-              Text('Ajouter une image', style: TextStyle(color: _textColor, fontSize: 16, fontWeight: FontWeight.bold)),
+              Text('Ajouter une image', style: TextStyle(color: _c.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
               SizedBox(height: 8),
-              Text('Cliquez pour sélectionner\n(1 image pour gratuit, 3 pour Premium)', textAlign: TextAlign.center, style: TextStyle(color: _hintColor, fontSize: 12)),
+              Text('Cliquez pour sélectionner\n(1 image pour gratuit, 3 pour Premium)', textAlign: TextAlign.center, style: TextStyle(color: _c.textSecondary, fontSize: 12)),
             ],
           ),
         ),
@@ -1627,8 +1644,8 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                 icon: Icon(Icons.add, size: 16),
                 label: Text('Ajouter'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _primaryColor,
-                  foregroundColor: Colors.white,
+                  backgroundColor: _c.primary,
+                  foregroundColor: _c.onPrimary,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
@@ -1641,7 +1658,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _backgroundColor,
+      backgroundColor: _c.background,
       body: Stack(
         children: [
           SingleChildScrollView(
@@ -1650,7 +1667,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                 Container(
                   padding: EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: _cardColor,
+                    color: _c.surface,
                     borderRadius: BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20)),
                     boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 15, offset: Offset(0, 4))],
                   ),
@@ -1658,7 +1675,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                     children: [
                       Container(
                         padding: EdgeInsets.all(8),
-                        decoration: BoxDecoration(color: _primaryColor, borderRadius: BorderRadius.circular(12)),
+                        decoration: BoxDecoration(color: _c.primary, borderRadius: BorderRadius.circular(12)),
                         child: Icon(Icons.photo_library, color: Colors.white, size: 24),
                       ),
                       SizedBox(width: 12),
@@ -1666,7 +1683,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Publication Image', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 18)),
+                            Text('Publication Image', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 18)),
                             SizedBox(height: 4),
                             _buildImageCounter(),
                           ],
@@ -1686,7 +1703,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                   margin: EdgeInsets.all(16),
                   padding: EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: _cardColor,
+                    color: _c.surface,
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))],
                   ),
@@ -1698,9 +1715,9 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                           width: double.infinity,
                           padding: EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: _backgroundColor,
+                            color: _c.background,
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: _selectedImages.isNotEmpty ? _primaryColor : Colors.grey[700]!, width: 2),
+                            border: Border.all(color: _selectedImages.isNotEmpty ? _c.primary : _c.border, width: 2),
                           ),
                           child: _buildImageGrid(),
                         ),
@@ -1708,17 +1725,17 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                         Container(
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.grey[700]!),
+                            border: Border.all(color: _c.border),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               TextFormField(
                                 controller: _descriptionController,
-                                style: TextStyle(color: _textColor, fontSize: 16),
+                                style: TextStyle(color: _c.textPrimary, fontSize: 16),
                                 decoration: InputDecoration(
                                   hintText: 'Décrivez votre image...',
-                                  hintStyle: TextStyle(color: _hintColor),
+                                  hintStyle: TextStyle(color: _c.textSecondary),
                                   border: InputBorder.none,
                                   contentPadding: EdgeInsets.all(16),
                                 ),
@@ -1741,7 +1758,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                         SizedBox(height: 20),
                         Container(
                           padding: EdgeInsets.all(12),
-                          decoration: BoxDecoration(color: Colors.grey[900], borderRadius: BorderRadius.circular(12)),
+                          decoration: BoxDecoration(color: _c.background, borderRadius: BorderRadius.circular(12)),
                           child: Row(
                             children: [
                               Icon(
@@ -1751,7 +1768,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                                     ? Icons.workspace_premium
                                     : Icons.lock,
                                 color: authProvider.loginUserData.role == UserRole.ADM.name
-                                    ? Colors.green
+                                    ? _c.primary
                                     : AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement)
                                     ? Color(0xFFFDB813)
                                     : Colors.grey,
@@ -1765,7 +1782,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                                       : AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement)
                                       ? 'Mode Premium: Pays illimités • 3 images • 3000 caractères'
                                       : 'Mode Gratuit: Max 2 pays • 1 image • 300 caractères',
-                                  style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                                  style: TextStyle(color: _c.textSecondary, fontSize: 12),
                                 ),
                               ),
                               if (!AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement) && authProvider.loginUserData.role != UserRole.ADM.name)
@@ -1784,12 +1801,12 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                             gradient: LinearGradient(
                               colors: onTap || (!_canPost && _cooldownMinutes > 0)
                                   ? [Colors.grey, Colors.grey]
-                                  : [_primaryColor, Color(0xFFFF5252)],
+                                  : [_c.primary, Color(0xFFFF5252)],
                               begin: Alignment.centerLeft,
                               end: Alignment.centerRight,
                             ),
                             borderRadius: BorderRadius.circular(25),
-                            boxShadow: [BoxShadow(color: _primaryColor.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))],
+                            boxShadow: [BoxShadow(color: _c.primary.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))],
                           ),
                           child: Material(
                             color: Colors.transparent,
@@ -1798,7 +1815,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                               onTap: onTap || (!_canPost && _cooldownMinutes > 0) ? null : _publishPost,
                               child: Center(
                                 child: onTap
-                                    ? LoadingAnimationWidget.flickr(size: 30, leftDotColor: Colors.white, rightDotColor: _secondaryColor)
+                                    ? LoadingAnimationWidget.flickr(size: 30, leftDotColor: Colors.white, rightDotColor: _c.accent)
                                     : (!_canPost && _cooldownMinutes > 0)
                                     ? Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -1809,7 +1826,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                                     SizedBox(width: 8),
                                     Container(
                                       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(color: _secondaryColor, borderRadius: BorderRadius.circular(12)),
+                                      decoration: BoxDecoration(color: _c.accent, borderRadius: BorderRadius.circular(12)),
                                       child: InkWell(
                                         onTap: () => RewardedAdWidget.showAd(_rewardedAdKey),
                                         child: Row(
@@ -1845,7 +1862,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                                       SizedBox(width: 4),
                                       Container(
                                         padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                        decoration: BoxDecoration(color: _secondaryColor, borderRadius: BorderRadius.circular(8)),
+                                        decoration: BoxDecoration(color: _c.accent, borderRadius: BorderRadius.circular(8)),
                                         child: Text('PUB', style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold)),
                                       ),
                                     ],

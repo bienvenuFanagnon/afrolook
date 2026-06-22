@@ -8,16 +8,18 @@ import 'package:afrotok/models/model_data.dart';
 
 class FeedScoringService {
   static double calculateFeedScore(Post post, int userLastVisitTime) {
-    final double engagementWeight = 0.6;
-    final double freshnessWeight = 0.3;
-    final double viralityWeight = 0.1;
+    const double engagementWeight = 0.6;
+    const double freshnessWeight = 0.3;
+    const double viralityWeight = 0.1;
 
-    return engagementWeight * _calculateEngagementScore(post) +
+    return engagementWeight * calculateEngagementScore(post) +
         freshnessWeight * _calculateFreshnessScore(post, userLastVisitTime) +
         viralityWeight * _calculateViralityScore(post);
   }
 
-  static double _calculateEngagementScore(Post post) {
+  /// Uniquement la composante engagement (likes, commentaires, partages, vues).
+  /// À utiliser quand la fraîcheur et la viralité sont calculées séparément.
+  static double calculateEngagementScore(Post post) {
     // Normalisation logarithmique
     final double likeScore = _logNormalize(post.likes ?? 0, base: 100);
     final double commentScore = _logNormalize(post.comments ?? 0, base: 50);

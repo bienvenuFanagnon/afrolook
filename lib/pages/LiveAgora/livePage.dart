@@ -26,6 +26,7 @@ import '../../services/linkService.dart';
 import '../paiement/newDepot.dart';
 import 'live_widgets.dart';
 import 'livesAgora.dart';
+import '../../widgets/chat/generic_share_sheet.dart';
 
 import 'package:flutter/material.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
@@ -96,16 +97,17 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   int _giftCount = 0;
   int _likeCount = 0;
   double _giftTotal = 0.0;
+  int _giftCoinsTotal = 0;
   List<String> _participants = [];
   List<String> _spectators = [];
   List<LiveComment> _comments = [];
   int _shareCount = 0;
   double _paidParticipationTotal = 0.0;
+  List<Map<String, dynamic>> _topDonors = [];
 
   // ÉTAT INTERFACE
   bool _showUI = true;
   bool _showGiftPanel = false;
-  bool _showPaymentWarning = false;
   bool _isParticipant = false;
   bool _isFollowing = false;
   bool _showUsersPanel = false;
@@ -141,8 +143,6 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   StreamSubscription<QuerySnapshot>? _commentsSubscription;
   StreamSubscription<QuerySnapshot>? _typingSubscription;
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _usersSubscription;
-  Timer? _paymentWarningTimer;
-  final int _liveDurationMinutes = 30; // ← CHANGEZ ICI POUR MODIFIER LA DURÉE
   late VideoEncoderConfiguration _videoConfig;
   // LISTE DE CADEAUX
   final List<Gift> _gifts = [
@@ -221,10 +221,6 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     //   _startPaymentTimer();
     // }
 
-    if (widget.isHost) {
-      _initializeHostTimer();
-    }
-
     if (widget.isInvited) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         // _showJoinOptions();
@@ -235,229 +231,6 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   }
 
 
-// Ajout dans _LivePageState
-  // ==================== GESTION TEMPS PERSISTANT SIMPLIFIÉE ====================
-  void _initializeHostTimer() async {
-    if (!widget.isHost) return;
-
-    try {
-      final liveDoc = await _firestore.collection('lives').doc(widget.liveId).get();
-      if (liveDoc.exists) {
-        final data = liveDoc.data()!;
-
-        // Si déjà en attente de paiement
-        if (data['paymentRequired'] == true) {
-          setState(() => _showPaymentWarning = true);
-          return;
-        }
-
-        // Récupérer la durée depuis PostLive (30 ou 60 minutes)
-        final liveDurationMinutes = widget.postLive.safeLiveDurationMinutes;
-
-        // Calculer le temps écoulé depuis le début ou dernier paiement
-        final referenceTime = data['lastPaymentTime'] ?? data['startTime'];
-        if (referenceTime == null) return;
-
-        final referenceDateTime = (referenceTime as Timestamp).toDate();
-        final now = DateTime.now();
-
-        final elapsedMinutes = now.difference(referenceDateTime).inMinutes;
-        final remainingMinutes = max(0, liveDurationMinutes - elapsedMinutes);
-
-        print("⏰ $elapsedMinutes min écoulées, $remainingMinutes min restantes sur $liveDurationMinutes min");
-        print("🎯 Type live: ${_isHostPremium ? 'PREMIUM' : 'GRATUIT'} (${liveDurationMinutes}min)");
-
-        _startPaymentTimer(remainingMinutes, liveDurationMinutes);
-      }
-    } catch (e) {
-      print("❌ Erreur initialisation timer: $e");
-      _startPaymentTimer();
-    }
-  }
-  Future<void> _initializeHostTimer2() async {
-    if (!widget.isHost) return;
-
-    try {
-      final liveDoc = await _firestore.collection('lives').doc(widget.liveId).get();
-      if (liveDoc.exists) {
-        final data = liveDoc.data()!;
-
-        // Si déjà en attente de paiement
-        if (data['paymentRequired'] == true) {
-          setState(() => _showPaymentWarning = true);
-          return;
-        }
-
-        // Calculer le temps écoulé depuis le début ou dernier paiement
-        final referenceTime = data['lastPaymentTime'] ?? data['startTime'];
-        if (referenceTime == null) return;
-
-        final referenceDateTime = (referenceTime as Timestamp).toDate();
-        final now = DateTime.now();
-
-        final elapsedMinutes = now.difference(referenceDateTime).inMinutes;
-        final remainingMinutes = max(0, _liveDurationMinutes - elapsedMinutes);
-
-        print("⏰ $elapsedMinutes min écoulées, $remainingMinutes min restantes sur $_liveDurationMinutes min");
-
-        _startPaymentTimer(remainingMinutes);
-      }
-    } catch (e) {
-      print("❌ Erreur initialisation timer: $e");
-      _startPaymentTimer();
-    }
-  }
-  void _startPaymentTimer([int? remainingMinutes, int? totalDuration]) {
-    if (!widget.isHost) return;
-
-    _paymentWarningTimer?.cancel();
-
-    // Utiliser la durée du PostLive
-    final liveDurationMinutes = totalDuration ?? widget.postLive.safeLiveDurationMinutes;
-    final minutes = remainingMinutes ?? liveDurationMinutes;
-
-    print("⏰ Timer configuré: $minutes minutes sur $liveDurationMinutes");
-    print("💰 Montant: ${liveDurationMinutes == 60 ? '200' : '100'} FCFA");
-
-    // Si temps écoulé, demander paiement immédiatement
-    if (minutes <= 0) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _requestPayment();
-      });
-      return;
-    }
-
-    _paymentWarningTimer = Timer(Duration(minutes: minutes), () {
-      _requestPayment();
-    });
-  }
-  void _requestPayment() async {
-    try {
-      // Calculer le prix selon la durée
-      final liveDurationMinutes = widget.postLive.safeLiveDurationMinutes;
-      final amount = liveDurationMinutes == 60 ? 100.0 : 100.0; // 200 FCFA pour 60min, 100 pour 30min
-
-      await _firestore.collection('lives').doc(widget.liveId).update({
-        'paymentRequired': true,
-        'paymentRequestTime': DateTime.now(),
-        'isPaused': true,
-        'pauseMessage': "Temps écoulé - En attente de prolongement ($liveDurationMinutes min)",
-      });
-
-      setState(() => _showPaymentWarning = true);
-
-      // Optionnel : Muter les flux de l'hôte immédiatement
-      if (widget.isHost) {
-        await _engine.muteLocalAudioStream(true);
-        await _engine.muteLocalVideoStream(true);
-      }
-
-      print("💰 Demande de paiement: $amount FCFA pour ${liveDurationMinutes}min");
-
-    } catch (e) {
-      print("❌ Erreur demande paiement: $e");
-    }
-  }
-
-  void _handlePayment() async {
-    try {
-      final userProvider = context.read<UserAuthProvider>();
-      final liveDurationMinutes = widget.postLive.safeLiveDurationMinutes;
-      final amount = liveDurationMinutes == 60 ? 200.0 : 100.0;
-
-      bool paymentSuccess = await userProvider.deductFromBalance(context, amount);
-
-      if (paymentSuccess) {
-        userProvider.incrementAppGain(amount);
-
-        final now = DateTime.now();
-        await _firestore.collection('lives').doc(widget.liveId).update({
-          'paymentRequired': false,
-          'paymentRequestTime': null,
-          'lastPaymentTime': now,
-          'isPaused': false,
-          'pauseMessage': null,
-        });
-
-        // Réactiver les flux si hôte
-        if (widget.isHost) {
-          await _engine.muteLocalAudioStream(false);
-          await _engine.muteLocalVideoStream(false);
-        }
-
-        setState(() => _showPaymentWarning = false);
-        _startPaymentTimer(liveDurationMinutes, liveDurationMinutes);
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Paiement de ${amount.toInt()} FCFA accepté! Live prolongé de $liveDurationMinutes min'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      } else {
-        _endLive();
-      }
-    } catch (e) {
-      print("❌ Erreur traitement paiement: $e");
-    }
-  }
-// Mettez à jour le message d'alerte
-  Widget _buildPaymentWarning() {
-    final liveDuration = widget.postLive.safeLiveDurationMinutes;
-    final amount = liveDuration == 60 ? 200.0 : 100.0;
-
-    return Container(
-      color: Colors.black.withOpacity(0.9),
-      padding: EdgeInsets.all(24),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.timer, size: 64, color: Color(0xFFF9A825)),
-            SizedBox(height: 20),
-            Text(
-              'Temps de live écoulé',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Live ${liveDuration} minutes',
-              style: TextStyle(color: Colors.white70, fontSize: 14),
-            ),
-            SizedBox(height: 12),
-            Text(
-              'Payez ${amount.toInt()} FCFA pour continuer votre live pendant ${liveDuration} minutes supplémentaires',
-              style: TextStyle(color: Colors.white70, fontSize: 14),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton(
-                  onPressed: _handlePayment,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFFF9A825),
-                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  ),
-                  child: Text('Payer ${amount.toInt()} FCFA',
-                      style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-                ),
-                TextButton(
-                  onPressed: _endLive,
-                  child: Text('Arrêter', style: TextStyle(color: Colors.white70)),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
   Future<void> _removeUserFromSpectators() async {
     try {
       final currentUserId = _auth.currentUser?.uid;
@@ -620,6 +393,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   }
 
   void _applyPostTrialRestrictions() {
+    if (!_isInitialized) return;
     switch (widget.postLive.audioBehaviorAfterTrial) {
       case 'mute':
         _engine.muteAllRemoteAudioStreams(true);
@@ -639,6 +413,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   }
 
   void _removeRestrictions() {
+    if (!_isInitialized) return;
     _engine.muteAllRemoteAudioStreams(false);
     _engine.adjustPlaybackSignalVolume(100);
     setState(() {
@@ -1162,26 +937,26 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       for (var doc in snapshot.docChanges) {
         if (doc.type == DocumentChangeType.added) {
           final data = doc.doc.data()!;
-          final likeEffect = LikeEffect(
-            id: doc.doc.id,
-            userId: data['userId'],
-            username: data['username'],
-            userImage: data['userImage'] ?? '',
-            timestamp: (data['timestamp'] as Timestamp).toDate(),
-          );
-
-          setState(() {
-            _likeEffects.add(likeEffect);
-          });
-
-          // Supprimer l'effet après l'animation
-          Future.delayed(Duration(milliseconds: 2500), () {
-            if (mounted) {
-              setState(() {
-                _likeEffects.removeWhere((effect) => effect.id == doc.doc.id);
+          final baseId = doc.doc.id;
+          // Affiche 5 à 8 cœurs décalés dans le temps pour chaque like reçu
+          final count = 5 + Random().nextInt(4);
+          for (int i = 0; i < count; i++) {
+            Future.delayed(Duration(milliseconds: i * 110), () {
+              if (!mounted) return;
+              final effectId = '${baseId}_$i';
+              final effect = LikeEffect(
+                id: effectId,
+                userId: data['userId'] as String? ?? '',
+                username: data['username'] as String? ?? '',
+                userImage: data['userImage'] as String? ?? '',
+                timestamp: (data['timestamp'] as Timestamp).toDate(),
+              );
+              setState(() => _likeEffects.add(effect));
+              Future.delayed(const Duration(milliseconds: 1800), () {
+                if (mounted) setState(() => _likeEffects.removeWhere((e) => e.id == effectId));
               });
-            }
-          });
+            });
+          }
         }
       }
     });
@@ -1219,62 +994,170 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
   void _sendGift(Gift gift) async {
     try {
-      final userProvider = Provider.of<UserAuthProvider>(context, listen: false);
-      final userBalance = userProvider.loginUserData!.votre_solde_principal!;
+      final currentUser = _auth.currentUser;
+      if (currentUser == null) return;
 
-      if (userBalance < gift.price) {
-        _showInsufficientBalanceDialog();
+      final coinsAmount = gift.price.toInt();
+      final senderRef = _firestore.collection('Users').doc(currentUser.uid);
+      final hostRef = _firestore.collection('Users').doc(widget.postLive.hostId);
+      final liveRef = _firestore.collection('lives').doc(widget.liveId);
+      final appDataRef = _firestore.collection('AppData').doc(authProvider.appDefaultData.id);
+      final now = DateTime.now().millisecondsSinceEpoch;
+
+      // Vérifier le solde
+      final senderDoc = await senderRef.get();
+      final senderCoins = (senderDoc.data()?['giftCoinsBalance'] ?? 0) as int;
+      if (senderCoins < coinsAmount) {
+        _showInsufficientCoinsDialog();
         return;
       }
 
-      final paymentSuccess = await userProvider.deductFromBalance(context, gift.price);
+      final hostDoc = await hostRef.get();
+      final hostCodeParrain = hostDoc.data()?['code_parrain'] as String?;
+      final hostName = hostDoc.data()?['pseudo'] as String? ?? '';
+      final me = authProvider.loginUserData;
 
-      if (paymentSuccess) {
-        User? user = _auth.currentUser;
-        if (user != null) {
-          _sendComment(
-            'a envoyé ${gift.name} ${gift.icon}',
-            type: 'gift',
-            giftId: gift.id,
-          );
+      // Répartition :
+      //   host a un parrain → host=75%, parrain=5%, app=~20%
+      //   host sans parrain → host=70%, app=~30%
+      final bool hasParrain = hostCodeParrain != null && hostCodeParrain.isNotEmpty;
+      final int hostCoins = hasParrain
+          ? (coinsAmount * 0.75).floor()
+          : (coinsAmount * 0.70).floor();
+      final int parrainCoins = hasParrain ? (coinsAmount * 0.05).floor() : 0;
+      final int appCoins = coinsAmount - hostCoins - parrainCoins;
 
-          final hostShare = gift.price * 0.7;
+      await _firestore.runTransaction((tx) async {
+        // 1. Débiter l'expéditeur
+        tx.update(senderRef, {
+          'giftCoinsBalance': FieldValue.increment(-coinsAmount),
+          'totalGiftCoinsSpent': FieldValue.increment(coinsAmount),
+        });
+        // 2. Créditer le host
+        tx.update(hostRef, {
+          'giftCoinsBalance': FieldValue.increment(hostCoins),
+          'totalCoinsEarnedFromGifts': FieldValue.increment(hostCoins),
+        });
+        // 3. Créditer l'application
+        tx.update(appDataRef, {'solde_gain_pieces': FieldValue.increment(appCoins)});
+        // 4. Mettre à jour le live
+        tx.update(liveRef, {
+          'giftCoinsTotal': FieldValue.increment(coinsAmount),
+          'giftCount': FieldValue.increment(1),
+          'giftLeaderboard.${currentUser.uid}': FieldValue.increment(coinsAmount),
+          'giftLeaderboardMeta.${currentUser.uid}': {
+            'pseudo': me.pseudo ?? '',
+            'imageUrl': me.imageUrl ?? '',
+          },
+        });
+        // 5. Transaction expéditeur (débit)
+        final txSenderRef = _firestore.collection('TransactionSoldes').doc();
+        tx.set(txSenderRef, (TransactionSolde()
+          ..id = txSenderRef.id
+          ..user_id = currentUser.uid
+          ..type = TypeTransaction.CADEAU_PIECES.name
+          ..statut = StatutTransaction.VALIDER.name
+          ..description = 'Cadeau ${gift.icon} ${gift.name} ($coinsAmount pcs) en live à @$hostName'
+          ..montant = coinsAmount.toDouble()
+          ..methode_paiement = 'pieces'
+          ..createdAt = now
+          ..updatedAt = now).toJson());
+        // 6. Transaction host (crédit)
+        final txHostRef = _firestore.collection('TransactionSoldes').doc();
+        tx.set(txHostRef, (TransactionSolde()
+          ..id = txHostRef.id
+          ..user_id = widget.postLive.hostId
+          ..type = TypeTransaction.CADEAU_PIECES_RECU.name
+          ..statut = StatutTransaction.VALIDER.name
+          ..description = 'Cadeau ${gift.icon} reçu de @${me.pseudo ?? ''} en live ($hostCoins pcs)'
+          ..montant = hostCoins.toDouble()
+          ..methode_paiement = 'pieces'
+          ..createdAt = now
+          ..updatedAt = now).toJson());
+      });
 
-
-          await _firestore.collection('lives').doc(widget.liveId).update({
-            'giftTotal': FieldValue.increment(hostShare),
-            'giftCount': FieldValue.increment(1),
-          });
-
-          await _firestore.collection('Users').doc(widget.postLive.hostId).update({
-            'votre_solde_principal': FieldValue.increment(hostShare),
-          });
-
-          if(userProvider.loginUserData!.codeParrain!=null){
-            final appShare = gift.price * 0.25;
-            userProvider.incrementAppGain(appShare);
-            userProvider.ajouterCommissionParrain(codeParrainage: userProvider.loginUserData!.codeParrain!, montant: gift.price);
-
-          }else{
-            final appShare = gift.price * 0.3;
-            userProvider.incrementAppGain(appShare);
-          }
-
-
-          setState(() {
-            _giftEffects.add(GiftEffect(
-              id: DateTime.now().millisecondsSinceEpoch,
-              gift: gift,
-              x: Random().nextDouble() * 0.6 + 0.2,
-            ));
-          });
-
-          setState(() => _showGiftPanel = false);
-        }
+      // Paiement parrain en arrière-plan (avec sa propre transaction)
+      if (hasParrain && parrainCoins > 0) {
+        _payCommissionWithTx(
+          codeParrain: hostCodeParrain!,
+          coins: parrainCoins,
+          sourceDescription: 'Commission parrainage sur cadeau live de $coinsAmount pcs',
+        );
       }
+
+      _sendComment(
+        'a envoyé ${gift.name} ${gift.icon} ($coinsAmount pcs)',
+        type: 'gift',
+        giftId: gift.id,
+      );
+
+      setState(() {
+        _giftEffects.add(GiftEffect(
+          id: DateTime.now().millisecondsSinceEpoch,
+          gift: gift,
+          x: Random().nextDouble() * 0.6 + 0.2,
+        ));
+        _showGiftPanel = false;
+      });
     } catch (e) {
-      print("❌ Erreur envoi cadeau: $e");
+      print('❌ Erreur envoi cadeau: $e');
     }
+  }
+
+  void _payCommissionWithTx({
+    required String codeParrain,
+    required int coins,
+    required String sourceDescription,
+  }) {
+    Future.microtask(() async {
+      try {
+        final q = await _firestore
+            .collection('Users')
+            .where('code_parrainage', isEqualTo: codeParrain)
+            .limit(1)
+            .get();
+        if (q.docs.isEmpty) return;
+        final parrainDoc = q.docs.first;
+        final parrainId = parrainDoc.id;
+        final now = DateTime.now().millisecondsSinceEpoch;
+
+        await _firestore.runTransaction((tx) async {
+          tx.update(parrainDoc.reference, {
+            'giftCoinsBalance': FieldValue.increment(coins),
+            'totalCoinsEarnedFromSponsorship': FieldValue.increment(coins),
+          });
+          final txRef = _firestore.collection('TransactionSoldes').doc();
+          tx.set(txRef, (TransactionSolde()
+            ..id = txRef.id
+            ..user_id = parrainId
+            ..type = TypeTransaction.GAIN_PIECES.name
+            ..statut = StatutTransaction.VALIDER.name
+            ..description = '$sourceDescription ($coins pcs)'
+            ..montant = coins.toDouble()
+            ..methode_paiement = 'commission_parrainage'
+            ..createdAt = now
+            ..updatedAt = now).toJson());
+        });
+      } catch (_) {}
+    });
+  }
+
+  void _showInsufficientCoinsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: Text('Pièces insuffisantes', style: TextStyle(color: Colors.white)),
+        content: Text('Vous n\'avez pas assez de pièces pour envoyer ce cadeau.',
+            style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('OK', style: TextStyle(color: Color(0xFFF9A825))),
+          ),
+        ],
+      ),
+    );
   }
 
   // ==================== GESTION FIREBASE STREAM ====================
@@ -1283,22 +1166,35 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     _liveSubscription = _firestore.collection('lives').doc(widget.liveId).snapshots().listen((snapshot) {
       if (snapshot.exists) {
         final data = snapshot.data()!;
+        // Leaderboard donateurs
+        final leaderboardMap = Map<String, dynamic>.from(data['giftLeaderboard'] ?? {});
+        final metaMap = Map<String, dynamic>.from(data['giftLeaderboardMeta'] ?? {});
+        final sortedEntries = leaderboardMap.entries.toList()
+          ..sort((a, b) => ((b.value as num?)?.toInt() ?? 0).compareTo((a.value as num?)?.toInt() ?? 0));
+        final topDonors = sortedEntries.take(3).map((e) {
+          final meta = metaMap[e.key] as Map<String, dynamic>? ?? {};
+          return {
+            'userId': e.key,
+            'pseudo': meta['pseudo'] ?? '',
+            'imageUrl': meta['imageUrl'] ?? '',
+            'totalCoins': (e.value as num?)?.toInt() ?? 0,
+          };
+        }).toList();
+
         setState(() {
-          _viewerCount = data['viewerCount'] ?? 0;
+          _viewerCount = List<String>.from(data['spectators'] ?? []).length;
           _giftCount = data['giftCount'] ?? 0;
           _giftTotal = (data['giftTotal'] ?? 0).toDouble();
+          _giftCoinsTotal = (data['giftCoinsTotal'] as num?)?.toInt() ?? 0;
           _participants = List<String>.from(data['participants'] ?? []);
           _totalviewerCount = List<String>.from(data['totalspectateurs'] ?? []).length;
           _spectators = List<String>.from(data['spectators'] ?? []);
           _likeCount = data['likeCount'] ?? 0;
           _shareCount = data['shareCount'] ?? 0;
           _paidParticipationTotal = (data['paidParticipationTotal'] ?? 0).toDouble();
-
-          // ⭐ NOUVEAU : État de pause synchronisé
-          _showPaymentWarning = data['paymentRequired'] == true;
           _isLivePaused = data['isPaused'] == true;
           _pauseMessage = data['pauseMessage'] as String?;
-
+          _topDonors = topDonors;
           final currentUserId = _auth.currentUser?.uid;
           _isParticipant = currentUserId != null && _participants.contains(currentUserId);
         });
@@ -1608,10 +1504,116 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       await _engine.leaveChannel();
       await _engine.release();
 
-      Navigator.pop(context);
+      if (widget.isHost && mounted) {
+        _showLiveEndStats();
+      } else {
+        Navigator.pop(context);
+      }
     } catch (e) {
       print("❌ Erreur fin du live: $e");
+      if (mounted) Navigator.pop(context);
     }
+  }
+
+  void _showLiveEndStats() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
+            ),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Color(0xFFF9A825).withOpacity(0.4), width: 1.5),
+          ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 60, height: 60,
+                decoration: BoxDecoration(
+                  color: Color(0xFFF9A825).withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.live_tv, color: Color(0xFFF9A825), size: 30),
+              ),
+              const SizedBox(height: 16),
+              const Text('Live terminé 🎉',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 20)),
+              const SizedBox(height: 4),
+              Text('Merci à tous vos spectateurs !',
+                  style: TextStyle(color: Colors.white54, fontSize: 13)),
+              const SizedBox(height: 24),
+              _buildStatRow(Icons.stars_rounded, 'Pièces reçues', '$_giftCoinsTotal pcs', const Color(0xFFF9A825)),
+              const SizedBox(height: 12),
+              _buildStatRow(Icons.favorite_rounded, 'Likes', '$_likeCount', Colors.pinkAccent),
+              const SizedBox(height: 12),
+              _buildStatRow(Icons.people_rounded, 'Spectateurs au total', '$_totalviewerCount', Colors.blueAccent),
+              const SizedBox(height: 12),
+              _buildStatRow(Icons.share_rounded, 'Partages', '$_shareCount', Colors.greenAccent),
+              if (_topDonors.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Divider(color: Colors.white12),
+                const SizedBox(height: 8),
+                Text('Top donateurs', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 8),
+                ..._topDonors.asMap().entries.map((e) {
+                  final idx = e.key;
+                  final donor = e.value;
+                  final medals = ['🥇', '🥈', '🥉'];
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 3),
+                    child: Row(
+                      children: [
+                        Text(medals[idx], style: TextStyle(fontSize: 16)),
+                        const SizedBox(width: 8),
+                        Text(donor['pseudo'] as String? ?? '', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                        const Spacer(),
+                        Text('${donor['totalCoins']} pcs', style: TextStyle(color: Color(0xFFF9A825), fontSize: 13, fontWeight: FontWeight.w700)),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).pop();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFFF9A825),
+                    padding: EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  child: const Text('Fermer', style: TextStyle(color: Colors.black, fontWeight: FontWeight.w800, fontSize: 16)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatRow(IconData icon, String label, String value, Color color) {
+    return Row(
+      children: [
+        Icon(icon, color: color, size: 22),
+        const SizedBox(width: 10),
+        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 14)),
+        const Spacer(),
+        Text(value, style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.bold)),
+      ],
+    );
   }
 
   void _leaveLive() async {
@@ -1639,12 +1641,89 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   }
 
   void _shareLive() {
-    final AppLinkService _appLinkService = AppLinkService();
-    _appLinkService.shareContent(
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: Color(0xFF1A1A2E),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 36, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 20),
+            Text('Partager ce live', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16)),
+            const SizedBox(height: 8),
+            Text(widget.postLive.title, style: const TextStyle(color: Colors.white54, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
+            const SizedBox(height: 20),
+            // Option 1 : partager dans un chat
+            ListTile(
+              onTap: () {
+                Navigator.pop(ctx);
+                _shareLiveToChat();
+              },
+              leading: Container(
+                width: 44, height: 44,
+                decoration: BoxDecoration(color: Color(0xFFF9A825).withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
+                child: Icon(Icons.chat_bubble_outline_rounded, color: Color(0xFFF9A825), size: 22),
+              ),
+              title: const Text('Envoyer dans un chat', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+              subtitle: const Text('Conversations ou groupes', style: TextStyle(color: Colors.white54, fontSize: 12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              tileColor: Colors.white.withOpacity(0.05),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            ),
+            const SizedBox(height: 10),
+            // Option 2 : lien externe
+            ListTile(
+              onTap: () {
+                Navigator.pop(ctx);
+                _shareLiveExternally();
+              },
+              leading: Container(
+                width: 44, height: 44,
+                decoration: BoxDecoration(color: Colors.blueAccent.withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
+                child: const Icon(Icons.ios_share_rounded, color: Colors.blueAccent, size: 22),
+              ),
+              title: const Text('Partager le lien', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+              subtitle: const Text('WhatsApp, réseaux sociaux...', style: TextStyle(color: Colors.white54, fontSize: 12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              tileColor: Colors.white.withOpacity(0.05),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _shareLiveExternally() {
+    final AppLinkService appLinkService = AppLinkService();
+    appLinkService.shareContent(
       type: AppLinkType.live,
-      id: widget.liveId!,
-      message: " 🎥🔥 ${widget.postLive.title}",
-      mediaUrl: "${widget.postLive.hostImage}",
+      id: widget.liveId,
+      message: "🎥🔥 ${widget.postLive.title}",
+      mediaUrl: widget.postLive.hostImage ?? '',
+    );
+    _incrementShareCount();
+  }
+
+  void _shareLiveToChat() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => GenericShareSheet(
+        itemId: widget.liveId,
+        itemType: 'live',
+        title: widget.postLive.title,
+        subtitle: '@${widget.postLive.hostName ?? ''}',
+        thumbnail: widget.postLive.hostImage ?? '',
+        icon: Icons.live_tv_rounded,
+      ),
     );
     _incrementShareCount();
   }
@@ -1685,9 +1764,6 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
             // INTERFACE UTILISATEUR
             if (_showUI) ..._buildUIOverlay(),
-
-            // BOUTON TOGGLE COMMENTS (TOUJOURS VISIBLE MÊME SI _showUI = false)
-            if (_showUI) _buildToggleCommentsButton(),
 
             // EFFETS ANIMÉS (au-dessus de tout)
             ..._buildTikTokLikeEffects(),
@@ -1746,6 +1822,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       _buildHostOverlay(),
       _buildViewerInfo(),
       _buildPinnedTextSection(),
+      _buildLeaderboard(),
       _buildCommentsSection(),
       _buildFooter(),
       _buildTypingIndicator(),
@@ -1755,7 +1832,6 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           onGiftSelected: _sendGift,
           onClose: () => setState(() => _showGiftPanel = false),
         ),
-      if (_showPaymentWarning&&widget.isHost) _buildPaymentWarning(),
       if (_showUsersPanel)
         UsersPanelWidget(
           users: _allUsers,
@@ -1771,82 +1847,116 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         ),
     ];
   }
+
+  Widget _buildLeaderboard() {
+    if (_topDonors.isEmpty) return const SizedBox.shrink();
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 185,
+      left: 16,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: _topDonors.asMap().entries.map((e) {
+          final idx = e.key;
+          final donor = e.value;
+          final medals = ['🥇', '🥈', '🥉'];
+          final imageUrl = donor['imageUrl'] as String? ?? '';
+          return Container(
+            margin: EdgeInsets.only(bottom: 5),
+            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Color(0xFFF9A825).withOpacity(0.25)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(medals[idx], style: TextStyle(fontSize: 12)),
+                SizedBox(width: 4),
+                if (imageUrl.isNotEmpty) ...[
+                  CircleAvatar(backgroundImage: NetworkImage(imageUrl), radius: 9, backgroundColor: Colors.white24),
+                  SizedBox(width: 4),
+                ],
+                Text(
+                  donor['pseudo'] as String? ?? '',
+                  style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600),
+                ),
+                SizedBox(width: 4),
+                Text(
+                  '${donor['totalCoins']}pcs',
+                  style: TextStyle(color: Color(0xFFF9A825), fontSize: 9, fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
   Widget _buildPausedOverlay() {
     return Container(
-      color: Colors.black,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF0D0D1A), Color(0xFF1A1430)],
+        ),
+      ),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Icône selon rôle
-            Icon(
-              widget.isHost ? Icons.timer_off : Icons.pause_circle_filled,
-              size: 80,
-              color: Color(0xFFF9A825),
-            ),
-            SizedBox(height: 20),
-
-            // Titre
-            Text(
-              widget.isHost ? 'Temps écoulé' : 'Live en pause',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
+            Container(
+              width: 88, height: 88,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF9A825).withOpacity(0.12),
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFFF9A825).withOpacity(0.4), width: 1.5),
               ),
+              child: const Icon(Icons.pause_rounded, size: 44, color: Color(0xFFF9A825)),
             ),
-            SizedBox(height: 12),
-
-            // Message (utilise celui de Firestore ou un par défaut)
+            const SizedBox(height: 20),
+            const Text(
+              'Live en pause',
+              style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: 0.5),
+            ),
+            const SizedBox(height: 8),
             Text(
-              _pauseMessage ??
-                  (widget.isHost
-                      ? 'Payez pour continuer la diffusion'
-                      : 'L\'hôte renouvelle son temps de live'),
-              style: TextStyle(color: Colors.white70, fontSize: 16),
+              _pauseMessage ?? "L'hôte a mis le live en pause",
+              style: const TextStyle(color: Colors.white54, fontSize: 14),
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: 24),
-
-            // Boutons différents selon rôle
-            if (widget.isHost)
-              Column(
-                children: [
-                  ElevatedButton(
-                    onPressed: _handlePayment,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFFF9A825),
-                      padding: EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-                    ),
-                    child: Text('Payer 100 FCFA',
-                        style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-                  ),
-                  SizedBox(height: 12),
-                  TextButton(
-                    onPressed: _endLive,
-                    child: Text('Arrêter le live', style: TextStyle(color: Colors.white70)),
-                  ),
-                ],
-              )
-            else
-            // Pour spectateurs : juste un indicateur d'attente
-              Column(
-                children: [
-                  CircularProgressIndicator(color: Color(0xFFF9A825)),
-                  SizedBox(height: 16),
-                  Text('Réactivation automatique...',
-                      style: TextStyle(color: Colors.white70)),
-                ],
+            const SizedBox(height: 28),
+            SizedBox(
+              width: 24, height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation(const Color(0xFFF9A825).withOpacity(0.7)),
               ),
+            ),
+            const SizedBox(height: 10),
+            const Text('Réactivation automatique…', style: TextStyle(color: Colors.white38, fontSize: 12)),
           ],
         ),
       ),
     );
   }
   Widget _buildVideoSection() {
+    // Moteur pas encore prêt → écran de chargement
+    if (!_isInitialized) {
+      return Container(
+        color: Colors.black,
+        child: const Center(
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation(Color(0xFFF9A825)),
+          ),
+        ),
+      );
+    }
 
     // ⭐ PRIORITÉ : Afficher écran de pause si live en pause
-    if (_isLivePaused&&!widget.isHost) {
+    if (_isLivePaused && !widget.isHost) {
       return _buildPausedOverlay();
     }
     return Stack(
@@ -1854,14 +1964,13 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         if (_remoteUid != null)
           AgoraVideoView(
             controller: VideoViewController.remote(
-
               rtcEngine: _engine,
               canvas: VideoCanvas(uid: _remoteUid),
               connection: RtcConnection(channelId: widget.liveId),
             ),
           ),
         if (_remoteUid == null)
-          Text("_remoteUid: ${_remoteUid}"),
+          const SizedBox.shrink(),
 
 
         if (_isVideoBlurred)
@@ -1909,15 +2018,16 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     return GestureDetector(
       onTap: () => setState(() => _showUI = !_showUI),
       child: Container(
-        padding: EdgeInsets.all(8),
+        width: 34, height: 34,
         decoration: BoxDecoration(
-          color: Colors.black54,
-          borderRadius: BorderRadius.circular(20),
+          color: Colors.black.withOpacity(0.5),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white.withOpacity(0.15)),
         ),
         child: Icon(
-          _showUI ? Icons.visibility_off : Icons.visibility,
-          color: Colors.white,
-          size: 20,
+          _showUI ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+          color: Colors.white70,
+          size: 16,
         ),
       ),
     );
@@ -1925,25 +2035,28 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
   Widget _buildAppName() {
     return Positioned(
-      top: MediaQuery.of(context).padding.top + 10,
+      top: MediaQuery.of(context).padding.top + 8,
       right: 16,
-      child: Row(
-        children: [
-          Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(color: Colors.red, shape: BoxShape.circle)
-          ),
-          SizedBox(width: 6),
-          Text('Afrolook Live',
-            style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-                shadows: [Shadow(offset: Offset(2.0, 2.0), blurRadius: 4.0, color: Colors.black38)]
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white.withOpacity(0.12)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 6, height: 6,
+              decoration: BoxDecoration(color: Colors.red, shape: BoxShape.circle),
             ),
-          ),
-        ],
+            SizedBox(width: 5),
+            Text('LIVE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 1.2)),
+            SizedBox(width: 5),
+            Text('Afrolook', style: TextStyle(color: Colors.white60, fontSize: 11, fontWeight: FontWeight.w500)),
+          ],
+        ),
       ),
     );
   }
@@ -1952,61 +2065,59 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     return Positioned(
       top: MediaQuery.of(context).padding.top + 50,
       left: 16,
-      child: Container(
-        padding: EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.6),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child:   GestureDetector(
-          onTap: () {
-            _showHostDetails();
-            setState(() => _isFollowing = !_isFollowing);
-          },
+      child: GestureDetector(
+        onTap: _showHostDetails,
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.55),
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(color: Colors.white.withOpacity(0.12)),
+          ),
           child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               CircleAvatar(
                 backgroundImage: NetworkImage(widget.hostImage),
-                radius: 20,
+                radius: 18,
+                backgroundColor: Colors.white24,
               ),
               SizedBox(width: 8),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                      "@${_hostData.pseudo ?? widget.hostName}",
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
+                    '@${_hostData.pseudo ?? widget.hostName}',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12),
                   ),
                   Text(
-                      '${_hostData.userAbonnesIds?.length ?? 0} abonnés',
-                      style: TextStyle(color: Colors.white70, fontSize: 12)
+                    '${_hostData.userAbonnesIds?.length ?? 0} abonnés',
+                    style: TextStyle(color: Colors.white54, fontSize: 10),
                   ),
-                  if (widget.isHost)
-                    Text('Hôte du live', style: TextStyle(color: Color(0xFFF9A825), fontSize: 12)),
                 ],
               ),
-              SizedBox(width: 12),
-              if (!widget.isHost)
+              if (!widget.isHost) ...[
+                SizedBox(width: 10),
                 GestureDetector(
-                  onTap: () {
-                    _showHostDetails();
-                    setState(() => _isFollowing = !_isFollowing);
-                  },
+                  onTap: () => setState(() => _isFollowing = !_isFollowing),
                   child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: _isFollowing ? Colors.grey : Color(0xFFF9A825),
-                      borderRadius: BorderRadius.circular(20),
+                      color: _isFollowing ? Colors.white.withOpacity(0.12) : Color(0xFFF9A825),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                     child: Text(
-                      _isFollowing ? 'Suivi' : 'Suivre',
+                      _isFollowing ? 'Suivi ✓' : 'Suivre',
                       style: TextStyle(
-                          color: _isFollowing ? Colors.white : Colors.black,
-                          fontWeight: FontWeight.bold
+                        color: _isFollowing ? Colors.white : Colors.black,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11,
                       ),
                     ),
                   ),
                 ),
+              ],
             ],
           ),
         ),
@@ -2066,63 +2177,71 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          _buildInfoChip(icon: Icons.people, value: '$_viewerCount/$_totalviewerCount'),
-          SizedBox(height: 8),
-          _buildInfoChip(icon: Icons.favorite, value: '$_likeCount', color: Colors.pink),
-          SizedBox(height: 8),
-          _buildInfoChip(
-              icon: Icons.card_giftcard,
-              // value: '${(_giftTotal).toInt()} - ${(_paidParticipationTotal).toInt()} FCFA',
-              value: '${(_giftTotal + _paidParticipationTotal).toInt()} FCFA',
-              color: Color(0xFFF9A825)
-          ),
-          SizedBox(height: 8),
+          _buildInfoChip(icon: Icons.people_rounded, value: '$_viewerCount/$_totalviewerCount'),
+          SizedBox(height: 6),
+          _buildInfoChip(icon: Icons.favorite_rounded, value: '$_likeCount', color: Colors.pinkAccent),
+          SizedBox(height: 6),
+          _buildInfoChip(icon: Icons.stars_rounded, value: '$_giftCoinsTotal pcs', color: Color(0xFFF9A825)),
+          SizedBox(height: 6),
           GestureDetector(
-            onTap: () {
-              _shareLive();
-            },
-              child: _buildInfoChip(icon: Icons.share, value: '$_shareCount', color: Colors.blue)),
-
+            onTap: _shareLive,
+            child: _buildInfoChip(icon: Icons.share_rounded, value: '$_shareCount', color: Colors.blueAccent),
+          ),
+          // Timer essai
           if (widget.postLive.isPaidLive && _remainingTrialMinutes < 999 && !_shouldSkipTrial())
-            Container(
-              margin: EdgeInsets.only(top: 12),
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: _remainingTrialMinutes < 2 ? Colors.red : Colors.orange,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                '${_remainingTrialMinutes.toString().padLeft(2, '0')}:${_remainingTrialSeconds.toString().padLeft(2, '0')}',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
-              ),
-            ),
-
-          if (_shouldSkipTrial() && widget.postLive.isPaidLive)
             Container(
               margin: EdgeInsets.only(top: 8),
               padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.8),
+                color: _remainingTrialMinutes < 2 ? Colors.red.withOpacity(0.9) : Colors.orange.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.timer_rounded, color: Colors.white, size: 11),
+                  SizedBox(width: 3),
+                  Text(
+                    '${_remainingTrialMinutes.toString().padLeft(2, '0')}:${_remainingTrialSeconds.toString().padLeft(2, '0')}',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+          // Badge rôle
+          if (_shouldSkipTrial() && widget.postLive.isPaidLive)
+            Container(
+              margin: EdgeInsets.only(top: 6),
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.18),
+                border: Border.all(color: Colors.green.withOpacity(0.45)),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
-                widget.isHost ? 'HÔTE' :
-                authProvider.loginUserData.role == UserRole.ADM.name ? 'ADMIN' : 'PARTICIPANT',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10),
+                widget.isHost ? 'HÔTE' : authProvider.loginUserData.role == UserRole.ADM.name ? 'ADMIN' : 'PARTICIPANT',
+                style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.w800, fontSize: 9, letterSpacing: .8),
               ),
             ),
-
+          // Bouton arrêter
           if (widget.isHost || authProvider.loginUserData.role == UserRole.ADM.name) ...[
-            SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _confirmEndLive,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              ),
-              child: Text(
-                'Arrêter',
-                style: TextStyle(color: Colors.white, fontSize: 12),
+            SizedBox(height: 12),
+            GestureDetector(
+              onTap: _confirmEndLive,
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.85),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.stop_rounded, color: Colors.white, size: 13),
+                    SizedBox(width: 4),
+                    Text('Arrêter', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 11)),
+                  ],
+                ),
               ),
             ),
           ],
@@ -2135,15 +2254,16 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black54,
-        borderRadius: BorderRadius.circular(10),
+        color: Colors.black.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: color, size: 16),
+          Icon(icon, color: color, size: 13),
           SizedBox(width: 4),
-          Text(value, style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold)),
+          Text(value, style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 11)),
         ],
       ),
     );
@@ -2153,30 +2273,23 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     if (widget.postLive.pinnedText == null || widget.postLive.pinnedText!.isEmpty) {
       return SizedBox.shrink();
     }
-
     return Positioned(
       top: MediaQuery.of(context).padding.top + 120,
       left: 16,
-      right: 120,
+      right: 130,
       child: Container(
-        padding: EdgeInsets.all(12),
+        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.7),
+          color: Colors.black.withOpacity(0.55),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Color(0xFFF9A825), width: 2),
+          border: Border(left: BorderSide(color: Color(0xFFF9A825), width: 3)),
         ),
         child: Row(
           children: [
-            Icon(Icons.push_pin, color: Color(0xFFF9A825), size: 16),
-            SizedBox(width: 8),
             Expanded(
               child: Text(
                 widget.postLive.pinnedText!,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -2184,7 +2297,10 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
             if (widget.isHost)
               GestureDetector(
                 onTap: _togglePinnedTextEditor,
-                child: Icon(Icons.edit, color: Colors.white70, size: 16),
+                child: Padding(
+                  padding: EdgeInsets.only(left: 6),
+                  child: Icon(Icons.edit_rounded, color: Colors.white38, size: 14),
+                ),
               ),
           ],
         ),
@@ -2192,193 +2308,178 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     );
   }
   bool _showComments = true;
-  Widget _buildToggleCommentsButton() {
-    return Positioned(
-      bottom: 80,
-      left: 8 + MediaQuery.of(context).size.width * 0.4 + 8,
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _showComments = !_showComments;
-          });
-        },
-        child: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.7),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.3),
-                blurRadius: 4,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Icon(
-            _showComments ? Icons.comment : Icons.comment_outlined,
-            color: Colors.white,
-            size: 20,
-          ),
-        ),
-      ),
-    );
-  }
+
   Widget _buildCommentsSection() {
-    if (!_showComments) {
-      return SizedBox.shrink(); // Ne rien afficher quand désactivé
-    }
-
+    final listHeight = MediaQuery.of(context).size.height * 0.30;
     return Positioned(
-      bottom: 80,
-      left: 8,
-      width: widget.isHost? MediaQuery.of(context).size.width * 0.7:MediaQuery.of(context).size.width * 0.7,
-      height:  MediaQuery.of(context).size.height * 0.35,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 8,
-              offset: Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            // En-tête de la section
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      bottom: 82,
+      left: 10,
+      width: MediaQuery.of(context).size.width * 0.68,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Bouton texte juste au-dessus de la liste
+          GestureDetector(
+            onTap: () => setState(() => _showComments = !_showComments),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                // color: Colors.black.withOpacity(0.8),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  topRight: Radius.circular(12),
-                ),
+                color: Colors.black.withOpacity(0.45),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.white.withOpacity(0.08)),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Commentaires',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _showComments = false;
-                      });
-                    },
-                    child: Icon(
-                      Icons.close,
-                      color: Colors.white,
-                      size: 18,
-                    ),
-                  ),
-                ],
+              child: Text(
+                _showComments ? 'Fermer les messages' : 'Afficher les messages',
+                style: const TextStyle(color: Colors.white70, fontSize: 10.5, fontWeight: FontWeight.w600),
               ),
             ),
-
-            // Liste des commentaires
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  // color: Colors.black.withOpacity(0.6),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(12),
-                    bottomRight: Radius.circular(12),
-                  ),
-                ),
-                child: ListView.builder(
-                  controller: _commentsScrollController,
-                  // SUPPRIMEZ reverse: true pour afficher du haut vers le bas
-                  shrinkWrap: true,
-                  itemCount: _comments.length,
-                  itemBuilder: (context, index) {
-                    final comment = _comments[index];
-                    return Container(
-                      margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          CircleAvatar(
-                            backgroundImage: NetworkImage(comment.userImage),
-                            radius: 12,
-                          ),
-                          SizedBox(width: 6),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  comment.username,
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
+          ),
+          if (_showComments) ...[
+            const SizedBox(height: 4),
+            SizedBox(
+              height: listHeight,
+              child: ListView.builder(
+                controller: _commentsScrollController,
+                itemCount: _comments.length,
+                itemBuilder: (context, index) {
+                  final comment = _comments[index];
+                  final isGift = comment.type == 'gift';
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 5),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: isGift
+                          ? const Color(0xFFF9A825).withOpacity(0.12)
+                          : Colors.black.withOpacity(0.45),
+                      borderRadius: BorderRadius.circular(16),
+                      border: isGift
+                          ? const Border(left: BorderSide(color: Color(0xFFF9A825), width: 2.5))
+                          : Border.all(color: Colors.white.withOpacity(0.05)),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        CircleAvatar(
+                          backgroundImage: comment.userImage.isNotEmpty
+                              ? NetworkImage(comment.userImage)
+                              : null,
+                          backgroundColor: Colors.white24,
+                          radius: 11,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                comment.username,
+                                style: TextStyle(
+                                  color: isGift ? const Color(0xFFF9A825) : Colors.white70,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 11,
                                 ),
-                                Text(
-                                  comment.message,
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                  ),
-                                  maxLines: 3,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
+                              ),
+                              Text(
+                                comment.message,
+                                style: const TextStyle(color: Colors.white, fontSize: 11),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
           ],
-        ),
+        ],
       ),
     );
   }
 
   Widget _buildFooter() {
+    final myCoins = (authProvider.loginUserData.giftCoinsBalance ?? 0);
+    final quickGifts = _gifts.take(3).toList();
     return Positioned(
       bottom: 0,
       left: 0,
       right: 0,
       child: Container(
-        padding: EdgeInsets.fromLTRB(16, 16, 16, 24),
+        padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).padding.bottom + 12),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.bottomCenter,
             end: Alignment.topCenter,
-            colors: [Colors.black87, Colors.transparent],
+            colors: [Colors.black.withOpacity(0.92), Colors.transparent],
+            stops: [0.0, 1.0],
           ),
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             if (widget.isHost || _isParticipant) _buildParticipantControls(),
+            // Solde pièces + raccourcis cadeaux
+            if (!widget.isHost && quickGifts.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: Color(0xFFF9A825).withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: Color(0xFFF9A825).withOpacity(0.4)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.stars_rounded, color: Color(0xFFF9A825), size: 14),
+                          SizedBox(width: 4),
+                          Text('$myCoins pcs',
+                              style: TextStyle(color: Color(0xFFF9A825), fontSize: 12, fontWeight: FontWeight.w700)),
+                        ],
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    ...quickGifts.map((gift) => GestureDetector(
+                      onTap: () => _sendGift(gift),
+                      child: Container(
+                        margin: EdgeInsets.only(right: 6),
+                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: Colors.white.withOpacity(0.15)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(gift.icon, style: TextStyle(fontSize: 14)),
+                            SizedBox(width: 3),
+                            Text('${gift.price.toInt()}', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      ),
+                    )),
+                  ],
+                ),
+              ),
+            // Barre principale
             Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(
                   child: Container(
-                    height: 40,
+                    height: 42,
                     decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(20),
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(21),
+                      border: Border.all(color: Colors.white.withOpacity(0.15)),
                     ),
                     child: Row(
                       children: [
@@ -2388,7 +2489,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
                             style: TextStyle(color: Colors.white, fontSize: 14),
                             decoration: InputDecoration(
                               hintText: 'Envoyer un message...',
-                              hintStyle: TextStyle(color: Colors.white54),
+                              hintStyle: TextStyle(color: Colors.white38),
                               border: InputBorder.none,
                               contentPadding: EdgeInsets.symmetric(horizontal: 16),
                             ),
@@ -2399,7 +2500,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
                           ),
                         ),
                         IconButton(
-                          icon: Icon(Icons.send, color: Color(0xFFF9A825), size: 20),
+                          icon: Icon(Icons.send_rounded, color: Color(0xFFF9A825), size: 20),
                           onPressed: () {
                             if (_commentController.text.isNotEmpty) {
                               _sendComment(_commentController.text);
@@ -2411,50 +2512,14 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
                     ),
                   ),
                 ),
-                SizedBox(width: 12),
-                GestureDetector(
-                  onTap: _sendLike,
-                  child: Column(
-                    children: [
-                      Icon(Icons.favorite, color: Colors.red, size: 28),
-                      SizedBox(height: 1),
-                      Text('$_likeCount', style: TextStyle(color: Colors.white, fontSize: 12)),
-                    ],
-                  ),
-                ),
-                SizedBox(width: 8),
-                GestureDetector(
-                  onTap: () => setState(() => _showGiftPanel = true),
-                  child: Column(
-                    children: [
-                      Icon(Icons.card_giftcard, color: Color(0xFFF9A825), size: 28),
-                      SizedBox(height: 1),
-                      Text('Cadeau', style: TextStyle(color: Colors.white, fontSize: 12)),
-                    ],
-                  ),
-                ),
-                SizedBox(width: 8),
-                GestureDetector(
-                  onTap: _toggleUsersPanel,
-                  child:Column(
-                    children: [
-                      Icon(Icons.people, color: Colors.white, size: 28),
-                      SizedBox(height: 1),
-                      Text('$_viewerCount', style: TextStyle(color: Colors.white, fontSize: 12)),
-                    ],
-                  ),
-                ),
-                SizedBox(width: 16),
-                GestureDetector(
-                  onTap: _shareLive,
-                  child:Column(
-                    children: [
-                      Icon(Icons.share, color: Colors.blue, size: 28),
-                      SizedBox(height: 1),
-                      Text('$_shareCount', style: TextStyle(color: Colors.white, fontSize: 12)),
-                    ],
-                  ),
-                ),
+                SizedBox(width: 10),
+                _buildFooterAction(icon: Icons.favorite_rounded, color: Colors.pinkAccent, label: '$_likeCount', onTap: _sendLike),
+                SizedBox(width: 6),
+                _buildFooterAction(icon: Icons.stars_rounded, color: Color(0xFFF9A825), label: 'Cadeau', onTap: () => setState(() => _showGiftPanel = true)),
+                SizedBox(width: 6),
+                _buildFooterAction(icon: Icons.people_rounded, color: Colors.white70, label: '$_viewerCount', onTap: _toggleUsersPanel),
+                SizedBox(width: 6),
+                _buildFooterAction(icon: Icons.share_rounded, color: Colors.blueAccent, label: '$_shareCount', onTap: _shareLive),
               ],
             ),
           ],
@@ -2463,81 +2528,106 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     );
   }
 
+  Widget _buildFooterAction({required IconData icon, required Color color, required String label, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 26),
+          SizedBox(height: 1),
+          Text(label, style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCtrlBtn({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    bool active = true,
+    Color? activeColor,
+  }) {
+    final color = active ? (activeColor ?? Colors.white) : Colors.redAccent;
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 44, height: 44,
+            decoration: BoxDecoration(
+              color: active ? Colors.white.withOpacity(0.12) : Colors.red.withOpacity(0.18),
+              shape: BoxShape.circle,
+              border: Border.all(color: color.withOpacity(0.3)),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(height: 4),
+          Text(label, style: const TextStyle(color: Colors.white60, fontSize: 10)),
+        ],
+      ),
+    );
+  }
+
   Widget _buildParticipantControls() {
     return Container(
-      margin: EdgeInsets.only(bottom: 12),
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.black54,
-        borderRadius: BorderRadius.circular(20),
+        color: Colors.black.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          GestureDetector(
+          _buildCtrlBtn(
+            icon: _isScreenSharing ? Icons.stop_screen_share : Icons.screen_share_rounded,
+            label: _isScreenSharing ? 'Arrêter' : 'Écran',
             onTap: _toggleScreenSharing,
-            child: Column(
-              children: [
-                Icon(
-                  _isScreenSharing ? Icons.stop_screen_share : Icons.screen_share,
-                  color: _isScreenSharing ? Colors.red : Colors.white,
-                  size: 24,
-                ),
-                Text(
-                  _isScreenSharing ? 'Arrêter' : 'Écran',
-                  style: TextStyle(color: Colors.white, fontSize: 10),
-                ),
-              ],
-            ),
+            active: !_isScreenSharing,
           ),
-          GestureDetector(
+          const SizedBox(width: 20),
+          _buildCtrlBtn(
+            icon: _isMicrophoneMuted ? Icons.mic_off_rounded : Icons.mic_rounded,
+            label: 'Micro',
             onTap: _toggleMicrophone,
-            child: Column(
-              children: [
-                Icon(
-                  _isMicrophoneMuted ? Icons.mic_off : Icons.mic,
-                  color: _isMicrophoneMuted ? Colors.red : Colors.white,
-                  size: 24,
-                ),
-                Text('Micro', style: TextStyle(color: Colors.white, fontSize: 10)),
-              ],
-            ),
+            active: !_isMicrophoneMuted,
           ),
-          if (!_isScreenSharing)
-            GestureDetector(
+          if (!_isScreenSharing) ...[
+            const SizedBox(width: 20),
+            _buildCtrlBtn(
+              icon: Icons.cameraswitch_rounded,
+              label: 'Caméra',
               onTap: _switchCamera,
-              child: Column(
-                children: [
-                  Icon(Icons.cameraswitch, color: Colors.white, size: 24),
-                  Text('Caméra', style: TextStyle(color: Colors.white, fontSize: 10)),
-                ],
-              ),
             ),
+          ],
         ],
       ),
     );
   }
 
   Widget _buildTypingIndicator() {
-    if (_typingUsers.isEmpty) return SizedBox.shrink();
-
+    if (_typingUsers.isEmpty) return const SizedBox.shrink();
+    final names = _typingUsers.values.take(2).join(', ');
     return Positioned(
-      bottom: 140,
-      left: 16,
+      bottom: 144,
+      left: 10,
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: Colors.black54,
-          borderRadius: BorderRadius.circular(20),
+          color: Colors.black.withOpacity(0.4),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withOpacity(0.07)),
         ),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text('✍️', style: TextStyle(fontSize: 16)),
-            SizedBox(width: 8),
-            Text(
-                '${_typingUsers.values.join(', ')} écrit...',
-                style: TextStyle(color: Colors.white, fontSize: 12)
-            ),
+            _TypingDots(),
+            const SizedBox(width: 6),
+            Text('$names écrit…', style: const TextStyle(color: Colors.white60, fontSize: 10.5)),
           ],
         ),
       ),
@@ -2674,7 +2764,6 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     _removeUserFromSpectators();
     _trialTimer?.cancel();
     _typingTimer?.cancel();
-    _paymentWarningTimer?.cancel();
     _liveSubscription?.cancel();
     _commentsSubscription?.cancel();
     _typingSubscription?.cancel();
@@ -2695,6 +2784,48 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 }
 
 
+
+class _TypingDots extends StatefulWidget {
+  const _TypingDots();
+  @override
+  State<_TypingDots> createState() => _TypingDotsState();
+}
+
+class _TypingDotsState extends State<_TypingDots> with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))..repeat();
+  }
+
+  @override
+  void dispose() { _ctrl.dispose(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (_, __) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(3, (i) {
+            final opacity = ((_ctrl.value * 3 - i).clamp(0.0, 1.0) * (1 - (_ctrl.value * 3 - i - 1).clamp(0.0, 1.0))).clamp(0.2, 1.0);
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 1.5),
+              width: 4, height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(opacity),
+                shape: BoxShape.circle,
+              ),
+            );
+          }),
+        );
+      },
+    );
+  }
+}
 
 class LiveComment {
   final String liveId;

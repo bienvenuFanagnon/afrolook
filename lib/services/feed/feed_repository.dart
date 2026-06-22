@@ -49,32 +49,25 @@ class FeedRepository {
 
     switch (query.type) {
       case FeedType.home:
-        // 1. Abonnements (30%)
+        // Les 5 seaux tournent en parallèle — chacun ignore les exclusions
+        // inter-seaux (dédup géré après collection).
         final aboIds = _take(query.subscriptionPostIds, excluded, (target * 0.30).round());
-        excluded.addAll(aboIds);
-        results.addAll(await loadPostsByIds(aboIds));
-
-        // 2. Pays (25%)
-        final countryPosts = await fetchCountryPosts(
-          query.countryCode, excluded,
-          limit: (target * 0.25).round(),
-        );
-        _addAll(results, excluded, countryPosts);
-
-        // 3. Score élevé (20%)
-        final scorePosts = await fetchScorePosts(excluded, limit: (target * 0.20).round());
-        _addAll(results, excluded, scorePosts);
-
-        // 4. Découverte (15%) — posts récents hors abonnements
-        final discoPosts = await fetchDiscoveryPosts(
-          query.subscriptionPostIds.toSet(), excluded,
-          limit: (target * 0.15).round(),
-        );
-        _addAll(results, excluded, discoPosts);
-
-        // 5. Résurgence (10%) — anciens posts de qualité
-        final resurge = await fetchResurgencePosts(excluded, limit: (target * 0.10).round());
-        _addAll(results, excluded, resurge);
+        final buckets = await Future.wait([
+          loadPostsByIds(aboIds),
+          fetchCountryPosts(query.countryCode, excluded, limit: (target * 0.25).round()),
+          fetchScorePosts(excluded, limit: (target * 0.20).round()),
+          fetchDiscoveryPosts(query.subscriptionPostIds.toSet(), excluded, limit: (target * 0.15).round()),
+          fetchResurgencePosts(excluded, limit: (target * 0.10).round()),
+        ]);
+        // Déduplication par ordre de priorité (seau 0 = plus prioritaire)
+        final seen = <String>{...excluded};
+        for (final bucket in buckets) {
+          for (final post in bucket) {
+            if (post.id != null && seen.add(post.id!)) {
+              results.add(post);
+            }
+          }
+        }
         break;
 
       case FeedType.video:
@@ -425,8 +418,8 @@ class FeedRepository {
 
   /// Score composite : engagement×0.35 + fraîcheur×0.25 + pays×0.20 + nouveau_créateur×0.15 + viralité×0.05
   double _computeScore(Post post, int nowMs, String countryCode) {
-    // Engagement (base FeedScoringService)
-    final engagement = FeedScoringService.calculateFeedScore(post, 0).clamp(0.0, 1.0);
+    // Engagement pur (sans fraîcheur ni viralité, déjà calculées ci-dessous)
+    final engagement = FeedScoringService.calculateEngagementScore(post).clamp(0.0, 1.0);
 
     // Fraîcheur : demi-vie 7 jours
     final ageHours = (nowMs - (post.createdAt ?? nowMs)) / 3600000.0;

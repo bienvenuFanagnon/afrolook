@@ -41,12 +41,7 @@ class _TopDatingProfilesWidgetState extends State<TopDatingProfilesWidget> {
   Widget build(BuildContext context) {
     return Consumer<UserAuthProvider>(
       builder: (context, provider, child) {
-        if (provider.isLoadingDatingProfiles) {
-          return const SizedBox(
-            height: 200,
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
+        if (provider.isLoadingDatingProfiles) return const SizedBox.shrink();
 
         final profiles = provider.topDatingProfiles;
         if (profiles.isEmpty) {

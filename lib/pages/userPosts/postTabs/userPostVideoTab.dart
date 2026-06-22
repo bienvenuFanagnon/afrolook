@@ -17,7 +17,9 @@ import 'package:iconsax/iconsax.dart';
 import '../../../providers/authProvider.dart';
 import '../../../providers/postProvider.dart';
 import '../../../providers/userProvider.dart';
+import '../../../theme/app_colors.dart';
 import '../../../services/postService/massNotificationService.dart';
+import '../../../services/postService/post_cooldown_service.dart';
 import '../../../services/utils/abonnement_utils.dart';
 import '../../pub/rewarded_ad_widget.dart';
 import '../../user/userAbonnementPage.dart';
@@ -108,13 +110,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
   late PostProvider postProvider;
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-  final Color _primaryColor = Color(0xFFE21221);
-  final Color _secondaryColor = Color(0xFFFFD600);
-  final Color _backgroundColor = Color(0xFF121212);
-  final Color _cardColor = Color(0xFF1E1E1E);
-  final Color _textColor = Colors.white;
-  final Color _hintColor = Colors.grey[400]!;
-  final Color _successColor = Color(0xFF4CAF50);
+  late AppColors _c;
   late MassNotificationService _notificationService;
   double _minAspectRatio = 1.33;
   double _maxAspectRatio = 1.78;
@@ -146,6 +142,12 @@ class _UserPubVideoState extends State<UserPubVideo> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _c = AppColors.of(context);
+  }
+
+  @override
   void dispose() {
     _countrySearchController.removeListener(_filterCountries);
     _countrySearchController.dispose();
@@ -173,10 +175,10 @@ class _UserPubVideoState extends State<UserPubVideo> {
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: _c.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: _isEventDatePast ? Colors.red : _primaryColor,
+          color: _isEventDatePast ? _c.danger : _c.primary,
           width: 1,
         ),
       ),
@@ -185,23 +187,23 @@ class _UserPubVideoState extends State<UserPubVideo> {
         children: [
           Row(
             children: [
-              Icon(Icons.event, color: _primaryColor, size: 20),
+              Icon(Icons.event, color: _c.primary, size: 20),
               SizedBox(width: 8),
               Text(
                 'Date de l\'événement',
-                style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
               ),
               if (_isEventDatePast)
                 Container(
                   margin: EdgeInsets.only(left: 8),
                   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.2),
+                    color: _c.danger.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     'DATE PASSÉE',
-                    style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: _c.danger, fontSize: 10, fontWeight: FontWeight.bold),
                   ),
                 ),
             ],
@@ -218,10 +220,10 @@ class _UserPubVideoState extends State<UserPubVideo> {
                   return Theme(
                     data: ThemeData.dark().copyWith(
                       colorScheme: ColorScheme.dark(
-                        primary: _primaryColor,
+                        primary: _c.primary,
                         onPrimary: Colors.white,
-                        surface: _cardColor,
-                        onSurface: _textColor,
+                        surface: _c.surface,
+                        onSurface: _c.textPrimary,
                       ),
                     ),
                     child: child!,
@@ -238,13 +240,13 @@ class _UserPubVideoState extends State<UserPubVideo> {
             child: Container(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
-                color: _backgroundColor,
+                color: _c.background,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[700]!),
+                border: Border.all(color: _c.border),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.calendar_today, color: _primaryColor, size: 20),
+                  Icon(Icons.calendar_today, color: _c.primary, size: 20),
                   SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -252,12 +254,12 @@ class _UserPubVideoState extends State<UserPubVideo> {
                           ? '${_selectedEventDate!.day}/${_selectedEventDate!.month}/${_selectedEventDate!.year}'
                           : 'Sélectionnez la date de l\'événement',
                       style: TextStyle(
-                        color: _selectedEventDate != null ? _textColor : _hintColor,
+                        color: _selectedEventDate != null ? _c.textPrimary : _c.textSecondary,
                         fontSize: 14,
                       ),
                     ),
                   ),
-                  Icon(Icons.arrow_drop_down, color: _hintColor),
+                  Icon(Icons.arrow_drop_down, color: _c.textSecondary),
                 ],
               ),
             ),
@@ -267,7 +269,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
               padding: EdgeInsets.only(top: 8),
               child: Text(
                 '📅 ${_formatEventDate(_selectedEventDate!)}',
-                style: TextStyle(color: _primaryColor, fontSize: 12),
+                style: TextStyle(color: _c.primary, fontSize: 12),
               ),
             ),
         ],
@@ -479,13 +481,13 @@ class _UserPubVideoState extends State<UserPubVideo> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: _cardColor,
+        backgroundColor: _c.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            Icon(Icons.lock, color: _primaryColor),
+            Icon(Icons.lock, color: _c.primary),
             SizedBox(width: 10),
-            Text('Limite de pays atteinte', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
+            Text('Limite de pays atteinte', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Column(
@@ -493,21 +495,21 @@ class _UserPubVideoState extends State<UserPubVideo> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('L\'abonnement gratuit est limité à 2 pays maximum.\nPassez à Afrolook Premium pour sélectionner tous les pays africains.',
-                style: TextStyle(color: _hintColor)),
+                style: TextStyle(color: _c.textSecondary)),
             SizedBox(height: 20),
             Container(
               padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Colors.black.withOpacity(0.3), borderRadius: BorderRadius.circular(12), border: Border.all(color: _secondaryColor)),
+              decoration: BoxDecoration(color: Colors.black.withOpacity(0.3), borderRadius: BorderRadius.circular(12), border: Border.all(color: _c.accent)),
               child: Row(
                 children: [
-                  Icon(Icons.workspace_premium, color: _secondaryColor),
+                  Icon(Icons.workspace_premium, color: _c.accent),
                   SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Afrolook Premium', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
-                        Text('Pays illimités • Pas de cooldown • Contenu exclusif', style: TextStyle(color: _hintColor, fontSize: 12)),
+                        Text('Afrolook Premium', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
+                        Text('Pays illimités • Pas de cooldown • Contenu exclusif', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
                       ],
                     ),
                   ),
@@ -517,13 +519,13 @@ class _UserPubVideoState extends State<UserPubVideo> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text('COMPRENDRE', style: TextStyle(color: _hintColor))),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('COMPRENDRE', style: TextStyle(color: _c.textSecondary))),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               Navigator.push(context, MaterialPageRoute(builder: (context) => AbonnementScreen()));
             },
-            style: ElevatedButton.styleFrom(backgroundColor: _secondaryColor, foregroundColor: Colors.black),
+            style: ElevatedButton.styleFrom(backgroundColor: _c.accent, foregroundColor: _c.onAccent),
             child: Text('PASSER À PREMIUM'),
           ),
         ],
@@ -537,22 +539,22 @@ class _UserPubVideoState extends State<UserPubVideo> {
     return Container(
       height: MediaQuery.of(context).size.height * 0.8,
       decoration: BoxDecoration(
-        color: _backgroundColor,
+        color: _c.background,
         borderRadius: BorderRadius.only(topLeft: Radius.circular(25), topRight: Radius.circular(25)),
       ),
       child: Column(
         children: [
           Container(
             padding: EdgeInsets.all(20),
-            decoration: BoxDecoration(color: _cardColor, borderRadius: BorderRadius.only(topLeft: Radius.circular(25), topRight: Radius.circular(25))),
+            decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.only(topLeft: Radius.circular(25), topRight: Radius.circular(25))),
             child: Column(
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Sélection des pays', style: TextStyle(color: _textColor, fontSize: 20, fontWeight: FontWeight.bold)),
+                    Text('Sélection des pays', style: TextStyle(color: _c.textPrimary, fontSize: 20, fontWeight: FontWeight.bold)),
                     IconButton(
-                      icon: Icon(Icons.close, color: _textColor),
+                      icon: Icon(Icons.close, color: _c.textPrimary),
                       onPressed: () {
                         setState(() {
                           _showCountrySelection = false;
@@ -568,38 +570,38 @@ class _UserPubVideoState extends State<UserPubVideo> {
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: isPremium || isAdmin ? _secondaryColor.withOpacity(0.2) : _primaryColor.withOpacity(0.2),
+                        color: isPremium || isAdmin ? _c.accent.withOpacity(0.2) : _c.primary.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: isPremium || isAdmin ? _secondaryColor : _primaryColor),
+                        border: Border.all(color: isPremium || isAdmin ? _c.accent : _c.primary),
                       ),
                       child: Row(
                         children: [
                           Icon(isPremium || isAdmin ? Icons.workspace_premium : Icons.lock, size: 14,
-                              color: isPremium || isAdmin ? _secondaryColor : _primaryColor),
+                              color: isPremium || isAdmin ? _c.accent : _c.primary),
                           SizedBox(width: 6),
                           Text(isPremium || isAdmin ? 'Pays illimités' : 'Max 2 pays',
-                              style: TextStyle(color: isPremium || isAdmin ? _secondaryColor : _primaryColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                              style: TextStyle(color: isPremium || isAdmin ? _c.accent : _c.primary, fontSize: 12, fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
                     SizedBox(width: 10),
                     Text(
                       _selectAllCountries ? '🌍 Toute l\'Afrique (Premium)' : (_selectedCountries.isEmpty ? '⚠️ Aucun pays' : '${_selectedCountries.length} pays sélectionné(s)'),
-                      style: TextStyle(color: _selectedCountries.isEmpty && !_selectAllCountries ? Colors.orange : _hintColor, fontSize: 14),
+                      style: TextStyle(color: _selectedCountries.isEmpty && !_selectAllCountries ? _c.warning : _c.textSecondary, fontSize: 14),
                     ),
                   ],
                 ),
                 SizedBox(height: 15),
                 Container(
-                  decoration: BoxDecoration(color: _cardColor, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey[700]!)),
+                  decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: _c.border)),
                   child: TextField(
                     controller: _countrySearchController,
                     focusNode: _countrySearchFocus,
-                    style: TextStyle(color: _textColor),
+                    style: TextStyle(color: _c.textPrimary),
                     decoration: InputDecoration(
                       hintText: 'Rechercher un pays...',
-                      hintStyle: TextStyle(color: _hintColor),
-                      prefixIcon: Icon(Icons.search, color: _primaryColor),
+                      hintStyle: TextStyle(color: _c.textSecondary),
+                      prefixIcon: Icon(Icons.search, color: _c.primary),
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.symmetric(horizontal: 16),
                     ),
@@ -609,45 +611,45 @@ class _UserPubVideoState extends State<UserPubVideo> {
             ),
           ),
           Material(
-            color: _cardColor,
+            color: _c.surface,
             child: ListTile(
               onTap: _toggleSelectAllCountries,
               leading: Container(
                 width: 40,
                 height: 40,
-                decoration: BoxDecoration(color: _selectAllCountries ? _secondaryColor : Colors.grey[800], borderRadius: BorderRadius.circular(10)),
-                child: Icon(Icons.workspace_premium, color: _selectAllCountries ? Colors.white : _hintColor),
+                decoration: BoxDecoration(color: _selectAllCountries ? _c.accent : _c.surfaceVariant, borderRadius: BorderRadius.circular(10)),
+                child: Icon(Icons.workspace_premium, color: _selectAllCountries ? Colors.white : _c.textSecondary),
               ),
               title: Row(
                 children: [
-                  Text('Tous les pays africains', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
+                  Text('Tous les pays africains', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
                   SizedBox(width: 8),
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(color: _secondaryColor.withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
-                    child: Text('PREMIUM', style: TextStyle(color: _secondaryColor, fontSize: 10, fontWeight: FontWeight.bold)),
+                    decoration: BoxDecoration(color: _c.accent.withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
+                    child: Text('PREMIUM', style: TextStyle(color: _c.accent, fontSize: 10, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
-              subtitle: Text('Fonctionnalité Premium - Votre vidéo sera visible dans toute l\'Afrique', style: TextStyle(color: _hintColor)),
+              subtitle: Text('Fonctionnalité Premium - Votre vidéo sera visible dans toute l\'Afrique', style: TextStyle(color: _c.textSecondary)),
               trailing: _selectAllCountries
-                  ? Container(padding: EdgeInsets.all(8), decoration: BoxDecoration(color: _successColor, shape: BoxShape.circle), child: Icon(Icons.check, color: Colors.white, size: 20))
+                  ? Container(padding: EdgeInsets.all(8), decoration: BoxDecoration(color: _c.primary, shape: BoxShape.circle), child: Icon(Icons.check, color: Colors.white, size: 20))
                   : null,
             ),
           ),
           if (!isPremium && !isAdmin)
             Container(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(color: _primaryColor.withOpacity(0.1), border: Border(left: BorderSide(color: _primaryColor, width: 3))),
+              decoration: BoxDecoration(color: _c.primary.withOpacity(0.1), border: Border(left: BorderSide(color: _c.primary, width: 3))),
               child: Row(
                 children: [
-                  Icon(Icons.info, size: 16, color: _primaryColor),
+                  Icon(Icons.info, size: 16, color: _c.primary),
                   SizedBox(width: 8),
-                  Expanded(child: Text('Abonnement gratuit : Sélectionnez 1 ou 2 pays maximum', style: TextStyle(color: _textColor, fontSize: 12))),
+                  Expanded(child: Text('Abonnement gratuit : Sélectionnez 1 ou 2 pays maximum', style: TextStyle(color: _c.textPrimary, fontSize: 12))),
                 ],
               ),
             ),
-          Divider(color: Colors.grey[800], height: 1),
+          Divider(color: _c.surfaceVariant, height: 1),
           Expanded(
             child: ListView.builder(
               padding: EdgeInsets.zero,
@@ -657,20 +659,20 @@ class _UserPubVideoState extends State<UserPubVideo> {
                 final isSelected = _selectedCountries.contains(country);
                 final isDisabled = !isPremium && !isAdmin && _selectedCountries.length >= _maxCountriesForFree && !isSelected;
                 return Material(
-                  color: isSelected ? _primaryColor.withOpacity(0.1) : _cardColor,
+                  color: isSelected ? _c.primary.withOpacity(0.1) : _c.surface,
                   child: ListTile(
                     onTap: isDisabled ? null : () => _toggleCountrySelection(country),
                     leading: Container(
                       width: 40,
                       height: 40,
-                      decoration: BoxDecoration(color: isSelected ? _primaryColor : Colors.grey[800], borderRadius: BorderRadius.circular(10)),
+                      decoration: BoxDecoration(color: isSelected ? _c.primary : _c.surfaceVariant, borderRadius: BorderRadius.circular(10)),
                       child: Center(child: Text(country.flag, style: TextStyle(fontSize: 20))),
                     ),
-                    title: Text(country.name, style: TextStyle(color: isDisabled ? Colors.grey[600] : _textColor, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
-                    subtitle: Text('Code: ${country.code}', style: TextStyle(color: isDisabled ? Colors.grey[600] : _hintColor)),
+                    title: Text(country.name, style: TextStyle(color: isDisabled ? _c.textSecondary : _c.textPrimary, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+                    subtitle: Text('Code: ${country.code}', style: TextStyle(color: isDisabled ? _c.textSecondary : _c.textSecondary)),
                     trailing: isSelected
-                        ? Container(padding: EdgeInsets.all(8), decoration: BoxDecoration(color: _primaryColor, shape: BoxShape.circle), child: Icon(Icons.check, color: Colors.white, size: 16))
-                        : (isDisabled ? Icon(Icons.lock, color: Colors.grey[600], size: 16) : null),
+                        ? Container(padding: EdgeInsets.all(8), decoration: BoxDecoration(color: _c.primary, shape: BoxShape.circle), child: Icon(Icons.check, color: Colors.white, size: 16))
+                        : (isDisabled ? Icon(Icons.lock, color: _c.textSecondary, size: 16) : null),
                   ),
                 );
               },
@@ -678,7 +680,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
           ),
           Container(
             padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(color: _cardColor, border: Border(top: BorderSide(color: Colors.grey[800]!))),
+            decoration: BoxDecoration(color: _c.surface, border: Border(top: BorderSide(color: _c.border))),
             child: Row(
               children: [
                 Expanded(
@@ -689,7 +691,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
                         _selectAllCountries = false;
                       });
                     },
-                    style: OutlinedButton.styleFrom(foregroundColor: _hintColor, side: BorderSide(color: Colors.grey[700]!), padding: EdgeInsets.symmetric(vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                    style: OutlinedButton.styleFrom(foregroundColor: _c.textSecondary, side: BorderSide(color: _c.border), padding: EdgeInsets.symmetric(vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                     child: Text('RÉINITIALISER'),
                   ),
                 ),
@@ -702,7 +704,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
                         _countrySearchController.clear();
                       });
                     },
-                    style: ElevatedButton.styleFrom(backgroundColor: _primaryColor, foregroundColor: Colors.white, padding: EdgeInsets.symmetric(vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                    style: ElevatedButton.styleFrom(backgroundColor: _c.primary, foregroundColor: _c.onPrimary, padding: EdgeInsets.symmetric(vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                     child: Text('CONFIRMER'),
                   ),
                 ),
@@ -729,10 +731,10 @@ class _UserPubVideoState extends State<UserPubVideo> {
       padding: EdgeInsets.all(16),
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: _c.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))],
-        border: Border.all(color: _selectedCountries.isEmpty && !_selectAllCountries ? Colors.orange : Colors.transparent, width: 1),
+        border: Border.all(color: _selectedCountries.isEmpty && !_selectAllCountries ? _c.warning : Colors.transparent, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -744,23 +746,23 @@ class _UserPubVideoState extends State<UserPubVideo> {
                 children: [
                   Container(
                     padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: _selectAllCountries ? _secondaryColor : _primaryColor, borderRadius: BorderRadius.circular(10)),
+                    decoration: BoxDecoration(color: _selectAllCountries ? _c.accent : _c.primary, borderRadius: BorderRadius.circular(10)),
                     child: Icon(_selectAllCountries ? Icons.workspace_premium : Icons.public, color: Colors.white, size: 20),
                   ),
                   SizedBox(width: 12),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Visibilité de la vidéo', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
-                      Text(displayMessage, style: TextStyle(color: _selectedCountries.isEmpty && !_selectAllCountries ? Colors.orange : _hintColor, fontSize: 14)),
+                      Text('Visibilité de la vidéo', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
+                      Text(displayMessage, style: TextStyle(color: _selectedCountries.isEmpty && !_selectAllCountries ? _c.warning : _c.textSecondary, fontSize: 14)),
                     ],
                   ),
                 ],
               ),
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(color: isPremium || isAdmin ? _secondaryColor.withOpacity(0.2) : _primaryColor.withOpacity(0.2), borderRadius: BorderRadius.circular(20), border: Border.all(color: isPremium || isAdmin ? _secondaryColor : _primaryColor)),
-                child: Text(isPremium || isAdmin ? 'PREMIUM' : 'GRATUIT', style: TextStyle(color: isPremium || isAdmin ? _secondaryColor : _primaryColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                decoration: BoxDecoration(color: isPremium || isAdmin ? _c.accent.withOpacity(0.2) : _c.primary.withOpacity(0.2), borderRadius: BorderRadius.circular(20), border: Border.all(color: isPremium || isAdmin ? _c.accent : _c.primary)),
+                child: Text(isPremium || isAdmin ? 'PREMIUM' : 'GRATUIT', style: TextStyle(color: isPremium || isAdmin ? _c.accent : _c.primary, fontSize: 12, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -768,12 +770,12 @@ class _UserPubVideoState extends State<UserPubVideo> {
             Container(
               margin: EdgeInsets.only(top: 12),
               padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.orange)),
+              decoration: BoxDecoration(color: _c.warning.withOpacity(0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: _c.warning)),
               child: Row(
                 children: [
-                  Icon(Icons.warning, size: 16, color: Colors.orange),
+                  Icon(Icons.warning, size: 16, color: _c.warning),
                   SizedBox(width: 8),
-                  Expanded(child: Text('Vous devez sélectionner au moins un pays', style: TextStyle(color: Colors.orange, fontSize: 12))),
+                  Expanded(child: Text('Vous devez sélectionner au moins un pays', style: TextStyle(color: _c.warning, fontSize: 12))),
                 ],
               ),
             ),
@@ -787,13 +789,13 @@ class _UserPubVideoState extends State<UserPubVideo> {
                   children: _selectedCountries.take(3).map((country) {
                     return Container(
                       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(color: _primaryColor.withOpacity(0.2), borderRadius: BorderRadius.circular(20), border: Border.all(color: _primaryColor)),
+                      decoration: BoxDecoration(color: _c.primary.withOpacity(0.2), borderRadius: BorderRadius.circular(20), border: Border.all(color: _c.primary)),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(country.flag),
                           SizedBox(width: 6),
-                          Text(country.name, style: TextStyle(color: _textColor, fontSize: 12)),
+                          Text(country.name, style: TextStyle(color: _c.textPrimary, fontSize: 12)),
                         ],
                       ),
                     );
@@ -802,7 +804,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
                 if (_selectedCountries.length > 3)
                   Padding(
                     padding: EdgeInsets.only(top: 8),
-                    child: Text('+ ${_selectedCountries.length - 3} autres pays...', style: TextStyle(color: _hintColor, fontSize: 12)),
+                    child: Text('+ ${_selectedCountries.length - 3} autres pays...', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
                   ),
               ],
             ),
@@ -816,7 +818,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
             },
             icon: Icon(Icons.edit_location, size: 18),
             label: Text('SÉLECTIONNER LES PAYS'),
-            style: ElevatedButton.styleFrom(backgroundColor: _primaryColor.withOpacity(0.2), foregroundColor: _primaryColor, minimumSize: Size(double.infinity, 45), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+            style: ElevatedButton.styleFrom(backgroundColor: _c.primary.withOpacity(0.2), foregroundColor: _c.primary, minimumSize: Size(double.infinity, 45), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
           ),
         ],
       ),
@@ -828,27 +830,27 @@ class _UserPubVideoState extends State<UserPubVideo> {
       width: double.infinity,
       padding: EdgeInsets.all(16),
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(color: _cardColor, borderRadius: BorderRadius.circular(16), border: Border.all(color: _secondaryColor)),
+      decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: _c.accent)),
       child: Column(
         children: [
           Row(
             children: [
-              Icon(Icons.timer, color: _secondaryColor, size: 24),
+              Icon(Icons.timer, color: _c.accent, size: 24),
               SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Temps d\'attente', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text('Temps d\'attente', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
                     SizedBox(height: 4),
-                    Text('Prochain post dans: $_timeRemaining', style: TextStyle(color: _hintColor, fontSize: 14)),
+                    Text('Prochain post dans: $_timeRemaining', style: TextStyle(color: _c.textSecondary, fontSize: 14)),
                   ],
                 ),
               ),
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(color: _secondaryColor.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
-                child: Text(_timeRemaining, style: TextStyle(color: _secondaryColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                decoration: BoxDecoration(color: _c.accent.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
+                child: Text(_timeRemaining, style: TextStyle(color: _c.accent, fontWeight: FontWeight.bold, fontSize: 16)),
               ),
             ],
           ),
@@ -857,9 +859,9 @@ class _UserPubVideoState extends State<UserPubVideo> {
             width: double.infinity,
             child: Column(
               children: [
-                Divider(color: Colors.grey[800]),
+                Divider(color: _c.surfaceVariant),
                 SizedBox(height: 12),
-                Text('OU', style: TextStyle(color: _hintColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                Text('OU', style: TextStyle(color: _c.textSecondary, fontSize: 12, fontWeight: FontWeight.bold)),
                 SizedBox(height: 12),
                 RewardedAdWidget(
                   key: _rewardedAdKey,
@@ -871,11 +873,11 @@ class _UserPubVideoState extends State<UserPubVideo> {
                       _timeRemaining = '';
                       _showRewardedAd = false;
                     });
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Merci ! Vous pouvez poster maintenant !', style: TextStyle(color: Colors.green)), backgroundColor: _cardColor, behavior: SnackBarBehavior.floating));
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Merci ! Vous pouvez poster maintenant !', style: TextStyle(color: _c.primary)), backgroundColor: _c.surface, behavior: SnackBarBehavior.floating));
                   },
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(color: _secondaryColor, borderRadius: BorderRadius.circular(12)),
+                    decoration: BoxDecoration(color: _c.accent, borderRadius: BorderRadius.circular(12)),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -893,7 +895,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
                   ),
                 ),
                 SizedBox(height: 8),
-                Text('Regardez une courte publicité pour\npublier immédiatement sans attendre', textAlign: TextAlign.center, style: TextStyle(color: _hintColor, fontSize: 11)),
+                Text('Regardez une courte publicité pour\npublier immédiatement sans attendre', textAlign: TextAlign.center, style: TextStyle(color: _c.textSecondary, fontSize: 11)),
               ],
             ),
           ),
@@ -906,31 +908,31 @@ class _UserPubVideoState extends State<UserPubVideo> {
     return Container(
       padding: EdgeInsets.all(16),
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(color: _cardColor, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))]),
+      decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))]),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.category, color: _primaryColor, size: 20),
+              Icon(Icons.category, color: _c.primary, size: 20),
               SizedBox(width: 8),
-              Text('Type de publication', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
+              Text('Type de publication', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
             ],
           ),
           SizedBox(height: 12),
           DropdownButtonFormField<String>(
             decoration: InputDecoration(
               hintText: 'Choisir un type de publication',
-              hintStyle: TextStyle(color: _hintColor),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[700]!)),
-              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[700]!)),
-              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _primaryColor)),
+              hintStyle: TextStyle(color: _c.textSecondary),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _c.border)),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _c.border)),
+              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _c.primary)),
               filled: true,
-              fillColor: _backgroundColor,
+              fillColor: _c.background,
               contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             ),
-            dropdownColor: _cardColor,
-            style: TextStyle(color: _textColor, fontSize: 14),
+            dropdownColor: _c.surface,
+            style: TextStyle(color: _c.textPrimary, fontSize: 14),
             value: _selectedPostType,
             onChanged: (String? newValue) {
               setState(() {
@@ -943,9 +945,9 @@ class _UserPubVideoState extends State<UserPubVideo> {
                 value: entry.key,
                 child: Row(
                   children: [
-                    Icon(_postTypes[entry.key]!['icon'] as IconData, color: _primaryColor, size: 18),
+                    Icon(_postTypes[entry.key]!['icon'] as IconData, color: _c.primary, size: 18),
                     SizedBox(width: 12),
-                    Text(_postTypes[entry.key]!['label'], style: TextStyle(color: _textColor)),
+                    Text(_postTypes[entry.key]!['label'], style: TextStyle(color: _c.textPrimary)),
                   ],
                 ),
               );
@@ -964,7 +966,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
     String badgeText;
     IconData badgeIcon;
     if (isAdmin) {
-      badgeColor = Colors.green;
+      badgeColor = _c.primary;
       badgeText = 'ADMIN';
       badgeIcon = Icons.admin_panel_settings;
     } else if (isPremium) {
@@ -995,7 +997,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
     final isPremium = AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement);
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
     double percentage = textLength / _maxCharacters;
-    Color counterColor = textLength > _maxCharacters ? Colors.red : (percentage > 0.8 ? Colors.orange : Colors.green);
+    Color counterColor = textLength > _maxCharacters ? _c.danger : (percentage > 0.8 ? _c.warning : _c.primary);
     String statusText;
     if (isAdmin) {
       statusText = 'Admin • ${textLength}/5000';
@@ -1009,7 +1011,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
       children: [
         Text(statusText, style: TextStyle(color: counterColor, fontSize: 12, fontWeight: FontWeight.bold)),
         SizedBox(height: 4),
-        LinearProgressIndicator(value: percentage.clamp(0.0, 1.0), backgroundColor: Colors.grey[800], valueColor: AlwaysStoppedAnimation<Color>(counterColor), minHeight: 3),
+        LinearProgressIndicator(value: percentage.clamp(0.0, 1.0), backgroundColor: _c.surfaceVariant, valueColor: AlwaysStoppedAnimation<Color>(counterColor), minHeight: 3),
       ],
     );
   }
@@ -1021,7 +1023,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.orange.shade900, Colors.orange.shade800],
+          colors: [Color.lerp(_c.warning, Colors.black, 0.4)!, Color.lerp(_c.warning, Colors.black, 0.25)!],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -1033,12 +1035,12 @@ class _UserPubVideoState extends State<UserPubVideo> {
         children: [
           Row(
             children: [
-              Icon(Icons.warning_amber_rounded, color: _secondaryColor, size: 28),
+              Icon(Icons.warning_amber_rounded, color: _c.accent, size: 28),
               SizedBox(width: 12),
               Expanded(
                 child: Text(
                   '📢 INFORMATION IMPORTANTE',
-                  style: TextStyle(color: _secondaryColor, fontWeight: FontWeight.bold, fontSize: 14),
+                  style: TextStyle(color: _c.accent, fontWeight: FontWeight.bold, fontSize: 14),
                 ),
               ),
             ],
@@ -1063,7 +1065,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
             ),
             child: Row(
               children: [
-                Icon(Icons.speed, color: _secondaryColor, size: 20),
+                Icon(Icons.speed, color: _c.accent, size: 20),
                 SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -1071,7 +1073,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
                     children: [
                       Text(
                         '🔄 Mesure temporaire :',
-                        style: TextStyle(color: _secondaryColor, fontWeight: FontWeight.bold, fontSize: 13),
+                        style: TextStyle(color: _c.accent, fontWeight: FontWeight.bold, fontSize: 13),
                       ),
                       SizedBox(height: 4),
                       Text(
@@ -1088,7 +1090,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
           SizedBox(height: 12),
           Text(
             '🔜 L\'ancienne limite sera rétablie dès que possible. Merci pour votre compréhension et votre fidélité !',
-            style: TextStyle(color: _secondaryColor, fontSize: 12, fontWeight: FontWeight.w500, fontStyle: FontStyle.italic),
+            style: TextStyle(color: _c.accent, fontSize: 12, fontWeight: FontWeight.w500, fontStyle: FontStyle.italic),
           ),
           SizedBox(height: 8),
           Text(
@@ -1108,7 +1110,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
     Color color;
     if (isAdmin) {
       sizeText = 'Admin: 200 Mo';
-      color = Colors.green;
+      color = _c.primary;
     } else if (isPremium) {
       sizeText = 'Premium: 30 Mo (temporaire)';
       color = Color(0xFFFDB813);
@@ -1137,7 +1139,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
     Color infoColor;
     if (isAdmin) {
       infoText = 'Admin : Tous pays • 200 Mo';
-      infoColor = Colors.green;
+      infoColor = _c.primary;
     } else if (isPremium) {
       infoText = 'Premium : Tous pays • 30 Mo (temporaire) • Pas d\'attente';
       infoColor = Color(0xFFFDB813);
@@ -1169,44 +1171,44 @@ class _UserPubVideoState extends State<UserPubVideo> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: _cardColor,
+        backgroundColor: _c.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            Icon(Icons.timer, color: _secondaryColor),
+            Icon(Icons.timer, color: _c.accent),
             SizedBox(width: 10),
-            Text('Temps d\'attente', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
+            Text('Temps d\'attente', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Vous devez attendre $_timeRemaining avant de pouvoir publier.', style: TextStyle(color: _hintColor)),
+            Text('Vous devez attendre $_timeRemaining avant de pouvoir publier.', style: TextStyle(color: _c.textSecondary)),
             SizedBox(height: 20),
             Container(
               padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(color: _secondaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: _secondaryColor)),
+              decoration: BoxDecoration(color: _c.accent.withOpacity(0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: _c.accent)),
               child: Column(
                 children: [
-                  Icon(Icons.play_circle_filled, color: _secondaryColor, size: 40),
+                  Icon(Icons.play_circle_filled, color: _c.accent, size: 40),
                   SizedBox(height: 8),
-                  Text('Regardez une publicité', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                  Text('Regardez une publicité', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
                   SizedBox(height: 4),
-                  Text('et publiez immédiatement !', style: TextStyle(color: _secondaryColor, fontSize: 14)),
+                  Text('et publiez immédiatement !', style: TextStyle(color: _c.accent, fontSize: 14)),
                 ],
               ),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text('ATTENDRE', style: TextStyle(color: _hintColor))),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('ATTENDRE', style: TextStyle(color: _c.textSecondary))),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               setState(() => _showRewardedAd = true);
               RewardedAdWidget.showAd(_rewardedAdKey);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: _secondaryColor, foregroundColor: Colors.black),
+            style: ElevatedButton.styleFrom(backgroundColor: _c.accent, foregroundColor: _c.onAccent),
             child: Text('REGARDER LA PUB'),
           ),
         ],
@@ -1233,7 +1235,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: _cardColor,
+        backgroundColor: _c.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
@@ -1246,24 +1248,24 @@ class _UserPubVideoState extends State<UserPubVideo> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(message!, style: TextStyle(color: Colors.grey[400])),
+            Text(message!, style: TextStyle(color: _c.textSecondary)),
             if (reason == 'size') ...[
               SizedBox(height: 16),
               Container(
                 padding: EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.2),
+                  color: _c.warning.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.orange),
+                  border: Border.all(color: _c.warning),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.compress, color: Colors.orange, size: 20),
+                    Icon(Icons.compress, color: _c.warning, size: 20),
                     SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         '💡 Conseil : Utilisez un outil de compression vidéo en ligne ou une application comme "Video Compressor" pour réduire la taille de votre vidéo.',
-                        style: TextStyle(color: Colors.orange.shade300, fontSize: 12),
+                        style: TextStyle(color: Color.lerp(_c.warning, Colors.white, 0.4)!, fontSize: 12),
                       ),
                     ),
                   ],
@@ -1284,7 +1286,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('À partir de 200 F/mois', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                          Text('Pays illimités • Contenu exclusif • Pas de cooldown', style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+                          Text('Pays illimités • Contenu exclusif • Pas de cooldown', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
                         ],
                       ),
                     ),
@@ -1302,7 +1304,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
                 Navigator.pop(context);
                 Navigator.push(context, MaterialPageRoute(builder: (context) => AbonnementScreen()));
               },
-              style: ElevatedButton.styleFrom(backgroundColor: Color(0xFFFDB813), foregroundColor: Colors.black),
+              style: ElevatedButton.styleFrom(backgroundColor: Color(0xFFFDB813), foregroundColor: _c.onAccent),
               child: Text(actionText!),
             ),
         ],
@@ -1331,22 +1333,22 @@ class _UserPubVideoState extends State<UserPubVideo> {
         barrierDismissible: false,
         builder: (BuildContext context) {
           return AlertDialog(
-            backgroundColor: _cardColor,
+            backgroundColor: _c.surface,
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(_primaryColor),
+                  valueColor: AlwaysStoppedAnimation<Color>(_c.primary),
                 ),
                 SizedBox(height: 16),
                 Text(
                   'Traitement de la vidéo...',
-                  style: TextStyle(color: _textColor),
+                  style: TextStyle(color: _c.textPrimary),
                 ),
                 SizedBox(height: 8),
                 Text(
                   'Vérification de la taille et génération de la miniature',
-                  style: TextStyle(color: _hintColor, fontSize: 12),
+                  style: TextStyle(color: _c.textSecondary, fontSize: 12),
                 ),
               ],
             ),
@@ -1409,7 +1411,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
       print("Erreur lors de la sélection de la vidéo: $e");
       if (Navigator.canPop(context)) Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur lors du traitement de la vidéo. Veuillez réessayer.', style: TextStyle(color: Colors.red)), backgroundColor: _cardColor),
+        SnackBar(content: Text('Erreur lors du traitement de la vidéo. Veuillez réessayer.', style: TextStyle(color: _c.danger)), backgroundColor: _c.surface),
       );
     } finally {
       _isPickingVideo = false;
@@ -1490,17 +1492,32 @@ class _UserPubVideoState extends State<UserPubVideo> {
       final allowAllMembers = widget.canal!.allowAllMembersToPost == true;
       final isMember = widget.canal!.usersSuiviId?.contains(currentUserId) == true;
       if (!isAdmin && !canPost) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Vous n\'êtes pas autorisé à poster dans ce canal', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Vous n\'êtes pas autorisé à poster dans ce canal', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))));
         return;
       }
       if (!isMember) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Vous devez être abonné au canal pour poster', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Vous devez être abonné au canal pour poster', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))));
         return;
       }
     }
 
     if (!_canPost && _cooldownMinutes > 0) {
       _showRewardedAdOption();
+      return;
+    }
+
+    // Vérification serveur : cooldown 5 min universel (anti-fraude)
+    final cooldown = await PostCooldownService.check();
+    if (!cooldown.canPost) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+            '⏳ Attendez ${PostCooldownService.formatRemaining(cooldown.remainingSeconds)} avant de publier à nouveau.',
+            textAlign: TextAlign.center,
+          ),
+          duration: const Duration(seconds: 4),
+        ));
+      }
       return;
     }
 
@@ -1518,12 +1535,12 @@ class _UserPubVideoState extends State<UserPubVideo> {
       final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
 
       if (!_selectAllCountries && _selectedCountries.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez sélectionner au moins un pays', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez sélectionner au moins un pays', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))));
         return;
       }
       if (!isPremium && !isAdmin) {
         if (_selectedCountries.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez sélectionner 1 ou 2 pays maximum', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez sélectionner 1 ou 2 pays maximum', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))));
           return;
         }
         if (_selectedCountries.length > _maxCountriesForFree) {
@@ -1535,13 +1552,13 @@ class _UserPubVideoState extends State<UserPubVideo> {
       if (_selectedPostType == 'EVENEMENT') {
         if (_selectedEventDate == null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Veuillez sélectionner la date de l\'événement', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))),
+            SnackBar(content: Text('Veuillez sélectionner la date de l\'événement', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))),
           );
           return;
         }
         if (_selectedEventDate!.isBefore(DateTime.now())) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('La date de l\'événement ne peut pas être dans le passé', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))),
+            SnackBar(content: Text('La date de l\'événement ne peut pas être dans le passé', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))),
           );
           return;
         }
@@ -1549,21 +1566,21 @@ class _UserPubVideoState extends State<UserPubVideo> {
 
       if (_isAdvertisement) {
         if (_selectedActionType == null) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez sélectionner un type d\'action pour la publicité', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez sélectionner un type d\'action pour la publicité', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))));
           return;
         }
         if (_actionUrlController.text.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez saisir le lien de la publicité', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez saisir le lien de la publicité', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))));
           return;
         }
         if (_selectedDurationDays == null) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez sélectionner la durée de la publicité', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez sélectionner la durée de la publicité', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))));
           return;
         }
       }
 
       if (_controller == null) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez choisir une vidéo.', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez choisir une vidéo.', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))));
         return;
       }
 
@@ -1578,15 +1595,15 @@ class _UserPubVideoState extends State<UserPubVideo> {
           barrierDismissible: false,
           builder: (BuildContext context) {
             return AlertDialog(
-              backgroundColor: _cardColor,
+              backgroundColor: _c.surface,
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(_primaryColor)),
+                  CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(_c.primary)),
                   SizedBox(height: 16),
-                  Text('Publication en cours...', style: TextStyle(color: _textColor)),
+                  Text('Publication en cours...', style: TextStyle(color: _c.textPrimary)),
                   SizedBox(height: 8),
-                  Text('${textLength} caractères • ${_selectAllCountries ? 'Toute l\'Afrique' : '${_selectedCountries.length} pays'}', style: TextStyle(color: _hintColor, fontSize: 12), textAlign: TextAlign.center),
+                  Text('${textLength} caractères • ${_selectAllCountries ? 'Toute l\'Afrique' : '${_selectedCountries.length} pays'}', style: TextStyle(color: _c.textSecondary, fontSize: 12), textAlign: TextAlign.center),
                 ],
               ),
             );
@@ -1732,16 +1749,16 @@ class _UserPubVideoState extends State<UserPubVideo> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.check_circle, color: Colors.green, size: 20),
+                    Icon(Icons.check_circle, color: _c.primary, size: 20),
                     SizedBox(width: 8),
-                    Text(successMessage, style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                    Text(successMessage, style: TextStyle(color: _c.primary, fontWeight: FontWeight.bold)),
                   ],
                 ),
                 SizedBox(height: 4),
                 Text('${textLength} caractères • ${sizeInMB.toStringAsFixed(1)} Mo • $countryMessage', style: TextStyle(color: Colors.white, fontSize: 12)),
               ],
             ),
-            backgroundColor: _cardColor,
+            backgroundColor: _c.surface,
             duration: Duration(seconds: 4),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1757,7 +1774,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
           onTap = false;
           _uploadProgress = 0;
         });
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur lors de la publication. Veuillez réessayer.', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur lors de la publication. Veuillez réessayer.', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))));
       }
     }
   }
@@ -1766,15 +1783,15 @@ class _UserPubVideoState extends State<UserPubVideo> {
     return Container(
       margin: EdgeInsets.only(top: 16),
       padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(color: _cardColor, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey[700]!)),
+      decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: _c.border)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.image, color: _primaryColor, size: 20),
+              Icon(Icons.image, color: _c.primary, size: 20),
               SizedBox(width: 8),
-              Text('Miniature de la vidéo', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
+              Text('Miniature de la vidéo', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
             ],
           ),
           SizedBox(height: 12),
@@ -1783,7 +1800,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
               height: 150,
               width: double.infinity,
               margin: EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), border: Border.all(color: _primaryColor)),
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), border: Border.all(color: _c.primary)),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: kIsWeb && _customThumbnailBytes != null ? Image.memory(_customThumbnailBytes!, fit: BoxFit.cover, width: double.infinity) : (_customThumbnailFile != null ? Image.file(File(_customThumbnailFile!.path), fit: BoxFit.cover, width: double.infinity) : Container()),
@@ -1794,7 +1811,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
               height: 150,
               width: double.infinity,
               margin: EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey[700]!)),
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), border: Border.all(color: _c.border)),
               child: ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.file(File(_localThumbnailPath!), fit: BoxFit.cover, width: double.infinity)),
             ),
           Row(
@@ -1804,7 +1821,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
                   onPressed: _isUploadingCustomThumbnail ? null : _selectCustomThumbnail,
                   icon: _isUploadingCustomThumbnail ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(Icons.image, size: 18),
                   label: Text(_useCustomThumbnail ? 'CHANGER LA MINIATURE' : 'CHOISIR UNE MINIATURE', style: TextStyle(fontSize: 12)),
-                  style: OutlinedButton.styleFrom(foregroundColor: _primaryColor, side: BorderSide(color: _primaryColor), padding: EdgeInsets.symmetric(vertical: 12)),
+                  style: OutlinedButton.styleFrom(foregroundColor: _c.primary, side: BorderSide(color: _c.primary), padding: EdgeInsets.symmetric(vertical: 12)),
                 ),
               ),
               if (_useCustomThumbnail) SizedBox(width: 8),
@@ -1820,13 +1837,13 @@ class _UserPubVideoState extends State<UserPubVideo> {
                     },
                     icon: Icon(Icons.refresh, size: 18),
                     label: Text('UTILISER AUTO', style: TextStyle(fontSize: 12)),
-                    style: OutlinedButton.styleFrom(foregroundColor: Colors.orange, side: BorderSide(color: Colors.orange), padding: EdgeInsets.symmetric(vertical: 12)),
+                    style: OutlinedButton.styleFrom(foregroundColor: _c.warning, side: BorderSide(color: _c.warning), padding: EdgeInsets.symmetric(vertical: 12)),
                   ),
                 ),
             ],
           ),
           SizedBox(height: 8),
-          Text('Choisissez une image personnalisée comme miniature ou utilisez la génération automatique', style: TextStyle(color: _hintColor, fontSize: 11), textAlign: TextAlign.center),
+          Text('Choisissez une image personnalisée comme miniature ou utilisez la génération automatique', style: TextStyle(color: _c.textSecondary, fontSize: 11), textAlign: TextAlign.center),
         ],
       ),
     );
@@ -1840,12 +1857,12 @@ class _UserPubVideoState extends State<UserPubVideo> {
         builder: (context, snapshot) {
           final sizeInMB = snapshot.hasData ? snapshot.data! / (1024 * 1024) : 0;
           final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
-          Color sizeColor = Colors.green;
-          if (!isAdmin && sizeInMB > _maxVideoSizeMB) sizeColor = Colors.red;
+          Color sizeColor = _c.primary;
+          if (!isAdmin && sizeInMB > _maxVideoSizeMB) sizeColor = _c.danger;
           return Container(
             padding: EdgeInsets.all(16),
             margin: EdgeInsets.symmetric(vertical: 8),
-            decoration: BoxDecoration(color: _cardColor, borderRadius: BorderRadius.circular(16), border: Border.all(color: sizeColor, width: 1), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 8, offset: Offset(0, 2))]),
+            decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: sizeColor, width: 1), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 8, offset: Offset(0, 2))]),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1853,21 +1870,21 @@ class _UserPubVideoState extends State<UserPubVideo> {
                   children: [
                     Container(padding: EdgeInsets.all(8), decoration: BoxDecoration(color: sizeColor.withOpacity(0.2), borderRadius: BorderRadius.circular(8)), child: Icon(Icons.videocam, color: sizeColor, size: 20)),
                     SizedBox(width: 12),
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Vidéo sélectionnée', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)), Text('Prête à être publiée', style: TextStyle(color: _hintColor, fontSize: 12))])),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Vidéo sélectionnée', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)), Text('Prête à être publiée', style: TextStyle(color: _c.textSecondary, fontSize: 12))])),
                     Container(padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: sizeColor.withOpacity(0.2), borderRadius: BorderRadius.circular(20), border: Border.all(color: sizeColor)), child: Text(snapshot.hasData ? '${sizeInMB.toStringAsFixed(1)} Mo' : '...', style: TextStyle(color: sizeColor, fontSize: 12, fontWeight: FontWeight.bold))),
                   ],
                 ),
                 SizedBox(height: 16),
-                Container(padding: EdgeInsets.all(12), decoration: BoxDecoration(color: _backgroundColor, borderRadius: BorderRadius.circular(12)), child: Column(
+                Container(padding: EdgeInsets.all(12), decoration: BoxDecoration(color: _c.background, borderRadius: BorderRadius.circular(12)), child: Column(
                   children: [
-                    Row(children: [Icon(Icons.insert_drive_file, color: _hintColor, size: 16), SizedBox(width: 8), Expanded(child: Text(_videoFileName ?? 'Vidéo', style: TextStyle(color: _textColor, fontSize: 13), overflow: TextOverflow.ellipsis))]),
+                    Row(children: [Icon(Icons.insert_drive_file, color: _c.textSecondary, size: 16), SizedBox(width: 8), Expanded(child: Text(_videoFileName ?? 'Vidéo', style: TextStyle(color: _c.textPrimary, fontSize: 13), overflow: TextOverflow.ellipsis))]),
                     SizedBox(height: 8),
-                    Row(children: [Icon(sizeInMB > _maxVideoSizeMB ? Icons.warning : Icons.check_circle, color: sizeInMB > _maxVideoSizeMB ? Colors.orange : Colors.green, size: 16), SizedBox(width: 8), Expanded(child: Text(sizeInMB > _maxVideoSizeMB ? 'Dépasse la limite autorisée (30 Mo max temporaire)' : 'Taille dans les limites', style: TextStyle(color: sizeInMB > _maxVideoSizeMB ? Colors.orange : Colors.green, fontSize: 13)))]),
+                    Row(children: [Icon(sizeInMB > _maxVideoSizeMB ? Icons.warning : Icons.check_circle, color: sizeInMB > _maxVideoSizeMB ? _c.warning : _c.primary, size: 16), SizedBox(width: 8), Expanded(child: Text(sizeInMB > _maxVideoSizeMB ? 'Dépasse la limite autorisée (30 Mo max temporaire)' : 'Taille dans les limites', style: TextStyle(color: sizeInMB > _maxVideoSizeMB ? _c.warning : _c.primary, fontSize: 13)))]),
                   ],
                 )),
                 SizedBox(height: 12),
                 Container(padding: EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.blue.withOpacity(0.3))), child: Row(children: [Icon(Icons.info_outline, color: Colors.blue, size: 18), SizedBox(width: 8), Expanded(child: Text('✅ Vidéo prête à être publiée\n(L\'aperçu vidéo n\'est pas disponible sur le web)', style: TextStyle(color: Colors.blue, fontSize: 12, height: 1.4)))])),
-                if (sizeInMB > _maxVideoSizeMB && !isAdmin) Container(margin: EdgeInsets.only(top: 12), padding: EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.red)), child: Row(children: [Icon(Icons.warning, color: Colors.red, size: 18), SizedBox(width: 8), Expanded(child: Text('Cette vidéo dépasse la limite temporaire de 30 Mo. Veuillez la compresser.', style: TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.w500)))])),
+                if (sizeInMB > _maxVideoSizeMB && !isAdmin) Container(margin: EdgeInsets.only(top: 12), padding: EdgeInsets.all(12), decoration: BoxDecoration(color: _c.danger.withOpacity(0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: _c.danger)), child: Row(children: [Icon(Icons.warning, color: _c.danger, size: 18), SizedBox(width: 8), Expanded(child: Text('Cette vidéo dépasse la limite temporaire de 30 Mo. Veuillez la compresser.', style: TextStyle(color: _c.danger, fontSize: 12, fontWeight: FontWeight.w500)))])),
               ],
             ),
           );
@@ -1880,15 +1897,15 @@ class _UserPubVideoState extends State<UserPubVideo> {
         builder: (context, snapshot) {
           final sizeInMB = snapshot.hasData ? snapshot.data! / (1024 * 1024) : 0;
           final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
-          Color sizeColor = Colors.green;
-          if (!isAdmin && sizeInMB > _maxVideoSizeMB) sizeColor = Colors.red;
+          Color sizeColor = _c.primary;
+          if (!isAdmin && sizeInMB > _maxVideoSizeMB) sizeColor = _c.danger;
           return Container(
             padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(color: _backgroundColor, borderRadius: BorderRadius.circular(16), border: Border.all(color: sizeColor.withOpacity(0.3))),
+            decoration: BoxDecoration(color: _c.background, borderRadius: BorderRadius.circular(16), border: Border.all(color: sizeColor.withOpacity(0.3))),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Aperçu de la vidéo:', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                Text('Aperçu de la vidéo:', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
                 SizedBox(height: 12),
                 Container(width: double.infinity, height: 200, decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: Colors.black), child: ClipRRect(borderRadius: BorderRadius.circular(12), child: VideoPlayer(_controller!))),
                 SizedBox(height: 6),
@@ -1896,30 +1913,30 @@ class _UserPubVideoState extends State<UserPubVideo> {
                 SizedBox(height: 6),
                 Row(
                   children: [
-                    IconButton(icon: Icon(_controller!.value.isPlaying ? Icons.pause : Icons.play_arrow, color: _primaryColor), onPressed: () => setState(() => _controller!.value.isPlaying ? _controller!.pause() : _controller!.play())),
-                    Expanded(child: VideoProgressIndicator(_controller!, allowScrubbing: true, colors: VideoProgressColors(playedColor: _primaryColor, bufferedColor: _secondaryColor, backgroundColor: Colors.grey[800]!))),
-                    IconButton(icon: Icon(Icons.volume_up, color: _controller!.value.volume > 0 ? _primaryColor : _hintColor), onPressed: () => setState(() => _controller!.setVolume(_controller!.value.volume > 0 ? 0 : 1))),
+                    IconButton(icon: Icon(_controller!.value.isPlaying ? Icons.pause : Icons.play_arrow, color: _c.primary), onPressed: () => setState(() => _controller!.value.isPlaying ? _controller!.pause() : _controller!.play())),
+                    Expanded(child: VideoProgressIndicator(_controller!, allowScrubbing: true, colors: VideoProgressColors(playedColor: _c.primary, bufferedColor: _c.accent, backgroundColor: _c.border))),
+                    IconButton(icon: Icon(Icons.volume_up, color: _controller!.value.volume > 0 ? _c.primary : _c.textSecondary), onPressed: () => setState(() => _controller!.setVolume(_controller!.value.volume > 0 ? 0 : 1))),
                   ],
                 ),
                 SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(children: [Icon(Icons.play_circle_fill, color: _primaryColor, size: 16), SizedBox(width: 4), Text('Vidéo sélectionnée', style: TextStyle(color: _hintColor, fontStyle: FontStyle.italic, fontSize: 12))]),
+                    Row(children: [Icon(Icons.play_circle_fill, color: _c.primary, size: 16), SizedBox(width: 4), Text('Vidéo sélectionnée', style: TextStyle(color: _c.textSecondary, fontStyle: FontStyle.italic, fontSize: 12))]),
                     Container(padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: sizeColor.withOpacity(0.2), borderRadius: BorderRadius.circular(8), border: Border.all(color: sizeColor)), child: Text(snapshot.hasData ? '${sizeInMB.toStringAsFixed(1)} Mo' : 'Chargement...', style: TextStyle(color: sizeColor, fontSize: 12, fontWeight: FontWeight.bold))),
                   ],
                 ),
-                if (_controller!.value.isInitialized) Padding(padding: EdgeInsets.only(top: 4), child: Text('Durée: ${_formatDuration(_controller!.value.duration)}', style: TextStyle(color: _hintColor, fontSize: 11))),
+                if (_controller!.value.isInitialized) Padding(padding: EdgeInsets.only(top: 4), child: Text('Durée: ${_formatDuration(_controller!.value.duration)}', style: TextStyle(color: _c.textSecondary, fontSize: 11))),
                 if (!isAdmin && sizeInMB > _maxVideoSizeMB)
                   Container(
                     margin: EdgeInsets.only(top: 12),
                     padding: EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.red)),
+                    decoration: BoxDecoration(color: _c.danger.withOpacity(0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: _c.danger)),
                     child: Row(
                       children: [
-                        Icon(Icons.warning, color: Colors.red, size: 18),
+                        Icon(Icons.warning, color: _c.danger, size: 18),
                         SizedBox(width: 8),
-                        Expanded(child: Text('⚠️ Cette vidéo dépasse la limite temporaire de 30 Mo. Veuillez la compresser avant publication.', style: TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.w500))),
+                        Expanded(child: Text('⚠️ Cette vidéo dépasse la limite temporaire de 30 Mo. Veuillez la compresser avant publication.', style: TextStyle(color: _c.danger, fontSize: 12, fontWeight: FontWeight.w500))),
                       ],
                     ),
                   ),
@@ -1959,7 +1976,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return AlertDialog(
-              backgroundColor: _cardColor,
+              backgroundColor: _c.surface,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               elevation: 24,
               contentPadding: EdgeInsets.zero,
@@ -1971,14 +1988,14 @@ class _UserPubVideoState extends State<UserPubVideo> {
                   children: [
                     Container(
                       padding: EdgeInsets.all(20),
-                      decoration: BoxDecoration(gradient: LinearGradient(colors: [_primaryColor, Color(0xFFFF5252)], begin: Alignment.topLeft, end: Alignment.bottomRight), borderRadius: BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20))),
+                      decoration: BoxDecoration(gradient: LinearGradient(colors: [_c.primary, Color(0xFFFF5252)], begin: Alignment.topLeft, end: Alignment.bottomRight), borderRadius: BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20))),
                       child: Column(
                         children: [
-                          Icon(Icons.emoji_events, color: _secondaryColor, size: 40),
+                          Icon(Icons.emoji_events, color: _c.accent, size: 40),
                           SizedBox(height: 8),
                           Text('GAGNEZ DE L\'ARGENT !', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                           SizedBox(height: 4),
-                          Container(padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4), decoration: BoxDecoration(color: _secondaryColor, borderRadius: BorderRadius.circular(20)), child: Text('JUSQU\'À 50€ (~32 800 FCFA) PAR VIDÉO', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 12))),
+                          Container(padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4), decoration: BoxDecoration(color: _c.accent, borderRadius: BorderRadius.circular(20)), child: Text('JUSQU\'À 50€ (~32 800 FCFA) PAR VIDÉO', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 12))),
                         ],
                       ),
                     ),
@@ -1988,32 +2005,32 @@ class _UserPubVideoState extends State<UserPubVideo> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(padding: EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.grey[800]!.withOpacity(0.3), borderRadius: BorderRadius.circular(12)), child: Row(children: [Icon(Icons.video_library, color: _primaryColor, size: 24), SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('CONTENU DE QUALITÉ', style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold, fontSize: 13)), Text('Vidéos bien produites, instructives et utiles comme sur YouTube', style: TextStyle(color: _hintColor, fontSize: 11))]))])),
+                            Container(padding: EdgeInsets.all(12), decoration: BoxDecoration(color: _c.border.withOpacity(0.3), borderRadius: BorderRadius.circular(12)), child: Row(children: [Icon(Icons.video_library, color: _c.primary, size: 24), SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('CONTENU DE QUALITÉ', style: TextStyle(color: _c.primary, fontWeight: FontWeight.bold, fontSize: 13)), Text('Vidéos bien produites, instructives et utiles comme sur YouTube', style: TextStyle(color: _c.textSecondary, fontSize: 11))]))])),
                             SizedBox(height: 12),
-                            Container(padding: EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.grey[800]!.withOpacity(0.3), borderRadius: BorderRadius.circular(12)), child: Row(children: [Icon(Icons.aspect_ratio, color: Colors.blue, size: 24), SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('FORMAT RECOMMANDÉ', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 13)), Text('Paysage (16:9) • Bonne résolution • Son clair', style: TextStyle(color: _hintColor, fontSize: 11))]))])),
+                            Container(padding: EdgeInsets.all(12), decoration: BoxDecoration(color: _c.border.withOpacity(0.3), borderRadius: BorderRadius.circular(12)), child: Row(children: [Icon(Icons.aspect_ratio, color: Colors.blue, size: 24), SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('FORMAT RECOMMANDÉ', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 13)), Text('Paysage (16:9) • Bonne résolution • Son clair', style: TextStyle(color: _c.textSecondary, fontSize: 11))]))])),
                             SizedBox(height: 12),
-                            Container(padding: EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.grey[800]!.withOpacity(0.3), borderRadius: BorderRadius.circular(12)), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Icon(Icons.school, color: Colors.green, size: 24), SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('CONTENU INSTRUCTIF', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 13)), SizedBox(height: 4), Text('✓ Tutoriels & astuces\n✓ Formations & cours\n✓ Conseils professionnels\n✓ Expériences & témoignages', style: TextStyle(color: _hintColor, fontSize: 11))]))])),
+                            Container(padding: EdgeInsets.all(12), decoration: BoxDecoration(color: _c.border.withOpacity(0.3), borderRadius: BorderRadius.circular(12)), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Icon(Icons.school, color: _c.primary, size: 24), SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('CONTENU INSTRUCTIF', style: TextStyle(color: _c.primary, fontWeight: FontWeight.bold, fontSize: 13)), SizedBox(height: 4), Text('✓ Tutoriels & astuces\n✓ Formations & cours\n✓ Conseils professionnels\n✓ Expériences & témoignages', style: TextStyle(color: _c.textSecondary, fontSize: 11))]))])),
                             SizedBox(height: 16),
-                            Container(padding: EdgeInsets.all(12), decoration: BoxDecoration(gradient: LinearGradient(colors: [_secondaryColor.withOpacity(0.2), _primaryColor.withOpacity(0.1)]), borderRadius: BorderRadius.circular(12), border: Border.all(color: _secondaryColor)), child: Column(children: [Row(children: [Icon(Icons.monetization_on, color: _secondaryColor, size: 20), SizedBox(width: 8), Text('GAINS POTENTIELS', style: TextStyle(color: _secondaryColor, fontWeight: FontWeight.bold, fontSize: 13))]), SizedBox(height: 8), Text('Avec des vidéos de qualité et instructives, vous pouvez gagner plus de 50€ (~32 800 FCFA) par vidéo selon l\'engagement et les vues.', style: TextStyle(color: _textColor, fontSize: 12), textAlign: TextAlign.center)])),
+                            Container(padding: EdgeInsets.all(12), decoration: BoxDecoration(gradient: LinearGradient(colors: [_c.accent.withOpacity(0.2), _c.primary.withOpacity(0.1)]), borderRadius: BorderRadius.circular(12), border: Border.all(color: _c.accent)), child: Column(children: [Row(children: [Icon(Icons.monetization_on, color: _c.accent, size: 20), SizedBox(width: 8), Text('GAINS POTENTIELS', style: TextStyle(color: _c.accent, fontWeight: FontWeight.bold, fontSize: 13))]), SizedBox(height: 8), Text('Avec des vidéos de qualité et instructives, vous pouvez gagner plus de 50€ (~32 800 FCFA) par vidéo selon l\'engagement et les vues.', style: TextStyle(color: _c.textPrimary, fontSize: 12), textAlign: TextAlign.center)])),
                             SizedBox(height: 20),
-                            Container(padding: EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.grey[800]!.withOpacity(0.3), borderRadius: BorderRadius.circular(10)), child: Row(children: [Checkbox(value: _hasAcceptedVideoConditions, onChanged: (bool? value) => setStateDialog(() => _hasAcceptedVideoConditions = value ?? false), activeColor: _primaryColor, checkColor: Colors.white, materialTapTargetSize: MaterialTapTargetSize.shrinkWrap), Expanded(child: Text('Je m\'engage à publier des vidéos de qualité et instructives', style: TextStyle(color: _textColor, fontSize: 11)))])),
+                            Container(padding: EdgeInsets.all(10), decoration: BoxDecoration(color: _c.border.withOpacity(0.3), borderRadius: BorderRadius.circular(10)), child: Row(children: [Checkbox(value: _hasAcceptedVideoConditions, onChanged: (bool? value) => setStateDialog(() => _hasAcceptedVideoConditions = value ?? false), activeColor: _c.primary, checkColor: Colors.white, materialTapTargetSize: MaterialTapTargetSize.shrinkWrap), Expanded(child: Text('Je m\'engage à publier des vidéos de qualité et instructives', style: TextStyle(color: _c.textPrimary, fontSize: 11)))])),
                           ],
                         ),
                       ),
                     ),
                     Container(
                       padding: EdgeInsets.all(16),
-                      decoration: BoxDecoration(border: Border(top: BorderSide(color: Colors.grey[800]!))),
+                      decoration: BoxDecoration(border: Border(top: BorderSide(color: _c.border))),
                       child: ElevatedButton(
                         onPressed: () {
                           if (!_hasAcceptedVideoConditions) {
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez accepter les conditions', style: TextStyle(color: Colors.red)), backgroundColor: _cardColor, duration: Duration(seconds: 2)));
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez accepter les conditions', style: TextStyle(color: _c.danger)), backgroundColor: _c.surface, duration: Duration(seconds: 2)));
                             return;
                           }
                           _saveModalSeen();
                           Navigator.pop(context);
                         },
-                        style: ElevatedButton.styleFrom(backgroundColor: _primaryColor, foregroundColor: Colors.white, minimumSize: Size(double.infinity, 45), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                        style: ElevatedButton.styleFrom(backgroundColor: _c.primary, foregroundColor: _c.onPrimary, minimumSize: Size(double.infinity, 45), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                         child: Text('COMMENCER À POSTER', style: TextStyle(fontWeight: FontWeight.bold)),
                       ),
                     ),
@@ -2032,20 +2049,20 @@ class _UserPubVideoState extends State<UserPubVideo> {
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: _c.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _secondaryColor, width: 1),
+        border: Border.all(color: _c.accent, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.phone_android, color: _secondaryColor, size: 24),
+              Icon(Icons.phone_android, color: _c.accent, size: 24),
               SizedBox(width: 12),
               Text(
                 'Faites la promotion de votre contenu !',
-                style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
               ),
             ],
           ),
@@ -2054,7 +2071,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
             'Vous pouvez créer des publicités pour vos événements, produits ou services. '
                 'Atteignez plus de 100 000 utilisateurs en Afrique, ciblez des pays spécifiques '
                 'et suivez vos statistiques en temps réel.',
-            style: TextStyle(color: _hintColor, fontSize: 13),
+            style: TextStyle(color: _c.textSecondary, fontSize: 13),
           ),
           SizedBox(height: 16),
           ElevatedButton.icon(
@@ -2067,8 +2084,8 @@ class _UserPubVideoState extends State<UserPubVideo> {
             icon: Icon(Icons.add_circle),
             label: Text('CRÉER UNE PUBLICITÉ'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: _primaryColor,
-              foregroundColor: Colors.white,
+              backgroundColor: _c.primary,
+              foregroundColor: _c.onPrimary,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
           ),
@@ -2087,20 +2104,20 @@ class _UserPubVideoState extends State<UserPubVideo> {
     return Stack(
       children: [
         Container(
-          color: _backgroundColor,
+          color: _c.background,
           child: SingleChildScrollView(
             child: Column(
               children: [
                 Container(
                   padding: EdgeInsets.all(16),
-                  decoration: BoxDecoration(color: _cardColor, borderRadius: BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20)), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 15, offset: Offset(0, 4))]),
+                  decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20)), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 15, offset: Offset(0, 4))]),
                   child: Column(
                     spacing: 5,
                     mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(padding: EdgeInsets.all(8), decoration: BoxDecoration(color: _primaryColor, borderRadius: BorderRadius.circular(12)), child: Icon(Icons.videocam, color: Colors.white, size: 24)),
-                      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Publication Vidéo', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 18)), SizedBox(height: 4), _buildUserStatusBadge()]),
+                      Container(padding: EdgeInsets.all(8), decoration: BoxDecoration(color: _c.primary, borderRadius: BorderRadius.circular(12)), child: Icon(Icons.videocam, color: Colors.white, size: 24)),
+                      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Publication Vidéo', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 18)), SizedBox(height: 4), _buildUserStatusBadge()]),
                       _buildVideoSizeInfo(),
                     ],
                   ),
@@ -2116,19 +2133,19 @@ class _UserPubVideoState extends State<UserPubVideo> {
                 Container(
                   margin: EdgeInsets.all(16),
                   padding: EdgeInsets.all(20),
-                  decoration: BoxDecoration(color: _cardColor, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))]),
+                  decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))]),
                   child: Form(
                     key: _formKey,
                     child: Column(
                       children: [
                         Container(
-                          decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey[700]!)),
+                          decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: _c.border)),
                           child: Column(
                             children: [
                               TextFormField(
                                 controller: _descriptionController,
-                                style: TextStyle(color: _textColor),
-                                decoration: InputDecoration(hintText: 'Décrivez votre vidéo...', hintStyle: TextStyle(color: _hintColor), border: InputBorder.none, contentPadding: EdgeInsets.all(16), prefixIcon: Icon(Icons.description, color: _primaryColor)),
+                                style: TextStyle(color: _c.textPrimary),
+                                decoration: InputDecoration(hintText: 'Décrivez votre vidéo...', hintStyle: TextStyle(color: _c.textSecondary), border: InputBorder.none, contentPadding: EdgeInsets.all(16), prefixIcon: Icon(Icons.description, color: _c.primary)),
                                 maxLines: 3,
                                 onChanged: (value) => setState(() {}),
                                 validator: (value) {
@@ -2145,7 +2162,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
                         Container(
                           width: double.infinity,
                           height: 55,
-                          decoration: BoxDecoration(color: _cardColor, borderRadius: BorderRadius.circular(12), border: Border.all(color: _secondaryColor, width: 2), boxShadow: [BoxShadow(color: _secondaryColor.withOpacity(0.3), blurRadius: 8, offset: Offset(0, 4))]),
+                          decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: _c.accent, width: 2), boxShadow: [BoxShadow(color: _c.accent.withOpacity(0.3), blurRadius: 8, offset: Offset(0, 4))]),
                           child: Material(
                             color: Colors.transparent,
                             child: InkWell(
@@ -2154,15 +2171,15 @@ class _UserPubVideoState extends State<UserPubVideo> {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.video_library, color: _secondaryColor, size: 24),
+                                  Icon(Icons.video_library, color: _c.accent, size: 24),
                                   SizedBox(width: 12),
                                   Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text('SÉLECTIONNER UNE VIDÉO', style: TextStyle(color: _secondaryColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                                      Text('SÉLECTIONNER UNE VIDÉO', style: TextStyle(color: _c.accent, fontWeight: FontWeight.bold, fontSize: 16)),
                                       SizedBox(height: 2),
-                                      Text('Maximum 30 Mo (temporaire)', style: TextStyle(color: _hintColor, fontSize: 12)),
+                                      Text('Maximum 30 Mo (temporaire)', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
                                     ],
                                   ),
                                 ],
@@ -2176,12 +2193,12 @@ class _UserPubVideoState extends State<UserPubVideo> {
                           Container(
                             padding: EdgeInsets.all(16),
                             margin: EdgeInsets.symmetric(vertical: 16),
-                            decoration: BoxDecoration(color: _backgroundColor, borderRadius: BorderRadius.circular(16)),
+                            decoration: BoxDecoration(color: _c.background, borderRadius: BorderRadius.circular(16)),
                             child: Column(
                               children: [
-                                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text('Téléchargement:', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)), Text('${(_uploadProgress * 100).toStringAsFixed(1)}%', style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold))]),
+                                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text('Téléchargement:', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)), Text('${(_uploadProgress * 100).toStringAsFixed(1)}%', style: TextStyle(color: _c.primary, fontWeight: FontWeight.bold))]),
                                 SizedBox(height: 8),
-                                LinearProgressIndicator(value: _uploadProgress, backgroundColor: Colors.grey[800], valueColor: AlwaysStoppedAnimation<Color>(_primaryColor), borderRadius: BorderRadius.circular(10)),
+                                LinearProgressIndicator(value: _uploadProgress, backgroundColor: _c.surfaceVariant, valueColor: AlwaysStoppedAnimation<Color>(_c.primary), borderRadius: BorderRadius.circular(10)),
                               ],
                             ),
                           ),
@@ -2190,9 +2207,9 @@ class _UserPubVideoState extends State<UserPubVideo> {
                           width: double.infinity,
                           height: 55,
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(colors: onTap || (!_canPost && _cooldownMinutes > 0) || _controller == null ? [Colors.grey, Colors.grey] : [_primaryColor, Color(0xFFFF5252)], begin: Alignment.centerLeft, end: Alignment.centerRight),
+                            gradient: LinearGradient(colors: onTap || (!_canPost && _cooldownMinutes > 0) || _controller == null ? [Colors.grey, Colors.grey] : [_c.primary, Color(0xFFFF5252)], begin: Alignment.centerLeft, end: Alignment.centerRight),
                             borderRadius: BorderRadius.circular(25),
-                            boxShadow: [BoxShadow(color: _primaryColor.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))],
+                            boxShadow: [BoxShadow(color: _c.primary.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))],
                           ),
                           child: Material(
                             color: Colors.transparent,
@@ -2216,7 +2233,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
                                     Text(_isAdvertisement ? 'PUBLIER LA PUBLICITÉ' : 'PUBLIER LA VIDÉO', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                                     if (_isAdvertisement) ...[
                                       SizedBox(width: 4),
-                                      Container(padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: _secondaryColor, borderRadius: BorderRadius.circular(8)), child: Text('PUB', style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold))),
+                                      Container(padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: _c.accent, borderRadius: BorderRadius.circular(8)), child: Text('PUB', style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold))),
                                     ],
                                     SizedBox(width: 4),
                                     Container(padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)), child: Text(_selectAllCountries ? '🌍' : '${_selectedCountries.length}', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14))),
@@ -2358,13 +2375,13 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //   late PostProvider postProvider;
 //   final FirebaseFirestore firestore = FirebaseFirestore.instance;
 //
-//   final Color _primaryColor = Color(0xFFE21221);
-//   final Color _secondaryColor = Color(0xFFFFD600);
-//   final Color _backgroundColor = Color(0xFF121212);
-//   final Color _cardColor = Color(0xFF1E1E1E);
-//   final Color _textColor = Colors.white;
-//   final Color _hintColor = Colors.grey[400]!;
-//   final Color _successColor = Color(0xFF4CAF50);
+//   final Color _c.primary = Color(0xFFE21221);
+//   final Color _c.accent = Color(0xFFFFD600);
+//   final Color _c.background = Color(0xFF121212);
+//   final Color _c.surface = Color(0xFF1E1E1E);
+//   final Color _c.textPrimary = Colors.white;
+//   final Color _c.textSecondary = _c.textSecondary!;
+//   final Color _c.primary = Color(0xFF4CAF50);
 //   late MassNotificationService _notificationService;
 //   double _minAspectRatio = 1.33;
 //   double _maxAspectRatio = 1.78;
@@ -2426,10 +2443,10 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
 //       padding: EdgeInsets.all(16),
 //       decoration: BoxDecoration(
-//         color: _cardColor,
+//         color: _c.surface,
 //         borderRadius: BorderRadius.circular(16),
 //         border: Border.all(
-//           color: _isEventDatePast ? Colors.red : _primaryColor,
+//           color: _isEventDatePast ? _c.danger : _c.primary,
 //           width: 1,
 //         ),
 //       ),
@@ -2438,23 +2455,23 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //         children: [
 //           Row(
 //             children: [
-//               Icon(Icons.event, color: _primaryColor, size: 20),
+//               Icon(Icons.event, color: _c.primary, size: 20),
 //               SizedBox(width: 8),
 //               Text(
 //                 'Date de l\'événement',
-//                 style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16),
+//                 style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
 //               ),
 //               if (_isEventDatePast)
 //                 Container(
 //                   margin: EdgeInsets.only(left: 8),
 //                   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
 //                   decoration: BoxDecoration(
-//                     color: Colors.red.withOpacity(0.2),
+//                     color: _c.danger.withOpacity(0.2),
 //                     borderRadius: BorderRadius.circular(12),
 //                   ),
 //                   child: Text(
 //                     'DATE PASSÉE',
-//                     style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold),
+//                     style: TextStyle(color: _c.danger, fontSize: 10, fontWeight: FontWeight.bold),
 //                   ),
 //                 ),
 //             ],
@@ -2471,10 +2488,10 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //                   return Theme(
 //                     data: ThemeData.dark().copyWith(
 //                       colorScheme: ColorScheme.dark(
-//                         primary: _primaryColor,
+//                         primary: _c.primary,
 //                         onPrimary: Colors.white,
-//                         surface: _cardColor,
-//                         onSurface: _textColor,
+//                         surface: _c.surface,
+//                         onSurface: _c.textPrimary,
 //                       ),
 //                     ),
 //                     child: child!,
@@ -2491,13 +2508,13 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //             child: Container(
 //               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
 //               decoration: BoxDecoration(
-//                 color: _backgroundColor,
+//                 color: _c.background,
 //                 borderRadius: BorderRadius.circular(12),
-//                 border: Border.all(color: Colors.grey[700]!),
+//                 border: Border.all(color: _c.border),
 //               ),
 //               child: Row(
 //                 children: [
-//                   Icon(Icons.calendar_today, color: _primaryColor, size: 20),
+//                   Icon(Icons.calendar_today, color: _c.primary, size: 20),
 //                   SizedBox(width: 12),
 //                   Expanded(
 //                     child: Text(
@@ -2505,12 +2522,12 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //                           ? '${_selectedEventDate!.day}/${_selectedEventDate!.month}/${_selectedEventDate!.year}'
 //                           : 'Sélectionnez la date de l\'événement',
 //                       style: TextStyle(
-//                         color: _selectedEventDate != null ? _textColor : _hintColor,
+//                         color: _selectedEventDate != null ? _c.textPrimary : _c.textSecondary,
 //                         fontSize: 14,
 //                       ),
 //                     ),
 //                   ),
-//                   Icon(Icons.arrow_drop_down, color: _hintColor),
+//                   Icon(Icons.arrow_drop_down, color: _c.textSecondary),
 //                 ],
 //               ),
 //             ),
@@ -2520,7 +2537,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //               padding: EdgeInsets.only(top: 8),
 //               child: Text(
 //                 '📅 ${_formatEventDate(_selectedEventDate!)}',
-//                 style: TextStyle(color: _primaryColor, fontSize: 12),
+//                 style: TextStyle(color: _c.primary, fontSize: 12),
 //               ),
 //             ),
 //         ],
@@ -2732,13 +2749,13 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //     showDialog(
 //       context: context,
 //       builder: (context) => AlertDialog(
-//         backgroundColor: _cardColor,
+//         backgroundColor: _c.surface,
 //         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
 //         title: Row(
 //           children: [
-//             Icon(Icons.lock, color: _primaryColor),
+//             Icon(Icons.lock, color: _c.primary),
 //             SizedBox(width: 10),
-//             Text('Limite de pays atteinte', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
+//             Text('Limite de pays atteinte', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
 //           ],
 //         ),
 //         content: Column(
@@ -2746,21 +2763,21 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //           crossAxisAlignment: CrossAxisAlignment.start,
 //           children: [
 //             Text('L\'abonnement gratuit est limité à 2 pays maximum.\nPassez à Afrolook Premium pour sélectionner tous les pays africains.',
-//                 style: TextStyle(color: _hintColor)),
+//                 style: TextStyle(color: _c.textSecondary)),
 //             SizedBox(height: 20),
 //             Container(
 //               padding: EdgeInsets.all(12),
-//               decoration: BoxDecoration(color: Colors.black.withOpacity(0.3), borderRadius: BorderRadius.circular(12), border: Border.all(color: _secondaryColor)),
+//               decoration: BoxDecoration(color: Colors.black.withOpacity(0.3), borderRadius: BorderRadius.circular(12), border: Border.all(color: _c.accent)),
 //               child: Row(
 //                 children: [
-//                   Icon(Icons.workspace_premium, color: _secondaryColor),
+//                   Icon(Icons.workspace_premium, color: _c.accent),
 //                   SizedBox(width: 10),
 //                   Expanded(
 //                     child: Column(
 //                       crossAxisAlignment: CrossAxisAlignment.start,
 //                       children: [
-//                         Text('Afrolook Premium', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
-//                         Text('Pays illimités • 80 Mo vidéo • Pas de cooldown', style: TextStyle(color: _hintColor, fontSize: 12)),
+//                         Text('Afrolook Premium', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
+//                         Text('Pays illimités • 80 Mo vidéo • Pas de cooldown', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
 //                       ],
 //                     ),
 //                   ),
@@ -2770,13 +2787,13 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //           ],
 //         ),
 //         actions: [
-//           TextButton(onPressed: () => Navigator.pop(context), child: Text('COMPRENDRE', style: TextStyle(color: _hintColor))),
+//           TextButton(onPressed: () => Navigator.pop(context), child: Text('COMPRENDRE', style: TextStyle(color: _c.textSecondary))),
 //           ElevatedButton(
 //             onPressed: () {
 //               Navigator.pop(context);
 //               Navigator.push(context, MaterialPageRoute(builder: (context) => AbonnementScreen()));
 //             },
-//             style: ElevatedButton.styleFrom(backgroundColor: _secondaryColor, foregroundColor: Colors.black),
+//             style: ElevatedButton.styleFrom(backgroundColor: _c.accent, foregroundColor: _c.onAccent),
 //             child: Text('PASSER À PREMIUM'),
 //           ),
 //         ],
@@ -2790,22 +2807,22 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //     return Container(
 //       height: MediaQuery.of(context).size.height * 0.8,
 //       decoration: BoxDecoration(
-//         color: _backgroundColor,
+//         color: _c.background,
 //         borderRadius: BorderRadius.only(topLeft: Radius.circular(25), topRight: Radius.circular(25)),
 //       ),
 //       child: Column(
 //         children: [
 //           Container(
 //             padding: EdgeInsets.all(20),
-//             decoration: BoxDecoration(color: _cardColor, borderRadius: BorderRadius.only(topLeft: Radius.circular(25), topRight: Radius.circular(25))),
+//             decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.only(topLeft: Radius.circular(25), topRight: Radius.circular(25))),
 //             child: Column(
 //               children: [
 //                 Row(
 //                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
 //                   children: [
-//                     Text('Sélection des pays', style: TextStyle(color: _textColor, fontSize: 20, fontWeight: FontWeight.bold)),
+//                     Text('Sélection des pays', style: TextStyle(color: _c.textPrimary, fontSize: 20, fontWeight: FontWeight.bold)),
 //                     IconButton(
-//                       icon: Icon(Icons.close, color: _textColor),
+//                       icon: Icon(Icons.close, color: _c.textPrimary),
 //                       onPressed: () {
 //                         setState(() {
 //                           _showCountrySelection = false;
@@ -2821,38 +2838,38 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //                     Container(
 //                       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
 //                       decoration: BoxDecoration(
-//                         color: isPremium || isAdmin ? _secondaryColor.withOpacity(0.2) : _primaryColor.withOpacity(0.2),
+//                         color: isPremium || isAdmin ? _c.accent.withOpacity(0.2) : _c.primary.withOpacity(0.2),
 //                         borderRadius: BorderRadius.circular(20),
-//                         border: Border.all(color: isPremium || isAdmin ? _secondaryColor : _primaryColor),
+//                         border: Border.all(color: isPremium || isAdmin ? _c.accent : _c.primary),
 //                       ),
 //                       child: Row(
 //                         children: [
 //                           Icon(isPremium || isAdmin ? Icons.workspace_premium : Icons.lock, size: 14,
-//                               color: isPremium || isAdmin ? _secondaryColor : _primaryColor),
+//                               color: isPremium || isAdmin ? _c.accent : _c.primary),
 //                           SizedBox(width: 6),
 //                           Text(isPremium || isAdmin ? 'Pays illimités' : 'Max 2 pays',
-//                               style: TextStyle(color: isPremium || isAdmin ? _secondaryColor : _primaryColor, fontSize: 12, fontWeight: FontWeight.bold)),
+//                               style: TextStyle(color: isPremium || isAdmin ? _c.accent : _c.primary, fontSize: 12, fontWeight: FontWeight.bold)),
 //                         ],
 //                       ),
 //                     ),
 //                     SizedBox(width: 10),
 //                     Text(
 //                       _selectAllCountries ? '🌍 Toute l\'Afrique (Premium)' : (_selectedCountries.isEmpty ? '⚠️ Aucun pays' : '${_selectedCountries.length} pays sélectionné(s)'),
-//                       style: TextStyle(color: _selectedCountries.isEmpty && !_selectAllCountries ? Colors.orange : _hintColor, fontSize: 14),
+//                       style: TextStyle(color: _selectedCountries.isEmpty && !_selectAllCountries ? _c.warning : _c.textSecondary, fontSize: 14),
 //                     ),
 //                   ],
 //                 ),
 //                 SizedBox(height: 15),
 //                 Container(
-//                   decoration: BoxDecoration(color: _cardColor, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey[700]!)),
+//                   decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: _c.border)),
 //                   child: TextField(
 //                     controller: _countrySearchController,
 //                     focusNode: _countrySearchFocus,
-//                     style: TextStyle(color: _textColor),
+//                     style: TextStyle(color: _c.textPrimary),
 //                     decoration: InputDecoration(
 //                       hintText: 'Rechercher un pays...',
-//                       hintStyle: TextStyle(color: _hintColor),
-//                       prefixIcon: Icon(Icons.search, color: _primaryColor),
+//                       hintStyle: TextStyle(color: _c.textSecondary),
+//                       prefixIcon: Icon(Icons.search, color: _c.primary),
 //                       border: InputBorder.none,
 //                       contentPadding: EdgeInsets.symmetric(horizontal: 16),
 //                     ),
@@ -2862,45 +2879,45 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //             ),
 //           ),
 //           Material(
-//             color: _cardColor,
+//             color: _c.surface,
 //             child: ListTile(
 //               onTap: _toggleSelectAllCountries,
 //               leading: Container(
 //                 width: 40,
 //                 height: 40,
-//                 decoration: BoxDecoration(color: _selectAllCountries ? _secondaryColor : Colors.grey[800], borderRadius: BorderRadius.circular(10)),
-//                 child: Icon(Icons.workspace_premium, color: _selectAllCountries ? Colors.white : _hintColor),
+//                 decoration: BoxDecoration(color: _selectAllCountries ? _c.accent : _c.surfaceVariant, borderRadius: BorderRadius.circular(10)),
+//                 child: Icon(Icons.workspace_premium, color: _selectAllCountries ? Colors.white : _c.textSecondary),
 //               ),
 //               title: Row(
 //                 children: [
-//                   Text('Tous les pays africains', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
+//                   Text('Tous les pays africains', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
 //                   SizedBox(width: 8),
 //                   Container(
 //                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-//                     decoration: BoxDecoration(color: _secondaryColor.withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
-//                     child: Text('PREMIUM', style: TextStyle(color: _secondaryColor, fontSize: 10, fontWeight: FontWeight.bold)),
+//                     decoration: BoxDecoration(color: _c.accent.withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
+//                     child: Text('PREMIUM', style: TextStyle(color: _c.accent, fontSize: 10, fontWeight: FontWeight.bold)),
 //                   ),
 //                 ],
 //               ),
-//               subtitle: Text('Fonctionnalité Premium - Votre vidéo sera visible dans toute l\'Afrique', style: TextStyle(color: _hintColor)),
+//               subtitle: Text('Fonctionnalité Premium - Votre vidéo sera visible dans toute l\'Afrique', style: TextStyle(color: _c.textSecondary)),
 //               trailing: _selectAllCountries
-//                   ? Container(padding: EdgeInsets.all(8), decoration: BoxDecoration(color: _successColor, shape: BoxShape.circle), child: Icon(Icons.check, color: Colors.white, size: 20))
+//                   ? Container(padding: EdgeInsets.all(8), decoration: BoxDecoration(color: _c.primary, shape: BoxShape.circle), child: Icon(Icons.check, color: Colors.white, size: 20))
 //                   : null,
 //             ),
 //           ),
 //           if (!isPremium && !isAdmin)
 //             Container(
 //               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-//               decoration: BoxDecoration(color: _primaryColor.withOpacity(0.1), border: Border(left: BorderSide(color: _primaryColor, width: 3))),
+//               decoration: BoxDecoration(color: _c.primary.withOpacity(0.1), border: Border(left: BorderSide(color: _c.primary, width: 3))),
 //               child: Row(
 //                 children: [
-//                   Icon(Icons.info, size: 16, color: _primaryColor),
+//                   Icon(Icons.info, size: 16, color: _c.primary),
 //                   SizedBox(width: 8),
-//                   Expanded(child: Text('Abonnement gratuit : Sélectionnez 1 ou 2 pays maximum', style: TextStyle(color: _textColor, fontSize: 12))),
+//                   Expanded(child: Text('Abonnement gratuit : Sélectionnez 1 ou 2 pays maximum', style: TextStyle(color: _c.textPrimary, fontSize: 12))),
 //                 ],
 //               ),
 //             ),
-//           Divider(color: Colors.grey[800], height: 1),
+//           Divider(color: _c.surfaceVariant, height: 1),
 //           Expanded(
 //             child: ListView.builder(
 //               padding: EdgeInsets.zero,
@@ -2910,20 +2927,20 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //                 final isSelected = _selectedCountries.contains(country);
 //                 final isDisabled = !isPremium && !isAdmin && _selectedCountries.length >= _maxCountriesForFree && !isSelected;
 //                 return Material(
-//                   color: isSelected ? _primaryColor.withOpacity(0.1) : _cardColor,
+//                   color: isSelected ? _c.primary.withOpacity(0.1) : _c.surface,
 //                   child: ListTile(
 //                     onTap: isDisabled ? null : () => _toggleCountrySelection(country),
 //                     leading: Container(
 //                       width: 40,
 //                       height: 40,
-//                       decoration: BoxDecoration(color: isSelected ? _primaryColor : Colors.grey[800], borderRadius: BorderRadius.circular(10)),
+//                       decoration: BoxDecoration(color: isSelected ? _c.primary : _c.surfaceVariant, borderRadius: BorderRadius.circular(10)),
 //                       child: Center(child: Text(country.flag, style: TextStyle(fontSize: 20))),
 //                     ),
-//                     title: Text(country.name, style: TextStyle(color: isDisabled ? Colors.grey[600] : _textColor, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
-//                     subtitle: Text('Code: ${country.code}', style: TextStyle(color: isDisabled ? Colors.grey[600] : _hintColor)),
+//                     title: Text(country.name, style: TextStyle(color: isDisabled ? _c.textSecondary : _c.textPrimary, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+//                     subtitle: Text('Code: ${country.code}', style: TextStyle(color: isDisabled ? _c.textSecondary : _c.textSecondary)),
 //                     trailing: isSelected
-//                         ? Container(padding: EdgeInsets.all(8), decoration: BoxDecoration(color: _primaryColor, shape: BoxShape.circle), child: Icon(Icons.check, color: Colors.white, size: 16))
-//                         : (isDisabled ? Icon(Icons.lock, color: Colors.grey[600], size: 16) : null),
+//                         ? Container(padding: EdgeInsets.all(8), decoration: BoxDecoration(color: _c.primary, shape: BoxShape.circle), child: Icon(Icons.check, color: Colors.white, size: 16))
+//                         : (isDisabled ? Icon(Icons.lock, color: _c.textSecondary, size: 16) : null),
 //                   ),
 //                 );
 //               },
@@ -2931,7 +2948,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //           ),
 //           Container(
 //             padding: EdgeInsets.all(16),
-//             decoration: BoxDecoration(color: _cardColor, border: Border(top: BorderSide(color: Colors.grey[800]!))),
+//             decoration: BoxDecoration(color: _c.surface, border: Border(top: BorderSide(color: _c.border))),
 //             child: Row(
 //               children: [
 //                 Expanded(
@@ -2942,7 +2959,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //                         _selectAllCountries = false;
 //                       });
 //                     },
-//                     style: OutlinedButton.styleFrom(foregroundColor: _hintColor, side: BorderSide(color: Colors.grey[700]!), padding: EdgeInsets.symmetric(vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+//                     style: OutlinedButton.styleFrom(foregroundColor: _c.textSecondary, side: BorderSide(color: _c.border), padding: EdgeInsets.symmetric(vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
 //                     child: Text('RÉINITIALISER'),
 //                   ),
 //                 ),
@@ -2955,7 +2972,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //                         _countrySearchController.clear();
 //                       });
 //                     },
-//                     style: ElevatedButton.styleFrom(backgroundColor: _primaryColor, foregroundColor: Colors.white, padding: EdgeInsets.symmetric(vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+//                     style: ElevatedButton.styleFrom(backgroundColor: _c.primary, foregroundColor: _c.onPrimary, padding: EdgeInsets.symmetric(vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
 //                     child: Text('CONFIRMER'),
 //                   ),
 //                 ),
@@ -2982,10 +2999,10 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //       padding: EdgeInsets.all(16),
 //       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
 //       decoration: BoxDecoration(
-//         color: _cardColor,
+//         color: _c.surface,
 //         borderRadius: BorderRadius.circular(16),
 //         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))],
-//         border: Border.all(color: _selectedCountries.isEmpty && !_selectAllCountries ? Colors.orange : Colors.transparent, width: 1),
+//         border: Border.all(color: _selectedCountries.isEmpty && !_selectAllCountries ? _c.warning : Colors.transparent, width: 1),
 //       ),
 //       child: Column(
 //         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2997,23 +3014,23 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //                 children: [
 //                   Container(
 //                     padding: EdgeInsets.all(8),
-//                     decoration: BoxDecoration(color: _selectAllCountries ? _secondaryColor : _primaryColor, borderRadius: BorderRadius.circular(10)),
+//                     decoration: BoxDecoration(color: _selectAllCountries ? _c.accent : _c.primary, borderRadius: BorderRadius.circular(10)),
 //                     child: Icon(_selectAllCountries ? Icons.workspace_premium : Icons.public, color: Colors.white, size: 20),
 //                   ),
 //                   SizedBox(width: 12),
 //                   Column(
 //                     crossAxisAlignment: CrossAxisAlignment.start,
 //                     children: [
-//                       Text('Visibilité de la vidéo', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
-//                       Text(displayMessage, style: TextStyle(color: _selectedCountries.isEmpty && !_selectAllCountries ? Colors.orange : _hintColor, fontSize: 14)),
+//                       Text('Visibilité de la vidéo', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
+//                       Text(displayMessage, style: TextStyle(color: _selectedCountries.isEmpty && !_selectAllCountries ? _c.warning : _c.textSecondary, fontSize: 14)),
 //                     ],
 //                   ),
 //                 ],
 //               ),
 //               Container(
 //                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-//                 decoration: BoxDecoration(color: isPremium || isAdmin ? _secondaryColor.withOpacity(0.2) : _primaryColor.withOpacity(0.2), borderRadius: BorderRadius.circular(20), border: Border.all(color: isPremium || isAdmin ? _secondaryColor : _primaryColor)),
-//                 child: Text(isPremium || isAdmin ? 'PREMIUM' : 'GRATUIT', style: TextStyle(color: isPremium || isAdmin ? _secondaryColor : _primaryColor, fontSize: 12, fontWeight: FontWeight.bold)),
+//                 decoration: BoxDecoration(color: isPremium || isAdmin ? _c.accent.withOpacity(0.2) : _c.primary.withOpacity(0.2), borderRadius: BorderRadius.circular(20), border: Border.all(color: isPremium || isAdmin ? _c.accent : _c.primary)),
+//                 child: Text(isPremium || isAdmin ? 'PREMIUM' : 'GRATUIT', style: TextStyle(color: isPremium || isAdmin ? _c.accent : _c.primary, fontSize: 12, fontWeight: FontWeight.bold)),
 //               ),
 //             ],
 //           ),
@@ -3021,12 +3038,12 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //             Container(
 //               margin: EdgeInsets.only(top: 12),
 //               padding: EdgeInsets.all(12),
-//               decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.orange)),
+//               decoration: BoxDecoration(color: _c.warning.withOpacity(0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: _c.warning)),
 //               child: Row(
 //                 children: [
-//                   Icon(Icons.warning, size: 16, color: Colors.orange),
+//                   Icon(Icons.warning, size: 16, color: _c.warning),
 //                   SizedBox(width: 8),
-//                   Expanded(child: Text('Vous devez sélectionner au moins un pays', style: TextStyle(color: Colors.orange, fontSize: 12))),
+//                   Expanded(child: Text('Vous devez sélectionner au moins un pays', style: TextStyle(color: _c.warning, fontSize: 12))),
 //                 ],
 //               ),
 //             ),
@@ -3040,13 +3057,13 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //                   children: _selectedCountries.take(3).map((country) {
 //                     return Container(
 //                       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-//                       decoration: BoxDecoration(color: _primaryColor.withOpacity(0.2), borderRadius: BorderRadius.circular(20), border: Border.all(color: _primaryColor)),
+//                       decoration: BoxDecoration(color: _c.primary.withOpacity(0.2), borderRadius: BorderRadius.circular(20), border: Border.all(color: _c.primary)),
 //                       child: Row(
 //                         mainAxisSize: MainAxisSize.min,
 //                         children: [
 //                           Text(country.flag),
 //                           SizedBox(width: 6),
-//                           Text(country.name, style: TextStyle(color: _textColor, fontSize: 12)),
+//                           Text(country.name, style: TextStyle(color: _c.textPrimary, fontSize: 12)),
 //                         ],
 //                       ),
 //                     );
@@ -3055,7 +3072,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //                 if (_selectedCountries.length > 3)
 //                   Padding(
 //                     padding: EdgeInsets.only(top: 8),
-//                     child: Text('+ ${_selectedCountries.length - 3} autres pays...', style: TextStyle(color: _hintColor, fontSize: 12)),
+//                     child: Text('+ ${_selectedCountries.length - 3} autres pays...', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
 //                   ),
 //               ],
 //             ),
@@ -3069,7 +3086,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //             },
 //             icon: Icon(Icons.edit_location, size: 18),
 //             label: Text('SÉLECTIONNER LES PAYS'),
-//             style: ElevatedButton.styleFrom(backgroundColor: _primaryColor.withOpacity(0.2), foregroundColor: _primaryColor, minimumSize: Size(double.infinity, 45), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+//             style: ElevatedButton.styleFrom(backgroundColor: _c.primary.withOpacity(0.2), foregroundColor: _c.primary, minimumSize: Size(double.infinity, 45), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
 //           ),
 //         ],
 //       ),
@@ -3081,27 +3098,27 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //       width: double.infinity,
 //       padding: EdgeInsets.all(16),
 //       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-//       decoration: BoxDecoration(color: _cardColor, borderRadius: BorderRadius.circular(16), border: Border.all(color: _secondaryColor)),
+//       decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: _c.accent)),
 //       child: Column(
 //         children: [
 //           Row(
 //             children: [
-//               Icon(Icons.timer, color: _secondaryColor, size: 24),
+//               Icon(Icons.timer, color: _c.accent, size: 24),
 //               SizedBox(width: 12),
 //               Expanded(
 //                 child: Column(
 //                   crossAxisAlignment: CrossAxisAlignment.start,
 //                   children: [
-//                     Text('Temps d\'attente', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
+//                     Text('Temps d\'attente', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
 //                     SizedBox(height: 4),
-//                     Text('Prochain post dans: $_timeRemaining', style: TextStyle(color: _hintColor, fontSize: 14)),
+//                     Text('Prochain post dans: $_timeRemaining', style: TextStyle(color: _c.textSecondary, fontSize: 14)),
 //                   ],
 //                 ),
 //               ),
 //               Container(
 //                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-//                 decoration: BoxDecoration(color: _secondaryColor.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
-//                 child: Text(_timeRemaining, style: TextStyle(color: _secondaryColor, fontWeight: FontWeight.bold, fontSize: 16)),
+//                 decoration: BoxDecoration(color: _c.accent.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
+//                 child: Text(_timeRemaining, style: TextStyle(color: _c.accent, fontWeight: FontWeight.bold, fontSize: 16)),
 //               ),
 //             ],
 //           ),
@@ -3110,9 +3127,9 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //             width: double.infinity,
 //             child: Column(
 //               children: [
-//                 Divider(color: Colors.grey[800]),
+//                 Divider(color: _c.surfaceVariant),
 //                 SizedBox(height: 12),
-//                 Text('OU', style: TextStyle(color: _hintColor, fontSize: 12, fontWeight: FontWeight.bold)),
+//                 Text('OU', style: TextStyle(color: _c.textSecondary, fontSize: 12, fontWeight: FontWeight.bold)),
 //                 SizedBox(height: 12),
 //                 RewardedAdWidget(
 //                   key: _rewardedAdKey,
@@ -3126,12 +3143,12 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //                       _timeRemaining = '';
 //                       _showRewardedAd = false;
 //                     });
-//                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Merci ! Vous pouvez poster maintenant !', style: TextStyle(color: Colors.green)), backgroundColor: _cardColor, behavior: SnackBarBehavior.floating));
+//                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Merci ! Vous pouvez poster maintenant !', style: TextStyle(color: _c.primary)), backgroundColor: _c.surface, behavior: SnackBarBehavior.floating));
 //
 //                   },
 //                   child: Container(
 //                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-//                     decoration: BoxDecoration(color: _secondaryColor, borderRadius: BorderRadius.circular(12)),
+//                     decoration: BoxDecoration(color: _c.accent, borderRadius: BorderRadius.circular(12)),
 //                     child: Row(
 //                       mainAxisSize: MainAxisSize.min,
 //                       children: [
@@ -3149,7 +3166,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //                   ),
 //                 ),
 //                 SizedBox(height: 8),
-//                 Text('Regardez une courte publicité pour\npublier immédiatement sans attendre', textAlign: TextAlign.center, style: TextStyle(color: _hintColor, fontSize: 11)),
+//                 Text('Regardez une courte publicité pour\npublier immédiatement sans attendre', textAlign: TextAlign.center, style: TextStyle(color: _c.textSecondary, fontSize: 11)),
 //               ],
 //             ),
 //           ),
@@ -3162,31 +3179,31 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //     return Container(
 //       padding: EdgeInsets.all(16),
 //       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-//       decoration: BoxDecoration(color: _cardColor, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))]),
+//       decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))]),
 //       child: Column(
 //         crossAxisAlignment: CrossAxisAlignment.start,
 //         children: [
 //           Row(
 //             children: [
-//               Icon(Icons.category, color: _primaryColor, size: 20),
+//               Icon(Icons.category, color: _c.primary, size: 20),
 //               SizedBox(width: 8),
-//               Text('Type de publication', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
+//               Text('Type de publication', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
 //             ],
 //           ),
 //           SizedBox(height: 12),
 //           DropdownButtonFormField<String>(
 //             decoration: InputDecoration(
 //               hintText: 'Choisir un type de publication',
-//               hintStyle: TextStyle(color: _hintColor),
-//               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[700]!)),
-//               enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[700]!)),
-//               focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _primaryColor)),
+//               hintStyle: TextStyle(color: _c.textSecondary),
+//               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _c.border)),
+//               enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _c.border)),
+//               focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _c.primary)),
 //               filled: true,
-//               fillColor: _backgroundColor,
+//               fillColor: _c.background,
 //               contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
 //             ),
-//             dropdownColor: _cardColor,
-//             style: TextStyle(color: _textColor, fontSize: 14),
+//             dropdownColor: _c.surface,
+//             style: TextStyle(color: _c.textPrimary, fontSize: 14),
 //             value: _selectedPostType,
 //             onChanged: (String? newValue) {
 //               setState(() {
@@ -3199,9 +3216,9 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //                 value: entry.key,
 //                 child: Row(
 //                   children: [
-//                     Icon(_postTypes[entry.key]!['icon'] as IconData, color: _primaryColor, size: 18),
+//                     Icon(_postTypes[entry.key]!['icon'] as IconData, color: _c.primary, size: 18),
 //                     SizedBox(width: 12),
-//                     Text(_postTypes[entry.key]!['label'], style: TextStyle(color: _textColor)),
+//                     Text(_postTypes[entry.key]!['label'], style: TextStyle(color: _c.textPrimary)),
 //                   ],
 //                 ),
 //               );
@@ -3220,7 +3237,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //     String badgeText;
 //     IconData badgeIcon;
 //     if (isAdmin) {
-//       badgeColor = Colors.green;
+//       badgeColor = _c.primary;
 //       badgeText = 'ADMIN';
 //       badgeIcon = Icons.admin_panel_settings;
 //     } else if (isPremium) {
@@ -3251,7 +3268,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //     final isPremium = AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement);
 //     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
 //     double percentage = textLength / _maxCharacters;
-//     Color counterColor = textLength > _maxCharacters ? Colors.red : (percentage > 0.8 ? Colors.orange : Colors.green);
+//     Color counterColor = textLength > _maxCharacters ? _c.danger : (percentage > 0.8 ? _c.warning : _c.primary);
 //     String statusText;
 //     if (isAdmin) {
 //       statusText = 'Admin • ${textLength}/5000';
@@ -3265,7 +3282,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //       children: [
 //         Text(statusText, style: TextStyle(color: counterColor, fontSize: 12, fontWeight: FontWeight.bold)),
 //         SizedBox(height: 4),
-//         LinearProgressIndicator(value: percentage.clamp(0.0, 1.0), backgroundColor: Colors.grey[800], valueColor: AlwaysStoppedAnimation<Color>(counterColor), minHeight: 3),
+//         LinearProgressIndicator(value: percentage.clamp(0.0, 1.0), backgroundColor: _c.surfaceVariant, valueColor: AlwaysStoppedAnimation<Color>(counterColor), minHeight: 3),
 //       ],
 //     );
 //   }
@@ -3277,7 +3294,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //     Color color;
 //     if (isAdmin) {
 //       sizeText = 'Taille max: 200 Mo (Admin)';
-//       color = Colors.green;
+//       color = _c.primary;
 //     } else if (isPremium) {
 //       sizeText = 'Taille max: 200 Mo (Premium)';
 //       color = Color(0xFFFDB813);
@@ -3306,7 +3323,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //     Color infoColor;
 //     if (isAdmin) {
 //       infoText = 'Mode Admin : Tous pays • 200 Mo • Pas de restrictions';
-//       infoColor = Colors.green;
+//       infoColor = _c.primary;
 //     } else if (isPremium) {
 //       infoText = 'Mode Premium : Tous pays • 200 Mo • Pas d\'attente';
 //       infoColor = Color(0xFFFDB813);
@@ -3340,44 +3357,44 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //     showDialog(
 //       context: context,
 //       builder: (context) => AlertDialog(
-//         backgroundColor: _cardColor,
+//         backgroundColor: _c.surface,
 //         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
 //         title: Row(
 //           children: [
-//             Icon(Icons.timer, color: _secondaryColor),
+//             Icon(Icons.timer, color: _c.accent),
 //             SizedBox(width: 10),
-//             Text('Temps d\'attente', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
+//             Text('Temps d\'attente', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
 //           ],
 //         ),
 //         content: Column(
 //           mainAxisSize: MainAxisSize.min,
 //           children: [
-//             Text('Vous devez attendre $_timeRemaining avant de pouvoir publier.', style: TextStyle(color: _hintColor)),
+//             Text('Vous devez attendre $_timeRemaining avant de pouvoir publier.', style: TextStyle(color: _c.textSecondary)),
 //             SizedBox(height: 20),
 //             Container(
 //               padding: EdgeInsets.all(16),
-//               decoration: BoxDecoration(color: _secondaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: _secondaryColor)),
+//               decoration: BoxDecoration(color: _c.accent.withOpacity(0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: _c.accent)),
 //               child: Column(
 //                 children: [
-//                   Icon(Icons.play_circle_filled, color: _secondaryColor, size: 40),
+//                   Icon(Icons.play_circle_filled, color: _c.accent, size: 40),
 //                   SizedBox(height: 8),
-//                   Text('Regardez une publicité', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
+//                   Text('Regardez une publicité', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
 //                   SizedBox(height: 4),
-//                   Text('et publiez immédiatement !', style: TextStyle(color: _secondaryColor, fontSize: 14)),
+//                   Text('et publiez immédiatement !', style: TextStyle(color: _c.accent, fontSize: 14)),
 //                 ],
 //               ),
 //             ),
 //           ],
 //         ),
 //         actions: [
-//           TextButton(onPressed: () => Navigator.pop(context), child: Text('ATTENDRE', style: TextStyle(color: _hintColor))),
+//           TextButton(onPressed: () => Navigator.pop(context), child: Text('ATTENDRE', style: TextStyle(color: _c.textSecondary))),
 //           ElevatedButton(
 //             onPressed: () {
 //               Navigator.pop(context);
 //               setState(() => _showRewardedAd = true);
 //               RewardedAdWidget.showAd(_rewardedAdKey);
 //             },
-//             style: ElevatedButton.styleFrom(backgroundColor: _secondaryColor, foregroundColor: Colors.black),
+//             style: ElevatedButton.styleFrom(backgroundColor: _c.accent, foregroundColor: _c.onAccent),
 //             child: Text('REGARDER LA PUB'),
 //           ),
 //         ],
@@ -3400,7 +3417,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //     showDialog(
 //       context: context,
 //       builder: (context) => AlertDialog(
-//         backgroundColor: _cardColor,
+//         backgroundColor: _c.surface,
 //         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
 //         title: Row(
 //           children: [
@@ -3413,7 +3430,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //           mainAxisSize: MainAxisSize.min,
 //           crossAxisAlignment: CrossAxisAlignment.start,
 //           children: [
-//             Text(message!, style: TextStyle(color: Colors.grey[400])),
+//             Text(message!, style: TextStyle(color: _c.textSecondary)),
 //             SizedBox(height: 20),
 //             Container(
 //               padding: EdgeInsets.all(12),
@@ -3427,7 +3444,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //                       crossAxisAlignment: CrossAxisAlignment.start,
 //                       children: [
 //                         Text('À partir de 200 F/mois', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-//                         Text('Pays illimités • 200 Mo vidéo • Pas de cooldown', style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+//                         Text('Pays illimités • 200 Mo vidéo • Pas de cooldown', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
 //                       ],
 //                     ),
 //                   ),
@@ -3443,7 +3460,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //               Navigator.pop(context);
 //               Navigator.push(context, MaterialPageRoute(builder: (context) => AbonnementScreen()));
 //             },
-//             style: ElevatedButton.styleFrom(backgroundColor: Color(0xFFFDB813), foregroundColor: Colors.black),
+//             style: ElevatedButton.styleFrom(backgroundColor: Color(0xFFFDB813), foregroundColor: _c.onAccent),
 //             child: Text(actionText!),
 //           ),
 //         ],
@@ -3473,22 +3490,22 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //         barrierDismissible: false,
 //         builder: (BuildContext context) {
 //           return AlertDialog(
-//             backgroundColor: _cardColor,
+//             backgroundColor: _c.surface,
 //             content: Column(
 //               mainAxisSize: MainAxisSize.min,
 //               children: [
 //                 CircularProgressIndicator(
-//                   valueColor: AlwaysStoppedAnimation<Color>(_primaryColor),
+//                   valueColor: AlwaysStoppedAnimation<Color>(_c.primary),
 //                 ),
 //                 SizedBox(height: 16),
 //                 Text(
 //                   'Traitement de la vidéo...',
-//                   style: TextStyle(color: _textColor),
+//                   style: TextStyle(color: _c.textPrimary),
 //                 ),
 //                 SizedBox(height: 8),
 //                 Text(
 //                   'Initialisation et génération de la miniature',
-//                   style: TextStyle(color: _hintColor, fontSize: 12),
+//                   style: TextStyle(color: _c.textSecondary, fontSize: 12),
 //                 ),
 //               ],
 //             ),
@@ -3599,11 +3616,11 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //     showDialog(
 //       context: context,
 //       builder: (context) => AlertDialog(
-//         backgroundColor: _cardColor,
+//         backgroundColor: _c.surface,
 //         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
 //         title: Row(
 //           children: [
-//             Icon(Icons.aspect_ratio, color: Colors.red, size: 28),
+//             Icon(Icons.aspect_ratio, color: _c.danger, size: 28),
 //             SizedBox(width: 10),
 //             Expanded(child: Text(title, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
 //           ],
@@ -3616,11 +3633,11 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //             SizedBox(height: 16),
 //             Container(
 //               padding: EdgeInsets.all(12),
-//               decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.red)),
+//               decoration: BoxDecoration(color: _c.danger.withOpacity(0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: _c.danger)),
 //               child: Column(
 //                 crossAxisAlignment: CrossAxisAlignment.start,
 //                 children: [
-//                   Text('Format détecté: ${aspectRatio.toStringAsFixed(2)}', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 13)),
+//                   Text('Format détecté: ${aspectRatio.toStringAsFixed(2)}', style: TextStyle(color: _c.danger, fontWeight: FontWeight.bold, fontSize: 13)),
 //                   SizedBox(height: 8),
 //                   Text('Recommandation :', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
 //                   SizedBox(height: 4),
@@ -3637,7 +3654,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //                         SizedBox(height: 4),
 //                         Text(
 //                           '✓ Paysage (16:9, 4:3)\n✓ Portrait (format téléphone)',
-//                           style: TextStyle(color: Colors.grey[400], fontSize: 12),
+//                           style: TextStyle(color: _c.textSecondary, fontSize: 12),
 //                         ),
 //                         SizedBox(height: 8),
 //                         Text(
@@ -3654,7 +3671,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //                         SizedBox(height: 4),
 //                         Text(
 //                           '✓ Paysage (16:9, 4:3) uniquement',
-//                           style: TextStyle(color: Colors.grey[400], fontSize: 12),
+//                           style: TextStyle(color: _c.textSecondary, fontSize: 12),
 //                         ),
 //                         SizedBox(height: 8),
 //                         Text(
@@ -3669,8 +3686,8 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //           ],
 //         ),
 //         actions: [
-//           TextButton(onPressed: () => Navigator.pop(context), child: Text('COMPRENDRE', style: TextStyle(color: _primaryColor))),
-//           ElevatedButton(onPressed: () => Navigator.pop(context), style: ElevatedButton.styleFrom(backgroundColor: _primaryColor, foregroundColor: Colors.white), child: Text('RÉESSAYER')),
+//           TextButton(onPressed: () => Navigator.pop(context), child: Text('COMPRENDRE', style: TextStyle(color: _c.primary))),
+//           ElevatedButton(onPressed: () => Navigator.pop(context), style: ElevatedButton.styleFrom(backgroundColor: _c.primary, foregroundColor: _c.onPrimary), child: Text('RÉESSAYER')),
 //         ],
 //       ),
 //     );
@@ -3749,11 +3766,11 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //       final allowAllMembers = widget.canal!.allowAllMembersToPost == true;
 //       final isMember = widget.canal!.usersSuiviId?.contains(currentUserId) == true;
 //       if (!isAdmin && !canPost) {
-//         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Vous n\'êtes pas autorisé à poster dans ce canal', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))));
+//         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Vous n\'êtes pas autorisé à poster dans ce canal', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))));
 //         return;
 //       }
 //       if (!isMember) {
-//         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Vous devez être abonné au canal pour poster', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))));
+//         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Vous devez être abonné au canal pour poster', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))));
 //         return;
 //       }
 //     }
@@ -3777,12 +3794,12 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //       final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
 //
 //       if (!_selectAllCountries && _selectedCountries.isEmpty) {
-//         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez sélectionner au moins un pays', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))));
+//         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez sélectionner au moins un pays', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))));
 //         return;
 //       }
 //       if (!isPremium && !isAdmin) {
 //         if (_selectedCountries.isEmpty) {
-//           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez sélectionner 1 ou 2 pays maximum', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))));
+//           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez sélectionner 1 ou 2 pays maximum', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))));
 //           return;
 //         }
 //         if (_selectedCountries.length > _maxCountriesForFree) {
@@ -3794,13 +3811,13 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //       if (_selectedPostType == 'EVENEMENT') {
 //         if (_selectedEventDate == null) {
 //           ScaffoldMessenger.of(context).showSnackBar(
-//             SnackBar(content: Text('Veuillez sélectionner la date de l\'événement', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))),
+//             SnackBar(content: Text('Veuillez sélectionner la date de l\'événement', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))),
 //           );
 //           return;
 //         }
 //         if (_selectedEventDate!.isBefore(DateTime.now())) {
 //           ScaffoldMessenger.of(context).showSnackBar(
-//             SnackBar(content: Text('La date de l\'événement ne peut pas être dans le passé', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))),
+//             SnackBar(content: Text('La date de l\'événement ne peut pas être dans le passé', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))),
 //           );
 //           return;
 //         }
@@ -3808,21 +3825,21 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //       // Validation de la publicité (admin uniquement)
 //       if (_isAdvertisement) {
 //         if (_selectedActionType == null) {
-//           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez sélectionner un type d\'action pour la publicité', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))));
+//           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez sélectionner un type d\'action pour la publicité', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))));
 //           return;
 //         }
 //         if (_actionUrlController.text.isEmpty) {
-//           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez saisir le lien de la publicité', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))));
+//           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez saisir le lien de la publicité', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))));
 //           return;
 //         }
 //         if (_selectedDurationDays == null) {
-//           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez sélectionner la durée de la publicité', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))));
+//           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez sélectionner la durée de la publicité', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))));
 //           return;
 //         }
 //       }
 //
 //       if (_controller == null) {
-//         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez choisir une vidéo.', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))));
+//         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez choisir une vidéo.', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))));
 //         return;
 //       }
 //
@@ -3837,15 +3854,15 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //           barrierDismissible: false,
 //           builder: (BuildContext context) {
 //             return AlertDialog(
-//               backgroundColor: _cardColor,
+//               backgroundColor: _c.surface,
 //               content: Column(
 //                 mainAxisSize: MainAxisSize.min,
 //                 children: [
-//                   CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(_primaryColor)),
+//                   CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(_c.primary)),
 //                   SizedBox(height: 16),
-//                   Text('Publication en cours...', style: TextStyle(color: _textColor)),
+//                   Text('Publication en cours...', style: TextStyle(color: _c.textPrimary)),
 //                   SizedBox(height: 8),
-//                   Text('${textLength} caractères • ${_selectAllCountries ? 'Toute l\'Afrique' : '${_selectedCountries.length} pays'}', style: TextStyle(color: _hintColor, fontSize: 12), textAlign: TextAlign.center),
+//                   Text('${textLength} caractères • ${_selectAllCountries ? 'Toute l\'Afrique' : '${_selectedCountries.length} pays'}', style: TextStyle(color: _c.textSecondary, fontSize: 12), textAlign: TextAlign.center),
 //                 ],
 //               ),
 //             );
@@ -3869,7 +3886,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //           } else {
 //             errorMessage = 'La vidéo est trop grande';
 //           }
-//           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage, textAlign: TextAlign.center, style: TextStyle(color: Colors.red))));
+//           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage, textAlign: TextAlign.center, style: TextStyle(color: _c.danger))));
 //           return;
 //         }
 //
@@ -4006,16 +4023,16 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //               children: [
 //                 Row(
 //                   children: [
-//                     Icon(Icons.check_circle, color: Colors.green, size: 20),
+//                     Icon(Icons.check_circle, color: _c.primary, size: 20),
 //                     SizedBox(width: 8),
-//                     Text(successMessage, style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+//                     Text(successMessage, style: TextStyle(color: _c.primary, fontWeight: FontWeight.bold)),
 //                   ],
 //                 ),
 //                 SizedBox(height: 4),
 //                 Text('${textLength} caractères • ${sizeInMB.toStringAsFixed(1)} Mo • $countryMessage', style: TextStyle(color: Colors.white, fontSize: 12)),
 //               ],
 //             ),
-//             backgroundColor: _cardColor,
+//             backgroundColor: _c.surface,
 //             duration: Duration(seconds: 4),
 //             behavior: SnackBarBehavior.floating,
 //             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -4031,7 +4048,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //           onTap = false;
 //           _uploadProgress = 0;
 //         });
-//         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur lors de la publication. Veuillez réessayer.', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))));
+//         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur lors de la publication. Veuillez réessayer.', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))));
 //       }
 //     }
 //   }
@@ -4040,15 +4057,15 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //     return Container(
 //       margin: EdgeInsets.only(top: 16),
 //       padding: EdgeInsets.all(16),
-//       decoration: BoxDecoration(color: _cardColor, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey[700]!)),
+//       decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: _c.border)),
 //       child: Column(
 //         crossAxisAlignment: CrossAxisAlignment.start,
 //         children: [
 //           Row(
 //             children: [
-//               Icon(Icons.image, color: _primaryColor, size: 20),
+//               Icon(Icons.image, color: _c.primary, size: 20),
 //               SizedBox(width: 8),
-//               Text('Miniature de la vidéo', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
+//               Text('Miniature de la vidéo', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
 //             ],
 //           ),
 //           SizedBox(height: 12),
@@ -4057,7 +4074,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //               height: 150,
 //               width: double.infinity,
 //               margin: EdgeInsets.only(bottom: 12),
-//               decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), border: Border.all(color: _primaryColor)),
+//               decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), border: Border.all(color: _c.primary)),
 //               child: ClipRRect(
 //                 borderRadius: BorderRadius.circular(8),
 //                 child: kIsWeb && _customThumbnailBytes != null ? Image.memory(_customThumbnailBytes!, fit: BoxFit.cover, width: double.infinity) : (_customThumbnailFile != null ? Image.file(File(_customThumbnailFile!.path), fit: BoxFit.cover, width: double.infinity) : Container()),
@@ -4068,7 +4085,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //               height: 150,
 //               width: double.infinity,
 //               margin: EdgeInsets.only(bottom: 12),
-//               decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey[700]!)),
+//               decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), border: Border.all(color: _c.border)),
 //               child: ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.file(File(_localThumbnailPath!), fit: BoxFit.cover, width: double.infinity)),
 //             ),
 //           Row(
@@ -4078,7 +4095,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //                   onPressed: _isUploadingCustomThumbnail ? null : _selectCustomThumbnail,
 //                   icon: _isUploadingCustomThumbnail ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(Icons.image, size: 18),
 //                   label: Text(_useCustomThumbnail ? 'CHANGER LA MINIATURE' : 'CHOISIR UNE MINIATURE', style: TextStyle(fontSize: 12)),
-//                   style: OutlinedButton.styleFrom(foregroundColor: _primaryColor, side: BorderSide(color: _primaryColor), padding: EdgeInsets.symmetric(vertical: 12)),
+//                   style: OutlinedButton.styleFrom(foregroundColor: _c.primary, side: BorderSide(color: _c.primary), padding: EdgeInsets.symmetric(vertical: 12)),
 //                 ),
 //               ),
 //               if (_useCustomThumbnail) SizedBox(width: 8),
@@ -4094,13 +4111,13 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //                     },
 //                     icon: Icon(Icons.refresh, size: 18),
 //                     label: Text('UTILISER AUTO', style: TextStyle(fontSize: 12)),
-//                     style: OutlinedButton.styleFrom(foregroundColor: Colors.orange, side: BorderSide(color: Colors.orange), padding: EdgeInsets.symmetric(vertical: 12)),
+//                     style: OutlinedButton.styleFrom(foregroundColor: _c.warning, side: BorderSide(color: _c.warning), padding: EdgeInsets.symmetric(vertical: 12)),
 //                   ),
 //                 ),
 //             ],
 //           ),
 //           SizedBox(height: 8),
-//           Text('Choisissez une image personnalisée comme miniature ou utilisez la génération automatique', style: TextStyle(color: _hintColor, fontSize: 11), textAlign: TextAlign.center),
+//           Text('Choisissez une image personnalisée comme miniature ou utilisez la génération automatique', style: TextStyle(color: _c.textSecondary, fontSize: 11), textAlign: TextAlign.center),
 //         ],
 //       ),
 //     );
@@ -4115,13 +4132,13 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //           final sizeInMB = snapshot.hasData ? snapshot.data! / (1024 * 1024) : 0;
 //           final isPremium = AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement);
 //           final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
-//           Color sizeColor = Colors.green;
-//           if (!isAdmin && !isPremium && sizeInMB > 20) sizeColor = Colors.red;
-//           else if (isPremium && sizeInMB > 80) sizeColor = Colors.orange;
+//           Color sizeColor = _c.primary;
+//           if (!isAdmin && !isPremium && sizeInMB > 20) sizeColor = _c.danger;
+//           else if (isPremium && sizeInMB > 80) sizeColor = _c.warning;
 //           return Container(
 //             padding: EdgeInsets.all(16),
 //             margin: EdgeInsets.symmetric(vertical: 8),
-//             decoration: BoxDecoration(color: _cardColor, borderRadius: BorderRadius.circular(16), border: Border.all(color: sizeColor, width: 1), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 8, offset: Offset(0, 2))]),
+//             decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: sizeColor, width: 1), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 8, offset: Offset(0, 2))]),
 //             child: Column(
 //               crossAxisAlignment: CrossAxisAlignment.start,
 //               children: [
@@ -4129,21 +4146,21 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //                   children: [
 //                     Container(padding: EdgeInsets.all(8), decoration: BoxDecoration(color: sizeColor.withOpacity(0.2), borderRadius: BorderRadius.circular(8)), child: Icon(Icons.videocam, color: sizeColor, size: 20)),
 //                     SizedBox(width: 12),
-//                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Vidéo sélectionnée', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)), Text('Prête à être publiée', style: TextStyle(color: _hintColor, fontSize: 12))])),
+//                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Vidéo sélectionnée', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)), Text('Prête à être publiée', style: TextStyle(color: _c.textSecondary, fontSize: 12))])),
 //                     Container(padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: sizeColor.withOpacity(0.2), borderRadius: BorderRadius.circular(20), border: Border.all(color: sizeColor)), child: Text(snapshot.hasData ? '${sizeInMB.toStringAsFixed(1)} Mo' : '...', style: TextStyle(color: sizeColor, fontSize: 12, fontWeight: FontWeight.bold))),
 //                   ],
 //                 ),
 //                 SizedBox(height: 16),
-//                 Container(padding: EdgeInsets.all(12), decoration: BoxDecoration(color: _backgroundColor, borderRadius: BorderRadius.circular(12)), child: Column(
+//                 Container(padding: EdgeInsets.all(12), decoration: BoxDecoration(color: _c.background, borderRadius: BorderRadius.circular(12)), child: Column(
 //                   children: [
-//                     Row(children: [Icon(Icons.insert_drive_file, color: _hintColor, size: 16), SizedBox(width: 8), Expanded(child: Text(_videoFileName ?? 'Vidéo', style: TextStyle(color: _textColor, fontSize: 13), overflow: TextOverflow.ellipsis))]),
+//                     Row(children: [Icon(Icons.insert_drive_file, color: _c.textSecondary, size: 16), SizedBox(width: 8), Expanded(child: Text(_videoFileName ?? 'Vidéo', style: TextStyle(color: _c.textPrimary, fontSize: 13), overflow: TextOverflow.ellipsis))]),
 //                     SizedBox(height: 8),
-//                     Row(children: [Icon(sizeInMB > _maxVideoSizeMB ? Icons.warning : Icons.check_circle, color: sizeInMB > _maxVideoSizeMB ? Colors.orange : Colors.green, size: 16), SizedBox(width: 8), Expanded(child: Text(sizeInMB > _maxVideoSizeMB ? 'Dépasse la limite autorisée' : 'Taille dans les limites', style: TextStyle(color: sizeInMB > _maxVideoSizeMB ? Colors.orange : Colors.green, fontSize: 13)))]),
+//                     Row(children: [Icon(sizeInMB > _maxVideoSizeMB ? Icons.warning : Icons.check_circle, color: sizeInMB > _maxVideoSizeMB ? _c.warning : _c.primary, size: 16), SizedBox(width: 8), Expanded(child: Text(sizeInMB > _maxVideoSizeMB ? 'Dépasse la limite autorisée' : 'Taille dans les limites', style: TextStyle(color: sizeInMB > _maxVideoSizeMB ? _c.warning : _c.primary, fontSize: 13)))]),
 //                   ],
 //                 )),
 //                 SizedBox(height: 12),
 //                 Container(padding: EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.blue.withOpacity(0.3))), child: Row(children: [Icon(Icons.info_outline, color: Colors.blue, size: 18), SizedBox(width: 8), Expanded(child: Text('✅ Vidéo prête à être publiée\n(L\'aperçu vidéo n\'est pas disponible sur le web)', style: TextStyle(color: Colors.blue, fontSize: 12, height: 1.4)))])),
-//                 if (sizeInMB > _maxVideoSizeMB) Container(margin: EdgeInsets.only(top: 12), padding: EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.red)), child: Row(children: [Icon(Icons.warning, color: Colors.red, size: 18), SizedBox(width: 8), Expanded(child: Text('Cette vidéo dépasse la limite autorisée. Elle ne pourra pas être publiée.', style: TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.w500)))])),
+//                 if (sizeInMB > _maxVideoSizeMB) Container(margin: EdgeInsets.only(top: 12), padding: EdgeInsets.all(12), decoration: BoxDecoration(color: _c.danger.withOpacity(0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: _c.danger)), child: Row(children: [Icon(Icons.warning, color: _c.danger, size: 18), SizedBox(width: 8), Expanded(child: Text('Cette vidéo dépasse la limite autorisée. Elle ne pourra pas être publiée.', style: TextStyle(color: _c.danger, fontSize: 12, fontWeight: FontWeight.w500)))])),
 //               ],
 //             ),
 //           );
@@ -4157,16 +4174,16 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //           final sizeInMB = snapshot.hasData ? snapshot.data! / (1024 * 1024) : 0;
 //           final isPremium = AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement);
 //           final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
-//           Color sizeColor = Colors.green;
-//           if (!isAdmin && !isPremium && sizeInMB > 20) sizeColor = Colors.red;
-//           else if (isPremium && sizeInMB > 80) sizeColor = Colors.orange;
+//           Color sizeColor = _c.primary;
+//           if (!isAdmin && !isPremium && sizeInMB > 20) sizeColor = _c.danger;
+//           else if (isPremium && sizeInMB > 80) sizeColor = _c.warning;
 //           return Container(
 //             padding: EdgeInsets.all(16),
-//             decoration: BoxDecoration(color: _backgroundColor, borderRadius: BorderRadius.circular(16), border: Border.all(color: sizeColor.withOpacity(0.3))),
+//             decoration: BoxDecoration(color: _c.background, borderRadius: BorderRadius.circular(16), border: Border.all(color: sizeColor.withOpacity(0.3))),
 //             child: Column(
 //               crossAxisAlignment: CrossAxisAlignment.start,
 //               children: [
-//                 Text('Aperçu de la vidéo:', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
+//                 Text('Aperçu de la vidéo:', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
 //                 SizedBox(height: 12),
 //                 Container(width: double.infinity, height: 200, decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: Colors.black), child: ClipRRect(borderRadius: BorderRadius.circular(12), child: VideoPlayer(_controller!))),
 //                 SizedBox(height: 6),
@@ -4174,20 +4191,20 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //                 SizedBox(height: 6),
 //                 Row(
 //                   children: [
-//                     IconButton(icon: Icon(_controller!.value.isPlaying ? Icons.pause : Icons.play_arrow, color: _primaryColor), onPressed: () => setState(() => _controller!.value.isPlaying ? _controller!.pause() : _controller!.play())),
-//                     Expanded(child: VideoProgressIndicator(_controller!, allowScrubbing: true, colors: VideoProgressColors(playedColor: _primaryColor, bufferedColor: _secondaryColor, backgroundColor: Colors.grey[800]!))),
-//                     IconButton(icon: Icon(Icons.volume_up, color: _controller!.value.volume > 0 ? _primaryColor : _hintColor), onPressed: () => setState(() => _controller!.setVolume(_controller!.value.volume > 0 ? 0 : 1))),
+//                     IconButton(icon: Icon(_controller!.value.isPlaying ? Icons.pause : Icons.play_arrow, color: _c.primary), onPressed: () => setState(() => _controller!.value.isPlaying ? _controller!.pause() : _controller!.play())),
+//                     Expanded(child: VideoProgressIndicator(_controller!, allowScrubbing: true, colors: VideoProgressColors(playedColor: _c.primary, bufferedColor: _c.accent, backgroundColor: _c.border))),
+//                     IconButton(icon: Icon(Icons.volume_up, color: _controller!.value.volume > 0 ? _c.primary : _c.textSecondary), onPressed: () => setState(() => _controller!.setVolume(_controller!.value.volume > 0 ? 0 : 1))),
 //                   ],
 //                 ),
 //                 SizedBox(height: 8),
 //                 Row(
 //                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
 //                   children: [
-//                     Row(children: [Icon(Icons.play_circle_fill, color: _primaryColor, size: 16), SizedBox(width: 4), Text('Vidéo sélectionnée', style: TextStyle(color: _hintColor, fontStyle: FontStyle.italic, fontSize: 12))]),
+//                     Row(children: [Icon(Icons.play_circle_fill, color: _c.primary, size: 16), SizedBox(width: 4), Text('Vidéo sélectionnée', style: TextStyle(color: _c.textSecondary, fontStyle: FontStyle.italic, fontSize: 12))]),
 //                     Container(padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: sizeColor.withOpacity(0.2), borderRadius: BorderRadius.circular(8), border: Border.all(color: sizeColor)), child: Text(snapshot.hasData ? '${sizeInMB.toStringAsFixed(1)} Mo' : 'Chargement...', style: TextStyle(color: sizeColor, fontSize: 12, fontWeight: FontWeight.bold))),
 //                   ],
 //                 ),
-//                 if (_controller!.value.isInitialized) Padding(padding: EdgeInsets.only(top: 4), child: Text('Durée: ${_formatDuration(_controller!.value.duration)}', style: TextStyle(color: _hintColor, fontSize: 11))),
+//                 if (_controller!.value.isInitialized) Padding(padding: EdgeInsets.only(top: 4), child: Text('Durée: ${_formatDuration(_controller!.value.duration)}', style: TextStyle(color: _c.textSecondary, fontSize: 11))),
 //               ],
 //             ),
 //           );
@@ -4224,7 +4241,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //         return StatefulBuilder(
 //           builder: (context, setStateDialog) {
 //             return AlertDialog(
-//               backgroundColor: _cardColor,
+//               backgroundColor: _c.surface,
 //               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
 //               elevation: 24,
 //               contentPadding: EdgeInsets.zero,
@@ -4236,14 +4253,14 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //                   children: [
 //                     Container(
 //                       padding: EdgeInsets.all(20),
-//                       decoration: BoxDecoration(gradient: LinearGradient(colors: [_primaryColor, Color(0xFFFF5252)], begin: Alignment.topLeft, end: Alignment.bottomRight), borderRadius: BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20))),
+//                       decoration: BoxDecoration(gradient: LinearGradient(colors: [_c.primary, Color(0xFFFF5252)], begin: Alignment.topLeft, end: Alignment.bottomRight), borderRadius: BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20))),
 //                       child: Column(
 //                         children: [
-//                           Icon(Icons.emoji_events, color: _secondaryColor, size: 40),
+//                           Icon(Icons.emoji_events, color: _c.accent, size: 40),
 //                           SizedBox(height: 8),
 //                           Text('GAGNEZ DE L\'ARGENT !', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
 //                           SizedBox(height: 4),
-//                           Container(padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4), decoration: BoxDecoration(color: _secondaryColor, borderRadius: BorderRadius.circular(20)), child: Text('JUSQU\'À 50€ (~32 800 FCFA) PAR VIDÉO', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 12))),
+//                           Container(padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4), decoration: BoxDecoration(color: _c.accent, borderRadius: BorderRadius.circular(20)), child: Text('JUSQU\'À 50€ (~32 800 FCFA) PAR VIDÉO', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 12))),
 //                         ],
 //                       ),
 //                     ),
@@ -4253,32 +4270,32 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //                         child: Column(
 //                           crossAxisAlignment: CrossAxisAlignment.start,
 //                           children: [
-//                             Container(padding: EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.grey[800]!.withOpacity(0.3), borderRadius: BorderRadius.circular(12)), child: Row(children: [Icon(Icons.video_library, color: _primaryColor, size: 24), SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('CONTENU DE QUALITÉ', style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold, fontSize: 13)), Text('Vidéos bien produites, instructives et utiles comme sur YouTube', style: TextStyle(color: _hintColor, fontSize: 11))]))])),
+//                             Container(padding: EdgeInsets.all(12), decoration: BoxDecoration(color: _c.border.withOpacity(0.3), borderRadius: BorderRadius.circular(12)), child: Row(children: [Icon(Icons.video_library, color: _c.primary, size: 24), SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('CONTENU DE QUALITÉ', style: TextStyle(color: _c.primary, fontWeight: FontWeight.bold, fontSize: 13)), Text('Vidéos bien produites, instructives et utiles comme sur YouTube', style: TextStyle(color: _c.textSecondary, fontSize: 11))]))])),
 //                             SizedBox(height: 12),
-//                             Container(padding: EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.grey[800]!.withOpacity(0.3), borderRadius: BorderRadius.circular(12)), child: Row(children: [Icon(Icons.aspect_ratio, color: Colors.blue, size: 24), SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('FORMAT RECOMMANDÉ', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 13)), Text('Paysage (16:9) • Bonne résolution • Son clair', style: TextStyle(color: _hintColor, fontSize: 11))]))])),
+//                             Container(padding: EdgeInsets.all(12), decoration: BoxDecoration(color: _c.border.withOpacity(0.3), borderRadius: BorderRadius.circular(12)), child: Row(children: [Icon(Icons.aspect_ratio, color: Colors.blue, size: 24), SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('FORMAT RECOMMANDÉ', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 13)), Text('Paysage (16:9) • Bonne résolution • Son clair', style: TextStyle(color: _c.textSecondary, fontSize: 11))]))])),
 //                             SizedBox(height: 12),
-//                             Container(padding: EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.grey[800]!.withOpacity(0.3), borderRadius: BorderRadius.circular(12)), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Icon(Icons.school, color: Colors.green, size: 24), SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('CONTENU INSTRUCTIF', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 13)), SizedBox(height: 4), Text('✓ Tutoriels & astuces\n✓ Formations & cours\n✓ Conseils professionnels\n✓ Expériences & témoignages', style: TextStyle(color: _hintColor, fontSize: 11))]))])),
+//                             Container(padding: EdgeInsets.all(12), decoration: BoxDecoration(color: _c.border.withOpacity(0.3), borderRadius: BorderRadius.circular(12)), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Icon(Icons.school, color: _c.primary, size: 24), SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('CONTENU INSTRUCTIF', style: TextStyle(color: _c.primary, fontWeight: FontWeight.bold, fontSize: 13)), SizedBox(height: 4), Text('✓ Tutoriels & astuces\n✓ Formations & cours\n✓ Conseils professionnels\n✓ Expériences & témoignages', style: TextStyle(color: _c.textSecondary, fontSize: 11))]))])),
 //                             SizedBox(height: 16),
-//                             Container(padding: EdgeInsets.all(12), decoration: BoxDecoration(gradient: LinearGradient(colors: [_secondaryColor.withOpacity(0.2), _primaryColor.withOpacity(0.1)]), borderRadius: BorderRadius.circular(12), border: Border.all(color: _secondaryColor)), child: Column(children: [Row(children: [Icon(Icons.monetization_on, color: _secondaryColor, size: 20), SizedBox(width: 8), Text('GAINS POTENTIELS', style: TextStyle(color: _secondaryColor, fontWeight: FontWeight.bold, fontSize: 13))]), SizedBox(height: 8), Text('Avec des vidéos de qualité et instructives, vous pouvez gagner plus de 50€ (~32 800 FCFA) par vidéo selon l\'engagement et les vues.', style: TextStyle(color: _textColor, fontSize: 12), textAlign: TextAlign.center)])),
+//                             Container(padding: EdgeInsets.all(12), decoration: BoxDecoration(gradient: LinearGradient(colors: [_c.accent.withOpacity(0.2), _c.primary.withOpacity(0.1)]), borderRadius: BorderRadius.circular(12), border: Border.all(color: _c.accent)), child: Column(children: [Row(children: [Icon(Icons.monetization_on, color: _c.accent, size: 20), SizedBox(width: 8), Text('GAINS POTENTIELS', style: TextStyle(color: _c.accent, fontWeight: FontWeight.bold, fontSize: 13))]), SizedBox(height: 8), Text('Avec des vidéos de qualité et instructives, vous pouvez gagner plus de 50€ (~32 800 FCFA) par vidéo selon l\'engagement et les vues.', style: TextStyle(color: _c.textPrimary, fontSize: 12), textAlign: TextAlign.center)])),
 //                             SizedBox(height: 20),
-//                             Container(padding: EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.grey[800]!.withOpacity(0.3), borderRadius: BorderRadius.circular(10)), child: Row(children: [Checkbox(value: _hasAcceptedVideoConditions, onChanged: (bool? value) => setStateDialog(() => _hasAcceptedVideoConditions = value ?? false), activeColor: _primaryColor, checkColor: Colors.white, materialTapTargetSize: MaterialTapTargetSize.shrinkWrap), Expanded(child: Text('Je m\'engage à publier des vidéos de qualité et instructives', style: TextStyle(color: _textColor, fontSize: 11)))])),
+//                             Container(padding: EdgeInsets.all(10), decoration: BoxDecoration(color: _c.border.withOpacity(0.3), borderRadius: BorderRadius.circular(10)), child: Row(children: [Checkbox(value: _hasAcceptedVideoConditions, onChanged: (bool? value) => setStateDialog(() => _hasAcceptedVideoConditions = value ?? false), activeColor: _c.primary, checkColor: Colors.white, materialTapTargetSize: MaterialTapTargetSize.shrinkWrap), Expanded(child: Text('Je m\'engage à publier des vidéos de qualité et instructives', style: TextStyle(color: _c.textPrimary, fontSize: 11)))])),
 //                           ],
 //                         ),
 //                       ),
 //                     ),
 //                     Container(
 //                       padding: EdgeInsets.all(16),
-//                       decoration: BoxDecoration(border: Border(top: BorderSide(color: Colors.grey[800]!))),
+//                       decoration: BoxDecoration(border: Border(top: BorderSide(color: _c.border))),
 //                       child: ElevatedButton(
 //                         onPressed: () {
 //                           if (!_hasAcceptedVideoConditions) {
-//                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez accepter les conditions', style: TextStyle(color: Colors.red)), backgroundColor: _cardColor, duration: Duration(seconds: 2)));
+//                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez accepter les conditions', style: TextStyle(color: _c.danger)), backgroundColor: _c.surface, duration: Duration(seconds: 2)));
 //                             return;
 //                           }
 //                           _saveModalSeen();
 //                           Navigator.pop(context);
 //                         },
-//                         style: ElevatedButton.styleFrom(backgroundColor: _primaryColor, foregroundColor: Colors.white, minimumSize: Size(double.infinity, 45), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+//                         style: ElevatedButton.styleFrom(backgroundColor: _c.primary, foregroundColor: _c.onPrimary, minimumSize: Size(double.infinity, 45), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
 //                         child: Text('COMMENCER À POSTER', style: TextStyle(fontWeight: FontWeight.bold)),
 //                       ),
 //                     ),
@@ -4297,20 +4314,20 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
 //       padding: EdgeInsets.all(16),
 //       decoration: BoxDecoration(
-//         color: _cardColor,
+//         color: _c.surface,
 //         borderRadius: BorderRadius.circular(16),
-//         border: Border.all(color: _secondaryColor, width: 1),
+//         border: Border.all(color: _c.accent, width: 1),
 //       ),
 //       child: Column(
 //         crossAxisAlignment: CrossAxisAlignment.start,
 //         children: [
 //           Row(
 //             children: [
-//               Icon(Icons.phone_android, color: _secondaryColor, size: 24),
+//               Icon(Icons.phone_android, color: _c.accent, size: 24),
 //               SizedBox(width: 12),
 //               Text(
 //                 'Faites la promotion de votre contenu !',
-//                 style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16),
+//                 style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
 //               ),
 //             ],
 //           ),
@@ -4319,7 +4336,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //             'Vous pouvez créer des publicités pour vos événements, produits ou services. '
 //                 'Atteignez plus de 100 000 utilisateurs en Afrique, ciblez des pays spécifiques '
 //                 'et suivez vos statistiques en temps réel.',
-//             style: TextStyle(color: _hintColor, fontSize: 13),
+//             style: TextStyle(color: _c.textSecondary, fontSize: 13),
 //           ),
 //           SizedBox(height: 16),
 //           ElevatedButton.icon(
@@ -4332,8 +4349,8 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //             icon: Icon(Icons.add_circle),
 //             label: Text('CRÉER UNE PUBLICITÉ'),
 //             style: ElevatedButton.styleFrom(
-//               backgroundColor: _primaryColor,
-//               foregroundColor: Colors.white,
+//               backgroundColor: _c.primary,
+//               foregroundColor: _c.onPrimary,
 //               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
 //             ),
 //           ),
@@ -4352,20 +4369,20 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //     return Stack(
 //       children: [
 //         Container(
-//           color: _backgroundColor,
+//           color: _c.background,
 //           child: SingleChildScrollView(
 //             child: Column(
 //               children: [
 //                 Container(
 //                   padding: EdgeInsets.all(16),
-//                   decoration: BoxDecoration(color: _cardColor, borderRadius: BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20)), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 15, offset: Offset(0, 4))]),
+//                   decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20)), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 15, offset: Offset(0, 4))]),
 //                   child: Column(
 //                     spacing: 5,
 //                     mainAxisAlignment: MainAxisAlignment.start,
 //                     crossAxisAlignment: CrossAxisAlignment.start,
 //                     children: [
-//                       Container(padding: EdgeInsets.all(8), decoration: BoxDecoration(color: _primaryColor, borderRadius: BorderRadius.circular(12)), child: Icon(Icons.videocam, color: Colors.white, size: 24)),
-//                       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Publication Vidéo', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 18)), SizedBox(height: 4), _buildUserStatusBadge()]),
+//                       Container(padding: EdgeInsets.all(8), decoration: BoxDecoration(color: _c.primary, borderRadius: BorderRadius.circular(12)), child: Icon(Icons.videocam, color: Colors.white, size: 24)),
+//                       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Publication Vidéo', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 18)), SizedBox(height: 4), _buildUserStatusBadge()]),
 //                       _buildVideoSizeInfo(),
 //                     ],
 //                   ),
@@ -4379,19 +4396,19 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //                 Container(
 //                   margin: EdgeInsets.all(16),
 //                   padding: EdgeInsets.all(20),
-//                   decoration: BoxDecoration(color: _cardColor, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))]),
+//                   decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))]),
 //                   child: Form(
 //                     key: _formKey,
 //                     child: Column(
 //                       children: [
 //                         Container(
-//                           decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey[700]!)),
+//                           decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: _c.border)),
 //                           child: Column(
 //                             children: [
 //                               TextFormField(
 //                                 controller: _descriptionController,
-//                                 style: TextStyle(color: _textColor),
-//                                 decoration: InputDecoration(hintText: 'Décrivez votre vidéo...', hintStyle: TextStyle(color: _hintColor), border: InputBorder.none, contentPadding: EdgeInsets.all(16), prefixIcon: Icon(Icons.description, color: _primaryColor)),
+//                                 style: TextStyle(color: _c.textPrimary),
+//                                 decoration: InputDecoration(hintText: 'Décrivez votre vidéo...', hintStyle: TextStyle(color: _c.textSecondary), border: InputBorder.none, contentPadding: EdgeInsets.all(16), prefixIcon: Icon(Icons.description, color: _c.primary)),
 //                                 maxLines: 3,
 //                                 onChanged: (value) => setState(() {}),
 //                                 validator: (value) {
@@ -4451,7 +4468,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //                         Container(
 //                           width: double.infinity,
 //                           height: 55,
-//                           decoration: BoxDecoration(color: _cardColor, borderRadius: BorderRadius.circular(12), border: Border.all(color: _secondaryColor, width: 2), boxShadow: [BoxShadow(color: _secondaryColor.withOpacity(0.3), blurRadius: 8, offset: Offset(0, 4))]),
+//                           decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: _c.accent, width: 2), boxShadow: [BoxShadow(color: _c.accent.withOpacity(0.3), blurRadius: 8, offset: Offset(0, 4))]),
 //                           child: Material(
 //                             color: Colors.transparent,
 //                             child: InkWell(
@@ -4460,15 +4477,15 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //                               child: Row(
 //                                 mainAxisAlignment: MainAxisAlignment.center,
 //                                 children: [
-//                                   Icon(Icons.video_library, color: _secondaryColor, size: 24),
+//                                   Icon(Icons.video_library, color: _c.accent, size: 24),
 //                                   SizedBox(width: 12),
 //                                   Column(
 //                                     mainAxisAlignment: MainAxisAlignment.center,
 //                                     crossAxisAlignment: CrossAxisAlignment.start,
 //                                     children: [
-//                                       Text('SÉLECTIONNER UNE VIDÉO', style: TextStyle(color: _secondaryColor, fontWeight: FontWeight.bold, fontSize: 16)),
+//                                       Text('SÉLECTIONNER UNE VIDÉO', style: TextStyle(color: _c.accent, fontWeight: FontWeight.bold, fontSize: 16)),
 //                                       SizedBox(height: 2),
-//                                       Text('Limite selon votre abonnement', style: TextStyle(color: _hintColor, fontSize: 12)),
+//                                       Text('Limite selon votre abonnement', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
 //                                     ],
 //                                   ),
 //                                 ],
@@ -4482,12 +4499,12 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //                           Container(
 //                             padding: EdgeInsets.all(16),
 //                             margin: EdgeInsets.symmetric(vertical: 16),
-//                             decoration: BoxDecoration(color: _backgroundColor, borderRadius: BorderRadius.circular(16)),
+//                             decoration: BoxDecoration(color: _c.background, borderRadius: BorderRadius.circular(16)),
 //                             child: Column(
 //                               children: [
-//                                 Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text('Téléchargement:', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)), Text('${(_uploadProgress * 100).toStringAsFixed(1)}%', style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold))]),
+//                                 Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text('Téléchargement:', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)), Text('${(_uploadProgress * 100).toStringAsFixed(1)}%', style: TextStyle(color: _c.primary, fontWeight: FontWeight.bold))]),
 //                                 SizedBox(height: 8),
-//                                 LinearProgressIndicator(value: _uploadProgress, backgroundColor: Colors.grey[800], valueColor: AlwaysStoppedAnimation<Color>(_primaryColor), borderRadius: BorderRadius.circular(10)),
+//                                 LinearProgressIndicator(value: _uploadProgress, backgroundColor: _c.surfaceVariant, valueColor: AlwaysStoppedAnimation<Color>(_c.primary), borderRadius: BorderRadius.circular(10)),
 //                               ],
 //                             ),
 //                           ),
@@ -4496,9 +4513,9 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //                           width: double.infinity,
 //                           height: 55,
 //                           decoration: BoxDecoration(
-//                             gradient: LinearGradient(colors: onTap || (!_canPost && _cooldownMinutes > 0) || _controller == null ? [Colors.grey, Colors.grey] : [_primaryColor, Color(0xFFFF5252)], begin: Alignment.centerLeft, end: Alignment.centerRight),
+//                             gradient: LinearGradient(colors: onTap || (!_canPost && _cooldownMinutes > 0) || _controller == null ? [Colors.grey, Colors.grey] : [_c.primary, Color(0xFFFF5252)], begin: Alignment.centerLeft, end: Alignment.centerRight),
 //                             borderRadius: BorderRadius.circular(25),
-//                             boxShadow: [BoxShadow(color: _primaryColor.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))],
+//                             boxShadow: [BoxShadow(color: _c.primary.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))],
 //                           ),
 //                           child: Material(
 //                             color: Colors.transparent,
@@ -4522,7 +4539,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //                                     Text(_isAdvertisement ? 'PUBLIER LA PUBLICITÉ' : 'PUBLIER LA VIDÉO', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
 //                                     if (_isAdvertisement) ...[
 //                                       SizedBox(width: 4),
-//                                       Container(padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: _secondaryColor, borderRadius: BorderRadius.circular(8)), child: Text('PUB', style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold))),
+//                                       Container(padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: _c.accent, borderRadius: BorderRadius.circular(8)), child: Text('PUB', style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold))),
 //                                     ],
 //                                     SizedBox(width: 4),
 //                                     Container(padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)), child: Text(_selectAllCountries ? '🌍' : '${_selectedCountries.length}', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14))),

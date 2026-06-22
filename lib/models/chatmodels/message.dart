@@ -66,6 +66,12 @@ class Message {
   /// Texte sous l'image (pour les messages de type image)
   final String? imageText;
 
+  /// Pour les messages link_share : type de l'item ('live', 'product', 'vip')
+  final String? itemType;
+
+  /// Pour les messages link_share : sous-titre de l'item
+  final String? itemSubtitle;
+
   /// Indique si le champ [message] est chiffré (AES-256, clé dérivée par
   /// conversation) et doit être déchiffré avant affichage.
   bool is_encrypted;
@@ -96,6 +102,8 @@ class Message {
     required this.messageType,
     this.voiceMessageDuration,
     this.imageText,
+    this.itemType,
+    this.itemSubtitle,
     this.is_encrypted = false,
     this.expires_at,
     MessageStatus status = MessageStatus.pending,
@@ -151,6 +159,8 @@ class Message {
     message_state: json['message_state'],
     receiverBy: json['receiverBy'],
     imageText: json['imageText'],
+    itemType: json['item_type'] as String?,
+    itemSubtitle: json['item_subtitle'] as String?,
     is_encrypted: json['is_encrypted'] == true,
     expires_at: json['expires_at'] as int?,
   );

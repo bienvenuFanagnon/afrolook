@@ -106,55 +106,7 @@ class _PronosticsCarouselWidgetState extends State<PronosticsCarouselWidget> {
   Widget build(BuildContext context) {
     _colors = AppColors.of(context);
 
-    if (_isLoading) {
-      return Container(
-        height: 160,
-        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-        decoration: BoxDecoration(
-          color: _colors.surfaceVariant,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: _colors.accent.withOpacity(0.3),
-            width: 1.5,
-          ),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              _colors.surfaceVariant,
-              _colors.surfaceVariant.withOpacity(0.8),
-            ],
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            LoadingAnimationWidget.flickr(
-              size: 40,
-              leftDotColor: _primaryColor,
-              rightDotColor: _colors.accent,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              '⚽ Pronostics du moment',
-              style: TextStyle(
-                color: _colors.accent,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Jouez et gagnez jusqu\'à 50 000 FCFA',
-              style: TextStyle(
-                color: _colors.textSecondary,
-                fontSize: 11,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
+    if (_isLoading) return const SizedBox.shrink();
 
     if (_pronostics.isEmpty) {
       return const SizedBox.shrink();

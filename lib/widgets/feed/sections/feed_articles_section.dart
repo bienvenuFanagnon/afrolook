@@ -21,10 +21,7 @@ class FeedArticlesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
-      return _SectionHeader(title: title, isLoading: true);
-    }
-    if (articles.isEmpty) return const SizedBox.shrink();
+    if (isLoading || articles.isEmpty) return const SizedBox.shrink();
 
     final size = MediaQuery.of(context).size;
     final colors = AppColors.of(context);

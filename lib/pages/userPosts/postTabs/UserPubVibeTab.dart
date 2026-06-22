@@ -17,6 +17,8 @@ import 'package:iconsax/iconsax.dart';
 import '../../../providers/authProvider.dart';
 import '../../../providers/postProvider.dart';
 import '../../../providers/userProvider.dart';
+import '../../../theme/app_colors.dart';
+import '../../../services/postService/post_cooldown_service.dart';
 import '../../../services/utils/abonnement_utils.dart';
 import '../../pub/rewarded_ad_widget.dart';
 import '../../user/userAbonnementPage.dart';
@@ -72,18 +74,18 @@ class _UserPubVibeState extends State<UserPubVibe> {
   bool _showCountrySelection = false;
   final FocusNode _countrySearchFocus = FocusNode();
 
-  // Catégories de vibes
-  final Map<String, Map<String, dynamic>> _vibeCategories = {
-    'COMEDIE': {'label': '🎭 Comédie', 'icon': Icons.theater_comedy, 'color': Colors.orange},
+  // Catégories de vibes (couleurs déco fixes — pas liées au thème)
+  static const Map<String, Map<String, dynamic>> _vibeCategories = {
+    'COMEDIE': {'label': '🎭 Comédie', 'icon': Icons.theater_comedy, 'color': Color(0xFFFF9800)},
     'DANSE': {'label': '💃 Danse', 'icon': Icons.music_note, 'color': Colors.pink},
     'MUSIQUE': {'label': '🎵 Musique', 'icon': Icons.music_video, 'color': Colors.purple},
     'CHALLENGE': {'label': '🏆 Challenge', 'icon': Icons.emoji_events, 'color': Colors.yellow},
     'TUTO': {'label': '📱 Tutoriel', 'icon': Icons.school, 'color': Colors.blue},
-    'ASTUCE': {'label': '💡 Astuce', 'icon': Icons.lightbulb, 'color': Colors.green},
+    'ASTUCE': {'label': '💡 Astuce', 'icon': Icons.lightbulb, 'color': Color(0xFFE21221)},
     'INSPIRATION': {'label': '✨ Inspiration', 'icon': Icons.psychology, 'color': Colors.teal},
-    'LOL': {'label': '😂 LOL', 'icon': Icons.face, 'color': Colors.red},
-    'FOOT': {'label': '⚽ Foot', 'icon': Icons.sports_soccer, 'color': Colors.green},
-    'BASKET': {'label': '🏀 Basket', 'icon': Icons.sports_basketball, 'color': Colors.orange},
+    'LOL': {'label': '😂 LOL', 'icon': Icons.face, 'color': Color(0xFFE53935)},
+    'FOOT': {'label': '⚽ Foot', 'icon': Icons.sports_soccer, 'color': Color(0xFFE21221)},
+    'BASKET': {'label': '🏀 Basket', 'icon': Icons.sports_basketball, 'color': Color(0xFFFF9800)},
   };
 
   late UserAuthProvider authProvider;
@@ -91,13 +93,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
   late PostProvider postProvider;
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-  final Color _primaryColor = Color(0xFFE21221);
-  final Color _secondaryColor = Color(0xFFFFD600);
-  final Color _backgroundColor = Color(0xFF121212);
-  final Color _cardColor = Color(0xFF1E1E1E);
-  final Color _textColor = Colors.white;
-  final Color _hintColor = Colors.grey[400]!;
-  final Color _successColor = Color(0xFF4CAF50);
+  late AppColors _c;
 
   final GlobalKey<RewardedAdWidgetState> _rewardedAdKey = GlobalKey();
   bool _showRewardedAd = false;
@@ -115,6 +111,12 @@ class _UserPubVibeState extends State<UserPubVibe> {
     _checkVideoQualityModalStatus();
 
     _countrySearchController.addListener(_filterCountries);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _c = AppColors.of(context);
   }
 
   @override
@@ -320,13 +322,13 @@ class _UserPubVibeState extends State<UserPubVibe> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: _cardColor,
+        backgroundColor: _c.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            Icon(Icons.lock, color: _primaryColor),
+            Icon(Icons.lock, color: _c.primary),
             SizedBox(width: 10),
-            Text('Limite de pays atteinte', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
+            Text('Limite de pays atteinte', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Column(
@@ -334,21 +336,21 @@ class _UserPubVibeState extends State<UserPubVibe> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('L\'abonnement gratuit est limité à 2 pays maximum.\nPassez à Afrolook Premium pour sélectionner tous les pays africains.',
-                style: TextStyle(color: _hintColor)),
+                style: TextStyle(color: _c.textSecondary)),
             SizedBox(height: 20),
             Container(
               padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Colors.black.withOpacity(0.3), borderRadius: BorderRadius.circular(12), border: Border.all(color: _secondaryColor)),
+              decoration: BoxDecoration(color: Colors.black.withOpacity(0.3), borderRadius: BorderRadius.circular(12), border: Border.all(color: _c.accent)),
               child: Row(
                 children: [
-                  Icon(Icons.workspace_premium, color: _secondaryColor),
+                  Icon(Icons.workspace_premium, color: _c.accent),
                   SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Afrolook Premium', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
-                        Text('Pays illimités • Pas de cooldown', style: TextStyle(color: _hintColor, fontSize: 12)),
+                        Text('Afrolook Premium', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
+                        Text('Pays illimités • Pas de cooldown', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
                       ],
                     ),
                   ),
@@ -358,13 +360,13 @@ class _UserPubVibeState extends State<UserPubVibe> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text('COMPRENDRE', style: TextStyle(color: _hintColor))),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('COMPRENDRE', style: TextStyle(color: _c.textSecondary))),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               Navigator.push(context, MaterialPageRoute(builder: (context) => AbonnementScreen()));
             },
-            style: ElevatedButton.styleFrom(backgroundColor: _secondaryColor, foregroundColor: Colors.black),
+            style: ElevatedButton.styleFrom(backgroundColor: _c.accent, foregroundColor: _c.onAccent),
             child: Text('PASSER À PREMIUM'),
           ),
         ],
@@ -378,22 +380,22 @@ class _UserPubVibeState extends State<UserPubVibe> {
     return Container(
       height: MediaQuery.of(context).size.height * 0.8,
       decoration: BoxDecoration(
-        color: _backgroundColor,
+        color: _c.background,
         borderRadius: BorderRadius.only(topLeft: Radius.circular(25), topRight: Radius.circular(25)),
       ),
       child: Column(
         children: [
           Container(
             padding: EdgeInsets.all(20),
-            decoration: BoxDecoration(color: _cardColor, borderRadius: BorderRadius.only(topLeft: Radius.circular(25), topRight: Radius.circular(25))),
+            decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.only(topLeft: Radius.circular(25), topRight: Radius.circular(25))),
             child: Column(
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Sélection des pays', style: TextStyle(color: _textColor, fontSize: 20, fontWeight: FontWeight.bold)),
+                    Text('Sélection des pays', style: TextStyle(color: _c.textPrimary, fontSize: 20, fontWeight: FontWeight.bold)),
                     IconButton(
-                      icon: Icon(Icons.close, color: _textColor),
+                      icon: Icon(Icons.close, color: _c.textPrimary),
                       onPressed: () {
                         setState(() {
                           _showCountrySelection = false;
@@ -409,38 +411,38 @@ class _UserPubVibeState extends State<UserPubVibe> {
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: isPremium || isAdmin ? _secondaryColor.withOpacity(0.2) : _primaryColor.withOpacity(0.2),
+                        color: isPremium || isAdmin ? _c.accent.withOpacity(0.2) : _c.primary.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: isPremium || isAdmin ? _secondaryColor : _primaryColor),
+                        border: Border.all(color: isPremium || isAdmin ? _c.accent : _c.primary),
                       ),
                       child: Row(
                         children: [
                           Icon(isPremium || isAdmin ? Icons.workspace_premium : Icons.lock, size: 14,
-                              color: isPremium || isAdmin ? _secondaryColor : _primaryColor),
+                              color: isPremium || isAdmin ? _c.accent : _c.primary),
                           SizedBox(width: 6),
                           Text(isPremium || isAdmin ? 'Pays illimités' : 'Max 2 pays',
-                              style: TextStyle(color: isPremium || isAdmin ? _secondaryColor : _primaryColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                              style: TextStyle(color: isPremium || isAdmin ? _c.accent : _c.primary, fontSize: 12, fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
                     SizedBox(width: 10),
                     Text(
                       _selectAllCountries ? '🌍 Toute l\'Afrique (Premium)' : (_selectedCountries.isEmpty ? '⚠️ Aucun pays' : '${_selectedCountries.length} pays sélectionné(s)'),
-                      style: TextStyle(color: _selectedCountries.isEmpty && !_selectAllCountries ? Colors.orange : _hintColor, fontSize: 14),
+                      style: TextStyle(color: _selectedCountries.isEmpty && !_selectAllCountries ? _c.warning : _c.textSecondary, fontSize: 14),
                     ),
                   ],
                 ),
                 SizedBox(height: 15),
                 Container(
-                  decoration: BoxDecoration(color: _cardColor, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey[700]!)),
+                  decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: _c.border)),
                   child: TextField(
                     controller: _countrySearchController,
                     focusNode: _countrySearchFocus,
-                    style: TextStyle(color: _textColor),
+                    style: TextStyle(color: _c.textPrimary),
                     decoration: InputDecoration(
                       hintText: 'Rechercher un pays...',
-                      hintStyle: TextStyle(color: _hintColor),
-                      prefixIcon: Icon(Icons.search, color: _primaryColor),
+                      hintStyle: TextStyle(color: _c.textSecondary),
+                      prefixIcon: Icon(Icons.search, color: _c.primary),
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.symmetric(horizontal: 16),
                     ),
@@ -450,45 +452,45 @@ class _UserPubVibeState extends State<UserPubVibe> {
             ),
           ),
           Material(
-            color: _cardColor,
+            color: _c.surface,
             child: ListTile(
               onTap: _toggleSelectAllCountries,
               leading: Container(
                 width: 40,
                 height: 40,
-                decoration: BoxDecoration(color: _selectAllCountries ? _secondaryColor : Colors.grey[800], borderRadius: BorderRadius.circular(10)),
-                child: Icon(Icons.workspace_premium, color: _selectAllCountries ? Colors.white : _hintColor),
+                decoration: BoxDecoration(color: _selectAllCountries ? _c.accent : _c.surfaceVariant, borderRadius: BorderRadius.circular(10)),
+                child: Icon(Icons.workspace_premium, color: _selectAllCountries ? Colors.white : _c.textSecondary),
               ),
               title: Row(
                 children: [
-                  Text('Tous les pays africains', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
+                  Text('Tous les pays africains', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
                   SizedBox(width: 8),
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(color: _secondaryColor.withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
-                    child: Text('PREMIUM', style: TextStyle(color: _secondaryColor, fontSize: 10, fontWeight: FontWeight.bold)),
+                    decoration: BoxDecoration(color: _c.accent.withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
+                    child: Text('PREMIUM', style: TextStyle(color: _c.accent, fontSize: 10, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
-              subtitle: Text('Fonctionnalité Premium - Votre vibe sera visible dans toute l\'Afrique', style: TextStyle(color: _hintColor)),
+              subtitle: Text('Fonctionnalité Premium - Votre vibe sera visible dans toute l\'Afrique', style: TextStyle(color: _c.textSecondary)),
               trailing: _selectAllCountries
-                  ? Container(padding: EdgeInsets.all(8), decoration: BoxDecoration(color: _successColor, shape: BoxShape.circle), child: Icon(Icons.check, color: Colors.white, size: 20))
+                  ? Container(padding: EdgeInsets.all(8), decoration: BoxDecoration(color: _c.primary, shape: BoxShape.circle), child: Icon(Icons.check, color: Colors.white, size: 20))
                   : null,
             ),
           ),
           if (!isPremium && !isAdmin)
             Container(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(color: _primaryColor.withOpacity(0.1), border: Border(left: BorderSide(color: _primaryColor, width: 3))),
+              decoration: BoxDecoration(color: _c.primary.withOpacity(0.1), border: Border(left: BorderSide(color: _c.primary, width: 3))),
               child: Row(
                 children: [
-                  Icon(Icons.info, size: 16, color: _primaryColor),
+                  Icon(Icons.info, size: 16, color: _c.primary),
                   SizedBox(width: 8),
-                  Expanded(child: Text('Abonnement gratuit : Sélectionnez 1 ou 2 pays maximum', style: TextStyle(color: _textColor, fontSize: 12))),
+                  Expanded(child: Text('Abonnement gratuit : Sélectionnez 1 ou 2 pays maximum', style: TextStyle(color: _c.textPrimary, fontSize: 12))),
                 ],
               ),
             ),
-          Divider(color: Colors.grey[800], height: 1),
+          Divider(color: _c.surfaceVariant, height: 1),
           Expanded(
             child: ListView.builder(
               padding: EdgeInsets.zero,
@@ -498,20 +500,20 @@ class _UserPubVibeState extends State<UserPubVibe> {
                 final isSelected = _selectedCountries.contains(country);
                 final isDisabled = !isPremium && !isAdmin && _selectedCountries.length >= _maxCountriesForFree && !isSelected;
                 return Material(
-                  color: isSelected ? _primaryColor.withOpacity(0.1) : _cardColor,
+                  color: isSelected ? _c.primary.withOpacity(0.1) : _c.surface,
                   child: ListTile(
                     onTap: isDisabled ? null : () => _toggleCountrySelection(country),
                     leading: Container(
                       width: 40,
                       height: 40,
-                      decoration: BoxDecoration(color: isSelected ? _primaryColor : Colors.grey[800], borderRadius: BorderRadius.circular(10)),
+                      decoration: BoxDecoration(color: isSelected ? _c.primary : _c.surfaceVariant, borderRadius: BorderRadius.circular(10)),
                       child: Center(child: Text(country.flag, style: TextStyle(fontSize: 20))),
                     ),
-                    title: Text(country.name, style: TextStyle(color: isDisabled ? Colors.grey[600] : _textColor, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
-                    subtitle: Text('Code: ${country.code}', style: TextStyle(color: isDisabled ? Colors.grey[600] : _hintColor)),
+                    title: Text(country.name, style: TextStyle(color: isDisabled ? _c.textSecondary : _c.textPrimary, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+                    subtitle: Text('Code: ${country.code}', style: TextStyle(color: isDisabled ? _c.textSecondary : _c.textSecondary)),
                     trailing: isSelected
-                        ? Container(padding: EdgeInsets.all(8), decoration: BoxDecoration(color: _primaryColor, shape: BoxShape.circle), child: Icon(Icons.check, color: Colors.white, size: 16))
-                        : (isDisabled ? Icon(Icons.lock, color: Colors.grey[600], size: 16) : null),
+                        ? Container(padding: EdgeInsets.all(8), decoration: BoxDecoration(color: _c.primary, shape: BoxShape.circle), child: Icon(Icons.check, color: Colors.white, size: 16))
+                        : (isDisabled ? Icon(Icons.lock, color: _c.textSecondary, size: 16) : null),
                   ),
                 );
               },
@@ -519,7 +521,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
           ),
           Container(
             padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(color: _cardColor, border: Border(top: BorderSide(color: Colors.grey[800]!))),
+            decoration: BoxDecoration(color: _c.surface, border: Border(top: BorderSide(color: _c.border))),
             child: Row(
               children: [
                 Expanded(
@@ -530,7 +532,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
                         _selectAllCountries = false;
                       });
                     },
-                    style: OutlinedButton.styleFrom(foregroundColor: _hintColor, side: BorderSide(color: Colors.grey[700]!), padding: EdgeInsets.symmetric(vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                    style: OutlinedButton.styleFrom(foregroundColor: _c.textSecondary, side: BorderSide(color: _c.border), padding: EdgeInsets.symmetric(vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                     child: Text('RÉINITIALISER'),
                   ),
                 ),
@@ -543,7 +545,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
                         _countrySearchController.clear();
                       });
                     },
-                    style: ElevatedButton.styleFrom(backgroundColor: _primaryColor, foregroundColor: Colors.white, padding: EdgeInsets.symmetric(vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                    style: ElevatedButton.styleFrom(backgroundColor: _c.primary, foregroundColor: _c.onPrimary, padding: EdgeInsets.symmetric(vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                     child: Text('CONFIRMER'),
                   ),
                 ),
@@ -570,10 +572,10 @@ class _UserPubVibeState extends State<UserPubVibe> {
       padding: EdgeInsets.all(16),
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: _c.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))],
-        border: Border.all(color: _selectedCountries.isEmpty && !_selectAllCountries ? Colors.orange : Colors.transparent, width: 1),
+        border: Border.all(color: _selectedCountries.isEmpty && !_selectAllCountries ? _c.warning : Colors.transparent, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -585,23 +587,23 @@ class _UserPubVibeState extends State<UserPubVibe> {
                 children: [
                   Container(
                     padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: _selectAllCountries ? _secondaryColor : _primaryColor, borderRadius: BorderRadius.circular(10)),
+                    decoration: BoxDecoration(color: _selectAllCountries ? _c.accent : _c.primary, borderRadius: BorderRadius.circular(10)),
                     child: Icon(_selectAllCountries ? Icons.workspace_premium : Icons.public, color: Colors.white, size: 20),
                   ),
                   SizedBox(width: 12),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Visibilité de la vibe', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
-                      Text(displayMessage, style: TextStyle(color: _selectedCountries.isEmpty && !_selectAllCountries ? Colors.orange : _hintColor, fontSize: 14)),
+                      Text('Visibilité de la vibe', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
+                      Text(displayMessage, style: TextStyle(color: _selectedCountries.isEmpty && !_selectAllCountries ? _c.warning : _c.textSecondary, fontSize: 14)),
                     ],
                   ),
                 ],
               ),
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(color: isPremium || isAdmin ? _secondaryColor.withOpacity(0.2) : _primaryColor.withOpacity(0.2), borderRadius: BorderRadius.circular(20), border: Border.all(color: isPremium || isAdmin ? _secondaryColor : _primaryColor)),
-                child: Text(isPremium || isAdmin ? 'PREMIUM' : 'GRATUIT', style: TextStyle(color: isPremium || isAdmin ? _secondaryColor : _primaryColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                decoration: BoxDecoration(color: isPremium || isAdmin ? _c.accent.withOpacity(0.2) : _c.primary.withOpacity(0.2), borderRadius: BorderRadius.circular(20), border: Border.all(color: isPremium || isAdmin ? _c.accent : _c.primary)),
+                child: Text(isPremium || isAdmin ? 'PREMIUM' : 'GRATUIT', style: TextStyle(color: isPremium || isAdmin ? _c.accent : _c.primary, fontSize: 12, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -609,12 +611,12 @@ class _UserPubVibeState extends State<UserPubVibe> {
             Container(
               margin: EdgeInsets.only(top: 12),
               padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.orange)),
+              decoration: BoxDecoration(color: _c.warning.withOpacity(0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: _c.warning)),
               child: Row(
                 children: [
-                  Icon(Icons.warning, size: 16, color: Colors.orange),
+                  Icon(Icons.warning, size: 16, color: _c.warning),
                   SizedBox(width: 8),
-                  Expanded(child: Text('Vous devez sélectionner au moins un pays', style: TextStyle(color: Colors.orange, fontSize: 12))),
+                  Expanded(child: Text('Vous devez sélectionner au moins un pays', style: TextStyle(color: _c.warning, fontSize: 12))),
                 ],
               ),
             ),
@@ -628,13 +630,13 @@ class _UserPubVibeState extends State<UserPubVibe> {
                   children: _selectedCountries.take(3).map((country) {
                     return Container(
                       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(color: _primaryColor.withOpacity(0.2), borderRadius: BorderRadius.circular(20), border: Border.all(color: _primaryColor)),
+                      decoration: BoxDecoration(color: _c.primary.withOpacity(0.2), borderRadius: BorderRadius.circular(20), border: Border.all(color: _c.primary)),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(country.flag),
                           SizedBox(width: 6),
-                          Text(country.name, style: TextStyle(color: _textColor, fontSize: 12)),
+                          Text(country.name, style: TextStyle(color: _c.textPrimary, fontSize: 12)),
                         ],
                       ),
                     );
@@ -643,7 +645,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
                 if (_selectedCountries.length > 3)
                   Padding(
                     padding: EdgeInsets.only(top: 8),
-                    child: Text('+ ${_selectedCountries.length - 3} autres pays...', style: TextStyle(color: _hintColor, fontSize: 12)),
+                    child: Text('+ ${_selectedCountries.length - 3} autres pays...', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
                   ),
               ],
             ),
@@ -657,7 +659,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
             },
             icon: Icon(Icons.edit_location, size: 18),
             label: Text('SÉLECTIONNER LES PAYS'),
-            style: ElevatedButton.styleFrom(backgroundColor: _primaryColor.withOpacity(0.2), foregroundColor: _primaryColor, minimumSize: Size(double.infinity, 45), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+            style: ElevatedButton.styleFrom(backgroundColor: _c.primary.withOpacity(0.2), foregroundColor: _c.primary, minimumSize: Size(double.infinity, 45), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
           ),
         ],
       ),
@@ -669,7 +671,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
       padding: EdgeInsets.all(16),
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: _c.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))],
       ),
@@ -678,9 +680,9 @@ class _UserPubVibeState extends State<UserPubVibe> {
         children: [
           Row(
             children: [
-              Icon(Icons.category, color: _primaryColor, size: 20),
+              Icon(Icons.category, color: _c.primary, size: 20),
               SizedBox(width: 8),
-              Text('Catégorie de la vibe', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
+              Text('Catégorie de la vibe', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
             ],
           ),
           SizedBox(height: 12),
@@ -690,14 +692,14 @@ class _UserPubVibeState extends State<UserPubVibe> {
             children: _vibeCategories.entries.map((entry) {
               final isSelected = _selectedVibeCategory == entry.key;
               return FilterChip(
-                label: Text(entry.value['label'], style: TextStyle(color: isSelected ? Colors.white : _textColor, fontSize: 12)),
+                label: Text(entry.value['label'], style: TextStyle(color: isSelected ? Colors.white : _c.textPrimary, fontSize: 12)),
                 selected: isSelected,
                 onSelected: (selected) {
                   setState(() {
                     _selectedVibeCategory = selected ? entry.key : null;
                   });
                 },
-                backgroundColor: _backgroundColor,
+                backgroundColor: _c.background,
                 selectedColor: entry.value['color'],
                 checkmarkColor: Colors.white,
                 shape: StadiumBorder(),
@@ -714,27 +716,27 @@ class _UserPubVibeState extends State<UserPubVibe> {
       width: double.infinity,
       padding: EdgeInsets.all(16),
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(color: _cardColor, borderRadius: BorderRadius.circular(16), border: Border.all(color: _secondaryColor)),
+      decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: _c.accent)),
       child: Column(
         children: [
           Row(
             children: [
-              Icon(Icons.timer, color: _secondaryColor, size: 24),
+              Icon(Icons.timer, color: _c.accent, size: 24),
               SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Temps d\'attente', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text('Temps d\'attente', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
                     SizedBox(height: 4),
-                    Text('Prochaine vibe dans: $_timeRemaining', style: TextStyle(color: _hintColor, fontSize: 14)),
+                    Text('Prochaine vibe dans: $_timeRemaining', style: TextStyle(color: _c.textSecondary, fontSize: 14)),
                   ],
                 ),
               ),
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(color: _secondaryColor.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
-                child: Text(_timeRemaining, style: TextStyle(color: _secondaryColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                decoration: BoxDecoration(color: _c.accent.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
+                child: Text(_timeRemaining, style: TextStyle(color: _c.accent, fontWeight: FontWeight.bold, fontSize: 16)),
               ),
             ],
           ),
@@ -743,9 +745,9 @@ class _UserPubVibeState extends State<UserPubVibe> {
             width: double.infinity,
             child: Column(
               children: [
-                Divider(color: Colors.grey[800]),
+                Divider(color: _c.surfaceVariant),
                 SizedBox(height: 12),
-                Text('OU', style: TextStyle(color: _hintColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                Text('OU', style: TextStyle(color: _c.textSecondary, fontSize: 12, fontWeight: FontWeight.bold)),
                 SizedBox(height: 12),
                 RewardedAdWidget(
                   key: _rewardedAdKey,
@@ -756,11 +758,11 @@ class _UserPubVibeState extends State<UserPubVibe> {
                       _timeRemaining = '';
                       _showRewardedAd = false;
                     });
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Merci ! Vous pouvez poster maintenant !', style: TextStyle(color: Colors.green)), backgroundColor: _cardColor, behavior: SnackBarBehavior.floating));
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Merci ! Vous pouvez poster maintenant !', style: TextStyle(color: _c.primary)), backgroundColor: _c.surface, behavior: SnackBarBehavior.floating));
                   },
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(color: _secondaryColor, borderRadius: BorderRadius.circular(12)),
+                    decoration: BoxDecoration(color: _c.accent, borderRadius: BorderRadius.circular(12)),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -778,7 +780,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
                   ),
                 ),
                 SizedBox(height: 8),
-                Text('Regardez une courte publicité pour\npublier immédiatement sans attendre', textAlign: TextAlign.center, style: TextStyle(color: _hintColor, fontSize: 11)),
+                Text('Regardez une courte publicité pour\npublier immédiatement sans attendre', textAlign: TextAlign.center, style: TextStyle(color: _c.textSecondary, fontSize: 11)),
               ],
             ),
           ),
@@ -792,7 +794,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
     final isPremium = AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement);
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
     double percentage = textLength / _maxCharacters;
-    Color counterColor = textLength > _maxCharacters ? Colors.red : (percentage > 0.8 ? Colors.orange : Colors.green);
+    Color counterColor = textLength > _maxCharacters ? _c.danger : (percentage > 0.8 ? _c.warning : _c.primary);
     String statusText;
     if (isAdmin) {
       statusText = 'Admin • ${textLength}/500';
@@ -806,7 +808,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
       children: [
         Text(statusText, style: TextStyle(color: counterColor, fontSize: 12, fontWeight: FontWeight.bold)),
         SizedBox(height: 4),
-        LinearProgressIndicator(value: percentage.clamp(0.0, 1.0), backgroundColor: Colors.grey[800], valueColor: AlwaysStoppedAnimation<Color>(counterColor), minHeight: 3),
+        LinearProgressIndicator(value: percentage.clamp(0.0, 1.0), backgroundColor: _c.surfaceVariant, valueColor: AlwaysStoppedAnimation<Color>(counterColor), minHeight: 3),
       ],
     );
   }
@@ -818,7 +820,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
     Color color;
     if (isAdmin) {
       sizeText = 'Taille max: 100 Mo (Admin)';
-      color = Colors.green;
+      color = _c.primary;
     } else if (isPremium) {
       sizeText = 'Taille max: 100 Mo (Premium)';
       color = Color(0xFFFDB813);
@@ -847,7 +849,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
     Color color;
     if (isAdmin) {
       durationText = 'Durée max: 60 sec (Admin)';
-      color = Colors.green;
+      color = _c.primary;
     } else if (isPremium) {
       durationText = 'Durée max: 45 sec (Premium)';
       color = Color(0xFFFDB813);
@@ -876,7 +878,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
     Color infoColor;
     if (isAdmin) {
       infoText = 'Mode Admin : Tous pays • 100 Mo • 60 sec max';
-      infoColor = Colors.green;
+      infoColor = _c.primary;
     } else if (isPremium) {
       infoText = 'Mode Premium : Tous pays • 100 Mo • 45 sec max • Pas d\'attente';
       infoColor = Color(0xFFFDB813);
@@ -923,7 +925,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: _cardColor,
+        backgroundColor: _c.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
@@ -936,7 +938,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(message!, style: TextStyle(color: Colors.grey[400])),
+            Text(message!, style: TextStyle(color: _c.textSecondary)),
             SizedBox(height: 20),
             Container(
               padding: EdgeInsets.all(12),
@@ -950,7 +952,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('À partir de 200 F/mois', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                        Text('Pays illimités • 100 Mo vidéo • Pas de cooldown', style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+                        Text('Pays illimités • 100 Mo vidéo • Pas de cooldown', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
                       ],
                     ),
                   ),
@@ -966,7 +968,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
               Navigator.pop(context);
               Navigator.push(context, MaterialPageRoute(builder: (context) => AbonnementScreen()));
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Color(0xFFFDB813), foregroundColor: Colors.black),
+            style: ElevatedButton.styleFrom(backgroundColor: Color(0xFFFDB813), foregroundColor: _c.onAccent),
             child: Text(actionText!),
           ),
         ],
@@ -999,15 +1001,15 @@ class _UserPubVibeState extends State<UserPubVibe> {
         barrierDismissible: false,
         builder: (BuildContext context) {
           return AlertDialog(
-            backgroundColor: _cardColor,
+            backgroundColor: _c.surface,
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(_primaryColor)),
+                CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(_c.primary)),
                 SizedBox(height: 16),
-                Text('Traitement de la vibe...', style: TextStyle(color: _textColor)),
+                Text('Traitement de la vibe...', style: TextStyle(color: _c.textPrimary)),
                 SizedBox(height: 8),
-                Text('Initialisation et vérification', style: TextStyle(color: _hintColor, fontSize: 12)),
+                Text('Initialisation et vérification', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
               ],
             ),
           );
@@ -1076,7 +1078,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
     } catch (e) {
       print("Erreur lors de la sélection de la vidéo: $e");
       if (Navigator.canPop(context)) Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur lors du traitement de la vidéo'), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur lors du traitement de la vidéo'), backgroundColor: _c.danger));
     } finally {
       _isPickingVideo = false;
     }
@@ -1168,6 +1170,21 @@ class _UserPubVibeState extends State<UserPubVibe> {
       return;
     }
 
+    // Vérification serveur : cooldown 5 min universel (anti-fraude)
+    final cooldown = await PostCooldownService.check();
+    if (!cooldown.canPost) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+            '⏳ Attendez ${PostCooldownService.formatRemaining(cooldown.remainingSeconds)} avant de publier à nouveau.',
+            textAlign: TextAlign.center,
+          ),
+          duration: const Duration(seconds: 4),
+        ));
+      }
+      return;
+    }
+
     if (_formKey.currentState!.validate()) {
       final textLength = _descriptionController.text.length;
       if (textLength > _maxCharacters) {
@@ -1217,15 +1234,15 @@ class _UserPubVibeState extends State<UserPubVibe> {
           barrierDismissible: false,
           builder: (BuildContext context) {
             return AlertDialog(
-              backgroundColor: _cardColor,
+              backgroundColor: _c.surface,
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(_primaryColor)),
+                  CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(_c.primary)),
                   SizedBox(height: 16),
-                  Text('Publication de la vibe...', style: TextStyle(color: _textColor)),
+                  Text('Publication de la vibe...', style: TextStyle(color: _c.textPrimary)),
                   SizedBox(height: 8),
-                  Text('${textLength} caractères • ${_selectAllCountries ? 'Toute l\'Afrique' : '${_selectedCountries.length} pays'}', style: TextStyle(color: _hintColor, fontSize: 12), textAlign: TextAlign.center),
+                  Text('${textLength} caractères • ${_selectAllCountries ? 'Toute l\'Afrique' : '${_selectedCountries.length} pays'}', style: TextStyle(color: _c.textSecondary, fontSize: 12), textAlign: TextAlign.center),
                 ],
               ),
             );
@@ -1325,16 +1342,16 @@ class _UserPubVibeState extends State<UserPubVibe> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.check_circle, color: Colors.green, size: 20),
+                    Icon(Icons.check_circle, color: _c.primary, size: 20),
                     SizedBox(width: 8),
-                    Text('Vibe publiée avec succès ! 🎉', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                    Text('Vibe publiée avec succès ! 🎉', style: TextStyle(color: _c.primary, fontWeight: FontWeight.bold)),
                   ],
                 ),
                 SizedBox(height: 4),
                 Text('${_vibeCategories[_selectedVibeCategory]!['label']} • ${durationInSeconds} sec • $countryMessage', style: TextStyle(color: Colors.white, fontSize: 12)),
               ],
             ),
-            backgroundColor: _cardColor,
+            backgroundColor: _c.surface,
             duration: Duration(seconds: 4),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1359,44 +1376,44 @@ class _UserPubVibeState extends State<UserPubVibe> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: _cardColor,
+        backgroundColor: _c.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            Icon(Icons.timer, color: _secondaryColor),
+            Icon(Icons.timer, color: _c.accent),
             SizedBox(width: 10),
-            Text('Temps d\'attente', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
+            Text('Temps d\'attente', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Vous devez attendre $_timeRemaining avant de pouvoir publier.', style: TextStyle(color: _hintColor)),
+            Text('Vous devez attendre $_timeRemaining avant de pouvoir publier.', style: TextStyle(color: _c.textSecondary)),
             SizedBox(height: 20),
             Container(
               padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(color: _secondaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: _secondaryColor)),
+              decoration: BoxDecoration(color: _c.accent.withOpacity(0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: _c.accent)),
               child: Column(
                 children: [
-                  Icon(Icons.play_circle_filled, color: _secondaryColor, size: 40),
+                  Icon(Icons.play_circle_filled, color: _c.accent, size: 40),
                   SizedBox(height: 8),
-                  Text('Regardez une publicité', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                  Text('Regardez une publicité', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
                   SizedBox(height: 4),
-                  Text('et publiez immédiatement !', style: TextStyle(color: _secondaryColor, fontSize: 14)),
+                  Text('et publiez immédiatement !', style: TextStyle(color: _c.accent, fontSize: 14)),
                 ],
               ),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text('ATTENDRE', style: TextStyle(color: _hintColor))),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('ATTENDRE', style: TextStyle(color: _c.textSecondary))),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               setState(() => _showRewardedAd = true);
               RewardedAdWidget.showAd(_rewardedAdKey);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: _secondaryColor, foregroundColor: Colors.black),
+            style: ElevatedButton.styleFrom(backgroundColor: _c.accent, foregroundColor: _c.onAccent),
             child: Text('REGARDER LA PUB'),
           ),
         ],
@@ -1432,7 +1449,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return AlertDialog(
-              backgroundColor: _cardColor,
+              backgroundColor: _c.surface,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               elevation: 24,
               contentPadding: EdgeInsets.zero,
@@ -1444,18 +1461,18 @@ class _UserPubVibeState extends State<UserPubVibe> {
                     Container(
                       padding: EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(colors: [_primaryColor, Color(0xFFFF5252)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                        gradient: LinearGradient(colors: [_c.primary, Color(0xFFFF5252)], begin: Alignment.topLeft, end: Alignment.bottomRight),
                         borderRadius: BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
                       ),
                       child: Column(
                         children: [
-                          Icon(Icons.music_video, color: _secondaryColor, size: 40),
+                          Icon(Icons.music_video, color: _c.accent, size: 40),
                           SizedBox(height: 8),
                           Text('BIENVENUE DANS LES VIBES !', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                           SizedBox(height: 4),
                           Container(
                             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                            decoration: BoxDecoration(color: _secondaryColor, borderRadius: BorderRadius.circular(20)),
+                            decoration: BoxDecoration(color: _c.accent, borderRadius: BorderRadius.circular(20)),
                             child: Text('VIDÉOS COURTES ET DIVERTISSANTES', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 10)),
                           ),
                         ],
@@ -1469,17 +1486,17 @@ class _UserPubVibeState extends State<UserPubVibe> {
                           children: [
                             Container(
                               padding: EdgeInsets.all(12),
-                              decoration: BoxDecoration(color: Colors.grey[800]!.withOpacity(0.3), borderRadius: BorderRadius.circular(12)),
+                              decoration: BoxDecoration(color: _c.border.withOpacity(0.3), borderRadius: BorderRadius.circular(12)),
                               child: Row(
                                 children: [
-                                  Icon(Icons.timer, color: _primaryColor, size: 24),
+                                  Icon(Icons.timer, color: _c.primary, size: 24),
                                   SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text('VIDÉOS COURTES (MAX 30s)', style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold, fontSize: 13)),
-                                        Text('Des vidéos rapides et percutantes pour divertir', style: TextStyle(color: _hintColor, fontSize: 11)),
+                                        Text('VIDÉOS COURTES (MAX 30s)', style: TextStyle(color: _c.primary, fontWeight: FontWeight.bold, fontSize: 13)),
+                                        Text('Des vidéos rapides et percutantes pour divertir', style: TextStyle(color: _c.textSecondary, fontSize: 11)),
                                       ],
                                     ),
                                   ),
@@ -1489,7 +1506,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
                             SizedBox(height: 12),
                             Container(
                               padding: EdgeInsets.all(12),
-                              decoration: BoxDecoration(color: Colors.grey[800]!.withOpacity(0.3), borderRadius: BorderRadius.circular(12)),
+                              decoration: BoxDecoration(color: _c.border.withOpacity(0.3), borderRadius: BorderRadius.circular(12)),
                               child: Row(
                                 children: [
                                   Icon(Icons.vertical_align_center, color: Colors.blue, size: 24),
@@ -1499,7 +1516,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text('FORMAT PORTRAIT', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 13)),
-                                        Text('Tournez votre téléphone à la verticale (9:16)', style: TextStyle(color: _hintColor, fontSize: 11)),
+                                        Text('Tournez votre téléphone à la verticale (9:16)', style: TextStyle(color: _c.textSecondary, fontSize: 11)),
                                       ],
                                     ),
                                   ),
@@ -1509,17 +1526,17 @@ class _UserPubVibeState extends State<UserPubVibe> {
                             SizedBox(height: 12),
                             Container(
                               padding: EdgeInsets.all(12),
-                              decoration: BoxDecoration(color: Colors.grey[800]!.withOpacity(0.3), borderRadius: BorderRadius.circular(12)),
+                              decoration: BoxDecoration(color: _c.border.withOpacity(0.3), borderRadius: BorderRadius.circular(12)),
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Icon(Icons.celebration, color: Colors.orange, size: 24),
+                                  Icon(Icons.celebration, color: _c.warning, size: 24),
                                   SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text('CONTENU DIVERTISSANT', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 13)),
+                                        Text('CONTENU DIVERTISSANT', style: TextStyle(color: _c.warning, fontWeight: FontWeight.bold, fontSize: 13)),
                                         SizedBox(height: 4),
                                         Text(
                                           '✓ Comédie et humour\n'
@@ -1527,7 +1544,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
                                               '✓ Danse et musique\n'
                                               '✓ Astuces et tutoriels\n'
                                               '✓ Inspiration et motivation',
-                                          style: TextStyle(color: _hintColor, fontSize: 11),
+                                          style: TextStyle(color: _c.textSecondary, fontSize: 11),
                                         ),
                                       ],
                                     ),
@@ -1538,20 +1555,20 @@ class _UserPubVibeState extends State<UserPubVibe> {
                             SizedBox(height: 16),
                             Container(
                               padding: EdgeInsets.all(12),
-                              decoration: BoxDecoration(gradient: LinearGradient(colors: [_secondaryColor.withOpacity(0.2), _primaryColor.withOpacity(0.1)]), borderRadius: BorderRadius.circular(12), border: Border.all(color: _secondaryColor)),
+                              decoration: BoxDecoration(gradient: LinearGradient(colors: [_c.accent.withOpacity(0.2), _c.primary.withOpacity(0.1)]), borderRadius: BorderRadius.circular(12), border: Border.all(color: _c.accent)),
                               child: Column(
                                 children: [
                                   Row(
                                     children: [
-                                      Icon(Icons.monetization_on, color: _secondaryColor, size: 20),
+                                      Icon(Icons.monetization_on, color: _c.accent, size: 20),
                                       SizedBox(width: 8),
-                                      Text('GAGNEZ DE L\'ARGENT', style: TextStyle(color: _secondaryColor, fontWeight: FontWeight.bold, fontSize: 13)),
+                                      Text('GAGNEZ DE L\'ARGENT', style: TextStyle(color: _c.accent, fontWeight: FontWeight.bold, fontSize: 13)),
                                     ],
                                   ),
                                   SizedBox(height: 8),
                                   Text(
                                     'Les vibes populaires peuvent vous rapporter des gains ! Plus vos vidéos sont vues et appréciées, plus vous gagnez.',
-                                    style: TextStyle(color: _textColor, fontSize: 12),
+                                    style: TextStyle(color: _c.textPrimary, fontSize: 12),
                                     textAlign: TextAlign.center,
                                   ),
                                 ],
@@ -1560,20 +1577,20 @@ class _UserPubVibeState extends State<UserPubVibe> {
                             SizedBox(height: 20),
                             Container(
                               padding: EdgeInsets.all(10),
-                              decoration: BoxDecoration(color: Colors.grey[800]!.withOpacity(0.3), borderRadius: BorderRadius.circular(10)),
+                              decoration: BoxDecoration(color: _c.border.withOpacity(0.3), borderRadius: BorderRadius.circular(10)),
                               child: Row(
                                 children: [
                                   Checkbox(
                                     value: _hasAcceptedVideoConditions,
                                     onChanged: (bool? value) => setStateDialog(() => _hasAcceptedVideoConditions = value ?? false),
-                                    activeColor: _primaryColor,
+                                    activeColor: _c.primary,
                                     checkColor: Colors.white,
                                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                   ),
                                   Expanded(
                                     child: Text(
                                       'Je comprends que les vibes sont des vidéos courtes et divertissantes (< 30 sec)',
-                                      style: TextStyle(color: _textColor, fontSize: 11),
+                                      style: TextStyle(color: _c.textPrimary, fontSize: 11),
                                     ),
                                   ),
                                 ],
@@ -1585,7 +1602,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
                     ),
                     Container(
                       padding: EdgeInsets.all(16),
-                      decoration: BoxDecoration(border: Border(top: BorderSide(color: Colors.grey[800]!))),
+                      decoration: BoxDecoration(border: Border(top: BorderSide(color: _c.border))),
                       child: ElevatedButton(
                         onPressed: () {
                           if (!_hasAcceptedVideoConditions) {
@@ -1595,7 +1612,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
                           _saveModalSeen();
                           Navigator.pop(context);
                         },
-                        style: ElevatedButton.styleFrom(backgroundColor: _primaryColor, foregroundColor: Colors.white, minimumSize: Size(double.infinity, 45), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                        style: ElevatedButton.styleFrom(backgroundColor: _c.primary, foregroundColor: _c.onPrimary, minimumSize: Size(double.infinity, 45), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                         child: Text('COMMENCER À POSTER DES VIBES', style: TextStyle(fontWeight: FontWeight.bold)),
                       ),
                     ),
@@ -1619,7 +1636,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
     return Stack(
       children: [
         Container(
-          color: _backgroundColor,
+          color: _c.background,
           child: SingleChildScrollView(
             child: Column(
               children: [
@@ -1627,18 +1644,18 @@ class _UserPubVibeState extends State<UserPubVibe> {
                 Container(
                   padding: EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: _cardColor,
+                    color: _c.surface,
                     borderRadius: BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20)),
                     boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 15, offset: Offset(0, 4))],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(padding: EdgeInsets.all(8), decoration: BoxDecoration(color: _primaryColor, borderRadius: BorderRadius.circular(12)), child: Icon(Icons.music_video, color: Colors.white, size: 24)),
+                      Container(padding: EdgeInsets.all(8), decoration: BoxDecoration(color: _c.primary, borderRadius: BorderRadius.circular(12)), child: Icon(Icons.music_video, color: Colors.white, size: 24)),
                       SizedBox(height: 6),
-                      Text('Publier une Vibe', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 18)),
+                      Text('Publier une Vibe', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 18)),
                       SizedBox(height: 4),
-                      Text('Vidéo courte et divertissante', style: TextStyle(color: _hintColor, fontSize: 12)),
+                      Text('Vidéo courte et divertissante', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
                       _buildVideoSizeInfo(),
                       SizedBox(height: 4),
                       _buildDurationInfo(),
@@ -1653,25 +1670,25 @@ class _UserPubVibeState extends State<UserPubVibe> {
                 Container(
                   margin: EdgeInsets.all(16),
                   padding: EdgeInsets.all(20),
-                  decoration: BoxDecoration(color: _cardColor, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))]),
+                  decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))]),
                   child: Form(
                     key: _formKey,
                     child: Column(
                       children: [
                         // Description
                         Container(
-                          decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey[700]!)),
+                          decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: _c.border)),
                           child: Column(
                             children: [
                               TextFormField(
                                 controller: _descriptionController,
-                                style: TextStyle(color: _textColor),
+                                style: TextStyle(color: _c.textPrimary),
                                 decoration: InputDecoration(
                                   hintText: 'Décrivez votre vibe... (ex: "Tuto maquillage 3min", "Challenge danse")',
-                                  hintStyle: TextStyle(color: _hintColor),
+                                  hintStyle: TextStyle(color: _c.textSecondary),
                                   border: InputBorder.none,
                                   contentPadding: EdgeInsets.all(16),
-                                  prefixIcon: Icon(Icons.description, color: _primaryColor),
+                                  prefixIcon: Icon(Icons.description, color: _c.primary),
                                 ),
                                 maxLines: 3,
                                 onChanged: (value) => setState(() {}),
@@ -1728,10 +1745,10 @@ class _UserPubVibeState extends State<UserPubVibe> {
                           width: double.infinity,
                           height: 55,
                           decoration: BoxDecoration(
-                            color: _cardColor,
+                            color: _c.surface,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: _secondaryColor, width: 2),
-                            boxShadow: [BoxShadow(color: _secondaryColor.withOpacity(0.3), blurRadius: 8, offset: Offset(0, 4))],
+                            border: Border.all(color: _c.accent, width: 2),
+                            boxShadow: [BoxShadow(color: _c.accent.withOpacity(0.3), blurRadius: 8, offset: Offset(0, 4))],
                           ),
                           child: Material(
                             color: Colors.transparent,
@@ -1741,15 +1758,15 @@ class _UserPubVibeState extends State<UserPubVibe> {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.video_library, color: _secondaryColor, size: 24),
+                                  Icon(Icons.video_library, color: _c.accent, size: 24),
                                   SizedBox(width: 12),
                                   Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text('SÉLECTIONNER UNE VIDÉO', style: TextStyle(color: _secondaryColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                                      Text('SÉLECTIONNER UNE VIDÉO', style: TextStyle(color: _c.accent, fontWeight: FontWeight.bold, fontSize: 16)),
                                       SizedBox(height: 2),
-                                      Text('Max ${_maxVideoDurationSeconds} secondes', style: TextStyle(color: _hintColor, fontSize: 12)),
+                                      Text('Max ${_maxVideoDurationSeconds} secondes', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
                                     ],
                                   ),
                                 ],
@@ -1765,12 +1782,12 @@ class _UserPubVibeState extends State<UserPubVibe> {
                           Container(
                             padding: EdgeInsets.all(16),
                             margin: EdgeInsets.symmetric(vertical: 16),
-                            decoration: BoxDecoration(color: _backgroundColor, borderRadius: BorderRadius.circular(16)),
+                            decoration: BoxDecoration(color: _c.background, borderRadius: BorderRadius.circular(16)),
                             child: Column(
                               children: [
-                                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text('Téléchargement:', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)), Text('${(_uploadProgress * 100).toStringAsFixed(1)}%', style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold))]),
+                                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text('Téléchargement:', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)), Text('${(_uploadProgress * 100).toStringAsFixed(1)}%', style: TextStyle(color: _c.primary, fontWeight: FontWeight.bold))]),
                                 SizedBox(height: 8),
-                                LinearProgressIndicator(value: _uploadProgress, backgroundColor: Colors.grey[800], valueColor: AlwaysStoppedAnimation<Color>(_primaryColor), borderRadius: BorderRadius.circular(10)),
+                                LinearProgressIndicator(value: _uploadProgress, backgroundColor: _c.surfaceVariant, valueColor: AlwaysStoppedAnimation<Color>(_c.primary), borderRadius: BorderRadius.circular(10)),
                               ],
                             ),
                           ),
@@ -1784,12 +1801,12 @@ class _UserPubVibeState extends State<UserPubVibe> {
                             gradient: LinearGradient(
                               colors: onTap || (!_canPost && _cooldownMinutes > 0) || _controller == null || _selectedVibeCategory == null
                                   ? [Colors.grey, Colors.grey]
-                                  : [_primaryColor, Color(0xFFFF5252)],
+                                  : [_c.primary, Color(0xFFFF5252)],
                               begin: Alignment.centerLeft,
                               end: Alignment.centerRight,
                             ),
                             borderRadius: BorderRadius.circular(25),
-                            boxShadow: [BoxShadow(color: _primaryColor.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))],
+                            boxShadow: [BoxShadow(color: _c.primary.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))],
                           ),
                           child: Material(
                             color: Colors.transparent,
@@ -1866,15 +1883,15 @@ class _UserPubVibeState extends State<UserPubVibe> {
           return Container(
             padding: EdgeInsets.all(16),
             margin: EdgeInsets.symmetric(vertical: 8),
-            decoration: BoxDecoration(color: _cardColor, borderRadius: BorderRadius.circular(16), border: Border.all(color: _primaryColor.withOpacity(0.3))),
+            decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: _c.primary.withOpacity(0.3))),
             child: Column(
               children: [
                 Row(
                   children: [
-                    Container(padding: EdgeInsets.all(8), decoration: BoxDecoration(color: _primaryColor.withOpacity(0.2), borderRadius: BorderRadius.circular(8)), child: Icon(Icons.videocam, color: _primaryColor, size: 20)),
+                    Container(padding: EdgeInsets.all(8), decoration: BoxDecoration(color: _c.primary.withOpacity(0.2), borderRadius: BorderRadius.circular(8)), child: Icon(Icons.videocam, color: _c.primary, size: 20)),
                     SizedBox(width: 12),
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Vidéo sélectionnée', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)), Text('Prête à être publiée', style: TextStyle(color: _hintColor, fontSize: 12))])),
-                    Container(padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: _primaryColor.withOpacity(0.2), borderRadius: BorderRadius.circular(20)), child: Text(snapshot.hasData ? '${sizeInMB.toStringAsFixed(1)} Mo' : '...', style: TextStyle(color: _primaryColor, fontSize: 12, fontWeight: FontWeight.bold))),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Vidéo sélectionnée', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)), Text('Prête à être publiée', style: TextStyle(color: _c.textSecondary, fontSize: 12))])),
+                    Container(padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: _c.primary.withOpacity(0.2), borderRadius: BorderRadius.circular(20)), child: Text(snapshot.hasData ? '${sizeInMB.toStringAsFixed(1)} Mo' : '...', style: TextStyle(color: _c.primary, fontSize: 12, fontWeight: FontWeight.bold))),
                   ],
                 ),
                 SizedBox(height: 12),
@@ -1895,20 +1912,20 @@ class _UserPubVibeState extends State<UserPubVibe> {
           final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
           final isPremium = AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement);
 
-          Color durationColor = Colors.green;
+          Color durationColor = _c.primary;
           if (!isAdmin && !isPremium && durationInSeconds > _maxVideoDurationSeconds) {
-            durationColor = Colors.red;
+            durationColor = _c.danger;
           } else if (isPremium && durationInSeconds > _maxVideoDurationSeconds) {
-            durationColor = Colors.orange;
+            durationColor = _c.warning;
           }
 
           return Container(
             padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(color: _backgroundColor, borderRadius: BorderRadius.circular(16), border: Border.all(color: durationColor.withOpacity(0.3))),
+            decoration: BoxDecoration(color: _c.background, borderRadius: BorderRadius.circular(16), border: Border.all(color: durationColor.withOpacity(0.3))),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Aperçu de la vibe:', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                Text('Aperçu de la vibe:', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
                 SizedBox(height: 12),
                 Container(
                   width: double.infinity,
@@ -1921,19 +1938,19 @@ class _UserPubVibeState extends State<UserPubVibe> {
                 SizedBox(height: 6),
                 Row(
                   children: [
-                    IconButton(icon: Icon(_controller!.value.isPlaying ? Icons.pause : Icons.play_arrow, color: _primaryColor), onPressed: () => setState(() => _controller!.value.isPlaying ? _controller!.pause() : _controller!.play())),
-                    Expanded(child: VideoProgressIndicator(_controller!, allowScrubbing: true, colors: VideoProgressColors(playedColor: _primaryColor, bufferedColor: _secondaryColor, backgroundColor: Colors.grey[800]!))),
-                    IconButton(icon: Icon(Icons.volume_up, color: _controller!.value.volume > 0 ? _primaryColor : _hintColor), onPressed: () => setState(() => _controller!.setVolume(_controller!.value.volume > 0 ? 0 : 1))),
+                    IconButton(icon: Icon(_controller!.value.isPlaying ? Icons.pause : Icons.play_arrow, color: _c.primary), onPressed: () => setState(() => _controller!.value.isPlaying ? _controller!.pause() : _controller!.play())),
+                    Expanded(child: VideoProgressIndicator(_controller!, allowScrubbing: true, colors: VideoProgressColors(playedColor: _c.primary, bufferedColor: _c.accent, backgroundColor: _c.border))),
+                    IconButton(icon: Icon(Icons.volume_up, color: _controller!.value.volume > 0 ? _c.primary : _c.textSecondary), onPressed: () => setState(() => _controller!.setVolume(_controller!.value.volume > 0 ? 0 : 1))),
                   ],
                 ),
                 SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(children: [Icon(Icons.play_circle_fill, color: _primaryColor, size: 16), SizedBox(width: 4), Text('Vidéo sélectionnée', style: TextStyle(color: _hintColor, fontStyle: FontStyle.italic, fontSize: 12))]),
+                    Row(children: [Icon(Icons.play_circle_fill, color: _c.primary, size: 16), SizedBox(width: 4), Text('Vidéo sélectionnée', style: TextStyle(color: _c.textSecondary, fontStyle: FontStyle.italic, fontSize: 12))]),
                     Row(
                       children: [
-                        Container(padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: _primaryColor.withOpacity(0.2), borderRadius: BorderRadius.circular(8)), child: Text(snapshot.hasData ? '${sizeInMB.toStringAsFixed(1)} Mo' : '...', style: TextStyle(color: _primaryColor, fontSize: 12, fontWeight: FontWeight.bold))),
+                        Container(padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: _c.primary.withOpacity(0.2), borderRadius: BorderRadius.circular(8)), child: Text(snapshot.hasData ? '${sizeInMB.toStringAsFixed(1)} Mo' : '...', style: TextStyle(color: _c.primary, fontSize: 12, fontWeight: FontWeight.bold))),
                         SizedBox(width: 8),
                         Container(padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: durationColor.withOpacity(0.2), borderRadius: BorderRadius.circular(8), border: Border.all(color: durationColor)), child: Text('${durationInSeconds}s', style: TextStyle(color: durationColor, fontSize: 12, fontWeight: FontWeight.bold))),
                       ],
@@ -1943,7 +1960,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
                 if (durationInSeconds > _maxVideoDurationSeconds && !isAdmin)
                   Padding(
                     padding: EdgeInsets.only(top: 8),
-                    child: Container(padding: EdgeInsets.all(8), decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), borderRadius: BorderRadius.circular(8)), child: Row(children: [Icon(Icons.warning, color: Colors.red, size: 16), SizedBox(width: 8), Expanded(child: Text('Cette vidéo dépasse la durée limite de ${_maxVideoDurationSeconds} secondes', style: TextStyle(color: Colors.red, fontSize: 12)))])),
+                    child: Container(padding: EdgeInsets.all(8), decoration: BoxDecoration(color: _c.danger.withOpacity(0.1), borderRadius: BorderRadius.circular(8)), child: Row(children: [Icon(Icons.warning, color: _c.danger, size: 16), SizedBox(width: 8), Expanded(child: Text('Cette vidéo dépasse la durée limite de ${_maxVideoDurationSeconds} secondes', style: TextStyle(color: _c.danger, fontSize: 12)))])),
                   ),
               ],
             ),
@@ -1957,15 +1974,15 @@ class _UserPubVibeState extends State<UserPubVibe> {
     return Container(
       margin: EdgeInsets.only(top: 16),
       padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(color: _cardColor, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey[700]!)),
+      decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: _c.border)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.image, color: _primaryColor, size: 20),
+              Icon(Icons.image, color: _c.primary, size: 20),
               SizedBox(width: 8),
-              Text('Miniature de la vibe', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
+              Text('Miniature de la vibe', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
             ],
           ),
           SizedBox(height: 12),
@@ -1974,7 +1991,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
               height: 150,
               width: double.infinity,
               margin: EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), border: Border.all(color: _primaryColor)),
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), border: Border.all(color: _c.primary)),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: kIsWeb && _customThumbnailBytes != null
@@ -1987,7 +2004,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
               height: 150,
               width: double.infinity,
               margin: EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey[700]!)),
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), border: Border.all(color: _c.border)),
               child: ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.file(File(_localThumbnailPath!), fit: BoxFit.cover, width: double.infinity)),
             ),
           Row(
@@ -1997,7 +2014,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
                   onPressed: _isUploadingCustomThumbnail ? null : _selectCustomThumbnail,
                   icon: _isUploadingCustomThumbnail ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(Icons.image, size: 18),
                   label: Text(_useCustomThumbnail ? 'CHANGER LA MINIATURE' : 'CHOISIR UNE MINIATURE', style: TextStyle(fontSize: 12)),
-                  style: OutlinedButton.styleFrom(foregroundColor: _primaryColor, side: BorderSide(color: _primaryColor), padding: EdgeInsets.symmetric(vertical: 12)),
+                  style: OutlinedButton.styleFrom(foregroundColor: _c.primary, side: BorderSide(color: _c.primary), padding: EdgeInsets.symmetric(vertical: 12)),
                 ),
               ),
               if (_useCustomThumbnail) SizedBox(width: 8),
@@ -2013,13 +2030,13 @@ class _UserPubVibeState extends State<UserPubVibe> {
                     },
                     icon: Icon(Icons.refresh, size: 18),
                     label: Text('UTILISER AUTO', style: TextStyle(fontSize: 12)),
-                    style: OutlinedButton.styleFrom(foregroundColor: Colors.orange, side: BorderSide(color: Colors.orange), padding: EdgeInsets.symmetric(vertical: 12)),
+                    style: OutlinedButton.styleFrom(foregroundColor: _c.warning, side: BorderSide(color: _c.warning), padding: EdgeInsets.symmetric(vertical: 12)),
                   ),
                 ),
             ],
           ),
           SizedBox(height: 8),
-          Text('Choisissez une image personnalisée comme miniature ou utilisez la génération automatique', style: TextStyle(color: _hintColor, fontSize: 11), textAlign: TextAlign.center),
+          Text('Choisissez une image personnalisée comme miniature ou utilisez la génération automatique', style: TextStyle(color: _c.textSecondary, fontSize: 11), textAlign: TextAlign.center),
         ],
       ),
     );

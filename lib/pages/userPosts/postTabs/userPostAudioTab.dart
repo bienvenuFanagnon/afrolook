@@ -21,7 +21,9 @@ import 'package:file_picker/file_picker.dart';
 import '../../../providers/authProvider.dart';
 import '../../../providers/postProvider.dart';
 import '../../../providers/userProvider.dart';
+import '../../../theme/app_colors.dart';
 import '../../../services/postService/massNotificationService.dart';
+import '../../../services/postService/post_cooldown_service.dart';
 import '../../../services/utils/abonnement_utils.dart';
 import '../../pub/rewarded_ad_widget.dart';
 import '../../user/userAbonnementPage.dart';
@@ -99,14 +101,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
   };
 
 
-  // Couleurs
-  final Color _primaryColor = Color(0xFFE21221);
-  final Color _secondaryColor = Color(0xFFFFD600);
-  final Color _backgroundColor = Color(0xFF121212);
-  final Color _cardColor = Color(0xFF1E1E1E);
-  final Color _textColor = Colors.white;
-  final Color _hintColor = Colors.grey[400]!;
-  final Color _successColor = Color(0xFF4CAF50);
+  late AppColors _c;
   final Color _audioColor = Color(0xFF2196F3);
 
   late MassNotificationService _notificationService;
@@ -162,6 +157,12 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
         });
       }
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _c = AppColors.of(context);
   }
 
   @override
@@ -280,14 +281,14 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: _cardColor,
+        backgroundColor: _c.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            Icon(Icons.timer, color: _secondaryColor),
+            Icon(Icons.timer, color: _c.accent),
             SizedBox(width: 10),
             Text('Temps d\'attente',
-                style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
+                style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Column(
@@ -295,25 +296,25 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
           children: [
             Text(
               'Vous devez attendre $_timeRemaining avant de pouvoir publier.',
-              style: TextStyle(color: _hintColor),
+              style: TextStyle(color: _c.textSecondary),
             ),
             SizedBox(height: 20),
             Container(
               padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: _secondaryColor.withOpacity(0.1),
+                color: _c.accent.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _secondaryColor),
+                border: Border.all(color: _c.accent),
               ),
               child: Column(
                 children: [
-                  Icon(Icons.play_circle_filled, color: _secondaryColor, size: 40),
+                  Icon(Icons.play_circle_filled, color: _c.accent, size: 40),
                   SizedBox(height: 8),
                   Text('Regardez une publicité',
-                      style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                      style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
                   SizedBox(height: 4),
                   Text('et publiez immédiatement !',
-                      style: TextStyle(color: _secondaryColor, fontSize: 14)),
+                      style: TextStyle(color: _c.accent, fontSize: 14)),
                 ],
               ),
             ),
@@ -322,7 +323,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('ATTENDRE', style: TextStyle(color: _hintColor)),
+            child: Text('ATTENDRE', style: TextStyle(color: _c.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -331,8 +332,8 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
               RewardedAdWidget.showAd(_rewardedAdKey);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: _secondaryColor,
-              foregroundColor: Colors.black,
+              backgroundColor: _c.accent,
+              foregroundColor: _c.onAccent,
             ),
             child: Text('REGARDER LA PUB'),
           ),
@@ -602,14 +603,14 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: _cardColor,
+        backgroundColor: _c.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            Icon(Icons.lock, color: _primaryColor),
+            Icon(Icons.lock, color: _c.primary),
             SizedBox(width: 10),
             Text('Limite de pays atteinte',
-                style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
+                style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Column(
@@ -619,7 +620,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
             Text(
               'L\'abonnement gratuit est limité à 2 pays maximum.\n'
                   'Passez à Afrolook Premium pour sélectionner tous les pays africains.',
-              style: TextStyle(color: _hintColor),
+              style: TextStyle(color: _c.textSecondary),
             ),
             SizedBox(height: 20),
             Container(
@@ -627,20 +628,20 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
               decoration: BoxDecoration(
                 color: Colors.black.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _secondaryColor),
+                border: Border.all(color: _c.accent),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.workspace_premium, color: _secondaryColor),
+                  Icon(Icons.workspace_premium, color: _c.accent),
                   SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('Afrolook Premium',
-                            style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
+                            style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
                         Text('Pays illimités • Audio 3 min • Pas de cooldown',
-                            style: TextStyle(color: _hintColor, fontSize: 12)),
+                            style: TextStyle(color: _c.textSecondary, fontSize: 12)),
                       ],
                     ),
                   ),
@@ -652,7 +653,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('COMPRENDRE', style: TextStyle(color: _hintColor)),
+            child: Text('COMPRENDRE', style: TextStyle(color: _c.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -661,8 +662,8 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                   MaterialPageRoute(builder: (context) => AbonnementScreen()));
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: _secondaryColor,
-              foregroundColor: Colors.black,
+              backgroundColor: _c.accent,
+              foregroundColor: _c.onAccent,
             ),
             child: Text('PASSER À PREMIUM'),
           ),
@@ -678,7 +679,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
     return Container(
       height: MediaQuery.of(context).size.height * 0.8,
       decoration: BoxDecoration(
-        color: _backgroundColor,
+        color: _c.background,
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(25),
           topRight: Radius.circular(25),
@@ -689,7 +690,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
           Container(
             padding: EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: _cardColor,
+              color: _c.surface,
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(25),
                 topRight: Radius.circular(25),
@@ -701,9 +702,9 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('Sélection des pays',
-                        style: TextStyle(color: _textColor, fontSize: 20, fontWeight: FontWeight.bold)),
+                        style: TextStyle(color: _c.textPrimary, fontSize: 20, fontWeight: FontWeight.bold)),
                     IconButton(
-                      icon: Icon(Icons.close, color: _textColor),
+                      icon: Icon(Icons.close, color: _c.textPrimary),
                       onPressed: () {
                         setState(() {
                           _showCountrySelection = false;
@@ -719,22 +720,22 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: isPremium || isAdmin ? _secondaryColor.withOpacity(0.2) : _primaryColor.withOpacity(0.2),
+                        color: isPremium || isAdmin ? _c.accent.withOpacity(0.2) : _c.primary.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: isPremium || isAdmin ? _secondaryColor : _primaryColor),
+                        border: Border.all(color: isPremium || isAdmin ? _c.accent : _c.primary),
                       ),
                       child: Row(
                         children: [
                           Icon(
                             isPremium || isAdmin ? Icons.workspace_premium : Icons.lock,
                             size: 14,
-                            color: isPremium || isAdmin ? _secondaryColor : _primaryColor,
+                            color: isPremium || isAdmin ? _c.accent : _c.primary,
                           ),
                           SizedBox(width: 6),
                           Text(
                             isPremium || isAdmin ? 'Pays illimités' : 'Max 2 pays',
                             style: TextStyle(
-                              color: isPremium || isAdmin ? _secondaryColor : _primaryColor,
+                              color: isPremium || isAdmin ? _c.accent : _c.primary,
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                             ),
@@ -747,25 +748,25 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                       _selectAllCountries
                           ? '🌍 Tous les pays'
                           : '${_selectedCountries.length} pays sélectionné(s)',
-                      style: TextStyle(color: _hintColor, fontSize: 14),
+                      style: TextStyle(color: _c.textSecondary, fontSize: 14),
                     ),
                   ],
                 ),
                 SizedBox(height: 15),
                 Container(
                   decoration: BoxDecoration(
-                    color: _cardColor,
+                    color: _c.surface,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[700]!),
+                    border: Border.all(color: _c.border),
                   ),
                   child: TextField(
                     controller: _countrySearchController,
                     focusNode: _countrySearchFocus,
-                    style: TextStyle(color: _textColor),
+                    style: TextStyle(color: _c.textPrimary),
                     decoration: InputDecoration(
                       hintText: 'Rechercher un pays...',
-                      hintStyle: TextStyle(color: _hintColor),
-                      prefixIcon: Icon(Icons.search, color: _primaryColor),
+                      hintStyle: TextStyle(color: _c.textSecondary),
+                      prefixIcon: Icon(Icons.search, color: _c.primary),
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.symmetric(horizontal: 16),
                     ),
@@ -775,46 +776,46 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
             ),
           ),
           Material(
-            color: _cardColor,
+            color: _c.surface,
             child: ListTile(
               onTap: _toggleSelectAllCountries,
               leading: Container(
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: _selectAllCountries ? _primaryColor : Colors.grey[800],
+                  color: _selectAllCountries ? _c.primary : _c.surfaceVariant,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   Icons.workspace_premium,
-                  color: _selectAllCountries ? Colors.white : _hintColor,
+                  color: _selectAllCountries ? Colors.white : _c.textSecondary,
                 ),
               ),
               title: Row(
                 children: [
                   Text('Tous les pays africains',
-                      style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
+                      style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
                   SizedBox(width: 8),
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: _secondaryColor.withOpacity(0.2),
+                      color: _c.accent.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text('PREMIUM',
-                        style: TextStyle(color: _secondaryColor, fontSize: 10, fontWeight: FontWeight.bold)),
+                        style: TextStyle(color: _c.accent, fontSize: 10, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
               subtitle: Text(
                 'Fonctionnalité Premium - Votre post sera visible dans toute l\'Afrique',
-                style: TextStyle(color: _hintColor),
+                style: TextStyle(color: _c.textSecondary),
               ),
               trailing: _selectAllCountries
                   ? Container(
                 padding: EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: _successColor,
+                  color: _c.primary,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(Icons.check, color: Colors.white, size: 20),
@@ -822,7 +823,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                   : null,
             ),
           ),
-          Divider(color: Colors.grey[800], height: 1),
+          Divider(color: _c.surfaceVariant, height: 1),
           Expanded(
             child: ListView.builder(
               padding: EdgeInsets.zero,
@@ -835,14 +836,14 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                     !isSelected;
 
                 return Material(
-                  color: isSelected ? _primaryColor.withOpacity(0.1) : _cardColor,
+                  color: isSelected ? _c.primary.withOpacity(0.1) : _c.surface,
                   child: ListTile(
                     onTap: isDisabled ? null : () => _toggleCountrySelection(country),
                     leading: Container(
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: isSelected ? _primaryColor : Colors.grey[800],
+                        color: isSelected ? _c.primary : _c.surfaceVariant,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Center(
@@ -852,27 +853,27 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                     title: Text(
                       country.name,
                       style: TextStyle(
-                        color: isDisabled ? Colors.grey[600] : _textColor,
+                        color: isDisabled ? _c.textSecondary : _c.textPrimary,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                       ),
                     ),
                     subtitle: Text(
                       'Code: ${country.code}',
                       style: TextStyle(
-                        color: isDisabled ? Colors.grey[600] : _hintColor,
+                        color: isDisabled ? _c.textSecondary : _c.textSecondary,
                       ),
                     ),
                     trailing: isSelected
                         ? Container(
                       padding: EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: _primaryColor,
+                        color: _c.primary,
                         shape: BoxShape.circle,
                       ),
                       child: Icon(Icons.check, color: Colors.white, size: 16),
                     )
                         : isDisabled
-                        ? Icon(Icons.lock, color: Colors.grey[600], size: 16)
+                        ? Icon(Icons.lock, color: _c.textSecondary, size: 16)
                         : null,
                   ),
                 );
@@ -882,8 +883,8 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
           Container(
             padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: _cardColor,
-              border: Border(top: BorderSide(color: Colors.grey[800]!)),
+              color: _c.surface,
+              border: Border(top: BorderSide(color: _c.border)),
             ),
             child: Row(
               children: [
@@ -896,8 +897,8 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                       });
                     },
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: _hintColor,
-                      side: BorderSide(color: Colors.grey[700]!),
+                      foregroundColor: _c.textSecondary,
+                      side: BorderSide(color: _c.border),
                       padding: EdgeInsets.symmetric(vertical: 15),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
@@ -914,8 +915,8 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                       });
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _primaryColor,
-                      foregroundColor: Colors.white,
+                      backgroundColor: _c.primary,
+                      foregroundColor: _c.onPrimary,
                       padding: EdgeInsets.symmetric(vertical: 15),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
@@ -947,11 +948,11 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
       padding: EdgeInsets.all(16),
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: _c.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: _selectedCountries.isEmpty && !_selectAllCountries
-              ? Colors.orange
+              ? _c.warning
               : Colors.transparent,
         ),
       ),
@@ -966,7 +967,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                   Container(
                     padding: EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: _selectAllCountries ? _secondaryColor : _primaryColor,
+                      color: _selectAllCountries ? _c.accent : _c.primary,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
@@ -980,9 +981,9 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Visibilité du post',
-                          style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                          style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
                       Text(displayMessage,
-                          style: TextStyle(color: _hintColor, fontSize: 14)),
+                          style: TextStyle(color: _c.textSecondary, fontSize: 14)),
                     ],
                   ),
                 ],
@@ -990,14 +991,14 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: isPremium || isAdmin ? _secondaryColor.withOpacity(0.2) : _primaryColor.withOpacity(0.2),
+                  color: isPremium || isAdmin ? _c.accent.withOpacity(0.2) : _c.primary.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: isPremium || isAdmin ? _secondaryColor : _primaryColor),
+                  border: Border.all(color: isPremium || isAdmin ? _c.accent : _c.primary),
                 ),
                 child: Text(
                   isPremium || isAdmin ? 'PREMIUM' : 'GRATUIT',
                   style: TextStyle(
-                    color: isPremium || isAdmin ? _secondaryColor : _primaryColor,
+                    color: isPremium || isAdmin ? _c.accent : _c.primary,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
@@ -1010,17 +1011,17 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
               margin: EdgeInsets.only(top: 12),
               padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.1),
+                color: _c.warning.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange),
+                border: Border.all(color: _c.warning),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.warning, size: 16, color: Colors.orange),
+                  Icon(Icons.warning, size: 16, color: _c.warning),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text('Vous devez sélectionner au moins un pays',
-                        style: TextStyle(color: Colors.orange, fontSize: 12)),
+                        style: TextStyle(color: _c.warning, fontSize: 12)),
                   ),
                 ],
               ),
@@ -1038,8 +1039,8 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
             icon: Icon(Icons.edit_location, size: 18),
             label: Text('SÉLECTIONNER LES PAYS'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: _primaryColor.withOpacity(0.2),
-              foregroundColor: _primaryColor,
+              backgroundColor: _c.primary.withOpacity(0.2),
+              foregroundColor: _c.primary,
               minimumSize: Size(double.infinity, 45),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
@@ -1054,7 +1055,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
       padding: EdgeInsets.all(16),
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: _c.surface,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -1062,35 +1063,35 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
         children: [
           Row(
             children: [
-              Icon(Icons.category, color: _primaryColor, size: 20),
+              Icon(Icons.category, color: _c.primary, size: 20),
               SizedBox(width: 8),
               Text('Type de publication',
-                  style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                  style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
             ],
           ),
           SizedBox(height: 12),
           DropdownButtonFormField<String>(
             decoration: InputDecoration(
               hintText: 'Choisir un type de publication',
-              hintStyle: TextStyle(color: _hintColor),
+              hintStyle: TextStyle(color: _c.textSecondary),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey[700]!),
+                borderSide: BorderSide(color: _c.border),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey[700]!),
+                borderSide: BorderSide(color: _c.border),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: _primaryColor),
+                borderSide: BorderSide(color: _c.primary),
               ),
               filled: true,
-              fillColor: _backgroundColor,
+              fillColor: _c.background,
               contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             ),
-            dropdownColor: _cardColor,
-            style: TextStyle(color: _textColor, fontSize: 14),
+            dropdownColor: _c.surface,
+            style: TextStyle(color: _c.textPrimary, fontSize: 14),
             value: _selectedPostType,
             onChanged: (String? newValue) {
               setState(() => _selectedPostType = newValue);
@@ -1100,9 +1101,9 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                 value: entry.key,
                 child: Row(
                   children: [
-                    Icon(entry.value['icon'] as IconData, color: _primaryColor, size: 18),
+                    Icon(entry.value['icon'] as IconData, color: _c.primary, size: 18),
                     SizedBox(width: 12),
-                    Text(entry.value['label'], style: TextStyle(color: _textColor)),
+                    Text(entry.value['label'], style: TextStyle(color: _c.textPrimary)),
                   ],
                 ),
               );
@@ -1124,10 +1125,10 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
       width: double.infinity,
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _backgroundColor,
+        color: _c.background,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: _audioFile != null ? _audioColor : Colors.grey[700]!,
+          color: _audioFile != null ? _audioColor : _c.border,
           width: 2,
         ),
       ),
@@ -1139,7 +1140,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
               Icon(Icons.audiotrack, color: _audioColor, size: 20),
               SizedBox(width: 8),
               Text('Audio (obligatoire)',
-                  style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                  style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
               SizedBox(width: 8),
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -1159,35 +1160,35 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
             Container(
               padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: _cardColor,
+                color: _c.surface,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.red, width: 2),
+                border: Border.all(color: _c.danger, width: 2),
               ),
               child: Column(
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.fiber_manual_record, color: Colors.red, size: 24),
+                      Icon(Icons.fiber_manual_record, color: _c.danger, size: 24),
                       SizedBox(width: 12),
                       Text(
                         'Enregistrement... $_recordingDuration s',
-                        style: TextStyle(color: Colors.red, fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(color: _c.danger, fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
                   SizedBox(height: 16),
                   LinearProgressIndicator(
                     value: _recordingDuration / _maxAudioDuration,
-                    backgroundColor: Colors.grey[800],
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                    backgroundColor: _c.surfaceVariant,
+                    valueColor: AlwaysStoppedAnimation<Color>(_c.danger),
                   ),
                   SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: _stopRecording,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
+                      backgroundColor: _c.danger,
+                      foregroundColor: _c.onPrimary,
                       minimumSize: Size(double.infinity, 45),
                     ),
                     child: Text('ARRÊTER L\'ENREGISTREMENT'),
@@ -1211,7 +1212,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _audioColor,
-                      foregroundColor: Colors.white,
+                      foregroundColor: _c.onPrimary,
                       padding: EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
@@ -1229,7 +1230,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                       ],
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey[800],
+                      backgroundColor: _c.surfaceVariant,
                       foregroundColor: _audioColor,
                       padding: EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1243,7 +1244,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
             Container(
               padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: _cardColor,
+                color: _c.surface,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
@@ -1265,14 +1266,14 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                           children: [
                             Text(
                               _audioFileName ?? 'Audio',
-                              style: TextStyle(color: _textColor, fontWeight: FontWeight.bold),
+                              style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                             SizedBox(height: 4),
                             Text(
                               '${_audioDuration ?? 0}s • ${_audioFile != null ? '${(_audioFile!.lengthSync() / 1024 / 1024).toStringAsFixed(1)} MB' : ''}',
-                              style: TextStyle(color: _hintColor, fontSize: 12),
+                              style: TextStyle(color: _c.textSecondary, fontSize: 12),
                             ),
                           ],
                         ),
@@ -1295,7 +1296,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                           ),
                           IconButton(
                             onPressed: _removeAudio,
-                            icon: Icon(Icons.close, color: Colors.red, size: 24),
+                            icon: Icon(Icons.close, color: _c.danger, size: 24),
                           ),
                         ],
                       ),
@@ -1308,7 +1309,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                       children: [
                         Text(
                           _formatTime(_currentAudioPosition),
-                          style: TextStyle(color: _hintColor, fontSize: 12),
+                          style: TextStyle(color: _c.textSecondary, fontSize: 12),
                         ),
                         Expanded(
                           child: Slider(
@@ -1319,12 +1320,12 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                                 : 1.0,
                             onChanged: _seekAudio,
                             activeColor: _audioColor,
-                            inactiveColor: Colors.grey[700],
+                            inactiveColor: _c.border,
                           ),
                         ),
                         Text(
                           _formatTime(_currentAudioDuration),
-                          style: TextStyle(color: _hintColor, fontSize: 12),
+                          style: TextStyle(color: _c.textSecondary, fontSize: 12),
                         ),
                       ],
                     ),
@@ -1343,10 +1344,10 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
       width: double.infinity,
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _backgroundColor,
+        color: _c.background,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: _coverImage != null ? _primaryColor : Colors.grey[700]!,
+          color: _coverImage != null ? _c.primary : _c.border,
           width: 2,
         ),
       ),
@@ -1355,10 +1356,10 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
         children: [
           Row(
             children: [
-              Icon(Icons.image, color: _primaryColor, size: 20),
+              Icon(Icons.image, color: _c.primary, size: 20),
               SizedBox(width: 8),
               Text('Image de couverture (optionnelle)',
-                  style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                  style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
             ],
           ),
           SizedBox(height: 16),
@@ -1369,18 +1370,18 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
               child: Container(
                 height: 120,
                 decoration: BoxDecoration(
-                  color: _cardColor,
+                  color: _c.surface,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey[700]!, style: BorderStyle.solid),
+                  border: Border.all(color: _c.border, style: BorderStyle.solid),
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.add_photo_alternate, size: 40, color: _hintColor),
+                    Icon(Icons.add_photo_alternate, size: 40, color: _c.textSecondary),
                     SizedBox(height: 8),
                     Text('Ajouter une image de couverture',
-                        style: TextStyle(color: _hintColor, fontSize: 14)),
-                    Text('(optionnel)', style: TextStyle(color: _hintColor, fontSize: 12)),
+                        style: TextStyle(color: _c.textSecondary, fontSize: 14)),
+                    Text('(optionnel)', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
                   ],
                 ),
               ),
@@ -1428,10 +1429,10 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
 
     double percentage = textLength / _maxCharacters;
     Color counterColor = textLength > _maxCharacters
-        ? Colors.red
+        ? _c.danger
         : percentage > 0.8
-        ? Colors.orange
-        : Colors.green;
+        ? _c.warning
+        : _c.primary;
 
     String statusText;
     if (isAdmin) {
@@ -1449,7 +1450,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
         SizedBox(height: 4),
         LinearProgressIndicator(
           value: percentage.clamp(0.0, 1.0),
-          backgroundColor: Colors.grey[800],
+          backgroundColor: _c.surfaceVariant,
           valueColor: AlwaysStoppedAnimation<Color>(counterColor),
           minHeight: 3,
         ),
@@ -1465,7 +1466,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: _cardColor,
+        backgroundColor: _c.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
@@ -1478,7 +1479,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(message, style: TextStyle(color: Colors.grey[400])),
+            Text(message, style: TextStyle(color: _c.textSecondary)),
             SizedBox(height: 20),
             Container(
               padding: EdgeInsets.all(12),
@@ -1498,7 +1499,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                         Text('Afrolook Premium',
                             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                         Text('Pays illimités • Audio 3 min • 3000 caractères',
-                            style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+                            style: TextStyle(color: _c.textSecondary, fontSize: 12)),
                       ],
                     ),
                   ),
@@ -1519,7 +1520,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Color(0xFFFDB813),
-              foregroundColor: Colors.black,
+              foregroundColor: _c.onAccent,
             ),
             child: Text(actionText),
           ),
@@ -1532,6 +1533,21 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
 
     if (!_canPost && _cooldownMinutes > 0) {
       _showRewardedAdOption(); // Proposer la pub
+      return;
+    }
+
+    // Vérification serveur : cooldown 5 min universel (anti-fraude)
+    final cooldown = await PostCooldownService.check();
+    if (!cooldown.canPost) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+            '⏳ Attendez ${PostCooldownService.formatRemaining(cooldown.remainingSeconds)} avant de publier à nouveau.',
+            textAlign: TextAlign.center,
+          ),
+          duration: const Duration(seconds: 4),
+        ));
+      }
       return;
     }
 
@@ -1567,20 +1583,20 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
         barrierDismissible: false,
         builder: (BuildContext context) {
           return AlertDialog(
-            backgroundColor: _cardColor,
+            backgroundColor: _c.surface,
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 LoadingAnimationWidget.flickr(
                   size: 50,
-                  leftDotColor: _primaryColor,
-                  rightDotColor: _secondaryColor,
+                  leftDotColor: _c.primary,
+                  rightDotColor: _c.accent,
                 ),
                 SizedBox(height: 16),
-                Text('Publication en cours...', style: TextStyle(color: _textColor)),
+                Text('Publication en cours...', style: TextStyle(color: _c.textPrimary)),
                 SizedBox(height: 8),
                 Text('Audio • ${_selectAllCountries ? "Toute l'Afrique" : '${_selectedCountries.length} pays'}',
-                    style: TextStyle(color: _hintColor, fontSize: 12)),
+                    style: TextStyle(color: _c.textSecondary, fontSize: 12)),
               ],
             ),
           );
@@ -1696,10 +1712,10 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.check_circle, color: Colors.green, size: 20),
+                  Icon(Icons.check_circle, color: _c.primary, size: 20),
                   SizedBox(width: 8),
                   Text('Publication réussie !',
-                      style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                      style: TextStyle(color: _c.primary, fontWeight: FontWeight.bold)),
                 ],
               ),
               SizedBox(height: 4),
@@ -1707,7 +1723,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                   style: TextStyle(color: Colors.white, fontSize: 12)),
             ],
           ),
-          backgroundColor: _cardColor,
+          backgroundColor: _c.surface,
           duration: Duration(seconds: 4),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1758,8 +1774,8 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
   void _showErrorSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, textAlign: TextAlign.center, style: TextStyle(color: Colors.red)),
-        backgroundColor: _cardColor,
+        content: Text(message, textAlign: TextAlign.center, style: TextStyle(color: _c.danger)),
+        backgroundColor: _c.surface,
         duration: Duration(seconds: 3),
       ),
     );
@@ -1771,36 +1787,36 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
       padding: EdgeInsets.all(16),
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: _c.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _secondaryColor),
+        border: Border.all(color: _c.accent),
       ),
       child: Column(
         children: [
           Row(
             children: [
-              Icon(Icons.timer, color: _secondaryColor, size: 24),
+              Icon(Icons.timer, color: _c.accent, size: 24),
               SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('Temps d\'attente',
-                        style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                        style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
                     SizedBox(height: 4),
                     Text('Prochain post dans: $_timeRemaining',
-                        style: TextStyle(color: _hintColor, fontSize: 14)),
+                        style: TextStyle(color: _c.textSecondary, fontSize: 14)),
                   ],
                 ),
               ),
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: _secondaryColor.withOpacity(0.2),
+                  color: _c.accent.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(_timeRemaining,
-                    style: TextStyle(color: _secondaryColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                    style: TextStyle(color: _c.accent, fontWeight: FontWeight.bold, fontSize: 16)),
               ),
             ],
           ),
@@ -1812,10 +1828,10 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
             width: double.infinity,
             child: Column(
               children: [
-                Divider(color: Colors.grey[800]),
+                Divider(color: _c.surfaceVariant),
                 SizedBox(height: 12),
                 Text('OU',
-                    style: TextStyle(color: _hintColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                    style: TextStyle(color: _c.textSecondary, fontSize: 12, fontWeight: FontWeight.bold)),
                 SizedBox(height: 12),
                 RewardedAdWidget(
                   key: _rewardedAdKey,
@@ -1828,8 +1844,8 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text('Merci ! Vous pouvez poster maintenant !',
-                            style: TextStyle(color: Colors.green)),
-                        backgroundColor: _cardColor,
+                            style: TextStyle(color: _c.primary)),
+                        backgroundColor: _c.surface,
                         behavior: SnackBarBehavior.floating,
                       ),
                     );
@@ -1840,7 +1856,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      color: _secondaryColor,
+                      color: _c.accent,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -1864,7 +1880,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                 SizedBox(height: 8),
                 Text('Regardez une courte publicité pour\npublier immédiatement sans attendre',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: _hintColor, fontSize: 11)),
+                    style: TextStyle(color: _c.textSecondary, fontSize: 11)),
               ],
             ),
           ),
@@ -1881,7 +1897,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
         !_isRecording;
 
     return Scaffold(
-      backgroundColor: _backgroundColor,
+      backgroundColor: _c.background,
       body: Stack(
         children: [
           SingleChildScrollView(
@@ -1891,7 +1907,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                 Container(
                   padding: EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: _cardColor,
+                    color: _c.surface,
                     borderRadius: BorderRadius.only(
                       bottomLeft: Radius.circular(20),
                       bottomRight: Radius.circular(20),
@@ -1913,7 +1929,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text('Publication Audio',
-                                style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 18)),
+                                style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 18)),
                             SizedBox(height: 4),
                             Container(
                               padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -1942,7 +1958,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                   margin: EdgeInsets.all(16),
                   padding: EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: _cardColor,
+                    color: _c.surface,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Form(
@@ -1958,17 +1974,17 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                         Container(
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.grey[700]!),
+                            border: Border.all(color: _c.border),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               TextFormField(
                                 controller: _descriptionController,
-                                style: TextStyle(color: _textColor, fontSize: 16),
+                                style: TextStyle(color: _c.textPrimary, fontSize: 16),
                                 decoration: InputDecoration(
                                   hintText: 'Description (optionnelle)...',
-                                  hintStyle: TextStyle(color: _hintColor),
+                                  hintStyle: TextStyle(color: _c.textSecondary),
                                   border: InputBorder.none,
                                   contentPadding: EdgeInsets.all(16),
                                 ),
@@ -1989,7 +2005,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                         Container(
                           padding: EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.grey[900],
+                            color: _c.background,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
@@ -2001,7 +2017,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                                     ? Icons.workspace_premium
                                     : Icons.lock,
                                 color: authProvider.loginUserData.role == UserRole.ADM.name
-                                    ? Colors.green
+                                    ? _c.primary
                                     : AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement)
                                     ? Color(0xFFFDB813)
                                     : Colors.grey,
@@ -2015,7 +2031,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                                       : AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement)
                                       ? 'Mode Premium: Pays illimités • Audio 3 min • 3000 caractères'
                                       : 'Mode Gratuit: Max 2 pays • Audio 3 min • 300 caractères',
-                                  style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                                  style: TextStyle(color: _c.textSecondary, fontSize: 12),
                                 ),
                               ),
                               if (!AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement) &&
@@ -2043,14 +2059,14 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                             gradient: LinearGradient(
                               colors: onTap || (!_canPost && _cooldownMinutes > 0)
                                   ? [Colors.grey, Colors.grey]
-                                  : [_primaryColor, Color(0xFFFF5252)],
+                                  : [_c.primary, Color(0xFFFF5252)],
                               begin: Alignment.centerLeft,
                               end: Alignment.centerRight,
                             ),
                             borderRadius: BorderRadius.circular(25),
                             boxShadow: [
                               BoxShadow(
-                                color: _primaryColor.withOpacity(0.3),
+                                color: _c.primary.withOpacity(0.3),
                                 blurRadius: 10,
                                 offset: Offset(0, 4),
                               ),
@@ -2068,7 +2084,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                                     ? LoadingAnimationWidget.flickr(
                                   size: 30,
                                   leftDotColor: Colors.white,
-                                  rightDotColor: _secondaryColor,
+                                  rightDotColor: _c.accent,
                                 )
                                     : (!_canPost && _cooldownMinutes > 0)
                                     ? Row(
@@ -2088,7 +2104,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                                     Container(
                                       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: _secondaryColor,
+                                        color: _c.accent,
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: InkWell(

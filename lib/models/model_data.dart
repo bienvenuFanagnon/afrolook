@@ -879,6 +879,36 @@ class UserData {
   Map<String, int>? postViewsMonthly = {}; // {"2026-06": 1500, ...} — affichage uniquement
   bool? postViewsMigrationDone = false;   // Flag migration one-time
 
+  // ── Compte officiel ───────────────────────────────────────────────────────
+  String? officialAccountType;             // OfficialAccountCategory.id (null = non officiel)
+  String? officialAccountStatus;           // 'approved' | 'suspended' | 'rejected'
+  bool? officialBadge = false;
+  String? officialAccountRequestId;
+  String? officialName;
+  String? officialDescription;
+  String? officialCountry;
+  String? officialCity;
+  String? officialWebsite;
+  List<String>? broadcastDomains = [];
+  List<Map<String, dynamic>>? officialSocialLinks = [];
+  bool? canMonetize = false;
+  bool? canReceiveGiftCommission = false;
+  bool? canDoParrainage = false;
+
+  bool get isOfficialAccount =>
+      officialBadge == true && officialAccountStatus == 'approved';
+
+  /// Peut recevoir cadeaux, revenus likes, vues cumulées.
+  /// Utilisateur simple → toujours monétisé.
+  /// Compte officiel → seulement influencer, artist, entrepreneur.
+  bool get isMonetized {
+    if (officialBadge != true) return true;
+    const monetizedTypes = {'influencer', 'artist', 'entrepreneur'};
+    return monetizedTypes.contains(officialAccountType);
+  }
+
+  OfficialSubscription? officialSubscription;
+
   UserData({
     this.reference,
     this.pseudo,
@@ -975,6 +1005,20 @@ class UserData {
     this.postViewsTotalCashed = 0.0,
     this.postViewsMonthly,
     this.postViewsMigrationDone = false,
+    this.officialAccountType,
+    this.officialAccountStatus,
+    this.officialBadge = false,
+    this.officialAccountRequestId,
+    this.officialName,
+    this.officialDescription,
+    this.officialCountry,
+    this.officialCity,
+    this.officialWebsite,
+    this.broadcastDomains = const [],
+    this.officialSocialLinks = const [],
+    this.canMonetize = false,
+    this.canReceiveGiftCommission = false,
+    this.canDoParrainage = false,
   }) {
     abonnement ??= AfrolookAbonnement.gratuit();
     liveStats ??= LiveStats.defaultForUser(id ?? '');
@@ -1133,6 +1177,23 @@ class UserData {
     postViewsMonthly = (json['postViewsMonthly'] as Map<String, dynamic>?)
         ?.map((k, v) => MapEntry(k, (v as num).toInt())) ?? {};
     postViewsMigrationDone = json['postViewsMigrationDone'] ?? false;
+
+    officialAccountType = json['officialAccountType'] as String?;
+    officialAccountStatus = json['officialAccountStatus'] as String?;
+    officialBadge = json['officialBadge'] as bool? ?? false;
+    officialAccountRequestId = json['officialAccountRequestId'] as String?;
+    officialName = json['officialName'] as String?;
+    officialDescription = json['officialDescription'] as String?;
+    officialCountry = json['officialCountry'] as String?;
+    officialCity = json['officialCity'] as String?;
+    officialWebsite = json['officialWebsite'] as String?;
+    broadcastDomains = List<String>.from(json['broadcastDomains'] as List? ?? []);
+    officialSocialLinks = (json['officialSocialLinks'] as List? ?? [])
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
+    canMonetize = json['canMonetize'] as bool? ?? false;
+    canReceiveGiftCommission = json['canReceiveGiftCommission'] as bool? ?? false;
+    canDoParrainage = json['canDoParrainage'] as bool? ?? false;
   }
 
   Map<String, dynamic> toJson() {
@@ -2844,9 +2905,67 @@ enum UserCmdStatus { ENCOURS, ANNULER, VALIDER }
 
 
 enum TypeTransaction{
-  DEPOTADMIN,RETRAITADMIN,DEPOT,RETRAIT,GAIN,DEPENSE, CONVERSION_PIECES, ACHAT_PIECES, CADEAU_PIECES, CADEAU_PIECES_RECU, GAIN_PIECES, LIKE_PIECES
+  DEPOTADMIN, RETRAITADMIN, DEPOT, RETRAIT, GAIN, DEPENSE,
+  CONVERSION_PIECES, ACHAT_PIECES, CADEAU_PIECES, CADEAU_PIECES_RECU,
+  GAIN_PIECES, LIKE_PIECES, ABONNEMENT_OFFICIEL
 }
 enum StatutTransaction { ENCOURS, ANNULER, VALIDER }
+
+/// Suivi de l'abonnement mensuel d'un compte officiel (5 000 FCFA/mois).
+class OfficialSubscription {
+  final bool active;
+  final DateTime? lastPaidAt;
+  final DateTime? nextDueAt;
+  final bool autoPayEnabled;
+
+  const OfficialSubscription({
+    this.active = false,
+    this.lastPaidAt,
+    this.nextDueAt,
+    this.autoPayEnabled = false,
+  });
+
+  int get daysLate {
+    if (nextDueAt == null) return 0;
+    final diff = DateTime.now().difference(nextDueAt!).inDays;
+    return diff > 0 ? diff : 0;
+  }
+
+  bool get isLate => daysLate > 0;
+  bool get isSuspendable => daysLate >= 30;
+
+  factory OfficialSubscription.fromJson(Map<String, dynamic> json) {
+    return OfficialSubscription(
+      active: json['active'] == true,
+      lastPaidAt: json['lastPaidAt'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(json['lastPaidAt'] as int)
+          : null,
+      nextDueAt: json['nextDueAt'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(json['nextDueAt'] as int)
+          : null,
+      autoPayEnabled: json['autoPayEnabled'] == true,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'active': active,
+    'lastPaidAt': lastPaidAt?.millisecondsSinceEpoch,
+    'nextDueAt': nextDueAt?.millisecondsSinceEpoch,
+    'autoPayEnabled': autoPayEnabled,
+  };
+
+  OfficialSubscription copyWith({
+    bool? active,
+    DateTime? lastPaidAt,
+    DateTime? nextDueAt,
+    bool? autoPayEnabled,
+  }) => OfficialSubscription(
+    active: active ?? this.active,
+    lastPaidAt: lastPaidAt ?? this.lastPaidAt,
+    nextDueAt: nextDueAt ?? this.nextDueAt,
+    autoPayEnabled: autoPayEnabled ?? this.autoPayEnabled,
+  );
+}
 
 
 @JsonSerializable()
@@ -4445,6 +4564,7 @@ enum NotificationType {
   CHRONIQUE,
   SERVICE,
   USER, GAIN,
+  COMPTE_OFFICIEL,
 }
 
 enum TypeEntreprise { personnel, partenaire }

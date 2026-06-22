@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
@@ -33,6 +36,11 @@ class _CreateLivePageState extends State<CreateLivePage> {
   bool _showPaymentModalAfterTrial = true;
   bool _useHDQuality = false;
   bool _useLowLatency = false;
+
+  // Image de couverture
+  File? _coverImageFile;
+  String? _coverImageUrl;
+  bool _isUploadingCover = false;
 
   // Variables pour le contrôle
   bool _isCreating = false;
@@ -919,6 +927,11 @@ class _CreateLivePageState extends State<CreateLivePage> {
 
                 SizedBox(height: 20),
 
+                // Image de couverture
+                _buildCoverImagePicker(),
+
+                SizedBox(height: 20),
+
                 // Titre
                 _buildTitleField(),
 
@@ -1565,6 +1578,88 @@ class _CreateLivePageState extends State<CreateLivePage> {
     );
   }
 
+  Future<void> _pickCoverImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    if (picked == null) return;
+    setState(() {
+      _coverImageFile = File(picked.path);
+      _coverImageUrl = null;
+    });
+    setState(() => _isUploadingCover = true);
+    try {
+      final liveId = _firestore.collection('Lives').doc().id;
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('live_covers/${_auth.currentUser!.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg');
+      await ref.putFile(_coverImageFile!);
+      final url = await ref.getDownloadURL();
+      if (mounted) setState(() => _coverImageUrl = url);
+    } catch (_) {} finally {
+      if (mounted) setState(() => _isUploadingCover = false);
+    }
+  }
+
+  Widget _buildCoverImagePicker() {
+    return GestureDetector(
+      onTap: _pickCoverImage,
+      child: Container(
+        height: 160,
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1E2E),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white12),
+          image: _coverImageFile != null
+              ? DecorationImage(image: FileImage(_coverImageFile!), fit: BoxFit.cover)
+              : null,
+        ),
+        child: _coverImageFile == null
+            ? Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.add_photo_alternate_rounded, color: Colors.white38, size: 36),
+                  const SizedBox(height: 8),
+                  const Text('Ajouter une image de couverture',
+                      style: TextStyle(color: Colors.white38, fontSize: 13)),
+                  const SizedBox(height: 4),
+                  const Text('Optionnel — visible dans la liste des lives',
+                      style: TextStyle(color: Colors.white24, fontSize: 11)),
+                ],
+              )
+            : Stack(
+                children: [
+                  if (_isUploadingCover)
+                    const Center(child: CircularProgressIndicator(color: Colors.white54)),
+                  Positioned(
+                    top: 8, right: 8,
+                    child: GestureDetector(
+                      onTap: () => setState(() { _coverImageFile = null; _coverImageUrl = null; }),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                        child: const Icon(Icons.close, color: Colors.white, size: 16),
+                      ),
+                    ),
+                  ),
+                  if (_coverImageUrl != null)
+                    Positioned(
+                      bottom: 8, right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(color: Colors.green.withOpacity(0.85), borderRadius: BorderRadius.circular(8)),
+                        child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                          Icon(Icons.check, color: Colors.white, size: 12),
+                          SizedBox(width: 4),
+                          Text('Uploadée', style: TextStyle(color: Colors.white, fontSize: 11)),
+                        ]),
+                      ),
+                    ),
+                ],
+              ),
+      ),
+    );
+  }
+
   Future<void> _createLive() async {
     if (_isCreating) {
       print('⚠️ Tentative bloquée : création déjà en cours');
@@ -1660,6 +1755,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
         title: _titleController.text.trim(),
         startTime: DateTime.now(),
         liveDurationMinutes: isAdmin?60:30,
+        coverImage: _coverImageUrl,
         // Paramètres live payant
         isPaidLive: _isPaidLive,
         participationFee: _isPaidLive ? double.parse(_participationFeeController.text) : 0.0,

@@ -21,10 +21,7 @@ class FeedCanauxSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
-      return _LoadingSection(title: title);
-    }
-    if (canaux.isEmpty) return const SizedBox.shrink();
+    if (isLoading || canaux.isEmpty) return const SizedBox.shrink();
 
     final size = MediaQuery.of(context).size;
     final colors = AppColors.of(context);
