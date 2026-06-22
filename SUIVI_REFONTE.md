@@ -1,5 +1,5 @@
 # SUIVI REFONTE UI — AFROLOOK V2
-_Dernière mise à jour : 21 juin 2026 (session 73)_
+_Dernière mise à jour : 22 juin 2026 (session 78)_
 
 ---
 
@@ -138,15 +138,15 @@ Tout est fait en **français**.
 | **Centralisation feed — Phase 2 (session 71)** | ✅ FAIT — `PostRenderer` + `FeedList` créés |
 | **Centralisation feed — Phase 3 (session 71)** | ✅ FAIT — `UnifiedFeedPage` + onglets Sport/Vibes + preload splash |
 | **Centralisation feed — Phase 4 (session 71 suite)** | ✅ FAIT — widgets `_build*` extraits en 6 composants partagés (`lib/widgets/feed/sections/`) + `FeedRepository` câblé dans `HomeConstPost`, `homeSportPost`, `PostDetailsVideoFormatTel` |
+| **Unification score (session 74)** | ✅ FAIT — `FeedScoringService.calculateEngagementScore()` public, `_computeScore` ne double-compte plus la fraîcheur |
+| **Requêtes Firestore parallèles (session 74)** | ✅ FAIT — `fetchFeed` FeedType.home passe de 5 awaits séquentiels à `Future.wait()` (dédup post-collection) |
+| **AppColors postWidgetPage (session 74)** | ✅ FAIT — 8 constantes hardcodées supprimées, badge événement + badge pays + dialog pièces migrés vers AppColors |
 
 ---
 
 ## WIDGET TOGGLE THÈME
 
-Le bouton de basculement clair/sombre est à exposer clairement dans l'UI.  
-`ThemeProvider.toggleTheme()` existe déjà.
-
-**À faire :** Proposer une position cohérente (drawer, settings, AppBar) et un design du bouton toggle.
+✅ Déjà implémenté (session antérieure).
 
 ---
 
@@ -255,6 +255,113 @@ Le bouton de basculement clair/sombre est à exposer clairement dans l'UI.
 - Pub = post ordinaire à 100% (même dimensions, même header avatar/nom, même zone média)
 - Overlay badge "SPONSORISÉ" en haut à droite (semi-transparent, petite police)
 - Rangée stats compacte (vues + CTR) + bouton CTA gradient rouge en dessous du post
+
+### Session 78 (22 juin 2026) — Fix double-flash feed au démarrage
+
+**Problème corrigé** : à chaque lancement, l'utilisateur voyait un post s'afficher (cache), puis un flash de loading, puis les posts se réafficher avec un premier post différent du précédent.
+
+**Cause racine** : dans `_loadInitialPosts()`, l'instruction `_posts = newPosts` remplaçait brutalement les posts du cache par les posts réseau — même quand le contenu était identique ou très similaire. Ce remplacement provoquait une rebuild visible de la liste (flash + changement de premier post).
+
+**Fix appliqué** (`lib/pages/home/HomeConstPost.dart`) :
+- Si `_posts` est vide (pas de cache) → comportement identique : réseau affiché directement
+- Si `_posts` contient déjà le cache → **ne pas remplacer** ; calculer les posts vraiment nouveaux (absents de `_loadedPostIds`) et les **prépendre** silencieusement en tête de liste
+- Dans les deux cas, `_saveFeedToCache()` est appelé → le cache est à jour pour le prochain lancement
+- L'indicateur `_isLoadingPosts` reste `false` pendant tout le background refresh (protégé par `if (_posts.isEmpty)`)
+
+**Résultat** :
+1. Lancement → posts du cache s'affichent instantanément ✅
+2. Réseau arrive → si nouveaux posts, prépendés discrètement en haut ✅
+3. Si réseau = même contenu que cache → rien ne change à l'écran ✅
+4. Le flash et le changement de premier post ont disparu ✅
+
+---
+
+### Session 77 (22 juin 2026) — AppColors : 6 pages de création de posts
+
+**Problème corrigé** : les pages de création de posts utilisaient des `final Color _primaryColor = Color(0xFF...)` hardcodées définies une fois pour toutes — jamais mises à jour avec le thème. Aucun changement visuel n'était perceptible à l'écran.
+
+**Solution** : suppression des constantes hardcodées, ajout de `late AppColors _c` + `didChangeDependencies()` dans chaque page.
+
+**Fichiers migrés** (6 au total) :
+- `userPostImageTab.dart` (UserPostLookImageTab) — mapping complet : `_primaryColor` → `_c.primary`, `_secondaryColor` → `_c.accent`, `_backgroundColor` → `_c.background`, `_cardColor` → `_c.surface`, `_textColor` → `_c.textPrimary`, `_hintColor` → `_c.textSecondary`, `_successColor` → `_c.primary` + `Colors.red/green/orange/grey[*]` → `_c.danger/primary/warning/border/surfaceVariant/textSecondary`
+- `userPostVideoTab.dart` (UserPubVideo) — même migration complète
+- `userPostAudioTab.dart` (UserPostLookAudioTab) — idem (conservé : `_audioColor = Color(0xFF2196F3)` intentionnel)
+- `userPostTextTab.dart` (UserPubText) — idem
+- `UserPubVibeTab.dart` (UserPubVibe) — idem
+- `postLookImageTab.dart` (PostLookImageTab) — idem + migration `ConstColors.backgroundColor` → `_c.background`, `ConstColors.textColors` → `_c.textPrimary`
+
+**Résultat** : 0 erreur `flutter analyze` sur les 6 fichiers. Les pages réagissent maintenant au thème clair/sombre.
+
+---
+
+### Session 76 (22 juin 2026) — AppColors : postWidgetPage.dart + post_video_format_tel_details.dart
+
+**Fichiers migrés** :
+
+`lib/pages/userPosts/postWidgets/postWidgetPage.dart` :
+- `_showGiftDialog` entièrement migré : bg dialog → `dc.surface`, bordure → `dc.accent`, titre → `dc.accent`, texte subtitle → `dc.textSecondary`, GridView items (selected bg → `dc.primary`, unselected → `dc.surfaceVariant`, border → `dc.accent`, texte → `dc.textPrimary`), solde → `dc.accent`, Annuler → `dc.textSecondary`, bouton Envoyer bg → `dc.primary`, texte → `dc.onPrimary`
+- SnackBar favoris : `Colors.white` → `onPrimary`, `Colors.grey` unfavorited → `surfaceVariant`
+- SnackBar erreur modification : `Colors.white` → `onPrimary`
+- SnackBar cadeau envoyé (x2) : `Colors.white` → `onPrimary`
+- 0 erreur `flutter analyze`
+
+`lib/pages/post_video_format_tel_details.dart` :
+- 3 SnackBars `backgroundColor: Colors.green` → `AppColors.of(context).primary` (cadeau x2, partage)
+- Overlays vidéo TikTok-style (texte white/black) laissés intentionnellement
+- Bouton "+" follow overlay (rouge/blanc) laissé intentionnellement
+- 0 erreur `flutter analyze`
+
+---
+
+### Session 75 (22 juin 2026) — Réorganisation Cloud Functions + cooldown post serveur
+
+**Objectif** : Découper `functions/src/index.ts` (3384 lignes) en fichiers domaine distincts. index.ts ne ré-exporte plus que les noms — aucun appel Firebase/Flutter cassé.
+
+**Structure créée** :
+
+`functions/src/shared/` :
+- `firebase.ts` — `initializeApp()` + export `db` (une seule initialisation)
+- `config.ts` — toutes les constantes (EMAIL_FROM, APP_DOMAIN, PLAY_STORE_URL, FEEXPAY_*, APP_FEE_RATE_AFROLOOK…)
+- `deposit_utils.ts` — `formatCinetpayDate`, `generateDepositNumber`, `generateFeexpayTransKeyAfrolook`, `generateDepositNumberAfrolook`, `calculateAppGainAfrolook`
+- `notification_utils.ts` — `sendToOneSignal`, `getCanalImage`
+- `email_utils.ts` — `emailTransporter`, `checkEmailRateLimit`, `canSendMarketingEmail`, `INACTIVE_USER_EMAIL_TEMPLATE`, `generateEmailHTML`, `generateInteractionEmailHTML`
+
+`functions/src/payments/` :
+- `cinetpay.ts` — `initiateAfrolookDeposit`, `afrolookDepositCallback`
+- `paygate.ts` — `processAfrolookPaygatePayment`
+- `feexpay.ts` — `initiateAfrolookFeexpayPayment`, `executeAfrolookFeexpayPayment`, `afrolookFeexpayWebhook`, `checkAfrolookFeexpayTransactionStatus`
+
+`functions/src/live/` :
+- `agora.ts` — `generateAgoraToken`
+
+`functions/src/posts/` :
+- `sharing.ts` — `sharePostLink`
+- `interactions.ts` — `onPostInteraction`, `onNewPostFromSubscription`
+- `lifecycle.ts` — **NOUVELLES FONCTIONS** : `moderatePostLifecycle` (trigger PENDING→VALIDE/NONVALIDE) + `checkPostCooldownServer` (callable cooldown 5 min, vérification serveur anti-fraude)
+
+`functions/src/notifications/` :
+- `bulk.ts` — `sendBulkNotification`
+
+`functions/src/emails/` :
+- `email_functions.ts` — `sendInactiveUserReminder`, `testAfrolookEmail`, `processInactiveUsersReminder`, `sendBulkEmail`, `testEmail`
+
+`functions/src/index.ts` — réduit à 10 lignes de ré-exports uniquement
+
+**Vérification** : `npm run build` → 0 erreur TypeScript
+
+**Nouvelles fonctions Cloud (`posts/lifecycle.ts`)** :
+- `moderatePostLifecycle` : déclenché à chaque création de document `Posts/{postId}` ; si `statut == "PENDING"` → valide `dataType` ∈ [IMAGE, VIDEO, AUDIO, TEXT] → met à jour `statut` (VALIDE ou NONVALIDE) + `moderatedAt`
+- `checkPostCooldownServer` : callable authentifié ; cherche le dernier post de l'utilisateur (`user_id == uid`, tri `created_at` desc, timestamps en microseconds Flutter) ; retourne `{ canPost, remainingSeconds }` — cooldown 5 minutes strict côté serveur
+
+**Intégration Flutter du cooldown serveur** :
+- `lib/services/postService/post_cooldown_service.dart` créé : `PostCooldownService.check()` → appelle `checkPostCooldownServer`, retourne `({canPost, remainingSeconds})` ; `formatRemaining()` → MM:SS
+- Intégré dans 6 tabs de publication (`_publishPost`/`_publishVideo`/`save`) :
+  - `userPostImageTab.dart`, `userPostVideoTab.dart`, `userPostAudioTab.dart`
+  - `userPostTextTab.dart`, `UserPubVibeTab.dart`, `postLookImageTab.dart`
+- Pattern : vérification serveur APRÈS le check local (UX) → SnackBar avec temps restant si bloqué
+- 0 erreur `flutter analyze` sur les fichiers modifiés
+
+---
 
 ### Session 73 — WorkManager notifications réelles + fix crash chroniques + pub vidéo
 

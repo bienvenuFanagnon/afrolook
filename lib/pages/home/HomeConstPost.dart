@@ -380,6 +380,29 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   }
 
 
+  // Injecte les anciens posts dans le feed quand le feed récent est épuisé.
+  // Relance le background loading pour continuer à alimenter le cache.
+  void _injectOldPostsAndResume() {
+    final available = _oldPostsCache
+        .where((p) => p.id != null && !_loadedPostIds.contains(p.id))
+        .take(12)
+        .toList()..shuffle();
+
+    if (available.isEmpty) return;
+
+    setState(() {
+      _posts.addAll(available);
+      _loadedPostIds.addAll(available.map((p) => p.id!));
+      _totalPostsLoaded += available.length;
+      _hasMorePosts = true;
+      _backgroundPostsLoaded = 0;
+      _useBackgroundLoading = true;
+    });
+
+    _oldPostsCache.removeWhere((p) => available.any((a) => a.id == p.id));
+    _startBackgroundLoading();
+  }
+
   void _startOldPostsLoading() {
     _oldPostsLoadTimer?.cancel();
     // Intervalle augmenté de 15s à 22s : réduit le nombre de round trips
@@ -914,6 +937,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     if (clearPosts) {
       _posts.clear();
       _loadedPostIds.clear();
+      _isLoadingPosts = true; // évite l'écran vide pendant le rechargement
     }
     _totalPostsLoaded = 0;
     _backgroundPostsLoaded = 0;
@@ -1006,6 +1030,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
       // Vérifier s'il reste des posts à charger
       _hasMorePosts = newPosts.length >= (_backgroundLoadLimit ~/ 2);
+
+      // Feed récent épuisé → injecter les anciens posts si disponibles
+      if (!_hasMorePosts && _oldPostsCache.isNotEmpty) {
+        _injectOldPostsAndResume();
+      }
 
       // Si on atteint la limite de background, désactiver
       if (_backgroundPostsLoaded >= _maxBackgroundPosts) {
@@ -1587,16 +1616,32 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           break;
       }
 
-      setState(() {
-        _posts = newPosts;
-        _loadedPostIds.addAll(loadedIds);
-        _totalPostsLoaded = newPosts.length;
-        _isFirstLoad = false;
-      });
+      if (_posts.isEmpty) {
+        // Aucun cache : afficher directement les posts réseau
+        setState(() {
+          _posts = newPosts;
+          _loadedPostIds.addAll(loadedIds);
+          _totalPostsLoaded = newPosts.length;
+          _isFirstLoad = false;
+        });
+      } else {
+        // Cache déjà affiché : ne pas remplacer les posts (évite le flash visible).
+        // Prépendre uniquement les posts vraiment nouveaux (absents du cache).
+        final alreadyShown = Set<String>.from(_loadedPostIds);
+        final trulyNew = newPosts.where((p) => p.id != null && !alreadyShown.contains(p.id)).toList();
+        setState(() {
+          if (trulyNew.isNotEmpty) {
+            _posts = [...trulyNew, ..._posts];
+          }
+          _loadedPostIds.addAll(loadedIds);
+          _totalPostsLoaded = _posts.length;
+          _isFirstLoad = false;
+        });
+      }
 
       print('✅ ${newPosts.length} posts chargés avec filtre: $_currentFilter');
 
-      // 🔥 Mettre à jour le cache local pour le prochain affichage instantané
+      // Sauvegarder en cache pour le prochain lancement (contenu à jour)
       if (newPosts.isNotEmpty) {
         _saveFeedToCache();
       }
@@ -1867,9 +1912,15 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
       _hasMorePosts = newPosts.length >= (_manualLoadLimit ~/ 2);
 
+      // Feed épuisé → injecter les anciens posts si disponibles
+      if (!_hasMorePosts && _oldPostsCache.isNotEmpty) {
+        _injectOldPostsAndResume();
+      }
+
     } catch (e) {
       print('❌ Erreur chargement manuel: $e');
       _hasMorePosts = false;
+      if (_oldPostsCache.isNotEmpty) _injectOldPostsAndResume();
     } finally {
       setState(() {
         _isLoadingMorePosts = false;
@@ -2269,11 +2320,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   // ===========================================================================
 
   Widget _buildChroniquesSection() {
-    if (_isLoadingChroniques) {
-      return _buildLoadingSection('📝 Chroniques récentes');
-    }
-
-    if (_chroniques.isEmpty) {
+    if (_isLoadingChroniques || _chroniques.isEmpty) {
       return SizedBox.shrink();
     }
 
@@ -2499,7 +2546,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           ),
         ),
       );
-    } else if (!_hasMorePosts) {
+    } else if (!_hasMorePosts && _oldPostsCache.isEmpty) {
       contentWidgets.add(
         Container(
           padding: EdgeInsets.symmetric(vertical: 30),
@@ -2727,24 +2774,25 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           ),
         ),
       );
-    } else if (!_hasMorePosts) {
+    } else if (!_hasMorePosts && _oldPostsCache.isEmpty) {
+      final colors2 = AppColors.of(context);
       contentWidgets.add(
         Container(
           padding: const EdgeInsets.symmetric(vertical: 30),
           child: Center(
             child: Column(
               children: [
-                const Icon(Icons.flag, color: Colors.green, size: 36),
+                Icon(Icons.flag, color: colors2.primary, size: 36),
                 const SizedBox(height: 10),
                 Text(
                   _getEndMessage(),
-                  style: const TextStyle(color: Colors.grey, fontSize: 14),
+                  style: TextStyle(color: colors2.textSecondary, fontSize: 14),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 5),
-                const Text(
+                Text(
                   'Revenez plus tard pour de nouveaux contenus',
-                  style: TextStyle(color: Colors.grey, fontSize: 11),
+                  style: TextStyle(color: colors2.textSecondary, fontSize: 11),
                 ),
               ],
             ),
