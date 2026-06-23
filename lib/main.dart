@@ -157,6 +157,15 @@ Future<void> main() async {
       initialDelay: const Duration(seconds: 10),
       existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
     );
+    // TEST UNIQUEMENT — déclenche une exécution immédiate pour vérifier les logs
+    if (!kReleaseMode) {
+      await Workmanager().registerOneOffTask(
+        '${afrolookTask}_test',
+        afrolookTask,
+        initialDelay: const Duration(seconds: 5),
+      );
+      debugPrint('✅ WorkManager one-off task enregistrée');
+    }
   }
 
   // FlutterDownloader

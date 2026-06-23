@@ -7,6 +7,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 
+import '../firebase_options.dart';
 import '../pages/component/consoleWidget.dart';
 
 /// =======================================================
@@ -39,8 +40,12 @@ void callbackDispatcher() {
       debugPrint('WORKMANAGER EXECUTÉ: $task à ${DateTime.now()}');
 
       WidgetsFlutterBinding.ensureInitialized();
-      await Firebase.initializeApp();
-      // Obligatoire dans l'isolate WorkManager — le plugin n'est pas initialisé depuis main.dart
+      // Initialisation Firebase avec options — obligatoire dans l'isolate WorkManager
+      if (Firebase.apps.isEmpty) {
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+      }
       await initLocalNotifications();
 
       if (task == afrolookTestTask) {
