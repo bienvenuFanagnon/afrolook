@@ -1,10 +1,13 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 
@@ -177,62 +180,137 @@ Future<void> _runNotificationCheck(
     category: 'messages',
     current: countMessages,
     previous: lastCounts['messages'] ?? 0,
-    showFn: () => _showCategoryNotification(
-      id: _notifIdMessages,
-      title: '$countMessages nouveau${countMessages > 1 ? 'x' : ''} message${countMessages > 1 ? 's' : ''}',
-      body: 'Tu as des messages non lus dans tes conversations.',
-      icon: '💬',
-    ),
+    showFn: () async {
+      String? imageUrl;
+      try {
+        final snap = await firestore.collection('Messages')
+            .where('receiverBy', isEqualTo: userId)
+            .where('message_state', isEqualTo: 'NONLU')
+            .where('is_valide', isEqualTo: true)
+            .limit(1).get();
+        final senderId = snap.docs.firstOrNull?.data()['send_by'] as String?;
+        if (senderId != null) {
+          final doc = await firestore.collection('Users').doc(senderId).get();
+          imageUrl = doc.data()?['imageUrl'] as String?;
+        }
+      } catch (_) {}
+      await _showCategoryNotification(
+        id: _notifIdMessages,
+        title: '$countMessages nouveau${countMessages > 1 ? 'x' : ''} message${countMessages > 1 ? 's' : ''}',
+        body: 'Tu as des messages non lus dans tes conversations.',
+        icon: '💬',
+        imageUrl: imageUrl,
+      );
+    },
   );
 
   await maybeShow(
     category: 'groups',
     current: countGroups,
     previous: lastCounts['groups'] ?? 0,
-    showFn: () => _showCategoryNotification(
-      id: _notifIdGroups,
-      title: '$countGroups groupe${countGroups > 1 ? 's' : ''} actif${countGroups > 1 ? 's' : ''}',
-      body: 'Des messages t\'attendent dans tes groupes.',
-      icon: '👥',
-    ),
+    showFn: () async {
+      String? imageUrl;
+      try {
+        final snap = await firestore.collection('GroupChats')
+            .where('member_ids', arrayContains: userId)
+            .limit(1).get();
+        imageUrl = snap.docs.firstOrNull?.data()['image_url'] as String?;
+      } catch (_) {}
+      await _showCategoryNotification(
+        id: _notifIdGroups,
+        title: '$countGroups groupe${countGroups > 1 ? 's' : ''} actif${countGroups > 1 ? 's' : ''}',
+        body: 'Des messages t\'attendent dans tes groupes.',
+        icon: '👥',
+        imageUrl: imageUrl,
+      );
+    },
   );
 
   await maybeShow(
     category: 'invitations',
     current: countInvitations,
     previous: lastCounts['invitations'] ?? 0,
-    showFn: () => _showCategoryNotification(
-      id: _notifIdInvitations,
-      title: '$countInvitations demande${countInvitations > 1 ? 's' : ''} d\'amitié',
-      body: '${countInvitations > 1 ? 'Des personnes veulent' : 'Une personne veut'} te rejoindre sur Afrolook.',
-      icon: '🤝',
-    ),
+    showFn: () async {
+      String? imageUrl;
+      try {
+        final snap = await firestore.collection('Invitations')
+            .where('receiver_id', isEqualTo: userId)
+            .where('status', isEqualTo: 'ENCOURS')
+            .limit(1).get();
+        final senderId = snap.docs.firstOrNull?.data()['sender_id'] as String?;
+        if (senderId != null) {
+          final doc = await firestore.collection('Users').doc(senderId).get();
+          imageUrl = doc.data()?['imageUrl'] as String?;
+        }
+      } catch (_) {}
+      await _showCategoryNotification(
+        id: _notifIdInvitations,
+        title: '$countInvitations demande${countInvitations > 1 ? 's' : ''} d\'amitié',
+        body: '${countInvitations > 1 ? 'Des personnes veulent' : 'Une personne veut'} te rejoindre sur Afrolook.',
+        icon: '🤝',
+        imageUrl: imageUrl,
+      );
+    },
   );
 
   await maybeShow(
     category: 'dating',
     current: countDating,
     previous: lastCounts['dating'] ?? 0,
-    showFn: () => _showCategoryNotification(
-      id: _notifIdDating,
-      title: '$countDating notification${countDating > 1 ? 's' : ''} AfroLove',
-      body: countDating > 1
-          ? 'Tu as des likes, matchs ou messages non lus sur AfroLove.'
-          : 'Quelqu\'un t\'a aimé ou t\'a envoyé un message sur AfroLove.',
-      icon: '❤️',
-    ),
+    showFn: () async {
+      String? imageUrl;
+      try {
+        final snap = await firestore.collection('Notifications')
+            .where('receiver_id', isEqualTo: userId)
+            .where('is_open', isEqualTo: false)
+            .limit(10).get();
+        for (final doc in snap.docs) {
+          final type = (doc.data()['type'] as String?) ?? '';
+          if (_datingTypes.contains(type)) {
+            imageUrl = doc.data()['media_url'] as String?;
+            if (imageUrl != null) break;
+          }
+        }
+      } catch (_) {}
+      await _showCategoryNotification(
+        id: _notifIdDating,
+        title: '$countDating notification${countDating > 1 ? 's' : ''} AfroLove',
+        body: countDating > 1
+            ? 'Tu as des likes, matchs ou messages non lus sur AfroLove.'
+            : 'Quelqu\'un t\'a aimé ou t\'a envoyé un message sur AfroLove.',
+        icon: '❤️',
+        imageUrl: imageUrl,
+      );
+    },
   );
 
   await maybeShow(
     category: 'app',
     current: countApp,
     previous: lastCounts['app'] ?? 0,
-    showFn: () => _showCategoryNotification(
-      id: _notifIdApp,
-      title: '$countApp notification${countApp > 1 ? 's' : ''}',
-      body: 'Tu as des interactions non lues sur tes publications.',
-      icon: '🔔',
-    ),
+    showFn: () async {
+      String? imageUrl;
+      try {
+        final snap = await firestore.collection('Notifications')
+            .where('receiver_id', isEqualTo: userId)
+            .where('is_open', isEqualTo: false)
+            .limit(10).get();
+        for (final doc in snap.docs) {
+          final type = (doc.data()['type'] as String?) ?? '';
+          if (!_datingTypes.contains(type)) {
+            imageUrl = doc.data()['media_url'] as String?;
+            if (imageUrl != null) break;
+          }
+        }
+      } catch (_) {}
+      await _showCategoryNotification(
+        id: _notifIdApp,
+        title: '$countApp notification${countApp > 1 ? 's' : ''}',
+        body: 'Tu as des interactions non lues sur tes publications.',
+        icon: '🔔',
+        imageUrl: imageUrl,
+      );
+    },
   );
 
   _saveLastCounts(prefs, {
@@ -258,7 +336,7 @@ Future<void> _runDebugNotificationPreview(
   FirebaseFirestore firestore,
   String userId,
 ) async {
-  // Derniers messages directs
+  // Derniers messages directs — image de l'expéditeur
   try {
     final msgs = await firestore
         .collection('Messages')
@@ -267,18 +345,49 @@ Future<void> _runDebugNotificationPreview(
         .limit(5)
         .get();
     if (msgs.docs.isNotEmpty) {
+      String? imageUrl;
+      try {
+        final senderId = msgs.docs.first.data()['send_by'] as String?;
+        if (senderId != null) {
+          final senderDoc = await firestore.collection('Users').doc(senderId).get();
+          imageUrl = senderDoc.data()?['imageUrl'] as String?;
+        }
+      } catch (_) {}
       await _showCategoryNotification(
         id: _notifIdMessages,
         title: '💬 ${msgs.docs.length} conversation(s) [DEBUG]',
         body: 'Aperçu — ${msgs.docs.length} message(s) récents dans tes conversations.',
         icon: '💬',
+        imageUrl: imageUrl,
       );
     }
   } catch (e) {
     debugPrint('❌ WM debug msgs: $e');
   }
 
-  // Dernières notifications Firestore (toutes, lues ou non)
+  // Groupes actifs — image du groupe
+  try {
+    final groups = await firestore
+        .collection('GroupChats')
+        .where('member_ids', arrayContains: userId)
+        .limit(5)
+        .get();
+    if (groups.docs.isNotEmpty) {
+      final firstGroupData = groups.docs.first.data();
+      final imageUrl = firstGroupData['image_url'] as String?;
+      await _showCategoryNotification(
+        id: _notifIdGroups,
+        title: '👥 ${groups.docs.length} groupe(s) [DEBUG]',
+        body: 'Aperçu — ${groups.docs.length} groupe(s) avec activité récente.',
+        icon: '👥',
+        imageUrl: imageUrl,
+      );
+    }
+  } catch (e) {
+    debugPrint('❌ WM debug groups: $e');
+  }
+
+  // Dernières notifications Firestore (toutes, lues ou non) — image media_url
   try {
     final notifs = await firestore
         .collection('Notifications')
@@ -287,9 +396,18 @@ Future<void> _runDebugNotificationPreview(
         .get();
 
     int dating = 0, app = 0;
+    String? datingImageUrl, appImageUrl;
     for (final doc in notifs.docs) {
-      final type = (doc.data()['type'] as String?) ?? '';
-      _datingTypes.contains(type) ? dating++ : app++;
+      final data = doc.data();
+      final type = (data['type'] as String?) ?? '';
+      final mediaUrl = data['media_url'] as String?;
+      if (_datingTypes.contains(type)) {
+        dating++;
+        datingImageUrl ??= mediaUrl;
+      } else {
+        app++;
+        appImageUrl ??= mediaUrl;
+      }
     }
 
     if (dating > 0) {
@@ -298,6 +416,7 @@ Future<void> _runDebugNotificationPreview(
         title: '❤️ $dating notification(s) AfroLove [DEBUG]',
         body: 'Aperçu — $dating notification(s) AfroLove récentes.',
         icon: '❤️',
+        imageUrl: datingImageUrl,
       );
     }
     if (app > 0) {
@@ -306,13 +425,14 @@ Future<void> _runDebugNotificationPreview(
         title: '🔔 $app notification(s) app [DEBUG]',
         body: 'Aperçu — $app notification(s) récentes (likes, comments...).',
         icon: '🔔',
+        imageUrl: appImageUrl,
       );
     }
   } catch (e) {
     debugPrint('❌ WM debug notifs: $e');
   }
 
-  // Invitations (toutes, acceptées ou non)
+  // Invitations — image de l'expéditeur de l'invitation
   try {
     final invits = await firestore
         .collection('Invitations')
@@ -320,11 +440,20 @@ Future<void> _runDebugNotificationPreview(
         .limit(5)
         .get();
     if (invits.docs.isNotEmpty) {
+      String? imageUrl;
+      try {
+        final senderId = invits.docs.first.data()['sender_id'] as String?;
+        if (senderId != null) {
+          final senderDoc = await firestore.collection('Users').doc(senderId).get();
+          imageUrl = senderDoc.data()?['imageUrl'] as String?;
+        }
+      } catch (_) {}
       await _showCategoryNotification(
         id: _notifIdInvitations,
         title: '🤝 ${invits.docs.length} invitation(s) [DEBUG]',
         body: 'Aperçu — ${invits.docs.length} invitation(s) d\'amitié.',
         icon: '🤝',
+        imageUrl: imageUrl,
       );
     }
   } catch (e) {
@@ -447,13 +576,35 @@ Future<void> initLocalNotifications() async {
   );
 }
 
+/// Télécharge une image depuis une URL et la retourne comme bitmap Android.
+/// Retourne null en cas d'échec (timeout, erreur réseau, URL vide).
+Future<FilePathAndroidBitmap?> _downloadImageBitmap(String? url) async {
+  if (url == null || url.isEmpty) return null;
+  try {
+    final response = await http
+        .get(Uri.parse(url))
+        .timeout(const Duration(seconds: 5));
+    if (response.statusCode != 200) return null;
+    final dir = await getTemporaryDirectory();
+    final hash = url.hashCode.abs();
+    final file = File('${dir.path}/wm_icon_$hash.jpg');
+    await file.writeAsBytes(response.bodyBytes);
+    return FilePathAndroidBitmap(file.path);
+  } catch (e) {
+    debugPrint('⚠️ WM image download failed: $e');
+    return null;
+  }
+}
+
 Future<void> _showCategoryNotification({
   required int id,
   required String title,
   required String body,
   required String icon,
+  String? imageUrl,
 }) async {
   final fullTitle = '$icon $title';
+  final largeBitmap = await _downloadImageBitmap(imageUrl);
 
   final androidDetails = AndroidNotificationDetails(
     'afrolook_channel',
@@ -463,8 +614,7 @@ Future<void> _showCategoryNotification({
     priority: Priority.high,
     showWhen: true,
     color: const Color(0xFF1FAA59),
-    // Grand cercle coloré de l'app (style Facebook)
-    largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+    largeIcon: largeBitmap ?? const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
     // Texte expandable au clic vers le bas
     styleInformation: BigTextStyleInformation(
       body,

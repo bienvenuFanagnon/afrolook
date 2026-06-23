@@ -1,5 +1,5 @@
 # SUIVI REFONTE UI — AFROLOOK V2
-_Dernière mise à jour : 23 juin 2026 (session 79)_
+_Dernière mise à jour : 23 juin 2026 (session 80)_
 
 ---
 
@@ -255,6 +255,52 @@ Tout est fait en **français**.
 - Pub = post ordinaire à 100% (même dimensions, même header avatar/nom, même zone média)
 - Overlay badge "SPONSORISÉ" en haut à droite (semi-transparent, petite police)
 - Rangée stats compacte (vues + CTR) + bouton CTA gradient rouge en dessous du post
+
+### Session 80 (23 juin 2026) — WorkManager : grandes icônes dynamiques + audit Cloud Functions
+
+**Objectif** : Remplacer l'icône statique Flutter dans les notifications locales par des images contextuelles (photo expéditeur, image groupe, image post).
+
+**1. Grande icône dynamique par catégorie (`lib/services/workManagerService.dart`)**
+- Nouvelle fonction `_downloadImageBitmap(String? url)` :
+  - Télécharge l'image depuis une URL HTTP en fichier temporaire (`getTemporaryDirectory()`)
+  - Timeout 5 secondes, fallback silencieux si erreur ou URL vide
+  - Retourne `FilePathAndroidBitmap` (bitmap depuis chemin fichier) ou `null`
+- `_showCategoryNotification` : nouveau paramètre optionnel `String? imageUrl`
+  - Si image téléchargée → `largeIcon: FilePathAndroidBitmap(path)` (photo réelle)
+  - Sinon → fallback `DrawableResourceAndroidBitmap('@mipmap/ic_launcher')` (icône app)
+- **Mode DEBUG** — `_runDebugNotificationPreview` enrichi :
+  - Messages directs → `send_by` → `Users.imageUrl` (photo expéditeur)
+  - Groupes ← nouvelle catégorie ajoutée → `GroupChats.image_url` (image du groupe)
+  - Notifications dating/app → `media_url` de la notification Firestore
+  - Invitations → `sender_id` → `Users.imageUrl` (photo de l'inviteur)
+- **Mode PRODUCTION** — `_runNotificationCheck` mis à jour :
+  - Chaque `maybeShow` lambda fetche une image contextuelle (requête `limit(1)`) uniquement au moment d'afficher
+  - Messages : `send_by` → `Users.imageUrl`
+  - Groupes : `GroupChats.image_url`
+  - Invitations : `sender_id` → `Users.imageUrl`
+  - Dating/App : premier `media_url` des notifications non lues correspondantes
+
+**2. Cloud Functions audit + correctifs**
+
+`functions/src/notifications/bulk.ts` :
+- Rate limit 30 min par expéditeur (`lastBulkNotifSentAt` sur doc Users)
+- Chaque notification sauvegardée avec : `is_open: false`, `users_id_view: []`, `created_at`, `updated_at`, `createdAt`, `updatedAt` (double snake_case + camelCase pour compatibilité)
+- Mise à jour `lastBulkNotifSentAt` après envoi réussi
+
+`functions/src/posts/interactions.ts` :
+- Garde anti auto-notification : `if (postOwnerId === userId) return`
+- Sauvegarde `NotificationData` dans Firestore **avant** l'envoi email (LIKE/COMMENT/SHARE)
+- Champs : `is_open: false`, `users_id_view: []`, `media_url: interactorData.imageUrl`, `post_id`, `post_data_type`, timestamps complets
+- Email conditionnel : uniquement si `emailNotifications.interactions !== false`
+
+**3. Architecture WorkManager debug/prod**
+- Debug (`!kReleaseMode`) → `registerOneOffTask` avec `Duration.zero` (déclenchement immédiat)
+- Production (`kReleaseMode`) → `registerPeriodicTask` 15 min avec `ExistingPeriodicWorkPolicy.keep`
+- `isInDebugMode: false` dans les deux cas (évite les logs Workmanager verbeux)
+
+**Résultat** : 0 erreur `flutter analyze`. Notifications affichent maintenant la photo de la personne/groupe à droite (grand cercle), style Facebook/Snapchat.
+
+---
 
 ### Session 79 (23 juin 2026) — Système de groupes Gold/Premium + deep links groupes + modals de restriction
 
