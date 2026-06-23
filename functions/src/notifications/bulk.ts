@@ -52,6 +52,18 @@ export const sendBulkNotification = onCall(
       }
       const senderData = senderDoc.data();
 
+      // ── Rate limit : 1 notification bulk par expéditeur toutes les 30 min ──
+      const RATE_LIMIT_MS = 30 * 60 * 1000;
+      const lastSentAt = senderData?.lastBulkNotifSentAt ?? 0;
+      if (Date.now() - lastSentAt < RATE_LIMIT_MS) {
+        console.log(`Rate limit atteint pour ${senderId} — dernier envoi il y a ${Math.round((Date.now() - lastSentAt) / 60000)} min`);
+        return {
+          success: true,
+          message: "Rate limit : notification ignorée pour éviter le spam",
+          processedCount: 0,
+        };
+      }
+
       const appConfigDoc = await db.collection("AppData").doc("XgkSxKc10vWsJJ2uBraT").get();
       const appConfig = appConfigDoc.data();
 
@@ -134,6 +146,12 @@ export const sendBulkNotification = onCall(
             receiver_id: userDoc.id,
             post_id: postId || "",
             post_data_type: postType || "",
+            // Champs requis pour la détection WorkManager et l'affichage in-app
+            is_open: false,
+            users_id_view: [],
+            created_at: currentTimeMicroseconds,
+            updated_at: currentTimeMicroseconds,
+            // Conserver camelCase pour compatibilité avec l'ancienne version
             createdAt: currentTimeMicroseconds,
             updatedAt: currentTimeMicroseconds,
             status: "VALIDE",
@@ -198,6 +216,11 @@ export const sendBulkNotification = onCall(
       } else {
         console.log(`Aucune push notification envoyée (aucun ID OneSignal valide)`);
       }
+
+      // Mettre à jour le timestamp du dernier envoi bulk pour le rate limit
+      await db.collection("Users").doc(senderId).update({
+        lastBulkNotifSentAt: Date.now(),
+      });
 
       return {
         success: true,

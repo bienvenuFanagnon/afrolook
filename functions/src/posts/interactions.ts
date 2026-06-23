@@ -106,11 +106,17 @@ export const onPostInteraction = onDocumentCreated(
     try {
       const { postId, userId, type, comment } = interaction;
 
+      // Ne pas notifier une auto-interaction
+      if (!postId || !userId || !type) return;
+
       const postDoc = await db.collection("Posts").doc(postId).get();
       if (!postDoc.exists) return;
 
       const postData = postDoc.data();
       const postOwnerId = postData?.userId;
+
+      // Pas de notif si l'utilisateur interagit avec son propre post
+      if (postOwnerId === userId) return;
 
       const [interactorDoc, postOwnerDoc] = await Promise.all([
         db.collection("Users").doc(userId).get(),
@@ -119,9 +125,60 @@ export const onPostInteraction = onDocumentCreated(
 
       const interactorData = interactorDoc.data();
       const postOwnerData = postOwnerDoc.data();
+      const interactorName = interactorData?.pseudo || "Un utilisateur";
 
+      // ── Sauvegarde NotificationData dans Firestore (pour WorkManager + onglet notifs) ──
+      let notifType = "";
+      let notifTitre = "";
+      let notifDescription = "";
+
+      switch (type) {
+        case "like":
+          notifType = "LIKE";
+          notifTitre = `${interactorName} a aimé votre publication`;
+          notifDescription = `${interactorName} a aimé votre publication`;
+          break;
+        case "comment":
+          notifType = "COMMENT";
+          notifTitre = `${interactorName} a commenté`;
+          notifDescription = comment?.substring(0, 200) || "A commenté votre publication";
+          break;
+        case "share":
+          notifType = "SHARE";
+          notifTitre = `${interactorName} a partagé`;
+          notifDescription = `${interactorName} a partagé votre publication`;
+          break;
+        default:
+          return;
+      }
+
+      const nowMs = Date.now();
+      const notifId = db.collection("Notifications").doc().id;
+      await db.collection("Notifications").doc(notifId).set({
+        id: notifId,
+        titre: notifTitre,
+        description: notifDescription,
+        type: notifType,
+        user_id: userId,
+        receiver_id: postOwnerId,
+        post_id: postId,
+        post_data_type: postData?.dataType || "",
+        media_url: interactorData?.imageUrl || "",
+        is_open: false,
+        users_id_view: [],
+        status: "VALIDE",
+        created_at: nowMs,
+        updated_at: nowMs,
+        createdAt: nowMs,
+        updatedAt: nowMs,
+      });
+
+      // ── Email (uniquement si l'utilisateur n'a pas désactivé les emails) ──
       const emailNotifications = postOwnerData?.emailNotifications;
-      if (emailNotifications && emailNotifications.interactions === false) return;
+      if (!emailNotifications || emailNotifications.interactions === false) {
+        // Pas d'email, mais la notif Firestore est déjà sauvegardée
+        return;
+      }
       if (!postOwnerData?.email) return;
 
       const canSend = await checkEmailRateLimit(postOwnerId);
@@ -129,7 +186,6 @@ export const onPostInteraction = onDocumentCreated(
 
       let subject = "";
       let message = "";
-      const interactorName = interactorData?.pseudo || "Un utilisateur";
 
       switch (type) {
         case "like":
