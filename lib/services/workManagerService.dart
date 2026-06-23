@@ -69,7 +69,9 @@ void callbackDispatcher() {
         );
       }
 
+      debugPrint('WM STEP 1 : Firebase OK');
       await initLocalNotifications();
+      debugPrint('WM STEP 2 : LocalNotifications initialisé');
 
       if (task == afrolookTestTask) {
         printVm('registerOneOffTask est lancé ...');
@@ -79,6 +81,7 @@ void callbackDispatcher() {
 
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString(_sessionTokenKey);
+      debugPrint('WM STEP 3 : userId = $userId');
 
       if (userId == null || userId.isEmpty) {
         debugPrint('⏭ WorkManager: aucun utilisateur connecté, skip');
@@ -476,6 +479,9 @@ Future<void> _showCategoryNotification({
     playSound: true,
     enableVibration: true,
     visibility: NotificationVisibility.public,
+    // Force le popup heads-up même quand l'app est au premier plan
+    fullScreenIntent: false,
+    category: AndroidNotificationCategory.message,
   );
 
   await flutterLocalNotificationsPlugin.show(
