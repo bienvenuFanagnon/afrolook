@@ -146,13 +146,16 @@ Future<void> main() async {
 
   // Workmanager
   if (!kIsWeb) {
-    await Workmanager().initialize(callbackDispatcher);
+    await Workmanager().initialize(
+      callbackDispatcher,
+      isInDebugMode: !kReleaseMode,
+    );
     Workmanager().registerPeriodicTask(
       afrolookTask,
       afrolookTask,
       frequency: const Duration(minutes: 15),
       initialDelay: const Duration(seconds: 10),
-      existingWorkPolicy: ExistingPeriodicWorkPolicy.replace,
+      existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
     );
   }
 

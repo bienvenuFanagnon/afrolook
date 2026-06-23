@@ -118,20 +118,26 @@ Future<void> _fetchAndShowUserNotifications(
   }
 
   // Filtre côté client : non vues + moins de 7 jours + pas encore affichées localement
+  // Note : certaines notifs (Cloud Functions) écrivent 'createdAt' (camelCase),
+  //        d'autres (Flutter) écrivent 'created_at' (snake_case) — on accepte les deux.
   final unread = snapshot.docs.where((doc) {
     final data = doc.data() as Map<String, dynamic>;
     final notifId = (data['id'] as String?) ?? doc.id;
     if (shownIds.contains(notifId)) return false;
     final viewers = List<String>.from(data['users_id_view'] ?? []);
     if (viewers.contains(userId)) return false;
-    final createdAt = (data['created_at'] as int?) ?? 0;
+    final createdAt = (data['created_at'] as int?)
+        ?? (data['createdAt'] as int?)
+        ?? 0;
     return createdAt > sinceMs;
   }).toList()
 
   // Tri côté client : plus récentes en premier
   ..sort((a, b) {
-    final aTs = ((a.data() as Map)['created_at'] as int?) ?? 0;
-    final bTs = ((b.data() as Map)['created_at'] as int?) ?? 0;
+    final aData = a.data() as Map<String, dynamic>;
+    final bData = b.data() as Map<String, dynamic>;
+    final aTs = (aData['created_at'] as int?) ?? (aData['createdAt'] as int?) ?? 0;
+    final bTs = (bData['created_at'] as int?) ?? (bData['createdAt'] as int?) ?? 0;
     return bTs.compareTo(aTs);
   });
 
@@ -178,8 +184,7 @@ Future<void> _fetchAndShowUserNotifications(
 /// =======================================================
 Future<void> initLocalNotifications() async {
   const AndroidInitializationSettings initializationSettingsAndroid =
-  AndroidInitializationSettings('@drawable/ic_stat_onesignal_default');
-  // AndroidInitializationSettings('@mipmap/ic_launcher');
+  AndroidInitializationSettings('@mipmap/ic_launcher');
 
   final InitializationSettings initializationSettings =
   InitializationSettings(android: initializationSettingsAndroid);
