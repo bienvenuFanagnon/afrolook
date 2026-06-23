@@ -1,14 +1,20 @@
-import 'package:afrotok/pages/user/profile/retraitAdmin/retraitAdminList.dart';
+﻿import 'package:afrotok/pages/user/profile/retraitAdmin/retraitAdminList.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:afrotok/pages/user/profile/retraitAdmin/searchUserAdmin.dart';
 import 'package:afrotok/providers/authProvider.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:intl/intl.dart';
+
 import 'package:provider/provider.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:iconsax/iconsax.dart';
 
 import '../../../models/model_data.dart';
-
 
 class UserTransactionsPage extends StatefulWidget {
   final String userId;
@@ -66,10 +72,10 @@ class _UserTransactionsPageState extends State<UserTransactionsPage> {
           _userData = UserData.fromJson(userDoc.data()!);
         });
       } else {
-        print("Utilisateur non trouvé avec l'ID: ${widget.userId}");
+        printVm("Utilisateur non trouvé avec l'ID: ${widget.userId}");
       }
     } catch (e) {
-      print("Erreur chargement user: $e");
+      printVm("Erreur chargement user: $e");
     } finally {
       setState(() {
         _isLoadingUser = false;
@@ -197,7 +203,7 @@ class _UserTransactionsPageState extends State<UserTransactionsPage> {
       _loadFirstPage();
 
     } catch (e) {
-      print("Erreur chargement transactions: $e");
+      printVm("Erreur chargement transactions: $e");
       setState(() {
         _isLoadingTransactions = false;
       });

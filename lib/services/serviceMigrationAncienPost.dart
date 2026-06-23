@@ -1,4 +1,6 @@
-// Créez un nouveau fichier migration_service.dart
+﻿// Créez un nouveau fichier migration_service.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/model_data.dart';
@@ -8,7 +10,7 @@ class MigrationAncienPostService {
 
   static Future<void> migrateOldPostsToCountrySystem() async {
     try {
-      print('🚀 Début de la migration des posts vers le système de pays...');
+      printVm('🚀 Début de la migration des posts vers le système de pays...');
 
       // Récupérer tous les posts existants
       final snapshot = await firestore
@@ -16,7 +18,7 @@ class MigrationAncienPostService {
           .where("status", isNotEqualTo: "SUPPRIMER")
           .get();
 
-      print('📊 Nombre de posts à migrer: ${snapshot.docs.length}');
+      printVm('📊 Nombre de posts à migrer: ${snapshot.docs.length}');
 
       int updatedCount = 0;
       int errorCount = 0;
@@ -28,7 +30,7 @@ class MigrationAncienPostService {
       // Traiter par batches - créer un nouveau batch à chaque fois
       for (int i = 0; i < snapshot.docs.length; i += batchSize) {
         batchNumber++;
-        print('\n🔄 Traitement du batch $batchNumber/$totalBatches...');
+        printVm('\n🔄 Traitement du batch $batchNumber/$totalBatches...');
 
         // Déterminer la fin du batch actuel
         final endIndex = (i + batchSize) < snapshot.docs.length
@@ -60,7 +62,7 @@ class MigrationAncienPostService {
               updatedCount++;
             }
           } catch (e) {
-            print('❌ Erreur sur le post ${doc.id}: $e');
+            printVm('❌ Erreur sur le post ${doc.id}: $e');
             errorCount++;
           }
         }
@@ -69,14 +71,14 @@ class MigrationAncienPostService {
           try {
             // Commit ce batch spécifique
             await batch.commit();
-            print('✅ Batch $batchNumber commité: $batchUpdates posts mis à jour');
-            print('📊 Progression: $updatedCount posts migrés sur ${snapshot.docs.length}');
+            printVm('✅ Batch $batchNumber commité: $batchUpdates posts mis à jour');
+            printVm('📊 Progression: $updatedCount posts migrés sur ${snapshot.docs.length}');
           } catch (e) {
-            print('❌ Erreur lors du commit du batch $batchNumber: $e');
+            printVm('❌ Erreur lors du commit du batch $batchNumber: $e');
             errorCount += batchUpdates;
           }
         } else {
-          print('ℹ️ Batch $batchNumber: Aucun post à migrer dans ce lot');
+          printVm('ℹ️ Batch $batchNumber: Aucun post à migrer dans ce lot');
         }
 
         // Petite pause pour éviter de surcharger Firebase
@@ -85,13 +87,13 @@ class MigrationAncienPostService {
         }
       }
 
-      print('\n🎉 Migration terminée!');
-      print('📈 Posts mis à jour: $updatedCount');
-      print('❌ Erreurs: $errorCount');
-      print('📋 Total posts traités: ${snapshot.docs.length}');
+      printVm('\n🎉 Migration terminée!');
+      printVm('📈 Posts mis à jour: $updatedCount');
+      printVm('❌ Erreurs: $errorCount');
+      printVm('📋 Total posts traités: ${snapshot.docs.length}');
 
     } catch (e) {
-      print('❌ Erreur lors de la migration: $e');
+      printVm('❌ Erreur lors de la migration: $e');
       rethrow;
     }
   }
@@ -99,17 +101,17 @@ class MigrationAncienPostService {
   // Version simplifiée - plus facile à déboguer
   static Future<void> migrateOldPostsSimple() async {
     try {
-      print('🚀 Début de la migration (ajout ALL)...');
+      printVm('🚀 Début de la migration (ajout ALL)...');
 
       final snapshot = await firestore
           .collection('Posts')
           .where("status", isNotEqualTo: "SUPPRIMER")
           .get();
 
-      print('📊 Nombre total de posts: ${snapshot.docs.length}');
+      printVm('📊 Nombre total de posts: ${snapshot.docs.length}');
 
       if (snapshot.docs.isEmpty) {
-        print('ℹ️ Aucun post trouvé.');
+        printVm('ℹ️ Aucun post trouvé.');
         return;
       }
 
@@ -152,19 +154,19 @@ class MigrationAncienPostService {
         try {
           await batch.commit();
           totalUpdated += currentBatch.length;
-          print('✅ Batch $batchesProcessed: ${currentBatch.length} posts mis à jour');
+          printVm('✅ Batch $batchesProcessed: ${currentBatch.length} posts mis à jour');
         } catch (e) {
-          print('❌ Erreur batch $batchesProcessed: $e');
+          printVm('❌ Erreur batch $batchesProcessed: $e');
         }
 
         await Future.delayed(Duration(milliseconds: 200));
       }
 
-      print('\n🎉 Migration terminée !');
-      print('📈 Total posts mis à jour: $totalUpdated');
+      printVm('\n🎉 Migration terminée !');
+      printVm('📈 Total posts mis à jour: $totalUpdated');
 
     } catch (e) {
-      print('❌ Erreur migration ALL: $e');
+      printVm('❌ Erreur migration ALL: $e');
       rethrow;
     }
   }
@@ -187,13 +189,13 @@ class MigrationAncienPostService {
             'available_countries': [],
             'updated_at': DateTime.now().millisecondsSinceEpoch,
           });
-          print('✅ Post $postId migré avec succès');
+          printVm('✅ Post $postId migré avec succès');
         } else {
-          print('ℹ️ Post $postId déjà migré');
+          printVm('ℹ️ Post $postId déjà migré');
         }
       }
     } catch (e) {
-      print('❌ Erreur migration post $postId: $e');
+      printVm('❌ Erreur migration post $postId: $e');
     }
   }
 
@@ -216,32 +218,32 @@ class MigrationAncienPostService {
         }
       }
 
-      print('\n📊 État de la migration:');
-      print('   Posts échantillonnés: $total');
-      print('   Posts déjà migrés: $migrated');
-      print('   Pourcentage migré: ${((migrated / total) * 100).toStringAsFixed(1)}%');
+      printVm('\n📊 État de la migration:');
+      printVm('   Posts échantillonnés: $total');
+      printVm('   Posts déjà migrés: $migrated');
+      printVm('   Pourcentage migré: ${((migrated / total) * 100).toStringAsFixed(1)}%');
 
       if (migrated < total) {
-        print('⚠️  Il reste ${total - migrated} posts à migrer dans cet échantillon');
+        printVm('⚠️  Il reste ${total - migrated} posts à migrer dans cet échantillon');
       } else {
-        print('✅ Tous les posts sont migrés dans cet échantillon!');
+        printVm('✅ Tous les posts sont migrés dans cet échantillon!');
       }
 
     } catch (e) {
-      print('❌ Erreur vérification migration: $e');
+      printVm('❌ Erreur vérification migration: $e');
     }
   }
 }
 
 Future<void> migrateDatingProfilesToLowercase() async {
   final firestore = FirebaseFirestore.instance;
-  print('🔍 Migration: Récupération de tous les profils dating...');
+  printVm('🔍 Migration: Récupération de tous les profils dating...');
   final snapshot = await firestore.collection('dating_profiles').get();
   final totalDocs = snapshot.docs.length;
-  print('📊 ${totalDocs} profils trouvés.');
+  printVm('📊 ${totalDocs} profils trouvés.');
 
   if (totalDocs == 0) {
-    print('✅ Aucun profil à migrer.');
+    printVm('✅ Aucun profil à migrer.');
     return;
   }
 
@@ -281,30 +283,30 @@ Future<void> migrateDatingProfilesToLowercase() async {
 
     if (batchUpdates > 0) {
       batchCount++;
-      print('📦 Envoi du lot $batchCount (${i+1} - $end) avec $batchUpdates mise(s) à jour...');
+      printVm('📦 Envoi du lot $batchCount (${i+1} - $end) avec $batchUpdates mise(s) à jour...');
       await batch.commit();
-      print('✅ Lot $batchCount envoyé.');
+      printVm('✅ Lot $batchCount envoyé.');
     } else {
-      print('ℹ️ Aucune mise à jour dans le lot ${i+1}-$end.');
+      printVm('ℹ️ Aucune mise à jour dans le lot ${i+1}-$end.');
     }
   }
 
-  print('🎉 Migration terminée ! $updatedCount profils mis à jour.');
+  printVm('🎉 Migration terminée ! $updatedCount profils mis à jour.');
 }
 
 Future<void> migrateInitialDatingProfilesForMen() async {
   try {
-    print('🚀 === DÉBUT DE LA MIGRATION DES PROFILS DATING (HOMMES) ===');
-    print('📅 Date de migration: ${DateTime.now()}');
+    printVm('🚀 === DÉBUT DE LA MIGRATION DES PROFILS DATING (HOMMES) ===');
+    printVm('📅 Date de migration: ${DateTime.now()}');
 
     // Récupérer tous les utilisateurs dont le genre est "Homme"
-    print('🔍 Recherche des utilisateurs avec genre = "Homme"...');
+    printVm('🔍 Recherche des utilisateurs avec genre = "Homme"...');
     final usersSnapshot = await FirebaseFirestore.instance
         .collection('Users')
         .where('genre', isEqualTo: 'Homme')
         .get();
 
-    print('📊 Total des utilisateurs trouvés: ${usersSnapshot.docs.length}');
+    printVm('📊 Total des utilisateurs trouvés: ${usersSnapshot.docs.length}');
 
     int createdCount = 0;
     int skippedCount = 0;
@@ -313,10 +315,10 @@ Future<void> migrateInitialDatingProfilesForMen() async {
     for (var userDoc in usersSnapshot.docs) {
       try {
         final userData = UserData.fromJson(userDoc.data());
-        print('\n--- Traitement de l\'utilisateur ---');
-        print('📱 ID: ${userData.id}');
-        print('👤 Pseudo: ${userData.pseudo}');
-        print('📧 Email: ${userData.email}');
+        printVm('\n--- Traitement de l\'utilisateur ---');
+        printVm('📱 ID: ${userData.id}');
+        printVm('👤 Pseudo: ${userData.pseudo}');
+        printVm('📧 Email: ${userData.email}');
 
         // Vérifier si un profil dating existe déjà
         final existingProfile = await FirebaseFirestore.instance
@@ -326,22 +328,22 @@ Future<void> migrateInitialDatingProfilesForMen() async {
             .get();
 
         if (existingProfile.docs.isNotEmpty) {
-          print('⚠️ Profil dating déjà existant pour cet utilisateur - Ignoré');
+          printVm('⚠️ Profil dating déjà existant pour cet utilisateur - Ignoré');
           skippedCount++;
           continue;
         }
 
         // Calcul de l'âge avec gestion des différents formats de date
         final age = _calculateAgeFromUserDataSafe(userData);
-        print('🎂 Âge calculé: $age ans');
+        printVm('🎂 Âge calculé: $age ans');
 
         // Calcul du pourcentage de complétion
         final completionPercentage = _calculateCompletionPercentage(userData);
-        print('📊 Pourcentage de complétion: ${completionPercentage.toStringAsFixed(1)}%');
+        printVm('📊 Pourcentage de complétion: ${completionPercentage.toStringAsFixed(1)}%');
 
         // ✅ CALCUL DU SCORE DE POPULARITÉ
         final userId = userData.id!;
-        print('📊 Calcul du score de popularité pour $userId...');
+        printVm('📊 Calcul du score de popularité pour $userId...');
 
         // Récupérer les compteurs
         final likesCount = await FirebaseFirestore.instance
@@ -364,10 +366,10 @@ Future<void> migrateInitialDatingProfilesForMen() async {
 
         // Calcul du score: 1 point par like, 2 points par coup de cœur, 3 points par connexion
         final popularityScore = (likesCount.count! * 1) + (coupsCount.count! * 2) + (connectionsCount.count! * 3);
-        print('📊 Score calculé: $popularityScore (likes: ${likesCount.count}, coups: ${coupsCount.count}, connexions: ${connectionsCount.count})');
+        printVm('📊 Score calculé: $popularityScore (likes: ${likesCount.count}, coups: ${coupsCount.count}, connexions: ${connectionsCount.count})');
 
         final now = DateTime.now().millisecondsSinceEpoch;
-        print('⏰ Timestamp actuel: $now');
+        printVm('⏰ Timestamp actuel: $now');
 
         final profileId = FirebaseFirestore.instance.collection('dating_profiles').doc().id;
 
@@ -402,47 +404,47 @@ Future<void> migrateInitialDatingProfilesForMen() async {
           'updatedAt': now,
         };
 
-        print('💾 Création du profil dating...');
+        printVm('💾 Création du profil dating...');
         await FirebaseFirestore.instance
             .collection('dating_profiles')
             .doc(profileId)
             .set(datingProfile);
 
-        print('✅ Profil dating créé avec succès (ID: $profileId, Score: $popularityScore)');
+        printVm('✅ Profil dating créé avec succès (ID: $profileId, Score: $popularityScore)');
         createdCount++;
 
       } catch (e) {
-        print('❌ Erreur lors du traitement de l\'utilisateur ${userDoc.id}: $e');
+        printVm('❌ Erreur lors du traitement de l\'utilisateur ${userDoc.id}: $e');
         errorCount++;
       }
     }
 
-    print('\n📊 === RÉSUMÉ DE LA MIGRATION (HOMMES) ===');
-    print('✅ Profils créés: $createdCount');
-    print('⚠️ Profils ignorés (déjà existants): $skippedCount');
-    print('❌ Erreurs: $errorCount');
-    print('🎯 Total traité: ${usersSnapshot.docs.length}');
-    print('✅ Migration des profils dating des hommes terminée avec succès!');
+    printVm('\n📊 === RÉSUMÉ DE LA MIGRATION (HOMMES) ===');
+    printVm('✅ Profils créés: $createdCount');
+    printVm('⚠️ Profils ignorés (déjà existants): $skippedCount');
+    printVm('❌ Erreurs: $errorCount');
+    printVm('🎯 Total traité: ${usersSnapshot.docs.length}');
+    printVm('✅ Migration des profils dating des hommes terminée avec succès!');
 
   } catch (e) {
-    print('❌ ERREUR FATALE lors de la migration: $e');
-    print('📋 Stack trace: ${StackTrace.current}');
+    printVm('❌ ERREUR FATALE lors de la migration: $e');
+    printVm('📋 Stack trace: ${StackTrace.current}');
   }
 }
 // Ajoutez cette méthode dans votre UserAuthProvider existant
 Future<void> migrateInitialDatingProfiles() async {
   try {
-    print('🚀 === DÉBUT DE LA MIGRATION DES PROFILS DATING ===');
-    print('📅 Date de migration: ${DateTime.now()}');
+    printVm('🚀 === DÉBUT DE LA MIGRATION DES PROFILS DATING ===');
+    printVm('📅 Date de migration: ${DateTime.now()}');
 
     // Récupérer tous les utilisateurs dont le genre est "femme"
-    print('🔍 Recherche des utilisateurs avec genre = "Femme"...');
+    printVm('🔍 Recherche des utilisateurs avec genre = "Femme"...');
     final usersSnapshot = await FirebaseFirestore.instance
         .collection('Users')
         .where('genre', isEqualTo: 'Femme')
         .get();
 
-    print('📊 Total des utilisateurs trouvés: ${usersSnapshot.docs.length}');
+    printVm('📊 Total des utilisateurs trouvés: ${usersSnapshot.docs.length}');
 
     int createdCount = 0;
     int skippedCount = 0;
@@ -451,10 +453,10 @@ Future<void> migrateInitialDatingProfiles() async {
     for (var userDoc in usersSnapshot.docs) {
       try {
         final userData = UserData.fromJson(userDoc.data());
-        print('\n--- Traitement de l\'utilisateur ---');
-        print('📱 ID: ${userData.id}');
-        print('👤 Pseudo: ${userData.pseudo}');
-        print('📧 Email: ${userData.email}');
+        printVm('\n--- Traitement de l\'utilisateur ---');
+        printVm('📱 ID: ${userData.id}');
+        printVm('👤 Pseudo: ${userData.pseudo}');
+        printVm('📧 Email: ${userData.email}');
 
         // Vérifier si un profil dating existe déjà
         final existingProfile = await FirebaseFirestore.instance
@@ -464,22 +466,22 @@ Future<void> migrateInitialDatingProfiles() async {
             .get();
 
         if (existingProfile.docs.isNotEmpty) {
-          print('⚠️ Profil dating déjà existant pour cet utilisateur - Ignoré');
+          printVm('⚠️ Profil dating déjà existant pour cet utilisateur - Ignoré');
           skippedCount++;
           continue;
         }
 
         // Calcul de l'âge avec gestion des différents formats de date
         final age = _calculateAgeFromUserDataSafe(userData);
-        print('🎂 Âge calculé: $age ans');
+        printVm('🎂 Âge calculé: $age ans');
 
         // Calcul du pourcentage de complétion
         final completionPercentage = _calculateCompletionPercentage(userData);
-        print('📊 Pourcentage de complétion: ${completionPercentage.toStringAsFixed(1)}%');
+        printVm('📊 Pourcentage de complétion: ${completionPercentage.toStringAsFixed(1)}%');
 
         // ✅ CALCUL DU SCORE DE POPULARITÉ
         final userId = userData.id!;
-        print('📊 Calcul du score de popularité pour $userId...');
+        printVm('📊 Calcul du score de popularité pour $userId...');
 
         // Récupérer les compteurs
         final likesCount = await FirebaseFirestore.instance
@@ -502,10 +504,10 @@ Future<void> migrateInitialDatingProfiles() async {
 
         // Calcul du score: 1 point par like, 2 points par coup de cœur, 3 points par connexion
         final popularityScore = (likesCount.count! * 1) + (coupsCount.count! * 2) + (connectionsCount.count! * 3);
-        print('📊 Score calculé: $popularityScore (likes: ${likesCount.count}, coups: ${coupsCount.count}, connexions: ${connectionsCount.count})');
+        printVm('📊 Score calculé: $popularityScore (likes: ${likesCount.count}, coups: ${coupsCount.count}, connexions: ${connectionsCount.count})');
 
         final now = DateTime.now().millisecondsSinceEpoch;
-        print('⏰ Timestamp actuel: $now');
+        printVm('⏰ Timestamp actuel: $now');
 
         final profileId = FirebaseFirestore.instance.collection('dating_profiles').doc().id;
 
@@ -540,31 +542,31 @@ Future<void> migrateInitialDatingProfiles() async {
           'updatedAt': now,
         };
 
-        print('💾 Création du profil dating...');
+        printVm('💾 Création du profil dating...');
         await FirebaseFirestore.instance
             .collection('dating_profiles')
             .doc(profileId)
             .set(datingProfile);
 
-        print('✅ Profil dating créé avec succès (ID: $profileId, Score: $popularityScore)');
+        printVm('✅ Profil dating créé avec succès (ID: $profileId, Score: $popularityScore)');
         createdCount++;
 
       } catch (e) {
-        print('❌ Erreur lors du traitement de l\'utilisateur ${userDoc.id}: $e');
+        printVm('❌ Erreur lors du traitement de l\'utilisateur ${userDoc.id}: $e');
         errorCount++;
       }
     }
 
-    print('\n📊 === RÉSUMÉ DE LA MIGRATION ===');
-    print('✅ Profils créés: $createdCount');
-    print('⚠️ Profils ignorés (déjà existants): $skippedCount');
-    print('❌ Erreurs: $errorCount');
-    print('🎯 Total traité: ${usersSnapshot.docs.length}');
-    print('✅ Migration des profils dating terminée avec succès!');
+    printVm('\n📊 === RÉSUMÉ DE LA MIGRATION ===');
+    printVm('✅ Profils créés: $createdCount');
+    printVm('⚠️ Profils ignorés (déjà existants): $skippedCount');
+    printVm('❌ Erreurs: $errorCount');
+    printVm('🎯 Total traité: ${usersSnapshot.docs.length}');
+    printVm('✅ Migration des profils dating terminée avec succès!');
 
   } catch (e) {
-    print('❌ ERREUR FATALE lors de la migration: $e');
-    print('📋 Stack trace: ${StackTrace.current}');
+    printVm('❌ ERREUR FATALE lors de la migration: $e');
+    printVm('📋 Stack trace: ${StackTrace.current}');
   }
 }
 
@@ -573,7 +575,7 @@ int _calculateAgeFromUserDataSafe(UserData userData) {
   try {
     // Si createdAt est null, retourner 0
     if (userData.createdAt == null) {
-      print('⚠️ createdAt est null, âge par défaut: 0');
+      printVm('⚠️ createdAt est null, âge par défaut: 0');
       return 0;
     }
 
@@ -584,17 +586,17 @@ int _calculateAgeFromUserDataSafe(UserData userData) {
     if (createdAt! > 1000000000000) {
       // C'est probablement en microsecondes
       birthDate = DateTime.fromMicrosecondsSinceEpoch(createdAt!);
-      print('📅 Date de naissance (microsecondes): $birthDate');
+      printVm('📅 Date de naissance (microsecondes): $birthDate');
     }
     // Vérifier si c'est en millisecondes (valeur entre 10^9 et 10^12)
     else if (createdAt > 1000000000 && createdAt <= 1000000000000) {
       birthDate = DateTime.fromMillisecondsSinceEpoch(createdAt);
-      print('📅 Date de naissance (millisecondes): $birthDate');
+      printVm('📅 Date de naissance (millisecondes): $birthDate');
     }
     // Sinon, traiter comme DateTime direct
     else {
       birthDate = DateTime.fromMillisecondsSinceEpoch(createdAt);
-      print('📅 Date de naissance (par défaut): $birthDate');
+      printVm('📅 Date de naissance (par défaut): $birthDate');
     }
 
     final now = DateTime.now();
@@ -608,15 +610,15 @@ int _calculateAgeFromUserDataSafe(UserData userData) {
 
     // Validation de l'âge
     if (age < 0 || age > 120) {
-      print('⚠️ Âge invalide calculé: $age, utilisation de 0');
+      printVm('⚠️ Âge invalide calculé: $age, utilisation de 0');
       return 0;
     }
 
     return age;
 
   } catch (e) {
-    print('❌ Erreur lors du calcul de l\'âge: $e');
-    print('📋 createdAt value: ${userData.createdAt}');
+    printVm('❌ Erreur lors du calcul de l\'âge: $e');
+    printVm('📋 createdAt value: ${userData.createdAt}');
     return 0;
   }
 }
@@ -625,59 +627,59 @@ double _calculateCompletionPercentage(UserData userData) {
   int completedFields = 0;
   int totalFields = 6;
 
-  print('🔍 Vérification des champs pour le calcul de complétion:');
+  printVm('🔍 Vérification des champs pour le calcul de complétion:');
 
   // Pseudo
   if (userData.pseudo?.isNotEmpty ?? false) {
     completedFields++;
-    print('  ✅ Pseudo: ${userData.pseudo}');
+    printVm('  ✅ Pseudo: ${userData.pseudo}');
   } else {
-    print('  ❌ Pseudo: manquant');
+    printVm('  ❌ Pseudo: manquant');
   }
 
   // Image URL
   if (userData.imageUrl?.isNotEmpty ?? false) {
     completedFields++;
-    print('  ✅ Image URL: ${userData.imageUrl}');
+    printVm('  ✅ Image URL: ${userData.imageUrl}');
   } else {
-    print('  ❌ Image URL: manquant');
+    printVm('  ❌ Image URL: manquant');
   }
 
   // Bio (apropos)
   if (userData.apropos?.isNotEmpty ?? false) {
     completedFields++;
-    print('  ✅ Bio: ${userData.apropos?.substring(0, userData.apropos!.length > 50 ? 50 : userData.apropos!.length)}...');
+    printVm('  ✅ Bio: ${userData.apropos?.substring(0, userData.apropos!.length > 50 ? 50 : userData.apropos!.length)}...');
   } else {
-    print('  ❌ Bio: manquant');
+    printVm('  ❌ Bio: manquant');
   }
 
   // Genre
   if (userData.genre?.isNotEmpty ?? false) {
     completedFields++;
-    print('  ✅ Genre: ${userData.genre}');
+    printVm('  ✅ Genre: ${userData.genre}');
   } else {
-    print('  ❌ Genre: manquant');
+    printVm('  ❌ Genre: manquant');
   }
 
   // Adresse
   if (userData.adresse?.isNotEmpty ?? false) {
     completedFields++;
-    print('  ✅ Adresse: ${userData.adresse}');
+    printVm('  ✅ Adresse: ${userData.adresse}');
   } else {
-    print('  ❌ Adresse: manquant');
+    printVm('  ❌ Adresse: manquant');
   }
 
   // Pays
   if (userData.userPays != null) {
     completedFields++;
-    print('  ✅ Pays: ${userData.userPays?.name}');
+    printVm('  ✅ Pays: ${userData.userPays?.name}');
   } else {
-    print('  ❌ Pays: manquant');
+    printVm('  ❌ Pays: manquant');
   }
 
   final percentage = (completedFields / totalFields) * 100;
-  print('📊 Total champs remplis: $completedFields/$totalFields');
-  print('📊 Pourcentage de complétion: ${percentage.toStringAsFixed(1)}%');
+  printVm('📊 Total champs remplis: $completedFields/$totalFields');
+  printVm('📊 Pourcentage de complétion: ${percentage.toStringAsFixed(1)}%');
 
   return percentage;
 }

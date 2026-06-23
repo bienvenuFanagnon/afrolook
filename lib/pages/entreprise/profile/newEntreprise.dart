@@ -1,16 +1,24 @@
-import 'dart:io';
+﻿import 'dart:io';
+import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/models/model_data.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:loading_animation_widget/loading_animation_widget.dart';
-import 'package:provider/provider.dart';
-import 'package:path/path.dart' as Path;
-import '../../../providers/authProvider.dart';
-import '../../../providers/userProvider.dart';
 
+import 'package:firebase_storage/firebase_storage.dart';
+
+import 'package:flutter/material.dart';
+
+import 'package:image_picker/image_picker.dart';
+
+import 'package:loading_animation_widget/loading_animation_widget.dart';
+
+import 'package:provider/provider.dart';
+
+import 'package:path/path.dart' as Path;
+
+import '../../../providers/authProvider.dart';
+
+import '../../../providers/userProvider.dart';
 
 class NewEntreprise extends StatefulWidget {
   @override
@@ -19,7 +27,6 @@ class NewEntreprise extends StatefulWidget {
 
 class _NewEntrepriseState extends State<NewEntreprise> {
   final _formKey = GlobalKey<FormState>();
-
 
   final TextEditingController _titreController = TextEditingController();
 
@@ -47,7 +54,6 @@ class _NewEntrepriseState extends State<NewEntreprise> {
 
   Future<bool> verifierEntrepriseName(String nom) async {
 
-
     // Récupérer la liste des utilisateurs
     CollectionReference pseudos = firestore.collection("EntrepriseNames");
     QuerySnapshot snapshot = await pseudos.get();
@@ -72,13 +78,12 @@ class _NewEntrepriseState extends State<NewEntreprise> {
         // // users.add(pseudo.toJson());
         //
         // await firestore.collection('EntrepriseNames').doc(pseudo.id).set(pseudo.toJson());
-        // print("///////////-- save pseudo --///////////////");
+        // printVm("///////////-- save pseudo --///////////////");
         return false;
       } on FirebaseException catch(error){
         return true;
       }
       // Le nom n'existe pas, créer un nouveau document
-
 
     } else {
       // Le nom existe déjà, afficher un message d'erreur
@@ -170,7 +175,6 @@ class _NewEntrepriseState extends State<NewEntreprise> {
                                     .doc()
                                     .id;
 
-
                                 EntrepriseAbonnement abonnement = EntrepriseAbonnement()
                                   ..type = TypeAbonement.GRATUIT.name
                                   ..id = "idabn"
@@ -189,8 +193,6 @@ class _NewEntrepriseState extends State<NewEntreprise> {
                                   ..isFinished = false
                                   ..dispo_afrolook = false;
 
-
-
                                 EntrepriseData entreprise=EntrepriseData();
                                 entreprise.titre=_titreController.text;
                                 entreprise.type=TypeEntreprise.personnel.name;
@@ -205,7 +207,6 @@ class _NewEntrepriseState extends State<NewEntreprise> {
 
                                 entreprise.abonnement=abonnement;
 
-
                                 Reference storageReference =
                                 FirebaseStorage.instance.ref().child(
                                     'post_media/${Path.basename(File(imageProfile!.path).path)}');
@@ -216,13 +217,13 @@ class _NewEntrepriseState extends State<NewEntreprise> {
                                   await storageReference
                                       .getDownloadURL()
                                       .then((fileURL) {
-                                    print("url media");
-                                     print(fileURL);
+                                    printVm("url media");
+                                     printVm(fileURL);
 
                                     entreprise.urlImage= fileURL;
                                   });
                                 });
-                                print(entreprise.toJson());
+                                printVm(entreprise.toJson());
 
                                 await FirebaseFirestore.instance
                                     .collection('Entreprises')
@@ -241,7 +242,6 @@ class _NewEntrepriseState extends State<NewEntreprise> {
                                 ScaffoldMessenger.of(context)
                                     .showSnackBar(snackBar);
 
-
                                 UserPseudo pseudo=UserPseudo();
                                 pseudo.id=firestore
                                     .collection('EntrepriseNames')
@@ -252,7 +252,7 @@ class _NewEntrepriseState extends State<NewEntreprise> {
                                 // users.add(pseudo.toJson());
 
                                 await firestore.collection('EntrepriseNames').doc(pseudo.id).set(pseudo.toJson());
-                                print("///////////-- save pseudo --///////////////");
+                                printVm("///////////-- save pseudo --///////////////");
                                // Navigator.pop(context);
                                 setState(() {
                                   _titreController.text='';
@@ -270,7 +270,7 @@ class _NewEntrepriseState extends State<NewEntreprise> {
                               );
                               ScaffoldMessenger.of(context)
                                   .showSnackBar(snackBar);
-                              print("erreur : ${e}");
+                              printVm("erreur : ${e}");
                               setState(() {
                                 onTapCreatePro=false;
                               });

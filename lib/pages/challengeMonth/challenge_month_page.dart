@@ -1,4 +1,6 @@
-// lib/pages/challenge/challenge_page.dart
+﻿// lib/pages/challenge/challenge_page.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -120,7 +122,7 @@ class _ChallengeMonthPageState extends State<ChallengeMonthPage> with SingleTick
         _loadingCurrent = false;
       });
     } catch (e) {
-      print('Erreur chargement mois courant: $e');
+      printVm('Erreur chargement mois courant: $e');
       setState(() => _loadingCurrent = false);
     }
   }
@@ -150,7 +152,7 @@ class _ChallengeMonthPageState extends State<ChallengeMonthPage> with SingleTick
         setState(() => _hasMoreCurrent = false);
       }
     } catch (e) {
-      print('Erreur chargement plus: $e');
+      printVm('Erreur chargement plus: $e');
     } finally {
       setState(() => _isLoadingMoreCurrent = false);
     }
@@ -172,7 +174,7 @@ class _ChallengeMonthPageState extends State<ChallengeMonthPage> with SingleTick
         _loadingHistory = false;
       });
     } catch (e) {
-      print('Erreur chargement historique: $e');
+      printVm('Erreur chargement historique: $e');
       setState(() => _loadingHistory = false);
     }
   }
@@ -754,7 +756,7 @@ class _ChallengeMonthPageState extends State<ChallengeMonthPage> with SingleTick
         return user;
       }
     } catch (e) {
-      print('Erreur chargement user: $e');
+      printVm('Erreur chargement user: $e');
     }
     return null;
   }

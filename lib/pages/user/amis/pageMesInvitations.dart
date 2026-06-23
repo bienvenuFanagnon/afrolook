@@ -1,24 +1,40 @@
-import 'dart:async';
+﻿import 'dart:async';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'dart:math';
 
 import 'package:afrotok/pages/component/showUserDetails.dart';
+
 import 'package:afrotok/services/api.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:flutter/cupertino.dart';
 
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+
 import 'package:provider/provider.dart';
+
 import 'package:skeletonizer/skeletonizer.dart';
+
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../constant/constColors.dart';
+
 import '../../../theme/app_colors.dart';
+
 import '../../../models/model_data.dart';
+
 import '../../../providers/authProvider.dart';
+
 import '../../../providers/userProvider.dart';
+
 import '../../auth/authTest/constants.dart';
+
 import '../../pub/native_ad_widget.dart';
+
 import '../detailsOtherUser.dart';
 
 class MesInvitationsPage extends StatefulWidget {
@@ -170,7 +186,7 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
             newInvitations.add(invitation);
           }
         } catch (e) {
-          print('Erreur chargement invitation: $e');
+          printVm('Erreur chargement invitation: $e');
         }
       }
 
@@ -180,6 +196,12 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
         } else {
           _invitations.addAll(newInvitations);
         }
+        // Déduplication par senderId : garder uniquement la plus récente par expéditeur
+        final seen = <String>{};
+        _invitations = _invitations.where((inv) {
+          final key = inv.senderId ?? '';
+          return key.isNotEmpty && seen.add(key);
+        }).toList();
         _lastDocument = snapshot.docs.last;
         _hasMore = snapshot.docs.length == _pageSize;
         _isLoadingMore = false;
@@ -191,7 +213,7 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
       userProvider.countInvitations = _invitations.length;
 
     } catch (e) {
-      print('Erreur chargement invitations: $e');
+      printVm('Erreur chargement invitations: $e');
       setState(() {
         _errorMessage = 'Impossible de charger vos invitations';
         _isLoadingMore = false;
@@ -756,7 +778,7 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
         child: MrecAdWidget(
           // templateType: TemplateType.small,
           onAdLoaded: () {
-            print('✅ Native Ad chargée dans invitations: $key');
+            printVm('✅ Native Ad chargée dans invitations: $key');
           },
         ),
       ),

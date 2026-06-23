@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:math';
 import 'package:afrotok/pages/canaux/listCanal.dart';
 import 'package:afrotok/pages/challenge/postChallengeWidget.dart';
@@ -199,12 +199,12 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
   void _initializeData() async {
     // 1. Détecter le pays de l'utilisateur
     _selectedCountryCode = authProvider.loginUserData.countryData?['countryCode']?.toUpperCase();
-    print('Pays utilisateur détecté: ${_selectedCountryCode}');
+    printVm('Pays utilisateur détecté: ${_selectedCountryCode}');
 
     // 🔥 MODIFICATION: Pour EVENEMENT, forcer le mode COUNTRY (pas de mix)
     if (widget.type == TabBarType.EVENEMENT.name) {
       _currentFilter = 'COUNTRY';  // Forcer le pays de l'utilisateur seulement
-      print('🎯 Mode EVENEMENT activé - Filtre: COUNTRY (${_selectedCountryCode})');
+      printVm('🎯 Mode EVENEMENT activé - Filtre: COUNTRY (${_selectedCountryCode})');
     } else {
       _currentFilter = 'MIXED';     // Comportement normal pour les autres types
     }
@@ -228,8 +228,8 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
   void _initializeData2() async {
     // 1. Détecter le pays de l'utilisateur
     _selectedCountryCode = authProvider.loginUserData.countryData?['countryCode']?.toUpperCase();
-    print('Pays utilisateur détecté: ${_selectedCountryCode}');
-    print('Type de post sélectionné: $_selectedPostType');
+    printVm('Pays utilisateur détecté: ${_selectedCountryCode}');
+    printVm('Type de post sélectionné: $_selectedPostType');
 
     // 2. Par défaut: mode "Mix" pour variété
     _currentFilter = 'MIXED';
@@ -272,7 +272,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
 
     _backgroundLoadTimer?.cancel();
 
-    print('🚀 Démarrage du chargement background pour $_selectedPostType');
+    printVm('🚀 Démarrage du chargement background pour $_selectedPostType');
 
     _backgroundLoadTimer = Timer.periodic(Duration(seconds: 2), (timer) async {
       if (_useBackgroundLoading &&
@@ -288,7 +288,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
       if (_backgroundPostsLoaded >= _maxBackgroundPosts ||
           !_hasMorePosts ||
           !_useBackgroundLoading) {
-        print('⏹️ Arrêt du chargement background');
+        printVm('⏹️ Arrêt du chargement background');
         timer.cancel();
         _useBackgroundLoading = false;
       }
@@ -304,7 +304,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
     try {
       return _scrollController.position.isScrollingNotifier.value;
     } catch (e) {
-      print('Erreur isUserScrolling: $e');
+      printVm('Erreur isUserScrolling: $e');
       return false;
     }
   }
@@ -317,7 +317,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
       return;
     }
 
-    print('🔄 Chargement background...');
+    printVm('🔄 Chargement background...');
 
     setState(() {
       _isLoadingBackground = true;
@@ -337,7 +337,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
           _backgroundPostsLoaded += newPosts.length;
         });
 
-        print('✅ ${newPosts.length} posts chargés en background');
+        printVm('✅ ${newPosts.length} posts chargés en background');
       }
 
       _hasMorePosts = newPosts.length >= (_backgroundLoadLimit ~/ 2);
@@ -347,7 +347,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
       }
 
     } catch (e) {
-      print('❌ Erreur chargement background: $e');
+      printVm('❌ Erreur chargement background: $e');
     } finally {
       setState(() {
         _isLoadingBackground = false;
@@ -815,7 +815,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
       _isLoadingPosts = false;
     });
 
-    print('✅ Filtre appliqué: $_currentFilter - Pays: $_selectedCountryCode - Type: $_selectedPostType');
+    printVm('✅ Filtre appliqué: $_currentFilter - Pays: $_selectedCountryCode - Type: $_selectedPostType');
   }
   void _showTypeFilterModal() {
     showModalBottomSheet(
@@ -1010,7 +1010,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
     // Arrêter le chargement background pendant le changement de filtre
     _backgroundLoadTimer?.cancel();
 
-    print('🔄 Changement de type: $_selectedPostType -> $newType');
+    printVm('🔄 Changement de type: $_selectedPostType -> $newType');
 
     setState(() {
       _selectedPostType = newType;
@@ -1033,7 +1033,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
       _isLoadingPosts = false;
     });
 
-    print('✅ Type changé: $newType');
+    printVm('✅ Type changé: $newType');
   }
   Widget _buildTypeOption({
     required String type,
@@ -1198,10 +1198,10 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
         _isFirstLoad = false;
       });
 
-      print('✅ ${newPosts.length} posts chargés avec filtre: $_currentFilter - Type: $_selectedPostType');
+      printVm('✅ ${newPosts.length} posts chargés avec filtre: $_currentFilter - Type: $_selectedPostType');
 
     } catch (e) {
-      print('❌ Erreur chargement posts: $e');
+      printVm('❌ Erreur chargement posts: $e');
       setState(() {
         _hasErrorPosts = true;
       });
@@ -1224,7 +1224,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
     if (limit <= 0) return;
 
     try {
-      print('🎯 Chargement posts - Type: $postType - Pays: ${countryCode ?? "ALL"}');
+      printVm('🎯 Chargement posts - Type: $postType - Pays: ${countryCode ?? "ALL"}');
 
       Query query = _firestore.collection('Posts');
 
@@ -1291,21 +1291,21 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
             added++;
           }
         } catch (e) {
-          print('Erreur parsing post: $e');
+          printVm('Erreur parsing post: $e');
         }
       }
 
-      print('✅ $added posts chargés (Type: $postType, Pays: ${countryCode ?? "ALL"})');
+      printVm('✅ $added posts chargés (Type: $postType, Pays: ${countryCode ?? "ALL"})');
 
     } catch (e) {
-      print('❌ Erreur chargement posts: $e');
+      printVm('❌ Erreur chargement posts: $e');
     }
   }
 
   // Méthode pour les posts MIXED (mélange intelligent)
   Future<void> _loadMixedPostsWithType(Set<String> loadedIds, List<Post> newPosts, int limit) async {
-    print('🔄 Chargement mode "Mix" avec type: $_selectedPostType');
-    print('🔄 Chargement mode "Mix" avec type et pays: $_selectedCountryCode');
+    printVm('🔄 Chargement mode "Mix" avec type: $_selectedPostType');
+    printVm('🔄 Chargement mode "Mix" avec type et pays: $_selectedCountryCode');
 
     if (_selectedCountryCode == null) return;
 
@@ -1372,13 +1372,13 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
           _totalPostsLoaded += newPosts.length;
         });
 
-        print('📱 ${newPosts.length} posts chargés manuellement');
+        printVm('📱 ${newPosts.length} posts chargés manuellement');
       }
 
       _hasMorePosts = newPosts.length >= (_manualLoadLimit ~/ 2);
 
     } catch (e) {
-      print('❌ Erreur chargement manuel: $e');
+      printVm('❌ Erreur chargement manuel: $e');
       _hasMorePosts = false;
     } finally {
       setState(() {
@@ -1461,7 +1461,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
         _suggestedUsers = users..shuffle();
       });
     } catch (e) {
-      print('Error loading suggested users: $e');
+      printVm('Error loading suggested users: $e');
     } finally {
       setState(() {
         _isLoadingSuggestedUsers = false;
@@ -1485,7 +1485,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
         _articles = articleResults;
       });
     } catch (e) {
-      print('Error loading articles: $e');
+      printVm('Error loading articles: $e');
     } finally {
       setState(() {
         _isLoadingArticles = false;
@@ -1507,7 +1507,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
         _canaux = canalResults..shuffle();
       });
     } catch (e) {
-      print('Error loading canaux: $e');
+      printVm('Error loading canaux: $e');
     } finally {
       setState(() {
         _isLoadingCanaux = false;
@@ -1537,7 +1537,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
             validChroniques.add(chronique);
           }
         } catch (e) {
-          print('❌ Erreur parsing chronique: $e');
+          printVm('❌ Erreur parsing chronique: $e');
         }
       }
 
@@ -1550,7 +1550,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
       }
 
     } catch (e) {
-      print('❌ Erreur chargement chroniques: $e');
+      printVm('❌ Erreur chargement chroniques: $e');
     } finally {
       setState(() {
         _isLoadingChroniques = false;
@@ -1577,7 +1577,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
         setState(() {});
       }
     } catch (e) {
-      print('❌ Erreur chargement données chroniques: $e');
+      printVm('❌ Erreur chargement données chroniques: $e');
     }
   }
 
@@ -2603,7 +2603,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
 
       PostViewService.recordAuthorView(post, currentUserId);
     } catch (e) {
-      print('Error recording post view: $e');
+      printVm('Error recording post view: $e');
       _postsViewedInSession.remove(post.id!);
     }
   }

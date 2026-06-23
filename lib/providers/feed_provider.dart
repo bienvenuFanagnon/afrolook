@@ -1,8 +1,13 @@
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import '../models/model_data.dart';
 import '../pages/chronique/chroniqueform.dart';
+
 import '../pages/home/feed_cache_service.dart';
+
 import '../services/feed/feed_repository.dart';
+
 import '../services/postService/mixed_feed_service.dart';
 
 /// État immuable pour un type de feed donné.
@@ -200,7 +205,7 @@ class FeedProvider extends ChangeNotifier {
       }
       notifyListeners();
     } catch (e) {
-      print('⚠️ [FeedProvider] loadGlobalContent: $e');
+      printVm('⚠️ [FeedProvider] loadGlobalContent: $e');
     }
   }
 

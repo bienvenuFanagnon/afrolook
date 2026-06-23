@@ -1,4 +1,4 @@
-
+﻿
 
 import 'package:afrotok/pages/Marketing/pageExplicationMarketing.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -72,7 +72,7 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
           });
         }
       } catch (e) {
-        print('Erreur chargement parrain: $e');
+        printVm('Erreur chargement parrain: $e');
       }
     }
   }
@@ -98,7 +98,7 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
       child: MrecAdWidget(
         // templateType: TemplateType.small,
         onAdLoaded: () {
-          print('✅ Native Ad chargée dans invitations: $key');
+          printVm('✅ Native Ad chargée dans invitations: $key');
         },
       ),
     );
@@ -1236,7 +1236,7 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
           .map((doc) => UserData.fromJson(doc.data()))
           .toList();
     } catch (e) {
-      print('Erreur récupération filleuls: $e');
+      printVm('Erreur récupération filleuls: $e');
       return [];
     }
   }
@@ -1290,7 +1290,7 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
       _showSuccessSnackbar(AppLocalizations.of(context).affiliParrainSuccess);
 
     } catch (e) {
-      print('Erreur ajout parrain: $e');
+      printVm('Erreur ajout parrain: $e');
       _showErrorSnackbar(AppLocalizations.of(context).affiliErrorParrain);
     } finally {
       setState(() {
@@ -1490,7 +1490,7 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
       _showSuccessSnackbar(isAdmin ? t.affiliActivatedAdmin : t.affiliActivatedMsg);
 
     } catch (e) {
-      print('Erreur activation marketing: $e');
+      printVm('Erreur activation marketing: $e');
       _showErrorSnackbar('Erreur lors de l\'activation: ${e.toString()}');
     } finally {
       setState(() {
@@ -1553,7 +1553,7 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
       });
 
     } catch (e) {
-      print('Erreur distribution commissions: $e');
+      printVm('Erreur distribution commissions: $e');
     }
   }
 
@@ -1593,7 +1593,7 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
         );
       }
     } catch (e) {
-      print('Erreur envoi notification commission: $e');
+      printVm('Erreur envoi notification commission: $e');
     }
   }
 
@@ -1613,7 +1613,7 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
         'statut': StatutTransaction.VALIDER.name,
       });
     } catch (e) {
-      print('Erreur création transaction: $e');
+      printVm('Erreur création transaction: $e');
     }
   }
 
@@ -1647,7 +1647,7 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
       final t = AppLocalizations.of(context);
       _showSuccessSnackbar(t.affiliEncashSuccess(marketingBalance.toInt()));
     } catch (e) {
-      print('Erreur encaissement: $e');
+      printVm('Erreur encaissement: $e');
       _showErrorSnackbar('Erreur lors de l\'encaissement');
     } finally {
       setState(() => isLoading = false);

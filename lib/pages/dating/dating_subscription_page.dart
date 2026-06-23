@@ -1,4 +1,6 @@
-// lib/pages/dating/dating_subscription_page.dart
+﻿// lib/pages/dating/dating_subscription_page.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -114,10 +116,10 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
   }
 
   Future<void> _loadPlans() async {
-    print('📱 === Chargement des plans d\'abonnement dating (local) ===');
+    printVm('📱 === Chargement des plans d\'abonnement dating (local) ===');
     _plans = _buildLocalPlans()..sort((a, b) => a.priceCoins.compareTo(b.priceCoins));
     for (var plan in _plans) {
-      print('   📌 ${plan.name} - ${plan.priceCoins} coins');
+      printVm('   📌 ${plan.name} - ${plan.priceCoins} coins');
     }
     setState(() => _isLoading = false);
 
@@ -137,7 +139,7 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
           .doc(_currentSubscriptionDocId)
           .update({'incognitoMode': value});
     } catch (e) {
-      print('❌ Erreur mise à jour mode incognito: $e');
+      printVm('❌ Erreur mise à jour mode incognito: $e');
       setState(() => _incognitoMode = !value);
     }
   }
@@ -161,23 +163,23 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
         _currentSubscriptionPlan = subscription.planCode;
         _currentSubscriptionDocId = snapshot.docs.first.id;
         _incognitoMode = snapshot.docs.first.data()['incognitoMode'] ?? false;
-        print('📌 Abonnement actuel: $_currentSubscriptionPlan');
+        printVm('📌 Abonnement actuel: $_currentSubscriptionPlan');
 
         // Vérifier si l'abonnement est expiré
         final now = DateTime.now().millisecondsSinceEpoch;
         if (subscription.endAt <= now) {
-          print('⚠️ Abonnement expiré');
+          printVm('⚠️ Abonnement expiré');
           _currentSubscriptionPlan = null;
         }
       } else {
-        print('📌 Aucun abonnement actif');
+        printVm('📌 Aucun abonnement actif');
         _currentSubscriptionPlan = 'gratuit';
       }
 
       setState(() {});
 
     } catch (e) {
-      print('❌ Erreur chargement abonnement actuel: $e');
+      printVm('❌ Erreur chargement abonnement actuel: $e');
     }
   }
 
@@ -194,24 +196,24 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
     final userId = authProvider.loginUserData.id;
     final currentCoins = authProvider.loginUserData.coinsBalance ?? 0;
 
-    print('📱 === SOUSCRIPTION À UN ABONNEMENT ===');
-    print('📌 Plan: ${plan.name} (${plan.code})');
-    print('💰 Coût: ${plan.priceCoins} pièces');
-    print('💳 Solde actuel: $currentCoins pièces');
-    print('👍 Likes par jour: ${plan.defaultLikes == -1 ? 'Illimités' : plan.defaultLikes}');
-    print('⭐ Super likes par jour: ${plan.defaultSuperLikes}');
-    print('📅 Durée: ${plan.durationInDays} jours');
+    printVm('📱 === SOUSCRIPTION À UN ABONNEMENT ===');
+    printVm('📌 Plan: ${plan.name} (${plan.code})');
+    printVm('💰 Coût: ${plan.priceCoins} pièces');
+    printVm('💳 Solde actuel: $currentCoins pièces');
+    printVm('👍 Likes par jour: ${plan.defaultLikes == -1 ? 'Illimités' : plan.defaultLikes}');
+    printVm('⭐ Super likes par jour: ${plan.defaultSuperLikes}');
+    printVm('📅 Durée: ${plan.durationInDays} jours');
 
     // Vérifier si l'utilisateur est déjà abonné à ce plan
     if (_currentSubscriptionPlan == plan.code) {
-      print('⚠️ Utilisateur déjà abonné à ${plan.name}');
+      printVm('⚠️ Utilisateur déjà abonné à ${plan.name}');
       _showSnackBar(AppLocalizations.of(context).datingAlreadySubscribedToPlan, Colors.orange);
       return;
     }
 
     // Vérifier le solde pour les plans payants
     if (plan.priceCoins > 0 && currentCoins < plan.priceCoins) {
-      print('❌ Solde insuffisant: $currentCoins < ${plan.priceCoins}');
+      printVm('❌ Solde insuffisant: $currentCoins < ${plan.priceCoins}');
       _showInsufficientCoinsDialog(plan);
       return;
     }
@@ -219,7 +221,7 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
     // Dialogue de confirmation
     final confirm = await _showConfirmationDialog(plan);
     if (confirm != true) {
-      print('❌ Abonnement annulé par l\'utilisateur');
+      printVm('❌ Abonnement annulé par l\'utilisateur');
       return;
     }
 
@@ -240,7 +242,7 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
           .where('isActive', isEqualTo: true)
           .get();
 
-      print('🔄 Exécution de la transaction Firestore...');
+      printVm('🔄 Exécution de la transaction Firestore...');
 
       await firestore.runTransaction((transaction) async {
         // 1. Lectures d'abord (règle Firestore : toutes les lectures doivent
@@ -263,14 +265,14 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
             'coinsBalance': currentBalance - plan.priceCoins,
             'totalCoinsSpent': FieldValue.increment(plan.priceCoins),
           });
-          print('💰 ${plan.priceCoins} pièces déduites du solde');
+          printVm('💰 ${plan.priceCoins} pièces déduites du solde');
         }
 
         // Désactiver les anciens abonnements (déjà récupérés avant la
         // transaction via une requête, pas besoin de relecture ici).
         for (var doc in oldSubscriptions.docs) {
           transaction.update(doc.reference, {'isActive': false});
-          print('📌 Ancien abonnement désactivé: ${doc.id}');
+          printVm('📌 Ancien abonnement désactivé: ${doc.id}');
         }
 
         // 3. Créer le nouvel abonnement AVEC les likes restants
@@ -295,9 +297,9 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
           firestore.collection('user_dating_subscriptions').doc(subscriptionId),
           subscription.toJson(),
         );
-        print('✅ Nouvel abonnement créé: ${plan.name}');
-        print('   📊 Likes restants: ${plan.defaultLikes == -1 ? 'Illimités' : plan.defaultLikes}');
-        print('   📊 Super likes restants: ${plan.defaultSuperLikes}');
+        printVm('✅ Nouvel abonnement créé: ${plan.name}');
+        printVm('   📊 Likes restants: ${plan.defaultLikes == -1 ? 'Illimités' : plan.defaultLikes}');
+        printVm('   📊 Super likes restants: ${plan.defaultSuperLikes}');
 
         // 4. Enregistrer la transaction de pièces
         final transactionId = firestore.collection('user_coin_transactions').doc().id;
@@ -316,10 +318,10 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
             'updatedAt': now,
           },
         );
-        print('💰 Transaction de pièces enregistrée');
+        printVm('💰 Transaction de pièces enregistrée');
       });
 
-      print('✅ === ABONNEMENT SOUSCRIT AVEC SUCCÈS ===');
+      printVm('✅ === ABONNEMENT SOUSCRIT AVEC SUCCÈS ===');
 
       // Mettre à jour les données locales
       _currentSubscriptionPlan = plan.code;
@@ -334,7 +336,7 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
       }
 
     } catch (e) {
-      print('❌ ERREUR lors de la souscription: $e');
+      printVm('❌ ERREUR lors de la souscription: $e');
       if (mounted) {
         _showSnackBar('Erreur: ${e.toString()}', Colors.red);
       }

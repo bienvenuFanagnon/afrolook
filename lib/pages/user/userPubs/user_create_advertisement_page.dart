@@ -1,4 +1,6 @@
-// user_create_advertisement_page.dart
+﻿// user_create_advertisement_page.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
@@ -272,7 +274,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
 
       Navigator.pop(context); // fermer le loader
     } catch (e) {
-      print("Erreur sélection vidéo: $e");
+      printVm("Erreur sélection vidéo: $e");
       if (Navigator.canPop(context)) Navigator.pop(context);
       _showError('Erreur lors du traitement de la vidéo');
     } finally {
@@ -327,7 +329,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
         _isUploadingCustomThumbnail = false;
       });
     } catch (e) {
-      print("Erreur sélection miniature: $e");
+      printVm("Erreur sélection miniature: $e");
       setState(() => _isUploadingCustomThumbnail = false);
     }
   }
@@ -349,7 +351,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
       final downloadUrl = await snapshot.ref.getDownloadURL();
       return downloadUrl;
     } catch (e) {
-      print('Erreur upload miniature personnalisée: $e');
+      printVm('Erreur upload miniature personnalisée: $e');
       return null;
     }
   }
@@ -529,7 +531,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
 
       _showSuccessDialog();
     } catch (e) {
-      print('Erreur publication: $e');
+      printVm('Erreur publication: $e');
       _showError('Erreur lors de la publication. Veuillez réessayer.');
     } finally {
       if (mounted) setState(() => _isUploading = false);
@@ -912,7 +914,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
                   initialCountryCode: 'TG',
                   onChanged: (value) {
                     _whatsappController.text = value.completeNumber;
-                    print("Numero complet: ${_whatsappController.text}");
+                    printVm("Numero complet: ${_whatsappController.text}");
                   },
                 ),
               )

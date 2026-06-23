@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:math';
 
 import 'package:afrotok/models/model_data.dart';
@@ -147,7 +147,7 @@ import 'hashtag/textHashTag/views/widgets/search_result_overlay.dart';
 //         });
 //       }
 //     } catch (e) {
-//       print("Erreur vérification cooldown: $e");
+//       printVm("Erreur vérification cooldown: $e");
 //       setState(() {
 //         _canPost = true;
 //       });
@@ -430,7 +430,7 @@ import 'hashtag/textHashTag/views/widgets/search_result_overlay.dart';
 //                                 ScaffoldMessenger.of(context).showSnackBar(snackBar);
 //
 //                               } catch (e) {
-//                                 print("erreur ${e}");
+//                                 printVm("erreur ${e}");
 //                                 setState(() {
 //                                   onTap = false;
 //                                 });
@@ -509,8 +509,8 @@ import 'hashtag/textHashTag/views/widgets/search_result_overlay.dart';
 //       minHeight: 1080, // Hauteur minimale de l'image compressée
 //     );
 //
-//     print('Taille originale: ${file.lengthSync()} bytes');
-//     print('Taille compressée: ${result!.length()} bytes');
+//     printVm('Taille originale: ${file.lengthSync()} bytes');
+//     printVm('Taille compressée: ${result!.length()} bytes');
 //
 //     return result;
 //   }
@@ -694,14 +694,14 @@ import 'hashtag/textHashTag/views/widgets/search_result_overlay.dart';
 //                                     await storageReference
 //                                         .getDownloadURL()
 //                                         .then((fileURL) {
-//                                       print("url media");
-//                                       //  print(fileURL);
+//                                       printVm("url media");
+//                                       //  printVm(fileURL);
 //
 //                                       post.images!.add(fileURL);
 //                                     });
 //                                   });
 //                                 }
-//                                 print("images: ${post.images!.length}");
+//                                 printVm("images: ${post.images!.length}");
 //                                 await FirebaseFirestore.instance
 //                                     .collection('Posts')
 //                                     .doc(postId)
@@ -738,7 +738,7 @@ import 'hashtag/textHashTag/views/widgets/search_result_overlay.dart';
 //                                 // users.add(pseudo.toJson());
 //
 //                                 await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-//                                 print("///////////-- save notification --///////////////");
+//                                 printVm("///////////-- save notification --///////////////");
 //
 //                                  authProvider.sendPushNotificationToUsers(
 //                                   sender: authProvider.loginUserData,                          // L'utilisateur qui envoie la notification
@@ -783,14 +783,14 @@ import 'hashtag/textHashTag/views/widgets/search_result_overlay.dart';
 //                                     .showSnackBar(snackBar);
 //                                 // postProvider.getPostsImages(limitePosts).then((value) {
 //                                 //   // value.forEach((element) {
-//                                 //   //   print(element.toJson());
+//                                 //   //   printVm(element.toJson());
 //                                 //   // },);
 //                                 //
 //                                 // },);
 //
 //                               } catch (e) {
 //
-//                                 print("erreur ${e}");
+//                                 printVm("erreur ${e}");
 //                                 setState(() {
 //                                   onTap=false;
 //                                 });
@@ -963,7 +963,7 @@ import 'hashtag/textHashTag/views/widgets/search_result_overlay.dart';
 //         });
 //       }
 //     } catch (e) {
-//       print("Erreur vérification cooldown: $e");
+//       printVm("Erreur vérification cooldown: $e");
 //       setState(() {
 //         _canPost = true;
 //       });
@@ -1361,7 +1361,7 @@ import 'hashtag/textHashTag/views/widgets/search_result_overlay.dart';
 //                               });
 //
 //                             } catch (e) {
-//                               print("Erreur lors de la publication: $e");
+//                               printVm("Erreur lors de la publication: $e");
 //                               setState(() {
 //                                 onTap = false;
 //                                 _uploadProgress = 0;
@@ -1487,9 +1487,9 @@ import 'hashtag/textHashTag/views/widgets/search_result_overlay.dart';
 //       //
 //       // await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
 //
-//       print("✅ Notification envoyée avec succès");
+//       printVm("✅ Notification envoyée avec succès");
 //     } catch (e) {
-//       print("❌ Erreur lors de l'envoi des notifications: $e");
+//       printVm("❌ Erreur lors de l'envoi des notifications: $e");
 //     }
 //   }
 // }
@@ -1954,7 +1954,7 @@ import 'hashtag/textHashTag/views/widgets/search_result_overlay.dart';
 //                               );
 //
 //                             } catch (e) {
-//                               print("Erreur lors de la publication: $e");
+//                               printVm("Erreur lors de la publication: $e");
 //                               setState(() {
 //                                 onTap = false;
 //                                 _uploadProgress = 0;
@@ -2069,9 +2069,9 @@ import 'hashtag/textHashTag/views/widgets/search_result_overlay.dart';
 //
 //       await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
 //
-//       print("✅ Notification envoyée avec succès");
+//       printVm("✅ Notification envoyée avec succès");
 //     } catch (e) {
-//       print("❌ Erreur lors de l'envoi des notifications: $e");
+//       printVm("❌ Erreur lors de l'envoi des notifications: $e");
 //     }
 //   }
 // }

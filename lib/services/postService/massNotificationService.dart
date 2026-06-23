@@ -1,4 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
 
 class MassNotificationService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -9,7 +10,7 @@ class MassNotificationService {
     required String authorId,
   }) async {
     try {
-      print('🚀 Début notification pour le post $postId aux abonnés de $authorId');
+      printVm('🚀 Début notification pour le post $postId aux abonnés de $authorId');
       final startTime = DateTime.now();
 
       // Utiliser une requête paginée pour gérer un grand nombre d'abonnés
@@ -24,14 +25,14 @@ class MassNotificationService {
 
         await _updateSubscribersBatch(subscriberIds, postId);
 
-        print('📦 Batch $batchCount traité: ${subscriberIds.length} abonnés');
+        printVm('📦 Batch $batchCount traité: ${subscriberIds.length} abonnés');
       });
 
       final duration = DateTime.now().difference(startTime);
-      print('✅ Notification terminée: $totalProcessed abonnés notifiés en ${duration.inSeconds}s');
+      printVm('✅ Notification terminée: $totalProcessed abonnés notifiés en ${duration.inSeconds}s');
 
     } catch (e) {
-      print('❌ Erreur notification abonnés: $e');
+      printVm('❌ Erreur notification abonnés: $e');
       // Relancer pour les retries
       rethrow;
     }
@@ -95,7 +96,7 @@ class MassNotificationService {
   Future<void> notifyViaCloudFunction(String postId, String authorId) async {
     // Cette méthode serait idéalement implémentée dans une Cloud Function
     // pour gérer des millions d'utilisateurs sans timeout
-    print('⚡ Utilisation Cloud Function pour la notification de masse');
+    printVm('⚡ Utilisation Cloud Function pour la notification de masse');
 
     // Implémentation avec Firebase Cloud Functions
     // await _firestore.collection('notificationTasks').add({

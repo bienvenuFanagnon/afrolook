@@ -1,4 +1,4 @@
-
+﻿
 
 import 'dart:io';
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -50,7 +50,7 @@ class CategorieProduitProvider extends ChangeNotifier {
 
 
 
-      print('list categorie ${listCategorie.length}');
+      printVm('list categorie ${listCategorie.length}');
       hasData=true;
       // listCategorie.shuffle();
 
@@ -61,7 +61,7 @@ class CategorieProduitProvider extends ChangeNotifier {
       return listCategorie;
       // return teams;
     }catch(e){
-      print("erreur ${e}");
+      printVm("erreur ${e}");
       hasData=false;
       return [];
     }
@@ -119,7 +119,7 @@ class CategorieProduitProvider extends ChangeNotifier {
 
 
 
-      print('list article ${listArticles.length}');
+      printVm('list article ${listArticles.length}');
       hasData=true;
       // teams.shuffle();
 
@@ -129,7 +129,7 @@ class CategorieProduitProvider extends ChangeNotifier {
       return listArticles;
       // return teams;
     }catch(e){
-      print("erreur ${e}");
+      printVm("erreur ${e}");
       hasData=false;
       return [];
     }
@@ -165,7 +165,7 @@ class CategorieProduitProvider extends ChangeNotifier {
         return article;
       }).toList();
 
-      print('🔥 Produits boostés actifs trouvés: ${activeBoostedArticles.length}');
+      printVm('🔥 Produits boostés actifs trouvés: ${activeBoostedArticles.length}');
 
       // Vérifier et mettre à jour les boosts expirés (sécurité supplémentaire)
       await _checkAndUpdateExpiredBoosts(activeBoostedArticles);
@@ -183,14 +183,14 @@ class CategorieProduitProvider extends ChangeNotifier {
         }
       }
 
-      print('🇹🇬 Produits même pays ($userCountryCode): ${sameCountryArticles.length}');
-      print('🌍 Produits autres pays: ${otherCountryArticles.length}');
+      printVm('🇹🇬 Produits même pays ($userCountryCode): ${sameCountryArticles.length}');
+      printVm('🌍 Produits autres pays: ${otherCountryArticles.length}');
 
       // NOUVEL ALGORITHME - Priorité aux produits boostés uniquement
       if (sameCountryArticles.length >= 10) {
         // Cas 1: Assez de produits boostés du même pays → prendre 10 aléatoires
         listArticles = sameCountryArticles.take(10).toList();
-        print('✅ Cas 1: 10+ produits même pays');
+        printVm('✅ Cas 1: 10+ produits même pays');
 
       } else if (sameCountryArticles.length >= 3) {
         // Cas 2: Entre 3 et 9 produits du même pays → prendre tous + compléter avec autres pays boostés
@@ -199,7 +199,7 @@ class CategorieProduitProvider extends ChangeNotifier {
         if (otherCountryArticles.isNotEmpty) {
           final additional = otherCountryArticles.take(needed).toList();
           listArticles.addAll(additional);
-          print('✅ Cas 2: ${sameCountryArticles.length} produits même pays + ${additional.length} autres pays');
+          printVm('✅ Cas 2: ${sameCountryArticles.length} produits même pays + ${additional.length} autres pays');
         }
 
       } else if (sameCountryArticles.length > 0) {
@@ -209,33 +209,33 @@ class CategorieProduitProvider extends ChangeNotifier {
         if (otherCountryArticles.isNotEmpty) {
           final additional = otherCountryArticles.take(needed).toList();
           listArticles.addAll(additional);
-          print('✅ Cas 3: ${sameCountryArticles.length} produits même pays + ${additional.length} autres pays');
+          printVm('✅ Cas 3: ${sameCountryArticles.length} produits même pays + ${additional.length} autres pays');
         }
 
       } else if (otherCountryArticles.length >= 10) {
         // Cas 4: Aucun produit du même pays, mais assez d'autres pays → prendre 10 aléatoires
         listArticles = otherCountryArticles.take(10).toList();
-        print('✅ Cas 4: 10+ produits autres pays');
+        printVm('✅ Cas 4: 10+ produits autres pays');
 
       } else if (otherCountryArticles.length > 0) {
         // Cas 5: Aucun produit du même pays, quelques autres pays → prendre tous disponibles
         listArticles = otherCountryArticles.take(10).toList();
-        print('✅ Cas 5: ${otherCountryArticles.length} produits autres pays seulement');
+        printVm('✅ Cas 5: ${otherCountryArticles.length} produits autres pays seulement');
 
       } else {
         // Cas 6: Aucun produit boosté du tout
-        print('❌ Aucun produit boosté disponible');
+        printVm('❌ Aucun produit boosté disponible');
       }
 
       // COMPLÉMENT AVEC PRODUITS NON BOOSTÉS (optionnel)
       if (listArticles.length < 3 && allowNonBoostedFallback) {
         final remaining = 10 - listArticles.length;
-        print('🔄 Complément avec ${remaining} produits non boostés');
+        printVm('🔄 Complément avec ${remaining} produits non boostés');
 
         final popularArticles = await _getPopularNonBoostedArticles(remaining, userCountryCode);
         listArticles.addAll(popularArticles);
 
-        print('✅ ${popularArticles.length} produits non boostés ajoutés');
+        printVm('✅ ${popularArticles.length} produits non boostés ajoutés');
       }
 
       // Mélanger final (sauf si moins de 3 produits)
@@ -243,14 +243,14 @@ class CategorieProduitProvider extends ChangeNotifier {
         listArticles.shuffle();
       }
 
-      print('🎯 FINAL: ${listArticles.length} produits retournés');
-      print('📊 Détail: ${listArticles.where((a) => a.countryData?['countryCode'] == userCountryCode).length} même pays, '
+      printVm('🎯 FINAL: ${listArticles.length} produits retournés');
+      printVm('📊 Détail: ${listArticles.where((a) => a.countryData?['countryCode'] == userCountryCode).length} même pays, '
           '${listArticles.where((a) => a.countryData?['countryCode'] != userCountryCode).length} autres pays');
 
       return listArticles;
 
     } catch (e) {
-      print("❌ Erreur getArticleBooster: $e");
+      printVm("❌ Erreur getArticleBooster: $e");
       return [];
     }
   }
@@ -278,9 +278,9 @@ class CategorieProduitProvider extends ChangeNotifier {
     if (updatedCount > 0) {
       try {
         await batch.commit();
-        print('🔄 $updatedCount boosts expirés mis à jour');
+        printVm('🔄 $updatedCount boosts expirés mis à jour');
       } catch (e) {
-        print("❌ Erreur mise à jour boosts expirés: $e");
+        printVm("❌ Erreur mise à jour boosts expirés: $e");
       }
     }
   }
@@ -321,7 +321,7 @@ class CategorieProduitProvider extends ChangeNotifier {
       return popularArticles.take(limit).toList();
 
     } catch (e) {
-      print("❌ Erreur _getPopularNonBoostedArticles: $e");
+      printVm("❌ Erreur _getPopularNonBoostedArticles: $e");
       return [];
     }
   }
@@ -372,7 +372,7 @@ class CategorieProduitProvider extends ChangeNotifier {
       return result.take(10).toList();
 
     } catch (e) {
-      print("❌ Erreur getPureBoostedArticles: $e");
+      printVm("❌ Erreur getPureBoostedArticles: $e");
       return [];
     }
   }
@@ -406,7 +406,7 @@ class CategorieProduitProvider extends ChangeNotifier {
 
 
 
-      print('list article ${listArticles.length}');
+      printVm('list article ${listArticles.length}');
       hasData=true;
       // teams.shuffle();
 
@@ -416,7 +416,7 @@ class CategorieProduitProvider extends ChangeNotifier {
       return listArticles;
       // return teams;
     }catch(e){
-      print("erreur ${e}");
+      printVm("erreur ${e}");
       hasData=false;
       return [];
     }
@@ -474,7 +474,7 @@ class CategorieProduitProvider extends ChangeNotifier {
 
 
 
-      print('list article ${listArticlesSearch.length}');
+      printVm('list article ${listArticlesSearch.length}');
       hasData=true;
       // teams.shuffle();
 
@@ -484,7 +484,7 @@ class CategorieProduitProvider extends ChangeNotifier {
       return listArticlesSearch;
       // return teams;
     }catch(e){
-      print("erreur ${e}");
+      printVm("erreur ${e}");
       hasData=false;
       return [];
     }
@@ -543,7 +543,7 @@ class CategorieProduitProvider extends ChangeNotifier {
 
 
 
-      print('list article ${listArticlesSearch.length}');
+      printVm('list article ${listArticlesSearch.length}');
       hasData=true;
       // teams.shuffle();
 
@@ -553,7 +553,7 @@ class CategorieProduitProvider extends ChangeNotifier {
       return listArticlesSearch;
       // return teams;
     }catch(e){
-      print("erreur ${e}");
+      printVm("erreur ${e}");
       hasData=false;
       return [];
     }
@@ -601,7 +601,7 @@ class CategorieProduitProvider extends ChangeNotifier {
       listArticles = querySnapshotUser.docs.map((doc) =>
           ArticleData.fromJson(doc.data() as Map<String, dynamic>)).toList();
 
-      print('list article ${listArticles.length}');
+      printVm('list article ${listArticles.length}');
       hasData=true;
       // teams.shuffle();
 
@@ -617,7 +617,7 @@ class CategorieProduitProvider extends ChangeNotifier {
       return listArticles;
       // return teams;
     }catch(e){
-      print("erreur ${e}");
+      printVm("erreur ${e}");
       hasData=false;
       return [];
     }
@@ -645,7 +645,7 @@ class CategorieProduitProvider extends ChangeNotifier {
       listArticles = querySnapshotUser.docs.map((doc) =>
           ArticleData.fromJson(doc.data() as Map<String, dynamic>)).toList();
 
-      print('list article ${listArticles.length}');
+      printVm('list article ${listArticles.length}');
       hasData=true;
       // teams.shuffle();
 
@@ -661,7 +661,7 @@ class CategorieProduitProvider extends ChangeNotifier {
       return listArticles;
       // return teams;
     }catch(e){
-      print("erreur ${e}");
+      printVm("erreur ${e}");
       hasData=false;
       return [];
     }
@@ -681,7 +681,7 @@ class CategorieProduitProvider extends ChangeNotifier {
 
       return true;
     }catch(e){
-      print("erreur update  : ${e}");
+      printVm("erreur update  : ${e}");
       return false;
     }
   }
@@ -699,9 +699,9 @@ class CategorieProduitProvider extends ChangeNotifier {
 
         .where("id",isEqualTo: id!).get()
         .then((value){
-      print("ArticleData by id");
+      printVm("ArticleData by id");
 
-      print(value);      return value;
+      printVm(value);      return value;
     }).catchError((onError){
 
     });
@@ -751,14 +751,14 @@ class CategorieProduitProvider extends ChangeNotifier {
 
 
 
-     print('list code ${listcode.length}');
+     printVm('list code ${listcode.length}');
 
 
 
      return existe;
      // return teams;
    }catch(e){
-     print("erreur ${e}");
+     printVm("erreur ${e}");
      return existe;
    }
   }
@@ -776,9 +776,9 @@ class CategorieProduitProvider extends ChangeNotifier {
       //  .where("article_id",isEqualTo: article_id!)
         .get()
         .then((value){
-      print("Commandes by id");
+      printVm("Commandes by id");
 
-      print(value);      return value;
+      printVm(value);      return value;
     }).catchError((onError){
 
     });
@@ -826,9 +826,9 @@ class CategorieProduitProvider extends ChangeNotifier {
     //  .where("article_id",isEqualTo: article_id!)
         .get()
         .then((value){
-      print("Commandes by id");
+      printVm("Commandes by id");
 
-      print(value);      return value;
+      printVm(value);      return value;
     }).catchError((onError){
 
     });
@@ -877,9 +877,9 @@ class CategorieProduitProvider extends ChangeNotifier {
     //  .where("article_id",isEqualTo: article_id!)
         .get()
         .then((value){
-      print("Commandes by id");
+      printVm("Commandes by id");
 
-      print(value);      return value;
+      printVm(value);      return value;
     }).catchError((onError){
 
     });
@@ -926,7 +926,7 @@ class CategorieProduitProvider extends ChangeNotifier {
 
       return true;
     }catch(e){
-      print("erreur update  : ${e}");
+      printVm("erreur update  : ${e}");
       return false;
     }
   }
@@ -941,7 +941,7 @@ class CategorieProduitProvider extends ChangeNotifier {
 
 
       //  await firestore.collection('Matches').doc(id).set(data.toJson());
-      print("///////////-- SAVE articles data  --///////////////");
+      printVm("///////////-- SAVE articles data  --///////////////");
       return true;
 
     } catch(error){
@@ -961,9 +961,9 @@ class CategorieProduitProvider extends ChangeNotifier {
     where("article_id",isEqualTo: article_id!)
         .get()
         .then((value){
-      print("Commandes by id");
+      printVm("Commandes by id");
 
-      print(value);      return value;
+      printVm(value);      return value;
     }).catchError((onError){
 
     });
@@ -985,9 +985,9 @@ class CategorieProduitProvider extends ChangeNotifier {
     // Get docs from collection reference
     QuerySnapshot querySnapshot = await collectionRef.where("code",isEqualTo: code!).get()
         .then((value){
-      print("Commandes by code");
+      printVm("Commandes by code");
 
-      print(value);      return value;
+      printVm(value);      return value;
     }).catchError((onError){
 
     });
@@ -1009,7 +1009,7 @@ class CategorieProduitProvider extends ChangeNotifier {
 
 
       //  await firestore.collection('Matches').doc(id).set(data.toJson());
-      print("///////////-- SAVE commande data  --///////////////");
+      printVm("///////////-- SAVE commande data  --///////////////");
       return true;
 
     } catch(error){

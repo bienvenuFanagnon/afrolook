@@ -1,4 +1,6 @@
-// lib/services/creator_service.dart
+﻿// lib/services/creator_service.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/dating_data.dart';
@@ -26,7 +28,7 @@ class CreatorService {
 
       return true;
     } catch (e) {
-      print('Erreur lors de la création du profil créateur: $e');
+      printVm('Erreur lors de la création du profil créateur: $e');
       return false;
     }
   }
@@ -105,7 +107,7 @@ class CreatorService {
 
       return true;
     } catch (e) {
-      print('Erreur lors de l\'abonnement: $e');
+      printVm('Erreur lors de l\'abonnement: $e');
       return false;
     }
   }
@@ -138,7 +140,7 @@ class CreatorService {
 
       return true;
     } catch (e) {
-      print('Erreur lors de la publication: $e');
+      printVm('Erreur lors de la publication: $e');
       return false;
     }
   }
@@ -203,7 +205,7 @@ class CreatorService {
         return true;
       });
     } catch (e) {
-      print('Erreur lors de la réaction: $e');
+      printVm('Erreur lors de la réaction: $e');
       return false;
     }
   }
@@ -262,7 +264,7 @@ class CreatorService {
         return true;
       });
     } catch (e) {
-      print('Erreur lors de l\'enregistrement de la vue: $e');
+      printVm('Erreur lors de l\'enregistrement de la vue: $e');
       return false;
     }
   }
@@ -306,7 +308,7 @@ class CreatorService {
 
       return true;
     } catch (e) {
-      print('Erreur lors du partage: $e');
+      printVm('Erreur lors du partage: $e');
       return false;
     }
   }
@@ -376,7 +378,7 @@ class CreatorService {
         return true;
       });
     } catch (e) {
-      print('Erreur lors de l\'achat: $e');
+      printVm('Erreur lors de l\'achat: $e');
       return false;
     }
   }

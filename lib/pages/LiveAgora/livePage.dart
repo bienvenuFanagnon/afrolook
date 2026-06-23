@@ -1,4 +1,4 @@
-// models/live_models.dart
+﻿// models/live_models.dart
 import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
@@ -172,7 +172,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   @override
   void initState() {
     super.initState();
-    print("🎬 Initialisation LivePage - Live ${widget.postLive.isPaidLive ? 'PAYANT' : 'GRATUIT'}");
+    printVm("🎬 Initialisation LivePage - Live ${widget.postLive.isPaidLive ? 'PAYANT' : 'GRATUIT'}");
 
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
 
@@ -181,7 +181,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       duration: Duration(milliseconds: 1500),
     );
 
-    print("🎬 Initialisation de LivePage - isHost: ${widget.isHost}");
+    printVm("🎬 Initialisation de LivePage - isHost: ${widget.isHost}");
 
     // Initialiser la configuration vidéo
     _videoConfig = VideoEncoderConfiguration();
@@ -202,7 +202,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     // Après 3 secondes, si remoteUid est toujours null, essayez avec uid=1
     Future.delayed(Duration(seconds: 3), () {
       if (_remoteUid == null && mounted) {
-        print("⚠️ remoteUid toujours null, tentative avec uid=1");
+        printVm("⚠️ remoteUid toujours null, tentative avec uid=1");
         setState(() {
           _remoteUid = 1; // Essayez avec l'UID probable de l'hôte
         });
@@ -239,10 +239,10 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           'spectators': FieldValue.arrayRemove([currentUserId]),
           'viewerCount': FieldValue.increment(-1),
         });
-        print("✅ Utilisateur retiré des spectateurs");
+        printVm("✅ Utilisateur retiré des spectateurs");
       }
     } catch (e) {
-      print("❌ Erreur retrait des spectateurs: $e");
+      printVm("❌ Erreur retrait des spectateurs: $e");
     }
   }
 // Modifiez la méthode _onTap pour ignorer la position du tap
@@ -271,7 +271,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         });
       }
     } catch (e) {
-      print("❌ Erreur envoi like partagé: $e");
+      printVm("❌ Erreur envoi like partagé: $e");
     }
   }
 
@@ -311,7 +311,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
       _removeRestrictions();
     } catch (e) {
-      print("❌ Erreur accord accès libre: $e");
+      printVm("❌ Erreur accord accès libre: $e");
     }
   }
 
@@ -346,7 +346,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         _startTrialTimer();
       }
     } catch (e) {
-      print("❌ Erreur initialisation système essai: $e");
+      printVm("❌ Erreur initialisation système essai: $e");
     }
   }
 
@@ -434,7 +434,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         'userWatchTime.$currentUserId': totalSeconds ~/ 60,
       });
     } catch (e) {
-      print("❌ Erreur mise à jour temps visionnage: $e");
+      printVm("❌ Erreur mise à jour temps visionnage: $e");
     }
   }
 
@@ -511,7 +511,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         );
       }
     } catch (e) {
-      print("❌ Erreur paiement participation: $e");
+      printVm("❌ Erreur paiement participation: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erreur lors du paiement'),
@@ -552,16 +552,16 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     try {
       _numberOfCameras = 2;
     } catch (e) {
-      print("❌ Erreur configuration caméra: $e");
+      printVm("❌ Erreur configuration caméra: $e");
     }
   }
 
   Future<void> _initAgora() async {
     try {
-      print("🔊 Demande des permissions Agora...");
+      printVm("🔊 Demande des permissions Agora...");
       await [Permission.microphone, Permission.camera].request();
 
-      print("🚀 Création du moteur Agora...");
+      printVm("🚀 Création du moteur Agora...");
       _engine = createAgoraRtcEngine();
 
       await _engine.initialize(RtcEngineContext(
@@ -573,29 +573,29 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       _engine.registerEventHandler(
         RtcEngineEventHandler(
           onJoinChannelSuccess: (connection, elapsed) {
-            print("✅ Rejoint le canal avec succès - UID: ${connection.localUid}");
+            printVm("✅ Rejoint le canal avec succès - UID: ${connection.localUid}");
             setState(() => _localUserJoined = true);
           },
           onUserJoined: (connection, remoteUid, elapsed) {
-            print("👤 Utilisateur rejoint: $remoteUid");
+            printVm("👤 Utilisateur rejoint: $remoteUid");
             setState(() => _remoteUid = remoteUid);
           },
           onUserOffline: (connection, remoteUid, reason) {
-            print("👋 Utilisateur parti: $remoteUid");
+            printVm("👋 Utilisateur parti: $remoteUid");
             setState(() => _remoteUid = null);
           },
           onCameraReady: () {
-            print("📷 Caméra prête");
+            printVm("📷 Caméra prête");
           },
           onRemoteVideoStateChanged: (connection, remoteUid, state, reason, elapsed) {
-            print("📹 État vidéo UID $remoteUid: $state");
+            printVm("📹 État vidéo UID $remoteUid: $state");
           },
         ),
       );
 
       await _engine.enableVideo();
-      print("Live premium : ${widget.postLive.toMap()}");
-      print("Live premium : ${_isLivePremium}");
+      printVm("Live premium : ${widget.postLive.toMap()}");
+      printVm("Live premium : ${_isLivePremium}");
 
       // 🔥 CONFIGURATION SELON TYPE DE LIVE (PREMIUM OU STANDARD)
       final isPremium = _isLivePremium; // Utilise la durée du live
@@ -662,23 +662,23 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       setState(() => _isInitialized = true);
 
       // Log de configuration
-      print("✅ Agora initialisé - Live: ${isPremium ? 'PREMIUM' : 'STANDARD'}");
-      print("   📹 Résolution: ${isPremium ? '1280x720 (HD)' : '640x360 (SD)'}");
-      print("   ⚡ Latence: ${isPremium ? 'Ultra Low (500ms)' : 'Low (2000ms)'}");
-      print("   🎯 Hôte: ${_isHostPremium ? 'PREMIUM' : 'STANDARD'}");
-      print("   ⏰ Durée: ${widget.postLive.safeLiveDurationMinutes} minutes");
+      printVm("✅ Agora initialisé - Live: ${isPremium ? 'PREMIUM' : 'STANDARD'}");
+      printVm("   📹 Résolution: ${isPremium ? '1280x720 (HD)' : '640x360 (SD)'}");
+      printVm("   ⚡ Latence: ${isPremium ? 'Ultra Low (500ms)' : 'Low (2000ms)'}");
+      printVm("   🎯 Hôte: ${_isHostPremium ? 'PREMIUM' : 'STANDARD'}");
+      printVm("   ⏰ Durée: ${widget.postLive.safeLiveDurationMinutes} minutes");
 
     } catch (e) {
-      print("💥 Erreur lors de l'initialisation Agora: $e");
+      printVm("💥 Erreur lors de l'initialisation Agora: $e");
     }
   }
 
   Future<void> _initAgora2() async {
     try {
-      print("🔊 Demande des permissions Agora...");
+      printVm("🔊 Demande des permissions Agora...");
       await [Permission.microphone, Permission.camera].request();
 
-      print("🚀 Création du moteur Agora...");
+      printVm("🚀 Création du moteur Agora...");
       _engine = createAgoraRtcEngine();
 
       await _engine.initialize(RtcEngineContext(
@@ -690,25 +690,25 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       _engine.registerEventHandler(
         RtcEngineEventHandler(
           onJoinChannelSuccess: (connection, elapsed) {
-            print("✅ Rejoint le canal avec succès - UID: ${connection.localUid}");
+            printVm("✅ Rejoint le canal avec succès - UID: ${connection.localUid}");
             setState(() => _localUserJoined = true);
           },
           onUserJoined: (connection, remoteUid, elapsed) {
-            print("👤 Utilisateur rejoint: $remoteUid");
+            printVm("👤 Utilisateur rejoint: $remoteUid");
             setState(() => _remoteUid = remoteUid);
           },
           onUserOffline: (connection, remoteUid, reason) {
-            print("👋 Utilisateur parti: $remoteUid");
+            printVm("👋 Utilisateur parti: $remoteUid");
             setState(() => _remoteUid = null);
           },
           onCameraReady: () {
-            print("📷 Caméra prête");
+            printVm("📷 Caméra prête");
           },
           // onCameraFocusAreaChanged: () {
-          //   print("🔍 Zone de focus caméra changée");
+          //   printVm("🔍 Zone de focus caméra changée");
           // },
           onRemoteVideoStateChanged: (connection, remoteUid, state, reason, elapsed) {
-            print("📹 État vidéo UID $remoteUid: $state");
+            printVm("📹 État vidéo UID $remoteUid: $state");
           },
         ),
       );
@@ -767,7 +767,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       _joinAsSpectator();
       setState(() => _isInitialized = true);
     } catch (e) {
-      print("💥 Erreur lors de l'initialisation Agora: $e");
+      printVm("💥 Erreur lors de l'initialisation Agora: $e");
     }
   }
 
@@ -787,7 +787,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
       return result.data['token'] as String;
     } catch (e) {
-      print("❌ Erreur récupération token Agora: $e");
+      printVm("❌ Erreur récupération token Agora: $e");
       return null;
     }
   }
@@ -807,7 +807,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
             await _startScreenSharing();
           }
         } catch (e) {
-          print("❌ Erreur partage écran: $e");
+          printVm("❌ Erreur partage écran: $e");
         }
       },
     );
@@ -830,7 +830,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       setState(() => _isScreenSharing = true);
       await _updateScreenSharingState(isSharing: true, sharerId: _auth.currentUser!.uid);
     } catch (e) {
-      print("❌ Erreur démarrage partage écran: $e");
+      printVm("❌ Erreur démarrage partage écran: $e");
     }
   }
 
@@ -846,7 +846,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       setState(() => _isScreenSharing = false);
       await _updateScreenSharingState(isSharing: false, sharerId: null);
     } catch (e) {
-      print("❌ Erreur arrêt partage écran: $e");
+      printVm("❌ Erreur arrêt partage écran: $e");
     }
   }
 
@@ -858,7 +858,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         'lastScreenSharingUpdate': DateTime.now(),
       });
     } catch (e) {
-      print("❌ Erreur mise à jour état partage écran: $e");
+      printVm("❌ Erreur mise à jour état partage écran: $e");
     }
   }
 
@@ -899,7 +899,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           await _engine.muteLocalAudioStream(!_isMicrophoneMuted);
           setState(() => _isMicrophoneMuted = !_isMicrophoneMuted);
         } catch (e) {
-          print("❌ Erreur contrôle micro: $e");
+          printVm("❌ Erreur contrôle micro: $e");
         }
       },
     );
@@ -920,7 +920,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           await _engine.switchCamera();
           setState(() => _isFrontCamera = !_isFrontCamera);
         } catch (e) {
-          print("❌ Erreur basculement caméra: $e");
+          printVm("❌ Erreur basculement caméra: $e");
         }
       },
     );
@@ -988,7 +988,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         });
       }
     } catch (e) {
-      print("❌ Erreur envoi commentaire: $e");
+      printVm("❌ Erreur envoi commentaire: $e");
     }
   }
 
@@ -1100,7 +1100,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         _showGiftPanel = false;
       });
     } catch (e) {
-      print('❌ Erreur envoi cadeau: $e');
+      printVm('❌ Erreur envoi cadeau: $e');
     }
   }
 
@@ -1287,7 +1287,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         });
       }
     } catch (e) {
-      print("❌ Erreur récupération données hôte: $e");
+      printVm("❌ Erreur récupération données hôte: $e");
     }
   }
 
@@ -1312,7 +1312,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
       setState(() => _allUsers = users);
     } catch (e) {
-      print("❌ Erreur récupération utilisateurs: $e");
+      printVm("❌ Erreur récupération utilisateurs: $e");
     }
   }
 
@@ -1341,7 +1341,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
       setState(() => _showPinnedTextEditor = false);
     } catch (e) {
-      print("❌ Erreur mise à jour texte épinglé: $e");
+      printVm("❌ Erreur mise à jour texte épinglé: $e");
     }
   }
 
@@ -1375,7 +1375,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         await _grantFreeAccess();
       }
     } catch (e) {
-      print("❌ Erreur rejoindre comme participant: $e");
+      printVm("❌ Erreur rejoindre comme participant: $e");
     }
   }
 
@@ -1391,7 +1391,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
       await liveProvider.joinAsSpectator(widget.liveId, _auth.currentUser!.uid);
     } catch (e) {
-      print("❌ Erreur rejoindre comme spectateur: $e");
+      printVm("❌ Erreur rejoindre comme spectateur: $e");
     }
   }
 
@@ -1441,7 +1441,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   //
   //     setState(() => _showPaymentWarning = true);
   //   } catch (e) {
-  //     print("❌ Erreur demande paiement: $e");
+  //     printVm("❌ Erreur demande paiement: $e");
   //   }
   // }
   //
@@ -1464,7 +1464,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   //       _endLive();
   //     }
   //   } catch (e) {
-  //     print("❌ Erreur traitement paiement: $e");
+  //     printVm("❌ Erreur traitement paiement: $e");
   //   }
   // }
 
@@ -1510,7 +1510,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         Navigator.pop(context);
       }
     } catch (e) {
-      print("❌ Erreur fin du live: $e");
+      printVm("❌ Erreur fin du live: $e");
       if (mounted) Navigator.pop(context);
     }
   }
@@ -1626,7 +1626,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       }
       Navigator.pop(context);
     } catch (e) {
-      print("❌ Erreur sortie live: $e");
+      printVm("❌ Erreur sortie live: $e");
     }
   }
 
@@ -1636,7 +1636,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       await _engine.release();
       await _initAgora();
     } catch (e) {
-      print("❌ Erreur réinitialisation Agora: $e");
+      printVm("❌ Erreur réinitialisation Agora: $e");
     }
   }
 
@@ -1734,7 +1734,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         'shareCount': FieldValue.increment(1),
       });
     } catch (e) {
-      print("❌ Erreur incrémentation partages: $e");
+      printVm("❌ Erreur incrémentation partages: $e");
     }
   }
 
@@ -2143,7 +2143,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         // Optionnel : Mettre à jour l'état du follow si nécessaire
         // setState(() => _isFollowing = !_isFollowing);
       } else {
-        print("❌ Utilisateur non trouvé avec l'ID: $userId");
+        printVm("❌ Utilisateur non trouvé avec l'ID: $userId");
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Utilisateur non trouvé'),
@@ -2152,7 +2152,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         );
       }
     } catch (e) {
-      print("❌ Erreur récupération utilisateur: $e");
+      printVm("❌ Erreur récupération utilisateur: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erreur lors du chargement des informations'),

@@ -1,4 +1,4 @@
-// import 'package:flutter/material.dart';
+﻿// import 'package:flutter/material.dart';
 //
 // import 'dart:io' show Platform;
 //
@@ -44,7 +44,7 @@
 //     // Choisir l'ID approprié
 //     final adUnitId = _useTestAd ? _testAdUnitId : _productionAdUnitId;
 //
-//     print('📢 Chargement de la bannière avec ID: $adUnitId');
+//     printVm('📢 Chargement de la bannière avec ID: $adUnitId');
 //
 //     _bannerAd = BannerAd(
 //       adUnitId: adUnitId,
@@ -52,7 +52,7 @@
 //       size: AdSize.banner,
 //       listener: BannerAdListener(
 //         onAdLoaded: (ad) {
-//           print('✅ Bannière chargée avec succès');
+//           printVm('✅ Bannière chargée avec succès');
 //           if (mounted) {
 //             setState(() {
 //               _isLoaded = true;
@@ -61,7 +61,7 @@
 //           }
 //         },
 //         onAdFailedToLoad: (ad, error) {
-//           print('❌ Erreur de chargement de la bannière: $error');
+//           printVm('❌ Erreur de chargement de la bannière: $error');
 //           ad.dispose();
 //           if (mounted) {
 //             setState(() {
@@ -70,13 +70,13 @@
 //           }
 //         },
 //         onAdOpened: (ad) {
-//           print('🔄 Bannière ouverte');
+//           printVm('🔄 Bannière ouverte');
 //         },
 //         onAdClosed: (ad) {
-//           print('🔄 Bannière fermée');
+//           printVm('🔄 Bannière fermée');
 //         },
 //         onAdImpression: (ad) {
-//           print('👁️ Impression de la bannière');
+//           printVm('👁️ Impression de la bannière');
 //         },
 //       ),
 //     )..load();

@@ -1,6 +1,9 @@
-import 'dart:math';
+﻿import 'dart:math';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:video_player/video_player.dart';
+
 import '../models/model_data.dart';
 
 /// Service singleton qui pré-initialise les contrôleurs vidéo des pubs actives.
@@ -59,7 +62,7 @@ class AdPreloadService {
       }
       _isLoaded = true;
     } catch (e) {
-      print('AdPreloadService.preload error: $e');
+      printVm('AdPreloadService.preload error: $e');
     }
   }
 

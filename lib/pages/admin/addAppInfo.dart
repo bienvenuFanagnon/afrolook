@@ -1,39 +1,67 @@
-import 'package:afrotok/models/model_data.dart';
+﻿import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:path/path.dart' as Path;
+
 import 'dart:io';
 
 import 'package:anim_search_bar/anim_search_bar.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:contained_tab_bar_view_with_custom_page_navigator/contained_tab_bar_view_with_custom_page_navigator.dart';
+
 import 'package:firebase_storage/firebase_storage.dart';
+
 import 'package:flutter/foundation.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:image_picker/image_picker.dart';
+
 import 'package:provider/provider.dart';
+
 import 'package:simple_tags/simple_tags.dart';
+
 import 'package:video_player/video_player.dart';
+
 import 'package:dropdown_search/dropdown_search.dart';
 
 import '../../constant/buttons.dart';
+
 import '../../constant/sizeButtons.dart';
+
 import '../../providers/authProvider.dart';
+
 import '../../providers/postProvider.dart';
+
 import '../../providers/userProvider.dart';
 
 import 'dart:io';
+
 import 'package:afrotok/models/model_data.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:firebase_storage/firebase_storage.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:image_picker/image_picker.dart';
+
 import 'package:path/path.dart' as Path;
+
 import 'package:provider/provider.dart';
+
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 
 import '../../constant/buttons.dart';
+
 import '../../constant/sizeButtons.dart';
+
 import '../../providers/authProvider.dart';
+
 import '../../providers/userProvider.dart';
 
 class NewAppInfo extends StatefulWidget {
@@ -99,7 +127,7 @@ class _NewAppInfoState extends State<NewAppInfo> {
       final TaskSnapshot snapshot = await uploadTask;
       return await snapshot.ref.getDownloadURL();
     } catch (e) {
-      print('Erreur upload image: $e');
+      printVm('Erreur upload image: $e');
       return null;
     }
   }
@@ -179,7 +207,7 @@ class _NewAppInfoState extends State<NewAppInfo> {
       });
 
     } catch (e) {
-      print('Erreur création info: $e');
+      printVm('Erreur création info: $e');
       _showErrorSnackBar('Erreur lors de la création: $e');
     } finally {
       if (mounted) {
@@ -205,7 +233,7 @@ class _NewAppInfoState extends State<NewAppInfo> {
 
       await _firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
     } catch (e) {
-      print('Erreur création notification: $e');
+      printVm('Erreur création notification: $e');
     }
   }
 

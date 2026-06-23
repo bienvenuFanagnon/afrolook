@@ -1,5 +1,7 @@
-// pages/pronostics/pronostic_detail_page.dart
+﻿// pages/pronostics/pronostic_detail_page.dart
 
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/postComments.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/providers/postProvider.dart';
@@ -129,7 +131,7 @@ class _PronosticDetailPageState extends State<PronosticDetailPage> with SingleTi
       }
       return pronostic;
     } catch (e) {
-      print('Erreur chargement pronostic: $e');
+      printVm('Erreur chargement pronostic: $e');
       return null;
     }
   }
@@ -145,7 +147,7 @@ class _PronosticDetailPageState extends State<PronosticDetailPage> with SingleTi
         return Post.fromJson(postDoc.data() as Map<String, dynamic>);
       }
     } catch (e) {
-      print('Erreur chargement post: $e');
+      printVm('Erreur chargement post: $e');
     }
     return null;
   }
@@ -286,7 +288,7 @@ class _PronosticDetailPageState extends State<PronosticDetailPage> with SingleTi
         ),
       );
     } catch (e) {
-      print('Erreur toggle favori: $e');
+      printVm('Erreur toggle favori: $e');
     } finally {
       setState(() => _isProcessingFavorite = false);
     }
@@ -333,7 +335,7 @@ class _PronosticDetailPageState extends State<PronosticDetailPage> with SingleTi
       addPointsForAction(UserAction.partagePost);
       addPointsForOtherUserAction(post.user_id!, UserAction.autre);
     } catch (e) {
-      print('Erreur partage: $e');
+      printVm('Erreur partage: $e');
     } finally {
       setState(() => _isSharing = false);
     }
@@ -1092,13 +1094,13 @@ class _PronosticDetailPageState extends State<PronosticDetailPage> with SingleTi
         // templateType: TemplateType.small, // ou TemplateType.small
 
         onAdLoaded: () {
-          print('✅ Native Ad Afrolook chargée: $key');
+          printVm('✅ Native Ad Afrolook chargée: $key');
         },
       ),
       //
       //   // child: BannerAdWidget(
       //   //   onAdLoaded: () {
-      //   //     print('✅ Bannière Afrolook chargée: $key');
+      //   //     printVm('✅ Bannière Afrolook chargée: $key');
       //   //   },
       //   // ),
     );
@@ -1435,7 +1437,7 @@ class _PronosticDetailPageState extends State<PronosticDetailPage> with SingleTi
 //         });
 //       }
 //     } catch (e) {
-//       print('Erreur vérification favoris: $e');
+//       printVm('Erreur vérification favoris: $e');
 //     }
 //   }
 //
@@ -1638,7 +1640,7 @@ class _PronosticDetailPageState extends State<PronosticDetailPage> with SingleTi
 //         ),
 //       );
 //     } catch (e) {
-//       print('Erreur toggle favori: $e');
+//       printVm('Erreur toggle favori: $e');
 //     } finally {
 //       setState(() {
 //         _isProcessingFavorite = false;
@@ -1678,7 +1680,7 @@ class _PronosticDetailPageState extends State<PronosticDetailPage> with SingleTi
 //         );
 //       }
 //     } catch (e) {
-//       print("Erreur like: $e");
+//       printVm("Erreur like: $e");
 //     }
 //   }
 //
@@ -1718,7 +1720,7 @@ class _PronosticDetailPageState extends State<PronosticDetailPage> with SingleTi
 //         addPointsForOtherUserAction(_post!.user_id!, UserAction.autre);
 //       }
 //     } catch (e) {
-//       print("Erreur partage: $e");
+//       printVm("Erreur partage: $e");
 //     } finally {
 //       if (mounted) {
 //         setState(() {

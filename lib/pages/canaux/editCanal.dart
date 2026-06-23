@@ -1,15 +1,27 @@
-import 'dart:io';
+﻿import 'dart:io';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:afrotok/models/model_data.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:firebase_storage/firebase_storage.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:image_picker/image_picker.dart';
+
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+
 import 'package:provider/provider.dart';
+
 import 'package:path/path.dart' as Path;
+
 import '../../../providers/authProvider.dart';
+
 import '../../../providers/userProvider.dart';
+
 import '../../theme/app_colors.dart';
+
 import '../../l10n/app_localizations.dart';
 
 class EditCanal extends StatefulWidget {
@@ -673,7 +685,7 @@ class _EditCanalState extends State<EditCanal> {
         });
 
       } catch (e) {
-        print('Erreur mise à jour canal: $e');
+        printVm('Erreur mise à jour canal: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(

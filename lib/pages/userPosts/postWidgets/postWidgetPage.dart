@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -235,7 +235,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
       // Vérifier si l'utilisateur a déjà vu
       if (usersViewed.contains(userId)) {
-        print("⏭️ L'utilisateur a déjà vu ce post");
+        printVm("⏭️ L'utilisateur a déjà vu ce post");
         return;
       }
 
@@ -246,10 +246,10 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       });
 
       PostViewService.recordAuthorView(widget.post, userId);
-      print("✅ Vue enregistrée pour $userId");
+      printVm("✅ Vue enregistrée pour $userId");
 
     } catch (e) {
-      print("Erreur enregistrement vue : $e");
+      printVm("Erreur enregistrement vue : $e");
     }
   }
 
@@ -259,7 +259,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   @override
   void initState() {
     super.initState();
-    print("index du post: ${widget.index}");
+    printVm("index du post: ${widget.index}");
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     postProvider = Provider.of<PostProvider>(context, listen: false);
     userProvider = Provider.of<UserProvider>(context, listen: false);
@@ -287,6 +287,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     final prefs = await SharedPreferences.getInstance();
     final userId = authProvider.loginUserData.id;
     final key = 'has_seen_support_modal_$userId';
+    if (!mounted) return;
     setState(() {
       _hasSeenSupportModal = prefs.getBool(key) ?? false;
     });
@@ -296,6 +297,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     final prefs = await SharedPreferences.getInstance();
     final userId = authProvider.loginUserData.id;
     await prefs.setBool('has_seen_support_modal_$userId', true);
+    if (!mounted) return;
     setState(() {
       _hasSeenSupportModal = true;
     });
@@ -448,6 +450,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     // ✅ ENVOYER LA NOTIFICATION AU CRÉATEUR
     await _sendSupportNotification(creatorId, currentUserId!, postId);
 
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(AppLocalizations.of(context).postSupportThanks),
@@ -455,13 +458,11 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         duration: Duration(seconds: 2),
       ),
     );
-    // Mettre à jour l'état local
     setState(() {
       widget.post.adSupportCount = (widget.post.adSupportCount ?? 0) + 1;
       _isSupporting = false;
       _showRewardedAd = false;
     });
-
   }
   Widget _buildSupportButton(bool hasAccess) {
     final colors = AppColors.of(context);
@@ -572,6 +573,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         await _addToFavorites(userId, postId, firestore);
       }
 
+      if (!mounted) return;
       // Mettre à jour l'état local
       setState(() {
         _isFavorite = !_isFavorite;
@@ -584,12 +586,10 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         }
       });
 
-      // Notifier le parent si nécessaire
       if (_isFavorite) {
-        widget.onLoved?.call(); // Utiliser le callback existant pour l'amour
+        widget.onLoved?.call();
       }
 
-      // Afficher un feedback
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -604,7 +604,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       );
 
     } catch (e) {
-      print('Erreur toggle favori: $e');
+      printVm('Erreur toggle favori: $e');
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -615,9 +616,11 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         ),
       );
     } finally {
-      setState(() {
-        _isProcessingFavorite = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isProcessingFavorite = false;
+        });
+      }
     }
   }
 
@@ -707,11 +710,12 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         );
       }
     } catch (e) {
-      print('Erreur création notification favori: $e');
+      printVm('Erreur création notification favori: $e');
     }
   }
   Future<void> _loadUserData() async {
     if (widget.post.user_id == null) return;
+    if (!mounted) return;
 
     setState(() {
       _isLoadingUser = true;
@@ -719,23 +723,26 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
     try {
       final userDoc = await firestore.collection('Users').doc(widget.post.user_id!).get();
-      if (userDoc.exists) {
+      if (userDoc.exists && mounted) {
         setState(() {
           _currentUser = UserData.fromJson(userDoc.data() as Map<String, dynamic>);
           widget.post.user = _currentUser;
         });
       }
     } catch (e) {
-      print('Erreur lors du chargement de l\'utilisateur: $e');
+      printVm('Erreur lors du chargement de l\'utilisateur: $e');
     } finally {
-      setState(() {
-        _isLoadingUser = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoadingUser = false;
+        });
+      }
     }
   }
 
   Future<void> _loadCanalData() async {
     if (widget.post.canal_id == null || widget.post.canal_id!.isEmpty) return;
+    if (!mounted) return;
 
     setState(() {
       _isLoadingCanal = true;
@@ -743,7 +750,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
     try {
       final canalDoc = await firestore.collection('Canaux').doc(widget.post.canal_id!).get();
-      if (canalDoc.exists) {
+      if (canalDoc.exists && mounted) {
         final canalData = canalDoc.data() as Map<String, dynamic>;
         setState(() {
           _currentCanal = Canal.fromJson(canalData);
@@ -751,11 +758,13 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         });
       }
     } catch (e) {
-      print('Erreur lors du chargement du canal: $e');
+      printVm('Erreur lors du chargement du canal: $e');
     } finally {
-      setState(() {
-        _isLoadingCanal = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoadingCanal = false;
+        });
+      }
     }
   }
 
@@ -878,7 +887,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   const SizedBox(height: 12),
                   MrecAdWidget(  // ou AdaptiveAdWidget(useBanner: false)
                     onAdLoaded: () {
-                      print('✅ Pub MREC affichée après le post ${widget.index}');
+                      printVm('✅ Pub MREC affichée après le post ${widget.index}');
                     },
                     showLessAdsButton: false, // désactive le bouton "moins de pub" si tu veux
                   ),
@@ -1376,7 +1385,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
               await _loadUserData();
             }
           } catch (e) {
-            print('Erreur lors de l\'abonnement: $e');
+            printVm('Erreur lors de l\'abonnement: $e');
           } finally {
             if (mounted) {
               setState(() {
@@ -1426,17 +1435,19 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         timeMs: 1000,
       );
 
-      if (thumbnailPath != null && File(thumbnailPath).existsSync()) {
+      if (thumbnailPath != null && File(thumbnailPath).existsSync() && mounted) {
         setState(() {
           _videoThumbnailPath = thumbnailPath;
           _isGeneratingThumbnail = false;
         });
       }
     } catch (e) {
-      print('Erreur génération thumbnail: $e');
-      setState(() {
-        _isGeneratingThumbnail = false;
-      });
+      printVm('Erreur génération thumbnail: $e');
+      if (mounted) {
+        setState(() {
+          _isGeneratingThumbnail = false;
+        });
+      }
     }
   }
 
@@ -2646,7 +2657,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         );
       }
     } catch (e) {
-      print("Erreur like: $e");
+      printVm("Erreur like: $e");
     }
   }
   Future<void> _handleLike() async {
@@ -2707,7 +2718,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       //   ),
       // );
     } catch (e) {
-      print("Erreur like: $e");
+      printVm("Erreur like: $e");
       // ScaffoldMessenger.of(context).showSnackBar(
       //   SnackBar(
       //     content: Text('Erreur: $e'),
@@ -2914,7 +2925,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
             // Sauvegarder la notification
             await firestore.collection('Notifications').doc(notificationId).set(notification.toJson());
-            print("✅ Notification Firebase enregistrée (contrôle 20 minutes respecté)");
+            printVm("✅ Notification Firebase enregistrée (contrôle 20 minutes respecté)");
 
             // =====================================================
             // ✅ 2. ENVOYER LA PUSH NOTIFICATION
@@ -2931,7 +2942,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                 post_type: PostDataType.IMAGE.name,
                 chat_id: '',
               );
-              print("✅ Push notification envoyée");
+              printVm("✅ Push notification envoyée");
             }
 
             // =====================================================
@@ -2947,8 +2958,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
             final minutesPassed = (timeSinceLastNotification / (60 * 1000 * 1000)).toStringAsFixed(1);
             final minutesRemaining = ((twentyMinutesMicroseconds - timeSinceLastNotification) / (60 * 1000 * 1000)).toStringAsFixed(1);
 
-            print("⏱️ Notification limitée - Dernière notification il y a $minutesPassed minutes");
-            print("⏱️ Prochaine notification possible dans $minutesRemaining minutes");
+            printVm("⏱️ Notification limitée - Dernière notification il y a $minutesPassed minutes");
+            printVm("⏱️ Prochaine notification possible dans $minutesRemaining minutes");
 
             // Optionnel: Afficher un message à l'utilisateur
             ScaffoldMessenger.of(context).showSnackBar(
@@ -2990,7 +3001,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         );
       }
     } catch (e) {
-      print("Erreur like: $e");
+      printVm("Erreur like: $e");
     }
   }
 
@@ -3114,7 +3125,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       }
 
     } catch (e) {
-      print("Erreur partage: $e");
+      printVm("Erreur partage: $e");
     } finally {
       // Désactiver le chargement même en cas d'erreur
       if (mounted) {
@@ -3130,15 +3141,15 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     try {
       // 🔹 Supprimer le post de Firestore
       await firestore.collection('Posts').doc(post.id).delete();
-      print('✅ Post ${post.id} supprimé de Firestore');
+      printVm('✅ Post ${post.id} supprimé de Firestore');
 
       // 🔹 Retirer l'ID de allPostIds
       await appDefaultRef.update({
         'allPostIds': FieldValue.arrayRemove([post.id]),
       });
-      print('✅ ID ${post.id} retiré de allPostIds');
+      printVm('✅ ID ${post.id} retiré de allPostIds');
     } catch (e) {
-      print('❌ Erreur lors de la suppression du post ${post.id}: $e');
+      printVm('❌ Erreur lors de la suppression du post ${post.id}: $e');
       throw e;
     }
   }
@@ -3308,7 +3319,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         _showInsufficientBalanceDialog();
       }
     } catch (e) {
-      print("Erreur envoi cadeau: $e");
+      printVm("Erreur envoi cadeau: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: AppColors.of(context).danger,
@@ -3469,7 +3480,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
       await firestore.collection('TransactionSoldes').doc(transaction.id).set(transaction.toJson());
     } catch (e) {
-      print("Erreur création transaction: $e");
+      printVm("Erreur création transaction: $e");
     }
   }
 

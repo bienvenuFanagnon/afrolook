@@ -1,4 +1,4 @@
-
+﻿
 import 'package:afrotok/models/model_data.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:country_flags/country_flags.dart';
@@ -162,7 +162,7 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
     Chat usersChat=Chat();
 
     if (await friendsStream.isEmpty) {
-      print("pas de chat ");
+      printVm("pas de chat ");
       String chatId = FirebaseFirestore.instance
           .collection('Chats')
           .doc()
@@ -183,12 +183,12 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
       usersChat=chat;
 
     }  else{
-      print("le chat existe  ");
-      print("stream :${friendsStream}");
+      printVm("le chat existe  ");
+      printVm("stream :${friendsStream}");
       usersChat= await friendsStream.first.then((value) async {
-        print("stream value l :${value.docs.length}");
+        printVm("stream value l :${value.docs.length}");
         if (value.docs.length<=0) {
-          print("pas de chat ");
+          printVm("pas de chat ");
 
           String chatId = FirebaseFirestore.instance
               .collection('Chats')
@@ -224,9 +224,9 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
       if (messageList.isEmpty) {
         usersChat.messages=[];
         userProvider.chat=usersChat;
-        print("messgae vide ");
+        printVm("messgae vide ");
       }else{
-        print("have messages");
+        printVm("have messages");
         usersChat.messages=messageList;
         userProvider.chat=usersChat;
       }
@@ -499,7 +499,7 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
                                     // users.add(pseudo.toJson());
 
                                     await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-                                    print("///////////-- save notification --///////////////");
+                                    printVm("///////////-- save notification --///////////////");
                                     SnackBar snackBar = SnackBar(
                                       content: Text('invitation envoyée',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
                                     );
@@ -940,7 +940,7 @@ class _UserProfileModalState extends State<UserProfileModal> {
         return Chat.fromJson(querySnapshot.docs.first.data());
       }
     } catch (e) {
-      print('Erreur getChatsData: $e');
+      printVm('Erreur getChatsData: $e');
       rethrow;
     }
   }
@@ -1362,7 +1362,9 @@ class _UserProfileModalState extends State<UserProfileModal> {
                                 );
                               }
                             }
-                                : () => _sendInvitation(widget.user),
+                                : isInvited
+                                    ? () {} // déjà invité — isDisabled gère le blocage
+                                    : () => _sendInvitation(widget.user),
                           ),
 
                           /// ABONNEMENT
@@ -1865,7 +1867,7 @@ class _UserProfileModalState extends State<UserProfileModal> {
                   // await profileLikeProvider.refreshLikes(widget.user.id!);
 
                 } catch (e) {
-                  print('Erreur like profil: $e');
+                  printVm('Erreur like profil: $e');
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -1962,7 +1964,7 @@ class _UserProfileModalState extends State<UserProfileModal> {
                 }
               }
             } catch (e) {
-              print('Erreur like profil: $e');
+              printVm('Erreur like profil: $e');
             }
           },
           child: Container(

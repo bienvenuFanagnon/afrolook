@@ -1,4 +1,6 @@
-// lib/providers/dating/coin_gift_provider.dart
+﻿// lib/providers/dating/coin_gift_provider.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../models/dating_data.dart';
@@ -80,7 +82,7 @@ class CoinProvider extends ChangeNotifier {
       _transactions = await _coinService.getCurrentUserTransactions();
       notifyListeners();
     } catch (e) {
-      print('Erreur chargement transactions: $e');
+      printVm('Erreur chargement transactions: $e');
     }
   }
 

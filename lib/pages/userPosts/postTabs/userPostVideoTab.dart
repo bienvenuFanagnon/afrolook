@@ -1,28 +1,51 @@
-import 'dart:async';
+﻿import 'dart:async';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'dart:io';
 import 'dart:typed_data';
+
 import 'package:afrotok/models/model_data.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:firebase_storage/firebase_storage.dart';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
+
 import 'package:flutter/material.dart';
+
 import 'package:image_picker/image_picker.dart';
+
 import 'package:path/path.dart' as Path;
+
 import 'package:path_provider/path_provider.dart';
+
 import 'package:provider/provider.dart';
+
 import 'package:video_player/video_player.dart';
+
 import 'package:video_thumbnail/video_thumbnail.dart';
+
 import 'package:iconsax/iconsax.dart';
 
 import '../../../providers/authProvider.dart';
+
 import '../../../providers/postProvider.dart';
+
 import '../../../providers/userProvider.dart';
+
 import '../../../theme/app_colors.dart';
+
 import '../../../services/postService/massNotificationService.dart';
+
 import '../../../services/postService/post_cooldown_service.dart';
+
 import '../../../services/utils/abonnement_utils.dart';
+
 import '../../pub/rewarded_ad_widget.dart';
+
 import '../../user/userAbonnementPage.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../user/userPubs/user_my_advertisements_page.dart';
@@ -327,7 +350,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
         _isUploadingCustomThumbnail = false;
       });
     } catch (e) {
-      print("Erreur sélection miniature: $e");
+      printVm("Erreur sélection miniature: $e");
       setState(() {
         _isUploadingCustomThumbnail = false;
       });
@@ -351,7 +374,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
       final downloadUrl = await snapshot.ref.getDownloadURL();
       return downloadUrl;
     } catch (e) {
-      print('Erreur upload miniature personnalisée: $e');
+      printVm('Erreur upload miniature personnalisée: $e');
       return null;
     }
   }
@@ -365,7 +388,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
     if (user.role == UserRole.ADM.name) {
       _maxCharacters = 5000;
       _cooldownMinutes = 0;
-      print('🔓 Mode Admin activé: 200 Mo pour la modération');
+      printVm('🔓 Mode Admin activé: 200 Mo pour la modération');
       return;
     }
 
@@ -375,11 +398,11 @@ class _UserPubVideoState extends State<UserPubVideo> {
     if (isPremium) {
       _maxCharacters = 3000;
       _cooldownMinutes = 0;
-      print('🌟 Mode Premium: 3000 caractères, 30 Mo (limite temporaire), pas de cooldown');
+      printVm('🌟 Mode Premium: 3000 caractères, 30 Mo (limite temporaire), pas de cooldown');
     } else {
       _maxCharacters = 300;
       _cooldownMinutes = 60;
-      print('🔒 Mode Gratuit: 300 caractères, 30 Mo (limite temporaire), cooldown 60min');
+      printVm('🔒 Mode Gratuit: 300 caractères, 30 Mo (limite temporaire), cooldown 60min');
     }
   }
 
@@ -411,7 +434,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
         setState(() => _canPost = true);
       }
     } catch (e) {
-      print("Erreur vérification cooldown: $e");
+      printVm("Erreur vérification cooldown: $e");
       setState(() => _canPost = true);
     }
   }
@@ -867,7 +890,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
                   key: _rewardedAdKey,
                   onAdDismissed: () => setState(() => _showRewardedAd = false),
                   onUserEarnedReward: (double amount, String name) {
-                    print('RewardedAdWidget - amount : $amount -- name: $name');
+                    printVm('RewardedAdWidget - amount : $amount -- name: $name');
                     setState(() {
                       _canPost = true;
                       _timeRemaining = '';
@@ -1322,7 +1345,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 
   Future<void> _getVideo() async {
     if (_isPickingVideo) {
-      print("⏳ Sélection déjà en cours, ignorée");
+      printVm("⏳ Sélection déjà en cours, ignorée");
       return;
     }
     _isPickingVideo = true;
@@ -1382,7 +1405,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
       final videoWidth = _controller!.value.size.width;
       final videoHeight = _controller!.value.size.height;
       aspectRatio = videoWidth / videoHeight;
-      print("📐 Dimensions: ${videoWidth}x${videoHeight} -> ratio ${aspectRatio.toStringAsFixed(2)}");
+      printVm("📐 Dimensions: ${videoWidth}x${videoHeight} -> ratio ${aspectRatio.toStringAsFixed(2)}");
 
       setState(() {
         _videoFile = video;
@@ -1408,7 +1431,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
       Navigator.pop(context);
 
     } catch (e) {
-      print("Erreur lors de la sélection de la vidéo: $e");
+      printVm("Erreur lors de la sélection de la vidéo: $e");
       if (Navigator.canPop(context)) Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erreur lors du traitement de la vidéo. Veuillez réessayer.', style: TextStyle(color: _c.danger)), backgroundColor: _c.surface),
@@ -1427,7 +1450,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
       final downloadUrl = await snapshot.ref.getDownloadURL();
       return downloadUrl;
     } catch (e) {
-      print('Erreur upload miniature: $e');
+      printVm('Erreur upload miniature: $e');
       return null;
     }
   }
@@ -1446,10 +1469,10 @@ class _UserPubVideoState extends State<UserPubVideo> {
       if (thumbnailUrl != null && mounted) {
         await FirebaseFirestore.instance.collection('Posts').doc(postId).update({'thumbnail': thumbnailUrl});
         setState(() => _generatedThumbnailUrl = thumbnailUrl);
-        print('✅ Miniature uploadée pour le post $postId');
+        printVm('✅ Miniature uploadée pour le post $postId');
       }
     } catch (e) {
-      print('Erreur génération/upload miniature: $e');
+      printVm('Erreur génération/upload miniature: $e');
     } finally {
       if (mounted) setState(() {
         _isGeneratingThumbnail = false;
@@ -1478,7 +1501,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
       String downloadUrl = await snapshot.ref.getDownloadURL();
       return downloadUrl;
     } catch (e) {
-      print("Erreur lors de l'upload de la vidéo: $e");
+      printVm("Erreur lors de l'upload de la vidéo: $e");
       throw Exception("Échec de l'upload de la vidéo");
     }
   }
@@ -1659,7 +1682,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
           thumbnailUrl = await _uploadCustomThumbnail();
           if (thumbnailUrl != null && mounted) {
             await FirebaseFirestore.instance.collection('Posts').doc(postId).update({'thumbnail': thumbnailUrl});
-            print('✅ Miniature personnalisée uploadée');
+            printVm('✅ Miniature personnalisée uploadée');
           }
         } else {
           await _generateAndUploadThumbnail(postId, fileURL);
@@ -1688,7 +1711,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
           await FirebaseFirestore.instance.collection('Posts').doc(postId).update({'advertisementId': advertisementId});
         }
 
-        print('✅ Post vidéo créé avec ID: $postId, ${_selectAllCountries ? 'Tous pays' : '${_selectedCountries.length} pays'}');
+        printVm('✅ Post vidéo créé avec ID: $postId, ${_selectAllCountries ? 'Tous pays' : '${_selectedCountries.length} pays'}');
 
         if (widget.canal != null) {
           widget.canal!.updatedAt = DateTime.now().microsecondsSinceEpoch;
@@ -1768,7 +1791,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
         _checkPostCooldown();
         setState(() {});
       } catch (e) {
-        print("❌ Erreur lors de la publication: $e");
+        printVm("❌ Erreur lors de la publication: $e");
         if (Navigator.canPop(context)) Navigator.pop(context);
         setState(() {
           onTap = false;
@@ -2594,7 +2617,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //         _isUploadingCustomThumbnail = false;
 //       });
 //     } catch (e) {
-//       print("Erreur sélection miniature: $e");
+//       printVm("Erreur sélection miniature: $e");
 //       setState(() {
 //         _isUploadingCustomThumbnail = false;
 //       });
@@ -2618,7 +2641,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //       final downloadUrl = await snapshot.ref.getDownloadURL();
 //       return downloadUrl;
 //     } catch (e) {
-//       print('Erreur upload miniature personnalisée: $e');
+//       printVm('Erreur upload miniature personnalisée: $e');
 //       return null;
 //     }
 //   }
@@ -2630,7 +2653,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //       _maxCharacters = 5000;
 //       _maxVideoSizeMB = 200;
 //       _cooldownMinutes = 0;
-//       print('🔓 Mode Admin activé: pas de restrictions');
+//       printVm('🔓 Mode Admin activé: pas de restrictions');
 //       return;
 //     }
 //     final isPremium = AbonnementUtils.isPremiumActive(abonnement);
@@ -2638,12 +2661,12 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //       _maxCharacters = 3000;
 //       _maxVideoSizeMB = 200;
 //       _cooldownMinutes = 0;
-//       print('🌟 Mode Premium: 3000 caractères, 200 Mo, pas de cooldown');
+//       printVm('🌟 Mode Premium: 3000 caractères, 200 Mo, pas de cooldown');
 //     } else {
 //       _maxCharacters = 300;
 //       _maxVideoSizeMB = 100;
 //       _cooldownMinutes = 60;
-//       print('🔒 Mode Gratuit: 300 caractères, 100 Mo, cooldown 60min');
+//       printVm('🔒 Mode Gratuit: 300 caractères, 100 Mo, cooldown 60min');
 //     }
 //   }
 //
@@ -2675,7 +2698,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //         setState(() => _canPost = true);
 //       }
 //     } catch (e) {
-//       print("Erreur vérification cooldown: $e");
+//       printVm("Erreur vérification cooldown: $e");
 //       setState(() => _canPost = true);
 //     }
 //   }
@@ -3137,7 +3160,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //
 //                   onAdDismissed: () => setState(() => _showRewardedAd = false),
 //                   onUserEarnedReward: (double amount, String name) {
-//                     print('RewardedAdWidget - amount : $amount -- name: $name');
+//                     printVm('RewardedAdWidget - amount : $amount -- name: $name');
 //                     setState(() {
 //                       _canPost = true;
 //                       _timeRemaining = '';
@@ -3478,7 +3501,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //
 //   Future<void> _getVideo() async {
 //     if (_isPickingVideo) {
-//       print("⏳ Sélection déjà en cours, ignorée");
+//       printVm("⏳ Sélection déjà en cours, ignorée");
 //       return;
 //     }
 //     _isPickingVideo = true;
@@ -3541,7 +3564,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //       final videoWidth = _controller!.value.size.width;
 //       final videoHeight = _controller!.value.size.height;
 //       aspectRatio = videoWidth / videoHeight;
-//       print("📐 Dimensions: ${videoWidth}x${videoHeight} -> ratio ${aspectRatio.toStringAsFixed(2)}, _isAdvertisement :$_isAdvertisement");
+//       printVm("📐 Dimensions: ${videoWidth}x${videoHeight} -> ratio ${aspectRatio.toStringAsFixed(2)}, _isAdvertisement :$_isAdvertisement");
 //
 //       // ========== VÉRIFICATION FORMAT (sauf pour les pubs) ==========
 //       // post.isPortrait = aspectRatio < 1.0; // 🔥 Stocke l'orientation
@@ -3572,7 +3595,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //       //     return;
 //       //   }
 //       // } else {
-//       //   print("📢 Mode publicité : format accepté (ratio = $aspectRatio)");
+//       //   printVm("📢 Mode publicité : format accepté (ratio = $aspectRatio)");
 //       // }
 //
 //       // Si tout est valide, on met à jour l'état
@@ -3601,7 +3624,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //       Navigator.pop(context);
 //
 //     } catch (e) {
-//       print("Erreur lors de la sélection de la vidéo: $e");
+//       printVm("Erreur lors de la sélection de la vidéo: $e");
 //       if (Navigator.canPop(context)) Navigator.pop(context); // fermer le loader si ouvert
 //       _showFormatErrorDialog(
 //         title: 'Erreur',
@@ -3701,7 +3724,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //       final downloadUrl = await snapshot.ref.getDownloadURL();
 //       return downloadUrl;
 //     } catch (e) {
-//       print('Erreur upload miniature: $e');
+//       printVm('Erreur upload miniature: $e');
 //       return null;
 //     }
 //   }
@@ -3720,10 +3743,10 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //       if (thumbnailUrl != null && mounted) {
 //         await FirebaseFirestore.instance.collection('Posts').doc(postId).update({'thumbnail': thumbnailUrl});
 //         setState(() => _generatedThumbnailUrl = thumbnailUrl);
-//         print('✅ Miniature uploadée pour le post $postId');
+//         printVm('✅ Miniature uploadée pour le post $postId');
 //       }
 //     } catch (e) {
-//       print('Erreur génération/upload miniature: $e');
+//       printVm('Erreur génération/upload miniature: $e');
 //     } finally {
 //       if (mounted) setState(() {
 //         _isGeneratingThumbnail = false;
@@ -3752,7 +3775,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //       String downloadUrl = await snapshot.ref.getDownloadURL();
 //       return downloadUrl;
 //     } catch (e) {
-//       print("Erreur lors de l'upload de la vidéo: $e");
+//       printVm("Erreur lors de l'upload de la vidéo: $e");
 //       throw Exception("Échec de l'upload de la vidéo");
 //     }
 //   }
@@ -3928,7 +3951,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //           thumbnailUrl = await _uploadCustomThumbnail();
 //           if (thumbnailUrl != null && mounted) {
 //             await FirebaseFirestore.instance.collection('Posts').doc(postId).update({'thumbnail': thumbnailUrl});
-//             print('✅ Miniature personnalisée uploadée');
+//             printVm('✅ Miniature personnalisée uploadée');
 //           }
 //         } else {
 //           await _generateAndUploadThumbnail(postId, fileURL);
@@ -3958,7 +3981,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //           await FirebaseFirestore.instance.collection('Posts').doc(postId).update({'advertisementId': advertisementId});
 //         }
 //
-//         print('✅ Post vidéo créé avec ID: $postId, ${_selectAllCountries ? 'Tous pays' : '${_selectedCountries.length} pays'}');
+//         printVm('✅ Post vidéo créé avec ID: $postId, ${_selectAllCountries ? 'Tous pays' : '${_selectedCountries.length} pays'}');
 //
 //         if (widget.canal != null) {
 //           widget.canal!.updatedAt = DateTime.now().microsecondsSinceEpoch;
@@ -4042,7 +4065,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //         _checkPostCooldown();
 //         setState(() {});
 //       } catch (e) {
-//         print("❌ Erreur lors de la publication: $e");
+//         printVm("❌ Erreur lors de la publication: $e");
 //         if (Navigator.canPop(context)) Navigator.pop(context);
 //         setState(() {
 //           onTap = false;

@@ -1,7 +1,11 @@
-import 'dart:math';
+﻿import 'dart:math';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/model_data.dart';
+
 import '../../pages/chronique/chroniqueform.dart';
+
 import '../postService/feed_scoring_service.dart';
 
 /// Types de feed disponibles dans l'application.
@@ -126,7 +130,7 @@ class FeedRepository {
       final allDocs = {...byCountry.docs, ...byAll.docs}.toList();
       return _parsePosts(allDocs, excluded, limit);
     } catch (e) {
-      print('⚠️ [FeedRepository] fetchCountryPosts: $e');
+      printVm('⚠️ [FeedRepository] fetchCountryPosts: $e');
       return [];
     }
   }
@@ -142,7 +146,7 @@ class FeedRepository {
           .get();
       return _parsePosts(snap.docs, excluded, limit);
     } catch (e) {
-      print('⚠️ [FeedRepository] fetchScorePosts: $e');
+      printVm('⚠️ [FeedRepository] fetchScorePosts: $e');
       return [];
     }
   }
@@ -165,7 +169,7 @@ class FeedRepository {
         limit,
       );
     } catch (e) {
-      print('⚠️ [FeedRepository] fetchDiscoveryPosts: $e');
+      printVm('⚠️ [FeedRepository] fetchDiscoveryPosts: $e');
       return [];
     }
   }
@@ -186,7 +190,7 @@ class FeedRepository {
           .get();
       return _parsePosts(snap.docs, excluded, limit);
     } catch (e) {
-      print('⚠️ [FeedRepository] fetchResurgencePosts: $e');
+      printVm('⚠️ [FeedRepository] fetchResurgencePosts: $e');
       return [];
     }
   }
@@ -216,7 +220,7 @@ class FeedRepository {
       }
       return posts;
     } catch (e) {
-      print('⚠️ [FeedRepository] fetchByTabbarType($tabbarType): $e');
+      printVm('⚠️ [FeedRepository] fetchByTabbarType($tabbarType): $e');
       return [];
     }
   }
@@ -237,7 +241,7 @@ class FeedRepository {
           .get();
       return _parsePosts(snap.docs, excluded, limit);
     } catch (e) {
-      print('⚠️ [FeedRepository] fetchByMediaType($mediaType): $e');
+      printVm('⚠️ [FeedRepository] fetchByMediaType($mediaType): $e');
       return [];
     }
   }
@@ -258,7 +262,7 @@ class FeedRepository {
       final snap = await q.limit(limit * 2).get();
       return _parsePosts(snap.docs, excluded, limit);
     } catch (e) {
-      print('⚠️ [FeedRepository] fetchRecentPosts: $e');
+      printVm('⚠️ [FeedRepository] fetchRecentPosts: $e');
       return [];
     }
   }
@@ -292,7 +296,7 @@ class FeedRepository {
       }
       return posts;
     } catch (e) {
-      print('⚠️ [FeedRepository] fetchOtherCountriesPosts: $e');
+      printVm('⚠️ [FeedRepository] fetchOtherCountriesPosts: $e');
       return [];
     }
   }
@@ -314,7 +318,7 @@ class FeedRepository {
           } catch (_) {}
         }
       } catch (e) {
-        print('⚠️ [FeedRepository] loadPostsByIds batch[$i]: $e');
+        printVm('⚠️ [FeedRepository] loadPostsByIds batch[$i]: $e');
       }
     }
     return posts;
@@ -339,7 +343,7 @@ class FeedRepository {
       }
       return valid;
     } catch (e) {
-      print('⚠️ [FeedRepository] fetchChroniques: $e');
+      printVm('⚠️ [FeedRepository] fetchChroniques: $e');
       return [];
     }
   }
@@ -359,7 +363,7 @@ class FeedRepository {
       }
       return result;
     } catch (e) {
-      print('⚠️ [FeedRepository] fetchCanaux: $e');
+      printVm('⚠️ [FeedRepository] fetchCanaux: $e');
       return [];
     }
   }
@@ -379,7 +383,7 @@ class FeedRepository {
       }
       return result;
     } catch (e) {
-      print('⚠️ [FeedRepository] fetchArticles: $e');
+      printVm('⚠️ [FeedRepository] fetchArticles: $e');
       return [];
     }
   }

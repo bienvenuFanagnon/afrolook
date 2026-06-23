@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'dart:ui';
 
 import 'package:audioplayers/audioplayers.dart';
@@ -121,7 +121,7 @@ class MediaPlaybackManager {
       ChewieController chewieController,
       VoidCallback onPause,
       ) {
-    print('🎬 MediaPlaybackManager: Enregistrement vidéo $postId');
+    printVm('🎬 MediaPlaybackManager: Enregistrement vidéo $postId');
 
     // Arrêter l'audio si nécessaire
     if (_currentMediaType == 'audio' && _currentAudioPlayer != null) {
@@ -131,7 +131,7 @@ class MediaPlaybackManager {
 
     // Pause de l'ancienne vidéo
     if (_currentMediaId != null && _currentMediaId != postId) {
-      print('🎬 Arrêt de l\'ancienne vidéo: $_currentMediaId');
+      printVm('🎬 Arrêt de l\'ancienne vidéo: $_currentMediaId');
       _onPauseCallback?.call();
       if (_currentChewieController != null) {
         _currentChewieController!.pause();
@@ -148,7 +148,7 @@ class MediaPlaybackManager {
     final isMuted = _soundProvider?.isMuted ?? true;
     final volume = isMuted ? 0.0 : 1.0;
 
-    print('🎬 Application du volume: $volume (muted: $isMuted)');
+    printVm('🎬 Application du volume: $volume (muted: $isMuted)');
 
     // Appliquer sur le ChewieController
     chewieController.setVolume(volume);
@@ -161,7 +161,7 @@ class MediaPlaybackManager {
       if (_currentChewieController == chewieController) {
         chewieController.setVolume(volume);
         controller.setVolume(volume);
-        print('🎬 Vérification volume: $volume');
+        printVm('🎬 Vérification volume: $volume');
       }
     });
   }
@@ -357,7 +357,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   /// disponible (préchargement Facebook-style des voisins).
   Future<void> _preInitializeVideo() async {
     if (_isLockedContent) {
-      print('🎬 Vidéo verrouillée - pré-initialisation bloquée');
+      printVm('🎬 Vidéo verrouillée - pré-initialisation bloquée');
       return;
     }
 
@@ -436,10 +436,10 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
           _isVideoLoading = false;
           _isInitializingVideo = false;
         });
-        print('✅ Vidéo pré-initialisée : ${widget.post.id}');
+        printVm('✅ Vidéo pré-initialisée : ${widget.post.id}');
       }
     } catch (e) {
-      print('Erreur pré-initialisation vidéo: $e');
+      printVm('Erreur pré-initialisation vidéo: $e');
       if (mounted) {
         setState(() {
           _isVideoLoading = false;
@@ -498,7 +498,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
         });
       }
     } catch (e) {
-      print('Erreur génération miniature: $e');
+      printVm('Erreur génération miniature: $e');
     } finally {
       if (mounted) setState(() => _isGeneratingThumbnail = false);
     }
@@ -517,7 +517,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
           widget.post.canal = _creatorCanal;
         }
       } catch (e) {
-        print('Erreur chargement canal: $e');
+        printVm('Erreur chargement canal: $e');
       } finally {
         if (mounted) setState(() => _isLoadingUser = false);
       }
@@ -534,7 +534,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
           widget.post.user = _creatorUser;
         }
       } catch (e) {
-        print('Erreur chargement utilisateur: $e');
+        printVm('Erreur chargement utilisateur: $e');
       } finally {
         if (mounted) setState(() => _isLoadingUser = false);
       }
@@ -557,7 +557,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
 
   Future<void> _initializeVideo() async {
     if (_isLockedContent) {
-      print('🎬 Vidéo verrouillée - initialisation bloquée');
+      printVm('🎬 Vidéo verrouillée - initialisation bloquée');
       return;
     }
 
@@ -632,7 +632,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
         });
       }
     } catch (e) {
-      print('Erreur initialisation vidéo: $e');
+      printVm('Erreur initialisation vidéo: $e');
       if (mounted) {
         setState(() {
           _isVideoLoading = false;
@@ -660,14 +660,14 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       _hasRecordedInteraction = true;
       await _authProvider.incrementPostTotalInteractions(postId: widget.post.id!);
     } catch (e) {
-      print('Erreur enregistrement interaction: $e');
+      printVm('Erreur enregistrement interaction: $e');
     }
   }
 
   void _playVideo() {
     // 🔥 CRITIQUE: Ne pas jouer la vidéo si le contenu est verrouillé
     if (_isLockedContent) {
-      print('🎬 Vidéo verrouillée - lecture bloquée');
+      printVm('🎬 Vidéo verrouillée - lecture bloquée');
       return;
     }
 
@@ -678,7 +678,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       _chewieController!.setVolume(volume);
       _videoController?.setVolume(volume);
 
-      print('🎬 _playVideo: volume forcé à $volume avant lecture');
+      printVm('🎬 _playVideo: volume forcé à $volume avant lecture');
 
       if (_isVideoCompleted) {
         _videoController?.seekTo(Duration.zero);
@@ -746,7 +746,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   void _onBecameVisible() {
     // 🔥 CRITIQUE: Ne rien faire si le contenu est verrouillé
     if (_isLockedContent) {
-      print('🎬 Vidéo verrouillée - visibilité ignorée');
+      printVm('🎬 Vidéo verrouillée - visibilité ignorée');
       return;
     }
 
@@ -781,9 +781,9 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
 
           if (!isMuted) {
             _playVideo();
-            print('🔊 Son activé : lecture vidéo ${widget.post.id} (volume: $targetVolume)');
+            printVm('🔊 Son activé : lecture vidéo ${widget.post.id} (volume: $targetVolume)');
           } else {
-            print('🔇 Son coupé globalement : vidéo ${widget.post.id} en pause');
+            printVm('🔇 Son coupé globalement : vidéo ${widget.post.id} en pause');
           }
         }
       });
@@ -997,7 +997,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
         }
       }
     } catch (e) {
-      print('Erreur favori: $e');
+      printVm('Erreur favori: $e');
     } finally {
       _isProcessingFavorite = false;
     }
@@ -1031,7 +1031,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre);
 
     } catch (e) {
-      print('Erreur partage: $e');
+      printVm('Erreur partage: $e');
     } finally {
       if (mounted) setState(() => _isSharing = false);
     }
@@ -1335,7 +1335,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
               await _loadCreatorData();
             }
           } catch (e) {
-            print('Erreur abonnement: $e');
+            printVm('Erreur abonnement: $e');
           } finally {
             if (mounted) setState(() => _isProcessingFollow = false);
           }
@@ -1698,7 +1698,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       final isMuted = _soundProvider.isMuted;
       final volume = isMuted ? 0.0 : 1.0;
 
-      print('🔊 _updateVolume appelé: muted=$isMuted, volume=$volume');
+      printVm('🔊 _updateVolume appelé: muted=$isMuted, volume=$volume');
 
       // Appliquer sur les deux contrôleurs
       _chewieController!.setVolume(volume);
@@ -1706,12 +1706,12 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
 
       // 🔥 Si le son est activé ET la vidéo est visible ET en pause -> jouer
       if (!isMuted && _isVisible && _chewieController != null && !_chewieController!.isPlaying) {
-        print('🔊 Son activé pendant la visibilité : reprise de la vidéo');
+        printVm('🔊 Son activé pendant la visibilité : reprise de la vidéo');
         _playVideo();
       }
       // Si le son est coupé et que la vidéo joue, on la met en pause
       else if (isMuted && _chewieController!.isPlaying) {
-        print('🔇 Son coupé pendant la visibilité : pause vidéo');
+        printVm('🔇 Son coupé pendant la visibilité : pause vidéo');
         _pauseVideo();
       }
     }
@@ -1764,7 +1764,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                 if (_shouldShowAd) ...[
                   const SizedBox(height: 12),
                   MrecAdWidget(
-                    onAdLoaded: () => print('✅ Pub MREC affichée après le post ${widget.index}'),
+                    onAdLoaded: () => printVm('✅ Pub MREC affichée après le post ${widget.index}'),
                     showLessAdsButton: false,
                   ),
                 ],

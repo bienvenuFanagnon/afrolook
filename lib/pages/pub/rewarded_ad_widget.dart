@@ -1,4 +1,6 @@
-import 'dart:async';
+﻿import 'dart:async';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:flutter/material.dart';
 import 'package:stack_appodeal_flutter/stack_appodeal_flutter.dart'; // ✅ SDK Appodeal
 
@@ -38,11 +40,11 @@ class RewardedAdWidgetState extends State<RewardedAdWidget> {
     Appodeal.setRewardedVideoCallbacks(
       onRewardedVideoLoaded: (isPrecache) {
         if (mounted) setState(() => _isAdReady = true);
-        print('✅ [APPODEAL REWARDED] Pub prête');
+        printVm('✅ [APPODEAL REWARDED] Pub prête');
       },
       onRewardedVideoFailedToLoad: () {
         if (mounted) setState(() => _isAdReady = false);
-        print('❌ [APPODEAL REWARDED] Échec chargement');
+        printVm('❌ [APPODEAL REWARDED] Échec chargement');
       },
       onRewardedVideoFinished: (double amount, String name) {
         // L'utilisateur a terminé la vidéo
@@ -110,7 +112,6 @@ class RewardedAdWidgetState extends State<RewardedAdWidget> {
   }
 }
 
-
 // import 'package:flutter/material.dart';
 //
 // import '../../services/ad_service.dart';
@@ -154,13 +155,13 @@ class RewardedAdWidgetState extends State<RewardedAdWidget> {
 //   @override
 //   void loadAd() {
 //     _adReadyCompleter = Completer<void>();
-//     print('📢 [REWARDED] Chargement...');
+//     printVm('📢 [REWARDED] Chargement...');
 //     RewardedAd.load(
 //       adUnitId: AdService.rewardedAdId,
 //       request: const AdRequest(),
 //       rewardedAdLoadCallback: RewardedAdLoadCallback(
 //         onAdLoaded: (ad) {
-//           print('✅ [REWARDED] Chargé');
+//           printVm('✅ [REWARDED] Chargé');
 //           _rewardedAd = ad;
 //           ad.fullScreenContentCallback = FullScreenContentCallback(
 //             onAdDismissedFullScreenContent: (ad) {

@@ -1,4 +1,6 @@
-// lib/services/dating_service.dart
+﻿// lib/services/dating_service.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/dating_data.dart';
@@ -72,7 +74,7 @@ class DatingService {
   //       }
   //     }
   //   } catch (e) {
-  //     print('Erreur lors de la migration: $e');
+  //     printVm('Erreur lors de la migration: $e');
   //   }
   // }
 
@@ -81,7 +83,7 @@ class DatingService {
   /// Met à jour le score de popularité d'un profil
   Future<void> updatePopularityScore(String userId) async {
     try {
-      print('📊 Mise à jour du score de popularité pour $userId');
+      printVm('📊 Mise à jour du score de popularité pour $userId');
 
       // Récupérer tous les compteurs en parallèle pour optimiser
       final futures = await Future.wait([
@@ -100,7 +102,7 @@ class DatingService {
       // - 3 points par connexion
       final score = (likesCount * 1) + (coupsCount * 2) + (connectionsCount * 3);
 
-      print('📊 Nouveau score: $score (likes: $likesCount, coups: $coupsCount, connexions: $connectionsCount)');
+      printVm('📊 Nouveau score: $score (likes: $likesCount, coups: $coupsCount, connexions: $connectionsCount)');
 
       // Mettre à jour dans Firestore
       final profileSnapshot = await _firestore
@@ -114,13 +116,13 @@ class DatingService {
           'popularityScore': score,
           'updatedAt': DateTime.now().millisecondsSinceEpoch,
         });
-        print('✅ Score mis à jour avec succès');
+        printVm('✅ Score mis à jour avec succès');
       } else {
-        print('⚠️ Profil non trouvé pour $userId');
+        printVm('⚠️ Profil non trouvé pour $userId');
       }
 
     } catch (e) {
-      print('❌ Erreur lors de la mise à jour du score: $e');
+      printVm('❌ Erreur lors de la mise à jour du score: $e');
     }
   }
 
@@ -156,19 +158,19 @@ class DatingService {
 
   /// Met à jour le score après un like
   Future<void> onUserLiked(String likedUserId) async {
-    print('❤️ Like reçu par $likedUserId - mise à jour du score');
+    printVm('❤️ Like reçu par $likedUserId - mise à jour du score');
     await updatePopularityScore(likedUserId);
   }
 
   /// Met à jour le score après un coup de cœur
   Future<void> onUserCoupDeCoeur(String targetUserId) async {
-    print('⭐ Coup de cœur reçu par $targetUserId - mise à jour du score');
+    printVm('⭐ Coup de cœur reçu par $targetUserId - mise à jour du score');
     await updatePopularityScore(targetUserId);
   }
 
   /// Met à jour le score après une connexion (match)
   Future<void> onUserConnected(String userId1, String userId2) async {
-    print('💑 Nouvelle connexion entre $userId1 et $userId2 - mise à jour des scores');
+    printVm('💑 Nouvelle connexion entre $userId1 et $userId2 - mise à jour des scores');
     await Future.wait([
       updatePopularityScore(userId1),
       updatePopularityScore(userId2),
@@ -205,7 +207,7 @@ class DatingService {
           .toList();
 
     } catch (e) {
-      print('❌ Erreur récupération profils populaires: $e');
+      printVm('❌ Erreur récupération profils populaires: $e');
       return [];
     }
   }
@@ -240,7 +242,7 @@ class DatingService {
           .toList();
 
     } catch (e) {
-      print('❌ Erreur récupération profils moins populaires: $e');
+      printVm('❌ Erreur récupération profils moins populaires: $e');
       return [];
     }
   }
@@ -254,7 +256,7 @@ class DatingService {
     int maxAge = 99,
     double popularRatio = 0.6, // 60% populaires, 40% moins populaires
   }) async {
-    print('🎯 Génération de profils mélangés (ratio populaires: ${(popularRatio * 100).toInt()}%)');
+    printVm('🎯 Génération de profils mélangés (ratio populaires: ${(popularRatio * 100).toInt()}%)');
 
     final popularCount = (limit * popularRatio).toInt();
     final lessPopularCount = limit - popularCount;
@@ -298,7 +300,7 @@ class DatingService {
       }
     }
 
-    print('📊 Mélange généré: ${mixed.length} profils');
+    printVm('📊 Mélange généré: ${mixed.length} profils');
     return mixed;
   }
   // Vérifier l'état du profil dating
@@ -321,7 +323,7 @@ class DatingService {
 
       return profile; // Profil complet
     } catch (e) {
-      print('Erreur lors de la vérification du profil: $e');
+      printVm('Erreur lors de la vérification du profil: $e');
       return null;
     }
   }
@@ -343,7 +345,7 @@ class DatingService {
 
       return true;
     } catch (e) {
-      print('Erreur lors de la sauvegarde du profil: $e');
+      printVm('Erreur lors de la sauvegarde du profil: $e');
       return false;
     }
   }
@@ -408,7 +410,7 @@ class DatingService {
         return true;
       });
     } catch (e) {
-      print('Erreur lors du like: $e');
+      printVm('Erreur lors du like: $e');
       return false;
     }
   }
@@ -452,7 +454,7 @@ class DatingService {
 
       return true;
     } catch (e) {
-      print('Erreur lors de la création de la connexion: $e');
+      printVm('Erreur lors de la création de la connexion: $e');
       return false;
     }
   }
@@ -480,7 +482,7 @@ class DatingService {
 
       return true;
     } catch (e) {
-      print('Erreur lors de la création de la conversation: $e');
+      printVm('Erreur lors de la création de la conversation: $e');
       return false;
     }
   }
@@ -549,7 +551,7 @@ class DatingService {
         return true;
       });
     } catch (e) {
-      print('Erreur lors de l\'envoi du message: $e');
+      printVm('Erreur lors de l\'envoi du message: $e');
       return false;
     }
   }

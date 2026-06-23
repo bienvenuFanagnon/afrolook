@@ -1,4 +1,6 @@
-// pages/admin/user_search_page.dart
+﻿// pages/admin/user_search_page.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/user/profile/retraitAdmin/userAllDetails.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -97,9 +99,9 @@ class _UserSearchPageState extends State<UserSearchPage> {
         _isLoading = false;
       });
 
-      print('✅ ${users.length} utilisateurs chargés');
+      printVm('✅ ${users.length} utilisateurs chargés');
     } catch (e) {
-      print('❌ Erreur chargement utilisateurs: $e');
+      printVm('❌ Erreur chargement utilisateurs: $e');
       setState(() => _isLoading = false);
 
       _showErrorSnackBar('Erreur lors du chargement des utilisateurs');
@@ -137,7 +139,7 @@ class _UserSearchPageState extends State<UserSearchPage> {
           _isLoadingMore = false;
         });
 
-        print('✅ ${moreUsers.length} utilisateurs supplémentaires chargés');
+        printVm('✅ ${moreUsers.length} utilisateurs supplémentaires chargés');
       } else {
         setState(() {
           _hasMoreData = false;
@@ -145,7 +147,7 @@ class _UserSearchPageState extends State<UserSearchPage> {
         });
       }
     } catch (e) {
-      print('❌ Erreur chargement supplémentaire: $e');
+      printVm('❌ Erreur chargement supplémentaire: $e');
       setState(() => _isLoadingMore = false);
     }
   }
@@ -193,9 +195,9 @@ class _UserSearchPageState extends State<UserSearchPage> {
         _isSearching = false;
       });
 
-      print('🔍 ${results.length} résultats trouvés pour "$query"');
+      printVm('🔍 ${results.length} résultats trouvés pour "$query"');
     } catch (e) {
-      print('❌ Erreur recherche: $e');
+      printVm('❌ Erreur recherche: $e');
       setState(() => _isSearching = false);
       _showErrorSnackBar('Erreur lors de la recherche');
     }
@@ -1311,7 +1313,7 @@ class _UserSearchPageState extends State<UserSearchPage> {
 //         _isSearching = false;
 //       });
 //     } catch (e) {
-//       print('Erreur recherche: $e');
+//       printVm('Erreur recherche: $e');
 //       setState(() => _isSearching = false);
 //
 //       ScaffoldMessenger.of(context).showSnackBar(

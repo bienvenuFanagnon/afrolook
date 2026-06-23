@@ -33,6 +33,125 @@ export const sharePostLink = onRequest(
       let isVideo = false;
       const deepLink = `afrolook://${type}/${id}`;
 
+      // Cas spécial : groupe — recherche par join_code
+      if (type === "group") {
+        const joinCode = id;
+        const now = Date.now();
+
+        try {
+          const groupSnap = await db.collection("GroupChats")
+            .where("join_code", "==", joinCode)
+            .limit(1)
+            .get();
+
+          if (groupSnap.empty) {
+            title = "Groupe introuvable";
+            description = "Ce lien d'invitation n'est plus valide.";
+          } else {
+            const groupData = groupSnap.docs[0].data();
+            const codeExpiresAt = groupData.join_code_expires_at as number | undefined;
+            const isFrozen = groupData.is_frozen === true;
+
+            if (codeExpiresAt && codeExpiresAt < now) {
+              title = groupData.name || "Groupe Afrolook";
+              description = "Ce lien d'invitation a expiré. Demandez un nouveau code au propriétaire du groupe.";
+            } else if (isFrozen) {
+              title = groupData.name || "Groupe Afrolook";
+              description = "Ce groupe est actuellement en lecture seule. Les nouvelles adhésions sont suspendues.";
+            } else {
+              title = groupData.name || "Groupe Afrolook";
+              const memberCount = groupData.member_count || 0;
+              description = `Rejoignez ce groupe sur AfroLook ! ${memberCount} membre${memberCount > 1 ? "s" : ""} actif${memberCount > 1 ? "s" : ""}.`;
+              previewImage = groupData.image_url || previewImage;
+            }
+          }
+        } catch (err) {
+          console.error("Erreur recherche groupe par join_code:", err);
+          title = "Groupe Afrolook";
+          description = "Rejoignez ce groupe sur AfroLook !";
+        }
+
+        const groupDeepLink = `afrolook://group/${joinCode}`;
+
+        res.set("Cache-Control", "no-store");
+
+        const groupHtml = `<!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>${title}</title>
+          <meta property="og:title" content="${title}">
+          <meta property="og:description" content="${description}">
+          <meta property="og:url" content="https://afrolookmedia.com/share/group/${joinCode}">
+          <meta property="og:site_name" content="Afrolook">
+          <meta property="og:image" content="${previewImage}">
+          <meta property="og:type" content="article">
+          <meta name="twitter:card" content="summary_large_image">
+          <meta name="twitter:title" content="${title}">
+          <meta name="twitter:description" content="${description}">
+          <meta name="twitter:image" content="${previewImage}">
+          <meta property="al:ios:url" content="${groupDeepLink}">
+          <meta property="al:ios:app_store_id" content="com.afrotok.afrotok">
+          <meta property="al:ios:app_name" content="Afrolook">
+          <meta property="al:android:url" content="${groupDeepLink}">
+          <meta property="al:android:package" content="com.afrotok.afrotok">
+          <meta property="al:android:app_name" content="Afrolook">
+          <script>
+            window.location.href = "${groupDeepLink}";
+            setTimeout(function() {
+              window.location.href = "https://play.google.com/store/apps/details?id=com.afrotok.afrotok";
+            }, 2500);
+          </script>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body {
+              background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%);
+              color: #fff;
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              min-height: 100vh;
+              display: flex; align-items: center; justify-content: center; padding: 20px;
+            }
+            .container { max-width: 500px; width: 100%; text-align: center; }
+            .group-icon {
+              width: 100px; height: 100px; border-radius: 50%; object-fit: cover;
+              border: 3px solid #FFD700; margin: 0 auto 24px; display: block;
+              box-shadow: 0 8px 24px rgba(255,215,0,0.3);
+            }
+            .crown { font-size: 40px; margin-bottom: 16px; }
+            .content-info {
+              background: rgba(255,255,255,0.05); backdrop-filter: blur(10px);
+              border-radius: 20px; padding: 25px; border: 1px solid rgba(255,215,0,0.2);
+            }
+            h2 { margin-bottom: 12px; font-size: 24px; font-weight: 700; color: #FFD700; }
+            .description { color: rgba(255,255,255,0.85); font-size: 15px; line-height: 1.6; margin-bottom: 20px; }
+            .code-badge {
+              display: inline-block; background: rgba(255,215,0,0.15);
+              border: 1px solid rgba(255,215,0,0.4); border-radius: 8px;
+              padding: 6px 16px; font-size: 18px; font-weight: 800;
+              letter-spacing: 3px; color: #FFD700; margin-bottom: 20px;
+            }
+            .loading-text { color: rgba(255,255,255,0.5); font-size: 13px; letter-spacing: 1px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="crown">👑</div>
+            <img src="${previewImage}" alt="${title}" class="group-icon" onerror="this.style.display='none'">
+            <div class="content-info">
+              <h2>${title}</h2>
+              <p class="description">${description}</p>
+              <div class="code-badge">${joinCode}</div>
+              <p class="loading-text">Ouverture de Afrolook...</p>
+            </div>
+          </div>
+        </body>
+        </html>`;
+
+        res.status(200).send(groupHtml);
+        return;
+      }
+
       switch (type) {
         case "article": collectionName = "Articles"; break;
         case "contentpaie": collectionName = "ContentPaies"; break;

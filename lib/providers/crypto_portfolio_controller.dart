@@ -1,4 +1,6 @@
-// controllers/crypto_portfolio_controller.dart
+﻿// controllers/crypto_portfolio_controller.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -63,22 +65,22 @@ class CryptoPortfolioProvider with ChangeNotifier {
     try {
       final user = _auth.currentUser;
       if (user == null) {
-        print("❌ Aucun utilisateur connecté pour charger le portefeuille");
+        printVm("❌ Aucun utilisateur connecté pour charger le portefeuille");
         return;
       }
 
-      print("👤 Chargement du portefeuille pour l'utilisateur: ${user.email} (${user.uid})");
+      printVm("👤 Chargement du portefeuille pour l'utilisateur: ${user.email} (${user.uid})");
 
       final portfolioDoc = await _firestore.collection('crypto_portfolios').doc(user.uid).get();
 
       if (portfolioDoc.exists) {
         _portfolio = CryptoPortfolio.fromFirestore(portfolioDoc);
-        print("✅ Portefeuille existant chargé - Solde: ${_portfolio!.balance} FCFA, ${_portfolio!.ownedCryptos.length} cryptos");
+        printVm("✅ Portefeuille existant chargé - Solde: ${_portfolio!.balance} FCFA, ${_portfolio!.ownedCryptos.length} cryptos");
       } else {
-        print("⚠️ Aucun portefeuille trouvé pour l'utilisateur");
+        printVm("⚠️ Aucun portefeuille trouvé pour l'utilisateur");
 
         if (createIfNotExists) {
-          print("🔄 Création d'un nouveau portefeuille...");
+          printVm("🔄 Création d'un nouveau portefeuille...");
 
           final newPortfolio = CryptoPortfolio(
             userId: user.uid,
@@ -93,9 +95,9 @@ class CryptoPortfolioProvider with ChangeNotifier {
           await _firestore.collection('crypto_portfolios').doc(user.uid).set(newPortfolio.toMap());
 
           _portfolio = newPortfolio;
-          print("🎉 Nouveau portefeuille créé avec succès dans Firebase");
+          printVm("🎉 Nouveau portefeuille créé avec succès dans Firebase");
         } else {
-          print("ℹ️ Création de portefeuille désactivée, portfolio restera null");
+          printVm("ℹ️ Création de portefeuille désactivée, portfolio restera null");
           _portfolio = null;
         }
       }
@@ -103,7 +105,7 @@ class CryptoPortfolioProvider with ChangeNotifier {
       notifyListeners();
 
     } catch (e) {
-      print('❌ Erreur lors du chargement/création du portefeuille: ${e.toString()}');
+      printVm('❌ Erreur lors du chargement/création du portefeuille: ${e.toString()}');
       _errorMessage = 'Erreur lors du chargement du portefeuille: ${e.toString()}';
       notifyListeners();
 

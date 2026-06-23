@@ -1,9 +1,15 @@
-import 'dart:async';
+﻿import 'dart:async';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:flutter/material.dart';
 import 'package:stack_appodeal_flutter/stack_appodeal_flutter.dart'; // ✅ SDK Appodeal
+
 import 'package:provider/provider.dart';
+
 import '../../../providers/authProvider.dart';
+
 import '../../../services/ad_service.dart';
+
 import '../../../services/utils/abonnement_utils.dart';
 
 class InterstitialAdWidget extends StatefulWidget {
@@ -39,18 +45,18 @@ class InterstitialAdWidgetState extends State<InterstitialAdWidget> {
   // ✅ Configuration des Callbacks Appodeal (Remplace FullScreenContentCallback)
   void _initCallbacks() {
     Appodeal.setInterstitialCallbacks(
-      onInterstitialLoaded: (isPrecache) => print('✅ [APPODEAL INTERSTITIAL] Prêt'),
-      onInterstitialFailedToLoad: () => print('❌ [APPODEAL INTERSTITIAL] Échec chargement'),
-      onInterstitialShown: () => print('👁️ [APPODEAL INTERSTITIAL] Affiché'),
+      onInterstitialLoaded: (isPrecache) => printVm('✅ [APPODEAL INTERSTITIAL] Prêt'),
+      onInterstitialFailedToLoad: () => printVm('❌ [APPODEAL INTERSTITIAL] Échec chargement'),
+      onInterstitialShown: () => printVm('👁️ [APPODEAL INTERSTITIAL] Affiché'),
       onInterstitialShowFailed: () {
-        print('❌ [APPODEAL INTERSTITIAL] Échec affichage');
+        printVm('❌ [APPODEAL INTERSTITIAL] Échec affichage');
         widget.onAdFailedToShow?.call();
       },
       onInterstitialClosed: () {
-        print('🚪 [APPODEAL INTERSTITIAL] Fermé');
+        printVm('🚪 [APPODEAL INTERSTITIAL] Fermé');
         widget.onAdDismissed?.call();
       },
-      onInterstitialClicked: () => print('🖱️ [APPODEAL INTERSTITIAL] Clic'),
+      onInterstitialClicked: () => printVm('🖱️ [APPODEAL INTERSTITIAL] Clic'),
     );
   }
 
@@ -77,7 +83,7 @@ class InterstitialAdWidgetState extends State<InterstitialAdWidget> {
   Future<void> showAd() async {
     // 1. Sécurité Premium
     if (_isPremium || _isCheckingPremium) {
-      print('📢 [INTERSTITIAL] Bypass (Premium ou Vérification)');
+      printVm('📢 [INTERSTITIAL] Bypass (Premium ou Vérification)');
       widget.onAdDismissed?.call();
       return;
     }
@@ -88,7 +94,7 @@ class InterstitialAdWidgetState extends State<InterstitialAdWidget> {
     if (isLoaded) {
       await Appodeal.show(AppodealAdType.Interstitial);
     } else {
-      print('⏳ [INTERSTITIAL] Pas encore prêt, on ignore pour ne pas bloquer l\'utilisateur');
+      printVm('⏳ [INTERSTITIAL] Pas encore prêt, on ignore pour ne pas bloquer l\'utilisateur');
       widget.onAdDismissed?.call();
     }
   }
@@ -149,7 +155,7 @@ class InterstitialAdWidgetState extends State<InterstitialAdWidget> {
 //         }
 //       }
 //     } catch (e) {
-//       print('Erreur vérification premium: $e');
+//       printVm('Erreur vérification premium: $e');
 //       _isPremium = false;
 //     } finally {
 //       if (mounted) {
@@ -164,32 +170,32 @@ class InterstitialAdWidgetState extends State<InterstitialAdWidget> {
 //   void loadAd() {
 //     // Si l'utilisateur est premium, ne pas charger la pub
 //     if (_isPremium) {
-//       print('📢 [INTERSTITIAL] Utilisateur Premium - Pas de publicité chargée');
+//       printVm('📢 [INTERSTITIAL] Utilisateur Premium - Pas de publicité chargée');
 //       setLoaded();
 //       return;
 //     }
 //
-//     print('📢 [INTERSTITIAL] Chargement ID: ${AdService.interstitialAdId}');
+//     printVm('📢 [INTERSTITIAL] Chargement ID: ${AdService.interstitialAdId}');
 //
 //     InterstitialAd.load(
 //       adUnitId: AdService.interstitialAdId,
 //       request: const AdRequest(),
 //       adLoadCallback: InterstitialAdLoadCallback(
 //         onAdLoaded: (ad) {
-//           print('✅ [INTERSTITIAL] Ad Loaded');
+//           printVm('✅ [INTERSTITIAL] Ad Loaded');
 //           _interstitialAd = ad;
 //           _isAdReady = true;
 //           setLoaded();
 //
 //           ad.fullScreenContentCallback = FullScreenContentCallback(
 //             onAdDismissedFullScreenContent: (ad) {
-//               print('🚪 [INTERSTITIAL] Ad Dismissed');
+//               printVm('🚪 [INTERSTITIAL] Ad Dismissed');
 //               ad.dispose();
 //               widget.onAdDismissed?.call();
 //               loadAd(); // Recharger pour la prochaine fois
 //             },
 //             onAdFailedToShowFullScreenContent: (ad, error) {
-//               print('❌ [INTERSTITIAL] Failed to show: $error');
+//               printVm('❌ [INTERSTITIAL] Failed to show: $error');
 //               ad.dispose();
 //               widget.onAdFailedToShow?.call(error);
 //               loadAd();
@@ -197,7 +203,7 @@ class InterstitialAdWidgetState extends State<InterstitialAdWidget> {
 //           );
 //         },
 //         onAdFailedToLoad: (error) {
-//           print('❌ [INTERSTITIAL] Failed to load: $error');
+//           printVm('❌ [INTERSTITIAL] Failed to load: $error');
 //           setError(error.message);
 //         },
 //       ),
@@ -207,14 +213,14 @@ class InterstitialAdWidgetState extends State<InterstitialAdWidget> {
 //   void showAd() {
 //     // Si l'utilisateur est premium, ne pas afficher la pub
 //     if (_isPremium) {
-//       print('📢 [INTERSTITIAL] Utilisateur Premium - Pas de publicité affichée');
+//       printVm('📢 [INTERSTITIAL] Utilisateur Premium - Pas de publicité affichée');
 //       widget.onAdDismissed?.call();
 //       return;
 //     }
 //
 //     // Pendant la vérification, ne pas afficher la pub
 //     if (_isCheckingPremium) {
-//       print('📢 [INTERSTITIAL] Vérification premium en cours, pas de publicité');
+//       printVm('📢 [INTERSTITIAL] Vérification premium en cours, pas de publicité');
 //       widget.onAdDismissed?.call();
 //       return;
 //     }
@@ -223,7 +229,7 @@ class InterstitialAdWidgetState extends State<InterstitialAdWidget> {
 //       _interstitialAd!.show();
 //       _isAdReady = false;
 //     } else {
-//       print('⏳ [INTERSTITIAL] Pas encore prêt, on continue sans pub.');
+//       printVm('⏳ [INTERSTITIAL] Pas encore prêt, on continue sans pub.');
 //       widget.onAdDismissed?.call();
 //     }
 //   }

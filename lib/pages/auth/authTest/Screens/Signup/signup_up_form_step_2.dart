@@ -1,4 +1,4 @@
-
+﻿
 import 'dart:typed_data';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -8,8 +8,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:csc_picker_plus/csc_picker_plus.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import '../../../../../../models/model_data.dart';
@@ -55,10 +58,66 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
   String? _currentAddress = '';
   Position? _currentPosition;
 
+  // Pays
+  String _countryValue = '';
+  String _stateValue = '';
+  String _cityValue = '';
+  String? _detectedCountryCode;
+  String? _detectedCountryName;
+  bool _locationDetected = false;
+  bool _locationLoading = false;
+
+  static const Map<String, String> _countryCodes = {
+    "Togo": "TG", "Benin": "BJ", "Burkina Faso": "BF", "Cameroon": "CM",
+    "Ivory Coast": "CI", "Algeria": "DZ", "Angola": "AO", "Botswana": "BW",
+    "Burundi": "BI", "Chad": "TD", "Congo": "CG", "Egypt": "EG",
+    "Ethiopia": "ET", "Gabon": "GA", "Ghana": "GH", "Guinea": "GN",
+    "Kenya": "KE", "Libya": "LY", "Madagascar": "MG", "Mali": "ML",
+    "Morocco": "MA", "Mozambique": "MZ", "Namibia": "NA", "Niger": "NE",
+    "Nigeria": "NG", "Rwanda": "RW", "Senegal": "SN", "Somalia": "SO",
+    "South Africa": "ZA", "Sudan": "SD", "Tanzania": "TZ", "Tunisia": "TN",
+    "Uganda": "UG", "Zambia": "ZM", "Zimbabwe": "ZW",
+    "France": "FR", "Germany": "DE", "Italy": "IT", "Spain": "ES",
+    "Portugal": "PT", "Belgium": "BE", "United Kingdom": "GB",
+    "United States": "US", "Canada": "CA", "Brazil": "BR",
+  };
+
+  String _getCountryCodeFromName(String country) => _countryCodes[country] ?? '';
+
   @override
   void initState() {
     super.initState();
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    if (!kIsWeb) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _detectCountryMobile());
+    }
+  }
+
+  Future<void> _detectCountryMobile() async {
+    if (_locationLoading || _locationDetected) return;
+    setState(() => _locationLoading = true);
+    try {
+      final permission = await Permission.location.request();
+      if (!permission.isGranted) return;
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.low,
+        timeLimit: const Duration(seconds: 10),
+      );
+      final placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
+      if (placemarks.isNotEmpty && mounted) {
+        setState(() {
+          _detectedCountryCode = placemarks[0].isoCountryCode;
+          _detectedCountryName = placemarks[0].country;
+          _locationDetected = true;
+          if (_countryValue.isEmpty && _detectedCountryName != null) {
+            _countryValue = _detectedCountryName!;
+          }
+        });
+      }
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _locationLoading = false);
+    }
   }
 
   // Méthode pour récupérer l'image (compatible web et mobile)
@@ -99,7 +158,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
         );
       }
     } catch (e) {
-      print("Erreur lors de la sélection de l'image: $e");
+      printVm("Erreur lors de la sélection de l'image: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: _colors.danger,
@@ -115,7 +174,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
       await user.sendEmailVerification();
       _showVerificationModal();
     } catch (e) {
-      print("Erreur lors de l'envoi de l'email de vérification: $e");
+      printVm("Erreur lors de l'envoi de l'email de vérification: $e");
     }
   }
 
@@ -283,7 +342,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
 
       return downloadUrl;
     } catch (e) {
-      print("Erreur lors de l'upload de l'image: $e");
+      printVm("Erreur lors de l'upload de l'image: $e");
       throw Exception("Échec de l'upload de l'image");
     }
   }
@@ -424,6 +483,9 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
 
     await authProvider.getAppData();
 
+    // Pays détecté ou sélectionné
+    _applyCountryToUser();
+
     // Configuration de l'utilisateur
     authProvider.registerUser.pointContribution = authProvider.appDefaultData.default_point_new_user!;
     authProvider.registerUser.votre_solde = 5.1;
@@ -455,6 +517,20 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
     await batch.commit();
   }
 
+  void _applyCountryToUser() {
+    final country = _countryValue.isNotEmpty ? _countryValue : (_detectedCountryName ?? '');
+    final code = kIsWeb
+        ? _getCountryCodeFromName(country)
+        : (_detectedCountryCode ?? _getCountryCodeFromName(country));
+    authProvider.registerUser.countryData = {
+      'country': country,
+      'state': _stateValue,
+      'city': _cityValue,
+      'countryCode': code,
+      'realCountry': _detectedCountryName ?? country,
+    };
+  }
+
   // Configuration des données sans parrainage
   Future<void> _configureUserDataWithoutParrainage(String id, UserPseudo pseudo) async {
     pseudo.id = firestore.collection('Pseudo').doc().id;
@@ -462,6 +538,9 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
     authProvider.registerUser.id = id;
 
     await authProvider.getAppData();
+
+    // Pays détecté ou sélectionné
+    _applyCountryToUser();
 
     // Configuration de l'utilisateur
     authProvider.registerUser.pointContribution = authProvider.appDefaultData.default_point_new_user!;
@@ -624,6 +703,10 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
                     _buildAboutSection(),
                     SizedBox(height: 20),
 
+                    // Section pays
+                    _buildCountrySection(),
+                    SizedBox(height: 20),
+
                     // Texte conditions
                     Text(
                       l10n.signupTermsAcceptance,
@@ -773,6 +856,141 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
         contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
       ),
       validator: validator,
+    );
+  }
+
+  Widget _buildCountrySection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.location_on_outlined, color: primaryGreen, size: 20),
+            SizedBox(width: 6),
+            Text(
+              'Où te trouves-tu ?',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: _colors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 8),
+
+        // Mobile : détection automatique, lecture seule — pas de modification possible
+        if (!kIsWeb) ...[
+          if (_locationLoading)
+            Row(
+              children: [
+                SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: primaryGreen)),
+                SizedBox(width: 8),
+                Text('Détection de ta localisation...', style: TextStyle(color: _colors.textSecondary, fontSize: 13)),
+              ],
+            )
+          else if (_locationDetected && _detectedCountryName != null)
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: _colors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: primaryGreen.withOpacity(0.5)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.my_location, color: primaryGreen, size: 18),
+                  SizedBox(width: 10),
+                  Text(
+                    _detectedCountryName!,
+                    style: TextStyle(color: _colors.textPrimary, fontSize: 14, fontWeight: FontWeight.w500),
+                  ),
+                  SizedBox(width: 6),
+                  Icon(Icons.check_circle, color: primaryGreen, size: 16),
+                ],
+              ),
+            )
+          else
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: _colors.surface,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.location_off_outlined, color: _colors.textSecondary, size: 18),
+                  SizedBox(width: 10),
+                  Text('Localisation non disponible', style: TextStyle(color: _colors.textSecondary, fontSize: 13)),
+                ],
+              ),
+            ),
+        ],
+
+        // Web : sélecteur manuel pays/région/ville
+        if (kIsWeb) _buildCscPicker(),
+      ],
+    );
+  }
+
+  Widget _buildCscPicker() {
+    return Container(
+      margin: EdgeInsets.only(top: 8),
+      decoration: BoxDecoration(
+        color: _colors.surface,
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: CSCPickerPlus(
+        showStates: true,
+        showCities: true,
+        flagState: CountryFlag.SHOW_IN_DROP_DOWN_ONLY,
+        defaultCountry: CscCountry.Togo,
+        dropdownDecoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: _colors.surface,
+        ),
+        disabledDropdownDecoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: _colors.surface,
+        ),
+        countrySearchPlaceholder: "Rechercher un pays",
+        stateSearchPlaceholder: "Rechercher une région",
+        citySearchPlaceholder: "Rechercher une ville",
+        countryDropdownLabel: "Sélectionnez un pays",
+        stateDropdownLabel: "Sélectionnez une région",
+        cityDropdownLabel: "Sélectionnez une ville",
+        countryFilter: const [
+          CscCountry.Togo, CscCountry.Algeria, CscCountry.Angola, CscCountry.Benin,
+          CscCountry.Botswana, CscCountry.Burkina_Faso, CscCountry.Burundi,
+          CscCountry.Cameroon, CscCountry.Chad, CscCountry.Comoros, CscCountry.Congo,
+          CscCountry.Djibouti, CscCountry.Egypt, CscCountry.Eritrea, CscCountry.Ethiopia,
+          CscCountry.Gabon, CscCountry.Gambia_The, CscCountry.Ghana, CscCountry.Guinea,
+          CscCountry.Kenya, CscCountry.Lesotho, CscCountry.Liberia, CscCountry.Libya,
+          CscCountry.Madagascar, CscCountry.Malawi, CscCountry.Mali, CscCountry.Mauritania,
+          CscCountry.Mauritius, CscCountry.Morocco, CscCountry.Mozambique, CscCountry.Namibia,
+          CscCountry.Niger, CscCountry.Nigeria, CscCountry.Rwanda, CscCountry.Senegal,
+          CscCountry.Seychelles, CscCountry.Sierra_Leone, CscCountry.Somalia,
+          CscCountry.South_Africa, CscCountry.Sudan, CscCountry.Tanzania, CscCountry.Tunisia,
+          CscCountry.Uganda, CscCountry.Zambia, CscCountry.Zimbabwe,
+          CscCountry.France, CscCountry.Germany, CscCountry.Italy, CscCountry.Spain,
+          CscCountry.Portugal, CscCountry.Netherlands_The, CscCountry.Belgium,
+          CscCountry.Sweden, CscCountry.Switzerland, CscCountry.Norway,
+          CscCountry.United_States, CscCountry.Canada, CscCountry.Brazil,
+          CscCountry.Argentina, CscCountry.Mexico, CscCountry.Chile,
+          CscCountry.Colombia, CscCountry.Peru, CscCountry.Venezuela,
+          CscCountry.China, CscCountry.Japan, CscCountry.India,
+          CscCountry.Thailand, CscCountry.Vietnam, CscCountry.Malaysia,
+          CscCountry.Singapore, CscCountry.Philippines, CscCountry.Indonesia,
+        ],
+        selectedItemStyle: TextStyle(color: _colors.primary, fontSize: 14),
+        dropdownHeadingStyle: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
+        dropdownItemStyle: TextStyle(color: Colors.black, fontSize: 14),
+        dropdownDialogRadius: 14.0,
+        searchBarRadius: 10.0,
+        onCountryChanged: (value) => setState(() => _countryValue = value),
+        onStateChanged: (value) => setState(() => _stateValue = value ?? ''),
+        onCityChanged: (value) => setState(() => _cityValue = value ?? ''),
+      ),
     );
   }
 
@@ -932,7 +1150,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
 //       // Afficher le modal de confirmation
 //       _showVerificationModal();
 //     } catch (e) {
-//       print("Erreur lors de l'envoi de l'email de vérification: $e");
+//       printVm("Erreur lors de l'envoi de l'email de vérification: $e");
 //     }
 //   }
 //
@@ -1333,7 +1551,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
 //
 //       return await snapshot.ref.getDownloadURL();
 //     } catch (e) {
-//       print("Erreur lors de l'upload de l'image: $e");
+//       printVm("Erreur lors de l'upload de l'image: $e");
 //       throw Exception("Échec de l'upload de l'image");
 //     }
 //   }

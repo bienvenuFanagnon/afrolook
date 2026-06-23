@@ -1,4 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import '../../models/model_data.dart';
 
 class PostViewService {
@@ -45,7 +46,7 @@ class PostViewService {
         'postViewsMonthlyPostIds.$month': FieldValue.arrayUnion([postId]),
       });
     } catch (e) {
-      print('PostViewService.recordAuthorView error: $e');
+      printVm('PostViewService.recordAuthorView error: $e');
     }
   }
 
@@ -73,9 +74,9 @@ class PostViewService {
         ...monthlyUpdate,
       });
 
-      print('✅ Migration vues posts: $totalViews vues (3 derniers mois)');
+      printVm('✅ Migration vues posts: $totalViews vues (3 derniers mois)');
     } catch (e) {
-      print('PostViewService.migrateUserPostViews error: $e');
+      printVm('PostViewService.migrateUserPostViews error: $e');
     }
   }
 
@@ -92,9 +93,9 @@ class PostViewService {
 
       await _firestore.collection('Users').doc(userId).update(update);
 
-      print('✅ Correction map mensuelle: ${monthly.length} mois recalculés');
+      printVm('✅ Correction map mensuelle: ${monthly.length} mois recalculés');
     } catch (e) {
-      print('PostViewService.fixMonthlyData error: $e');
+      printVm('PostViewService.fixMonthlyData error: $e');
     }
   }
 

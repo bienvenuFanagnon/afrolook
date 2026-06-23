@@ -1,10 +1,12 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:afrotok/models/model_data.dart';
 import 'feed_scoring_service.dart';
 
 class MigrationPostService {
   static Future<void> migrateExistingPosts() async {
-    print('🚀 Début de la migration des posts existants...');
+    printVm('🚀 Début de la migration des posts existants...');
 
     // ✅ SUPPRIMÉ: plus besoin de vérifier le statut
     final snapshot = await FirebaseFirestore.instance
@@ -36,12 +38,12 @@ class MigrationPostService {
         // Commit par lots de 100 pour éviter les timeouts
         if (processed % 100 == 0) {
           await batch.commit();
-          print('✅ ${processed}/${snapshot.docs.length} posts migrés');
+          printVm('✅ ${processed}/${snapshot.docs.length} posts migrés');
           // Réinitialiser le batch
           batch = FirebaseFirestore.instance.batch();
         }
       } catch (e) {
-        print('❌ Erreur sur le post ${doc.id}: $e');
+        printVm('❌ Erreur sur le post ${doc.id}: $e');
       }
     }
 
@@ -50,11 +52,11 @@ class MigrationPostService {
       await batch.commit();
     }
 
-    print('🎉 Migration terminée: $processed posts migrés');
+    printVm('🎉 Migration terminée: $processed posts migrés');
   }
 
   static Future<void> migrateUsersLastVisit() async {
-    print('🚀 Migration des timestamps utilisateur...');
+    printVm('🚀 Migration des timestamps utilisateur...');
 
     final snapshot = await FirebaseFirestore.instance
         .collection('Users')
@@ -70,6 +72,6 @@ class MigrationPostService {
     }
 
     await batch.commit();
-    print('✅ ${snapshot.docs.length} utilisateurs migrés');
+    printVm('✅ ${snapshot.docs.length} utilisateurs migrés');
   }
 }

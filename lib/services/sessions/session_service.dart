@@ -1,4 +1,6 @@
-import 'package:shared_preferences/shared_preferences.dart';
+﻿import 'package:shared_preferences/shared_preferences.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../cache/startup_cache_service.dart';
 
@@ -13,13 +15,13 @@ class SessionUserFirebaseService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(TOKEN_KEY, userId);
     await prefs.setInt(LAST_ACTIVE_KEY, DateTime.now().millisecondsSinceEpoch);
-    print('✅ Session sauvegardée pour: $userId');
+    printVm('✅ Session sauvegardée pour: $userId');
   }
 
   /// Récupère l'ID utilisateur stocké
   static Future<String?> getStoredUserId() async {
     final prefs = await SharedPreferences.getInstance();
-    print('✅ get Session TOKEN_KEY: $TOKEN_KEY');
+    printVm('✅ get Session TOKEN_KEY: $TOKEN_KEY');
 
     return prefs.getString(TOKEN_KEY);
   }
@@ -34,7 +36,7 @@ class SessionUserFirebaseService {
     final now = DateTime.now().millisecondsSinceEpoch;
     final daysInactive = (now - lastActive) ~/ ONE_DAY_IN_MILLISECONDS;
 
-    print('📊 Vérification session: daysInactive=$daysInactive, max=$MAX_INACTIVE_DAYS');
+    printVm('📊 Vérification session: daysInactive=$daysInactive, max=$MAX_INACTIVE_DAYS');
 
     return daysInactive < MAX_INACTIVE_DAYS;
   }
@@ -51,7 +53,7 @@ class SessionUserFirebaseService {
     await prefs.remove(TOKEN_KEY);
     await prefs.remove(LAST_ACTIVE_KEY);
     await StartupCacheService.clear();
-    print('🗑️ Session et cache effacés');
+    printVm('🗑️ Session et cache effacés');
   }
 
   /// Vérifie si l'utilisateur est inactif depuis plus de 3 jours (Firestore)
@@ -76,11 +78,11 @@ class SessionUserFirebaseService {
 
       final daysInactive = (now - lastActiveMillis) ~/ ONE_DAY_IN_MILLISECONDS;
 
-      print('📊 isUserInactive: userId=$userId, daysInactive=$daysInactive');
+      printVm('📊 isUserInactive: userId=$userId, daysInactive=$daysInactive');
 
       return daysInactive >= MAX_INACTIVE_DAYS;
     } catch (e) {
-      print('Erreur isUserInactive: $e');
+      printVm('Erreur isUserInactive: $e');
       return true;
     }
   }

@@ -1,4 +1,6 @@
-// lib/pages/dating/dating_chat_page.dart
+﻿// lib/pages/dating/dating_chat_page.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
@@ -2654,7 +2656,7 @@ class _AudioMessageWidgetState extends State<_AudioMessageWidget> {
 //                   .snapshots(),
 //               builder: (context, snapshot) {
 //                 if (snapshot.hasError) {
-//                   print('Erreur: ${snapshot.error}');
+//                   printVm('Erreur: ${snapshot.error}');
 //                   return Center(child: Text('Erreur: ${snapshot.error}'));
 //                 }
 //                 if (snapshot.connectionState == ConnectionState.waiting) {

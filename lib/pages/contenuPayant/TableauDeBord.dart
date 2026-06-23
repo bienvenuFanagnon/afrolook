@@ -1,23 +1,39 @@
-import 'dart:async';
+﻿import 'dart:async';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:afrotok/models/model_data.dart';
+
 import 'package:afrotok/pages/contenuPayant/profileScreenContent.dart';
+
 import 'package:afrotok/providers/authProvider.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:provider/provider.dart';
+
 import 'package:cached_network_image/cached_network_image.dart';
+
 import 'package:video_thumbnail/video_thumbnail.dart';
+
 import 'package:path_provider/path_provider.dart';
 
 import '../../providers/contenuPayantProvider.dart';
+
 import '../../providers/userProvider.dart';
+
 import '../../theme/app_colors.dart';
+
 import '../pub/native_ad_widget.dart';
+
 import 'contentDetails.dart';
+
 import 'contentDetailsEbook.dart';
+
 import 'contentForm.dart';
+
 import 'contentSerie.dart';
 
 // Méthode utilitaire (hors État) pour optimiser les URLs d'images via le CDN
@@ -80,7 +96,7 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
         _isSearchingCreator = false;
       });
     } catch (e) {
-      print('Erreur recherche créateur: $e');
+      printVm('Erreur recherche créateur: $e');
       setState(() {
         _searchResults = [];
         _isSearchingCreator = false;
@@ -185,7 +201,7 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
     return Container(
       key: ValueKey(key),
       margin: EdgeInsets.symmetric(vertical: 16),
-      child: MrecAdWidget(key: ValueKey(key), onAdLoaded: () => print('✅ Native Ad Afrolook chargée: $key')),
+      child: MrecAdWidget(key: ValueKey(key), onAdLoaded: () => printVm('✅ Native Ad Afrolook chargée: $key')),
     );
   }
 
@@ -934,7 +950,6 @@ class ContentSearchDelegate extends SearchDelegate {
   }
 }
 
-
 // class DashboardContentScreen extends StatefulWidget {
 //   @override
 //   _DashboardContentScreenState createState() => _DashboardContentScreenState();
@@ -1166,12 +1181,12 @@ class ContentSearchDelegate extends SearchDelegate {
 //         // templateType: TemplateType.medium, // ou TemplateType.small
 //
 //         onAdLoaded: () {
-//           print('✅ Native Ad Afrolook chargée: $key');
+//           printVm('✅ Native Ad Afrolook chargée: $key');
 //         },
 //       ),
 //       // child: BannerAdWidget(
 //       //   onAdLoaded: () {
-//       //     print('✅ Bannière Afrolook chargée: $key');
+//       //     printVm('✅ Bannière Afrolook chargée: $key');
 //       //   },
 //       // ),
 //     );
@@ -1888,7 +1903,7 @@ class ContentSearchDelegate extends SearchDelegate {
 //       );
 //       if (path != null) return await File(path).readAsBytes();
 //     } catch (e) {
-//       print('Erreur génération thumbnail: $e');
+//       printVm('Erreur génération thumbnail: $e');
 //     }
 //     return null;
 //   }

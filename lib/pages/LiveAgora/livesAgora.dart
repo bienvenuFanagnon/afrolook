@@ -1,4 +1,6 @@
-// models/live_models.dart
+﻿// models/live_models.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -613,10 +615,10 @@ class LiveProvider extends ChangeNotifier {
       _allLives = [];
       _lastAllLiveDoc = null;
       _allLivesFinished = false;
-      print("🔄 Reset de tous les lives");
+      printVm("🔄 Reset de tous les lives");
     }
     if (_allLivesFinished) {
-      print("✅ Tous les lives déjà chargés");
+      printVm("✅ Tous les lives déjà chargés");
       return;
     }
     // inal List<String> totalspectateurs ;
@@ -633,17 +635,17 @@ class LiveProvider extends ChangeNotifier {
 
       if (_lastAllLiveDoc != null) {
         query = query.startAfterDocument(_lastAllLiveDoc!);
-        print("📥 Chargement supplémentaire de tous les lives");
+        printVm("📥 Chargement supplémentaire de tous les lives");
       } else {
-        print("📥 Premier chargement de tous les lives");
+        printVm("📥 Premier chargement de tous les lives");
       }
 
       QuerySnapshot snapshot = await query.get();
-      print("📊 ${snapshot.docs.length} lives récupérés");
+      printVm("📊 ${snapshot.docs.length} lives récupérés");
 
       if (snapshot.docs.isEmpty) {
         _allLivesFinished = true;
-        print("🏁 Fin du chargement - aucun live supplémentaire");
+        printVm("🏁 Fin du chargement - aucun live supplémentaire");
         return;
       }
 
@@ -661,9 +663,9 @@ class LiveProvider extends ChangeNotifier {
             endedCount++;
           }
 
-          print("✅ Live ajouté: ${live.title} - isLive: ${live.isLive} - giftTotal: ${live.giftTotal}");
+          printVm("✅ Live ajouté: ${live.title} - isLive: ${live.isLive} - giftTotal: ${live.giftTotal}");
         } catch (e) {
-          print("❌ Impossible de convertir le live ${doc.id}: $e");
+          printVm("❌ Impossible de convertir le live ${doc.id}: $e");
         }
       }
 
@@ -671,14 +673,14 @@ class LiveProvider extends ChangeNotifier {
 
       if (_allLives.length >= maxLives) {
         _allLivesFinished = true;
-        print("🏁 Limite maximale de lives atteinte: ${_allLives.length}");
+        printVm("🏁 Limite maximale de lives atteinte: ${_allLives.length}");
       }
 
-      print("📈 Statut final - Actifs: $activeCount, Terminés: $endedCount, Total: ${_allLives.length}");
+      printVm("📈 Statut final - Actifs: $activeCount, Terminés: $endedCount, Total: ${_allLives.length}");
       notifyListeners();
 
     } catch (e) {
-      print("❌ Erreur lors du chargement des lives par batch: $e");
+      printVm("❌ Erreur lors du chargement des lives par batch: $e");
       if (reset) {
         _allLives = [];
         _lastAllLiveDoc = null;
@@ -715,7 +717,7 @@ class LiveProvider extends ChangeNotifier {
           final live = PostLive.fromMap(doc.data() as Map<String, dynamic>);
           _endedLives.add(live);
         } catch (e) {
-          print("Impossible de convertir le live terminé ${doc.id}: $e");
+          printVm("Impossible de convertir le live terminé ${doc.id}: $e");
         }
       }
 
@@ -725,7 +727,7 @@ class LiveProvider extends ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
-      print("Erreur lors du chargement des lives terminés par batch: $e");
+      printVm("Erreur lors du chargement des lives terminés par batch: $e");
     }
   }
 
@@ -757,7 +759,7 @@ class LiveProvider extends ChangeNotifier {
           final live = PostLive.fromMap(doc.data() as Map<String, dynamic>);
           _activeLives.add(live);
         } catch (e) {
-          print("Impossible de convertir le live actif ${doc.id}: $e");
+          printVm("Impossible de convertir le live actif ${doc.id}: $e");
         }
       }
 
@@ -767,7 +769,7 @@ class LiveProvider extends ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
-      print("Erreur lors du chargement des lives actifs par batch: $e");
+      printVm("Erreur lors du chargement des lives actifs par batch: $e");
     }
   }
 
@@ -783,13 +785,13 @@ class LiveProvider extends ChangeNotifier {
           final live = PostLive.fromMap(doc.data() as Map<String, dynamic>);
           _allLives.add(live);
         } catch (e) {
-          print("Impossible de convertir le live ${doc.id}: $e");
+          printVm("Impossible de convertir le live ${doc.id}: $e");
         }
       }
-      print("Liste des lives: ${_allLives.length}");
+      printVm("Liste des lives: ${_allLives.length}");
       notifyListeners();
     } catch (e) {
-      print("Erreur lors du chargement des lives: $e");
+      printVm("Erreur lors du chargement des lives: $e");
     }
   }
 
@@ -808,13 +810,13 @@ class LiveProvider extends ChangeNotifier {
           final live = PostLive.fromMap(doc.data() as Map<String, dynamic>);
           _activeLives.add(live);
         } catch (e) {
-          print("Impossible de convertir le live ${doc.id}: $e");
+          printVm("Impossible de convertir le live ${doc.id}: $e");
         }
       }
 
       notifyListeners();
     } catch (e) {
-      print("Erreur lors du chargement des lives actifs: $e");
+      printVm("Erreur lors du chargement des lives actifs: $e");
     }
   }
 
@@ -825,9 +827,9 @@ class LiveProvider extends ChangeNotifier {
       await _firestore.collection('lives').doc(liveId).update({
         'userWatchTime.$userId': minutes,
       });
-      print("⏰ Temps visionnage mis à jour: $userId -> $minutes min");
+      printVm("⏰ Temps visionnage mis à jour: $userId -> $minutes min");
     } catch (e) {
-      print("❌ Erreur mise à jour temps visionnage: $e");
+      printVm("❌ Erreur mise à jour temps visionnage: $e");
     }
   }
 
@@ -842,7 +844,7 @@ class LiveProvider extends ChangeNotifier {
       }
       return false;
     } catch (e) {
-      print("❌ Erreur vérification statut paiement: $e");
+      printVm("❌ Erreur vérification statut paiement: $e");
       return false;
     }
   }
@@ -854,9 +856,9 @@ class LiveProvider extends ChangeNotifier {
         'giftTotal': FieldValue.increment(amount),
         'userWatchTime.$userId': 999,
       });
-      print("💰 Paiement participation traité: $amount FCFA pour $userId");
+      printVm("💰 Paiement participation traité: $amount FCFA pour $userId");
     } catch (e) {
-      print("❌ Erreur traitement paiement participation: $e");
+      printVm("❌ Erreur traitement paiement participation: $e");
       rethrow;
     }
   }
@@ -867,15 +869,15 @@ class LiveProvider extends ChangeNotifier {
         await _firestore.collection('lives').doc(liveId).update({
           'pinnedText': FieldValue.delete(),
         });
-        print("📌 Texte épinglé supprimé");
+        printVm("📌 Texte épinglé supprimé");
       } else {
         await _firestore.collection('lives').doc(liveId).update({
           'pinnedText': text,
         });
-        print("📌 Texte épinglé mis à jour: $text");
+        printVm("📌 Texte épinglé mis à jour: $text");
       }
     } catch (e) {
-      print("❌ Erreur mise à jour texte épinglé: $e");
+      printVm("❌ Erreur mise à jour texte épinglé: $e");
       rethrow;
     }
   }
@@ -885,9 +887,9 @@ class LiveProvider extends ChangeNotifier {
       await _firestore.collection('lives').doc(liveId).update({
         'shareCount': FieldValue.increment(1),
       });
-      print("📤 Compteur partages incrémenté");
+      printVm("📤 Compteur partages incrémenté");
     } catch (e) {
-      print("❌ Erreur incrémentation partages: $e");
+      printVm("❌ Erreur incrémentation partages: $e");
     }
   }
 
@@ -896,9 +898,9 @@ class LiveProvider extends ChangeNotifier {
       await _firestore.collection('lives').doc(liveId).update({
         'invitedUsers': FieldValue.arrayUnion([userId]),
       });
-      print("📨 Utilisateur $userId invité au live $liveId");
+      printVm("📨 Utilisateur $userId invité au live $liveId");
     } catch (e) {
-      print("❌ Erreur lors de l'invitation: $e");
+      printVm("❌ Erreur lors de l'invitation: $e");
     }
   }
 
@@ -913,13 +915,13 @@ class LiveProvider extends ChangeNotifier {
             'participants': FieldValue.arrayUnion([userId]),
             'invitedUsers': FieldValue.arrayRemove([userId]),
           });
-          print("🎤 Utilisateur $userId rejoint comme participant");
+          printVm("🎤 Utilisateur $userId rejoint comme participant");
           return true;
         }
       }
       return false;
     } catch (e) {
-      print("❌ Erreur lors de la participation: $e");
+      printVm("❌ Erreur lors de la participation: $e");
       return false;
     }
   }
@@ -931,9 +933,9 @@ class LiveProvider extends ChangeNotifier {
         'spectators': FieldValue.arrayUnion([userId]),
         'viewerCount': FieldValue.increment(1),
       });
-      print("👀 Utilisateur $userId rejoint comme spectateur");
+      printVm("👀 Utilisateur $userId rejoint comme spectateur");
     } catch (e) {
-      print("❌ Erreur lors de l'ajout du spectateur: $e");
+      printVm("❌ Erreur lors de l'ajout du spectateur: $e");
     }
   }
 
@@ -944,9 +946,9 @@ class LiveProvider extends ChangeNotifier {
         'spectators': FieldValue.arrayRemove([userId]),
         'viewerCount': FieldValue.increment(-1),
       });
-      print("🚪 Utilisateur $userId a quitté le live");
+      printVm("🚪 Utilisateur $userId a quitté le live");
     } catch (e) {
-      print("❌ Erreur lors de la sortie du live: $e");
+      printVm("❌ Erreur lors de la sortie du live: $e");
     }
   }
 
@@ -956,14 +958,14 @@ class LiveProvider extends ChangeNotifier {
       onTimeExpired();
       stopLiveTimer(liveId);
     });
-    print("⏰ Timer live démarré: $durationMinutes minutes");
+    printVm("⏰ Timer live démarré: $durationMinutes minutes");
   }
 
   void stopLiveTimer(String liveId) {
     if (_liveTimers.containsKey(liveId)) {
       _liveTimers[liveId]!.cancel();
       _liveTimers.remove(liveId);
-      print("⏹️ Timer live arrêté");
+      printVm("⏹️ Timer live arrêté");
     }
   }
 
@@ -971,7 +973,7 @@ class LiveProvider extends ChangeNotifier {
   void dispose() {
     _liveTimers.values.forEach((timer) => timer.cancel());
     _liveTimers.clear();
-    print("🧹 LiveProvider disposé");
+    printVm("🧹 LiveProvider disposé");
     super.dispose();
   }
 }

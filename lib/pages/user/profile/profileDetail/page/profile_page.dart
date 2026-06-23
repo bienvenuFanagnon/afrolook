@@ -1,19 +1,33 @@
 import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+
 import 'package:flutter/cupertino.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:flutter/services.dart';
+
 import 'package:image_picker/image_picker.dart';
+
 import 'package:provider/provider.dart';
+
 import 'dart:io';
+
 import 'dart:typed_data';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 import '../../../../../constant/constColors.dart';
+
 import '../../../../../theme/app_colors.dart';
+
 import '../../../../../constant/logo.dart';
+
 import '../../../../../providers/authProvider.dart';
+
 import '../widget/numbers_widget.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -42,7 +56,7 @@ class _ProfilePageState extends State<ProfilePage> {
   static const Color accentRed = Color(0xFFFF5252);
   Future<void> _createProfileUpdatePost(String newImageUrl) async {
     try {
-      print('📝 Création d\'un post de mise à jour de profil');
+      printVm('📝 Création d\'un post de mise à jour de profil');
 
       String postId = FirebaseFirestore.instance.collection('Posts').doc().id;
       authProvider.loginUserData.imageUrl=newImageUrl;
@@ -74,13 +88,13 @@ class _ProfilePageState extends State<ProfilePage> {
           .doc(postId)
           .set(post.toJson());
 
-      print('✅ Post de mise à jour de profil créé avec succès');
+      printVm('✅ Post de mise à jour de profil créé avec succès');
 
       // Notifier les abonnés (optionnel)
       _notifyFollowersAboutProfileUpdate(postId);
 
     } catch (e) {
-      print('❌ Erreur lors de la création du post: $e');
+      printVm('❌ Erreur lors de la création du post: $e');
     }
   }
 
@@ -102,7 +116,7 @@ class _ProfilePageState extends State<ProfilePage> {
       addPointsForAction(UserAction.post);
 
     } catch (e) {
-      print('❌ Erreur notification: $e');
+      printVm('❌ Erreur notification: $e');
     }
   }
   @override
@@ -146,7 +160,7 @@ class _ProfilePageState extends State<ProfilePage> {
         }
       }
     } catch (e) {
-      print("Erreur lors de la sélection d'image: $e");
+      printVm("Erreur lors de la sélection d'image: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Erreur lors de la sélection d'image"),
@@ -221,7 +235,7 @@ class _ProfilePageState extends State<ProfilePage> {
       });
 
     } catch (error) {
-      print("Erreur upload: $error");
+      printVm("Erreur upload: $error");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Erreur lors du téléchargement de l'image"),
@@ -285,7 +299,7 @@ class _ProfilePageState extends State<ProfilePage> {
       }
 
     } catch (error) {
-      print("Erreur update: $error");
+      printVm("Erreur update: $error");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Erreur lors de la mise à jour"),
@@ -929,8 +943,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
               // Section Parrainage
               _buildParrainageCard(),
-
-
 
               SizedBox(height: 30),
             ],

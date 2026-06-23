@@ -1,14 +1,25 @@
-import 'dart:math';
+﻿import 'dart:math';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:afrotok/models/model_data.dart';
+
 import 'package:provider/provider.dart';
+
 import '../../pages/socialVideos/thread/afrolookVideoOriginal.dart';
+
 import '../../providers/afroshop/categorie_produits_provider.dart';
+
 import '../../providers/chroniqueProvider.dart';
+
 import '../../providers/contenuPayantProvider.dart';
+
 import 'feed_scoring_service.dart';
+
 import 'package:afrotok/providers/authProvider.dart';
+
 import 'package:afrotok/providers/postProvider.dart';
 
 class MixedTikTokVideoService {
@@ -59,7 +70,7 @@ class MixedTikTokVideoService {
   // 🔥 INITIALISATION
   Future<void> initialize() async {
     await _loadSeenVideosFromStorage();
-    print('🎯 Service TikTok initialisé - ${_seenVideoIds.length} vidéos vues');
+    printVm('🎯 Service TikTok initialisé - ${_seenVideoIds.length} vidéos vues');
   }
 
   // 🔥 CHARGEMENT DE LA MÉMOIRE DES VIDÉOS VUES
@@ -73,7 +84,7 @@ class MixedTikTokVideoService {
         _seenVideoIds = _seenVideoIds.take(_maxSeenMemory).toSet();
       }
     } catch (e) {
-      print('❌ Erreur chargement mémoire vidéos: $e');
+      printVm('❌ Erreur chargement mémoire vidéos: $e');
       _seenVideoIds = Set();
     }
   }
@@ -85,7 +96,7 @@ class MixedTikTokVideoService {
       final seenJson = _seenVideoIds.take(200).join(',');
       await prefs.setString(_prefsKeySeen, seenJson);
     } catch (e) {
-      print('❌ Erreur sauvegarde mémoire vidéos: $e');
+      printVm('❌ Erreur sauvegarde mémoire vidéos: $e');
     }
   }
 
@@ -99,7 +110,7 @@ class MixedTikTokVideoService {
     _isLoading = true;
 
     try {
-      print('🎬 Chargement contenu vidéo mixte - LoadMore: $loadMore - Filtre: ${filter?.label}');
+      printVm('🎬 Chargement contenu vidéo mixte - LoadMore: $loadMore - Filtre: ${filter?.label}');
 
       if (!loadMore) {
         _mixedVideoContent.clear();
@@ -116,7 +127,7 @@ class MixedTikTokVideoService {
       }
 
       if (_preparedVideoIds.isEmpty) {
-        print('📭 Aucune vidéo à charger');
+        printVm('📭 Aucune vidéo à charger');
         _hasMore = false;
         return _mixedVideoContent;
       }
@@ -135,11 +146,11 @@ class MixedTikTokVideoService {
 
       _hasMore = _currentIndex < _preparedVideoIds.length;
 
-      print('✅ Contenu vidéo mixte chargé: ${_mixedVideoContent.length} éléments (hasMore: $_hasMore)');
+      printVm('✅ Contenu vidéo mixte chargé: ${_mixedVideoContent.length} éléments (hasMore: $_hasMore)');
       return _mixedVideoContent;
 
     } catch (e) {
-      print('❌ Erreur chargement contenu vidéo mixte: $e');
+      printVm('❌ Erreur chargement contenu vidéo mixte: $e');
       _hasMore = false;
       return _mixedVideoContent;
     } finally {
@@ -154,7 +165,7 @@ class MixedTikTokVideoService {
     _isPreparingVideos = true;
 
     try {
-      print('🎯 Préparation des IDs de vidéos avec filtre: ${filter?.label}');
+      printVm('🎯 Préparation des IDs de vidéos avec filtre: ${filter?.label}');
 
       final userDoc = await firestore.collection('Users').doc(currentUserId).get();
       if (!userDoc.exists) return;
@@ -206,7 +217,7 @@ class MixedTikTokVideoService {
       // 🔥 FILTRAGE FINAL POUR EXCLURE LES VIDÉOS VUES
       final filteredVideos = allVideoIds.where((id) => !_seenVideoIds.contains(id)).toList();
 
-      print('''
+      printVm('''
 🧹 FILTRAGE VIDÉOS:
    - Total trouvé: ${allVideoIds.length}
    - Après filtrage (déjà vues): ${filteredVideos.length}
@@ -220,10 +231,10 @@ class MixedTikTokVideoService {
       _alreadyLoadedVideoIds.clear();
       _hasMore = _preparedVideoIds.isNotEmpty;
 
-      print('📦 Préparation terminée: ${_preparedVideoIds.length} vidéos');
+      printVm('📦 Préparation terminée: ${_preparedVideoIds.length} vidéos');
 
     } catch (e) {
-      print('❌ Erreur préparation IDs vidéos: $e');
+      printVm('❌ Erreur préparation IDs vidéos: $e');
       _preparedVideoIds = [];
       _hasMore = false;
     } finally {
@@ -254,7 +265,7 @@ class MixedTikTokVideoService {
         .toList();
 
     if (availableIds.isEmpty) {
-      print('⚠️ Toutes les vidéos de ce lot sont déjà chargées');
+      printVm('⚠️ Toutes les vidéos de ce lot sont déjà chargées');
       _currentIndex = endIndex;
       return await _loadCurrentVideoBatch();
     }
@@ -294,7 +305,7 @@ class MixedTikTokVideoService {
       }
     }
 
-    print('🎬 Contenu vidéo mixte: ${mixedContent.length} éléments (${videos.length} vidéos)');
+    printVm('🎬 Contenu vidéo mixte: ${mixedContent.length} éléments (${videos.length} vidéos)');
     return mixedContent;
   }
 
@@ -311,7 +322,7 @@ class MixedTikTokVideoService {
 
       return snapshot.docs.map((doc) => doc.id).toList();
     } catch (e) {
-      print('❌ Erreur vidéos récentes: $e');
+      printVm('❌ Erreur vidéos récentes: $e');
       return [];
     }
   }
@@ -330,7 +341,7 @@ class MixedTikTokVideoService {
 
       return snapshot.docs.map((doc) => doc.id).toList();
     } catch (e) {
-      print('❌ Erreur vidéos par score: $e');
+      printVm('❌ Erreur vidéos par score: $e');
       return [];
     }
   }
@@ -347,7 +358,7 @@ class MixedTikTokVideoService {
 
       return snapshot.docs.map((doc) => doc.id).toList();
     } catch (e) {
-      print('❌ Erreur vidéos par type: $e');
+      printVm('❌ Erreur vidéos par type: $e');
       return [];
     }
   }
@@ -376,7 +387,7 @@ class MixedTikTokVideoService {
 
             return post;
           } catch (e) {
-            print('❌ Erreur parsing vidéo ${doc.id}: $e');
+            printVm('❌ Erreur parsing vidéo ${doc.id}: $e');
             return null;
           }
         }).where((video) => video != null).cast<Post>().toList();
@@ -384,7 +395,7 @@ class MixedTikTokVideoService {
         videos.addAll(batchVideos);
       }
     } catch (e) {
-      print('❌ Erreur chargement vidéos par IDs: $e');
+      printVm('❌ Erreur chargement vidéos par IDs: $e');
     }
 
     return videos;
@@ -411,10 +422,10 @@ class MixedTikTokVideoService {
         });
       }
 
-      print('👁️ Vidéo $videoId marquée comme vue');
+      printVm('👁️ Vidéo $videoId marquée comme vue');
 
     } catch (e) {
-      print('❌ Erreur marquage vidéo vue: $e');
+      printVm('❌ Erreur marquage vidéo vue: $e');
     }
   }
 
@@ -424,9 +435,9 @@ class MixedTikTokVideoService {
       _seenVideoIds.clear();
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_prefsKeySeen);
-      print('🧹 Mémoire vidéos vidée');
+      printVm('🧹 Mémoire vidéos vidée');
     } catch (e) {
-      print('❌ Erreur vidage mémoire vidéos: $e');
+      printVm('❌ Erreur vidage mémoire vidéos: $e');
     }
   }
 
@@ -439,7 +450,7 @@ class MixedTikTokVideoService {
     _isLoading = false;
     _hasMore = true;
 
-    print('🔄 Service vidéo réinitialisé');
+    printVm('🔄 Service vidéo réinitialisé');
   }
 }
 

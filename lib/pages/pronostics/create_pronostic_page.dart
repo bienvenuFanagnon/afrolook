@@ -1,5 +1,7 @@
-// pages/pronostics/create_pronostic_page.dart
+﻿// pages/pronostics/create_pronostic_page.dart
 
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:afrotok/providers/authProvider.dart';
@@ -944,7 +946,7 @@ class _CreatePronosticPageState extends State<CreatePronosticPage> {
       }
 
     } catch (e) {
-      print('Erreur publication pronostic: $e');
+      printVm('Erreur publication pronostic: $e');
 
       if (context.mounted) {
         if (Navigator.canPop(context)) {
@@ -1905,7 +1907,7 @@ class _CreatePronosticPageState extends State<CreatePronosticPage> {
 //       }
 //
 //     } catch (e) {
-//       print('Erreur publication pronostic: $e');
+//       printVm('Erreur publication pronostic: $e');
 //
 //       if (context.mounted) {
 //         if (Navigator.canPop(context)) {

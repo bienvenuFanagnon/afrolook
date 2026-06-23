@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:math';
 import 'package:afrotok/pages/challenge/postChallengeWidget.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -322,7 +322,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   }
   Future<bool> _shouldStartTimer() async {
     if (_isUserPremium()) {
-      print('⏱️ [Timer] Utilisateur premium → timer non démarré');
+      printVm('⏱️ [Timer] Utilisateur premium → timer non démarré');
       return false;
     }
 
@@ -331,72 +331,72 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     if (lastPopupDateStr != null) {
       final lastDate = DateTime.parse(lastPopupDateStr);
       final diffDays = DateTime.now().difference(lastDate).inDays;
-      print('⏱️ [Timer] Dernière popup: $lastPopupDateStr, différence jours: $diffDays');
+      printVm('⏱️ [Timer] Dernière popup: $lastPopupDateStr, différence jours: $diffDays');
       if (diffDays < 2) {
-        print('⏱️ [Timer] Délai de 2 jours non écoulé → timer non démarré');
+        printVm('⏱️ [Timer] Délai de 2 jours non écoulé → timer non démarré');
         return false;
       }
     }
 
-    print('⏱️ [Timer] Conditions OK : non premium et cooldown passé');
+    printVm('⏱️ [Timer] Conditions OK : non premium et cooldown passé');
     return true;
   }
   void _startStayTimer() async {
-    print('⏱️ [Timer] Démarrage demandé...');
+    printVm('⏱️ [Timer] Démarrage demandé...');
 
     bool shouldStart = await _shouldStartTimer();
     if (!shouldStart) return;
 
     _stopStayTimer();
     _stayTimer = Timer(const Duration(seconds: 5), () {
-      print('⏱️ [Timer] Timer déclenché après 5 secondes');
+      printVm('⏱️ [Timer] Timer déclenché après 5 secondes');
       _checkAndShowSupportPopup();
     });
-    print('⏱️ [Timer] Timer démarré (10s)');
+    printVm('⏱️ [Timer] Timer démarré (10s)');
   }
   void _stopStayTimer() {
     if (_stayTimer != null && _stayTimer!.isActive) {
       _stayTimer!.cancel();
-      print('⏱️ [Timer] Timer annulé');
+      printVm('⏱️ [Timer] Timer annulé');
     }
   }
 
   bool _isUserPremium() {
     final user = authProvider.loginUserData;
     if (user == null) {
-      print('🔍 [Premium] Utilisateur null');
+      printVm('🔍 [Premium] Utilisateur null');
       return false;
     }
     final isPremium = AbonnementUtils.isPremiumActive(user.abonnement);
-    print('🔍 [Premium] Abonnement utilisateur: ${user.abonnement} => isPremium = $isPremium');
+    printVm('🔍 [Premium] Abonnement utilisateur: ${user.abonnement} => isPremium = $isPremium');
     return isPremium;
   }
 
   Future<void> _checkAndShowSupportPopup() async {
-    print('🔔 [Popup] Vérification des conditions...');
+    printVm('🔔 [Popup] Vérification des conditions...');
     if (!_isPageVisible) {
-      print('🔔 [Popup] Page non visible → annulé');
+      printVm('🔔 [Popup] Page non visible → annulé');
       return;
     }
     if (_isSupportDialogShowing) {
-      print('🔔 [Popup] Popup déjà en cours d\'affichage → annulé');
+      printVm('🔔 [Popup] Popup déjà en cours d\'affichage → annulé');
       return;
     }
     if (_isUserPremium()) {
-      print('🔔 [Popup] Utilisateur premium → pas de popup');
+      printVm('🔔 [Popup] Utilisateur premium → pas de popup');
       return;
     }
 
     final prefs = await SharedPreferences.getInstance();
     final lastPopupDateStr = prefs.getString(_lastPopupDateKey!);
-    print('🔔 [Popup] Dernière date enregistrée: $lastPopupDateStr');
+    printVm('🔔 [Popup] Dernière date enregistrée: $lastPopupDateStr');
 
     if (lastPopupDateStr != null) {
       final lastDate = DateTime.parse(lastPopupDateStr);
       final diffDays = DateTime.now().difference(lastDate).inDays;
-      print('🔔 [Popup] Différence en jours: $diffDays');
+      printVm('🔔 [Popup] Différence en jours: $diffDays');
       if (diffDays < 2) {
-        print('🔔 [Popup] Cooldown actif (moins de 2 jours) → popup ignoré');
+        printVm('🔔 [Popup] Cooldown actif (moins de 2 jours) → popup ignoré');
         return;
       }
     }
@@ -404,9 +404,9 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     // Enregistrer la date actuelle
     final nowStr = DateTime.now().toIso8601String();
     await prefs.setString(_lastPopupDateKey!, nowStr);
-    print('🔔 [Popup] Date enregistrée: $nowStr');
+    printVm('🔔 [Popup] Date enregistrée: $nowStr');
 
-    print('🔔 [Popup] Affichage du popup...');
+    printVm('🔔 [Popup] Affichage du popup...');
     _showSupportDialog();
   }
   void _showSupportDialog() {
@@ -547,8 +547,8 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   void _initializeData() async {
     // 1. Détecter le pays de l'utilisateur
     _selectedCountryCode = authProvider.loginUserData.countryData?['countryCode']?.toUpperCase();
-    print('Pays utilisateur détecté: ${_selectedCountryCode}');
-    print('Type de post sélectionné: $_selectedPostType');
+    printVm('Pays utilisateur détecté: ${_selectedCountryCode}');
+    printVm('Type de post sélectionné: $_selectedPostType');
 
     // 2. Par défaut: filtre sur le pays de l'utilisateur (Session 11/14),
     // fallback sur "Tous" si pays inconnu.
@@ -626,7 +626,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
             post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
             cachedPosts.add(post);
           } catch (e) {
-            print('⚠️ Cache: erreur parsing post: $e');
+            printVm('⚠️ Cache: erreur parsing post: $e');
           }
         }
       }
@@ -651,7 +651,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
               cachedChroniques.add(chronique);
             }
           } catch (e) {
-            print('⚠️ Cache: erreur parsing chronique: $e');
+            printVm('⚠️ Cache: erreur parsing chronique: $e');
           }
         }
       }
@@ -665,7 +665,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
             _userDataCache[userId] = userData;
             _userVerificationStatus[userId] = userData.isVerify ?? false;
           } catch (e) {
-            print('⚠️ Cache: erreur parsing auteur chronique: $e');
+            printVm('⚠️ Cache: erreur parsing auteur chronique: $e');
           }
         });
       }
@@ -678,7 +678,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
           try {
             cachedSuggestedUsers.add(UserData.fromJson(Map<String, dynamic>.from(u as Map)));
           } catch (e) {
-            print('⚠️ Cache: erreur parsing profil suggéré: $e');
+            printVm('⚠️ Cache: erreur parsing profil suggéré: $e');
           }
         }
       }
@@ -691,7 +691,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
           try {
             cachedCanaux.add(Canal.fromJson(Map<String, dynamic>.from(c as Map)));
           } catch (e) {
-            print('⚠️ Cache: erreur parsing canal: $e');
+            printVm('⚠️ Cache: erreur parsing canal: $e');
           }
         }
       }
@@ -704,7 +704,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
           try {
             cachedArticles.add(ArticleData.fromJson(Map<String, dynamic>.from(a as Map)));
           } catch (e) {
-            print('⚠️ Cache: erreur parsing article boosté: $e');
+            printVm('⚠️ Cache: erreur parsing article boosté: $e');
           }
         }
       }
@@ -733,10 +733,10 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         }
       });
 
-      print('⚡ Feed Sport affiché instantanément depuis le cache local ($_feedCacheKey)');
+      printVm('⚡ Feed Sport affiché instantanément depuis le cache local ($_feedCacheKey)');
       return cachedPosts.isNotEmpty;
     } catch (e) {
-      print('⚠️ Erreur _loadFromCacheAndDisplay (Sport): $e');
+      printVm('⚠️ Erreur _loadFromCacheAndDisplay (Sport): $e');
       return false;
     }
   }
@@ -800,7 +800,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
 
       await FeedCacheService.saveFeedData(_feedCacheKey, data);
     } catch (e) {
-      print('⚠️ Erreur _saveFeedToCache (Sport): $e');
+      printVm('⚠️ Erreur _saveFeedToCache (Sport): $e');
     }
   }
 
@@ -813,7 +813,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
 
     _backgroundLoadTimer?.cancel();
 
-    print('🚀 Démarrage du chargement background pour $_selectedPostType');
+    printVm('🚀 Démarrage du chargement background pour $_selectedPostType');
 
     _backgroundLoadTimer = Timer.periodic(Duration(seconds: 2), (timer) async {
       if (_useBackgroundLoading &&
@@ -829,7 +829,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       if (_backgroundPostsLoaded >= _maxBackgroundPosts ||
           !_hasMorePosts ||
           !_useBackgroundLoading) {
-        print('⏹️ Arrêt du chargement background');
+        printVm('⏹️ Arrêt du chargement background');
         timer.cancel();
         _useBackgroundLoading = false;
       }
@@ -845,7 +845,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     try {
       return _scrollController.position.isScrollingNotifier.value;
     } catch (e) {
-      print('Erreur isUserScrolling: $e');
+      printVm('Erreur isUserScrolling: $e');
       return false;
     }
   }
@@ -858,7 +858,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       return;
     }
 
-    print('🔄 Chargement background...');
+    printVm('🔄 Chargement background...');
 
     setState(() {
       _isLoadingBackground = true;
@@ -878,7 +878,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
           _backgroundPostsLoaded += newPosts.length;
         });
 
-        print('✅ ${newPosts.length} posts chargés en background');
+        printVm('✅ ${newPosts.length} posts chargés en background');
       }
 
       _hasMorePosts = newPosts.length >= (_backgroundLoadLimit ~/ 2);
@@ -888,7 +888,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       }
 
     } catch (e) {
-      print('❌ Erreur chargement background: $e');
+      printVm('❌ Erreur chargement background: $e');
     } finally {
       setState(() {
         _isLoadingBackground = false;
@@ -1358,7 +1358,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       _isLoadingPosts = false;
     });
 
-    print('✅ Filtre appliqué: $_currentFilter - Pays: $_selectedCountryCode - Type: $_selectedPostType');
+    printVm('✅ Filtre appliqué: $_currentFilter - Pays: $_selectedCountryCode - Type: $_selectedPostType');
   }
   void _showTypeFilterModal() {
     final colors = AppColors.of(context);
@@ -1554,7 +1554,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     // Arrêter le chargement background pendant le changement de filtre
     _backgroundLoadTimer?.cancel();
 
-    print('🔄 Changement de type: $_selectedPostType -> $newType');
+    printVm('🔄 Changement de type: $_selectedPostType -> $newType');
 
     setState(() {
       _selectedPostType = newType;
@@ -1577,7 +1577,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       _isLoadingPosts = false;
     });
 
-    print('✅ Type changé: $newType');
+    printVm('✅ Type changé: $newType');
   }
   Widget _buildTypeOption({
     required String type,
@@ -1766,10 +1766,10 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         _saveFeedToCache();
       }
 
-      print('✅ ${newPosts.length} posts chargés avec filtre: $_currentFilter - Type: $_selectedPostType');
+      printVm('✅ ${newPosts.length} posts chargés avec filtre: $_currentFilter - Type: $_selectedPostType');
 
     } catch (e) {
-      print('❌ Erreur chargement posts: $e');
+      printVm('❌ Erreur chargement posts: $e');
       setState(() {
         _hasErrorPosts = true;
       });
@@ -1809,7 +1809,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       }
       _addFetchedToList(posts, loadedIds, newPosts, limit);
     } catch (e) {
-      print('❌ Erreur chargement posts: $e');
+      printVm('❌ Erreur chargement posts: $e');
     }
   }
 
@@ -1834,8 +1834,8 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   Widget _buildAdNative({required String key}) => FeedAdMrec(adKey: key);
   // Méthode pour les posts MIXED (mélange intelligent)
   Future<void> _loadMixedPostsWithType(Set<String> loadedIds, List<Post> newPosts, int limit) async {
-    print('🔄 Chargement mode "Mix" avec type: $_selectedPostType');
-    print('🔄 Chargement mode "Mix" avec type et pays: $_selectedCountryCode');
+    printVm('🔄 Chargement mode "Mix" avec type: $_selectedPostType');
+    printVm('🔄 Chargement mode "Mix" avec type et pays: $_selectedCountryCode');
 
     if (_selectedCountryCode == null) return;
 
@@ -1902,13 +1902,13 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
           _totalPostsLoaded += newPosts.length;
         });
 
-        print('📱 ${newPosts.length} posts chargés manuellement');
+        printVm('📱 ${newPosts.length} posts chargés manuellement');
       }
 
       _hasMorePosts = newPosts.length >= (_manualLoadLimit ~/ 2);
 
     } catch (e) {
-      print('❌ Erreur chargement manuel: $e');
+      printVm('❌ Erreur chargement manuel: $e');
       _hasMorePosts = false;
     } finally {
       setState(() {
@@ -1992,7 +1992,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       });
       _saveFeedToCache();
     } catch (e) {
-      print('Error loading suggested users: $e');
+      printVm('Error loading suggested users: $e');
     } finally {
       setState(() {
         _isLoadingSuggestedUsers = false;
@@ -2017,7 +2017,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       });
       _saveFeedToCache();
     } catch (e) {
-      print('Error loading articles: $e');
+      printVm('Error loading articles: $e');
     } finally {
       setState(() {
         _isLoadingArticles = false;
@@ -2040,7 +2040,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       });
       _saveFeedToCache();
     } catch (e) {
-      print('Error loading canaux: $e');
+      printVm('Error loading canaux: $e');
     } finally {
       setState(() {
         _isLoadingCanaux = false;
@@ -2059,7 +2059,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       }
       _saveFeedToCache();
     } catch (e) {
-      print('❌ Erreur chargement chroniques: $e');
+      printVm('❌ Erreur chargement chroniques: $e');
     } finally {
       setState(() => _isLoadingChroniques = false);
     }
@@ -2099,7 +2099,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         setState(() {});
       }
     } catch (e) {
-      print('❌ Erreur chargement données chroniques: $e');
+      printVm('❌ Erreur chargement données chroniques: $e');
     }
   }
 
@@ -2241,22 +2241,26 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   }
 
   Widget _buildProfilesSection() {
+    final currentUser = authProvider.loginUserData;
+    
+    final pendingIds = Set<String>.from(
+      currentUser.mesInvitationsEnvoyerId ?? [],
+    );
     return FeedProfilesSection(
       users: _suggestedUsers,
       isLoading: _isLoadingSuggestedUsers,
       title: '👑 Profils à découvrir',
       seeAllLabel: 'Voir tout',
       onShowProfile: _showUserDetails,
+      currentUserId: currentUser.id ?? '',
+      pendingInvitationUserIds: pendingIds,
     );
   }
 
-  void _showUserDetails(UserData user) async {
-    final users = await authProvider.getUserById(user.id!);
-    if (users.isNotEmpty && mounted) {
-      final w = MediaQuery.of(context).size.width;
-      final h = MediaQuery.of(context).size.height;
-      showUserDetailsModalDialog(users.first, w, h, context);
-    }
+  void _showUserDetails(UserData user) {
+    final w = MediaQuery.of(context).size.width;
+    final h = MediaQuery.of(context).size.height;
+    showUserDetailsModalDialog(user, w, h, context);
   }
 
   Widget _buildArticlesSection() {
@@ -2324,7 +2328,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     final int startMicros = startDate.microsecondsSinceEpoch;
     final int endMicros = endDate.microsecondsSinceEpoch;
 
-    print("📜 Chargement anciens posts entre $startDate et $endDate");
+    printVm("📜 Chargement anciens posts entre $startDate et $endDate");
 
     Query query = _firestore.collection('Posts');
 
@@ -2338,7 +2342,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     final snapshot = await query.get();
 
     if (snapshot.docs.isEmpty) {
-      print("⚠️ Aucun post trouvé dans cette période");
+      printVm("⚠️ Aucun post trouvé dans cette période");
       return [];
     }
 
@@ -2388,7 +2392,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
           break;
         }
 
-        print("↩️ Fenêtre vide, tentative de repli (${attempt + 1}/${maxFallbacks + 1})");
+        printVm("↩️ Fenêtre vide, tentative de repli (${attempt + 1}/${maxFallbacks + 1})");
       }
 
       if (validOldPosts.isNotEmpty) {
@@ -2396,14 +2400,14 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
 
         _oldPostsCache.addAll(validOldPosts);
 
-        print(
+        printVm(
           "✅ ${validOldPosts.length} anciens posts ajoutés (cache: ${_oldPostsCache.length})",
         );
       } else {
-        print("⚠️ Aucun post valide après filtrage (toutes les tentatives vides)");
+        printVm("⚠️ Aucun post valide après filtrage (toutes les tentatives vides)");
       }
     } catch (e) {
-      print("❌ Erreur chargement anciens posts: $e");
+      printVm("❌ Erreur chargement anciens posts: $e");
     } finally {
       _isLoadingOldPosts = false;
     }
@@ -3118,7 +3122,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
 
       // ❌ Si moins de 2 jours -> ne PAS compter la vue
       if (difference < 2) {
-        print(
+        printVm(
             '⏭️ Post ${post.id} déjà vu il y a $difference jour(s) par $currentUserId - Vue NON comptée');
 
         if (!post.users_vue_id!.contains(currentUserId)) {
@@ -3168,13 +3172,13 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       }
 
       PostViewService.recordAuthorView(post, currentUserId);
-      print('✅ Vue comptée pour post ${post.id} par $currentUserId');
+      printVm('✅ Vue comptée pour post ${post.id} par $currentUserId');
 
       // ✅ 2. GESTION DE L'INTERACTION (par session)
       await _checkAndIncrementInteraction(post);
 
     } catch (e) {
-      print('Error recording post view: $e');
+      printVm('Error recording post view: $e');
     }
   }
 
@@ -3193,9 +3197,9 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       // Incrémenter l'interaction UNE SEULE FOIS par session
       await authProvider.incrementPostTotalInteractions(postId: post.id!);
       await _prefs.setBool(interactionKey, true);
-      print('✅ Total interactions +1 pour le post ${post.id} (première vue de la session)');
+      printVm('✅ Total interactions +1 pour le post ${post.id} (première vue de la session)');
     } else {
-      print('⏭️ Interaction déjà comptée dans cette session pour le post ${post.id}');
+      printVm('⏭️ Interaction déjà comptée dans cette session pour le post ${post.id}');
     }
   }
 
@@ -3212,7 +3216,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
 
     // Si déjà vu aujourd'hui, NE PAS COMPTER la vue
     if (lastViewDate == todayDate) {
-      print('⏭️ Post ${post.id} déjà vu aujourd\'hui par $currentUserId - Vue NON comptée');
+      printVm('⏭️ Post ${post.id} déjà vu aujourd\'hui par $currentUserId - Vue NON comptée');
 
       // ✅ On met quand même à jour l'UI locale pour montrer que le post est vu
       if (!post.users_vue_id!.contains(currentUserId)) {
@@ -3266,10 +3270,10 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         authProvider.loginUserData.viewedPostIds!.add(post.id!);
       }
 
-      print('✅ Vue comptée pour post ${post.id} par $currentUserId le $todayDate');
+      printVm('✅ Vue comptée pour post ${post.id} par $currentUserId le $todayDate');
 
     } catch (e) {
-      print('Error recording post view: $e');
+      printVm('Error recording post view: $e');
     }
   }
 
@@ -3313,7 +3317,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       }
 
     } catch (e) {
-      print('Error recording post view: $e');
+      printVm('Error recording post view: $e');
       _postsViewedInSession.remove(post.id!);
     }
   }

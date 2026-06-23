@@ -1,14 +1,23 @@
-import 'dart:async';
+﻿import 'dart:async';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:afrotok/models/model_data.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+
 import 'package:provider/provider.dart';
+
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../providers/authProvider.dart';
+
 import '../../../providers/profilLikeProvider.dart';
+
 import '../../../providers/userProvider.dart';
+
 import '../../component/showUserDetails.dart';
 
 class AddListAmis extends StatefulWidget {
@@ -175,7 +184,7 @@ class _AddListAmisState extends State<AddListAmis> with AutomaticKeepAliveClient
         });
       }
     } catch (e) {
-      print('Erreur chargement: $e');
+      printVm('Erreur chargement: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -239,7 +248,7 @@ class _AddListAmisState extends State<AddListAmis> with AutomaticKeepAliveClient
       }
 
     } catch (e) {
-      print("Erreur recherche: $e");
+      printVm("Erreur recherche: $e");
       setState(() {
         _isSearchLoading = false;
       });
@@ -293,7 +302,7 @@ class _AddListAmisState extends State<AddListAmis> with AutomaticKeepAliveClient
       }
 
     } catch (e) {
-      print('Erreur chargement plus de résultats: $e');
+      printVm('Erreur chargement plus de résultats: $e');
     } finally {
       setState(() {
         _isLoadingMoreSearch = false;
@@ -318,7 +327,7 @@ class _AddListAmisState extends State<AddListAmis> with AutomaticKeepAliveClient
             });
           }
         } catch (e) {
-          print('Erreur préchargement like: $e');
+          printVm('Erreur préchargement like: $e');
         }
       }
     }
@@ -845,7 +854,6 @@ class _AddListAmisState extends State<AddListAmis> with AutomaticKeepAliveClient
   }
 }
 
-
 // import 'dart:math';
 // import 'package:afrotok/models/model_data.dart';
 // import 'package:cloud_firestore/cloud_firestore.dart';
@@ -953,7 +961,7 @@ class _AddListAmisState extends State<AddListAmis> with AutomaticKeepAliveClient
 //
 //       setState(() => _isLoading = false);
 //     } catch (e) {
-//       print("Erreur recherche: $e");
+//       printVm("Erreur recherche: $e");
 //       setState(() => _isLoading = false);
 //     }
 //   }
@@ -1191,7 +1199,7 @@ class _AddListAmisState extends State<AddListAmis> with AutomaticKeepAliveClient
 //                     }
 //                   }
 //                 } catch (e) {
-//                   print('Erreur like profil: $e');
+//                   printVm('Erreur like profil: $e');
 //                 }
 //               },
 //               child: Container(
@@ -1630,7 +1638,7 @@ class _AddListAmisState extends State<AddListAmis> with AutomaticKeepAliveClient
 //
 //                   return _buildUserGrid();
 //                 } else if (snapshot.hasError) {
-//                   print("${snapshot.error}");
+//                   printVm("${snapshot.error}");
 //                   return Center(
 //                     child: Column(
 //                       mainAxisAlignment: MainAxisAlignment.center,

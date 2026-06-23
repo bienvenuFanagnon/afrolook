@@ -1,4 +1,4 @@
-import 'dart:math';
+﻿import 'dart:math';
 
 import 'package:afrotok/models/tiktokModel.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -215,7 +215,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
       await _refreshUserData();
 
     } catch (e) {
-      print('Erreur lors de l\'opération: $e');
+      printVm('Erreur lors de l\'opération: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -293,7 +293,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
       }
 
     } catch (e) {
-      print("Erreur lors du désabonnement : $e");
+      printVm("Erreur lors du désabonnement : $e");
       throw e; // Relancer l'erreur pour la gestion dans _toggleAbonnement
     }
   }
@@ -314,7 +314,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
         });
       }
     } catch (e) {
-      print('Erreur refresh user data: $e');
+      printVm('Erreur refresh user data: $e');
     }
   }
   Future<void> _shareProfile() async {
@@ -342,7 +342,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
       );
 
     } catch (e) {
-      print('Erreur partage profil: $e');
+      printVm('Erreur partage profil: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -628,7 +628,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
         _loading = false;
       });
     } catch (e) {
-      print('Erreur chargement posts: $e');
+      printVm('Erreur chargement posts: $e');
       setState(() => _loading = false);
     }
   }
@@ -668,7 +668,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
         });
       }
     } catch (e) {
-      print('Erreur chargement plus de posts: $e');
+      printVm('Erreur chargement plus de posts: $e');
     } finally {
       setState(() => _loadingMore = false);
     }
@@ -729,7 +729,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
         _adsLoading = false;
       });
     } catch (e) {
-      print('Erreur chargement pubs: $e');
+      printVm('Erreur chargement pubs: $e');
       setState(() => _adsLoading = false);
     }
   }
@@ -758,7 +758,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
         });
       }
     } catch (e) {
-      print('Erreur chargement plus de pubs: $e');
+      printVm('Erreur chargement plus de pubs: $e');
     } finally {
       setState(() => _adsLoadingMore = false);
     }
@@ -783,7 +783,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
               Advertisement.fromJson({'id': doc.id, ...doc.data()});
         }
       } catch (e) {
-        print('Erreur fetch advertisements: $e');
+        printVm('Erreur fetch advertisements: $e');
       }
     }
   }

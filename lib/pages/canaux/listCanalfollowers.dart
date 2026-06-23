@@ -1,8 +1,13 @@
 import 'package:afrotok/pages/component/showUserDetails.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../models/model_data.dart';
+
 import '../../theme/app_colors.dart';
+
 import '../../l10n/app_localizations.dart';
 
 class ChannelFollowersPage extends StatefulWidget {
@@ -70,7 +75,7 @@ class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
               final user = UserData.fromJson(data);
               listUsers.add(user);
             } catch (e) {
-              print('Erreur création UserData: $e');
+              printVm('Erreur création UserData: $e');
             }
           }
 
@@ -78,7 +83,7 @@ class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
             await Future.delayed(Duration(milliseconds: 50));
           }
         } catch (e) {
-          print('Erreur batch: $e');
+          printVm('Erreur batch: $e');
         }
       }
 
@@ -89,7 +94,7 @@ class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
       });
 
     } catch (e) {
-      print('Erreur globale _getUsersBatch: $e');
+      printVm('Erreur globale _getUsersBatch: $e');
     }
 
     return listUsers;
@@ -106,7 +111,7 @@ class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
     try {
       await _loadNextPage();
     } catch (e) {
-      print('Erreur _loadInitialUsers: $e');
+      printVm('Erreur _loadInitialUsers: $e');
     } finally {
       if (mounted) setState(() { _isLoading = false; _initialLoadComplete = true; });
     }
@@ -144,7 +149,7 @@ class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
         });
       }
     } catch (e) {
-      print('Erreur _loadNextPage: $e');
+      printVm('Erreur _loadNextPage: $e');
       if (mounted) setState(() { _isLoading = false; });
     }
   }

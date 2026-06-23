@@ -1,23 +1,38 @@
-import 'dart:async';
+﻿import 'dart:async';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'dart:math';
 import 'package:afrotok/pages/canaux/canalPostNew.dart';
+
 import 'package:afrotok/pages/canaux/editCanal.dart';
+
 import 'package:afrotok/providers/postProvider.dart';
+
 import 'package:auto_animated/auto_animated.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:provider/provider.dart';
+
 import '../../../providers/authProvider.dart';
+
 import '../../../providers/userProvider.dart';
+
 import 'package:afrotok/models/model_data.dart';
+
 import '../../theme/app_colors.dart';
+
 import '../../l10n/app_localizations.dart';
+
 import '../component/showImage.dart';
+
 import '../paiement/newDepot.dart';
+
 import '../userPosts/postWidgets/postWidgetPage.dart';
+
 import 'canal_manage_admins.dart';
-
-
 
 class CanalDetails extends StatefulWidget {
   final Canal canal;
@@ -95,7 +110,7 @@ class _CanalDetailsState extends State<CanalDetails> {
       });
       _streamController.add(_allPosts);
     } catch (e) {
-      print('Erreur chargement posts: $e');
+      printVm('Erreur chargement posts: $e');
       setState(() {
         _isLoadingPosts = false;
       });
@@ -121,7 +136,7 @@ class _CanalDetailsState extends State<CanalDetails> {
       });
       _streamController.add(_allPosts);
     } catch (e) {
-      print('Erreur chargement posts supplémentaires: $e');
+      printVm('Erreur chargement posts supplémentaires: $e');
       setState(() {
         _isLoadingMorePosts = false;
       });
@@ -238,7 +253,7 @@ class _CanalDetailsState extends State<CanalDetails> {
       );
 
     } catch (e) {
-      print('Erreur désabonnement: $e');
+      printVm('Erreur désabonnement: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -363,8 +378,6 @@ class _CanalDetailsState extends State<CanalDetails> {
 
       }
 
-
-
       // // Créditer l'application
       // await authProvider.incrementAppGain(appShare);
 
@@ -392,7 +405,7 @@ class _CanalDetailsState extends State<CanalDetails> {
       );
 
     } catch (e) {
-      print('Erreur abonnement privé: $e');
+      printVm('Erreur abonnement privé: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -426,7 +439,7 @@ class _CanalDetailsState extends State<CanalDetails> {
         'canal_id': widget.canal.id,
       });
     } catch (e) {
-      print('Erreur crédit créateur: $e');
+      printVm('Erreur crédit créateur: $e');
       throw e;
     }
   }
@@ -1383,5 +1396,4 @@ class _CanalDetailsState extends State<CanalDetails> {
     );
   }
 }
-
 

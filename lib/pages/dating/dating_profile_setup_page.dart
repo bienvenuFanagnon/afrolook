@@ -1,4 +1,6 @@
-// lib/pages/creator/creator_profile_page.dart
+﻿// lib/pages/creator/creator_profile_page.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/dating/dating_entry_page.dart';
 import 'package:csc_picker_plus/csc_picker_plus.dart';
 import 'package:flutter/material.dart';
@@ -178,7 +180,7 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
           debugPrint("📍 Localisation détectée: $_detectedCountryName ($_detectedCountryCode) - lat: $_detectedLatitude, lng: $_detectedLongitude");
         }
       } catch (e) {
-        print("❌ Erreur localisation: $e");
+        printVm("❌ Erreur localisation: $e");
       }
     }
 
@@ -223,10 +225,10 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
           });
         }
 
-        print('✅ ${filesToAdd.length} photos sélectionnées');
+        printVm('✅ ${filesToAdd.length} photos sélectionnées');
       }
     } catch (e) {
-      print('❌ Erreur sélection image: $e');
+      printVm('❌ Erreur sélection image: $e');
       _showError(AppLocalizations.of(context).datingErrorSelectImages);
     }
   }
@@ -260,7 +262,7 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
 
         final url = await ref.getDownloadURL();
         uploadedUrls.add(url);
-        print("✅ Image uploadée: $url");
+        printVm("✅ Image uploadée: $url");
       }
 
       // Upload des images web (Uint8List)
@@ -275,11 +277,11 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
         await ref.putData(bytes);
         final url = await ref.getDownloadURL();
         uploadedUrls.add(url);
-        print("✅ Image web uploadée: $url");
+        printVm("✅ Image web uploadée: $url");
       }
 
     } catch (e) {
-      print("❌ Erreur upload image: $e");
+      printVm("❌ Erreur upload image: $e");
       _showError(AppLocalizations.of(context).datingErrorUploadImages);
     }
 
@@ -374,14 +376,14 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
           .doc(datingProfile.id)
           .set(datingProfile.toJson());
 
-      print("✅ Profil dating enregistré avec succès");
+      printVm("✅ Profil dating enregistré avec succès");
 
       if (mounted) {
         _showSuccess(isEditing ? AppLocalizations.of(context).datingProfileUpdated : AppLocalizations.of(context).datingProfileCreated);
         Navigator.pushReplacement(context, MaterialPageRoute(builder:(context) => DatingSwipePage(),));
       }
     } catch (e) {
-      print("❌ Erreur sauvegarde profil: $e");
+      printVm("❌ Erreur sauvegarde profil: $e");
       _showError(AppLocalizations.of(context).datingErrorGeneric.replaceAll('{error}', e.toString()));
     } finally {
       setState(() => _isUploading = false);

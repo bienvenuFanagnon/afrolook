@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:stack_appodeal_flutter/stack_appodeal_flutter.dart';
-
 
 class AdService {
   // Singleton
@@ -28,7 +29,7 @@ class AdService {
   static Future<void> init() async {
     if (!isMobile) return;
 
-    print('📢 [ADSERVICE] Initialisation en mode: $currentMode');
+    printVm('📢 [ADSERVICE] Initialisation en mode: $currentMode');
 
     // 1. Configuration globale avant initialisation
     await Appodeal.setTesting(_useTestAds);
@@ -53,27 +54,26 @@ class AdService {
     // Appodeal.setCustomFilter("consent_zone", true);
     // 3. Lancement de l'initialisation
 
-
     Appodeal.initialize(
       appKey: _appKey,
       adTypes: adTypes,
       onInitializationFinished: (errors) async {
         if (errors == null || errors.isEmpty) {
-          print("✅ [ADSERVICE] Initialisation réussie");
+          printVm("✅ [ADSERVICE] Initialisation réussie");
           // ✅ Cache APRÈS init
           await Appodeal.cache(AppodealAdType.MREC);
           // await Appodeal.cache(AppodealAdType.Banner);
         } else {
-          print("⚠️ [ADSERVICE] Nombre d'erreurs: ${errors.length}");
+          printVm("⚠️ [ADSERVICE] Nombre d'erreurs: ${errors.length}");
           for (var error in errors) {
             // 1. Affiche le nom de l'erreur (ex: SdkConfigurationError)
-            // print("❌ Type: ${error.name}");
+            // printVm("❌ Type: ${error.name}");
 
             // 2. Affiche la description détaillée fournie par le SDK
-            print("📝 [ADSERVICE] Description: ${error.description}");
+            printVm("📝 [ADSERVICE] Description: ${error.description}");
 
             // 3. Tente de voir le message natif complet
-            print("🔍 [ADSERVICE] Détails complets: ${error.toString()}");
+            printVm("🔍 [ADSERVICE] Détails complets: ${error.toString()}");
           }
         }
       },
@@ -83,12 +83,12 @@ class AdService {
     //   adTypes: adTypes,
     //   onInitializationFinished: (errors) {
     //     if (errors == null || errors.isEmpty) {
-    //       print("✅ [ADSERVICE] Initialisation terminée avec succès");
+    //       printVm("✅ [ADSERVICE] Initialisation terminée avec succès");
     //     } else {
     //       for (var error in errors) {
-    //         print("⚠️ [ADSERVICE] Erreur de hashCode: ${error.hashCode}");
-    //         print("⚠️ [ADSERVICE] Message: ${error.description}");
-    //         print("⚠️ [ADSERVICE] Erreur initialisation: ${error.description}");
+    //         printVm("⚠️ [ADSERVICE] Erreur de hashCode: ${error.hashCode}");
+    //         printVm("⚠️ [ADSERVICE] Message: ${error.description}");
+    //         printVm("⚠️ [ADSERVICE] Erreur initialisation: ${error.description}");
     //       }
     //     }
     //   },
@@ -99,7 +99,7 @@ class AdService {
   static void setMode(bool useTest) {
     _useTestAds = useTest;
     Appodeal.setTesting(useTest);
-    print('📢 [ADSERVICE] Mode publicitaire changé: $currentMode');
+    printVm('📢 [ADSERVICE] Mode publicitaire changé: $currentMode');
   }
 
   /// ✅ OUTILS DE DIAGNOSTIC
@@ -112,7 +112,6 @@ class AdService {
     }
   }
 }
-
 
 // class AdService {
 //   // Singleton
@@ -167,6 +166,6 @@ class AdService {
 //   // Permettre de changer le mode (utile pour les tests)
 //   static void setMode(bool useTest) {
 //     _useTestAds = useTest;
-//     print('📢 Mode publicitaire: ${useTest ? 'TEST' : 'PRODUCTION'}');
+//     printVm('📢 Mode publicitaire: ${useTest ? 'TEST' : 'PRODUCTION'}');
 //   }
 // }

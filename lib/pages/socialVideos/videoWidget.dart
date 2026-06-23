@@ -1,5 +1,7 @@
+﻿
 
 
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:chewie/chewie.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -55,7 +57,7 @@ class _VideoWidgetState extends State<VideoWidget> {
     Chat usersChat=Chat();
 
     if (await friendsStream.isEmpty) {
-      print("pas de chat ");
+      printVm("pas de chat ");
       String chatId = FirebaseFirestore.instance
           .collection('Chats')
           .doc()
@@ -77,12 +79,12 @@ class _VideoWidgetState extends State<VideoWidget> {
       usersChat=chat;
 
     }  else{
-      print("le chat existe  ");
-      // print("stream :${friendsStream}");
+      printVm("le chat existe  ");
+      // printVm("stream :${friendsStream}");
       usersChat= await friendsStream.first.then((value) async {
-        // print("stream value l :${value.docs.length}");
+        // printVm("stream value l :${value.docs.length}");
         if (value.docs.length<=0) {
-          print("pas de chat ");
+          printVm("pas de chat ");
           String chatId = FirebaseFirestore.instance
               .collection('Chats')
               .doc()
@@ -118,9 +120,9 @@ class _VideoWidgetState extends State<VideoWidget> {
       if (messageList.isEmpty) {
         usersChat.messages=[];
         userProvider.chat=usersChat;
-        print("messages vide ");
+        printVm("messages vide ");
       }else{
-        print("have messages");
+        printVm("have messages");
         usersChat.messages=messageList;
         userProvider.chat=usersChat;
       }
@@ -219,7 +221,7 @@ class _VideoWidgetState extends State<VideoWidget> {
 
             behavior: HitTestBehavior.opaque,
             onPointerDown: (PointerDownEvent details){
-              print('Contact léger détecté 1!');
+              printVm('Contact léger détecté 1!');
               bool isReady=true;
               ////// update view video /////
               // if (widget.post!.type==PostType.PUB.name) {
@@ -253,16 +255,16 @@ class _VideoWidgetState extends State<VideoWidget> {
               //       _buttonEnabled = true;
               //
               //   }  else{
-              //     print('indispo!');
+              //     printVm('indispo!');
               //   }
               // }
 
             },
             child: GestureDetector(
               onTap: () {
-                print('tap tap taptap');
+                printVm('tap tap taptap');
                 if (videoPlayerController.value.isPlaying) {
-                  print('pause 1!');
+                  printVm('pause 1!');
                   _chewieController.pause();
                   // videoPlayerController.pause();
 
@@ -271,7 +273,7 @@ class _VideoWidgetState extends State<VideoWidget> {
                   _chewieController.play();
                   // videoPlayerController.play();
 
-                  print('play 1!');
+                  printVm('play 1!');
                 }
               },
               child: SizedBox.expand(
@@ -282,7 +284,7 @@ class _VideoWidgetState extends State<VideoWidget> {
                     height: videoPlayerController.value.size.height,
                     child: GestureDetector(
                       onTap: () {
-                        print('on tap tap');
+                        printVm('on tap tap');
                       },
                       // child:VideoPlayer(
                       //     key: new PageStorageKey(widget.post.url_media!),

@@ -1,5 +1,7 @@
-// admin_email_screen.dart
+﻿// admin_email_screen.dart
 
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -171,7 +173,7 @@ class _AdminEmailScreenState extends State<AdminEmailScreen> {
         });
       }
     } catch (e) {
-      print('Erreur chargement: $e');
+      printVm('Erreur chargement: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erreur de chargement: $e'), backgroundColor: africanRed),
       );

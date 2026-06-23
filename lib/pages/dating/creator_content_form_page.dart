@@ -1,4 +1,6 @@
-// lib/pages/creator/creator_content_form_page.dart
+﻿// lib/pages/creator/creator_content_form_page.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -86,7 +88,7 @@ class _CreatorContentFormPageState extends State<CreatorContentFormPage>
         _initVideoPlayer(_existingMediaUrl!);
       }
 
-      print('📱 Chargement du contenu existant: ${widget.existingContent!.titre}');
+      printVm('📱 Chargement du contenu existant: ${widget.existingContent!.titre}');
     }
   }
 
@@ -173,7 +175,7 @@ class _CreatorContentFormPageState extends State<CreatorContentFormPage>
         }
       }
     } catch (e) {
-      print('❌ Erreur sélection média: $e');
+      printVm('❌ Erreur sélection média: $e');
     }
   }
 
@@ -288,7 +290,7 @@ class _CreatorContentFormPageState extends State<CreatorContentFormPage>
           .doc(content.id)
           .set(content.toJson());
 
-      print('✅ Contenu ${widget.existingContent == null ? 'créé' : 'mis à jour'}: ${content.titre}');
+      printVm('✅ Contenu ${widget.existingContent == null ? 'créé' : 'mis à jour'}: ${content.titre}');
 
       if (widget.existingContent == null) {
         final fieldToUpdate = _isPaid ? 'paidContentsCount' : 'freeContentsCount';
@@ -319,7 +321,7 @@ class _CreatorContentFormPageState extends State<CreatorContentFormPage>
       }
 
     } catch (e) {
-      print('❌ Erreur sauvegarde: $e');
+      printVm('❌ Erreur sauvegarde: $e');
       _showError('Erreur: ${e.toString()}');
     } finally {
       setState(() => _isLoading = false);

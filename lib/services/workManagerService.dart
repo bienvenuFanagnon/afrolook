@@ -1,4 +1,4 @@
-import 'dart:math';
+﻿import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -40,6 +40,8 @@ void callbackDispatcher() {
 
       WidgetsFlutterBinding.ensureInitialized();
       await Firebase.initializeApp();
+      // Obligatoire dans l'isolate WorkManager — le plugin n'est pas initialisé depuis main.dart
+      await initLocalNotifications();
 
       if (task == afrolookTestTask) {
         printVm('registerOneOffTask est lancé ...');
@@ -270,7 +272,7 @@ Future<void> initializeCanalFields() async {
   final firestore = FirebaseFirestore.instance;
 
   try {
-    print('🚀 Démarrage initialisation des champs des canaux...');
+    printVm('🚀 Démarrage initialisation des champs des canaux...');
 
     final canals = await firestore.collection('Canaux').get();
     int updatedCount = 0;
@@ -299,13 +301,13 @@ Future<void> initializeCanalFields() async {
       if (updates.isNotEmpty) {
         await doc.reference.update(updates);
         updatedCount++;
-        print('✅ Canal ${doc.id} mis à jour');
+        printVm('✅ Canal ${doc.id} mis à jour');
       }
     }
 
-    print('🎉 Initialisation terminée : $updatedCount canaux mis à jour');
+    printVm('🎉 Initialisation terminée : $updatedCount canaux mis à jour');
 
   } catch (e) {
-    print('❌ Erreur lors de l\'initialisation: $e');
+    printVm('❌ Erreur lors de l\'initialisation: $e');
   }
 }

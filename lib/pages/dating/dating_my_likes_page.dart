@@ -1,4 +1,4 @@
-// lib/pages/dating/dating_received_likes_page.dart
+﻿// lib/pages/dating/dating_received_likes_page.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -69,7 +69,7 @@ class _DatingReceivedLikesPageState extends State<DatingReceivedLikesPage> {
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            print('Erreur: ${snapshot.error}');
+            printVm('Erreur: ${snapshot.error}');
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -417,7 +417,7 @@ class _DatingReceivedLikesPageState extends State<DatingReceivedLikesPage> {
       }
       return null;
     } catch (e) {
-      print('❌ Erreur récupération dating profile: $e');
+      printVm('❌ Erreur récupération dating profile: $e');
       return null;
     }
   }

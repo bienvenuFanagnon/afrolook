@@ -1,26 +1,42 @@
-import 'package:afrotok/models/model_data.dart';
+﻿import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
+
 import 'package:flutter_carousel_widget/flutter_carousel_widget.dart';
+
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
+
 import 'package:marquee/marquee.dart';
+
 import 'package:provider/provider.dart';
+
 import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../constant/constColors.dart';
+
 import '../../../constant/textCustom.dart';
+
 import '../../../providers/authProvider.dart';
+
 import '../../../providers/postProvider.dart';
+
 import '../../../providers/userProvider.dart';
+
 import '../../user/amis/pageMesInvitations.dart';
+
 import '../../../theme/app_colors.dart';
+
 import 'cardModel.dart';
+
 import 'card_exemple.dart';
 
 import 'package:badges/badges.dart' as badges;
-
 
 class UserCards extends StatefulWidget {
   const UserCards({
@@ -50,13 +66,9 @@ class _ExamplePageState extends State<UserCards> {
         .where('status', isEqualTo: "${InvitationStatus.ENCOURS.name}")
         .snapshots();
 
-
-
-
     await for (var invitationsSnapshot in invitationsStream) {
 
       for (var invitationDoc in invitationsSnapshot.docs) {
-
 
         //userData=userList.first;
 
@@ -65,7 +77,6 @@ class _ExamplePageState extends State<UserCards> {
         invitation=Invitation.fromJson(invitationDoc.data());
         //  invitation.inviteUser=userList.first;
         invitations.add(invitation);
-
 
         userProvider.countInvitations=invitations.length;
 
@@ -102,9 +113,6 @@ class _ExamplePageState extends State<UserCards> {
             child:                 GestureDetector(
               onTap: () {
 
-
-
-
                 Navigator.push(context, MaterialPageRoute(builder: (context) => MesInvitationsPage(context: context),));
 
               },
@@ -116,7 +124,7 @@ class _ExamplePageState extends State<UserCards> {
                       stream: getNbrInvitation(),
                       builder: (context, snapshot){
                         if(snapshot.hasError){
-                          print("erreur: ${snapshot.error.toString()}");
+                          printVm("erreur: ${snapshot.error.toString()}");
                           return badges.Badge(
                             badgeContent: Text('1'),
                             showBadge: false,
@@ -130,10 +138,8 @@ class _ExamplePageState extends State<UserCards> {
                         }else
                         if(snapshot.hasData){
 
-
                           if(snapshot.data!>0){
                             return badges.Badge(
-
 
                               badgeContent: snapshot.data!>10?Text('9+',style: TextStyle(fontSize:10,color: colors.onAccent ),):Text('${snapshot.data!}',style: TextStyle(fontSize:10,color: colors.onAccent ),),
                               child: Icon(
@@ -158,9 +164,8 @@ class _ExamplePageState extends State<UserCards> {
                             );
                           }
 
-
                         }else{
-                          print("data: ${snapshot.data}");
+                          printVm("data: ${snapshot.data}");
                           return badges.Badge(
                             badgeContent: Text('1'),
                             showBadge: false,
@@ -172,7 +177,6 @@ class _ExamplePageState extends State<UserCards> {
                             ),
                           );
                         }
-
 
                       }
                   ),

@@ -1,13 +1,23 @@
-import 'dart:io';
+﻿import 'dart:io';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+
 import 'package:video_thumbnail/video_thumbnail.dart';
+
 import 'package:path_provider/path_provider.dart';
+
 import '../../models/model_data.dart';
+
 import '../../providers/authProvider.dart';
+
 import 'package:provider/provider.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../postDetails.dart';
+
 import '../postDetailsVideo.dart';
 
 // Couleurs du thème
@@ -74,7 +84,7 @@ class _FavoritePostThumbnailWidgetState extends State<FavoritePostThumbnailWidge
         });
       }
     } catch (e) {
-      print('Erreur chargement utilisateur: $e');
+      printVm('Erreur chargement utilisateur: $e');
     } finally {
       setState(() {
         _isLoadingUser = false;
@@ -106,7 +116,7 @@ class _FavoritePostThumbnailWidgetState extends State<FavoritePostThumbnailWidge
         });
       }
     } catch (e) {
-      print('Erreur génération thumbnail: $e');
+      printVm('Erreur génération thumbnail: $e');
       setState(() {
         _isGeneratingThumbnail = false;
       });

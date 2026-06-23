@@ -1,30 +1,48 @@
-import 'package:afrotok/pages/socialVideos/videoPlayer.dart';
+﻿import 'package:afrotok/pages/socialVideos/videoPlayer.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import 'dart:math';
 
 import 'package:anim_search_bar/anim_search_bar.dart';
+
 import 'package:cached_network_image/cached_network_image.dart';
+
 import 'package:contained_tab_bar_view_with_custom_page_navigator/contained_tab_bar_view_with_custom_page_navigator.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
+
 import 'package:intl/intl.dart';
+
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+
 import 'package:popup_menu/popup_menu.dart';
+
 import 'package:provider/provider.dart';
+
 import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../../../constant/constColors.dart';
-import '../../../../../constant/listItemsCarousel.dart';
-import '../../../../../constant/sizeText.dart';
-import '../../../../../constant/textCustom.dart';
-import '../../../../../models/model_data.dart';
-import '../../../../../providers/authProvider.dart';
-import '../../../../../providers/postProvider.dart';
-import '../../../../../providers/userProvider.dart';
-import '../../../../socialVideos/afrovideos/videoWidget.dart';
 
+import '../../../../../constant/listItemsCarousel.dart';
+
+import '../../../../../constant/sizeText.dart';
+
+import '../../../../../constant/textCustom.dart';
+
+import '../../../../../models/model_data.dart';
+
+import '../../../../../providers/authProvider.dart';
+
+import '../../../../../providers/postProvider.dart';
+
+import '../../../../../providers/userProvider.dart';
+
+import '../../../../socialVideos/afrovideos/videoWidget.dart';
 
 class ProfileUserEntrepriseVideoTab extends StatefulWidget {
   const ProfileUserEntrepriseVideoTab({super.key});
@@ -88,7 +106,6 @@ class _ProfileUserEntrepriseVideoTabState extends State<ProfileUserEntrepriseVid
   }
   PopupMenu? postmenu;
 
-
   bool isUserAbonne(List<UserAbonnes> userAbonnesList, String userIdToCheck) {
     return userAbonnesList.any((userAbonne) => userAbonne.abonneUserId == userIdToCheck);
   }
@@ -143,9 +160,8 @@ class _ProfileUserEntrepriseVideoTabState extends State<ProfileUserEntrepriseVid
   }
   Widget homeProfileUsers(UserData user)  {
 
-
     //authProvider.getCurrentUser(authProvider.loginUserData!.id!);
-    //  print("invitation : ${authProvider.loginUserData.mesInvitationsEnvoyer!.length}");
+    //  printVm("invitation : ${authProvider.loginUserData.mesInvitationsEnvoyer!.length}");
 
     bool abonneTap =false;
     bool inviteTap =false;
@@ -161,7 +177,6 @@ class _ProfileUserEntrepriseVideoTabState extends State<ProfileUserEntrepriseVid
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-
 
               ClipRRect(
                 borderRadius: BorderRadius.all(Radius.circular(10)),
@@ -181,7 +196,6 @@ class _ProfileUserEntrepriseVideoTabState extends State<ProfileUserEntrepriseVid
                   ),
                 ),
               ),
-
 
               Padding(
                 padding: const EdgeInsets.only(top: 2.0,bottom: 2),
@@ -254,7 +268,6 @@ class _ProfileUserEntrepriseVideoTabState extends State<ProfileUserEntrepriseVid
 
                                   }
                                 },);
-
 
                                 setState(() {
                                   inviteTap=false;
@@ -351,7 +364,6 @@ class _ProfileUserEntrepriseVideoTabState extends State<ProfileUserEntrepriseVid
                                 }
                               },);
 
-
                               setState(() {
                                 abonneTap=false;
                               });
@@ -374,18 +386,13 @@ class _ProfileUserEntrepriseVideoTabState extends State<ProfileUserEntrepriseVid
                   }
               )
 
-
-
             ],
           ),
         ),
       ),
     );
 
-
   }
-
-
 
   Widget homePostUsers(Post post,double height, double width) {
     double h = MediaQuery.of(context).size.height;
@@ -594,8 +601,6 @@ class _ProfileUserEntrepriseVideoTabState extends State<ProfileUserEntrepriseVid
                     ),
                   ),
 
-
-
                   SizedBox(
                     height: 10,
                   ),
@@ -612,7 +617,6 @@ class _ProfileUserEntrepriseVideoTabState extends State<ProfileUserEntrepriseVid
                                   if (!isIn(post.users_love_id!,authProvider.loginUserData.id!)) {
 
                                   }
-
 
                                 },
                                 child: Container(
@@ -646,7 +650,6 @@ class _ProfileUserEntrepriseVideoTabState extends State<ProfileUserEntrepriseVid
                             builder: (BuildContext context, StateSetter setState) {
                               return GestureDetector(
                                 onTap: () async {
-
 
                                 },
                                 child: Container(
@@ -712,7 +715,6 @@ class _ProfileUserEntrepriseVideoTabState extends State<ProfileUserEntrepriseVid
                               return GestureDetector(
                                 onTap: () {
 
-
                                 },
                                 child: Container(
                                   width: 70,
@@ -740,10 +742,6 @@ class _ProfileUserEntrepriseVideoTabState extends State<ProfileUserEntrepriseVid
                             }
                         ),
 
-
-
-
-
                       ],
                     ),
                   ),
@@ -761,7 +759,6 @@ class _ProfileUserEntrepriseVideoTabState extends State<ProfileUserEntrepriseVid
                           Text("Contacter",style: TextStyle(color: Colors.green),),
                         ],
                       )),
-
 
                   SizedBox(
                     height: 10,
@@ -791,7 +788,7 @@ class _ProfileUserEntrepriseVideoTabState extends State<ProfileUserEntrepriseVid
             stream: postProvider.getEntreprisePostsVideoByUser(authProvider.loginUserData.id!),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                print("attente");
+                printVm("attente");
                 return SizedBox(
                   //height: height,
                   width: width,
@@ -811,7 +808,7 @@ class _ProfileUserEntrepriseVideoTabState extends State<ProfileUserEntrepriseVid
                   ),
                 );
               } else if (snapshot.hasError) {
-                print("erreur ${snapshot.error}");
+                printVm("erreur ${snapshot.error}");
                 return
                   Skeletonizer(
 
@@ -1014,7 +1011,6 @@ class _ProfileUserEntrepriseVideoTabState extends State<ProfileUserEntrepriseVid
                                             GestureDetector(
                                               onTap: () {
 
-
                                               },
                                               child: Container(
                                                 width: 110,
@@ -1070,7 +1066,6 @@ class _ProfileUserEntrepriseVideoTabState extends State<ProfileUserEntrepriseVid
                                             GestureDetector(
                                               onTap: () {
 
-
                                               },
                                               child: Container(
                                                 width: 110,
@@ -1123,12 +1118,9 @@ class _ProfileUserEntrepriseVideoTabState extends State<ProfileUserEntrepriseVid
                                               ),
                                             ),
 
-
-
                                           ],
                                         ),
                                       ),
-
 
                                       SizedBox(
                                         height: 2,

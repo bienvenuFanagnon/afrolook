@@ -1,5 +1,6 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:io';
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -86,7 +87,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
         }
       });
     } catch (e) {
-      print('Erreur chargement restrictions: $e');
+      printVm('Erreur chargement restrictions: $e');
     }
   }
 
@@ -1662,18 +1663,18 @@ class _CreateLivePageState extends State<CreateLivePage> {
 
   Future<void> _createLive() async {
     if (_isCreating) {
-      print('⚠️ Tentative bloquée : création déjà en cours');
+      printVm('⚠️ Tentative bloquée : création déjà en cours');
       return;
     }
 
     if (!_formKey.currentState!.validate()) {
-      print('❌ Validation du formulaire échouée');
+      printVm('❌ Validation du formulaire échouée');
       return;
     }
 
     final User? user = _auth.currentUser;
     if (user == null) {
-      print('❌ Utilisateur non authentifié');
+      printVm('❌ Utilisateur non authentifié');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Vous devez être connecté pour créer un live'),
@@ -1701,7 +1702,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
     _creationTimer = Timer(Duration(seconds: 10), () {
       if (mounted) {
         setState(() => _isCreating = false);
-        print('🔓 Verrouillage automatique libéré après 10 secondes');
+        printVm('🔓 Verrouillage automatique libéré après 10 secondes');
       }
     });
 
@@ -1775,7 +1776,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
       final actualQuality = _useHDQuality && (_liveRestrictions['canChooseHD'] == true || _liveRestrictions['isAdmin'] == true) ? 'HD' : 'SD';
       final actualLatency = _useLowLatency && (_liveRestrictions['canChooseLowLatency'] == true || _liveRestrictions['isAdmin'] == true) ? 500 : 2000;
 
-      print("✅ Live créé avec succès: $liveId - Qualité: $actualQuality - Latence: ${actualLatency}ms");
+      printVm("✅ Live créé avec succès: $liveId - Qualité: $actualQuality - Latence: ${actualLatency}ms");
 
       // Incrémenter le compteur de lives (sauf pour admin)
       if (_liveRestrictions['isAdmin'] != true) {
@@ -1801,7 +1802,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
       );
 
     } catch (e) {
-      print("❌ Erreur création live: $e");
+      printVm("❌ Erreur création live: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erreur lors de la création du live: ${e.toString()}'),
@@ -1832,11 +1833,11 @@ class _CreateLivePageState extends State<CreateLivePage> {
             post_type: PostDataType.TEXT.name,
             chat_id: '',
           );
-          print("📨 Notifications envoyées à ${userIds.length} utilisateurs");
+          printVm("📨 Notifications envoyées à ${userIds.length} utilisateurs");
         }
       });
     } catch (e) {
-      print("⚠️ Erreur envoi notifications: $e");
+      printVm("⚠️ Erreur envoi notifications: $e");
     }
   }
 }
@@ -2320,18 +2321,18 @@ class _CreateLivePageState extends State<CreateLivePage> {
 //   Future<void> _createLive() async {
 //     // 1. VÉRIFICATION PRÉLIMINAIRE
 //     if (_isCreating) {
-//       print('⚠️ Tentative bloquée : création déjà en cours');
+//       printVm('⚠️ Tentative bloquée : création déjà en cours');
 //       return;
 //     }
 //
 //     if (!_formKey.currentState!.validate()) {
-//       print('❌ Validation du formulaire échouée');
+//       printVm('❌ Validation du formulaire échouée');
 //       return;
 //     }
 //
 //     final User? user = _auth.currentUser;
 //     if (user == null) {
-//       print('❌ Utilisateur non authentifié');
+//       printVm('❌ Utilisateur non authentifié');
 //       ScaffoldMessenger.of(context).showSnackBar(
 //         SnackBar(
 //           content: Text('Vous devez être connecté pour créer un live'),
@@ -2348,7 +2349,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
 //     _creationTimer = Timer(Duration(seconds: 10), () {
 //       if (mounted) {
 //         setState(() => _isCreating = false);
-//         print('🔓 Verrouillage automatique libéré après 10 secondes');
+//         printVm('🔓 Verrouillage automatique libéré après 10 secondes');
 //       }
 //     });
 //
@@ -2363,7 +2364,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
 //
 //       if (activeLiveQuery.docs.isNotEmpty) {
 //         // L'utilisateur a déjà un live actif
-//         print('❌ Utilisateur a déjà un live actif: ${activeLiveQuery.docs.first.id}');
+//         printVm('❌ Utilisateur a déjà un live actif: ${activeLiveQuery.docs.first.id}');
 //
 //         ScaffoldMessenger.of(context).showSnackBar(
 //           SnackBar(
@@ -2420,7 +2421,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
 //
 //       // 5. SAUVEGARDE DANS FIRESTORE
 //       await _firestore.collection('lives').doc(liveId).set(newLive.toMap());
-//       print("✅ Live créé avec succès: $liveId");
+//       printVm("✅ Live créé avec succès: $liveId");
 //
 //       // 6. ENVOYER LES NOTIFICATIONS (en arrière-plan)
 //       _sendNotifications(authProvider, newLive);
@@ -2441,7 +2442,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
 //       );
 //
 //     } catch (e) {
-//       print("❌ Erreur création live: $e");
+//       printVm("❌ Erreur création live: $e");
 //       ScaffoldMessenger.of(context).showSnackBar(
 //         SnackBar(
 //           content: Text('Erreur lors de la création du live: ${e.toString()}'),
@@ -2475,11 +2476,11 @@ class _CreateLivePageState extends State<CreateLivePage> {
 //             post_type: PostDataType.TEXT.name,
 //             chat_id: '',
 //           );
-//           print("📨 Notifications envoyées à ${userIds.length} utilisateurs");
+//           printVm("📨 Notifications envoyées à ${userIds.length} utilisateurs");
 //         }
 //       });
 //     } catch (e) {
-//       print("⚠️ Erreur envoi notifications: $e");
+//       printVm("⚠️ Erreur envoi notifications: $e");
 //       // Ne pas bloquer la création du live si les notifications échouent
 //     }
 //   }

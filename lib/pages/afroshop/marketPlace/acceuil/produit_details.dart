@@ -1,42 +1,61 @@
-import 'dart:io';
+﻿import 'dart:io';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'dart:math';
 
-
 import 'package:afrotok/pages/paiement/newDepot.dart';
+
 import 'package:cached_network_image/cached_network_image.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:dropdown_search/dropdown_search.dart';
+
 import 'package:flutter/cupertino.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:flutter/widgets.dart';
+
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
+
 import 'package:like_button/like_button.dart';
+
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+
 import 'package:provider/provider.dart';
+
 import 'package:share_plus/share_plus.dart';
+
 import 'package:skeletonizer/skeletonizer.dart';
+
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:http/http.dart' as http;
+
 import 'package:path_provider/path_provider.dart';
 
 import 'package:insta_image_viewer/insta_image_viewer.dart';
 
 import '../../../../constant/constColors.dart';
+
 import '../../../../constant/custom_theme.dart';
 
 import '../../../../models/model_data.dart';
+
 import '../../../../widgets/chat/generic_share_sheet.dart';
+
 import '../../../../providers/afroshop/categorie_produits_provider.dart';
+
 import '../../../../providers/authProvider.dart';
+
 import '../../../../providers/postProvider.dart';
+
 import '../../../entreprise/profile/ProfileEntreprise.dart';
+
 import '../../../user/conponent.dart';
 
-
 import 'package:flutter/services.dart'; // Pour Clipboard
-
-
 
 class ProduitDetail extends StatefulWidget {
   final String productId;
@@ -122,7 +141,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
       }
 
     } catch (e) {
-      print("Erreur chargement données: $e");
+      printVm("Erreur chargement données: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Erreur de chargement")),
       );
@@ -140,7 +159,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
         'updatedAt': DateTime.now().millisecondsSinceEpoch,
       });
     } catch (e) {
-      print("Erreur incrémentation vues: $e");
+      printVm("Erreur incrémentation vues: $e");
     }
   }
 
@@ -154,7 +173,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
         article!.contact = (article!.contact ?? 0) + 1;
       });
     } catch (e) {
-      print("Erreur incrémentation contacts: $e");
+      printVm("Erreur incrémentation contacts: $e");
     }
   }
 
@@ -243,7 +262,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
       });
 
     } catch (e) {
-      print("Erreur partage: $e");
+      printVm("Erreur partage: $e");
       // Fallback simple en cas d'erreur
       final fallbackText = 'Découvrez "${article!.titre}" à ${article!.prix} FCFA sur Afroshop Afrolook!';
       await Share.share(fallbackText);
@@ -336,7 +355,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
       });
 
     } catch (e) {
-      print("Erreur WhatsApp: $e");
+      printVm("Erreur WhatsApp: $e");
       // Fallback simple en cas d'erreur
       final phone = article!.phone!;
       String urlFallback = "https://wa.me/$phone?text=" + Uri.encodeComponent(
@@ -581,7 +600,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
         );
       }
     } catch (e) {
-      print("Erreur boost: $e");
+      printVm("Erreur boost: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: Colors.red,
@@ -662,7 +681,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
         }
       }
     } catch (e) {
-      print("Erreur like: $e");
+      printVm("Erreur like: $e");
     }
   }
 
@@ -791,7 +810,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
         );
       }
     } catch (e) {
-      // print("Erreur abonnement: $e");
+      // printVm("Erreur abonnement: $e");
       // ScaffoldMessenger.of(context).showSnackBar(
       //   SnackBar(content: Text("Erreur lors de l'abonnement")),
       // );
@@ -961,14 +980,13 @@ class _ProduitDetailState extends State<ProduitDetail> {
     final canBoostPremium = hasPremiumSubscription &&
         (entrepriseData?.abonnement?.produistIdBoosted?.length ?? 0) < 5;
 
-
 // 🔍 Affichage dans la console
-    print('hasPremiumSubscription: $hasPremiumSubscription');
-    print('canBoostPremium: $canBoostPremium');
+    printVm('hasPremiumSubscription: $hasPremiumSubscription');
+    printVm('canBoostPremium: $canBoostPremium');
 
 // Pour plus de détails sur le contenu de l’abonnement
-    print('Type abonnement: ${entrepriseData?.abonnement?.type}');
-    print('Produits boostés: ${entrepriseData?.abonnement?.produistIdBoosted?.length}');
+    printVm('Type abonnement: ${entrepriseData?.abonnement?.type}');
+    printVm('Produits boostés: ${entrepriseData?.abonnement?.produistIdBoosted?.length}');
 
     return Dialog(
       backgroundColor: Colors.grey[900],
@@ -1418,7 +1436,6 @@ class _ProduitDetailState extends State<ProduitDetail> {
       ),
     );
   }
-
 
   Widget _buildOwnerContact() {
     return Container(

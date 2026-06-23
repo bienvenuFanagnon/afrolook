@@ -1,12 +1,19 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:provider/provider.dart';
 import 'package:iconsax/iconsax.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../models/crypto_model.dart';
+
 import '../../models/model_data.dart';
+
 import '../../providers/crypto_admin_provider.dart';
+
 import '../../providers/crypto_market_provider.dart';
+
 import 'crypto_form_page.dart';
 
 class AdminCryptoPage extends StatefulWidget {
@@ -71,7 +78,7 @@ class _AdminCryptoPageState extends State<AdminCryptoPage> with SingleTickerProv
         _isLoading = false;
       });
     } catch (e) {
-      print('Erreur lors du chargement des données: $e');
+      printVm('Erreur lors du chargement des données: $e');
       setState(() {
         _isLoading = false;
       });

@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'dart:math';
 
 import 'package:afrotok/models/model_data.dart';
@@ -57,7 +57,7 @@ setMessageNonLu(int nbr){
           .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
           .toList();
     } catch (e) {
-      print('Erreur recherche créateur: $e');
+      printVm('Erreur recherche créateur: $e');
       return [];
     }
   }
@@ -160,7 +160,7 @@ setMessageNonLu(int nbr){
         _hasMore = newInfos.length == limit;
       }
     } catch (e) {
-      print('Error loading infos: $e');
+      printVm('Error loading infos: $e');
     }
 
     _isLoading = false;
@@ -177,7 +177,7 @@ setMessageNonLu(int nbr){
         'views': FieldValue.increment(1),
       });
     } catch (e) {
-      print('Error incrementing views: $e');
+      printVm('Error incrementing views: $e');
     }
   }
 
@@ -207,7 +207,7 @@ setMessageNonLu(int nbr){
         });
       }
     } catch (e) {
-      print('Error toggling like: $e');
+      printVm('Error toggling like: $e');
     }
   }
 
@@ -219,7 +219,7 @@ setMessageNonLu(int nbr){
           .get();
       return likeDoc.exists;
     } catch (e) {
-      print('Error checking like: $e');
+      printVm('Error checking like: $e');
       return false;
     }
   }
@@ -235,7 +235,7 @@ setMessageNonLu(int nbr){
       _listInfos.removeWhere((info) => info.id == infoId);
       notifyListeners();
     } catch (e) {
-      print('Error deleting info: $e');
+      printVm('Error deleting info: $e');
       throw e;
     }
   }
@@ -250,7 +250,7 @@ setMessageNonLu(int nbr){
         'featured_at': featured ? DateTime.now().millisecondsSinceEpoch : 0,
       });
     } catch (e) {
-      print('Error toggling featured: $e');
+      printVm('Error toggling featured: $e');
       throw e;
     }
   }
@@ -424,7 +424,7 @@ setMessageNonLu(int nbr){
     try {
       // 🔥 Vérifier que appTotalPoints n'est pas nul ou zéro
       if (appData.appTotalPoints == 0) {
-        print("❌ ERREUR : appTotalPoints = 0, impossible de calculer la popularité.");
+        printVm("❌ ERREUR : appTotalPoints = 0, impossible de calculer la popularité.");
         return [];
       }
 
@@ -443,7 +443,7 @@ setMessageNonLu(int nbr){
       WriteBatch batch = FirebaseFirestore.instance.batch();
 
       for (UserData user in topUsers) {
-        // print("user totalPoints : ${user.totalPoints}");
+        // printVm("user totalPoints : ${user.totalPoints}");
         int userPoints = user.totalPoints ?? 0;
 
         // 🧮 Calcul de popularité (0 à 1)
@@ -455,7 +455,7 @@ setMessageNonLu(int nbr){
         // 📌 Référence Firestore
         DocumentReference userRef =
         FirebaseFirestore.instance.collection('Users').doc(user.id);
-        // print("user totalPoints popularite: ${popularite}");
+        // printVm("user totalPoints popularite: ${popularite}");
 
         batch.update(userRef, {
           "popularite": popularite,
@@ -467,12 +467,12 @@ setMessageNonLu(int nbr){
       // 🚀 Lancer l’update
       await batch.commit();
 
-      print("🔥 Popularité mise à jour pour les Top 10 utilisateurs.");
+      printVm("🔥 Popularité mise à jour pour les Top 10 utilisateurs.");
 
       return topUsers;
 
     } catch (e) {
-      print("❌ Erreur updateTopUsersPopularity : $e");
+      printVm("❌ Erreur updateTopUsersPopularity : $e");
       return [];
     }
   }
@@ -558,7 +558,7 @@ setMessageNonLu(int nbr){
 
       return abonnesList;
     } catch (e) {
-      print("Erreur getUserAbonnes: $e");
+      printVm("Erreur getUserAbonnes: $e");
       return [];
     }
   }
@@ -566,11 +566,11 @@ setMessageNonLu(int nbr){
   Future<List<UserData>> getUsersBatch(List<String> userIds) async {
     List<UserData> listUsers = [];
 
-    print('🔍 getUsersBatch appelé avec ${userIds.length} userIds');
-    print('🔍 userIds: $userIds');
+    printVm('🔍 getUsersBatch appelé avec ${userIds.length} userIds');
+    printVm('🔍 userIds: $userIds');
 
     if (userIds.isEmpty) {
-      print('⚠️ Liste userIds vide');
+      printVm('⚠️ Liste userIds vide');
       return listUsers;
     }
 
@@ -585,7 +585,7 @@ setMessageNonLu(int nbr){
         final end = i + batchSize < userIds.length ? i + batchSize : userIds.length;
         final batchIds = userIds.sublist(i, end);
 
-        print('\n📦 Batch $batchCount (${batchIds.length} IDs): $batchIds');
+        printVm('\n📦 Batch $batchCount (${batchIds.length} IDs): $batchIds');
 
         if (batchIds.isEmpty) continue;
 
@@ -594,28 +594,28 @@ setMessageNonLu(int nbr){
               .where('id', whereIn: batchIds)
               .get();
 
-          print('📊 Documents trouvés: ${querySnapshotUser.docs.length}');
+          printVm('📊 Documents trouvés: ${querySnapshotUser.docs.length}');
 
           // DEBUG: Afficher chaque document
           for (var doc in querySnapshotUser.docs) {
-            print('📄 Document ID: ${doc.id}');
-            print('📄 Document data: ${doc.data()}');
+            printVm('📄 Document ID: ${doc.id}');
+            printVm('📄 Document data: ${doc.data()}');
 
             try {
               final data = doc.data() as Map<String, dynamic>;
               final user = UserData.fromJson(data);
 
-              print('✅ User créé:');
-              print('   - id: ${user.id}');
-              print('   - pseudo: ${user.pseudo}');
-              print('   - imageUrl: ${user.imageUrl}');
-              print('   - abonnes: ${user.abonnes}');
-              print('   - isVerify: ${user.isVerify}');
+              printVm('✅ User créé:');
+              printVm('   - id: ${user.id}');
+              printVm('   - pseudo: ${user.pseudo}');
+              printVm('   - imageUrl: ${user.imageUrl}');
+              printVm('   - abonnes: ${user.abonnes}');
+              printVm('   - isVerify: ${user.isVerify}');
 
               listUsers.add(user);
             } catch (e) {
-              print('❌ Erreur création UserData: $e');
-              print('❌ Données problématiques: ${doc.data()}');
+              printVm('❌ Erreur création UserData: $e');
+              printVm('❌ Données problématiques: ${doc.data()}');
             }
           }
 
@@ -625,17 +625,17 @@ setMessageNonLu(int nbr){
           }
 
         } catch (e) {
-          print('❌ Erreur batch $batchCount: $e');
+          printVm('❌ Erreur batch $batchCount: $e');
         }
       }
 
-      print('\n📊 Récapitulatif:');
-      print('✅ Total utilisateurs récupérés: ${listUsers.length} sur ${userIds.length}');
+      printVm('\n📊 Récapitulatif:');
+      printVm('✅ Total utilisateurs récupérés: ${listUsers.length} sur ${userIds.length}');
 
       if (listUsers.isNotEmpty) {
-        print('👥 Utilisateurs obtenus:');
+        printVm('👥 Utilisateurs obtenus:');
         for (var user in listUsers) {
-          print('   - ${user.pseudo} (id: ${user.id})');
+          printVm('   - ${user.pseudo} (id: ${user.id})');
         }
 
         // Trier par popularité
@@ -645,18 +645,18 @@ setMessageNonLu(int nbr){
           return bFollowers.compareTo(aFollowers);
         });
 
-        print('📈 Tri effectué par popularité');
+        printVm('📈 Tri effectué par popularité');
       } else {
-        print('⚠️ AUCUN utilisateur récupéré!');
-        print('⚠️ Possible causes:');
-        print('   - IDs incorrects dans Firestore');
-        print('   - Champ "id" différent dans Firestore');
-        print('   - Structure de données différente');
+        printVm('⚠️ AUCUN utilisateur récupéré!');
+        printVm('⚠️ Possible causes:');
+        printVm('   - IDs incorrects dans Firestore');
+        printVm('   - Champ "id" différent dans Firestore');
+        printVm('   - Structure de données différente');
       }
 
     } catch (e) {
-      print('❌ Erreur globale getUsersBatch: $e');
-      print('❌ StackTrace: ${e.toString()}');
+      printVm('❌ Erreur globale getUsersBatch: $e');
+      printVm('❌ StackTrace: ${e.toString()}');
     }
 
     return listUsers;
@@ -687,10 +687,10 @@ setMessageNonLu(int nbr){
 
       listUsers.shuffle(); // Mélanger les résultats pour un effet aléatoire
 
-      print('Liste des utilisateurs récupérés: ${listUsers.length}');
+      printVm('Liste des utilisateurs récupérés: ${listUsers.length}');
 
     } catch (e) {
-      print('Erreur lors de la récupération des utilisateurs : $e');
+      printVm('Erreur lors de la récupération des utilisateurs : $e');
     }
 
     return listUsers;
@@ -943,14 +943,26 @@ setMessageNonLu(int nbr){
     Provider.of<UserAuthProvider>(context, listen: false);
     bool resp=false;
 
+  try{
+    // Vérifie qu'aucune invitation ENCOURS n'existe déjà entre ces deux utilisateurs
+    final existing = await firestore
+        .collection('Invitations')
+        .where('sender_id', isEqualTo: invitation.senderId)
+        .where('receiver_id', isEqualTo: invitation.receiverId)
+        .where('status', isEqualTo: InvitationStatus.ENCOURS.name)
+        .limit(1)
+        .get();
+
+    if (existing.docs.isNotEmpty) {
+      return false; // doublon — invitation déjà en cours
+    }
+
   String id = firestore
       .collection('Invitations')
       .doc()
       .id;
     invitation.id = id;
     authProvider.loginUserData!.pointContribution=authProvider.loginUserData!.pointContribution!+1;
-  try{
-
 
     await firestore.collection('Invitations').doc(id).set(invitation.toJson());
     await firestore.collection('Users').doc( authProvider.loginUserData!.id).update( authProvider.loginUserData!.toJson());

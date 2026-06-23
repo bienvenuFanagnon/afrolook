@@ -1,14 +1,23 @@
-import 'package:afrotok/pages/auth/update_pass_word/confirm_verification_otp.dart';
+﻿import 'package:afrotok/pages/auth/update_pass_word/confirm_verification_otp.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:intl_phone_field/intl_phone_field.dart';
+
 import 'package:provider/provider.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../providers/authProvider.dart';
+
 import '../authTest/Screens/Signup/function.dart';
+
 import '../authTest/Screens/Signup/verificationOtps.dart';
+
 import '../authTest/constants.dart';
 
 class ConfirmUser extends StatefulWidget {
@@ -154,7 +163,7 @@ class _ConfirmUserState extends State<ConfirmUser> {
               errorMessage = 'Une erreur inconnue est survenue. Veuillez réessayer plus tard';
           }
           showErrorDialog(context, errorMessage);
-          print(" erreur : ${e.toString()}");
+          printVm(" erreur : ${e.toString()}");
         },
         autoRetrieval: (v) {},
       );
@@ -693,7 +702,6 @@ class _ConfirmUserState extends State<ConfirmUser> {
   }
 }
 
-
 //
 // import 'package:afrotok/pages/auth/update_pass_word/confirm_verification_otp.dart';
 // import 'package:awesome_dialog/awesome_dialog.dart';
@@ -778,7 +786,7 @@ class _ConfirmUserState extends State<ConfirmUser> {
 //         //errorMessage = e.toString();
 //         }
 //         showErrorDialog( context, errorMessage);
-//         print(" erreur : ${e.toString()}");
+//         printVm(" erreur : ${e.toString()}");
 //       }, autoRetrieval: (v) {});
 //     }else{
 //       onTap = false;
@@ -858,10 +866,10 @@ class _ConfirmUserState extends State<ConfirmUser> {
 //               //   initialCountryCode: 'TG',
 //               //   onChanged: (phone) {
 //               //     telephoneController.text=phone.completeNumber;
-//               //     print(phone.completeNumber);
+//               //     printVm(phone.completeNumber);
 //               //   },
 //               //   onCountryChanged: (country) {
-//               //     print('Country changed to: ' + country.name);
+//               //     printVm('Country changed to: ' + country.name);
 //               //   },
 //               //   validator: (value) {
 //               //     if (value!.completeNumber.isEmpty) {

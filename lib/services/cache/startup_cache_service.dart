@@ -1,4 +1,6 @@
-import 'dart:convert';
+﻿import 'dart:convert';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/model_data.dart';
 
@@ -21,7 +23,7 @@ class StartupCacheService {
       await prefs.setString(_keyUserData, jsonEncode(_userToMap(user)));
       await prefs.setInt(_keyUserTime, DateTime.now().millisecondsSinceEpoch);
     } catch (e) {
-      print('⚠️ [StartupCache] saveUserData échoué: $e');
+      printVm('⚠️ [StartupCache] saveUserData échoué: $e');
     }
   }
 
@@ -39,7 +41,7 @@ class StartupCacheService {
       await prefs.setString(_keyAppData, jsonEncode(map));
       await prefs.setInt(_keyAppTime, DateTime.now().millisecondsSinceEpoch);
     } catch (e) {
-      print('⚠️ [StartupCache] saveAppData échoué: $e');
+      printVm('⚠️ [StartupCache] saveAppData échoué: $e');
     }
   }
 
@@ -55,7 +57,7 @@ class StartupCacheService {
       if (raw == null) return null;
       return _userFromMap(jsonDecode(raw) as Map<String, dynamic>);
     } catch (e) {
-      print('⚠️ [StartupCache] loadUserData échoué: $e');
+      printVm('⚠️ [StartupCache] loadUserData échoué: $e');
       return null;
     }
   }
@@ -76,7 +78,7 @@ class StartupCacheService {
       map['one_signal_app_id'] ??= '';
       return AppDefaultData.fromJson(map);
     } catch (e) {
-      print('⚠️ [StartupCache] loadAppData échoué: $e');
+      printVm('⚠️ [StartupCache] loadAppData échoué: $e');
       return null;
     }
   }

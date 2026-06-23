@@ -1,5 +1,7 @@
-// services/remuneration_service.dart
+﻿// services/remuneration_service.dart
 
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -14,7 +16,7 @@ class RemunerationService {
   // Fonction utilitaire pour logger avec timestamp
   void _log(String message, {String type = 'INFO'}) {
     final timestamp = DateTime.now().toString().split('.')[0];
-    print('[$timestamp] $type: $message');
+    printVm('[$timestamp] $type: $message');
   }
 
   // ============================================

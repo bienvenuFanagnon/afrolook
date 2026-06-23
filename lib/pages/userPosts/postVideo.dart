@@ -1,4 +1,4 @@
-import 'package:afrotok/models/model_data.dart';
+﻿import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:camera/camera.dart';
 import 'package:fluttertagger/fluttertagger.dart';
@@ -75,10 +75,10 @@ class _PostVideoUserState extends State<PostVideoUser> {
 
     if (videoDuration.inSeconds > 60*5) {
       // La durée de la vidéo dépasse 30 secondes, vous pouvez afficher une erreur ici
-      print("Erreur : La durée de la vidéo dépasse 5 min");
+      printVm("Erreur : La durée de la vidéo dépasse 5 min");
     } else {
       // La durée de la vidéo est inférieure ou égale à 30 secondes
-      print("La durée de la vidéo est conforme");
+      printVm("La durée de la vidéo est conforme");
     }
   }
 
@@ -200,7 +200,7 @@ body: SingleChildScrollView(
 
                             if (videoDuration.inSeconds > 60*5) {
                               // La durée de la vidéo dépasse 30 secondes, vous pouvez afficher une erreur ici
-                              print("Erreur : La durée de la vidéo dépasse 5 min");
+                              printVm("Erreur : La durée de la vidéo dépasse 5 min");
                               SnackBar snackBar = SnackBar(
                                 content: Text(
                                   'La durée de la vidéo dépasse 5 min !',
@@ -265,19 +265,19 @@ body: SingleChildScrollView(
 
                               await uploadTask.whenComplete(() {
                                 // Tâche de téléchargement terminée avec succès
-                                print('File uploaded successfully');
+                                printVm('File uploaded successfully');
                               });
                               await uploadTask.whenComplete(() async {
                                 await storageReference
                                     .getDownloadURL()
                                     .then((fileURL) {
-                                  print("url media");
-                                  //  print(fileURL);
+                                  printVm("url media");
+                                  //  printVm(fileURL);
 
                                   post.url_media=fileURL;
                                 });
                               });
-                              print("video: ${post.url_media}");
+                              printVm("video: ${post.url_media}");
                               await FirebaseFirestore.instance
                                   .collection('Posts')
                                   .doc(postId)
@@ -310,7 +310,7 @@ body: SingleChildScrollView(
                               // users.add(pseudo.toJson());
 
                               await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-                              print("///////////-- save notification --///////////////");
+                              printVm("///////////-- save notification --///////////////");
                               await authProvider
                                   .getAllUsersOneSignaUserId()
                                   .then(
@@ -349,7 +349,7 @@ body: SingleChildScrollView(
 
 
                           } catch (e) {
-                            print("erreur ${e}");
+                            printVm("erreur ${e}");
                             setState(() {
                               onTap=false;
                             });

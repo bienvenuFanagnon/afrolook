@@ -1,29 +1,47 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:flutter/material.dart';
 
 import 'dart:math';
 
 import 'package:anim_search_bar/anim_search_bar.dart';
+
 import 'package:cached_network_image/cached_network_image.dart';
+
 import 'package:contained_tab_bar_view_with_custom_page_navigator/contained_tab_bar_view_with_custom_page_navigator.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
+
 import 'package:intl/intl.dart';
+
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+
 import 'package:popup_menu/popup_menu.dart';
+
 import 'package:provider/provider.dart';
+
 import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../../../constant/constColors.dart';
-import '../../../../../constant/listItemsCarousel.dart';
-import '../../../../../constant/sizeText.dart';
-import '../../../../../constant/textCustom.dart';
-import '../../../../../models/model_data.dart';
-import '../../../../../providers/authProvider.dart';
-import '../../../../../providers/postProvider.dart';
-import '../../../../../providers/userProvider.dart';
-import '../../postComments.dart';
 
+import '../../../../../constant/listItemsCarousel.dart';
+
+import '../../../../../constant/sizeText.dart';
+
+import '../../../../../constant/textCustom.dart';
+
+import '../../../../../models/model_data.dart';
+
+import '../../../../../providers/authProvider.dart';
+
+import '../../../../../providers/postProvider.dart';
+
+import '../../../../../providers/userProvider.dart';
+
+import '../../postComments.dart';
 
 class ProfileEntreprisePostImageTab extends StatefulWidget {
   const ProfileEntreprisePostImageTab({super.key});
@@ -97,7 +115,6 @@ class _ProfileEntreprisePostImageTabState extends State<ProfileEntreprisePostIma
   }
   PopupMenu? postmenu;
 
-
   bool isUserAbonne(List<UserAbonnes> userAbonnesList, String userIdToCheck) {
     return userAbonnesList.any((userAbonne) => userAbonne.abonneUserId == userIdToCheck);
   }
@@ -150,11 +167,6 @@ class _ProfileEntreprisePostImageTabState extends State<ProfileEntreprisePostIma
       },
     );
   }
-
-
-
-
-
 
   Widget homePostUsers(Post post,double height, double width) {
     double h = MediaQuery.of(context).size.height;
@@ -418,8 +430,6 @@ class _ProfileEntreprisePostImageTabState extends State<ProfileEntreprisePostIma
                     ),
                   ),
 
-
-
                   SizedBox(
                     height: 10,
                   ),
@@ -436,7 +446,6 @@ class _ProfileEntreprisePostImageTabState extends State<ProfileEntreprisePostIma
                                   if (!isIn(post.users_love_id!,authProvider.loginUserData.id!)) {
 
                                   }
-
 
                                 },
                                 child: Container(
@@ -473,7 +482,6 @@ class _ProfileEntreprisePostImageTabState extends State<ProfileEntreprisePostIma
                                   if (!isIn(post.users_like_id!,authProvider.loginUserData.id!)) {
 
                                   }
-
 
                                 },
                                 child: Container(
@@ -539,7 +547,6 @@ class _ProfileEntreprisePostImageTabState extends State<ProfileEntreprisePostIma
                               return GestureDetector(
                                 onTap: () {
 
-
                                 },
                                 child: Container(
                                   width: 70,
@@ -567,10 +574,6 @@ class _ProfileEntreprisePostImageTabState extends State<ProfileEntreprisePostIma
                             }
                         ),
 
-
-
-
-
                       ],
                     ),
                   ),
@@ -588,7 +591,6 @@ class _ProfileEntreprisePostImageTabState extends State<ProfileEntreprisePostIma
                           Text("Contacter",style: TextStyle(color: Colors.green),),
                         ],
                       )),
-
 
                   SizedBox(
                     height: 10,
@@ -618,7 +620,7 @@ class _ProfileEntreprisePostImageTabState extends State<ProfileEntreprisePostIma
             stream: postProvider.getPubImagesByEntreprise(userProvider.entrepriseData.id!),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                print("attente");
+                printVm("attente");
                 return SizedBox(
                   //height: height,
                   width: width,
@@ -638,7 +640,7 @@ class _ProfileEntreprisePostImageTabState extends State<ProfileEntreprisePostIma
                   ),
                 );
               } else if (snapshot.hasError) {
-                print("erreur ${snapshot.error}");
+                printVm("erreur ${snapshot.error}");
                 return
                   Skeletonizer(
 
@@ -841,7 +843,6 @@ class _ProfileEntreprisePostImageTabState extends State<ProfileEntreprisePostIma
                                             GestureDetector(
                                               onTap: () {
 
-
                                               },
                                               child: Container(
                                                 width: 110,
@@ -897,7 +898,6 @@ class _ProfileEntreprisePostImageTabState extends State<ProfileEntreprisePostIma
                                             GestureDetector(
                                               onTap: () {
 
-
                                               },
                                               child: Container(
                                                 width: 110,
@@ -950,12 +950,9 @@ class _ProfileEntreprisePostImageTabState extends State<ProfileEntreprisePostIma
                                               ),
                                             ),
 
-
-
                                           ],
                                         ),
                                       ),
-
 
                                       SizedBox(
                                         height: 2,

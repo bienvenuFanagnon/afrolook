@@ -1,4 +1,5 @@
-import 'package:shared_preferences/shared_preferences.dart';
+﻿import 'package:shared_preferences/shared_preferences.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
 
 class LocalViewedPostsService {
   static const String _viewedPostsKey = 'viewed_posts';
@@ -10,9 +11,9 @@ class LocalViewedPostsService {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_lastSeenPostKey, postId);
-      print('📍 Dernier post vu mis à jour: $postId');
+      printVm('📍 Dernier post vu mis à jour: $postId');
     } catch (e) {
-      print('❌ Erreur sauvegarde dernier post vu: $e');
+      printVm('❌ Erreur sauvegarde dernier post vu: $e');
     }
   }
 
@@ -22,7 +23,7 @@ class LocalViewedPostsService {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getString(_lastSeenPostKey);
     } catch (e) {
-      print('❌ Erreur récupération dernier post vu: $e');
+      printVm('❌ Erreur récupération dernier post vu: $e');
       return null;
     }
   }
@@ -36,9 +37,9 @@ class LocalViewedPostsService {
       // 2. Mettre à jour le dernier post vu
       await updateLastSeenPost(postId);
 
-      print('✅ Post $postId enregistré comme dernier post vu');
+      printVm('✅ Post $postId enregistré comme dernier post vu');
     } catch (e) {
-      print('❌ Erreur enregistrement complet post $postId: $e');
+      printVm('❌ Erreur enregistrement complet post $postId: $e');
     }
   }
   // 🔥 SAUVEGARDER UN POST COMME VU
@@ -57,10 +58,10 @@ class LocalViewedPostsService {
         }
 
         await prefs.setStringList(_viewedPostsKey, viewedPosts);
-        print('✅ Post $postId sauvegardé localement (total: ${viewedPosts.length})');
+        printVm('✅ Post $postId sauvegardé localement (total: ${viewedPosts.length})');
       }
     } catch (e) {
-      print('❌ Erreur sauvegarde locale post $postId: $e');
+      printVm('❌ Erreur sauvegarde locale post $postId: $e');
     }
   }
 
@@ -70,7 +71,7 @@ class LocalViewedPostsService {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getStringList(_viewedPostsKey) ?? [];
     } catch (e) {
-      print('❌ Erreur récupération posts vus: $e');
+      printVm('❌ Erreur récupération posts vus: $e');
       return [];
     }
   }
@@ -80,9 +81,9 @@ class LocalViewedPostsService {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_viewedPostsKey);
-      print('🧹 Historique posts vus effacé');
+      printVm('🧹 Historique posts vus effacé');
     } catch (e) {
-      print('❌ Erreur effacement historique: $e');
+      printVm('❌ Erreur effacement historique: $e');
     }
   }
 

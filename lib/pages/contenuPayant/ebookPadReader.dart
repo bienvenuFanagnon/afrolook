@@ -1,7 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
+
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
+
 import 'package:afrotok/models/model_data.dart';
 
 import '../../theme/app_colors.dart';
@@ -40,10 +44,10 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
         ? widget.episode!.pdfUrl
         : widget.content.pdfUrl;
 
-    print('📖 URL du PDF récupérée: $pdfUrl');
+    printVm('📖 URL du PDF récupérée: $pdfUrl');
 
     if (pdfUrl == null || pdfUrl.isEmpty) {
-      print('❌ Aucun PDF disponible');
+      printVm('❌ Aucun PDF disponible');
       setState(() {
         _isLoading = false;
         _hasError = true;
@@ -55,7 +59,7 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
     // Utiliser Google Docs Viewer pour afficher le PDF
     final encodedPdfUrl = Uri.encodeComponent(pdfUrl);
     final googleDocsUrl = 'https://docs.google.com/gview?embedded=true&url=$encodedPdfUrl';
-    print('🔗 URL Google Docs: $googleDocsUrl');
+    printVm('🔗 URL Google Docs: $googleDocsUrl');
 
     // Configuration de la plateforme
     late final PlatformWebViewControllerCreationParams params;
@@ -78,13 +82,13 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
       ..setNavigationDelegate(
         NavigationDelegate(
           onProgress: (int progress) {
-            print('📊 Progression du chargement: $progress%');
+            printVm('📊 Progression du chargement: $progress%');
             setState(() {
               _loadingProgress = progress;
             });
           },
           onPageStarted: (String url) {
-            print('🚀 Début du chargement: $url');
+            printVm('🚀 Début du chargement: $url');
             setState(() {
               _isLoading = true;
               _hasError = false;
@@ -93,7 +97,7 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
             });
           },
           onPageFinished: (String url) {
-            print('✅ Chargement terminé: $url');
+            printVm('✅ Chargement terminé: $url');
             setState(() {
               _isLoading = false;
               _loadingProgress = 100;
@@ -104,7 +108,7 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
             _checkIfContentLoaded();
           },
           onWebResourceError: (WebResourceError error) {
-            print('❌ Erreur WebView: ${error.errorCode} - ${error.description}');
+            printVm('❌ Erreur WebView: ${error.errorCode} - ${error.description}');
             setState(() {
               _isLoading = false;
               _hasError = true;
@@ -112,18 +116,18 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
             });
           },
           onNavigationRequest: (NavigationRequest request) {
-            print('🧭 Navigation vers: ${request.url}');
+            printVm('🧭 Navigation vers: ${request.url}');
 
             // Bloquer les téléchargements de PDF
             if (request.url.endsWith('.pdf') && !request.url.contains('docs.google.com')) {
-              print('🚫 Téléchargement PDF bloqué: ${request.url}');
+              printVm('🚫 Téléchargement PDF bloqué: ${request.url}');
               return NavigationDecision.prevent;
             }
 
             return NavigationDecision.navigate;
           },
           onHttpError: (HttpResponseError error) {
-            print('🌐 Erreur HTTP: ${error.response?.statusCode}');
+            printVm('🌐 Erreur HTTP: ${error.response?.statusCode}');
             setState(() {
               _isLoading = false;
               _hasError = true;
@@ -148,7 +152,7 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
     // Vérifier après un délai si le contenu est vraiment chargé
     Future.delayed(Duration(seconds: 3), () {
       if (_isLoading) {
-        print('⚠️ Chargement trop long, vérification...');
+        printVm('⚠️ Chargement trop long, vérification...');
         setState(() {
           _isLoading = false;
           _hasError = true;

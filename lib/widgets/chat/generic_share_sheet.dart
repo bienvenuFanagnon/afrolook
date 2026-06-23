@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../models/model_data.dart';
 import '../../pages/chat/group/group_chat_page.dart';
 import '../../providers/authProvider.dart';
+import '../../services/utils/group_permission_utils.dart';
 import '../../theme/app_colors.dart';
 
 /// Partage un produit, un contenu VIP ou un live dans une conversation ou un groupe.
@@ -160,14 +161,26 @@ class _GenericShareSheetState extends State<GenericShareSheet>
         .collection('members')
         .doc(myId)
         .get();
-    final memberData = memberDoc.data() ?? {};
-    final role = memberData['role'] as String? ?? 'member';
-    final isAdminOrOwner = role == 'owner' || role == 'admin';
-    final perms = (memberData['permissions'] as Map<String, dynamic>?) ?? {};
-    if (!isAdminOrOwner && perms['can_share'] != true) {
+    final role = memberDoc.data()?['role'] as String? ?? 'member';
+
+    // Vérification centralisée des permissions de partage
+    final groupData = await GroupPermissionUtils.loadGroupData(groupId);
+    final canShare = GroupPermissionUtils.canShare(
+      groupData: groupData,
+      userId: myId,
+      userRole: role,
+    );
+    if (!canShare) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Vous n'avez pas le droit de partager dans ce groupe.")),
+          SnackBar(
+            content: Text(
+              GroupPermissionUtils.isGroupFrozen(groupData)
+                  ? 'Groupe gelé — le propriétaire n\'est plus Gold.'
+                  : 'Partage non autorisé dans ce groupe.',
+            ),
+            backgroundColor: Colors.red,
+          ),
         );
       }
       return;

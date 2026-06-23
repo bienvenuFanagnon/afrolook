@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 import 'dart:typed_data';
@@ -217,7 +217,7 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
         });
       }
     } catch (e) {
-      print('Erreur préparation capsules: $e');
+      printVm('Erreur préparation capsules: $e');
       setState(() => _isDownloadingPdf = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erreur chargement aperçu'), backgroundColor: _colors.danger),
@@ -356,7 +356,7 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
         _isLiked = isLiked;
         _isDisliked = isDisliked;
       });
-    } catch (e) { print('Error checking user reaction: $e'); }
+    } catch (e) { printVm('Error checking user reaction: $e'); }
   }
 
   void _handleLike() async {
@@ -435,7 +435,7 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
       else
         contentProvider.incrementShares(widget.content.id!);
       await Future.delayed(Duration(milliseconds: 500));
-    } catch (e) { print('Erreur partage: $e'); }
+    } catch (e) { printVm('Erreur partage: $e'); }
     finally { if (mounted) setState(() => _isSharing = false); }
   }
 
@@ -662,7 +662,7 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
         _showDownloadError();
       }
     } catch (e) {
-      print('Erreur téléchargement: $e');
+      printVm('Erreur téléchargement: $e');
       setState(() => _isDownloading = false);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur téléchargement'), backgroundColor: Colors.red));
     }
@@ -784,7 +784,7 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
         _isLoadingPdf = false;
       });
     } catch (e) {
-      print('Erreur initialisation PDF complet: $e');
+      printVm('Erreur initialisation PDF complet: $e');
       setState(() => _isLoadingPdf = false);
     }
   }
@@ -872,7 +872,7 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
     return Container(
       key: ValueKey(key),
       margin: EdgeInsets.symmetric(vertical: 16),
-      child: MrecAdWidget(key: ValueKey(key), onAdLoaded: () => print('✅ Native Ad Afrolook chargée: $key')),
+      child: MrecAdWidget(key: ValueKey(key), onAdLoaded: () => printVm('✅ Native Ad Afrolook chargée: $key')),
     );
   }
 
@@ -1267,12 +1267,12 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //         // templateType: TemplateType.medium, // ou TemplateType.small
 //
 //         onAdLoaded: () {
-//           print('✅ Native Ad Afrolook chargée: $key');
+//           printVm('✅ Native Ad Afrolook chargée: $key');
 //         },
 //       ),
 //       // child: BannerAdWidget(
 //       //   onAdLoaded: () {
-//       //     print('✅ Bannière Afrolook chargée: $key');
+//       //     printVm('✅ Bannière Afrolook chargée: $key');
 //       //   },
 //       // ),
 //     );
@@ -1307,7 +1307,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //         _isDisliked = isDisliked;
 //       });
 //     } catch (e) {
-//       print('Error checking user reaction: $e');
+//       printVm('Error checking user reaction: $e');
 //     }
 //   }
 //
@@ -1522,7 +1522,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //           _isLoadingPdf = false;
 //         });
 //       } catch (e) {
-//         print('Erreur initialisation PDF: $e');
+//         printVm('Erreur initialisation PDF: $e');
 //         setState(() {
 //           _isLoadingPdf = false;
 //         });
@@ -1668,7 +1668,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //
 //     } catch (e) {
 //       // Gérer l'erreur silencieusement ou afficher un message
-//       print('Erreur lors du partage: $e');
+//       printVm('Erreur lors du partage: $e');
 //     } finally {
 //       if (mounted) {
 //         setState(() {
@@ -1825,7 +1825,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //       }
 //
 //     } catch (e) {
-//       print('❌ Erreur téléchargement ebook: $e');
+//       printVm('❌ Erreur téléchargement ebook: $e');
 //       setState(() {
 //         _isDownloading = false;
 //       });

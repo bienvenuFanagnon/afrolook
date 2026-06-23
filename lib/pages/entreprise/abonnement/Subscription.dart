@@ -1,19 +1,26 @@
-import 'package:afrotok/providers/authProvider.dart';
+﻿import 'package:afrotok/providers/authProvider.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:cinetpay/cinetpay.dart';
 import 'package:flutter/material.dart';
+
 import 'package:provider/provider.dart';
 
 import '../../../models/model_data.dart';
+
 import '../../paiement/newDepot.dart';
+
 import '../../user/monetisation.dart';
 
-
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:path/path.dart' as Path;
-import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+import 'package:firebase_storage/firebase_storage.dart';
+
+import 'package:path/path.dart' as Path;
+
+import 'dart:io';
 
 class PremiumSubscriptionPage extends StatefulWidget {
   final EntrepriseData? entreprise;
@@ -867,7 +874,7 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
       Navigator.pop(context);
 
     } catch (e) {
-      print("Erreur lors de l'abonnement: $e");
+      printVm("Erreur lors de l'abonnement: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: Colors.red,

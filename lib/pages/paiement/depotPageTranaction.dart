@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 
@@ -116,7 +116,7 @@ class _DepotPageTransactionState extends State<DepotPageTransaction> {
   void _processDepot(double montantTotal,prixFcfa,frais) async {
     if (_formKey.currentState?.validate() ?? false) {
       try {
-        print("Validation réussie, début du processus de paiement...");
+        printVm("Validation réussie, début du processus de paiement...");
 
 // Si le formulaire est valide, procéder avec l'action
         printVm('paiement');
@@ -184,7 +184,7 @@ class _DepotPageTransactionState extends State<DepotPageTransaction> {
         printVm('paiement3333');
 
       } catch (e) {
-        print("Erreur lors de la transaction : $e");
+        printVm("Erreur lors de la transaction : $e");
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("Une erreur est survenue. Veuillez réessayer."),

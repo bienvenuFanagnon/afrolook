@@ -1,9 +1,15 @@
-import 'dart:io';
+﻿import 'dart:io';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'dart:ui';
 import 'package:flutter/material.dart';
+
 import 'package:flutter_downloader/flutter_downloader.dart';
+
 import 'package:path_provider/path_provider.dart';
+
 import 'package:open_filex/open_filex.dart';
+
 import 'dart:isolate';
 
 class EbookDownloader {
@@ -17,7 +23,7 @@ class EbookDownloader {
       int status = data[1];
       int progress = data[2];
 
-      print('Task ($id) status: $status, progress: $progress%');
+      printVm('Task ($id) status: $status, progress: $progress%');
     });
 
     FlutterDownloader.registerCallback(downloadCallback);
@@ -60,7 +66,7 @@ class EbookDownloader {
         );
       }
     } catch (e) {
-      print('❌ Erreur téléchargement ebook: $e');
+      printVm('❌ Erreur téléchargement ebook: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erreur téléchargement: ${e.toString()}'), backgroundColor: Colors.red),
       );

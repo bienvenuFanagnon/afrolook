@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
@@ -28,10 +28,10 @@ Future<Map<String, String?>> extractColorsFromImageUrl(String imageUrl) async {
       'darkMutedColor': colorToHex(palette.darkMutedColor?.color),
     };
 
-    print("colorMap : ${jsonEncode(colorMap)}");
+    printVm("colorMap : ${jsonEncode(colorMap)}");
     return colorMap;
   } catch (e) {
-    print('Erreur lors de l\'extraction des couleurs : $e');
+    printVm('Erreur lors de l\'extraction des couleurs : $e');
 
     final colorMap = {
       'dominantColor': colorToHex(Colors.green),

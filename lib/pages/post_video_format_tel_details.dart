@@ -1,50 +1,89 @@
-import 'dart:async';
+﻿import 'dart:async';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'dart:math';
 import 'dart:typed_data';
+
 import 'package:intl/intl.dart';
+
 import 'package:url_launcher/url_launcher.dart';
+
 import 'package:afrotok/pages/component/showUserDetails.dart';
+
 import 'package:afrotok/pages/paiement/newDepot.dart';
+
 import 'package:afrotok/pages/postDetails.dart';
+
 import 'package:afrotok/widgets/chat/post_share_sheet.dart';
+
 import 'package:afrotok/pages/postDetailsVideo.dart';
+
 import 'package:afrotok/pages/pub/banner_ad_widget.dart';
+
 import 'package:afrotok/pages/pub/native_ad_widget.dart';
+
 import 'package:afrotok/pages/pub/rewarded_ad_widget.dart';
+
 import 'package:afrotok/pages/widgetGlobal.dart';
+
 import 'package:flutter/gestures.dart';
+
 import 'package:flutter/material.dart';
 
 import 'package:video_player/video_player.dart';
+
 import 'package:chewie/chewie.dart';
+
 import 'package:cached_network_image/cached_network_image.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:provider/provider.dart';
+
 import 'package:afrotok/models/model_data.dart';
+
 import 'package:afrotok/providers/authProvider.dart';
+
 import 'package:afrotok/providers/postProvider.dart';
+
 import 'package:afrotok/pages/postComments.dart';
+
 import 'package:afrotok/services/linkService.dart';
+
 import 'package:video_thumbnail/video_thumbnail.dart';
 
 import '../providers/coin_gift_provider.dart';
+
 import '../services/utils/abonnement_utils.dart';
+
 import '../widgets/user_badge_widget.dart';
+
 import 'UserServices/deviceService.dart';
+
 import 'admin/AfrolookPub/ad_post_page_video_widget.dart';
+
 import 'canaux/detailsCanal.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'coins/coin_gift_dialog.dart';
+
 import 'coins/coin_recharge_screen.dart';
+
 import 'coins/post_gifts_list.dart';
 
 import '../theme/app_colors.dart';
+
 import '../services/feed/feed_repository.dart';
+
 import 'userPosts/postWidgets/translatable_description.dart';
+
 import '../providers/locale_provider.dart';
+
 import 'package:flutter_animate/flutter_animate.dart';
+
 import '../services/postService/post_view_service.dart';
 
 const _afroBlack = Color(0xFF000000);
@@ -259,8 +298,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       final int startMicros = startDate.microsecondsSinceEpoch;
       final int endMicros = endDate.microsecondsSinceEpoch;
 
-
-      print("📜 Chargement anciennes vidéos entre $startDate et $endDate");
+      printVm("📜 Chargement anciennes vidéos entre $startDate et $endDate");
 
       // ------------------------------------------------------------
       // 2. Query Firestore (intervalle de temps)
@@ -279,7 +317,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       final snapshot = await query.get();
 
       if (snapshot.docs.isEmpty) {
-        print("⚠️ Aucune vidéo trouvée dans cette période");
+        printVm("⚠️ Aucune vidéo trouvée dans cette période");
         _isLoadingOldVideos = false;
         return;
       }
@@ -312,12 +350,12 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       if (validOldVideos.isNotEmpty) {
         validOldVideos.shuffle();
         _oldVideosCache.addAll(validOldVideos);
-        print("✅ ${validOldVideos.length} anciennes vidéos ajoutées (cache: ${_oldVideosCache.length})");
+        printVm("✅ ${validOldVideos.length} anciennes vidéos ajoutées (cache: ${_oldVideosCache.length})");
       } else {
-        print("⚠️ Aucune vidéo valide après filtrage");
+        printVm("⚠️ Aucune vidéo valide après filtrage");
       }
     } catch (e) {
-      print("❌ Erreur chargement anciennes vidéos: $e");
+      printVm("❌ Erreur chargement anciennes vidéos: $e");
     } finally {
       _isLoadingOldVideos = false;
     }
@@ -389,7 +427,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         }
       }
     } catch (e) {
-      print("Erreur favori: $e");
+      printVm("Erreur favori: $e");
     } finally {
       _isFavoriteProcessing = false;
     }
@@ -446,9 +484,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       // NE PAS jouer, NE PAS mettre en pause, NE PAS seek
       // L'initialisation seule suffit à remplir le buffer
       _preloadedControllers[index] = controller;
-      print("✅ Vidéo préchargée à l'index $index");
+      printVm("✅ Vidéo préchargée à l'index $index");
     } catch (e) {
-      print("❌ Erreur préchargement index $index : $e");
+      printVm("❌ Erreur préchargement index $index : $e");
     } finally {
       _preloadingIndices.remove(index);
     }
@@ -574,7 +612,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       await _recordPostView(post);
       _startSuggestionModalTimer();
     } catch (e) {
-      print('❌ Erreur init vidéo: $e');
+      printVm('❌ Erreur init vidéo: $e');
       setState(() => _isVideoInitialized = false);
     }
   }
@@ -688,7 +726,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       if (currentUserId == null) return;
       widget.initialPost!.users_vue_id ??= [];
       if (widget.initialPost!.users_vue_id!.contains(currentUserId)) {
-        print('⏭️ Vue déjà enregistrée pour cet utilisateur');
+        printVm('⏭️ Vue déjà enregistrée pour cet utilisateur');
         return;
       }
       authProvider. incrementPostTotalInteractions(postId: widget.initialPost!.id!);
@@ -703,9 +741,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         'popularity': FieldValue.increment(2),
       });
       PostViewService.recordAuthorView(widget.initialPost!, currentUserId);
-      print('✅ Vue unique enregistrée pour ${widget.initialPost!.id}');
+      printVm('✅ Vue unique enregistrée pour ${widget.initialPost!.id}');
     } catch (e) {
-      print("Erreur incrémentation vues: $e");
+      printVm("Erreur incrémentation vues: $e");
     }
   }
 
@@ -808,7 +846,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         if (userDoc.exists) {
           post.user = UserData.fromJson(userDoc.data()!);
         }
-      } catch (e) { print('Erreur chargement user: $e'); }
+      } catch (e) { printVm('Erreur chargement user: $e'); }
     }
 
     if (post.canal_id != null && post.canal_id!.isNotEmpty && post.canal == null) {
@@ -817,7 +855,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         if (canalDoc.exists) {
           post.canal = Canal.fromJson(canalDoc.data()!);
         }
-      } catch (e) { print('Erreur chargement canal: $e'); }
+      } catch (e) { printVm('Erreur chargement canal: $e'); }
     }
     if (mounted) setState(() {});
   }
@@ -848,7 +886,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         _rebuildFeedItems();
       }
     } catch (e) {
-      print('Erreur chargement vidéos: $e');
+      printVm('Erreur chargement vidéos: $e');
     } finally {
       setState(() => _isLoadingMore = false);
     }
@@ -1014,14 +1052,11 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         }
       }
 
-
     }
-
 
     results.shuffle();
     return results;
   }
-
 
   void _subscribeToPostUpdates(Post post) {
     if (post.id == null || _postSubscriptions.containsKey(post.id)) return;
@@ -1043,7 +1078,6 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
   // ==================== VIDEO INIT & PLAYBACK ====================
 
-
   Future<void> _recordPostView(Post post) async {
     if (post.id == null) return;
     final currentUserId = authProvider.loginUserData.id;
@@ -1060,7 +1094,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         post.users_vue_id = [...?post.users_vue_id, currentUserId];
       });
       PostViewService.recordAuthorView(post, currentUserId);
-    } catch (e) { print('Erreur enregistrement vue: $e'); }
+    } catch (e) { printVm('Erreur enregistrement vue: $e'); }
   }
 
   Future<void> _markPostAsSeen(Post post) async {
@@ -1083,8 +1117,6 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     final key = 'has_seen_suggestions_modal_video_$userId';
     _hasSeenSuggestionsModal = _prefs.getBool(key) ?? false;
   }
-
-
 
   void _startSuggestionModalTimer() {
     // Vérifier si le modal doit être affiché
@@ -1406,7 +1438,6 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         _sendLikeNotification(post);
       }
 
-
       // Feedback utilisateur
       // ScaffoldMessenger.of(context).showSnackBar(
       //   const SnackBar(
@@ -1416,7 +1447,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       //   ),
       // );
     } catch (e) {
-      // print('Erreur like: $e');
+      // printVm('Erreur like: $e');
       // ScaffoldMessenger.of(context).showSnackBar(
       //   SnackBar(
       //     content: Text('Erreur: $e'),
@@ -1514,7 +1545,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       postProvider.interactWithPostAndIncrementSolde(post.id!, userId, "like", post.user_id!);
       authProvider.incrementPostTotalInteractions(postId: post.id!);
       _sendLikeNotification(post);
-    } catch (e) { print('Erreur like: $e'); }
+    } catch (e) { printVm('Erreur like: $e'); }
   }
 
   Future<void> _sendLikeNotification(Post post) async {
@@ -1667,7 +1698,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       await _createTransaction(TypeTransaction.DEPENSE.name, amount, "Cadeau envoyé à @${post.user!.pseudo}", authProvider.loginUserData.id!);
       await _createTransaction(TypeTransaction.GAIN.name, gainDestinataire, "Cadeau reçu de @${authProvider.loginUserData.pseudo}", post.user_id!);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: AppColors.of(context).primary, content: const Text('🎁 Cadeau envoyé!')));
-    } catch (e) { print('Erreur envoi cadeau: $e'); }
+    } catch (e) { printVm('Erreur envoi cadeau: $e'); }
   }
 
   void _showInsufficientBalanceDialog() {
@@ -1717,7 +1748,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         post.users_partage_id!.add(authProvider.loginUserData.id!);
       });
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Partagé !'), backgroundColor: AppColors.of(context).primary));
-    } catch (e) { print('Erreur partage: $e'); } finally { setState(() => _isSharing = false); }
+    } catch (e) { printVm('Erreur partage: $e'); } finally { setState(() => _isSharing = false); }
   }
 
   void _showPostMenu(Post post) {
@@ -1797,7 +1828,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       await _firestore.collection('AppData').doc(appId).update({'allPostIds': FieldValue.arrayRemove([post.id])});
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Post supprimé')));
       if (_videoPosts.length == 1) Navigator.pop(context);
-    } catch (e) { print('Erreur suppression: $e'); }
+    } catch (e) { printVm('Erreur suppression: $e'); }
   }
 
   // ==================== CHALLENGE & VOTE ====================
@@ -1807,7 +1838,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     try {
       final doc = await _firestore.collection('Challenges').doc(widget.initialPost!.challenge_id).get();
       if (doc.exists) setState(() => _challenge = Challenge.fromJson(doc.data()!)..id = doc.id);
-    } catch (e) { print('Erreur chargement challenge: $e'); } finally { setState(() => _loadingChallenge = false); }
+    } catch (e) { printVm('Erreur chargement challenge: $e'); } finally { setState(() => _loadingChallenge = false); }
   }
 
   Future<void> _checkIfUserHasVoted() async {
@@ -2808,7 +2839,6 @@ class FlyingHeart {
     required this.color,
   });
 }
-
 
 class _AnimatedHeart extends StatefulWidget {
   final FlyingHeart heart;

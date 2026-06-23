@@ -1,30 +1,48 @@
-import 'dart:io';
+﻿import 'dart:io';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:shimmer/shimmer.dart';
+
 import 'package:cached_network_image/cached_network_image.dart';
 
 import 'package:afrotok/models/model_data.dart';
+
 import 'package:afrotok/pages/chronique/chroniquehome.dart';
+
 import 'package:afrotok/pages/chronique/chroniquedetails.dart';
 
 import '../../chronique/chroniqueform.dart';
+
 import 'dart:io';
+
 import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:shimmer/shimmer.dart';
+
 import 'package:cached_network_image/cached_network_image.dart';
+
 import 'package:video_thumbnail/video_thumbnail.dart';
 
 import 'package:afrotok/models/model_data.dart';
+
 import 'package:afrotok/pages/chronique/chroniquehome.dart';
+
 import 'package:afrotok/pages/chronique/chroniquedetails.dart';
+
 import '../../chronique/chroniqueform.dart';
+
 import '../../../theme/app_colors.dart';
+
 import 'package:flutter_animate/flutter_animate.dart';
 
 class ChroniqueSectionComponent extends StatefulWidget {
@@ -83,7 +101,7 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
               });
             }
           } catch (e) {
-            print('Erreur génération thumbnail: $e');
+            printVm('Erreur génération thumbnail: $e');
           } finally {
             _isGenerating.remove(chronique.id);
           }

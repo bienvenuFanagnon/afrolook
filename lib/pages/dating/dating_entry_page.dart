@@ -1,4 +1,6 @@
-// lib/pages/dating/dating_swipe_page.dart
+﻿// lib/pages/dating/dating_swipe_page.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
@@ -330,7 +332,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
 
   void _listenUnreadNotifications() {
     if (_currentUserId == null) {
-      print('⚠️ _listenUnreadNotifications: currentUserId is null');
+      printVm('⚠️ _listenUnreadNotifications: currentUserId is null');
       return;
     }
 
@@ -341,8 +343,8 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
       'DATING_MESSAGE',
     ];
 
-    print('🔔 Listening for unread dating notifications for user: $_currentUserId');
-    print('📋 Types recherchés: $datingTypes');
+    printVm('🔔 Listening for unread dating notifications for user: $_currentUserId');
+    printVm('📋 Types recherchés: $datingTypes');
 
     firestore
         .collection('Notifications')
@@ -351,13 +353,13 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
         .where('is_open', isEqualTo: false)
         .snapshots()
         .listen((snapshot) {
-      print('📬 Snapshot reçu: ${snapshot.docs.length} documents');
+      printVm('📬 Snapshot reçu: ${snapshot.docs.length} documents');
       for (var doc in snapshot.docs) {
-        print('   - ${doc.id} | type: ${doc['type']} | is_open: ${doc['is_open']}');
+        printVm('   - ${doc.id} | type: ${doc['type']} | is_open: ${doc['is_open']}');
       }
       if (mounted) setState(() => _unreadNotificationsCount = snapshot.docs.length);
     }, onError: (e) {
-      print('❌ Erreur dans le stream des notifications: $e');
+      printVm('❌ Erreur dans le stream des notifications: $e');
     });
   }
 
@@ -389,7 +391,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
         });
       }
     } catch (e) {
-      print('❌ Erreur _checkNewActivity: $e');
+      printVm('❌ Erreur _checkNewActivity: $e');
     }
   }
 
@@ -554,7 +556,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
           });
           for (var i = 1; i < docs.length; i++) {
             await firestore.collection('user_dating_subscriptions').doc(docs[i].id).update({'isActive': false});
-            print('🧹 Doublon d\'abonnement actif désactivé: ${docs[i].id}');
+            printVm('🧹 Doublon d\'abonnement actif désactivé: ${docs[i].id}');
           }
         }
         final subscription = docs.first;
@@ -594,7 +596,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
             'quotaPlanCode': _subscriptionPlan,
             'updatedAt': nowMillis,
           });
-          print('🔄 Réinitialisation des quotas (plan=$_subscriptionPlan): likes=$_remainingLikes, super likes=$_remainingSuperLikes, swipes=$_remainingSwipes');
+          printVm('🔄 Réinitialisation des quotas (plan=$_subscriptionPlan): likes=$_remainingLikes, super likes=$_remainingSuperLikes, swipes=$_remainingSwipes');
         } else {
           _remainingLikes = subscriptionData['remainingLikes'] ?? defaultLikes;
           _remainingSuperLikes = subscriptionData['remainingSuperLikes'] ?? defaultSuperLikes;
@@ -635,7 +637,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
             'createdAt': nowMillis,
             'updatedAt': nowMillis,
           });
-          print('⚠️ Abonnement expiré, passage en gratuit');
+          printVm('⚠️ Abonnement expiré, passage en gratuit');
         }
       } else {
         // Aucun abonnement -> mode gratuit
@@ -662,11 +664,11 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
           'createdAt': nowMillis,
           'updatedAt': nowMillis,
         });
-        print('💾 Nouveau document gratuit créé avec $_remainingLikes likes');
+        printVm('💾 Nouveau document gratuit créé avec $_remainingLikes likes');
       }
       if (mounted) setState(() {});
     } catch (e) {
-      print('❌ Erreur chargement abonnement: $e');
+      printVm('❌ Erreur chargement abonnement: $e');
       _remainingLikes = 10;
       _remainingSuperLikes = 1;
     }
@@ -697,7 +699,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
         'updatedAt': DateTime.now().millisecondsSinceEpoch,
       });
     } catch (e) {
-      print('❌ Erreur décrément $field: $e');
+      printVm('❌ Erreur décrément $field: $e');
     }
   }
 
@@ -712,9 +714,9 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
         'remainingSuperLikes': _remainingSuperLikes,
         'updatedAt': DateTime.now().millisecondsSinceEpoch,
       });
-      print('💾 Likes sauvegardés: $_remainingLikes likes, $_remainingSuperLikes super likes');
+      printVm('💾 Likes sauvegardés: $_remainingLikes likes, $_remainingSuperLikes super likes');
     } catch (e) {
-      print('❌ Erreur sauvegarde likes: $e');
+      printVm('❌ Erreur sauvegarde likes: $e');
     }
   }
 
@@ -755,7 +757,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
       _excludedUserIds = interactedIds;
       _passedUserIds = passedIds;
     } catch (e) {
-      print('❌ Erreur chargement profils déjà explorés: $e');
+      printVm('❌ Erreur chargement profils déjà explorés: $e');
     }
   }
 
@@ -800,7 +802,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
         }
       }
     } catch (e) {
-      print('❌ Erreur chargement profil: $e');
+      printVm('❌ Erreur chargement profil: $e');
     }
   }
 
@@ -894,7 +896,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
     }
 
     try {
-      print('Sexe de recherche : ${_currentUserProfile!.rechercheSexe}');
+      printVm('Sexe de recherche : ${_currentUserProfile!.rechercheSexe}');
 
       // Construction de la requête de base
       Query query = firestore
@@ -949,7 +951,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
       List<DatingProfile> allProfiles = snapshot.docs
           .map((doc) => DatingProfile.fromJson(doc.data() as Map<String, dynamic>))
           .toList();
-      print('📊 ${allProfiles.length} profils avant');
+      printVm('📊 ${allProfiles.length} profils avant');
 
       // Exclure l'utilisateur lui-même
       allProfiles = allProfiles.where((p) => p.userId != _currentUserId).toList();
@@ -990,13 +992,13 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
         }
       }
 
-      print('📊 ${allProfiles.length} profils après exclusion de soi-même et filtres');
+      printVm('📊 ${allProfiles.length} profils après exclusion de soi-même et filtres');
 
       // Pour un "load more", écarter les profils déjà présents dans le deck
       // (toutes pages confondues) pour éviter les doublons.
       if (isLoadMore) {
         allProfiles = allProfiles.where((p) => !_loadedProfileIds.contains(p.userId)).toList();
-        print('📊 ${allProfiles.length} profils après déduplication (load more)');
+        printVm('📊 ${allProfiles.length} profils après déduplication (load more)');
       }
 
       if (isLoadMore && allProfiles.isEmpty) {
@@ -1083,7 +1085,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
         _loadMoreProfiles();
       }
     } catch (e) {
-      print('❌ Erreur chargement profils: $e');
+      printVm('❌ Erreur chargement profils: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -1343,7 +1345,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
         'updatedAt': DateTime.now().millisecondsSinceEpoch,
       });
     } catch (e) {
-      print('❌ Erreur ajustement $field: $e');
+      printVm('❌ Erreur ajustement $field: $e');
     }
   }
 
@@ -1564,7 +1566,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
         if (e.toString().contains('insufficient_balance')) {
           _showInsufficientCoinsForBoostDialog(priceCoins);
         } else {
-          print('❌ Erreur activation boost longue durée: $e');
+          printVm('❌ Erreur activation boost longue durée: $e');
         }
       }
     }
@@ -1632,7 +1634,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
         if (e.toString().contains('insufficient_balance')) {
           _showInsufficientCoinsForBoostDialog(_boostCostCoins);
         } else {
-          print('❌ Erreur activation boost: $e');
+          printVm('❌ Erreur activation boost: $e');
         }
       }
     }
@@ -1742,7 +1744,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
         'createdAt': DateTime.now().millisecondsSinceEpoch,
       });
     } catch (e) {
-      print('⚠️ _passProfile error: $e');
+      printVm('⚠️ _passProfile error: $e');
     }
   }
 
@@ -1843,7 +1845,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
         // Récupérer le profil de l'utilisateur courant pour vérifier la compatibilité
         final currentProfile = await _getCurrentUserDatingProfile();
         if (currentProfile == null) {
-          print('Profil courant non trouvé');
+          printVm('Profil courant non trouvé');
           return;
         }
 
@@ -1886,7 +1888,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
         _showSuccessMessage(t.datingYouLiked.replaceAll('{pseudo}', profile.pseudo), Colors.green);
       }
     } catch (e) {
-      print('❌ Erreur like: $e');
+      printVm('❌ Erreur like: $e');
     }
   }
 
@@ -1903,7 +1905,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
       }
       return null;
     } catch (e) {
-      print('❌ Erreur récupération profil courant: $e');
+      printVm('❌ Erreur récupération profil courant: $e');
       return null;
     }
   }
@@ -1948,7 +1950,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
 
       return null;
     } catch (e) {
-      print('❌ Erreur vérification connexion: $e');
+      printVm('❌ Erreur vérification connexion: $e');
       return null;
     }
   }
@@ -1973,7 +1975,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
       await firestore.collection('dating_connections').doc(connectionId).set(connection.toJson());
       return connection;
     } catch (e) {
-      print('❌ Erreur création connexion: $e');
+      printVm('❌ Erreur création connexion: $e');
       return null;
     }
   }
@@ -2031,7 +2033,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
 
       _showSuccessMessage(t.datingSuperLikeSentTo.replaceAll('{pseudo}', profile.pseudo), Colors.amber);
     } catch (e) {
-      print('❌ Erreur super like: $e');
+      printVm('❌ Erreur super like: $e');
       _showSuccessMessage(t.datingErrorSending, Colors.red);
     }
   }
@@ -2089,7 +2091,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
         });
       }
     } catch (e) {
-      print('❌ Erreur mise à jour score: $e');
+      printVm('❌ Erreur mise à jour score: $e');
     }
   }
 
@@ -2112,13 +2114,18 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
     required String message,
     required String type,
   }) async {
+    // On ne s'envoie jamais une notification à soi-même
+    if (toUserId == _currentUserId) return;
+
     final now = DateTime.now().microsecondsSinceEpoch;
     final currentUser = await _getCurrentUser();
+    // Photo de l'expéditeur : priorité Users > profil dating
+    final senderPhoto = currentUser?.imageUrl ?? _currentUserProfile?.imageUrl ?? '';
     final notificationId = firestore.collection('Notifications').doc().id;
     await firestore.collection('Notifications').doc(notificationId).set({
       'id': notificationId,
       'titre': type == 'match' ? 'Nouveau match ! 🎉' : type == 'super_like' ? 'Super like ! ⭐' : 'Nouveau like ❤️',
-      'media_url': _currentUserProfile?.imageUrl ?? '',
+      'media_url': senderPhoto,
       'type': 'DATING_${type.toUpperCase()}',
       'description': message,
       'users_id_view': [],
@@ -2136,7 +2143,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
       final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
       await authProvider.sendNotification(
         userIds: [toUser.oneIgnalUserid!],
-        smallImage: _currentUserProfile?.imageUrl ?? '',
+        smallImage: senderPhoto,
         send_user_id: _currentUserId!,
         recever_user_id: toUserId,
         message: message,
@@ -2155,7 +2162,9 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
 
 
   String _getCurrentUserPseudo() {
-    return _currentUserProfile?.pseudo ?? 'Utilisateur';
+    // Priorité au pseudo de l'app (toujours défini) plutôt qu'au pseudo dating
+    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    return authProvider.loginUserData.pseudo ?? _currentUserProfile?.pseudo ?? 'Utilisateur';
   }
   void _showSuccessMessage(String message, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -2274,7 +2283,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
         _showSuccessMessage(t.datingRechargeSuccess.replaceAll('{amount}', '$amount'), Colors.green);
       }
     } catch (e) {
-      print('❌ Erreur recharge $type: $e');
+      printVm('❌ Erreur recharge $type: $e');
     }
   }
 
@@ -2936,21 +2945,45 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
               ),
             ),
           ),
-          GestureDetector(
-            onTap: _toggleFilters,
-            child: Container(
-              margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(20)),
-              child: Row(
-                children: [
-                  Icon(Icons.filter_list, size: 16, color: Colors.white),
-                  const SizedBox(width: 4),
-                  Text(t.datingFilters, style: const TextStyle(color: Colors.white, fontSize: 12)),
-                ],
-              ),
-            ),
+          // Filtres — icône seule (sans texte)
+          IconButton(
+            icon: const Icon(Icons.filter_list, color: Colors.white),
+            onPressed: _toggleFilters,
           ),
+          // Notifications Afrolove
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications_none_rounded, color: Colors.white),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const DatingNotificationsPage()),
+                ),
+              ),
+              if (_unreadNotificationsCount > 0)
+                Positioned(
+                  right: 6,
+                  top: 6,
+                  child: Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: const BoxDecoration(
+                      color: Colors.amber,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      _unreadNotificationsCount > 9 ? '9+' : '$_unreadNotificationsCount',
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontSize: 8,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(width: 4),
         ],
       ),
       body: Stack(

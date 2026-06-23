@@ -1,27 +1,44 @@
-import 'dart:io';
+﻿import 'dart:io';
+import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/pages/entreprise/abonnement/Subscription.dart';
 import 'package:afrotok/pages/user/conponent.dart';
+
 import 'package:afrotok/providers/authProvider.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:country_code_picker/country_code_picker.dart';
+
 import 'package:csc_picker_plus/csc_picker_plus.dart';
+
 import 'package:dropdown_search/dropdown_search.dart';
+
 import 'package:firebase_storage/firebase_storage.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
+
 import 'package:image_picker/image_picker.dart';
+
 import 'package:phone_form_field/phone_form_field.dart';
+
 import 'package:provider/provider.dart';
+
 import 'package:path/path.dart' as Path;
 
 import '../../../../constant/custom_theme.dart';
-import '../../../../models/model_data.dart';
-import '../../../../providers/afroshop/authAfroshopProvider.dart';
-import '../../../../providers/afroshop/categorie_produits_provider.dart';
-import '../../../../providers/userProvider.dart';
-import '../../../entreprise/profile/ProfileEntreprise.dart';
 
+import '../../../../models/model_data.dart';
+
+import '../../../../providers/afroshop/authAfroshopProvider.dart';
+
+import '../../../../providers/afroshop/categorie_produits_provider.dart';
+
+import '../../../../providers/userProvider.dart';
+
+import '../../../entreprise/profile/ProfileEntreprise.dart';
 
 class AddNewProduit extends StatefulWidget {
   final EntrepriseData entrepriseData;
@@ -1041,8 +1058,6 @@ class _AddAnnonceState extends State<AddNewProduit> {
                   ),
                 ),
 
-
-
                 SizedBox(height: 100),
               ],
             ),
@@ -1232,7 +1247,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
       }
 
     } catch (e) {
-      print("Erreur lors de la publication: $e");
+      printVm("Erreur lors de la publication: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: Colors.red,

@@ -1,5 +1,7 @@
+﻿
 
 
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -39,7 +41,7 @@ class PronosticProvider with ChangeNotifier {
         return pronostic;
       }
     } catch (e) {
-      print('Erreur récupération pronostic by ID: $e');
+      printVm('Erreur récupération pronostic by ID: $e');
     }
     return null;
   }
@@ -66,7 +68,7 @@ class PronosticProvider with ChangeNotifier {
         return pronostic;
       }
     } catch (e) {
-      print('Erreur récupération pronostic by postId: $e');
+      printVm('Erreur récupération pronostic by postId: $e');
     }
     return null;
   }
@@ -132,7 +134,7 @@ class PronosticProvider with ChangeNotifier {
         return pronostic;
       }).toList();
     } catch (e) {
-      print('Erreur récupération pronostics user: $e');
+      printVm('Erreur récupération pronostics user: $e');
       return [];
     }
   }
@@ -184,7 +186,7 @@ class PronosticProvider with ChangeNotifier {
       notifyListeners();
       return docRef.id;
     } catch (e) {
-      print('Erreur création pronostic: $e');
+      printVm('Erreur création pronostic: $e');
       rethrow;
     }
   }
@@ -239,7 +241,7 @@ class PronosticProvider with ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
-      print('Erreur updateStatut: $e');
+      printVm('Erreur updateStatut: $e');
       rethrow;
     }
   }
@@ -272,7 +274,7 @@ class PronosticProvider with ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
-      print('Erreur updateScoreFinal: $e');
+      printVm('Erreur updateScoreFinal: $e');
       rethrow;
     }
   }
@@ -301,7 +303,7 @@ class PronosticProvider with ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
-      print('Erreur updateScore: $e');
+      printVm('Erreur updateScore: $e');
       rethrow;
     }
   }
@@ -394,7 +396,7 @@ class PronosticProvider with ChangeNotifier {
         };
       }
     } catch (e) {
-      print('Erreur ajoutParticipation: $e');
+      printVm('Erreur ajoutParticipation: $e');
       return {
         'success': false,
         'message': e.toString(),
@@ -436,7 +438,7 @@ class PronosticProvider with ChangeNotifier {
         'gainParGagnant': gainParGagnant,
       };
     } catch (e) {
-      print('Erreur distribuerGains: $e');
+      printVm('Erreur distribuerGains: $e');
       return {
         'success': false,
         'message': e.toString(),
@@ -461,7 +463,7 @@ class PronosticProvider with ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
-      print('Erreur updateCagnotte: $e');
+      printVm('Erreur updateCagnotte: $e');
       rethrow;
     }
   }
@@ -497,7 +499,7 @@ class PronosticProvider with ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
-      print('Erreur marquerGagnants: $e');
+      printVm('Erreur marquerGagnants: $e');
       rethrow;
     }
   }
@@ -523,7 +525,7 @@ class PronosticProvider with ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
-      print('Erreur annulerPronostic: $e');
+      printVm('Erreur annulerPronostic: $e');
       rethrow;
     }
   }
@@ -553,7 +555,7 @@ class PronosticProvider with ChangeNotifier {
       _pronosticsCache.remove(pronosticId);
       notifyListeners();
     } catch (e) {
-      print('Erreur deletePronostic: $e');
+      printVm('Erreur deletePronostic: $e');
       rethrow;
     }
   }
@@ -627,7 +629,7 @@ class PronosticProvider with ChangeNotifier {
         'typeAcces': pronostic.typeAcces,
       };
     } catch (e) {
-      print('Erreur verificationParticipation: $e');
+      printVm('Erreur verificationParticipation: $e');
       return {
         'peutParticiper': false,
         'raison': 'Erreur: $e',

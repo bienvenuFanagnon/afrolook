@@ -1,34 +1,54 @@
-import 'dart:io';
+﻿import 'dart:io';
+import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
+
 import 'package:path_provider/path_provider.dart';
+
 import 'package:provider/provider.dart';
+
 import 'dart:math';
 
 import 'package:afrotok/models/model_data.dart';
+
 import 'package:afrotok/services/linkService.dart';
+
 import 'package:afrotok/providers/afroshop/categorie_produits_provider.dart';
+
 import 'package:afrotok/providers/authProvider.dart';
+
 import 'package:afrotok/providers/postProvider.dart';
+
 import 'package:afrotok/providers/userProvider.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:flutter_image_slideshow/flutter_image_slideshow.dart';
+
 import 'package:hashtagable_v3/widgets/hashtag_text.dart';
+
 import 'package:share_plus/share_plus.dart';
+
 import 'package:video_thumbnail/video_thumbnail.dart';
+
 import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../services/postService/feed_interaction_service.dart';
+
 import '../canaux/detailsCanal.dart';
+
 import '../component/showUserDetails.dart';
+
 import '../postComments.dart';
+
 import '../postDetails.dart';
+
 import '../postDetailsVideo.dart';
+
 import '../userPosts/postWidgets/postUserWidget.dart';
-
-
 
 // Vos couleurs principales
 const _afroBlack = Color(0xFF000000);
@@ -133,7 +153,7 @@ class _LookChallengePostWidgetState extends State<LookChallengePostWidget>
         });
       }
     } catch (e) {
-      print('Erreur lors du chargement de l\'utilisateur: $e');
+      printVm('Erreur lors du chargement de l\'utilisateur: $e');
     } finally {
       setState(() {
         _isLoadingUser = false;
@@ -162,7 +182,7 @@ class _LookChallengePostWidgetState extends State<LookChallengePostWidget>
         });
       }
     } catch (e) {
-      print('Erreur lors du chargement du canal: $e');
+      printVm('Erreur lors du chargement du canal: $e');
     } finally {
       setState(() {
         _isLoadingCanal = false;
@@ -181,7 +201,7 @@ class _LookChallengePostWidgetState extends State<LookChallengePostWidget>
         });
       }
     } catch (e) {
-      print('Erreur lors de la vérification du vote: $e');
+      printVm('Erreur lors de la vérification du vote: $e');
     }
   }
 
@@ -226,7 +246,7 @@ class _LookChallengePostWidgetState extends State<LookChallengePostWidget>
         });
       }
     } catch (e) {
-      print('Erreur génération thumbnail: $e');
+      printVm('Erreur génération thumbnail: $e');
       setState(() {
         _isGeneratingThumbnail = false;
       });
@@ -1322,7 +1342,7 @@ class _LookChallengePostWidgetState extends State<LookChallengePostWidget>
         );
       }
     } catch (e) {
-      print("Erreur like: $e");
+      printVm("Erreur like: $e");
     }
   }
 
@@ -1364,7 +1384,7 @@ class _LookChallengePostWidgetState extends State<LookChallengePostWidget>
         );
       }
     } catch (e) {
-      print("Erreur love: $e");
+      printVm("Erreur love: $e");
     }
   }
 

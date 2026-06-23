@@ -1,4 +1,6 @@
-import 'package:firebase_auth/firebase_auth.dart';
+﻿import 'package:firebase_auth/firebase_auth.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -21,27 +23,25 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
   Provider.of<UserAuthProvider>(context, listen: false);
   bool onTap=false;
 
-
   Future<User?> getUserByUid(String uid) async {
     try {
       User? user = await FirebaseAuth.instance.authStateChanges().firstWhere((User? user) => user != null && user.uid == uid);
       return user;
     } catch (e) {
-      print("Erreur lors de la récupération de l'utilisateur: $e");
+      printVm("Erreur lors de la récupération de l'utilisateur: $e");
       return null;
     }
   }
 
-
   Future<User?> getUserByPhone(String email) async {
-    print("phone number mail : ${email}");
+    printVm("phone number mail : ${email}");
 
     try {
       User? user = await FirebaseAuth.instance.authStateChanges().firstWhere((User? user) => user != null && user.email == email);
-      print("email: ${user!.email}");
+      printVm("email: ${user!.email}");
       return user;
     } catch (e) {
-      print("Erreur lors de la récupération de l'utilisateur: $e");
+      printVm("Erreur lors de la récupération de l'utilisateur: $e");
       return null;
     }
   }
@@ -91,7 +91,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       // Mettre à jour le mot de passe de l'utilisateur
       await user.reauthenticateWithCredential(credential);
     }catch(e){
-      print("error ${e}");
+      printVm("error ${e}");
 
     }
 

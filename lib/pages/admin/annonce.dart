@@ -1,24 +1,41 @@
-import 'package:afrotok/models/model_data.dart';
+﻿import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:path/path.dart' as Path;
+
 import 'dart:io';
 
 import 'package:anim_search_bar/anim_search_bar.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:contained_tab_bar_view_with_custom_page_navigator/contained_tab_bar_view_with_custom_page_navigator.dart';
+
 import 'package:firebase_storage/firebase_storage.dart';
+
 import 'package:flutter/foundation.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:image_picker/image_picker.dart';
+
 import 'package:provider/provider.dart';
+
 import 'package:simple_tags/simple_tags.dart';
+
 import 'package:video_player/video_player.dart';
+
 import 'package:dropdown_search/dropdown_search.dart';
 
 import '../../constant/buttons.dart';
+
 import '../../constant/sizeButtons.dart';
+
 import '../../providers/authProvider.dart';
+
 import '../../providers/postProvider.dart';
+
 import '../../providers/userProvider.dart';
 
 class NewAppAnnonce extends StatefulWidget {
@@ -190,8 +207,8 @@ class _NewAppInfoState extends State<NewAppAnnonce> {
                                   await storageReference
                                       .getDownloadURL()
                                       .then((fileURL) {
-                                    print("url media");
-                                    //  print(fileURL);
+                                    printVm("url media");
+                                    //  printVm(fileURL);
 
                                     infos.media_url=fileURL;
                                   });
@@ -229,7 +246,7 @@ class _NewAppInfoState extends State<NewAppAnnonce> {
                               // users.add(pseudo.toJson());
 
                               await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-                              print("///////////-- save notification --///////////////");
+                              printVm("///////////-- save notification --///////////////");
 
                               SnackBar snackBar = SnackBar(
                                 content: Text(
@@ -252,9 +269,8 @@ class _NewAppInfoState extends State<NewAppAnnonce> {
                                   .showSnackBar(snackBar);
                             }
 
-
                           } catch (e) {
-                            print("erreur ${e}");
+                            printVm("erreur ${e}");
                             setState(() {
                               onTap=false;
                             });

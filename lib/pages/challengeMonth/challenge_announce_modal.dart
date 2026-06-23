@@ -1,9 +1,15 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/model_data.dart';
+
 import '../../services/challengeMonh/challenge_month_service.dart';
+
 import '../postDetails.dart';
+
 import '../postDetailsVideo.dart';
+
 import 'challenge_month_page.dart';
 
 void showChallengeMonthAnnounceModal(BuildContext context) {
@@ -145,11 +151,10 @@ Future<List<Post>> _fetchTop3PostsWithCreators() async {
 
     return posts;
   } catch (e) {
-    print('Erreur chargement top posts challenge: $e');
+    printVm('Erreur chargement top posts challenge: $e');
     return [];
   }
 }
-
 
 Widget _buildPostCard(BuildContext context, Post post, int rank) {
   final isVideo = post.dataType == PostDataType.VIDEO.name;

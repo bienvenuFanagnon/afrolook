@@ -1,31 +1,59 @@
-import 'dart:async';
+﻿import 'dart:async';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'dart:math';
 import 'dart:typed_data';
+
 import 'package:afrotok/pages/component/showUserDetails.dart';
+
 import 'package:afrotok/pages/paiement/newDepot.dart';
+
 import 'package:afrotok/pages/postComments.dart';
+
 import 'package:afrotok/pages/pub/banner_ad_widget.dart';
+
 import 'package:afrotok/pages/pub/native_ad_widget.dart';
+
 import 'package:afrotok/pages/pub/rewarded_ad_widget.dart';
+
 import 'package:afrotok/pages/widgetGlobal.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:video_player/video_player.dart';
+
 import 'package:chewie/chewie.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:provider/provider.dart';
+
 import 'package:afrotok/models/model_data.dart';
+
 import 'package:afrotok/providers/authProvider.dart';
+
 import 'package:afrotok/providers/postProvider.dart';
+
 import 'package:afrotok/services/linkService.dart';
+
 import 'package:video_thumbnail/video_thumbnail.dart';
+
 import '../../providers/coin_gift_provider.dart';
+
 import '../../services/utils/abonnement_utils.dart';
+
 import '../../widgets/user_badge_widget.dart';
+
 import '../admin/AfrolookPub/ad_post_page_video_widget.dart';
+
 import '../canaux/detailsCanal.dart';
+
 import '../coins/coin_gift_dialog.dart';
+
 import '../coins/coin_recharge_screen.dart';
+
 import '../coins/post_gifts_list.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -212,7 +240,7 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
         }
       }
     } catch (e) {
-      print("Erreur favori: $e");
+      printVm("Erreur favori: $e");
     } finally {
       _isFavoriteProcessing = false;
     }
@@ -260,7 +288,7 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
       await controller.initialize();
       _preloadedControllers[index] = controller;
     } catch (e) {
-      print("❌ Erreur préchargement: $e");
+      printVm("❌ Erreur préchargement: $e");
     } finally {
       _preloadingIndices.remove(index);
     }
@@ -359,7 +387,7 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
       await _recordPostView(post);
       _startSuggestionModalTimer();
     } catch (e) {
-      print('❌ Erreur init vibe: $e');
+      printVm('❌ Erreur init vibe: $e');
       setState(() => _isVideoInitialized = false);
     }
   }
@@ -469,7 +497,7 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
         setState(() => _oldVibesCache.addAll(validOldVibes));
       }
     } catch (e) {
-      print("❌ Erreur chargement anciennes vibes: $e");
+      printVm("❌ Erreur chargement anciennes vibes: $e");
     } finally {
       _isLoadingOldVibes = false;
     }
@@ -535,13 +563,13 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
       try {
         final userDoc = await _firestore.collection('Users').doc(post.user_id).get();
         if (userDoc.exists) post.user = UserData.fromJson(userDoc.data()!);
-      } catch (e) { print('Erreur chargement user: $e'); }
+      } catch (e) { printVm('Erreur chargement user: $e'); }
     }
     if (post.canal_id != null && post.canal_id!.isNotEmpty && post.canal == null) {
       try {
         final canalDoc = await _firestore.collection('Canaux').doc(post.canal_id).get();
         if (canalDoc.exists) post.canal = Canal.fromJson(canalDoc.data()!);
-      } catch (e) { print('Erreur chargement canal: $e'); }
+      } catch (e) { printVm('Erreur chargement canal: $e'); }
     }
     if (mounted) setState(() {});
   }
@@ -566,7 +594,7 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
         _rebuildFeedItems();
       }
     } catch (e) {
-      print('Erreur chargement vibes: $e');
+      printVm('Erreur chargement vibes: $e');
     } finally {
       setState(() => _isLoadingMore = false);
     }
@@ -672,7 +700,7 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
         'users_vue_id': FieldValue.arrayUnion([currentUserId]),
         'popularity': FieldValue.increment(2),
       });
-    } catch (e) { print("Erreur vues: $e"); }
+    } catch (e) { printVm("Erreur vues: $e"); }
   }
 
   Future<void> _recordPostView(Post post) async {
@@ -690,7 +718,7 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
         post.vues = (post.vues ?? 0) + 1;
         post.users_vue_id = [...?post.users_vue_id, currentUserId];
       });
-    } catch (e) { print('Erreur vue: $e'); }
+    } catch (e) { printVm('Erreur vue: $e'); }
   }
 
   Future<void> _markPostAsSeen(Post post) async {
@@ -867,7 +895,7 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
       postProvider.interactWithPostAndIncrementSolde(post.id!, userId, "like", post.user_id!);
       authProvider.incrementPostTotalInteractions(postId: post.id!);
       _sendLikeNotification(post);
-    } catch (e) { print('Erreur like: $e'); }
+    } catch (e) { printVm('Erreur like: $e'); }
   }
 
   void _showInsufficientCoinsForLikeDialog() {
@@ -974,7 +1002,7 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
       });
       setState(() => post.partage = (post.partage ?? 0) + 1);
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vibe partagée !'), backgroundColor: Colors.green));
-    } catch (e) { print('Erreur partage: $e'); } finally { setState(() => _isSharing = false); }
+    } catch (e) { printVm('Erreur partage: $e'); } finally { setState(() => _isSharing = false); }
   }
 
   void _showPostMenu(Post post) {
@@ -1005,7 +1033,7 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
       await _firestore.collection('Posts').doc(post.id).delete();
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vibe supprimée')));
       if (_vibePosts.length == 1) Navigator.pop(context);
-    } catch (e) { print('Erreur suppression: $e'); }
+    } catch (e) { printVm('Erreur suppression: $e'); }
   }
 
   Future<void> _loadSupportModalSeen() async {

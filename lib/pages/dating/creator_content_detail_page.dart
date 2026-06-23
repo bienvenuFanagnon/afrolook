@@ -1,4 +1,6 @@
-// lib/pages/creator/creator_content_detail_page.dart
+﻿// lib/pages/creator/creator_content_detail_page.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -96,7 +98,7 @@ class _CreatorContentDetailPageState extends State<CreatorContentDetailPage> {
         setState(() => _creatorProfile = CreatorProfile.fromJson(doc.data()!));
       }
     } catch (e) {
-      print('❌ Erreur chargement profil créateur: $e');
+      printVm('❌ Erreur chargement profil créateur: $e');
     }
   }
 
@@ -115,7 +117,7 @@ class _CreatorContentDetailPageState extends State<CreatorContentDetailPage> {
           .get();
       setState(() => _isSubscribed = snapshot.docs.isNotEmpty);
     } catch (e) {
-      print('❌ Erreur vérification abonnement: $e');
+      printVm('❌ Erreur vérification abonnement: $e');
     }
   }
 
@@ -136,7 +138,7 @@ class _CreatorContentDetailPageState extends State<CreatorContentDetailPage> {
           .get();
       setState(() => _isPurchased = snapshot.docs.isNotEmpty);
     } catch (e) {
-      print('❌ Erreur vérification achat: $e');
+      printVm('❌ Erreur vérification achat: $e');
     }
   }
 
@@ -155,7 +157,7 @@ class _CreatorContentDetailPageState extends State<CreatorContentDetailPage> {
           .get();
       setState(() => _isLiked = snapshot.docs.isNotEmpty);
     } catch (e) {
-      print('❌ Erreur vérification like: $e');
+      printVm('❌ Erreur vérification like: $e');
     }
   }
 
@@ -188,7 +190,7 @@ class _CreatorContentDetailPageState extends State<CreatorContentDetailPage> {
             .update({'viewsCount': FieldValue.increment(1)});
       }
     } catch (e) {
-      print('❌ Erreur enregistrement vue: $e');
+      printVm('❌ Erreur enregistrement vue: $e');
     }
   }
 
@@ -240,7 +242,7 @@ class _CreatorContentDetailPageState extends State<CreatorContentDetailPage> {
         setState(() => _isLiked = true);
       }
     } catch (e) {
-      print('❌ Erreur like: $e');
+      printVm('❌ Erreur like: $e');
     } finally {
       setState(() => _isLoading = false);
     }

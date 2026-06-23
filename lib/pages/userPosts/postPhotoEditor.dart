@@ -1,4 +1,4 @@
-// Dart imports:
+﻿// Dart imports:
 import 'dart:io';
 import 'dart:math';
 import 'dart:ui' as ui;
@@ -242,8 +242,8 @@ class _PostPhotoEditorState extends State<PostPhotoEditor>
       minHeight: 1080, // Hauteur minimale de l'image compressée
     );
 
-    print('Taille originale: ${file.lengthSync()} bytes');
-    print('Taille compressée: ${result!.length()} bytes');
+    printVm('Taille originale: ${file.lengthSync()} bytes');
+    printVm('Taille compressée: ${result!.length()} bytes');
 
     return result;
   }
@@ -287,10 +287,10 @@ class _PostPhotoEditorState extends State<PostPhotoEditor>
       rotate: 0,
     );
 
-    print('Taille originale: ${list.length} bytes');
-    print('Taille compressée: ${result!.length} bytes');
-    print(list.length);
-    print(result.length);
+    printVm('Taille originale: ${list.length} bytes');
+    printVm('Taille compressée: ${result!.length} bytes');
+    printVm(list.length);
+    printVm(result.length);
     return result;
   }
 

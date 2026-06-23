@@ -1,10 +1,17 @@
-import 'package:afrotok/pages/userPosts/postWidgets/postWidgetPage.dart';
+﻿import 'package:afrotok/pages/userPosts/postWidgets/postWidgetPage.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:provider/provider.dart';
+
 import '../../providers/authProvider.dart';
+
 import '../../providers/postProvider.dart';
+
 import '../home/homeWidget.dart';
+
 import '../../models/model_data.dart';
 
 import 'favorite_post_thumbnail.dart';
@@ -84,7 +91,7 @@ class _FavoritePostsPageState extends State<FavoritePostsPage> {
       });
 
     } catch (e) {
-      print('Erreur chargement favoris: $e');
+      printVm('Erreur chargement favoris: $e');
       setState(() {
         _hasError = true;
         _isLoading = false;

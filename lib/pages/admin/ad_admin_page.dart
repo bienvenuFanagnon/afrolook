@@ -1,4 +1,6 @@
-import 'package:afrotok/services/ad_service.dart';
+﻿import 'package:afrotok/services/ad_service.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:flutter/material.dart';
 import 'package:stack_appodeal_flutter/stack_appodeal_flutter.dart'; // ✅ SDK Appodeal
 
@@ -15,7 +17,7 @@ class _AdAdminPageState extends State<AdAdminPage> {
 
   void _updateStatus(String status) {
     setState(() => _lastStatus = status);
-    print("📢 [ADMIN AD]: $status");
+    printVm("📢 [ADMIN AD]: $status");
   }
 
   /// 1. Lancer l'Inspecteur de Médiation (Le remplaçant d'Ad Inspector)

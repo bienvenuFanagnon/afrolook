@@ -1,13 +1,23 @@
 import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+
 import 'package:provider/provider.dart';
+
 import '../../../providers/authProvider.dart';
+
 import '../../../providers/userProvider.dart';
+
 import '../../providers/postProvider.dart';
+
 import '../../theme/app_colors.dart';
+
 import '../../l10n/app_localizations.dart';
+
 import 'detailsCanal.dart';
+
 import 'newCanal.dart';
 
 class CanalListPageByUser extends StatefulWidget {
@@ -67,7 +77,7 @@ class _CanalListPageByUserState extends State<CanalListPageByUser> {
       });
 
     } catch (e) {
-      print("Erreur chargement canaux: $e");
+      printVm("Erreur chargement canaux: $e");
       setState(() {
         isLoading = false;
         hasError = true;
@@ -117,7 +127,7 @@ class _CanalListPageByUserState extends State<CanalListPageByUser> {
 
         setState(() {});
       } catch (e) {
-        print("Erreur suivre canal: $e");
+        printVm("Erreur suivre canal: $e");
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(

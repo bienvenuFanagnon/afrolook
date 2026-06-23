@@ -1,4 +1,6 @@
-// lib/pages/creator/creator_profile_page.dart
+﻿// lib/pages/creator/creator_profile_page.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -111,7 +113,7 @@ class _CreatorOtherProfilePageState extends State<CreatorOtherProfilePage> {
       await _recordProfileView();
 
     } catch (e) {
-      print('❌ Erreur chargement profil créateur: $e');
+      printVm('❌ Erreur chargement profil créateur: $e');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -157,7 +159,7 @@ class _CreatorOtherProfilePageState extends State<CreatorOtherProfilePage> {
 
       _hasRecordedView = true;
     } catch (e) {
-      print('❌ Erreur enregistrement vue: $e');
+      printVm('❌ Erreur enregistrement vue: $e');
     }
   }
 
@@ -240,7 +242,7 @@ class _CreatorOtherProfilePageState extends State<CreatorOtherProfilePage> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t.creatorConversionError), backgroundColor: Colors.red));
       }
     } catch (e) {
-      print('❌ Erreur conversion: $e');
+      printVm('❌ Erreur conversion: $e');
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${t.creatorRegisterError}: ${e.toString()}'), backgroundColor: Colors.red));
     } finally {
       setState(() => _isLoading = false);

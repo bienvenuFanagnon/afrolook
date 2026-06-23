@@ -1,48 +1,89 @@
-import 'dart:async';
+﻿import 'dart:async';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'dart:io';
 import 'dart:math';
+
 import 'dart:typed_data';
 
 import 'package:afrotok/pages/component/showUserDetails.dart';
+
 import 'package:afrotok/pages/paiement/newDepot.dart';
+
 import 'package:afrotok/pages/postDetails.dart';
+
 import 'package:afrotok/pages/post_video_format_tel_details.dart';
+
 import 'package:afrotok/widgets/chat/post_share_sheet.dart';
+
 import 'package:afrotok/pages/pub/banner_ad_widget.dart';
+
 import 'package:afrotok/pages/pub/native_ad_widget.dart';
+
 import 'package:afrotok/pages/pub/rewarded_ad_widget.dart';
+
 import 'package:afrotok/pages/widgetGlobal.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:flutter_linkify/flutter_linkify.dart';
+
 import 'package:flutter_animate/flutter_animate.dart';
+
 import '../theme/app_colors.dart';
+
 import '../providers/locale_provider.dart';
+
 import 'userPosts/postWidgets/translatable_description.dart';
 
 import 'package:intl/intl.dart';
+
 import 'package:url_launcher/url_launcher.dart';
+
 import 'package:video_player/video_player.dart';
+
 import 'package:chewie/chewie.dart';
+
 import 'package:cached_network_image/cached_network_image.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:provider/provider.dart';
+
 import 'package:afrotok/models/model_data.dart';
+
 import 'package:afrotok/providers/postProvider.dart';
+
 import 'package:afrotok/pages/postComments.dart';
+
 import 'package:afrotok/services/linkService.dart';
+
 import 'package:afrotok/widgets/user_badge_widget.dart';
+
 import 'package:video_thumbnail/video_thumbnail.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:firebase_storage/firebase_storage.dart';
+
 import 'package:path_provider/path_provider.dart';
+
 import '../providers/authProvider.dart';
+
 import '../providers/coin_gift_provider.dart';
+
 import 'canaux/detailsCanal.dart';
+
 import 'coins/coin_gift_dialog.dart';
+
 import 'coins/coin_recharge_screen.dart';
+
 import 'coins/post_gifts_list.dart';
+
 import 'home/homeWidget.dart';
+
 import '../services/postService/post_view_service.dart';
 
 // Couleurs Afrolook
@@ -53,8 +94,6 @@ const _afroRed = Color(0xFFE74C3C);
 const _afroDarkGrey = Color(0xFF16181C);
 const _afroLightGrey = Color(0xFF71767B);
 
-
-
 const _twitterDarkBg = Color(0xFF000000);
 const _twitterCardBg = Color(0xFF16181C);
 const _twitterTextPrimary = Color(0xFFFFFFFF);
@@ -63,7 +102,6 @@ const _twitterBlue = Color(0xFF1D9BF0);
 const _twitterRed = Color(0xFFF91880);
 const _twitterGreen = Color(0xFF00BA7C);
 const _twitterYellow = Color(0xFFFFD400);
-
 
 class VideoYoutubePageDetails extends StatefulWidget {
   final Post initialPost;
@@ -138,12 +176,9 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
   Timer? _suggestionModalTimer;
   bool _hasSeenSuggestionsModal = false;
 
-
-
   @override
   void initState() {
     super.initState();
-
 
     _initSharedPreferences();
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
@@ -184,7 +219,6 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     }
   }
 
-
   void _startSuggestionModalTimer() {
     _suggestionModalTimer?.cancel();
     if (_hasSeenSuggestionsModal) return;
@@ -196,19 +230,18 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
   }
   Future<void> _markSuggestionsModalSeen() async {
     final userId = authProvider.loginUserData?.id;
-    print('🔍 _markSuggestionsModalSeen - userId: $userId');
+    printVm('🔍 _markSuggestionsModalSeen - userId: $userId');
     if (userId == null) {
-      print('⚠️ userId est null, impossible de sauvegarder');
+      printVm('⚠️ userId est null, impossible de sauvegarder');
       return;
     }
     final key = 'has_seen_suggestions_modal_video_$userId';
     await _prefs.setBool(key, true);
-    print('💾 Clé sauvegardée: $key = true');
+    printVm('💾 Clé sauvegardée: $key = true');
     setState(() {
       _hasSeenSuggestionsModal = true;
     });
   }
-
 
   void _showSuggestionsModal() {
     final suggestions = postProvider.suggestedPosts
@@ -424,9 +457,9 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
         transaction.update(adRef, updates);
       });
 
-      print('✅ Clic enregistré pour la pub: ${ad.id}');
+      printVm('✅ Clic enregistré pour la pub: ${ad.id}');
     } catch (e) {
-      print('❌ Erreur clic: $e');
+      printVm('❌ Erreur clic: $e');
       _clickedInSession.remove(clickKey);
     }
   }
@@ -488,7 +521,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
         });
       }
     } catch (e) {
-      print('Erreur génération miniature pour post ${post.id}: $e');
+      printVm('Erreur génération miniature pour post ${post.id}: $e');
     } finally {
       _generatingThumbnails.remove(post.id);
       setState(() {});
@@ -509,7 +542,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
         _recordAdView(ad);
       }
     } catch (e) {
-      print('Erreur chargement publicité: $e');
+      printVm('Erreur chargement publicité: $e');
     } finally {
       setState(() => _isLoadingAd = false);
     }
@@ -527,7 +560,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
         'updatedAt': DateTime.now().microsecondsSinceEpoch,
       });
     } catch (e) {
-      print('Erreur enregistrement vue pub: $e');
+      printVm('Erreur enregistrement vue pub: $e');
     }
   }
 
@@ -560,7 +593,6 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     return allSuggestions.where((p) => p.id != widget.initialPost.id).toList();
   }
 
-
 // Navigation vers un post suggéré
   void _onSuggestedPostSelected(Post newPost) {
     if(newPost.dataType==PostDataType.VIDEO.name){
@@ -591,7 +623,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       if (currentUserId == null) return;
       widget.initialPost.users_vue_id ??= [];
       if (widget.initialPost.users_vue_id!.contains(currentUserId)) {
-        print('⏭️ Vue déjà enregistrée pour cet utilisateur');
+        printVm('⏭️ Vue déjà enregistrée pour cet utilisateur');
         return;
       }
       authProvider. incrementPostTotalInteractions(postId: widget.initialPost.id!);
@@ -606,9 +638,9 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
         'popularity': FieldValue.increment(2),
       });
       PostViewService.recordAuthorView(widget.initialPost, currentUserId);
-      print('✅ Vue unique enregistrée pour ${widget.initialPost.id}');
+      printVm('✅ Vue unique enregistrée pour ${widget.initialPost.id}');
     } catch (e) {
-      print("Erreur incrémentation vues: $e");
+      printVm("Erreur incrémentation vues: $e");
     }
   }
 
@@ -655,7 +687,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
         setState(() => _isLoadingCanal = false);
       }
     } catch (e) {
-      print('Erreur chargement relations: $e');
+      printVm('Erreur chargement relations: $e');
     } finally {
       setState(() => _isLoadingUser = false);
     }
@@ -671,7 +703,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
         setState(() => _isFavorite = favorites.contains(userId));
       }
     } catch (e) {
-      print('Erreur vérification favori: $e');
+      printVm('Erreur vérification favori: $e');
     }
   }
 
@@ -684,7 +716,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
         _challenge = Challenge.fromJson(doc.data()!)..id = doc.id;
       }
     } catch (e) {
-      print('Erreur chargement challenge: $e');
+      printVm('Erreur chargement challenge: $e');
     } finally {
       setState(() => _loadingChallenge = false);
     }
@@ -758,7 +790,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
         });
       }
     } catch (e) {
-      print('Erreur vérification vote: $e');
+      printVm('Erreur vérification vote: $e');
     }
   }
 
@@ -789,7 +821,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       setState(() => _isVideoInitialized = true);
       await _recordPostView();
     } catch (e) {
-      print('Erreur initialisation vidéo: $e');
+      printVm('Erreur initialisation vidéo: $e');
       setState(() => _isVideoInitialized = false);
     }
   }
@@ -852,7 +884,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
         );
       }
     } catch (e) {
-      print('Erreur favori: $e');
+      printVm('Erreur favori: $e');
     } finally {
       setState(() => _isProcessingFavorite = false);
     }
@@ -926,7 +958,6 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
         }
       }
 
-
       // Feedback utilisateur
       // ScaffoldMessenger.of(context).showSnackBar(
       //   const SnackBar(
@@ -936,7 +967,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       //   ),
       // );
     } catch (e) {
-      print("❌ Erreur like: $e");
+      printVm("❌ Erreur like: $e");
       // ScaffoldMessenger.of(context).showSnackBar(
       //   SnackBar(
       //     content: Text('Erreur: $e'),
@@ -1051,7 +1082,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
         // templateType: TemplateType.medium, // ou TemplateType.small
 
         onAdLoaded: () {
-          print('✅ Native Ad Afrolook chargée: $key');
+          printVm('✅ Native Ad Afrolook chargée: $key');
           authProvider.incrementCreatorCoins(postId: widget.initialPost.id!, creatorId: widget.initialPost.user_id!, currentUserId:authProvider.loginUserData.id!);
 
         },
@@ -1059,7 +1090,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       // child: BannerAdWidget(
       //   onAdLoaded: () {
       //
-      //     print('✅ Bannière Afrolook chargée: $key');
+      //     printVm('✅ Bannière Afrolook chargée: $key');
       //     authProvider.incrementCreatorCoins(widget.initialPost.user_id!);
       //   },
       // ),
@@ -1081,19 +1112,18 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
         // templateType: TemplateType.small, // ou TemplateType.small
 
         onAdLoaded: () {
-          print('✅ Native Ad Afrolook chargée: $key');
+          printVm('✅ Native Ad Afrolook chargée: $key');
           authProvider.incrementCreatorCoins(postId: widget.initialPost.id!, creatorId: widget.initialPost.user_id!, currentUserId:authProvider.loginUserData.id!);
 
         },
       ),
       // child: BannerAdWidget(
       //   onAdLoaded: () {
-      //     print('✅ Bannière Afrolook chargée: $key');
+      //     printVm('✅ Bannière Afrolook chargée: $key');
       //   },
       // ),
     );
   }
-
 
   void _sharePost(Post post) async {
     setState(() => _isSharing = true);
@@ -1105,7 +1135,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       setState(() => post.partage = (post.partage ?? 0) + 1);
       addPointsForAction(UserAction.partagePost);
     } catch (e) {
-      print('Erreur partage: $e');
+      printVm('Erreur partage: $e');
     } finally {
       setState(() => _isSharing = false);
     }
@@ -1258,7 +1288,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       await _firestore.collection('Posts').doc(_currentPost.id).update({'users_cadeau_id': FieldValue.arrayUnion([authProvider.loginUserData.id])});
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('🎁 Cadeau envoyé avec succès!'), backgroundColor: Colors.green));
     } catch (e) {
-      print('Erreur envoi cadeau: $e');
+      printVm('Erreur envoi cadeau: $e');
     } finally {
       setState(() => _isLoadingGift = false);
     }
@@ -1649,7 +1679,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       });
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Vote enregistré !'), backgroundColor: Colors.green));
     } catch (e) {
-      print('Erreur vote: $e');
+      printVm('Erreur vote: $e');
     } finally {
       setState(() => _isVoting = false);
     }
@@ -1986,7 +2016,4 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     );
   }
 }
-
-
-
 

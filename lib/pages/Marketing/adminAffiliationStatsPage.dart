@@ -1,9 +1,13 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
+
 import 'package:intl/intl.dart';
 
 import '../../providers/authProvider.dart';
+
 import '../../models/model_data.dart';
 
 class AdminAffiliationStatsPage extends StatefulWidget {
@@ -116,7 +120,7 @@ class _AdminAffiliationStatsPageState extends State<AdminAffiliationStatsPage> {
       });
 
     } catch (e) {
-      print('Erreur chargement données: $e');
+      printVm('Erreur chargement données: $e');
       setState(() => _isLoading = false);
     }
   }

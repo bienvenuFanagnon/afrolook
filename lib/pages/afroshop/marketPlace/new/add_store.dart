@@ -1,15 +1,23 @@
-import 'dart:io';
+﻿import 'dart:io';
+import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
+
 import 'package:image_picker/image_picker.dart';
+
 import 'package:provider/provider.dart';
 
 import '../../../../constant/custom_theme.dart';
+
 import '../../../../providers/afroshop/authAfroshopProvider.dart';
+
 import '../../../../providers/afroshop/categorie_produits_provider.dart';
+
 import 'abonement.dart';
+
 class AddStore extends StatefulWidget {
   const AddStore({super.key});
 
@@ -79,13 +87,10 @@ class _AddStoreState extends State<AddStore> {
               annonceRegisterData.user_id=authProvider.loginData.id!;
               annonceRegisterData.categorie_id=categorieSelected.id;
 
-
-              //  print('sous categorie id: $sousCategorieSelected.id');
-              print('Titre: $_titre');
-              print('Description: $_description');
-              print('Prix: $_prix');
-
-
+              //  printVm('sous categorie id: $sousCategorieSelected.id');
+              printVm('Titre: $_titre');
+              printVm('Description: $_description');
+              printVm('Prix: $_prix');
 
               if (_mediaFileList!.isNotEmpty) {
                 setState(() {
@@ -93,14 +98,12 @@ class _AddStoreState extends State<AddStore> {
                 });
                 // List<ProduitImages> listImages = [];
 
-                // print("produit final : ${produit.toJson()}");
-                //print("user token : ${authProvider.loginData.token!}");
+                // printVm("produit final : ${produit.toJson()}");
+                //printVm("user token : ${authProvider.loginData.token!}");
                 annonceRegisterData.updatedAt =
                     DateTime.now().microsecondsSinceEpoch;
                 annonceRegisterData.createdAt =
                     DateTime.now().microsecondsSinceEpoch;
-
-
 
                 for (XFile _image in _mediaFileList!) {
                   Reference storageReference =
@@ -113,14 +116,13 @@ class _AddStoreState extends State<AddStore> {
                     await storageReference
                         .getDownloadURL()
                         .then((fileURL) {
-                      print("url media");
-                      //  print(fileURL);
+                      printVm("url media");
+                      //  printVm(fileURL);
 
                       annonceRegisterData.images!.add(fileURL);
                     });
                   });
                 }
-
 
                 String postId = FirebaseFirestore.instance
                     .collection('Articles')
@@ -150,8 +152,6 @@ class _AddStoreState extends State<AddStore> {
                     // Afficher le SnackBar en bas de la page
                     ScaffoldMessenger.of(context)
                         .showSnackBar(snackBar);
-
-
 
                     _titre='';
                     _description='';
@@ -185,7 +185,6 @@ class _AddStoreState extends State<AddStore> {
                   }
                 });
 
-
               }
               else {
                 setState(() {
@@ -203,7 +202,6 @@ class _AddStoreState extends State<AddStore> {
                     snackBar);
               }
               // Navigator.push(context, MaterialPageRoute(builder: (context) => AddAnnonceStep4(annonceRegisterData: annonceRegisterData),));
-
 
             }
 

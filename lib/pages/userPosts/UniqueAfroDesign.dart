@@ -1,4 +1,4 @@
-
+﻿
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
@@ -327,7 +327,7 @@ isLoading=true;
                         return GestureDetector(
                           onTap: () async{
                             selectedImage = images[index];
-                            print('debut de supperposition');
+                            printVm('debut de supperposition');
 
                             // Provider.of<UserAuthProvider>(context, listen: false).setLoading(true);
 
@@ -339,7 +339,7 @@ isLoading=true;
                             await Future.delayed(Duration(seconds: 1));
 
                             await _openPicker(widget.initialImage);
-                            print('fin de supperposition');
+                            printVm('fin de supperposition');
                             // Provider.of<UserAuthProvider>(context, listen: false).setLoading(false);
 
                             setState(() {

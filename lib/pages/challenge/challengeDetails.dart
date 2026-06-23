@@ -1,4 +1,4 @@
-// challenge_detail_page.dart (version complète refaite)
+﻿// challenge_detail_page.dart (version complète refaite)
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/component/showUserDetails.dart';
 import 'package:afrotok/pages/paiement/newDepot.dart';
@@ -1490,12 +1490,12 @@ class _ChallengeDetailPageState extends State<ChallengeDetailPage> {
         // templateType: TemplateType.small, // ou TemplateType.small
 
         onAdLoaded: () {
-          print('✅ Native Ad Afrolook chargée: $key');
+          printVm('✅ Native Ad Afrolook chargée: $key');
         },
       ),
       // child: BannerAdWidget(
       //   onAdLoaded: () {
-      //     print('✅ Bannière Afrolook chargée: $key');
+      //     printVm('✅ Bannière Afrolook chargée: $key');
       //   },
       // ),
     );
@@ -5018,7 +5018,7 @@ class _ChallengeDetailPageState extends State<ChallengeDetailPage> {
 //         );
 //       }
 //     } catch (e) {
-//       print('Erreur envoi notification inscription: $e');
+//       printVm('Erreur envoi notification inscription: $e');
 //     }
 //   }
 //

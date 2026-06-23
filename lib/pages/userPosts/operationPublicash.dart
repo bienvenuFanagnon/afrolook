@@ -1,4 +1,4 @@
-
+﻿
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/userPosts/postWidgets/postWidgetPage.dart';
 import 'package:afrotok/providers/authProvider.dart';
@@ -31,7 +31,7 @@ Future<bool> processPublicashTransaction({
 
     // Vérifier si l'utilisateur existe
     if (listUsers.isEmpty) {
-      print("Utilisateur non trouvé");
+      printVm("Utilisateur non trouvé");
       return false;
     }
 
@@ -42,7 +42,7 @@ Future<bool> processPublicashTransaction({
 
     // Vérifier si le solde est suffisant
     if (userSendCadeau.votre_solde_principal! < 2) {
-      print("Solde insuffisant");
+      printVm("Solde insuffisant");
       showInsufficientBalanceDialog(context);
       return false;
     }
@@ -87,7 +87,7 @@ Future<bool> processPublicashTransaction({
     return true;
   } catch (e) {
     // Gérer les erreurs
-    print("Erreur lors de la transaction : $e");
+    printVm("Erreur lors de la transaction : $e");
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: Colors.red,

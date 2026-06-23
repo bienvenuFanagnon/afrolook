@@ -1,4 +1,6 @@
-// Dart imports:
+﻿// Dart imports:
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -129,7 +131,7 @@ mixin ExampleHelperState<T extends StatefulWidget> on State<T> {
       //     await Permission.photos.request().isGranted) {
       //   // Enregistrer l'image dans la galerie
       //   final result = await ImageGallerySaverPlus.saveImage(image);
-      //   print(result);
+      //   printVm(result);
       //   ScaffoldMessenger.of(context).showSnackBar(
       //     SnackBar(
       //       content: Text('Image enregistrée dans la galerie', style: TextStyle(color: Colors.white)),
@@ -149,7 +151,7 @@ mixin ExampleHelperState<T extends StatefulWidget> on State<T> {
       return false;
 
     } catch (e) {
-      print('erreur: $e');
+      printVm('erreur: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Erreur d'enregistrement dans la galerie : $e", style: TextStyle(color: Colors.white)),

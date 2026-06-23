@@ -1,4 +1,6 @@
-// pages/users/users_list_page.dart
+﻿// pages/users/users_list_page.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'dart:async';
 import 'dart:math';
 
@@ -103,7 +105,7 @@ class _UsersListPageState extends State<UsersListPage> with AutomaticKeepAliveCl
         _isLoading = false;
       });
     } catch (e) {
-      print('Erreur chargement initial: $e');
+      printVm('Erreur chargement initial: $e');
       setState(() => _isLoading = false);
     }
   }
@@ -132,7 +134,7 @@ class _UsersListPageState extends State<UsersListPage> with AutomaticKeepAliveCl
         _isLoading = false;
       });
     } catch (e) {
-      print('Erreur chargement supplémentaire: $e');
+      printVm('Erreur chargement supplémentaire: $e');
       setState(() => _isLoading = false);
     }
   }
@@ -202,7 +204,7 @@ class _UsersListPageState extends State<UsersListPage> with AutomaticKeepAliveCl
 
       return result;
     } catch (e) {
-      print('Erreur fetch users: $e');
+      printVm('Erreur fetch users: $e');
       throw Exception('Erreur fetch users: $e');
     }
   }
@@ -275,7 +277,7 @@ class _UsersListPageState extends State<UsersListPage> with AutomaticKeepAliveCl
       }
 
     } catch (e) {
-      print("Erreur recherche: $e");
+      printVm("Erreur recherche: $e");
       setState(() {
         _isSearchLoading = false;
       });
@@ -343,7 +345,7 @@ class _UsersListPageState extends State<UsersListPage> with AutomaticKeepAliveCl
       }
 
     } catch (e) {
-      print('Erreur chargement plus de résultats: $e');
+      printVm('Erreur chargement plus de résultats: $e');
       setState(() => _isLoading = false);
     }
   }
@@ -617,7 +619,7 @@ class _UsersListPageState extends State<UsersListPage> with AutomaticKeepAliveCl
                                               );
                                             }
                                           } catch (e) {
-                                            print('Erreur like: $e');
+                                            printVm('Erreur like: $e');
                                           }
                                         },
                                         child: Container(

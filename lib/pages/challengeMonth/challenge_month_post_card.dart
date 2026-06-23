@@ -1,4 +1,4 @@
-// lib/pages/challenge/challenge_post_card.dart
+﻿// lib/pages/challenge/challenge_post_card.dart
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -81,7 +81,7 @@ class _ChallengePostCardState extends State<ChallengePostCard> {
         }
       }
     } catch (e) {
-      print('Erreur chargement créateur: $e');
+      printVm('Erreur chargement créateur: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

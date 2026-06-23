@@ -1,4 +1,6 @@
-// lib/services/challenge_month_service.dart
+﻿// lib/services/challenge_month_service.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/model_data.dart';
@@ -60,7 +62,7 @@ class ChallengeMonthService {
         if (ts != null) return DateTime.fromMicrosecondsSinceEpoch(ts);
       }
     } catch (e) {
-      print('Erreur récupération date début challenge: $e');
+      printVm('Erreur récupération date début challenge: $e');
     }
     return DateTime(2026, 4, 1);
   }
@@ -327,7 +329,7 @@ class ChallengeMonthService {
 //         if (ts != null) return DateTime.fromMicrosecondsSinceEpoch(ts);
 //       }
 //     } catch (e) {
-//       print('Erreur récupération date début challenge: $e');
+//       printVm('Erreur récupération date début challenge: $e');
 //     }
 //     // Date par défaut: 1 avril 2026 (microsecondes)
 //     return DateTime(2026, 4, 1);

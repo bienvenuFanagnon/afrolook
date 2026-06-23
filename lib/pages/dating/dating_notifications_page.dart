@@ -1,4 +1,6 @@
-// lib/pages/dating/dating_notifications_page.dart
+﻿// lib/pages/dating/dating_notifications_page.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 
 import 'package:provider/provider.dart';
@@ -50,7 +52,7 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
         _unreadCount = snapshot.docs.length;
       });
     } catch (e) {
-      print('❌ Erreur chargement compteur notifications: $e');
+      printVm('❌ Erreur chargement compteur notifications: $e');
     }
   }
 
@@ -65,7 +67,7 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
       });
       _loadUnreadCount();
     } catch (e) {
-      print('❌ Erreur marquage notification comme lue: $e');
+      printVm('❌ Erreur marquage notification comme lue: $e');
     }
   }
 
@@ -82,7 +84,7 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
         key: ValueKey(key),
         // templateType: TemplateType.small,
         onAdLoaded: () {
-          print('✅ Native Ad Afrolook chargée: $key');
+          printVm('✅ Native Ad Afrolook chargée: $key');
         },
       ),
     );
@@ -379,10 +381,11 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
           }
 
           // Convertir les documents en objets NotificationData
-          final notifications = notificationsDocs.map((doc) {
-            final data = doc.data() as Map<String, dynamic>;
-            return NotificationData.fromJson(data);
-          }).toList();
+          // Filtre les self-notifications (user_id == receiver_id) — données corrompues
+          final notifications = notificationsDocs
+              .map((doc) => NotificationData.fromJson(doc.data() as Map<String, dynamic>))
+              .where((n) => (n.user_id ?? '') != _currentUserId)
+              .toList();
 
           // Construire la liste des widgets (notifications + bannières) sans setState
           final List<Widget> widgets = [];

@@ -1,4 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:afrotok/models/model_data.dart';
 import 'feed_scoring_service.dart';
 
@@ -18,10 +20,10 @@ class FeedInteractionService {
       // 2. Recalculer et mettre à jour le score
       await _updatePostScore(post.id!);
 
-      print('✅ Like enregistré et score mis à jour pour le post ${post.id}');
+      printVm('✅ Like enregistré et score mis à jour pour le post ${post.id}');
 
     } catch (e) {
-      print('❌ Erreur lors du like: $e');
+      printVm('❌ Erreur lors du like: $e');
     }
   }
 
@@ -35,10 +37,10 @@ class FeedInteractionService {
       });
 
       await _updatePostScore(post.id!);
-      print('✅ Commentaire enregistré et score mis à jour');
+      printVm('✅ Commentaire enregistré et score mis à jour');
 
     } catch (e) {
-      print('❌ Erreur lors du commentaire: $e');
+      printVm('❌ Erreur lors du commentaire: $e');
     }
   }
 
@@ -52,10 +54,10 @@ class FeedInteractionService {
       });
 
       await _updatePostScore(post.id!);
-      print('✅ Partage enregistré et score mis à jour');
+      printVm('✅ Partage enregistré et score mis à jour');
 
     } catch (e) {
-      print('❌ Erreur lors du partage: $e');
+      printVm('❌ Erreur lors du partage: $e');
     }
   }
 
@@ -69,10 +71,10 @@ class FeedInteractionService {
       // });
 
       await _updatePostScore(post.id!);
-      print('✅ Love enregistré et score mis à jour');
+      printVm('✅ Love enregistré et score mis à jour');
 
     } catch (e) {
-      print('❌ Erreur lors du love: $e');
+      printVm('❌ Erreur lors du love: $e');
     }
   }
 
@@ -93,10 +95,10 @@ class FeedInteractionService {
           'lastScoreUpdate': DateTime.now().millisecondsSinceEpoch,
         });
 
-        print('📊 Score mis à jour pour $postId: $newScore');
+        printVm('📊 Score mis à jour pour $postId: $newScore');
       }
     } catch (e) {
-      print('❌ Erreur mise à jour score: $e');
+      printVm('❌ Erreur mise à jour score: $e');
     }
   }
 
@@ -114,7 +116,7 @@ class FeedInteractionService {
       }
 
     } catch (e) {
-      print('❌ Erreur mise à jour vues: $e');
+      printVm('❌ Erreur mise à jour vues: $e');
     }
   }
 }

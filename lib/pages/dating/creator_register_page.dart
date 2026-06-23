@@ -1,4 +1,6 @@
-// lib/pages/creator/creator_register_page.dart
+﻿// lib/pages/creator/creator_register_page.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -66,7 +68,7 @@ class _CreatorRegisterPageState extends State<CreatorRegisterPage> {
         }
       }
     } catch (e) {
-      print('❌ Erreur sélection image: $e');
+      printVm('❌ Erreur sélection image: $e');
     }
   }
 
@@ -79,7 +81,7 @@ class _CreatorRegisterPageState extends State<CreatorRegisterPage> {
         await ref.putData(_selectedImageBytes!);
         return await ref.getDownloadURL();
       } catch (e) {
-        print('❌ Erreur upload image (web): $e');
+        printVm('❌ Erreur upload image (web): $e');
         return null;
       }
     } else {
@@ -90,7 +92,7 @@ class _CreatorRegisterPageState extends State<CreatorRegisterPage> {
         await ref.putFile(_selectedImageFile!);
         return await ref.getDownloadURL();
       } catch (e) {
-        print('❌ Erreur upload image (mobile): $e');
+        printVm('❌ Erreur upload image (mobile): $e');
         return null;
       }
     }
@@ -155,7 +157,7 @@ class _CreatorRegisterPageState extends State<CreatorRegisterPage> {
       _showSnackBar(t.creatorRegisterSuccess, Colors.green);
       Navigator.pop(context);
     } catch (e) {
-      print('❌ Erreur inscription créateur: $e');
+      printVm('❌ Erreur inscription créateur: $e');
       _showSnackBar('${t.creatorRegisterError}: ${e.toString()}', Colors.red);
     } finally {
       setState(() => _isLoading = false);

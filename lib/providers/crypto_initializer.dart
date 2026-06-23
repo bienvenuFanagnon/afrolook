@@ -1,4 +1,6 @@
-// utils/crypto_initializer.dart
+﻿// utils/crypto_initializer.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CryptoInitializer {
@@ -118,9 +120,9 @@ class CryptoInitializer {
 
         if (query.docs.isEmpty) {
           await _firestore.collection('cryptos').add(crypto);
-          print('✅ Crypto ${crypto['symbol']} créée avec succès');
+          printVm('✅ Crypto ${crypto['symbol']} créée avec succès');
         } else {
-          print('ℹ️ Crypto ${crypto['symbol']} existe déjà - Mise à jour...');
+          printVm('ℹ️ Crypto ${crypto['symbol']} existe déjà - Mise à jour...');
 
           // Mettre à jour les limites si nécessaire
           final existingDoc = query.docs.first;
@@ -129,12 +131,12 @@ class CryptoInitializer {
             'dailyMinChange': -0.15,
             'lastUpdated': Timestamp.now(),
           });
-          print('✅ Crypto ${crypto['symbol']} mise à jour');
+          printVm('✅ Crypto ${crypto['symbol']} mise à jour');
         }
       }
-      print('🎉 Initialisation des cryptos terminée avec succès!');
+      printVm('🎉 Initialisation des cryptos terminée avec succès!');
     } catch (e) {
-      print('❌ Erreur lors de l\'initialisation des cryptos: $e');
+      printVm('❌ Erreur lors de l\'initialisation des cryptos: $e');
     }
   }
 

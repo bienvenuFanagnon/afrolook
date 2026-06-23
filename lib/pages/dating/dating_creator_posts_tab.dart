@@ -1,4 +1,6 @@
-// lib/pages/dating/dating_creator_posts_tab.dart
+﻿// lib/pages/dating/dating_creator_posts_tab.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -75,7 +77,7 @@ class _DatingCreatorPostsPageState extends State<DatingCreatorPostsPage> {
       return;
     }
     try {
-      print('🔍 Vérification si utilisateur est créateur...');
+      printVm('🔍 Vérification si utilisateur est créateur...');
       final snapshot = await _firestore
           .collection('creator_profiles')
           .where('userId', isEqualTo: _currentUserId)
@@ -85,12 +87,12 @@ class _DatingCreatorPostsPageState extends State<DatingCreatorPostsPage> {
       if (snapshot.docs.isNotEmpty) {
         _myCreatorProfile = CreatorProfile.fromJson(snapshot.docs.first.data());
         setState(() => _isCreator = true);
-        print('✅ Utilisateur est créateur: ${_myCreatorProfile!.pseudo}');
+        printVm('✅ Utilisateur est créateur: ${_myCreatorProfile!.pseudo}');
       } else {
-        print('ℹ️ Utilisateur n\'est pas créateur');
+        printVm('ℹ️ Utilisateur n\'est pas créateur');
       }
     } catch (e) {
-      print('❌ Erreur vérification créateur: $e');
+      printVm('❌ Erreur vérification créateur: $e');
     } finally {
       setState(() => _isLoadingCreatorProfile = false);
     }
@@ -99,7 +101,7 @@ class _DatingCreatorPostsPageState extends State<DatingCreatorPostsPage> {
   Future<void> _loadSubscriptions() async {
     if (_currentUserId == null) return;
     try {
-      print('📥 Chargement des abonnements créateur...');
+      printVm('📥 Chargement des abonnements créateur...');
       final snapshot = await _firestore
           .collection('creator_subscriptions')
           .where('userId', isEqualTo: _currentUserId)
@@ -108,9 +110,9 @@ class _DatingCreatorPostsPageState extends State<DatingCreatorPostsPage> {
       for (var doc in snapshot.docs) {
         _subscriptionCache[doc['creatorId']] = true;
       }
-      print('✅ ${_subscriptionCache.length} abonnements chargés');
+      printVm('✅ ${_subscriptionCache.length} abonnements chargés');
     } catch (e) {
-      print('❌ Erreur chargement abonnements: $e');
+      printVm('❌ Erreur chargement abonnements: $e');
     }
   }
 
@@ -123,7 +125,7 @@ class _DatingCreatorPostsPageState extends State<DatingCreatorPostsPage> {
     // On vérifie seulement si on est déjà en train de charger plus
     if (loadMore && (_isLoadingMore || !_hasMore)) return;
 
-    print('📱 _loadContents - loadMore: $loadMore, isLoading: $_isLoading, isLoadingMore: $_isLoadingMore, hasMore: $_hasMore');
+    printVm('📱 _loadContents - loadMore: $loadMore, isLoading: $_isLoading, isLoadingMore: $_isLoadingMore, hasMore: $_hasMore');
 
     setState(() {
       if (loadMore) {
@@ -141,14 +143,14 @@ class _DatingCreatorPostsPageState extends State<DatingCreatorPostsPage> {
 
       if (loadMore && _lastDocument != null) {
         query = query.startAfterDocument(_lastDocument!);
-        print('📄 Pagination après document: ${_lastDocument!.id}');
+        printVm('📄 Pagination après document: ${_lastDocument!.id}');
       }
 
       final snapshot = await query.limit(_batchSize).get();
-      print('📊 Nombre de documents trouvés: ${snapshot.docs.length}');
+      printVm('📊 Nombre de documents trouvés: ${snapshot.docs.length}');
 
       if (snapshot.docs.isEmpty) {
-        print('⚠️ Aucun document trouvé');
+        printVm('⚠️ Aucun document trouvé');
         setState(() => _hasMore = false);
       } else {
         _lastDocument = snapshot.docs.last;
@@ -159,15 +161,15 @@ class _DatingCreatorPostsPageState extends State<DatingCreatorPostsPage> {
         setState(() {
           if (loadMore) {
             _contents.addAll(newContents);
-            print('📦 Ajout de ${newContents.length} contenus (total: ${_contents.length})');
+            printVm('📦 Ajout de ${newContents.length} contenus (total: ${_contents.length})');
           } else {
             _contents = newContents;
-            print('🎯 Premier chargement: ${_contents.length} contenus');
+            printVm('🎯 Premier chargement: ${_contents.length} contenus');
           }
         });
       }
     } catch (e) {
-      print('❌ Erreur chargement: $e');
+      printVm('❌ Erreur chargement: $e');
       setState(() => _error = e.toString());
     } finally {
       setState(() {
@@ -184,7 +186,7 @@ class _DatingCreatorPostsPageState extends State<DatingCreatorPostsPage> {
         .collection('creator_contents')
         .doc(content.id)
         .update({'viewsCount': FieldValue.increment(1)});
-    print('👁️ Vue enregistrée pour ${content.titre}');
+    printVm('👁️ Vue enregistrée pour ${content.titre}');
   }
 
   Future<void> _toggleLike(CreatorContent content) async {
@@ -207,7 +209,7 @@ class _DatingCreatorPostsPageState extends State<DatingCreatorPostsPage> {
       }
       _showLikeAnimation();
     } catch (e) {
-      print('❌ Erreur like: $e');
+      printVm('❌ Erreur like: $e');
     }
   }
 

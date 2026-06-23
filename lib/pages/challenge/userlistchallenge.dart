@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+﻿import 'dart:typed_data';
 import 'package:afrotok/pages/challenge/challengeDetails.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/postDetails.dart';
@@ -48,12 +48,12 @@ class _UserChallengesPageState extends State<UserChallengesPage> {
     try {
       final user = authProvider.loginUserData;
       if (user == null || user.id == null) {
-        print("⚠️ Aucun utilisateur connecté.");
+        printVm("⚠️ Aucun utilisateur connecté.");
         setState(() { _loading = false; });
         return;
       }
 
-      print("👤 Chargement des challenges pour userId = ${user.id}");
+      printVm("👤 Chargement des challenges pour userId = ${user.id}");
 
       // 1. Récupérer tous les challenges où l'utilisateur est inscrit
       final challengesSnapshot = await firestore
@@ -111,7 +111,7 @@ class _UserChallengesPageState extends State<UserChallengesPage> {
       });
 
     } catch (e, stack) {
-     print('❌ Erreur chargement challenges utilisateur: $e');
+     printVm('❌ Erreur chargement challenges utilisateur: $e');
       debugPrint('📌 StackTrace: $stack');
       setState(() {
         _loading = false;

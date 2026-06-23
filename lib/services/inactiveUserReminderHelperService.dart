@@ -1,8 +1,11 @@
-import 'dart:async';
+﻿import 'dart:async';
+import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+
 import 'package:flutter/foundation.dart';
+
 import 'package:flutter/material.dart';
 
 class InactiveUserReminderService {
@@ -17,7 +20,6 @@ class InactiveUserReminderService {
   static final FirebaseFunctions _functions = FirebaseFunctions.instance;
   static bool _isProcessing = false;
   static DateTime? _lastProcessDate;
-
 
   /// Appelée lors de la connexion de l'utilisateur
   /// S'exécute en arrière-plan sans bloquer l'UI
@@ -123,11 +125,11 @@ class InactiveUserReminderService {
       final daysInactive = calculateDaysInactive(lastTimeActive);
       final isInactive = daysInactive >= DAYS_INACTIVE_THRESHOLD && lastTimeActive > 0;
 
-      print('📊 isUserInactive: userId=$userId, daysInactive=$daysInactive, isInactive=$isInactive');
+      printVm('📊 isUserInactive: userId=$userId, daysInactive=$daysInactive, isInactive=$isInactive');
 
       return isInactive;
     } catch (e) {
-      print('Erreur isUserInactive: $e');
+      printVm('Erreur isUserInactive: $e');
       return false;
     }
   }
@@ -149,11 +151,11 @@ class InactiveUserReminderService {
       final count = remindersSnapshot.count ?? 0;
       final canReceive = count < MAX_EMAILS_PER_MONTH;
 
-      print('📧 canReceiveReminder: userId=$userId, count=$count, canReceive=$canReceive');
+      printVm('📧 canReceiveReminder: userId=$userId, count=$count, canReceive=$canReceive');
 
       return canReceive;
     } catch (e) {
-      print('Erreur canReceiveReminder: $e');
+      printVm('Erreur canReceiveReminder: $e');
       return false;
     }
   }
@@ -212,7 +214,7 @@ class InactiveUserReminderService {
         'raw_last_time_active': lastTimeActive, // Pour débogage
       };
     } catch (e) {
-      print('Erreur getUserEmailData: $e');
+      printVm('Erreur getUserEmailData: $e');
       return null;
     }
   }
@@ -239,13 +241,13 @@ class InactiveUserReminderService {
             'last_time_active_updated_at': FieldValue.serverTimestamp(),
           });
           updatedCount++;
-          print('✅ Migration userId ${doc.id}: $lastTimeActive → $newTimestamp');
+          printVm('✅ Migration userId ${doc.id}: $lastTimeActive → $newTimestamp');
         }
       }
 
-      print('📊 Migration terminée: $updatedCount utilisateurs mis à jour');
+      printVm('📊 Migration terminée: $updatedCount utilisateurs mis à jour');
     } catch (e) {
-      print('Erreur migration: $e');
+      printVm('Erreur migration: $e');
     }
   }
 }

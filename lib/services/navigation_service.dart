@@ -1,21 +1,39 @@
-import 'dart:async';
+﻿import 'dart:async';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
 import 'package:app_links/app_links.dart';
+
 import 'package:onesignal_flutter/onesignal_flutter.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
+
 import '../models/model_data.dart';
+
 import '../pages/chronique/chroniquedetails.dart';
+
 import '../pages/chronique/chroniquehome.dart';
+
 import '../pages/chat/myChat.dart';
+
 import '../pages/postDetails.dart';
+
 import '../pages/postDetailsVideo.dart';
+
 import '../pages/user/amis/pageMesInvitations.dart';
+
 import '../pages/user/amis/ami.dart';
+
 import '../pages/mes_notifications.dart';
+
 import '../pages/user/monetisation.dart';
+
 import '../pages/home/homeScreen.dart';
+
 import '../models/chatmodels/message.dart';
 
 class NavigationService {
@@ -52,7 +70,7 @@ class NavigationService {
     if (kIsWeb) return;
 
     OneSignal.Notifications.addClickListener((event) async {
-      print("📱 [NAVIGATION_SERVICE] Notification cliquée");
+      printVm("📱 [NAVIGATION_SERVICE] Notification cliquée");
 
       await Future.delayed(const Duration(milliseconds: 300));
 
@@ -65,7 +83,7 @@ class NavigationService {
       final chatId = additionalData['chat_id'] as String?;
       final sendUserId = additionalData['send_user_id'] as String?;
 
-      print("📱 [NAVIGATION_SERVICE] type: $typeNotif, postId: $postId");
+      printVm("📱 [NAVIGATION_SERVICE] type: $typeNotif, postId: $postId");
 
       // Chronique
       if (postType == 'CHRONIQUE' ||
@@ -169,7 +187,7 @@ class NavigationService {
           final cleanId = rawId.split('?')[0].split('#')[0];
           final typeStr = segments[1];
 
-          print("🔗 [NAVIGATION_SERVICE] Deep link: type=$typeStr, id=$cleanId");
+          printVm("🔗 [NAVIGATION_SERVICE] Deep link: type=$typeStr, id=$cleanId");
 
           if (typeStr.toLowerCase() == 'chronique') {
             if (onChroniqueNotification != null) {
@@ -265,7 +283,7 @@ class NavigationService {
       }
     } catch (e) {
       Navigator.pop(context);
-      print("Erreur navigation post: $e");
+      printVm("Erreur navigation post: $e");
     }
   }
 
@@ -318,7 +336,7 @@ class NavigationService {
       );
     } catch (e) {
       Navigator.pop(context);
-      print("Erreur navigation chat: $e");
+      printVm("Erreur navigation chat: $e");
     }
   }
 }

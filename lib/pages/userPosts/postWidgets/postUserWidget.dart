@@ -1,4 +1,4 @@
-
+﻿
 
 
 
@@ -98,7 +98,7 @@ Future<void> deletePost(Post post, BuildContext context) async {
         ),
       ),
     );
-    print('Erreur suppression post: $e');
+    printVm('Erreur suppression post: $e');
   }
 }
 

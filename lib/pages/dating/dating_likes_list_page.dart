@@ -1,4 +1,4 @@
-// lib/pages/dating/dating_likes_list_page.dart
+﻿// lib/pages/dating/dating_likes_list_page.dart
 import 'dart:ui';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
@@ -52,7 +52,7 @@ class _DatingLikesListPageState extends State<DatingLikesListPage>
         }
       }
     } catch (e) {
-      print('❌ Erreur chargement abonnement: $e');
+      printVm('❌ Erreur chargement abonnement: $e');
     }
   }
 
@@ -559,7 +559,7 @@ class _DatingLikesListPageState extends State<DatingLikesListPage>
       }
       return null;
     } catch (e) {
-      print('❌ Erreur récupération dating profile: $e');
+      printVm('❌ Erreur récupération dating profile: $e');
       return null;
     }
   }

@@ -1,6 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
+
 import 'package:url_launcher/url_launcher.dart';
 
 class ContactPage extends StatefulWidget {
@@ -52,7 +55,7 @@ class _AidePageState extends State<ContactPage> {
         ),
       );
     } catch (error) {
-      print(error);
+      printVm(error);
       platformResponse = error.toString();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

@@ -1,43 +1,77 @@
-import 'dart:async';
+﻿import 'dart:async';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'dart:math';
 import 'package:afrotok/models/model_data.dart';
+
 import 'package:afrotok/pages/afroshop/marketPlace/acceuil/produit_details.dart';
+
 import 'package:afrotok/pages/canaux/detailsCanal.dart';
+
 import 'package:afrotok/pages/postDetailsVideo.dart';
+
 import 'package:afrotok/providers/authProvider.dart';
+
 import 'package:afrotok/providers/postProvider.dart';
+
 import 'package:afrotok/providers/afroshop/categorie_produits_provider.dart';
+
 import 'package:flutter/material.dart';
 
 import 'package:provider/provider.dart';
 
 import '../../../providers/chroniqueProvider.dart';
+
 import '../../../providers/contenuPayantProvider.dart';
+
 import '../../../services/postService/mixed_feedvideo_service.dart';
+
 import '../../UserServices/ServiceWidget.dart';
+
 import '../../afroshop/marketPlace/acceuil/home_afroshop.dart';
+
 import '../../afroshop/marketPlace/component.dart';
+
 import '../../canaux/listCanal.dart';
+
 import 'dart:async';
+
 import 'dart:math';
+
 import 'package:afrotok/models/model_data.dart';
+
 import 'package:afrotok/pages/afroshop/marketPlace/acceuil/produit_details.dart';
+
 import 'package:afrotok/pages/canaux/detailsCanal.dart';
+
 import 'package:afrotok/pages/postDetailsVideo.dart';
+
 import 'package:afrotok/providers/authProvider.dart';
+
 import 'package:afrotok/providers/postProvider.dart';
+
 import 'package:afrotok/providers/afroshop/categorie_produits_provider.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:provider/provider.dart';
 
 import '../../../providers/chroniqueProvider.dart';
+
 import '../../../providers/contenuPayantProvider.dart';
+
 import '../../../services/postService/mixed_feedvideo_service.dart';
+
 import '../../UserServices/ServiceWidget.dart';
+
 import '../../afroshop/marketPlace/acceuil/home_afroshop.dart';
+
 import '../../afroshop/marketPlace/component.dart';
+
 import '../../canaux/listCanal.dart';
+
 import '../../pub/banner_ad_widget.dart';
+
 import '../../pub/native_ad_widget.dart';
 
 // 🔥 ENUM POUR LES FILTRES VIDÉO
@@ -124,7 +158,7 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
       await _loadInitialVideos();
 
     } catch (e) {
-      print('❌ Erreur initialisation services TikTok: $e');
+      printVm('❌ Erreur initialisation services TikTok: $e');
       setState(() => _hasError = true);
     } finally {
       if (mounted) {
@@ -137,7 +171,7 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
   Future<void> _onFilterChanged(VideoFilter newFilter) async {
     if (_currentFilter == newFilter) return;
 
-    print('🎯 Changement de filtre vidéo: ${_currentFilter.label} → ${newFilter.label}');
+    printVm('🎯 Changement de filtre vidéo: ${_currentFilter.label} → ${newFilter.label}');
 
     setState(() {
       _currentFilter = newFilter;
@@ -153,10 +187,10 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
         _isLoading = false;
       });
 
-      print('✅ Filtre vidéo appliqué: ${_mixedFeed.length} éléments');
+      printVm('✅ Filtre vidéo appliqué: ${_mixedFeed.length} éléments');
 
     } catch (e) {
-      print('❌ Erreur application filtre vidéo: $e');
+      printVm('❌ Erreur application filtre vidéo: $e');
       setState(() {
         _isLoading = false;
         _hasError = true;
@@ -180,10 +214,10 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
         _canaux = canaux.take(6).toList();
       });
 
-      print('🛍️ Contenu publicitaire chargé: ${_articles.length} articles, ${_canaux.length} canaux');
+      printVm('🛍️ Contenu publicitaire chargé: ${_articles.length} articles, ${_canaux.length} canaux');
 
     } catch (e) {
-      print('❌ Erreur chargement contenu publicitaire: $e');
+      printVm('❌ Erreur chargement contenu publicitaire: $e');
     }
   }
 
@@ -206,10 +240,10 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
         _startAutoPlayTimer();
       }
 
-      print('✅ Chargement initial: ${_mixedFeed.length} éléments mixte');
+      printVm('✅ Chargement initial: ${_mixedFeed.length} éléments mixte');
 
     } catch (e) {
-      print('❌ Erreur chargement vidéos: $e');
+      printVm('❌ Erreur chargement vidéos: $e');
       setState(() => _hasError = true);
     }
   }
@@ -235,7 +269,7 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
       }
 
     } catch (e) {
-      print('❌ Erreur chargement supplémentaire: $e');
+      printVm('❌ Erreur chargement supplémentaire: $e');
     } finally {
       if (mounted) {
         setState(() => _isLoadingMore = false);
@@ -362,13 +396,13 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
         // templateType: TemplateType.medium, // ou TemplateType.small
 
         onAdLoaded: () {
-          print('✅ Native Ad Afrolook chargée: $key');
+          printVm('✅ Native Ad Afrolook chargée: $key');
         },
       ),
 
       // child: BannerAdWidget(
       //   onAdLoaded: () {
-      //     print('✅ Bannière Afrolook chargée: $key');
+      //     printVm('✅ Bannière Afrolook chargée: $key');
       //   },
       // ),
     );
@@ -407,7 +441,6 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
             // FILTRES
             // _buildFilterChips(),
             // _buildAdBanner(key: 'ad_video'),
-
 
             // CONTENU PRINCIPAL
             Expanded(
@@ -575,8 +608,6 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
             ),
           ),
         ),
-
-
 
         // INDICATEUR DE FILTRE
         Positioned(

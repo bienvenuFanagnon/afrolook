@@ -1,4 +1,6 @@
-import 'package:android_id/android_id.dart';
+﻿import 'package:android_id/android_id.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:device_info_plus/device_info_plus.dart';
 import 'dart:io';
 
@@ -30,10 +32,10 @@ class DeviceInfoService {
       }
 
       _deviceId = deviceId;
-      print("ID Appareil généré: $deviceId");
+      printVm("ID Appareil généré: $deviceId");
       return deviceId;
     } catch (e) {
-      print("Erreur récupération ID appareil: $e");
+      printVm("Erreur récupération ID appareil: $e");
       // Fallback basé sur le timestamp
       return 'error_device_${DateTime.now().millisecondsSinceEpoch}';
     }

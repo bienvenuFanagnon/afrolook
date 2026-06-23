@@ -1,6 +1,8 @@
-// import 'dart:js' as js;
+﻿// import 'dart:js' as js;
 // import 'dart:html' as html;
 //
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -29,7 +31,7 @@ Future<void> showInstallModal(BuildContext context) async {
   // bool isInstalled = html.window.matchMedia('(display-mode: standalone)').matches;
   //
   // if (hideModal || isInstalled) {
-  //   print("PWA: Modal masqué (Déjà installé ou refusé)");
+  //   printVm("PWA: Modal masqué (Déjà installé ou refusé)");
   //   return;
   // }
   //

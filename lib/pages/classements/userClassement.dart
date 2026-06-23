@@ -1,15 +1,23 @@
-import 'package:afrotok/models/model_data.dart';
+﻿import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:provider/provider.dart';
+
 import 'package:shimmer/shimmer.dart';
 
 import '../../../constant/constColors.dart';
+
 import '../../../constant/logo.dart';
+
 import '../../../constant/sizeText.dart';
+
 import '../../../providers/authProvider.dart';
+
 import '../component/showUserDetails.dart';
+
 import '../pub/native_ad_widget.dart';
 
 class UserClassement extends StatefulWidget {
@@ -65,7 +73,7 @@ class _UserClassementState extends State<UserClassement> {
         _isLoading = false;
       });
     } catch (e) {
-      print('❌ Erreur lors de la récupération du classement: $e');
+      printVm('❌ Erreur lors de la récupération du classement: $e');
       setState(() {
         _errorMessage = 'Impossible de charger le classement';
         _isLoading = false;
@@ -355,7 +363,7 @@ class _UserClassementState extends State<UserClassement> {
       child: MrecAdWidget(
         // templateType: TemplateType.small,
         onAdLoaded: () {
-          print('✅ Native Ad chargée dans top10: $key');
+          printVm('✅ Native Ad chargée dans top10: $key');
         },
       ),
     );

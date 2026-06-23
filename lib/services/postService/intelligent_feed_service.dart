@@ -1,4 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:afrotok/models/model_data.dart';
 import 'feed_scoring_service.dart';
 
@@ -19,7 +21,7 @@ class IntelligentFeedService {
         return await _getChronologicalFeed(limit);
       }
     } catch (e) {
-      print('Error loading feed: $e');
+      printVm('Error loading feed: $e');
       return await _getChronologicalFeed(limit);
     }
   }

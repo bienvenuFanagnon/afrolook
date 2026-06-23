@@ -1,21 +1,30 @@
-import 'dart:async';
+﻿import 'dart:async';
+import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/pages/auth/authTest/Screens/Signup/signup_up_form_step_2.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:pinput/pinput.dart';
+
 import 'package:provider/provider.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../models/model_data.dart';
+
 import '../../../providers/authProvider.dart';
+
 import '../../../providers/userProvider.dart';
+
 import '../authTest/Screens/Signup/function.dart';
+
 import 'change_pass_word.dart';
-
-
 
 class ConfirmVerificationOtp extends StatefulWidget {
 
@@ -24,8 +33,6 @@ class ConfirmVerificationOtp extends StatefulWidget {
       : super(key: key);
   final String verificationId;
   final String phoneNumber;
-
-
 
   @override
   State<ConfirmVerificationOtp> createState() => _VerificationOtpState();
@@ -45,7 +52,6 @@ class _VerificationOtpState extends State<ConfirmVerificationOtp> {
   Provider.of<UserProvider>(context, listen: false);
 
   final _auth = FirebaseAuth.instance;
-
 
 // Méthode pour récupérer l'UID de l'utilisateur après vérification SMS et vérifier s'il existe dans Firestore
 
@@ -146,7 +152,7 @@ class _VerificationOtpState extends State<ConfirmVerificationOtp> {
       loading = false;
       setState(() {});
       showErrorDialog(_scaffoldKey!.currentContext!);
-      print("Le code est erroné");
+      printVm("Le code est erroné");
     }, autoRetrieval: (v) {});
   }
 
@@ -171,7 +177,7 @@ class _VerificationOtpState extends State<ConfirmVerificationOtp> {
           await authProvider.getAppData();
           // await userProvider.getAllAnnonces();
 
-          //print("app data2 : ${authProvider.appDefaultData.toJson()!}");
+          //printVm("app data2 : ${authProvider.appDefaultData.toJson()!}");
           // Obtenez les SharedPreferences
           userProvider.changeState(user: authProvider.loginUserData,
               state: UserState.ONLINE.name);
@@ -182,9 +188,7 @@ class _VerificationOtpState extends State<ConfirmVerificationOtp> {
               '/home');
          // Navigator.pushNamed(context, '/chargement');
 
-
         }
-
 
       }else{
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -203,8 +207,6 @@ class _VerificationOtpState extends State<ConfirmVerificationOtp> {
     );
 
  */
-
-
 
   }
 

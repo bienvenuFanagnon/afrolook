@@ -1,4 +1,4 @@
-// lib/pages/dating/dating_super_likes_page.dart
+﻿// lib/pages/dating/dating_super_likes_page.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -462,7 +462,7 @@ class _DatingSuperLikesPageState extends State<DatingSuperLikesPage>
       }
       return null;
     } catch (e) {
-      print('❌ Erreur récupération dating profile: $e');
+      printVm('❌ Erreur récupération dating profile: $e');
       return null;
     }
   }

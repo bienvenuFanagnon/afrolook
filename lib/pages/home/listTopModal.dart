@@ -1,31 +1,57 @@
-import 'package:afrotok/pages/LiveAgora/live_list_page.dart';
+﻿import 'package:afrotok/pages/LiveAgora/live_list_page.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:afrotok/pages/afroshop/marketPlace/acceuil/home_afroshop.dart';
 import 'package:afrotok/pages/challenge/challengeDetails.dart';
+
 import 'package:cached_network_image/cached_network_image.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../constant/custom_theme.dart';
+
 import '../../models/model_data.dart';
+
 import '../../providers/afroshop/categorie_produits_provider.dart';
+
 import '../../providers/userProvider.dart';
+
 import '../LiveAgora/create_live_page.dart';
+
 import '../LiveAgora/livePage.dart';
+
 import '../LiveAgora/livesAgora.dart';
+
 import '../afroshop/marketPlace/acceuil/produit_details.dart';
+
 import '../afroshop/marketPlace/component.dart';
+
 import '../classements/userClassement.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:provider/provider.dart';
+
 import 'package:afrotok/providers/authProvider.dart';
+
 import 'package:afrotok/models/model_data.dart';
 
 import '../dating/dating_entry_page.dart';
+
 import '../info.dart';
+
 import '../user/mes_gains_post_page.dart';
+
 import '../../theme/app_colors.dart';
+
 import '../../l10n/app_localizations.dart';
+
 import 'package:flutter_animate/flutter_animate.dart';
+
 class TopFiveModal {
   static Future<void> showTopFiveModal(
       BuildContext context, List<UserData> topUsers) async {
@@ -337,10 +363,6 @@ class TopFiveUserItem extends StatelessWidget {
     ).animate().fadeIn(duration: 300.ms, delay: (40 * rank).ms).slideX(begin: -0.05, end: 0, duration: 300.ms, curve: Curves.easeOut);
   }
 }
-
-
-
-
 
 class TopLiveGridModal {
   static Future<void> showTopLiveGridModal(BuildContext context) async {
@@ -822,9 +844,6 @@ class _LiveGridItem extends StatelessWidget {
   }
 }
 
-
-
-
 // class TopProductsGridModal {
 //   static Future<void> showTopProductsGridModal(BuildContext context) async {
 //     late CategorieProduitProvider     categorieProduitProvider = Provider.of<CategorieProduitProvider>(context, listen: false);
@@ -1211,18 +1230,10 @@ class _LiveGridItem extends StatelessWidget {
 //   }
 // }
 
-
-
-
 ///////////
-
-
 
 // Ajoutez cette classe après les autres modals
 // Modifiez la partie contenu principal du ChallengeModal
-
-
-
 
 class TopProductsGridModal {
   static Future<void> showTopProductsGridModal(BuildContext context) async {
@@ -1859,7 +1870,6 @@ class ChallengeModal {
     final isEnCours = challenge.isEnCours;
     final isEnAttente = challenge.isEnAttente;
 
-
     showDialog(
       context: context,
       barrierDismissible: true,
@@ -2432,8 +2442,6 @@ class ChallengeModal {
   }
 }
 
-
-
 // Ajoutez cette classe après les autres modals
 class AfrolookInfoModal {
   static const String _lastInfoModalKey = 'last_info_modal';
@@ -2882,7 +2890,7 @@ class AfrolookInfoModal {
   static Future<void> _markModalShown() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_lastInfoModalKey, DateTime.now().millisecondsSinceEpoch);
-    print('✅ Modal info Afrolook marqué comme affiché');
+    printVm('✅ Modal info Afrolook marqué comme affiché');
   }
 
   static void _navigateToInfoPage(BuildContext context) {
@@ -2919,10 +2927,10 @@ class AfrolookInfoModal {
 
     final shouldShow = await _shouldShowModal();
 
-    print('🔍 État du modal info Afrolook:');
-    print('   - Dernier affichage: $lastShown');
-    print('   - Doit être affiché: ${shouldShow ? "OUI" : "NON"}');
-    print('   - Intervalle: $_modalIntervalHours heures');
+    printVm('🔍 État du modal info Afrolook:');
+    printVm('   - Dernier affichage: $lastShown');
+    printVm('   - Doit être affiché: ${shouldShow ? "OUI" : "NON"}');
+    printVm('   - Intervalle: $_modalIntervalHours heures');
   }
 }
 // Modifiez la classe AdvancedModalManager pour inclure les challenges
@@ -2954,7 +2962,7 @@ class AdvancedModalManager {
       // 🆕 ÉTAPE 1: Vérifier et afficher le modal info Afrolook
       final shouldShowInfo = await _shouldShowInfoModal();
       if (shouldShowInfo && context.mounted) {
-        print('📢 Affichage du modal info Afrolook');
+        printVm('📢 Affichage du modal info Afrolook');
         await AfrolookInfoModal.showAfrolookInfoModal(context);
         return; // On s'arrête ici, le modal challenge viendra après
       }
@@ -2962,7 +2970,7 @@ class AdvancedModalManager {
       // 🏆 ÉTAPE 2: Vérifier et afficher le modal Top 5 Afrolookeur
       final shouldShowTopFive = await _shouldShowTopFiveModal();
       if (shouldShowTopFive && context.mounted) {
-        print('👑 Tentative d\'affichage du modal Top 5 Afrolookeur');
+        printVm('👑 Tentative d\'affichage du modal Top 5 Afrolookeur');
         final success = await _tryShowTopFiveModal(context);
         if (success) {
           return; // On s'arrête ici si le modal a été affiché
@@ -2974,13 +2982,13 @@ class AdvancedModalManager {
       final activeChallenge = await _getActiveChallenge();
 
       if (activeChallenge != null && shouldShowChallenge && context.mounted) {
-        print('🏆 Challenge actif trouvé: ${activeChallenge.titre}');
+        printVm('🏆 Challenge actif trouvé: ${activeChallenge.titre}');
         await _showChallengeModal(context, activeChallenge);
         return;
       }
 
       // 🚫 ÉTAPE 4: Aucun modal prioritaire, afficher les autres modals
-      print('❌ Aucun modal prioritaire, affichage des modals secondaires');
+      printVm('❌ Aucun modal prioritaire, affichage des modals secondaires');
       final lastModalType = await _getLastModalType();
 
       if (lastModalType == 'products') {
@@ -3019,7 +3027,7 @@ if(userProvider.listAllUsers.isNotEmpty){
 
       if (topAfrolookeurs.isNotEmpty) {
         final topFive = topAfrolookeurs.take(5).toList();
-        print('👑 Top 5 récupéré avec ${topFive.length} utilisateurs');
+        printVm('👑 Top 5 récupéré avec ${topFive.length} utilisateurs');
 
         if (context.mounted) {
           await TopFiveModal.showTopFiveModal(context, topFive);
@@ -3027,10 +3035,10 @@ if(userProvider.listAllUsers.isNotEmpty){
           return true;
         }
       } else {
-        print('👑 Aucun utilisateur trouvé pour le Top 5');
+        printVm('👑 Aucun utilisateur trouvé pour le Top 5');
       }
     } catch (e) {
-      print('❌ Erreur lors de l\'affichage du modal Top 5: $e');
+      printVm('❌ Erreur lors de l\'affichage du modal Top 5: $e');
     }
 
     return false;
@@ -3040,7 +3048,7 @@ if(userProvider.listAllUsers.isNotEmpty){
   static Future<void> _markTopFiveModalShown() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_lastTopFiveModalKey, DateTime.now().millisecondsSinceEpoch);
-    print('✅ Modal Top 5 marqué comme affiché à ${DateTime.now()}');
+    printVm('✅ Modal Top 5 marqué comme affiché à ${DateTime.now()}');
   }
 
   // Les méthodes existantes restent inchangées...
@@ -3073,7 +3081,7 @@ if(userProvider.listAllUsers.isNotEmpty){
       await _showProductModal(context);
       await _setLastModalType('products');
     } else {
-      print('⏰ Modal produits non affiché');
+      printVm('⏰ Modal produits non affiché');
     }
   }
 
@@ -3083,7 +3091,7 @@ if(userProvider.listAllUsers.isNotEmpty){
       await _showLiveModal(context);
       await _setLastModalType('lives');
     } else {
-      print('⏰ Modal lives non affiché');
+      printVm('⏰ Modal lives non affiché');
     }
   }
 
@@ -3108,25 +3116,25 @@ if(userProvider.listAllUsers.isNotEmpty){
       }
       return null;
     } catch (e) {
-      print('❌ Erreur lors de la récupération du challenge: $e');
+      printVm('❌ Erreur lors de la récupération du challenge: $e');
       return null;
     }
   }
 
   static Future<void> _showProductModal(BuildContext context) async {
-    print('🛒 Affichage du modal des produits boostés');
+    printVm('🛒 Affichage du modal des produits boostés');
     await TopProductsGridModal.showTopProductsGridModal(context);
     await _markModalShown(_lastProductModalKey);
   }
 
   static Future<void> _showChallengeModal(BuildContext context, Challenge challenge) async {
-    print('🏆 Affichage du modal du challenge: ${challenge.titre}');
+    printVm('🏆 Affichage du modal du challenge: ${challenge.titre}');
     await ChallengeModal.showChallengeModal(context, challenge);
     await _markModalShown(_lastChallengeModalKey);
   }
 
   static Future<void> _showLiveModal(BuildContext context) async {
-    print('🎥 Affichage du modal des lives');
+    printVm('🎥 Affichage du modal des lives');
     await TopLiveGridModal.showTopLiveGridModal(context);
     await _markModalShown(_lastLiveModalKey);
   }
@@ -3134,7 +3142,7 @@ if(userProvider.listAllUsers.isNotEmpty){
   static Future<void> _markModalShown(String modalKey) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(modalKey, DateTime.now().millisecondsSinceEpoch);
-    print('✅ Modal $modalKey marqué comme affiché à ${DateTime.now()}');
+    printVm('✅ Modal $modalKey marqué comme affiché à ${DateTime.now()}');
   }
 
   static Future<bool> _shouldShowModal(String modalKey) async {
@@ -3167,23 +3175,23 @@ if(userProvider.listAllUsers.isNotEmpty){
     final shouldShowChallenge = await _shouldShowChallengeModal();
     final shouldShowTopFive = await _shouldShowTopFiveModal(); // Nouveau
 
-    print('🔍 État des modals:');
-    print('   - Dernier modal: $lastModalType');
-    print('   - Modal Info: ${shouldShowInfo ? "À AFFICHER" : "PAS MAINTENANT"} (affiché: ${infoShown ?? "jamais"})');
-    print('   - Modal Top 5: ${shouldShowTopFive ? "À AFFICHER" : "PAS MAINTENANT"} (affiché: ${topFiveShown ?? "jamais"})'); // Nouveau
-    print('   - Modal Challenge: ${shouldShowChallenge ? "À AFFICHER" : "PAS MAINTENANT"} (affiché: ${challengeShown ?? "jamais"})');
-    print('   - Challenge actif: ${activeChallenge != null ? "OUI" : "NON"}');
-    print('   - Produits affichés: ${productShown ?? "jamais"}');
-    print('   - Lives affichés: ${liveShown ?? "jamais"}');
+    printVm('🔍 État des modals:');
+    printVm('   - Dernier modal: $lastModalType');
+    printVm('   - Modal Info: ${shouldShowInfo ? "À AFFICHER" : "PAS MAINTENANT"} (affiché: ${infoShown ?? "jamais"})');
+    printVm('   - Modal Top 5: ${shouldShowTopFive ? "À AFFICHER" : "PAS MAINTENANT"} (affiché: ${topFiveShown ?? "jamais"})'); // Nouveau
+    printVm('   - Modal Challenge: ${shouldShowChallenge ? "À AFFICHER" : "PAS MAINTENANT"} (affiché: ${challengeShown ?? "jamais"})');
+    printVm('   - Challenge actif: ${activeChallenge != null ? "OUI" : "NON"}');
+    printVm('   - Produits affichés: ${productShown ?? "jamais"}');
+    printVm('   - Lives affichés: ${liveShown ?? "jamais"}');
 
     if (shouldShowInfo) {
-      print('   📢 PRIORITÉ: Modal Info Afrolook');
+      printVm('   📢 PRIORITÉ: Modal Info Afrolook');
     } else if (shouldShowTopFive) {
-      print('   👑 PRIORITÉ: Modal Top 5 Afrolookeur');
+      printVm('   👑 PRIORITÉ: Modal Top 5 Afrolookeur');
     } else if (activeChallenge != null && shouldShowChallenge) {
-      print('   🎯 PRIORITÉ: Modal Challenge');
+      printVm('   🎯 PRIORITÉ: Modal Challenge');
     } else {
-      print('   🚫 Aucun modal prioritaire - modals secondaires');
+      printVm('   🚫 Aucun modal prioritaire - modals secondaires');
     }
   }
 
@@ -3195,11 +3203,9 @@ if(userProvider.listAllUsers.isNotEmpty){
     await prefs.remove(_lastInfoModalKey);
     await prefs.remove(_lastTopFiveModalKey); // Nouveau
     await prefs.remove(_lastModalTypeKey);
-    print('🔄 Tous les modals ont été réinitialisés');
+    printVm('🔄 Tous les modals ont été réinitialisés');
   }
 }
-
-
 
 void showRemunerationAnnounceModal(BuildContext context, String userId) {
   showDialog(

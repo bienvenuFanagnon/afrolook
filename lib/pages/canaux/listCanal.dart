@@ -1,14 +1,25 @@
-import 'package:afrotok/models/model_data.dart';
+﻿import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+
 import 'package:provider/provider.dart';
+
 import '../../../providers/authProvider.dart';
+
 import '../../../providers/userProvider.dart';
+
 import '../../providers/postProvider.dart';
+
 import '../../theme/app_colors.dart';
+
 import '../../l10n/app_localizations.dart';
+
 import '../paiement/newDepot.dart';
+
 import 'detailsCanal.dart';
+
 import 'newCanal.dart';
 
 class CanalListPage extends StatefulWidget {
@@ -85,7 +96,7 @@ class _CanalListPageState extends State<CanalListPage> {
         _isLoading = false;
       });
     } catch (e) {
-      print('Erreur chargement initial: $e');
+      printVm('Erreur chargement initial: $e');
       setState(() {
         _isLoading = false;
       });
@@ -120,7 +131,7 @@ class _CanalListPageState extends State<CanalListPage> {
         _isLoadingMore = false;
       });
     } catch (e) {
-      print('Erreur chargement supplémentaire: $e');
+      printVm('Erreur chargement supplémentaire: $e');
       setState(() {
         _isLoadingMore = false;
       });
@@ -269,7 +280,6 @@ class _CanalListPageState extends State<CanalListPage> {
       // // Créditer l'application
       // await authProvider.incrementAppGain(appShare);
 
-
       // Diviser le montant (70% créateur, 30% application)
       final double creatorShare = price * 0.7;
       double appShare = price * 0.3;
@@ -288,7 +298,6 @@ class _CanalListPageState extends State<CanalListPage> {
         authProvider.ajouterCommissionParrainViaUserId(userId: canal.userId!, montant: price);
 
       }
-
 
       // Enregistrer les transactions
       await _recordTransactions(canal, price, creatorShare, appShare, isAlreadySubscribed);
@@ -314,7 +323,7 @@ class _CanalListPageState extends State<CanalListPage> {
       );
 
     } catch (e) {
-      print('Erreur abonnement privé: $e');
+      printVm('Erreur abonnement privé: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -348,7 +357,7 @@ class _CanalListPageState extends State<CanalListPage> {
         'canal_id': canalId,
       });
     } catch (e) {
-      print('Erreur crédit créateur: $e');
+      printVm('Erreur crédit créateur: $e');
       throw e;
     }
   }

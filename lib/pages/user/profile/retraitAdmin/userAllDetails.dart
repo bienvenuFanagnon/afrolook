@@ -1,4 +1,6 @@
-// pages/admin/user_management_page.dart
+﻿// pages/admin/user_management_page.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/component/showUserDetails.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -47,7 +49,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
         setState(() => _isLoading = false);
       }
     } catch (e) {
-      print('Erreur chargement user: $e');
+      printVm('Erreur chargement user: $e');
       setState(() => _isLoading = false);
     }
   }

@@ -1,4 +1,6 @@
+﻿
 
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:provider/provider.dart';
@@ -286,10 +288,10 @@ class CoinGiftService {
             .call({'userId': userId, 'userData': userData});
 
         if (result.data['success'] == true) {
-          print('✅ Email de rappel envoyé à ${userData['userEmail']}');
+          printVm('✅ Email de rappel envoyé à ${userData['userEmail']}');
         }
       } catch (e) {
-        print('❌ Erreur _checkAndSendReminderIfInactive: $e');
+        printVm('❌ Erreur _checkAndSendReminderIfInactive: $e');
       }
     });
   }
@@ -311,7 +313,7 @@ class CoinGiftService {
         .get();
 
     if (query.docs.isEmpty) {
-      print("⚠️ Aucun parrain trouvé avec ce code: $codeParrainage");
+      printVm("⚠️ Aucun parrain trouvé avec ce code: $codeParrainage");
       return;
     }
 
@@ -344,7 +346,7 @@ class CoinGiftService {
 
     await transactionRef.set(transaction.toJson());
 
-    print("✅ Commission de $commissionCoins pièces ajoutée au parrain $parrainId");
+    printVm("✅ Commission de $commissionCoins pièces ajoutée au parrain $parrainId");
   }
 
   /// Envoyer une notification de cadeau

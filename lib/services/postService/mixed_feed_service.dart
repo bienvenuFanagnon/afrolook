@@ -1,39 +1,71 @@
-import 'dart:async';
+﻿import 'dart:async';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:afrotok/models/model_data.dart';
+
 import 'package:provider/provider.dart';
+
 import '../../pages/chronique/chroniqueform.dart';
+
 import '../../providers/afroshop/categorie_produits_provider.dart';
+
 import '../../providers/chroniqueProvider.dart';
+
 import '../../providers/contenuPayantProvider.dart';
+
 import 'feed_scoring_service.dart';
+
 import 'package:afrotok/providers/authProvider.dart';
+
 import 'package:afrotok/providers/postProvider.dart';
 
 import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:afrotok/models/model_data.dart';
+
 import 'package:provider/provider.dart';
+
 import '../../pages/chronique/chroniqueform.dart';
+
 import '../../providers/afroshop/categorie_produits_provider.dart';
+
 import '../../providers/chroniqueProvider.dart';
+
 import '../../providers/contenuPayantProvider.dart';
+
 import 'feed_scoring_service.dart';
+
 import 'package:afrotok/providers/authProvider.dart';
 
 import 'local_viewed_posts_service.dart';
+
 import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:afrotok/models/model_data.dart';
+
 import 'package:provider/provider.dart';
+
 import '../../pages/chronique/chroniqueform.dart';
+
 import '../../providers/afroshop/categorie_produits_provider.dart';
+
 import '../../providers/chroniqueProvider.dart';
 
 // 🔥 CLASSE DE CONFIGURATION CENTRALISÉE COMPLÈTE
@@ -95,7 +127,6 @@ class FeedConfig {
   static const int backgroundLoadDelayMs = 500;
   static const int batchCommitDelayMs = 100;
 }
-
 
 class MixedFeedService {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -180,7 +211,7 @@ class MixedFeedService {
         return;
       }
 
-      print('🚀 Chargement des ${FeedConfig.immediatePostsCount} posts immédiats...');
+      printVm('🚀 Chargement des ${FeedConfig.immediatePostsCount} posts immédiats...');
 
       List<String> immediatePostIds = [];
 
@@ -201,11 +232,11 @@ class MixedFeedService {
                 .toList();
 
             immediatePostIds.addAll(subscriptionPosts);
-            print('📨 ${subscriptionPosts.length} post(s) d\'abonnement(s)');
+            printVm('📨 ${subscriptionPosts.length} post(s) d\'abonnement(s)');
           }
         }
       } catch (e) {
-        print('⚠️ Erreur abonnements, continuation: $e');
+        printVm('⚠️ Erreur abonnements, continuation: $e');
       }
 
       // 🔥 ÉTAPE 2: COMPLÉTER AVEC DES POSTS RÉCENTS
@@ -215,9 +246,9 @@ class MixedFeedService {
           final recentPosts = await _getRecentPostIdsForImmediate(limit: needed * 2);
           final postsToAdd = recentPosts.take(needed).toList();
           immediatePostIds.addAll(postsToAdd);
-          print('🔄 ${postsToAdd.length} post(s) récents ajoutés');
+          printVm('🔄 ${postsToAdd.length} post(s) récents ajoutés');
         } catch (e) {
-          print('⚠️ Erreur posts récents: $e');
+          printVm('⚠️ Erreur posts récents: $e');
         }
       }
 
@@ -226,9 +257,9 @@ class MixedFeedService {
         try {
           final forcedPosts = await _getForcedPosts(FeedConfig.immediatePostsCount);
           immediatePostIds.addAll(forcedPosts);
-          print('💥 ${forcedPosts.length} post(s) forcés');
+          printVm('💥 ${forcedPosts.length} post(s) forcés');
         } catch (e) {
-          print('❌ Erreur forçage: $e');
+          printVm('❌ Erreur forçage: $e');
         }
       }
 
@@ -244,10 +275,10 @@ class MixedFeedService {
       }
 
       _areImmediatePostsLoaded = true;
-      print('🎯 FINAL: ${_immediatePosts.length} post(s) immédiat(s) chargé(s)');
+      printVm('🎯 FINAL: ${_immediatePosts.length} post(s) immédiat(s) chargé(s)');
 
     } catch (e) {
-      print('❌ Erreur critique posts immédiats: $e');
+      printVm('❌ Erreur critique posts immédiats: $e');
       _immediatePosts = [];
       _areImmediatePostsLoaded = true;
     }
@@ -271,12 +302,10 @@ class MixedFeedService {
       return filteredPosts.take(limit).toList();
 
     } catch (e) {
-      print('❌ Erreur posts récents immédiats: $e');
+      printVm('❌ Erreur posts récents immédiats: $e');
       return [];
     }
   }
-
-
 
 // 🔥 NOUVELLE MÉTHODE : PRÉPARATION PROGRESSIVE
   Future<void> preparePostsOnly() async {
@@ -289,15 +318,15 @@ class MixedFeedService {
       final currentUserId = authProvider.loginUserData.id;
       if (currentUserId == null) return;
 
-      print('🎯 Début de la préparation progressive des posts...');
+      printVm('🎯 Début de la préparation progressive des posts...');
 
       // 🔥 LANCER EN BACKGROUND SANS ATTENDRE
       _startProgressivePreparation(currentUserId);
 
-      print('✅ Préparation lancée en background');
+      printVm('✅ Préparation lancée en background');
 
     } catch (e) {
-      print('❌ Erreur préparation posts: $e');
+      printVm('❌ Erreur préparation posts: $e');
       _isPreparingPosts = false;
     }
   }
@@ -322,7 +351,7 @@ class MixedFeedService {
       final immediatePostIds = _immediatePosts.map((post) => post.id!).where((id) => id != null).toList();
       final excludedPosts = {...allViewedPosts, ...immediatePostIds}.toList();
 
-      print('🎯 Préparation progressive - Cible: $_preloadBatchSize posts');
+      printVm('🎯 Préparation progressive - Cible: $_preloadBatchSize posts');
 
       // 🔥 PHASE 1 : POSTS RAPIDES (abonnements + récents)
       await _loadQuickPosts(newPostsFromSubscriptions, excludedPosts);
@@ -334,7 +363,7 @@ class MixedFeedService {
       _loadForcedPostsInBackground(excludedPosts);
 
     } catch (e) {
-      print('❌ Erreur préparation progressive: $e');
+      printVm('❌ Erreur préparation progressive: $e');
       _isPreparingPosts = false;
     }
   }
@@ -352,7 +381,7 @@ class MixedFeedService {
           excludedIds: []
       );
       quickPosts.addAll(subscriptionIds);
-      print('📨 Phase rapide - Abonnements: ${subscriptionIds.length}');
+      printVm('📨 Phase rapide - Abonnements: ${subscriptionIds.length}');
 
       // 2. POSTS RÉCENTS (rapide)
       if (quickPosts.length < _preloadBatchSize) {
@@ -364,7 +393,7 @@ class MixedFeedService {
             attempt: 1
         );
         quickPosts.addAll(recentIds);
-        print('🆕 Phase rapide - Récents: ${recentIds.length}');
+        printVm('🆕 Phase rapide - Récents: ${recentIds.length}');
       }
 
       // 🔥 METTRE À JOUR IMMÉDIATEMENT LES POSTS DISPONIBLES
@@ -375,14 +404,14 @@ class MixedFeedService {
         // Mélanger pour variété
         _availablePostIds.shuffle();
 
-        print('🚀 Posts rapides disponibles: ${_availablePostIds.length}');
+        printVm('🚀 Posts rapides disponibles: ${_availablePostIds.length}');
 
         // Notifier que de nouveaux posts sont prêts
         _notifyNewPostsAvailable();
       }
 
     } catch (e) {
-      print('❌ Erreur phase rapide: $e');
+      printVm('❌ Erreur phase rapide: $e');
     }
   }
 
@@ -395,7 +424,7 @@ class MixedFeedService {
         final needed = _preloadBatchSize - _availablePostIds.length;
         final scoreLimit = min(needed, FeedConfig.scoreLimit);
 
-        print('📊 Début phase score - Besoin: $needed posts');
+        printVm('📊 Début phase score - Besoin: $needed posts');
 
         final highScorePosts = await _getPostsByScoreRecursive(
             limit: scoreLimit ~/ 3,
@@ -430,7 +459,7 @@ class MixedFeedService {
           _availablePostIds.addAll(allScorePosts);
           _availablePostIds.shuffle();
 
-          print('📊 Phase score terminée: +${allScorePosts.length} posts (Total: ${_availablePostIds.length})');
+          printVm('📊 Phase score terminée: +${allScorePosts.length} posts (Total: ${_availablePostIds.length})');
           _notifyNewPostsAvailable();
         }
 
@@ -440,7 +469,7 @@ class MixedFeedService {
         }
 
       } catch (e) {
-        print('❌ Erreur phase score: $e');
+        printVm('❌ Erreur phase score: $e');
       }
     });
   }
@@ -452,7 +481,7 @@ class MixedFeedService {
         if (_availablePostIds.length >= _preloadBatchSize) return;
 
         final needed = _preloadBatchSize - _availablePostIds.length;
-        print('💥 Début phase forçage - Besoin: $needed posts');
+        printVm('💥 Début phase forçage - Besoin: $needed posts');
 
         final forcedPosts = await _getForcedPosts(
             needed * FeedConfig.forceMultiplier,
@@ -463,16 +492,16 @@ class MixedFeedService {
           _availablePostIds.addAll(forcedPosts);
           _availablePostIds.shuffle();
 
-          print('💥 Phase forçage terminée: +${forcedPosts.length} posts (Total: ${_availablePostIds.length})');
+          printVm('💥 Phase forçage terminée: +${forcedPosts.length} posts (Total: ${_availablePostIds.length})');
           _notifyNewPostsAvailable();
         }
 
         // 🔥 MARQUER LA FIN DE LA PRÉPARATION
         _isPreparingPosts = false;
-        print('🎯 Préparation progressive terminée: ${_availablePostIds.length} posts disponibles');
+        printVm('🎯 Préparation progressive terminée: ${_availablePostIds.length} posts disponibles');
 
       } catch (e) {
-        print('❌ Erreur phase forçage: $e');
+        printVm('❌ Erreur phase forçage: $e');
         _isPreparingPosts = false;
       }
     });
@@ -481,20 +510,18 @@ class MixedFeedService {
 // 🔥 NOTIFIER QUE DE NOUVEAUX POSTS SONT DISPONIBLES
   void _notifyNewPostsAvailable() {
     // Cette méthode peut être utilisée pour notifier les listeners si besoin
-    print('🆕 Nouveaux posts disponibles: ${_availablePostIds.length}');
+    printVm('🆕 Nouveaux posts disponibles: ${_availablePostIds.length}');
   }
-
-
 
   // 🔥 CHARGEMENT DU CONTENU GLOBAL DEPUIS LA PAGE
   Future<void> loadGlobalContentFromPage() async {
     if (_hasLoadedGlobalContent) {
-      print('✅ Contenu global déjà chargé');
+      printVm('✅ Contenu global déjà chargé');
       return;
     }
 
     try {
-      print('🌍 Chargement du contenu global depuis la page...');
+      printVm('🌍 Chargement du contenu global depuis la page...');
 
       await Future.wait([
         _loadChroniques(),
@@ -504,7 +531,7 @@ class MixedFeedService {
 
       _hasLoadedGlobalContent = true;
 
-      print('''
+      printVm('''
 ✅ Contenu global chargé depuis la page:
    - ${_globalChroniques.length} chroniques
    - ${_globalArticles.length} articles  
@@ -512,7 +539,7 @@ class MixedFeedService {
 ''');
 
     } catch (e) {
-      print('❌ Erreur chargement contenu global depuis page: $e');
+      printVm('❌ Erreur chargement contenu global depuis page: $e');
     }
   }
 
@@ -523,7 +550,7 @@ class MixedFeedService {
     _isLoading = true;
 
     try {
-      print('🧠 Chargement contenu mixte - LoadMore: $loadMore');
+      printVm('🧠 Chargement contenu mixte - LoadMore: $loadMore');
 
       if (!loadMore) {
         // 🔥 RÉINITIALISER POUR LE PREMIER CHARGEMENT
@@ -541,7 +568,7 @@ class MixedFeedService {
       }
 
       if (_preparedPostIds.isEmpty) {
-        print('📭 Aucun post à charger');
+        printVm('📭 Aucun post à charger');
         _hasMore = false;
         return _mixedContent;
       }
@@ -561,11 +588,11 @@ class MixedFeedService {
       // 🔥 METTRE À JOUR L'ÉTAT "HAS MORE"
       _hasMore = _currentIndex < _preparedPostIds.length;
 
-      print('✅ Contenu mixte chargé: ${_mixedContent.length} éléments (hasMore: $_hasMore)');
+      printVm('✅ Contenu mixte chargé: ${_mixedContent.length} éléments (hasMore: $_hasMore)');
       return _mixedContent;
 
     } catch (e) {
-      print('❌ Erreur chargement contenu mixte: $e');
+      printVm('❌ Erreur chargement contenu mixte: $e');
       _hasMore = false;
       return _mixedContent;
     } finally {
@@ -577,7 +604,7 @@ class MixedFeedService {
 // Dans MixedFeedService - Modifier _prepareInitialPostIds
   Future<void> _prepareInitialPostIds(String currentUserId) async {
     try {
-      print('🎯 Préparation des IDs de posts - Cible: $_preloadBatchSize posts...');
+      printVm('🎯 Préparation des IDs de posts - Cible: $_preloadBatchSize posts...');
 
       final userDoc = await firestore.collection('Users').doc(currentUserId).get();
       if (!userDoc.exists) return;
@@ -602,7 +629,7 @@ class MixedFeedService {
       final immediatePostIds = _immediatePosts.map((post) => post.id!).where((id) => id != null).toList();
       final excludedPosts = {...recentViewedPosts, ...recentLocalViewed, ...immediatePostIds}.toList();
 
-      print('👀 Posts exclus réduits: ${excludedPosts.length} (dont ${immediatePostIds.length} immédiats)');
+      printVm('👀 Posts exclus réduits: ${excludedPosts.length} (dont ${immediatePostIds.length} immédiats)');
 
       // 🔥 ALGORITHME AMÉLIORÉ AVEC FALLBACK
       final Set<String> allPostIds = Set();
@@ -611,7 +638,7 @@ class MixedFeedService {
 
       while (allPostIds.length < _preloadBatchSize && attempts < maxAttempts) {
         attempts++;
-        print('🔄 Tentative $attempts - Posts trouvés: ${allPostIds.length}');
+        printVm('🔄 Tentative $attempts - Posts trouvés: ${allPostIds.length}');
 
         final remaining = _preloadBatchSize - allPostIds.length;
 
@@ -625,7 +652,7 @@ class MixedFeedService {
               excludedIds: allPostIds.toList()
           );
           allPostIds.addAll(subscriptionPosts);
-          print('   📨 Abonnements: +${subscriptionPosts.length}');
+          printVm('   📨 Abonnements: +${subscriptionPosts.length}');
         }
 
         // 2. Posts récents avec fallback progressif
@@ -644,7 +671,7 @@ class MixedFeedService {
               attempt: attempts
           );
           allPostIds.addAll(recentPosts);
-          print('   🆕 Récents: +${recentPosts.length}');
+          printVm('   🆕 Récents: +${recentPosts.length}');
         }
 
         // 3. Posts par score
@@ -685,12 +712,12 @@ class MixedFeedService {
           allPostIds.addAll(mediumScorePosts);
           allPostIds.addAll(lowScorePosts);
 
-          print('   📊 Scores: ${highScorePosts.length}F ${mediumScorePosts.length}M ${lowScorePosts.length}L');
+          printVm('   📊 Scores: ${highScorePosts.length}F ${mediumScorePosts.length}M ${lowScorePosts.length}L');
         }
 
         // 4. 🔥 FORÇAGE INTELLIGENT : Si pas assez de posts
         if (allPostIds.length < 5 && attempts >= 1) { // Réduit à 1 tentative
-          print('🚨 FORÇAGE - Recherche avec exclusions réduites...');
+          printVm('🚨 FORÇAGE - Recherche avec exclusions réduites...');
           final forcedLimit = min(15, _preloadBatchSize - allPostIds.length);
 
           // 🔥 FORÇAGE AVEC EXCLUSIONS MINIMALES
@@ -698,7 +725,7 @@ class MixedFeedService {
 
           final forcedPosts = await _getForcedPosts(forcedLimit, excludedIds: minimalExclusions);
           allPostIds.addAll(forcedPosts);
-          print('   💥 Forcés: +${forcedPosts.length}');
+          printVm('   💥 Forcés: +${forcedPosts.length}');
         }
 
         // Petit délai entre les tentatives
@@ -707,13 +734,13 @@ class MixedFeedService {
         }
       }
 
-      print('🎯 Recherche terminée: ${allPostIds.length} posts uniques après $attempts tentatives');
+      printVm('🎯 Recherche terminée: ${allPostIds.length} posts uniques après $attempts tentatives');
 
       // 🔥 FILTRAGE FINAL AVEC EXCLUSIONS RÉDUITES
       final minimalExclusions = [...immediatePostIds, ...recentViewedPosts.take(50)]; // Seulement 50 derniers vus
       final finalPosts = allPostIds.where((id) => !minimalExclusions.contains(id)).toList();
 
-      print('''
+      printVm('''
 📦 RÉSULTAT FINAL:
    - Posts bruts: ${allPostIds.length}
    - Après filtrage: ${finalPosts.length}
@@ -729,10 +756,10 @@ class MixedFeedService {
       _alreadyLoadedPostIds.clear();
       _hasMore = _preparedPostIds.isNotEmpty;
 
-      print('✅ Préparation terminée: ${_preparedPostIds.length} posts prêts');
+      printVm('✅ Préparation terminée: ${_preparedPostIds.length} posts prêts');
 
     } catch (e) {
-      print('❌ Erreur préparation IDs: $e');
+      printVm('❌ Erreur préparation IDs: $e');
       _preparedPostIds = [];
       _hasMore = false;
     }
@@ -751,7 +778,7 @@ class MixedFeedService {
 
       return unseenPosts.take(limit).toList();
     } catch (e) {
-      print('❌ Erreur abonnements récursifs: $e');
+      printVm('❌ Erreur abonnements récursifs: $e');
       return [];
     }
   }
@@ -783,7 +810,7 @@ class MixedFeedService {
       return filteredPosts.take(limit).toList();
 
     } catch (e) {
-      print('❌ Erreur posts récents récursifs: $e');
+      printVm('❌ Erreur posts récents récursifs: $e');
       return [];
     }
   }
@@ -819,7 +846,7 @@ class MixedFeedService {
       return filteredPosts.take(limit).toList();
 
     } catch (e) {
-      print('❌ Erreur posts score récursifs: $e');
+      printVm('❌ Erreur posts score récursifs: $e');
       return [];
     }
   }
@@ -839,7 +866,7 @@ class MixedFeedService {
       return filteredPosts.take(limit).toList();
 
     } catch (e) {
-      print('❌ Erreur posts forcés: $e');
+      printVm('❌ Erreur posts forcés: $e');
       return [];
     }
   }
@@ -856,7 +883,7 @@ class MixedFeedService {
   Future<void> _cleanupOldViewedPosts(String userId, List<String> viewedPostIds) async {
     try {
       if (viewedPostIds.length > FeedConfig.maxViewedPosts) {
-        print('🧹 Nettoyage Firestore: ${viewedPostIds.length} posts vus → ${FeedConfig.maxViewedPosts}');
+        printVm('🧹 Nettoyage Firestore: ${viewedPostIds.length} posts vus → ${FeedConfig.maxViewedPosts}');
 
         // Garder seulement les posts les plus récents
         final cleanedPosts = viewedPostIds.length > FeedConfig.maxViewedPosts
@@ -867,17 +894,17 @@ class MixedFeedService {
           'viewedPostIds': cleanedPosts,
         });
 
-        print('✅ Firestore nettoyé: ${cleanedPosts.length} posts conservés');
+        printVm('✅ Firestore nettoyé: ${cleanedPosts.length} posts conservés');
       }
     } catch (e) {
-      print('❌ Erreur nettoyage Firestore: $e');
+      printVm('❌ Erreur nettoyage Firestore: $e');
     }
   }
 
   // 🔥 VIDER COMPLÈTEMENT L'HISTORIQUE DES POSTS VUS
   Future<void> clearUserViewedPosts() async {
     try {
-      print('🧹 Début du nettoyage complet des posts vus...');
+      printVm('🧹 Début du nettoyage complet des posts vus...');
 
       final currentUserId = authProvider.loginUserData.id;
       if (currentUserId == null) return;
@@ -899,7 +926,7 @@ class MixedFeedService {
       _immediatePosts.clear();
       _areImmediatePostsLoaded = false;
 
-      print('''
+      printVm('''
 ✅ NETTOYAGE COMPLET RÉUSSI:
    - Firestore: viewedPostIds vidé
    - Stockage local: posts vus effacés
@@ -910,7 +937,7 @@ class MixedFeedService {
       await _prepareInitialPostIds(currentUserId);
 
     } catch (e) {
-      print('❌ Erreur nettoyage posts vus: $e');
+      printVm('❌ Erreur nettoyage posts vus: $e');
     }
   }
 
@@ -929,7 +956,7 @@ class MixedFeedService {
         .toList();
 
     if (availableIds.isEmpty) {
-      print('⚠️ Tous les posts de ce lot sont déjà chargés, passage au suivant');
+      printVm('⚠️ Tous les posts de ce lot sont déjà chargés, passage au suivant');
       _currentIndex = endIndex;
       return await _loadCurrentBatch();
     }
@@ -956,11 +983,11 @@ class MixedFeedService {
     final mixedContent = <dynamic>[];
 
     if (!loadMore) {
-      print('🎯 Construction contenu mixte INITIAL:');
-      print('   - ${posts.length} posts');
-      print('   - ${_globalChroniques.length} chroniques');
-      print('   - ${_globalArticles.length} articles');
-      print('   - ${_globalCanaux.length} canaux');
+      printVm('🎯 Construction contenu mixte INITIAL:');
+      printVm('   - ${posts.length} posts');
+      printVm('   - ${_globalChroniques.length} chroniques');
+      printVm('   - ${_globalArticles.length} articles');
+      printVm('   - ${_globalCanaux.length} canaux');
 
       // 1. Chroniques en premier
       if (_globalChroniques.isNotEmpty) {
@@ -968,7 +995,7 @@ class MixedFeedService {
           type: ContentMixtType.CHRONIQUES,
           data: _globalChroniques,
         ));
-        print('   ✅ Chroniques ajoutées');
+        printVm('   ✅ Chroniques ajoutées');
       }
 
       // 2. Posts initiaux (2-3 premiers)
@@ -979,7 +1006,7 @@ class MixedFeedService {
           data: post,
         ));
       }
-      print('   ✅ ${initialPosts.length} posts initiaux ajoutés');
+      printVm('   ✅ ${initialPosts.length} posts initiaux ajoutés');
 
       // 3. Canaux (avant les articles)
       if (_globalCanaux.isNotEmpty) {
@@ -987,7 +1014,7 @@ class MixedFeedService {
           type: ContentMixtType.CANAUX,
           data: _globalCanaux,
         ));
-        print('   ✅ Canaux ajoutés');
+        printVm('   ✅ Canaux ajoutés');
       }
 
       // 4. 🔥 ARTICLES UNIQUEMENT EN INITIAL
@@ -996,7 +1023,7 @@ class MixedFeedService {
           type: ContentMixtType.ARTICLES,
           data: _globalArticles,
         ));
-        print('   ✅ Articles ajoutés (initial seulement)');
+        printVm('   ✅ Articles ajoutés (initial seulement)');
       }
 
       // 5. Posts restants
@@ -1008,16 +1035,16 @@ class MixedFeedService {
             data: post,
           ));
         }
-        print('   ✅ ${remainingPosts.length} posts restants ajoutés');
+        printVm('   ✅ ${remainingPosts.length} posts restants ajoutés');
       }
 
     } else {
       // 🔥 CHARGEMENT SUPPLÉMENTAIRE : PAS D'ARTICLES
-      print('🎯 Construction contenu mixte LOADMORE:');
-      print('   - ${posts.length} posts');
-      print('   - ${_globalChroniques.length} chroniques');
-      print('   - ${_globalCanaux.length} canaux');
-      print('   - ❌ Articles exclus en loadMore');
+      printVm('🎯 Construction contenu mixte LOADMORE:');
+      printVm('   - ${posts.length} posts');
+      printVm('   - ${_globalChroniques.length} chroniques');
+      printVm('   - ${_globalCanaux.length} canaux');
+      printVm('   - ❌ Articles exclus en loadMore');
 
       // 1. Chroniques (si disponibles)
       if (_globalChroniques.isNotEmpty) {
@@ -1025,7 +1052,7 @@ class MixedFeedService {
           type: ContentMixtType.CHRONIQUES,
           data: _globalChroniques,
         ));
-        print('   ✅ Chroniques ajoutées en loadMore');
+        printVm('   ✅ Chroniques ajoutées en loadMore');
       }
 
       // 2. Posts (la majorité du contenu)
@@ -1035,7 +1062,7 @@ class MixedFeedService {
           data: post,
         ));
       }
-      print('   ✅ ${posts.length} posts ajoutés en loadMore');
+      printVm('   ✅ ${posts.length} posts ajoutés en loadMore');
 
       // 3. 🔥 CANAUX EN LOADMORE
       if (_globalCanaux.isNotEmpty) {
@@ -1043,11 +1070,11 @@ class MixedFeedService {
           type: ContentMixtType.CANAUX,
           data: _globalCanaux,
         ));
-        print('   ✅ Canaux ajoutés en loadMore');
+        printVm('   ✅ Canaux ajoutés en loadMore');
       }
     }
 
-    print('🎯 Contenu mixte final: ${mixedContent.length} sections');
+    printVm('🎯 Contenu mixte final: ${mixedContent.length} sections');
     return mixedContent;
   }
 
@@ -1094,7 +1121,7 @@ class MixedFeedService {
             final post = Post.fromJson({'id': doc.id, ...doc.data()});
             return post;
           } catch (e) {
-            print('❌ Erreur parsing post ${doc.id}: $e');
+            printVm('❌ Erreur parsing post ${doc.id}: $e');
             return null;
           }
         }).where((post) => post != null).cast<Post>().toList();
@@ -1102,7 +1129,7 @@ class MixedFeedService {
         posts.addAll(batchPosts);
       }
     } catch (e) {
-      print('❌ Erreur chargement posts par IDs: $e');
+      printVm('❌ Erreur chargement posts par IDs: $e');
     }
 
     return posts;
@@ -1128,16 +1155,16 @@ class MixedFeedService {
 
           // Vérifier si la chronique est expirée
           if (chronique.isExpired) {
-            print('🗑️ Chronique expirée détectée: ${chronique.id} - Expirée depuis: ${chronique.expiresAt.toDate()}');
+            printVm('🗑️ Chronique expirée détectée: ${chronique.id} - Expirée depuis: ${chronique.expiresAt.toDate()}');
             expiredChroniqueIds.add(chronique.id!);
           } else {
             // Calculer le temps restant pour debug
             final timeLeft = chronique.expiresAt.toDate().difference(now);
-            print('✅ Chronique valide: ${chronique.id} - Expire dans: ${timeLeft.inHours}h ${timeLeft.inMinutes.remainder(60)}min');
+            printVm('✅ Chronique valide: ${chronique.id} - Expire dans: ${timeLeft.inHours}h ${timeLeft.inMinutes.remainder(60)}min');
             validChroniques.add(chronique);
           }
         } catch (e) {
-          print('❌ Erreur parsing chronique ${doc.id}: $e');
+          printVm('❌ Erreur parsing chronique ${doc.id}: $e');
         }
       }
 
@@ -1149,7 +1176,7 @@ class MixedFeedService {
       // 🔥 LIMITER AUX PREMIÈRES CHRONIQUES VALIDES
       _globalChroniques = validChroniques.take(FeedConfig.chroniquesDisplayLimit).toList();
 
-      print('''
+      printVm('''
 📊 CHRONIQUES CHARGÉES:
    - Total trouvées: ${snapshot.docs.length}
    - Expirées supprimées: ${expiredChroniqueIds.length}
@@ -1158,7 +1185,7 @@ class MixedFeedService {
 ''');
 
     } catch (e) {
-      print('❌ Erreur chargement chroniques: $e');
+      printVm('❌ Erreur chargement chroniques: $e');
       _globalChroniques = [];
     }
   }
@@ -1166,7 +1193,7 @@ class MixedFeedService {
   // 🔥 SUPPRESSION EFFICACE PAR LOTS DES CHRONIQUES EXPIRÉES
   Future<void> _deleteExpiredChroniques(List<String> chroniqueIds) async {
     try {
-      print('🧹 Suppression de ${chroniqueIds.length} chroniques expirées...');
+      printVm('🧹 Suppression de ${chroniqueIds.length} chroniques expirées...');
 
       // Supprimer par lots
       for (int i = 0; i < chroniqueIds.length; i += FeedConfig.cleanupBatchSize) {
@@ -1178,7 +1205,7 @@ class MixedFeedService {
         }
 
         await batch.commit();
-        print('✅ Lot ${i ~/ FeedConfig.cleanupBatchSize + 1} supprimé: ${batchIds.length} chroniques');
+        printVm('✅ Lot ${i ~/ FeedConfig.cleanupBatchSize + 1} supprimé: ${batchIds.length} chroniques');
 
         // Petit délai entre les batches pour éviter les limites
         if (i + FeedConfig.cleanupBatchSize < chroniqueIds.length) {
@@ -1186,10 +1213,10 @@ class MixedFeedService {
         }
       }
 
-      print('🎯 Suppression terminée: ${chroniqueIds.length} chroniques expirées supprimées');
+      printVm('🎯 Suppression terminée: ${chroniqueIds.length} chroniques expirées supprimées');
 
     } catch (e) {
-      print('❌ Erreur suppression chroniques expirées: $e');
+      printVm('❌ Erreur suppression chroniques expirées: $e');
     }
   }
 
@@ -1205,7 +1232,7 @@ class MixedFeedService {
         return ArticleData.fromJson({'id': doc.id, ...doc.data()});
       }).toList();
     } catch (e) {
-      print('❌ Erreur articles: $e');
+      printVm('❌ Erreur articles: $e');
       _globalArticles = [];
     }
   }
@@ -1222,7 +1249,7 @@ class MixedFeedService {
       }).toList();
       _globalCanaux.shuffle();
     } catch (e) {
-      print('❌ Erreur canaux: $e');
+      printVm('❌ Erreur canaux: $e');
       _globalCanaux = [];
     }
   }
@@ -1238,9 +1265,9 @@ class MixedFeedService {
         'newPostsFromSubscriptions': FieldValue.arrayRemove([postId]),
       });
 
-      print('👁️ Post $postId marqué comme vu');
+      printVm('👁️ Post $postId marqué comme vu');
     } catch (e) {
-      print('❌ Erreur marquage post vu: $e');
+      printVm('❌ Erreur marquage post vu: $e');
     }
   }
 
@@ -1268,11 +1295,11 @@ class MixedFeedService {
 
       if (updates.isNotEmpty) {
         await firestore.collection('Users').doc(currentUserId).update(updates);
-        print('🧹 Listes utilisateur nettoyées');
+        printVm('🧹 Listes utilisateur nettoyées');
       }
 
     } catch (e) {
-      print('❌ Erreur nettoyage listes: $e');
+      printVm('❌ Erreur nettoyage listes: $e');
     }
   }
 
@@ -1288,7 +1315,7 @@ class MixedFeedService {
     _hasMore = true;
     _immediatePosts.clear();
     _areImmediatePostsLoaded = false;
-    print('🔄 Service réinitialisé');
+    printVm('🔄 Service réinitialisé');
   }
 }
 
@@ -1308,8 +1335,6 @@ class ContentSection {
   ContentSection({required this.type, required this.data});
 }
 
-
-
 // 🔥 SERVICE DE NOTIFICATION DES ABONNÉS
 class MassNotificationService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -1319,7 +1344,7 @@ class MassNotificationService {
     required String authorId,
   }) async {
     try {
-      print('🚀 Notification pour le post $postId aux abonnés de $authorId');
+      printVm('🚀 Notification pour le post $postId aux abonnés de $authorId');
 
       int totalProcessed = 0;
       int batchCount = 0;
@@ -1332,13 +1357,13 @@ class MassNotificationService {
 
         await _updateSubscribersBatch(subscriberIds, postId);
 
-        print('📦 Batch $batchCount: ${subscriberIds.length} abonnés');
+        printVm('📦 Batch $batchCount: ${subscriberIds.length} abonnés');
       });
 
-      print('✅ Notification terminée: $totalProcessed abonnés notifiés');
+      printVm('✅ Notification terminée: $totalProcessed abonnés notifiés');
 
     } catch (e) {
-      print('❌ Erreur notification abonnés: $e');
+      printVm('❌ Erreur notification abonnés: $e');
       rethrow;
     }
   }

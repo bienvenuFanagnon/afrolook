@@ -1,19 +1,30 @@
-import 'package:afrotok/pages/user/profile/retraitAdmin/retraitAdminList.dart';
+﻿import 'package:afrotok/pages/user/profile/retraitAdmin/retraitAdminList.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:afrotok/pages/user/profile/retraitAdmin/searchUserAdmin.dart';
 import 'package:afrotok/providers/authProvider.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
+
 import 'package:intl/intl.dart';
+
 import 'package:provider/provider.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:iconsax/iconsax.dart';
 
 import '../../../models/model_data.dart';
-import '../../Marketing/adminAffiliationStatsPage.dart';
-import '../../admin/ad_admin_page.dart';
-import '../../admin/remuneration_admin_page.dart';
-import '../monetisation.dart';
 
+import '../../Marketing/adminAffiliationStatsPage.dart';
+
+import '../../admin/ad_admin_page.dart';
+
+import '../../admin/remuneration_admin_page.dart';
+
+import '../monetisation.dart';
 
 class AdminHubPage extends StatefulWidget {
   @override
@@ -77,7 +88,7 @@ class _AdminHubPageState extends State<AdminHubPage> {
         };
       });
     } catch (e) {
-      print('Erreur chargement stats retraits: $e');
+      printVm('Erreur chargement stats retraits: $e');
     }
   }
 
@@ -1038,7 +1049,6 @@ class _AdminHubPageState extends State<AdminHubPage> {
   }
 }
 
-
 // ==================== TRANSACTIONS LIST PAGE AVEC PAGINATION FIRESTORE ====================
 
 class TransactionsListPage extends StatefulWidget {
@@ -1089,7 +1099,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
         !_isLoadingMore &&
         _hasMore &&
         !_isFiltering) {
-      print("📜 Scroll en bas - Chargement de la page suivante...");
+      printVm("📜 Scroll en bas - Chargement de la page suivante...");
       _loadNextPage();
     }
   }
@@ -1102,7 +1112,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
 
     // Filtre par utilisateur si sélectionné
     if (_selectedUserId != null && _selectedUserId!.isNotEmpty) {
-      print("🔍 Filtre par user_id: $_selectedUserId");
+      printVm("🔍 Filtre par user_id: $_selectedUserId");
       query = query.where("user_id", isEqualTo: _selectedUserId);
     }
 
@@ -1122,15 +1132,15 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
       _hasMore = true;
     });
 
-    print("🚀 Chargement de la première page...");
-    print("🔍 Filtres - Type: $_selectedType, StartDate: $_startDate, EndDate: $_endDate, UserId: $_selectedUserId");
+    printVm("🚀 Chargement de la première page...");
+    printVm("🔍 Filtres - Type: $_selectedType, StartDate: $_startDate, EndDate: $_endDate, UserId: $_selectedUserId");
 
     try {
       Query query = _buildBaseQuery();
       query = query.limit(_pageSize);
 
       final snapshot = await query.get();
-      print("📊 Nombre de documents reçus: ${snapshot.docs.length}");
+      printVm("📊 Nombre de documents reçus: ${snapshot.docs.length}");
 
       _allDocs = snapshot.docs;
       _transactions = _applyLocalFilters(snapshot.docs);
@@ -1142,12 +1152,12 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
         _hasMore = false;
       }
 
-      print("📊 Transactions après filtre local: ${_transactions.length}");
-      print("📊 hasMore: $_hasMore");
+      printVm("📊 Transactions après filtre local: ${_transactions.length}");
+      printVm("📊 hasMore: $_hasMore");
 
     } catch (e, stack) {
-      print("❌ Erreur chargement première page: $e");
-      print(stack);
+      printVm("❌ Erreur chargement première page: $e");
+      printVm(stack);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Erreur: $e"), backgroundColor: Colors.red),
       );
@@ -1167,15 +1177,15 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
       _isLoadingMore = true;
     });
 
-    print("🚀 Chargement de la page suivante...");
-    print("📄 LastDocument: ${_lastDocument?.id}");
+    printVm("🚀 Chargement de la page suivante...");
+    printVm("📄 LastDocument: ${_lastDocument?.id}");
 
     try {
       Query query = _buildBaseQuery();
       query = query.startAfterDocument(_lastDocument!).limit(_pageSize);
 
       final snapshot = await query.get();
-      print("📊 Nouveaux documents reçus: ${snapshot.docs.length}");
+      printVm("📊 Nouveaux documents reçus: ${snapshot.docs.length}");
 
       if (snapshot.docs.isNotEmpty) {
         _allDocs.addAll(snapshot.docs);
@@ -1187,12 +1197,12 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
         _hasMore = false;
       }
 
-      print("📊 Total transactions: ${_transactions.length}");
-      print("📊 hasMore: $_hasMore");
+      printVm("📊 Total transactions: ${_transactions.length}");
+      printVm("📊 hasMore: $_hasMore");
 
     } catch (e, stack) {
-      print("❌ Erreur chargement page suivante: $e");
-      print(stack);
+      printVm("❌ Erreur chargement page suivante: $e");
+      printVm(stack);
     } finally {
       setState(() {
         _isLoadingMore = false;
@@ -1238,7 +1248,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
       _isFiltering = true;
     });
 
-    print("🔄 Application des filtres...");
+    printVm("🔄 Application des filtres...");
 
     // Réinitialiser tout
     _transactions = [];
@@ -1302,7 +1312,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
         });
       }
     } catch (e) {
-      print("❌ Erreur recherche utilisateur: $e");
+      printVm("❌ Erreur recherche utilisateur: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Erreur: $e"), backgroundColor: Colors.red),
       );
@@ -1744,7 +1754,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
           userData = UserData.fromJson(userDoc.data()!);
         }
       } catch (e) {
-        print("❌ Erreur chargement utilisateur: $e");
+        printVm("❌ Erreur chargement utilisateur: $e");
       }
     }
 

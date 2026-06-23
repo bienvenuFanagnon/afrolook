@@ -1,9 +1,12 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../models/dating_data.dart';
-import '../dating_entry_page.dart';
-import '../dating_profile_detail_page.dart';
 
+import '../dating_entry_page.dart';
+
+import '../dating_profile_detail_page.dart';
 
 void showTopDatingAnnounceModal(BuildContext context) {
   showDialog(
@@ -180,7 +183,7 @@ Future<List<DatingProfile>> _fetchTopProfiles() async {
     profiles.shuffle();
     return profiles.take(3).toList();
   } catch (e) {
-    print('Erreur chargement top profils: $e');
+    printVm('Erreur chargement top profils: $e');
     return [];
   }
 }

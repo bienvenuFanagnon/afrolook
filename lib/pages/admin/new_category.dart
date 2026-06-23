@@ -1,4 +1,6 @@
+﻿
 
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:path/path.dart' as Path;
 import 'dart:io';
 
@@ -173,8 +175,8 @@ class _NewAppInfoState extends State<AddCategorie> {
                               //     await storageReference
                               //         .getDownloadURL()
                               //         .then((fileURL) {
-                              //       print("url media");
-                              //       //  print(fileURL);
+                              //       printVm("url media");
+                              //       //  printVm(fileURL);
                               //
                               //       infos.logo=fileURL;
                               //     });
@@ -202,7 +204,7 @@ class _NewAppInfoState extends State<AddCategorie> {
                               ScaffoldMessenger.of(context)
                                   .showSnackBar(snackBar);
                             } catch (e) {
-                              print("erreur ${e}");
+                              printVm("erreur ${e}");
                               setState(() {
                                 onTap=false;
                               });

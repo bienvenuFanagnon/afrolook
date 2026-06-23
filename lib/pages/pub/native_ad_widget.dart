@@ -1,10 +1,17 @@
-import 'dart:io';
+﻿import 'dart:io';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
 import 'package:stack_appodeal_flutter/stack_appodeal_flutter.dart';
+
 import 'package:provider/provider.dart';
+
 import '../../../providers/authProvider.dart';
+
 import '../../../services/utils/abonnement_utils.dart';
+
 import '../user/userAbonnementPage.dart';
 
 class MrecAdWidget extends StatefulWidget {
@@ -54,37 +61,37 @@ class _MrecAdWidgetState extends State<MrecAdWidget> {
       // Callbacks pour le format BANNER
       Appodeal.setBannerCallbacks(
         onBannerLoaded: (isPrecache) {
-          print('✅ [BANNER] Loaded (isPrecache: $isPrecache)');
+          printVm('✅ [BANNER] Loaded (isPrecache: $isPrecache)');
           if (mounted) {
             setState(() => _adIsLoaded = true);
             widget.onAdLoaded?.call();
           }
         },
         onBannerFailedToLoad: () {
-          print('❌ [BANNER] Failed to load');
+          printVm('❌ [BANNER] Failed to load');
           if (mounted) setState(() => _adIsLoaded = false);
         },
-        onBannerShown: () => print('📢 [BANNER] Shown'),
-        onBannerClicked: () => print('🖱️ [BANNER] Clicked'),
-        onBannerExpired: () => print('⏰ [BANNER] Expired'),
+        onBannerShown: () => printVm('📢 [BANNER] Shown'),
+        onBannerClicked: () => printVm('🖱️ [BANNER] Clicked'),
+        onBannerExpired: () => printVm('⏰ [BANNER] Expired'),
       );
     } else {
       // Callbacks pour le format MREC
       Appodeal.setMrecCallbacks(
         onMrecLoaded: (isPrecache) {
-          print('✅ [MREC] Loaded (isPrecache: $isPrecache)');
+          printVm('✅ [MREC] Loaded (isPrecache: $isPrecache)');
           if (mounted) {
             setState(() => _adIsLoaded = true);
             widget.onAdLoaded?.call();
           }
         },
         onMrecFailedToLoad: () {
-          print('❌ [MREC] Failed to load');
+          printVm('❌ [MREC] Failed to load');
           if (mounted) setState(() => _adIsLoaded = false);
         },
-        onMrecShown: () => print('📢 [MREC] Shown'),
-        onMrecClicked: () => print('🖱️ [MREC] Clicked'),
-        onMrecExpired: () => print('⏰ [MREC] Expired'),
+        onMrecShown: () => printVm('📢 [MREC] Shown'),
+        onMrecClicked: () => printVm('🖱️ [MREC] Clicked'),
+        onMrecExpired: () => printVm('⏰ [MREC] Expired'),
       );
     }
   }
@@ -95,13 +102,12 @@ class _MrecAdWidgetState extends State<MrecAdWidget> {
       // Vérifier si une bannière est déjà chargée (selon le type)
       // Vérifier si une bannière est déjà chargée (selon le type)
       bool isLoaded = await Appodeal.isLoaded(_adType) ?? false;
-      print('🔍 [MRECWidget] Appodeal.isLoaded(${_adType}) = $isLoaded');
+      printVm('🔍 [MRECWidget] Appodeal.isLoaded(${_adType}) = $isLoaded');
       setState(() {
         _isCheckingPremium = false;
         _adIsLoaded = isLoaded;
       });
   }
-
 
   Future<void> _checkPremiumStatusOld() async {
     try {
@@ -110,16 +116,16 @@ class _MrecAdWidgetState extends State<MrecAdWidget> {
       final user = authProvider.loginUserData;
       if (user != null) {
         _isPremium = AbonnementUtils.isPremiumActive(user.abonnement);
-        print('👤 [MRECWidget] Premium status: $_isPremium (abonnement: ${user.abonnement!.type!})');
+        printVm('👤 [MRECWidget] Premium status: $_isPremium (abonnement: ${user.abonnement!.type!})');
       }
     } catch (e) {
-      print('⚠️ [MRECWidget] Error checking premium: $e');
+      printVm('⚠️ [MRECWidget] Error checking premium: $e');
       _isPremium = false;
     } finally {
       if (mounted) {
         // Vérifier si une bannière est déjà chargée (selon le type)
         bool isLoaded = await Appodeal.isLoaded(_adType) ?? false;
-        print('🔍 [MRECWidget] Appodeal.isLoaded(${_adType}) = $isLoaded');
+        printVm('🔍 [MRECWidget] Appodeal.isLoaded(${_adType}) = $isLoaded');
         setState(() {
           _isCheckingPremium = false;
           _adIsLoaded = isLoaded;
@@ -130,10 +136,10 @@ class _MrecAdWidgetState extends State<MrecAdWidget> {
 
   @override
   Widget build(BuildContext context) {
-    // print('🔍 [MRECWidget] _isCheckingPremium = $_isCheckingPremium');
-    // print('🔍 [MRECWidget] _isPremium = $_isPremium');
-    print('🔍 [MRECWidget] _checkedAd = $_checkedAd');
-    print('🔍 [MRECWidget] _adIsLoaded = $_adIsLoaded');
+    // printVm('🔍 [MRECWidget] _isCheckingPremium = $_isCheckingPremium');
+    // printVm('🔍 [MRECWidget] _isPremium = $_isPremium');
+    printVm('🔍 [MRECWidget] _checkedAd = $_checkedAd');
+    printVm('🔍 [MRECWidget] _adIsLoaded = $_adIsLoaded');
 
     // if (_isPremium) {
     //   return const SizedBox.shrink();

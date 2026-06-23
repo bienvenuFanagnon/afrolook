@@ -1,4 +1,6 @@
-// services/retraitService.dart
+﻿// services/retraitService.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/model_data.dart';
 import '../models/payment_config.dart';
@@ -64,10 +66,10 @@ class RetraitService {
         transaction.set(retraitRef, transactionData.toJson());
       });
 
-      print('✅ Demande de retrait créée: $montant FCFA pour $countryCode');
+      printVm('✅ Demande de retrait créée: $montant FCFA pour $countryCode');
       return true;
     } catch (e) {
-      print('❌ Erreur demande retrait: $e');
+      printVm('❌ Erreur demande retrait: $e');
       return false;
     }
   }
@@ -87,10 +89,10 @@ class RetraitService {
         'updated_at': DateTime.now().millisecondsSinceEpoch,
       });
 
-      print('✅ Retrait validé: $retraitId');
+      printVm('✅ Retrait validé: $retraitId');
       return true;
     } catch (e) {
-      print('❌ Erreur validation retrait: $e');
+      printVm('❌ Erreur validation retrait: $e');
       return false;
     }
   }
@@ -132,10 +134,10 @@ class RetraitService {
         });
       });
 
-      print('✅ Retrait annulé et solde remboursé: $retraitId');
+      printVm('✅ Retrait annulé et solde remboursé: $retraitId');
       return true;
     } catch (e) {
-      print('❌ Erreur annulation retrait: $e');
+      printVm('❌ Erreur annulation retrait: $e');
       return false;
     }
   }

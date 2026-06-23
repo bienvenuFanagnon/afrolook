@@ -1,4 +1,6 @@
-// lib/pages/dating/dating_connections_page.dart
+﻿// lib/pages/dating/dating_connections_page.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -51,7 +53,7 @@ class _DatingConnectionsPageState extends State<DatingConnectionsPage> {
       }
       setState(() {});
     } catch (e) {
-      print('❌ Erreur chargement abonnement: $e');
+      printVm('❌ Erreur chargement abonnement: $e');
       _isPremium = false;
     }
   }

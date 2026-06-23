@@ -1,4 +1,6 @@
+﻿
 
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'dart:math';
 
 import 'package:afrotok/pages/user/profile/profileTabsBar/profileImageTab.dart';
@@ -147,7 +149,7 @@ class _UserPublicationViewState extends State<UserPublicationView> {
 
 
     //authProvider.getCurrentUser(authProvider.loginUserData!.id!);
-    //  print("invitation : ${authProvider.loginUserData.mesInvitationsEnvoyer!.length}");
+    //  printVm("invitation : ${authProvider.loginUserData.mesInvitationsEnvoyer!.length}");
 
     bool abonneTap =false;
     bool inviteTap =false;
@@ -439,7 +441,7 @@ class _UserPublicationViewState extends State<UserPublicationView> {
               ProfileVideoTab(),
               OnlyUserServiceListPage(),
             ],
-            onChange: (index) => print(index),
+            onChange: (index) => printVm(index),
           ),
         ),
 
@@ -566,7 +568,7 @@ class _EntreprisePublicationViewState extends State<EntreprisePublicationView> {
 
 
     //authProvider.getCurrentUser(authProvider.loginUserData!.id!);
-    //  print("invitation : ${authProvider.loginUserData.mesInvitationsEnvoyer!.length}");
+    //  printVm("invitation : ${authProvider.loginUserData.mesInvitationsEnvoyer!.length}");
 
     bool abonneTap =false;
     bool inviteTap =false;
@@ -849,7 +851,7 @@ class _EntreprisePublicationViewState extends State<EntreprisePublicationView> {
             ProfileUserEntrepriseImageTab(),
             ProfileUserEntrepriseVideoTab(),
           ],
-          onChange: (index) => print(index),
+          onChange: (index) => printVm(index),
         ),
       ),
 

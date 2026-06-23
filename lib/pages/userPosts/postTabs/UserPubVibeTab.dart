@@ -1,27 +1,49 @@
 import 'dart:async';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'dart:io';
 import 'dart:typed_data';
+
 import 'package:afrotok/models/model_data.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:firebase_storage/firebase_storage.dart';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
+
 import 'package:flutter/material.dart';
+
 import 'package:image_picker/image_picker.dart';
+
 import 'package:path/path.dart' as Path;
+
 import 'package:path_provider/path_provider.dart';
+
 import 'package:provider/provider.dart';
+
 import 'package:video_player/video_player.dart';
+
 import 'package:video_thumbnail/video_thumbnail.dart';
+
 import 'package:iconsax/iconsax.dart';
 
 import '../../../providers/authProvider.dart';
+
 import '../../../providers/postProvider.dart';
+
 import '../../../providers/userProvider.dart';
+
 import '../../../theme/app_colors.dart';
+
 import '../../../services/postService/post_cooldown_service.dart';
+
 import '../../../services/utils/abonnement_utils.dart';
+
 import '../../pub/rewarded_ad_widget.dart';
+
 import '../../user/userAbonnementPage.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 class UserPubVibe extends StatefulWidget {
@@ -170,7 +192,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
         _isUploadingCustomThumbnail = false;
       });
     } catch (e) {
-      print("Erreur sélection miniature: $e");
+      printVm("Erreur sélection miniature: $e");
       setState(() {
         _isUploadingCustomThumbnail = false;
       });
@@ -194,7 +216,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
       final downloadUrl = await snapshot.ref.getDownloadURL();
       return downloadUrl;
     } catch (e) {
-      print('Erreur upload miniature personnalisée: $e');
+      printVm('Erreur upload miniature personnalisée: $e');
       return null;
     }
   }
@@ -252,7 +274,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
         setState(() => _canPost = true);
       }
     } catch (e) {
-      print("Erreur vérification cooldown: $e");
+      printVm("Erreur vérification cooldown: $e");
       setState(() => _canPost = true);
     }
   }
@@ -1076,7 +1098,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
 
       Navigator.pop(context);
     } catch (e) {
-      print("Erreur lors de la sélection de la vidéo: $e");
+      printVm("Erreur lors de la sélection de la vidéo: $e");
       if (Navigator.canPop(context)) Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur lors du traitement de la vidéo'), backgroundColor: _c.danger));
     } finally {
@@ -1093,7 +1115,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
       final downloadUrl = await snapshot.ref.getDownloadURL();
       return downloadUrl;
     } catch (e) {
-      print('Erreur upload miniature: $e');
+      printVm('Erreur upload miniature: $e');
       return null;
     }
   }
@@ -1113,7 +1135,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
         await FirebaseFirestore.instance.collection('Posts').doc(postId).update({'thumbnail': thumbnailUrl});
       }
     } catch (e) {
-      print('Erreur génération/upload miniature: $e');
+      printVm('Erreur génération/upload miniature: $e');
     } finally {
       if (mounted) setState(() {
         _isGeneratingThumbnail = false;
@@ -1142,7 +1164,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
       String downloadUrl = await snapshot.ref.getDownloadURL();
       return downloadUrl;
     } catch (e) {
-      print("Erreur lors de l'upload de la vidéo: $e");
+      printVm("Erreur lors de l'upload de la vidéo: $e");
       throw Exception("Échec de l'upload de la vidéo");
     }
   }
@@ -1361,7 +1383,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
         addPointsForAction(UserAction.post);
         _checkPostCooldown();
       } catch (e) {
-        print("❌ Erreur lors de la publication: $e");
+        printVm("❌ Erreur lors de la publication: $e");
         if (Navigator.canPop(context)) Navigator.pop(context);
         setState(() {
           onTap = false;

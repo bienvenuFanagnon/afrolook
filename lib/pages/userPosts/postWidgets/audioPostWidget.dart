@@ -1,19 +1,32 @@
-import 'dart:async';
+﻿import 'dart:async';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
+
 import 'package:cached_network_image/cached_network_image.dart';
+
 import 'package:firebase_storage/firebase_storage.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:path_provider/path_provider.dart';
+
 import 'package:provider/provider.dart';
+
 import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../../models/model_data.dart';
+
 import '../../../providers/authProvider.dart';
+
 import '../../../providers/sound_provider.dart';
+
 import '../../../theme/app_colors.dart';
+
 import '../../postDetails.dart';
+
 import '../youTube_video_card.dart';
 
 /// Carte de post audio, extraite de HomePostUsersWidget.
@@ -112,7 +125,7 @@ class _AudioPostCardState extends State<AudioPostCard> {
         return file;
       }
     } catch (e) {
-      print('Erreur préchargement audio $_postId: $e');
+      printVm('Erreur préchargement audio $_postId: $e');
     }
     return null;
   }

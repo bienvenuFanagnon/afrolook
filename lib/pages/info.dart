@@ -1,25 +1,38 @@
-import 'dart:math';
+﻿import 'dart:math';
+import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/models/model_data.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:flutter/cupertino.dart';
+
 import 'package:flutter_linkify/flutter_linkify.dart';
+
 import 'package:provider/provider.dart';
+
 import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../constant/constColors.dart';
+
 import '../../../constant/logo.dart';
+
 import '../../../constant/sizeText.dart';
+
 import '../../../constant/textCustom.dart';
+
 import '../../providers/authProvider.dart';
+
 import '../../providers/postProvider.dart';
+
 import '../../providers/userProvider.dart';
+
 import 'admin/addAppInfo.dart';
 
 import 'package:linkify/linkify.dart';
-import 'package:url_launcher/url_launcher.dart';
 
+import 'package:url_launcher/url_launcher.dart';
 
 class AppInfos extends StatefulWidget {
   const AppInfos({super.key});
@@ -599,8 +612,6 @@ class InfoCard extends StatelessWidget {
   }
 }
 
-
-
 class InfoDetailPage extends StatefulWidget {
   final Information info;
   final bool isAdmin;
@@ -689,7 +700,7 @@ class _InfoDetailPageState extends State<InfoDetailPage> {
         });
       }
     } catch (e) {
-      print('Error toggling like: $e');
+      printVm('Error toggling like: $e');
       if (mounted) {
         setState(() {
           _isLoadingLike = false;

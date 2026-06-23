@@ -1,4 +1,6 @@
-// lib/pages/dating/dating_explore_page.dart
+﻿// lib/pages/dating/dating_explore_page.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -120,7 +122,7 @@ class _DatingExplorePageState extends State<DatingExplorePage> {
       }
       if (mounted) setState(() {});
     } catch (e) {
-      print('❌ Erreur chargement abonnement: $e');
+      printVm('❌ Erreur chargement abonnement: $e');
       _subscriptionPlan = 'gratuit';
       _maxVisibleProfiles = 10;
     }
@@ -142,7 +144,7 @@ class _DatingExplorePageState extends State<DatingExplorePage> {
       await _loadExcludedUserIds();
       await _loadProfiles(reset: true);
     } catch (e) {
-      print('❌ Erreur chargement profil: $e');
+      printVm('❌ Erreur chargement profil: $e');
       setState(() => _isLoading = false);
     }
   }
@@ -176,7 +178,7 @@ class _DatingExplorePageState extends State<DatingExplorePage> {
 
       _excludedUserIds = ids;
     } catch (e) {
-      print('❌ Erreur chargement profils déjà explorés: $e');
+      printVm('❌ Erreur chargement profils déjà explorés: $e');
     }
   }
 
@@ -272,7 +274,7 @@ class _DatingExplorePageState extends State<DatingExplorePage> {
       }
       _rebuildDisplayItems(); // Mettre à jour l'affichage
     } catch (e) {
-      print('❌ Erreur chargement profils explore: $e');
+      printVm('❌ Erreur chargement profils explore: $e');
       setState(() {
         _isLoading = false;
         _isLoadingMore = false;
@@ -417,7 +419,7 @@ class _DatingExplorePageState extends State<DatingExplorePage> {
         key: ValueKey(key),
         // templateType: TemplateType.medium,
         onAdLoaded: () {
-          print('✅ Native Ad Afrolook chargée: $key');
+          printVm('✅ Native Ad Afrolook chargée: $key');
         },
 
       ),

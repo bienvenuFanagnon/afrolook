@@ -1,4 +1,5 @@
-import 'dart:convert';
+﻿import 'dart:convert';
+import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -38,7 +39,7 @@ class FeedCacheService {
       await prefs.setString(cacheKey, jsonEncode(envelope));
     } catch (e) {
       // Le cache est un confort, jamais bloquant : on ignore les erreurs.
-      print('⚠️ FeedCacheService.saveFeedData error ($cacheKey): $e');
+      printVm('⚠️ FeedCacheService.saveFeedData error ($cacheKey): $e');
     }
   }
 
@@ -82,7 +83,7 @@ class FeedCacheService {
         'cachedAt': cachedAt,
       };
     } catch (e) {
-      print('⚠️ FeedCacheService.loadFeedData error ($cacheKey): $e');
+      printVm('⚠️ FeedCacheService.loadFeedData error ($cacheKey): $e');
       return null;
     }
   }

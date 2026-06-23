@@ -1,5 +1,7 @@
-// pages/admin/remuneration_admin_page.dart
+﻿// pages/admin/remuneration_admin_page.dart
 
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -54,7 +56,7 @@ class _RemunerationAdminPageState extends State<RemunerationAdminPage> with Sing
         _chargerEncaissementsParJour(),
       ]);
     } catch (e) {
-      print('Erreur chargement: $e');
+      printVm('Erreur chargement: $e');
       _showError('Erreur chargement: $e');
     }
 

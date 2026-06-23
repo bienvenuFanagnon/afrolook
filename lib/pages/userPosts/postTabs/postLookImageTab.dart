@@ -1,4 +1,4 @@
-// Dart imports:
+﻿// Dart imports:
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
@@ -225,7 +225,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
         });
       }
     } catch (e) {
-      print("Erreur vérification cooldown: $e");
+      printVm("Erreur vérification cooldown: $e");
       setState(() {
         _canPost = true;
       });
@@ -398,7 +398,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
       await FirebaseFirestore.instance.collection('Posts').doc(postId).set(post.toJson());
       // postProvider.addPostIdToAppDefaultData(postId);
 
-      print('✅ Post créé avec ID: $postId');
+      printVm('✅ Post créé avec ID: $postId');
 
       // 🔥 ÉTAPE 2: NOTIFIER LES ABONNÉS EN ARRIÈRE-PLAN
       if (authProvider.loginUserData.id != null) {
@@ -460,7 +460,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
       );
 
     } catch (e) {
-      print("❌ Erreur lors de la publication: $e");
+      printVm("❌ Erreur lors de la publication: $e");
 
       // Fermer le dialog en cas d'erreur
       if (Navigator.canPop(context)) {
@@ -490,7 +490,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
 
     Future.microtask(() async {
       try {
-        print('🚀 Notification abonnés démarrée à ${startTime.toIso8601String()}');
+        printVm('🚀 Notification abonnés démarrée à ${startTime.toIso8601String()}');
 
         // Optionnel: suivre la progression dans Firestore
         await FirebaseFirestore.instance
@@ -512,7 +512,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
         final endTime = DateTime.now();
         final duration = endTime.difference(startTime);
 
-        print('✅ Notification terminée en ${duration.inSeconds} secondes');
+        printVm('✅ Notification terminée en ${duration.inSeconds} secondes');
 
         // Marquer comme terminé
         await FirebaseFirestore.instance
@@ -525,7 +525,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
         });
 
       } catch (e) {
-        print('❌ Erreur notification abonnés: $e');
+        printVm('❌ Erreur notification abonnés: $e');
 
         // Marquer comme échoué
         await FirebaseFirestore.instance
@@ -671,7 +671,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
   //     );
   //
   //   } catch (e) {
-  //     print("Erreur : $e");
+  //     printVm("Erreur : $e");
   //     ScaffoldMessenger.of(context).showSnackBar(
   //       SnackBar(
   //         content: Text(

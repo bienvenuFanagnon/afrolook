@@ -1,12 +1,18 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:crypto/crypto.dart';
-import '../models/crypto_model.dart';
-import '../pages/widgetGlobal.dart';
 
+import 'package:http/http.dart' as http;
+
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
+
+import '../models/crypto_model.dart';
+
+import '../pages/widgetGlobal.dart';
 
 // ✅ CLASSES POUR LA SÉCURITÉ
 class SellCheckResult {
@@ -318,15 +324,13 @@ class CryptoTradingProvider with ChangeNotifier {
         );
       }
 
-
-
       return SecurityCheckResult(
         allowed: true,
         riskLevel: financialImpact.riskLevel,
         estimatedPrice: estimatedPrice,
       );
     } catch (e) {
-      print('Erreur lors des vérifications de sécurité: ${e.toString()}');
+      printVm('Erreur lors des vérifications de sécurité: ${e.toString()}');
       return SecurityCheckResult(
         allowed: false,
         errorMessage: 'Erreur lors des vérifications de sécurité: ${e.toString()}',
@@ -418,7 +422,7 @@ class CryptoTradingProvider with ChangeNotifier {
         estimatedPrice: estimatedPrice,
       );
     } catch (e) {
-      print('Erreur lors des vérifications de sécurité: ${e.toString()}');
+      printVm('Erreur lors des vérifications de sécurité: ${e.toString()}');
 
       return SecurityCheckResult(
         allowed: false,
@@ -457,7 +461,7 @@ class CryptoTradingProvider with ChangeNotifier {
 
       return SellCheckResult(allowed: true);
     } catch (e) {
-      print('Erreur vérification période blocage: $e');
+      printVm('Erreur vérification période blocage: $e');
 
       debugPrint('Erreur vérification période blocage: $e');
       return SellCheckResult(allowed: true);
@@ -535,7 +539,6 @@ class CryptoTradingProvider with ChangeNotifier {
         if (portfolio.balance < totalCost) {
           throw 'Solde insuffisant. Il vous manque ${(totalCost - portfolio.balance).toStringAsFixed(2)} FCFA';
         }
-
 
         // Mise à jour de la crypto avec historique
         final updatedPriceHistory = List<PriceHistory>.from(currentCrypto.priceHistory);
@@ -623,7 +626,6 @@ class CryptoTradingProvider with ChangeNotifier {
       await _recordIpAddress(user.uid, cryptoId);
 
       // Points pour investissement
-
 
       _errorMessage = '';
       notifyListeners();
@@ -914,7 +916,7 @@ class CryptoTradingProvider with ChangeNotifier {
 
   Future<void> fetchCryptoDetails() async {
     try {
-      print('Chargement cryptoId: ${cryptoId}');
+      printVm('Chargement cryptoId: ${cryptoId}');
       _isLoading = true;
       notifyListeners();
 
@@ -928,7 +930,7 @@ class CryptoTradingProvider with ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     } catch (e) {
-      print('Erreur lors du chargement: ${e.toString()}');
+      printVm('Erreur lors du chargement: ${e.toString()}');
       _errorMessage = 'Erreur lors du chargement: ${e.toString()}';
       _isLoading = false;
       notifyListeners();
@@ -950,7 +952,7 @@ class CryptoTradingProvider with ChangeNotifier {
       );
       notifyListeners();
     } catch (e) {
-      print('Erreur transactions: ${e.toString()}');
+      printVm('Erreur transactions: ${e.toString()}');
 
       _errorMessage = 'Erreur transactions: ${e.toString()}';
       notifyListeners();

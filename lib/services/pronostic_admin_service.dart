@@ -1,5 +1,7 @@
-// services/pronostic_admin_service.dart
+﻿// services/pronostic_admin_service.dart
 
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/services/pronostic_payment_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -50,10 +52,10 @@ class PronosticAdminService {
         );
       }
 
-      print('✅ Match démarré, ${participantsIds.length} participants notifiés');
+      printVm('✅ Match démarré, ${participantsIds.length} participants notifiés');
       return true;
     } catch (e) {
-      print('❌ Erreur démarrage match: $e');
+      printVm('❌ Erreur démarrage match: $e');
       return false;
     }
   }
@@ -72,7 +74,7 @@ class PronosticAdminService {
 
       return true;
     } catch (e) {
-      print('Erreur terminaison match: $e');
+      printVm('Erreur terminaison match: $e');
       return false;
     }
   }
@@ -95,7 +97,7 @@ class PronosticAdminService {
 
       return true;
     } catch (e) {
-      print('Erreur remboursement: $e');
+      printVm('Erreur remboursement: $e');
       return false;
     }
   }

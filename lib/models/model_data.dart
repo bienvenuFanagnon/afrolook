@@ -1,12 +1,17 @@
-import 'dart:io';
+﻿import 'dart:io';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:afrotok/pages/LiveAgora/livesAgora.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:flutter/material.dart';
 
 import '../pages/UserServices/deviceService.dart';
+
 import 'chatmodels/message.dart';
 
 import 'package:json_annotation/json_annotation.dart';
+
 part 'model_data.g.dart'; // Generated file name based on the class name
 /* flutter pub run build_runner build */
 
@@ -536,8 +541,8 @@ class AppDefaultData {
 }
 class AfrolookAbonnement {
   String? id;
-  String type; // 'gratuit' ou 'premium'
-  double prix; // Prix actuel
+  String type; // 'gratuit' | 'premium' | 'gold'
+  double prix;
   DateTime dateDebut;
   DateTime dateFin;
   bool estActif;
@@ -550,11 +555,22 @@ class AfrolookAbonnement {
   List<String> avantagesActives;
 
   static const double prixPremiumBase = 200.0;
+  static const double prixGoldBase = 500.0;
+
+  // Réductions Premium (en FCFA sur le total)
   static const Map<int, double> reductions = {
     3: 100.0,
     4: 100.0,
     6: 200.0,
-    12: 400.0,
+    12: 500.0,
+  };
+
+  // Réductions Gold (en FCFA sur le total)
+  static const Map<int, double> reductionsGold = {
+    2: 50.0,
+    3: 150.0,
+    6: 500.0,
+    12: 1500.0,
   };
 
   AfrolookAbonnement({
@@ -597,8 +613,7 @@ class AfrolookAbonnement {
     double? prixPersonnalise,
   }) {
     final now = DateTime.now();
-    final prixCalcul = prixPersonnalise ?? calculerPrix(dureeMois);
-
+    final prixCalcul = prixPersonnalise ?? calculerPrixPremium(dureeMois);
     return AfrolookAbonnement(
       type: 'premium',
       prix: prixCalcul,
@@ -614,14 +629,44 @@ class AfrolookAbonnement {
     );
   }
 
-  // Méthode statique pour calculer le prix
-  static double calculerPrix(int dureeMois) {
-    double prixTotal = dureeMois * prixPremiumBase;
-    double reduction = reductions[dureeMois] ?? 0.0;
+  // Constructeur pour abonnement gold
+  factory AfrolookAbonnement.gold({
+    int dureeMois = 1,
+    double? prixPersonnalise,
+  }) {
+    final now = DateTime.now();
+    final prixCalcul = prixPersonnalise ?? calculerPrixGold(dureeMois);
+    return AfrolookAbonnement(
+      type: 'gold',
+      prix: prixCalcul,
+      dateDebut: now,
+      dateFin: now.add(Duration(days: 30 * dureeMois)),
+      estActif: true,
+      dureeMois: dureeMois,
+      montantPaye: prixCalcul,
+      methodePaiement: 'solde',
+      createdAt: now,
+      updatedAt: now,
+      avantagesActives: getAvantagesGold(),
+    );
+  }
+
+  // Calcul du prix Premium (conservé comme alias pour compatibilité)
+  static double calculerPrix(int dureeMois) => calculerPrixPremium(dureeMois);
+
+  static double calculerPrixPremium(int dureeMois) {
+    final prixTotal = dureeMois * prixPremiumBase;
+    final reduction = reductions[dureeMois] ?? 0.0;
     return prixTotal - reduction;
   }
 
-  // Méthode pour obtenir les avantages gratuits
+  static double calculerPrixGold(int dureeMois) {
+    final prixTotal = dureeMois * prixGoldBase;
+    final reduction = reductionsGold[dureeMois] ?? 0.0;
+    return prixTotal - reduction;
+  }
+
+  // Avantages gratuits
   static List<String> getAvantagesGratuits() {
     return [
       'live_qualite_base',
@@ -633,7 +678,7 @@ class AfrolookAbonnement {
     ];
   }
 
-  // Méthode pour obtenir les avantages premium
+  // Avantages premium
   static List<String> getAvantagesPremium() {
     return [
       'live_qualite_HD',
@@ -649,41 +694,51 @@ class AfrolookAbonnement {
     ];
   }
 
+  // Avantages gold (inclut tout Premium + exclusifs Gold)
+  static List<String> getAvantagesGold() {
+    return [
+      ...getAvantagesPremium(),
+      'groupe_prive_payant',
+      'code_unique_groupe',
+      'carousel_pub_groupes',
+      'badge_gold',
+      'revenus_groupe_70pct',
+    ];
+  }
+
   factory AfrolookAbonnement.fromJson(Map<String, dynamic> json) {
-    // Vérifier si l'abonnement est expiré
     final dateFin = DateTime.parse(json['dateFin']);
     final estExpire = dateFin.isBefore(DateTime.now());
+    final typeVal = json['type'] as String? ?? 'gratuit';
 
-    if (estExpire && json['type'] == 'premium') {
-      // Retourner un abonnement gratuit si premium expiré
+    // Si premium ou gold expiré → retour gratuit
+    if (estExpire && (typeVal == 'premium' || typeVal == 'gold')) {
       return AfrolookAbonnement.gratuit();
     }
 
     return AfrolookAbonnement(
       id: json['id'],
-      type: json['type'],
+      type: typeVal,
       prix: (json['prix'] as num).toDouble(),
       dateDebut: DateTime.parse(json['dateDebut']),
       dateFin: dateFin,
-      estActif: json['estActif'] && !estExpire,
+      estActif: (json['estActif'] as bool? ?? true) && !estExpire,
       transactionId: json['transactionId'],
-      dureeMois: json['dureeMois'],
+      dureeMois: json['dureeMois'] as int? ?? 1,
       montantPaye: (json['montantPaye'] as num).toDouble(),
-      methodePaiement: json['methodePaiement'],
+      methodePaiement: json['methodePaiement'] as String? ?? 'solde',
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
-      avantagesActives: List<String>.from(json['avantagesActives']),
+      avantagesActives: List<String>.from(json['avantagesActives'] ?? []),
     );
   }
 
   Map<String, dynamic> toJson() {
-    // Vérifier l'expiration avant de sauvegarder
     final maintenant = DateTime.now();
-    if (type == 'premium' && dateFin.isBefore(maintenant)) {
-      // Si premium expiré, retourner gratuit
+    // Si plan payant expiré → sauvegarder comme gratuit
+    if ((type == 'premium' || type == 'gold') && dateFin.isBefore(maintenant)) {
       return AfrolookAbonnement.gratuit().toJson();
     }
-
     return {
       'id': id,
       'type': type,
@@ -701,14 +756,21 @@ class AfrolookAbonnement {
     };
   }
 
-  // Propriété pour vérifier si premium actif
+  // Premium actif — vrai pour Premium ET Gold (Gold ⊃ Premium)
   bool get estPremium {
-    if (type != 'premium') return false;
+    if (type != 'premium' && type != 'gold') return false;
     if (!estActif) return false;
     return !dateFin.isBefore(DateTime.now());
   }
 
-  // Propriété pour vérifier si expiré
+  // Gold actif — vrai uniquement pour Gold
+  bool get estGold {
+    if (type != 'gold') return false;
+    if (!estActif) return false;
+    return !dateFin.isBefore(DateTime.now());
+  }
+
+  // Expiré (plans payants uniquement)
   bool get estExpire {
     if (type == 'gratuit') return false;
     return dateFin.isBefore(DateTime.now());
@@ -716,44 +778,39 @@ class AfrolookAbonnement {
 
   // Jours restants
   int get joursRestants {
-    final maintenant = DateTime.now();
-    final difference = dateFin.difference(maintenant);
+    final difference = dateFin.difference(DateTime.now());
     return difference.inDays.clamp(0, 365);
   }
 
-  // Expire bientôt
+  // Expire bientôt (≤ 7 jours)
   bool get expireBientot {
     if (!estPremium) return false;
     return joursRestants <= 7 && joursRestants > 0;
   }
 
-  // Dans la classe AfrolookAbonnement
-// Ajouter cette méthode
   Map<String, dynamic> getLiveRestrictions() {
-    if (type == 'premium' && estPremium) {
+    if (estPremium) {
       return {
-        'maxMonthlyLives': 999, // Illimité
-        'latency': 500, // 500ms
+        'maxMonthlyLives': 999,
+        'latency': 500,
         'quality': 'HD',
         'bitrate': 4000,
         'resolution': '720p',
         'canChooseHD': true,
         'canChooseLowLatency': true,
       };
-    } else {
-      return {
-        'maxMonthlyLives': 5,
-        'latency': 2000, // 2 secondes
-        'quality': 'SD',
-        'bitrate': 1000,
-        'resolution': '480p',
-        'canChooseHD': false,
-        'canChooseLowLatency': false,
-      };
     }
+    return {
+      'maxMonthlyLives': 5,
+      'latency': 2000,
+      'quality': 'SD',
+      'bitrate': 1000,
+      'resolution': '480p',
+      'canChooseHD': false,
+      'canChooseLowLatency': false,
+    };
   }
 }
-
 
 class UserData {
   String? id;
@@ -863,7 +920,6 @@ class UserData {
 
   int? totalAdViewsSupported = 0; // total des pubs de soutien regardées par l'utilisateur
   int? totalCoinsEarnedFromAdSupport = 0; // total des pièces gagnées via les pubs de soutien (créateur)
-
 
   // Afrolook pièces cadeaux
 // Dans UserData, ajouter ces champs (après les champs dating)
@@ -1306,13 +1362,11 @@ class Post {
   Map<String, bool>? seenByUsersMap = {};
   bool? hasBeenSeenByCurrentUser;
 
-
   double? feedScore = 0.5; // Score pour le feed (0.0 - 1.0)
   int? lastScoreUpdate; // Timestamp du dernier calcul
   int? recentEngagement; // Engagement des dernières 24h
   bool? isBoosted = false; // Post boosté manuellement
   int? uniqueViewsCount = 0; // Compteur de vues uniques
-
 
   // NOUVEAUX CHAMPS POUR GESTION MULTIPLE GAGNANTS
   int? rangGagnant; // 1, 2, 3
@@ -1505,7 +1559,6 @@ class Post {
     int vuesValue = json['vues'] ?? 0;
     int interactions = json['totalInteractions'] ?? 0;
 
-
     if (interactions == 0) {
       totalInteractions = vuesValue;
     } else {
@@ -1514,8 +1567,6 @@ class Post {
     // Dans fromJson
     isPortrait = json['isPortrait']??true;
     challengeMonth = json['challengeMonth']??null;
-
-
 
   }
 
@@ -1666,7 +1717,6 @@ class Advertisement {
   List<String>? clickersIds; // IDs des utilisateurs qui ont cliqué
 
   int? pricePaid; // Prix payé par l'utilisateur (en FCFA)
-
 
   Advertisement({
     this.id,
@@ -2210,9 +2260,6 @@ class Challenge {
   bool? determinationEnCours = false;
   int? dateDeterminationGagnants;
 
-
-
-
   Challenge();
 
   Challenge.fromJson(Map<String, dynamic> json) {
@@ -2260,7 +2307,6 @@ class Challenge {
         ? List<String>.from(json['devices_votants_ids'])
         : [];
 
-
     // NOUVEAUX CHAMPS POUR GESTION MULTIPLE GAGNANTS
     nombreGagnants = json['nombre_gagnants'] ?? 1;
     bool hasValidGagnants = json['gagnants'] != null &&
@@ -2269,14 +2315,14 @@ class Challenge {
         json['prix_deja_encaisser'] != true; // <─ IMPORTANT
     // Récupérer les gagnants (rétrocompatible avec posts_winner_ids)
     if (hasValidGagnants) {
-      print("Migration challenge postsWinnerIds 1 :");
+      printVm("Migration challenge postsWinnerIds 1 :");
       gagnants = List<Map<String, dynamic>>.from(json['gagnants']);
     }
 // Sinon migration depuis l'ancien format
     else if (json['posts_winner_ids'] != null) {
       final postsWinnerIds = List<String>.from(json['posts_winner_ids']);
       if (postsWinnerIds.isNotEmpty) {
-        print("Migration challenge postsWinnerIds 3 :");
+        printVm("Migration challenge postsWinnerIds 3 :");
         gagnants = [{
           'post_id': postsWinnerIds.first,
           'rang': 1,
@@ -2380,7 +2426,6 @@ class Challenge {
         now >= (startInscriptionAt ?? 0) &&
         now <= (endInscriptionAt ?? 0);
   }
-
 
   bool get peutParticiper {
     final now = DateTime.now().microsecondsSinceEpoch;
@@ -2573,7 +2618,6 @@ class EntrepriseAbonnement {
   bool? dispo_afrolook;
   List<String>? produistIdBoosted = [];
 
-
   EntrepriseAbonnement();
 
   factory EntrepriseAbonnement.fromJson(Map<String, dynamic> json) =>
@@ -2629,7 +2673,6 @@ class TransactionSolde {
   // Add a method that converts this instance to a JSON map
   Map<String, dynamic> toJson() => _$TransactionSoldeToJson(this);
 }
-
 
 class Transaction {
   String? id;
@@ -2851,7 +2894,6 @@ class Canal {
 
 }
 
-
 @JsonSerializable()
 class Commande {
   String? id;
@@ -2901,8 +2943,6 @@ class CommandeCode {
 enum RoleUser { ADMIN, USER, SUPERADMIN }
 
 enum UserCmdStatus { ENCOURS, ANNULER, VALIDER }
-
-
 
 enum TypeTransaction{
   DEPOTADMIN, RETRAITADMIN, DEPOT, RETRAIT, GAIN, DEPENSE,
@@ -2967,7 +3007,6 @@ class OfficialSubscription {
   );
 }
 
-
 @JsonSerializable()
 class UserIACompte {
   String? ia_name;
@@ -2998,7 +3037,6 @@ class UserIACompte {
   // Add a method that converts this instance to a JSON map
   Map<String, dynamic> toJson() => _$UserIACompteToJson(this);
 }
-
 
 class UserServiceData {
   String? id;
@@ -3310,7 +3348,6 @@ class Chat {
       json['messages'].forEach((v) {
         messages!.add(new Message.fromJson(v));
       });
-
 
     }
 
@@ -3912,9 +3949,7 @@ class Transactionunk {
   });
 }
 
-
 ////////////////////////// contenu payant //////////////////////////////
-
 
 // Modèle pour les catégories de contenu
 class ContentCategory {
@@ -4580,7 +4615,6 @@ enum TabBarType {
   GAMER,
 }
 
-
 // models/transaction_retrait_model.dart
 class TransactionRetrait {
   String? id;
@@ -4730,7 +4764,6 @@ class ActionPoints {
   }
 }
 
-
 // country_data.dart
 class AfricanCountry {
   final String code;
@@ -4803,9 +4836,7 @@ class AfricanCountry {
   ];
 }
 
-
 // models/remuneration_models.dart
-
 
 // ============================================
 // CONFIGURATION DE LA RÉMUNÉRATION
@@ -5122,8 +5153,6 @@ class EncaissementDetails {
     };
   }
 }
-
-
 
 // models/pronostic_models.dart
 

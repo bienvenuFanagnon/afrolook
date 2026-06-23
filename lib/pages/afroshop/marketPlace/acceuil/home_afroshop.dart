@@ -1,24 +1,43 @@
-import 'package:afrotok/pages/afroshop/marketPlace/acceuil/produit_details.dart';
+﻿import 'package:afrotok/pages/afroshop/marketPlace/acceuil/produit_details.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+
 import 'package:carousel_slider/carousel_slider.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:dropdown_search/dropdown_search.dart';
+
 import 'package:flutter/cupertino.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:flutter/widgets.dart';
+
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
+
 import 'package:provider/provider.dart';
+
 import 'package:like_button/like_button.dart';
+
 import 'package:share_plus/share_plus.dart';
 
 import '../../../../constant/custom_theme.dart';
+
 import '../../../../models/model_data.dart';
+
 import '../../../../providers/afroshop/authAfroshopProvider.dart';
+
 import '../../../../providers/afroshop/categorie_produits_provider.dart';
+
 import '../../../../providers/authProvider.dart';
+
 import '../../../user/conponent.dart';
+
 import '../component.dart';
+
 import '../new/addProduit.dart';
 
 class HomeAfroshopPage extends StatefulWidget {
@@ -188,7 +207,7 @@ class _HomePageState extends State<HomeAfroshopPage> {
       await _loadInitialProducts();
 
     } catch (e) {
-      print("Error initializing data: $e");
+      printVm("Error initializing data: $e");
       setState(() {
         _isLoading = false;
         _isLoadingBoosted = false;
@@ -206,7 +225,7 @@ class _HomePageState extends State<HomeAfroshopPage> {
         _isLoadingBoosted = false;
       });
     } catch (e) {
-      print("Error loading boosted products: $e");
+      printVm("Error loading boosted products: $e");
       setState(() {
         _isLoadingBoosted = false;
       });
@@ -231,7 +250,7 @@ class _HomePageState extends State<HomeAfroshopPage> {
         _isLoading = false;
       });
     } catch (e) {
-      print("Error loading initial products: $e");
+      printVm("Error loading initial products: $e");
       setState(() {
         _isLoading = false;
       });
@@ -281,7 +300,7 @@ class _HomePageState extends State<HomeAfroshopPage> {
 
       return articles;
     } catch (e) {
-      print("Error fetching products batch: $e");
+      printVm("Error fetching products batch: $e");
       return [];
     }
   }
@@ -307,7 +326,7 @@ class _HomePageState extends State<HomeAfroshopPage> {
         _isLoadingMore = false;
       });
     } catch (e) {
-      print("Error loading more products: $e");
+      printVm("Error loading more products: $e");
       setState(() {
         _isLoadingMore = false;
       });

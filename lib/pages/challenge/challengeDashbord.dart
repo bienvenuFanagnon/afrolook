@@ -1,13 +1,23 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:provider/provider.dart';
+
 import 'package:intl/intl.dart';
+
 import 'package:afrotok/models/model_data.dart';
+
 import 'package:afrotok/providers/authProvider.dart';
+
 import 'package:afrotok/providers/postProvider.dart';
+
 import 'package:afrotok/providers/userProvider.dart';
+
 import 'challengeDetails.dart';
+
 import 'newChallenge.dart';
 
 // Couleurs pour le thème
@@ -115,7 +125,7 @@ class _ChallengeDashboardPageState extends State<ChallengeDashboardPage> with Si
         _revenusTotaux = revenus;
       });
     } catch (e) {
-      print('Erreur calcul stats: $e');
+      printVm('Erreur calcul stats: $e');
     }
   }
 

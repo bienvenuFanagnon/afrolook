@@ -1,4 +1,6 @@
-// challenge_post_page.dart
+﻿// challenge_post_page.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:afrotok/models/model_data.dart';
@@ -582,7 +584,7 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
         );
       }
     } catch (e) {
-      print('Erreur notification: $e');
+      printVm('Erreur notification: $e');
     }
   }
 
@@ -603,7 +605,7 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
         );
       }
     } catch (e) {
-      print('Erreur notification: $e');
+      printVm('Erreur notification: $e');
     }
   }
 
@@ -1678,7 +1680,7 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
 //         );
 //       }
 //     } catch (e) {
-//       print('Erreur envoi notification: $e');
+//       printVm('Erreur envoi notification: $e');
 //     }
 //   }
 //
@@ -1706,7 +1708,7 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
 //         );
 //       }
 //     } catch (e) {
-//       print('Erreur envoi notification participation: $e');
+//       printVm('Erreur envoi notification participation: $e');
 //     }
 //   }
 //

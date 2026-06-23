@@ -1,9 +1,15 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:http/http.dart' as http;
+
 import 'dart:convert';
+
 import 'package:crypto/crypto.dart';
+
 import 'package:url_launcher/url_launcher.dart';
 
 class PaiementPage extends StatefulWidget {
@@ -99,7 +105,7 @@ class _PaiementPageState extends State<PaiementPage> {
       Navigator.pop(context);
     } catch (e) {
       // Mettre à jour transaction en failed si besoin
-      print("Erreur paiement: $e");
+      printVm("Erreur paiement: $e");
       _showError(e.toString());
     } finally {
       setState(() => _loading = false);

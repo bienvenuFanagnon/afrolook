@@ -1,7 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:intl/intl.dart';
 
 class PendingTransactionsScreen extends StatefulWidget {
@@ -384,7 +388,7 @@ class _VerificationDialogState extends State<_VerificationDialog> {
         });
       }
     } catch (e) {
-      print('Erreur: $e');
+      printVm('Erreur: $e');
       if (_checkCount < _maxChecks) {
         setState(() {
           _message = '⚠️ Erreur technique, nouvelle tentative... ($_checkCount/$_maxChecks)';

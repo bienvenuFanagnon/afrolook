@@ -1,16 +1,29 @@
-import 'dart:async';
+﻿import 'dart:async';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'dart:math';
 import 'package:afrotok/pages/pub/native_ad_widget.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:flutter_linkify/flutter_linkify.dart';
+
 import 'package:intl/intl.dart';
+
 import 'package:video_player/video_player.dart';
+
 import 'package:chewie/chewie.dart';
+
 import 'package:cached_network_image/cached_network_image.dart';
+
 import 'package:afrotok/models/model_data.dart';
+
 import 'package:url_launcher/url_launcher.dart';
+
 import 'package:linkify/linkify.dart'; // ajoutez cette dépendance
 
 const _afroBlack = Color(0xFF000000);
@@ -118,7 +131,7 @@ class _AdPostWidgetState extends State<AdPostWidget> {
         }
       }
     } catch (e) {
-      print('Erreur enregistrement vue pub: $e');
+      printVm('Erreur enregistrement vue pub: $e');
     }
   }
 
@@ -148,7 +161,7 @@ class _AdPostWidgetState extends State<AdPostWidget> {
         }
       }
     } catch (e) {
-      print('Erreur enregistrement clic pub: $e');
+      printVm('Erreur enregistrement clic pub: $e');
     }
   }
 
@@ -185,7 +198,7 @@ class _AdPostWidgetState extends State<AdPostWidget> {
         _isLoading = false;
       });
     } catch (e) {
-      print('Erreur vidéo pub: $e');
+      printVm('Erreur vidéo pub: $e');
       _autoAdvanceTimer?.cancel();
       _cleanup();
       widget.onComplete();

@@ -1,18 +1,30 @@
-import 'package:afrotok/pages/admin/new_category.dart';
+﻿import 'package:afrotok/pages/admin/new_category.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:afrotok/pages/entreprise/abonnement/MySubscription.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../../constant/custom_theme.dart';
-import '../../../constant/logo.dart';
-import '../../../models/model_data.dart';
-import '../../../providers/authProvider.dart';
-import '../../../providers/userProvider.dart';
-import 'package:afrotok/pages/afroshop/marketPlace/acceuil/produit_details.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import '../../../providers/afroshop/categorie_produits_provider.dart';
-import '../../../providers/postProvider.dart';
 
+import 'package:flutter/material.dart';
+
+import 'package:provider/provider.dart';
+
+import '../../../constant/custom_theme.dart';
+
+import '../../../constant/logo.dart';
+
+import '../../../models/model_data.dart';
+
+import '../../../providers/authProvider.dart';
+
+import '../../../providers/userProvider.dart';
+
+import 'package:afrotok/pages/afroshop/marketPlace/acceuil/produit_details.dart';
+
+import 'package:cached_network_image/cached_network_image.dart';
+
+import '../../../providers/afroshop/categorie_produits_provider.dart';
+
+import '../../../providers/postProvider.dart';
 
 class EntrepriseProfil extends StatefulWidget {
   final String? userId;
@@ -84,7 +96,7 @@ class _EntrepriseProfilState extends State<EntrepriseProfil> {
         _isLoading = false;
       });
     } catch (e) {
-      print("Erreur chargement entreprise: $e");
+      printVm("Erreur chargement entreprise: $e");
       setState(() {
         _isLoading = false;
       });
@@ -112,7 +124,7 @@ class _EntrepriseProfilState extends State<EntrepriseProfil> {
 
       return false;
     } catch (e) {
-      print("Erreur loadEntrepriseByUserId: $e");
+      printVm("Erreur loadEntrepriseByUserId: $e");
       return false;
     }
   }
@@ -130,7 +142,7 @@ class _EntrepriseProfilState extends State<EntrepriseProfil> {
         produits = articles;
       });
     } catch (e) {
-      print("Erreur chargement produits: $e");
+      printVm("Erreur chargement produits: $e");
     }
   }
 
@@ -178,7 +190,7 @@ class _EntrepriseProfilState extends State<EntrepriseProfil> {
 
       return articles;
     } catch (e) {
-      print("Erreur fetch produits: $e");
+      printVm("Erreur fetch produits: $e");
       return [];
     }
   }
@@ -203,7 +215,7 @@ class _EntrepriseProfilState extends State<EntrepriseProfil> {
         _isLoadingMore = false;
       });
     } catch (e) {
-      print("Erreur load more produits: $e");
+      printVm("Erreur load more produits: $e");
       setState(() {
         _isLoadingMore = false;
       });

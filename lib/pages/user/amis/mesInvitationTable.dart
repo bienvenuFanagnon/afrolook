@@ -166,7 +166,15 @@ class _MesInvitationsState extends State<MesInvitations> {
         .snapshots();
 
     await for (var invitationsSnapshot in invitationsStream) {
-      invitations = invitationsSnapshot.docs.map((doc) => Invitation.fromJson(doc.data())).toList();
+      final all = invitationsSnapshot.docs
+          .map((doc) => Invitation.fromJson(doc.data()))
+          .toList();
+      // Déduplication par senderId
+      final seen = <String>{};
+      invitations = all.where((inv) {
+        final key = inv.senderId ?? '';
+        return key.isNotEmpty && seen.add(key);
+      }).toList();
       yield invitations;
     }
   }

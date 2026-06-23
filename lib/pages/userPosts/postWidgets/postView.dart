@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:math';
 import 'package:afrotok/pages/afroshop/marketPlace/acceuil/home_afroshop.dart';
 import 'package:afrotok/pages/home/users_cards/allUsersCard.dart';
@@ -2527,7 +2527,7 @@ class _PostViewState extends State<PostView>
                             softWrap: true, // Assure que le texte se découpe sur plusieurs lignes si nécessaire
                             // overflow: TextOverflow.ellipsis, // Ajoute une ellipse si le texte dépasse
                             onTap: (text) {
-                              print(text);
+                              printVm(text);
                             },
                           ),
                         ),
@@ -2677,7 +2677,7 @@ class _PostViewState extends State<PostView>
 
                               /// Called whenever the page in the center of the viewport changes.
                               onPageChanged: (value) {
-                                print('Page changed: $value');
+                                printVm('Page changed: $value');
                               },
 
                               /// Auto scroll interval.

@@ -1,10 +1,16 @@
-import 'package:shared_preferences/shared_preferences.dart';
+﻿import 'package:shared_preferences/shared_preferences.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:flutter/material.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../providers/authProvider.dart';
+
 import 'session_expired_modal.dart';
 
 class SessionCheckerService {
@@ -22,17 +28,16 @@ class SessionCheckerService {
 
     // Si l'utilisateur Firebase est null
     if (currentUser == null) {
-      print('🔍 [SessionChecker] Firebase Auth: utilisateur null');
+      printVm('🔍 [SessionChecker] Firebase Auth: utilisateur null');
 
       _showSessionExpiredModal(context, authProvider);
-
 
       return false;
 
     } else {
       // Utilisateur connecté, mettre à jour l'activité
       await _updateSessionActivity();
-      print('✅ [SessionChecker] Session valide pour: ${currentUser.uid}');
+      printVm('✅ [SessionChecker] Session valide pour: ${currentUser.uid}');
       return true;
     }
 
@@ -57,7 +62,7 @@ class SessionCheckerService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(TOKEN_KEY);
     await prefs.remove(LAST_ACTIVE_KEY);
-    print('🗑️ [SessionChecker] Session effacée');
+    printVm('🗑️ [SessionChecker] Session effacée');
   }
 
   /// Met à jour l'activité

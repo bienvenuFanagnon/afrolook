@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import 'dart:math';
@@ -311,7 +311,7 @@ bool _isLoading=false;
                   }
                 } catch (e) {
                   setState(() => _isLoading = false);
-                  print("Erreur : $e");
+                  printVm("Erreur : $e");
                 }
               },
 
@@ -453,7 +453,7 @@ bool _isLoading=false;
                       }
                     } catch (e) {
                       setState(() => _isLoading = false);
-                      print("Erreur : $e");
+                      printVm("Erreur : $e");
                     }
                   },
                 ),

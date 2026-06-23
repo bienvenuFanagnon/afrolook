@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+﻿import 'dart:typed_data';
 
 import 'package:afrotok/pages/challenge/challengeDetails.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -119,13 +119,13 @@ class _ChallengesListPageState extends State<ChallengesListPage> {
         // templateType: TemplateType.small, // ou TemplateType.small
 
         onAdLoaded: () {
-          print('✅ Native Ad Afrolook chargée: $key');
+          printVm('✅ Native Ad Afrolook chargée: $key');
         },
       ),
 
       // child: BannerAdWidget(
       //   onAdLoaded: () {
-      //     print('✅ Bannière Afrolook chargée: $key');
+      //     printVm('✅ Bannière Afrolook chargée: $key');
       //   },
       // ),
     );

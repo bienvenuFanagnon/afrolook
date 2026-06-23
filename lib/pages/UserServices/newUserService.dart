@@ -1,25 +1,41 @@
-import 'dart:io';
+﻿import 'dart:io';
+import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/pages/userPosts/hashtag/textHashTag/views/widgets/loading_indicator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:firebase_storage/firebase_storage.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:image_picker/image_picker.dart'; // Pour sélectionner une image depuis la galerie
+
 import 'package:path/path.dart' as Path;
+
 import 'package:phone_form_field/phone_form_field.dart';
+
 import 'package:provider/provider.dart';
 
 import '../../models/model_data.dart';
+
 import '../../providers/authProvider.dart';
 
 import 'dart:io';
+
 import 'package:afrotok/models/model_data.dart';
+
 import 'package:afrotok/providers/authProvider.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:firebase_storage/firebase_storage.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:image_picker/image_picker.dart';
+
 import 'package:path/path.dart' as Path;
+
 import 'package:provider/provider.dart';
 
 class UserServiceForm extends StatefulWidget {
@@ -262,7 +278,7 @@ class _UserServiceFormState extends State<UserServiceForm> {
       final TaskSnapshot snapshot = await uploadTask;
       return await snapshot.ref.getDownloadURL();
     } catch (e) {
-      print('Erreur upload image: $e');
+      printVm('Erreur upload image: $e');
       return null;
     }
   }
@@ -325,7 +341,7 @@ class _UserServiceFormState extends State<UserServiceForm> {
       });
 
     } catch (e) {
-      print('Erreur sauvegarde service: $e');
+      printVm('Erreur sauvegarde service: $e');
       _showErrorSnackBar('Erreur lors de la sauvegarde: $e');
     } finally {
       if (mounted) {
@@ -701,9 +717,6 @@ class _UserServiceFormState extends State<UserServiceForm> {
     );
   }
 }
-
-
-
 
 class ServiceConstants {
   static const List<String> categories = [

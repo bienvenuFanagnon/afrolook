@@ -1,4 +1,6 @@
-// pages/chronique/add_chronique_page.dart
+﻿// pages/chronique/add_chronique_page.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
@@ -377,7 +379,7 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
 
       Navigator.pop(context);
     } catch (e) {
-      print("Erreur chronique form : $e");
+      printVm("Erreur chronique form : $e");
       _showErrorDialog('Erreur lors de la publication: $e');
     } finally {
       setState(() => _isUploading = false);

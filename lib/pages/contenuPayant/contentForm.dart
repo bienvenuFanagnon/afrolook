@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:io';
 
 import 'package:afrotok/models/model_data.dart';
@@ -353,7 +353,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
           .get();
 
       if (!docSnapshot.exists) {
-        print('Document $serieId non trouvé');
+        printVm('Document $serieId non trouvé');
         return;
       }
 
@@ -380,9 +380,9 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
         );
       }
 
-      print("Notification envoyée pour l'épisode: ${content.title}");
+      printVm("Notification envoyée pour l'épisode: ${content.title}");
     } catch (e) {
-      print("Erreur lors de l'envoi de la notification: $e");
+      printVm("Erreur lors de l'envoi de la notification: $e");
     }
   }
 

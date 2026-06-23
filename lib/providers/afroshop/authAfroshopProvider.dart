@@ -1,5 +1,7 @@
+﻿
 
 
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'dart:io';
 import 'package:afrotok/models/model_data.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -35,7 +37,7 @@ class UserShopAuthProvider extends ChangeNotifier {
   Future<void> storeToken(String value) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('token', value);
-    print('token saved : ${value}');
+    printVm('token saved : ${value}');
   }
 
   Future<void> isFirst(bool value) async {
@@ -49,7 +51,7 @@ class UserShopAuthProvider extends ChangeNotifier {
 
   Future<bool?> getIfIsFirst() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    print('is_first:');
+    printVm('is_first:');
 
     return  prefs.getBool('is_first');
   }
@@ -82,7 +84,7 @@ class UserShopAuthProvider extends ChangeNotifier {
 
 
       //  await firestore.collection('Matches').doc(id).set(data.toJson());
-      print("///////////-- SAVE soccer data  --///////////////");
+      printVm("///////////-- SAVE soccer data  --///////////////");
       return true;
     }catch(error){
       return false;
@@ -99,9 +101,9 @@ class UserShopAuthProvider extends ChangeNotifier {
     // Get docs from collection reference
     QuerySnapshot querySnapshot = await collectionRef.where("phone",isEqualTo: phone!).get()
         .then((value){
-      print("user by phone");
+      printVm("user by phone");
 
-      print(value);      return value;
+      printVm(value);      return value;
     }).catchError((onError){
 
     });
@@ -124,9 +126,9 @@ class UserShopAuthProvider extends ChangeNotifier {
     // Get docs from collection reference
     QuerySnapshot querySnapshot = await collectionRef.where("phone",isNotEqualTo: phone!).get()
         .then((value){
-      print("user by phone");
+      printVm("user by phone");
 
-      print(value);      return value;
+      printVm(value);      return value;
     }).catchError((onError){
 
     });
@@ -152,9 +154,9 @@ class UserShopAuthProvider extends ChangeNotifier {
 
         .get()
         .then((value){
-      print("user by phone");
+      printVm("user by phone");
 
-      print(value);      return value;
+      printVm(value);      return value;
     }).catchError((onError){
 
     });
@@ -182,9 +184,9 @@ class UserShopAuthProvider extends ChangeNotifier {
     // Get docs from collection reference
     QuerySnapshot querySnapshot = await collectionRef.where("id",isEqualTo: id!).get()
         .then((value){
-      print("user by phone");
+      printVm("user by phone");
 
-      print(value);      return value;
+      printVm(value);      return value;
     }).catchError((onError){
 
     });

@@ -1,4 +1,5 @@
-import 'package:video_player/video_player.dart';
+﻿import 'package:video_player/video_player.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
 
 /// Gestionnaire global de préchargement des vidéos du feed Home/Sport.
 ///
@@ -74,7 +75,7 @@ class VideoPreloadManager {
       }
     } catch (e) {
       // ignore: avoid_print
-      print('❌ VideoPreloadManager: erreur préchargement $postId: $e');
+      printVm('❌ VideoPreloadManager: erreur préchargement $postId: $e');
     } finally {
       _preloadingIds.remove(postId);
     }

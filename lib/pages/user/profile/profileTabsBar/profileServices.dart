@@ -1,3 +1,5 @@
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/UserServices/detailsUserService.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:flutter/material.dart';

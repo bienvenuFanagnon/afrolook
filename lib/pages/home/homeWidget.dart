@@ -1,12 +1,19 @@
-import 'dart:math';
+﻿import 'dart:math';
+import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import '../../models/model_data.dart';
 import 'dart:io';
+
 import 'package:flutter/foundation.dart'; // Pour kIsWeb
+
 import 'package:video_thumbnail/video_thumbnail.dart';
+
 import 'package:path_provider/path_provider.dart';
+
 import 'package:firebase_storage/firebase_storage.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 String getTabBarTypeMessage(String type,Post post) {
   // switch (type) {
   //   case 'ACTUALITES':
@@ -38,8 +45,6 @@ int genererNombreAleatoire() {
   return nombreAleatoire + 1;
 }
 
-
-
 Future<void> checkAndGenerateThumbnail({
   required String postId,
   required String videoUrl,
@@ -51,7 +56,7 @@ async {
   if (currentThumbnail != null && currentThumbnail.isNotEmpty) return;
 
   try {
-    print("🎬 Génération du thumbnail pour le post: $postId");
+    printVm("🎬 Génération du thumbnail pour le post: $postId");
 
     // 2. Générer le thumbnail dans un dossier temporaire
     // final String? fileName = await VideoThumbnail.thumbnailFile(
@@ -88,9 +93,9 @@ async {
         'thumbnail': downloadUrl,
       });
 
-      print("✅ Thumbnail mis à jour avec succès : $downloadUrl");
+      printVm("✅ Thumbnail mis à jour avec succès : $downloadUrl");
     }
   } catch (e) {
-    print("❌ Erreur lors de la génération du thumbnail: $e");
+    printVm("❌ Erreur lors de la génération du thumbnail: $e");
   }
 }

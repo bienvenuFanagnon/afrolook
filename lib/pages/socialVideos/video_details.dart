@@ -1,4 +1,4 @@
-import 'package:afrotok/pages/home/homeWidget.dart';
+﻿import 'package:afrotok/pages/home/homeWidget.dart';
 import 'package:afrotok/pages/socialVideos/afrovideos/afrovideo.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 
@@ -472,7 +472,7 @@ class _PostVideosState extends State<OnlyPostVideo> with WidgetsBindingObserver,
                   }
                 } catch (e) {
                   setState(() => _isLoading = false);
-                  print("Erreur : $e");
+                  printVm("Erreur : $e");
                 }
               },
 
@@ -614,7 +614,7 @@ class _PostVideosState extends State<OnlyPostVideo> with WidgetsBindingObserver,
                       }
                     } catch (e) {
                       setState(() => _isLoading = false);
-                      print("Erreur : $e");
+                      printVm("Erreur : $e");
                     }
                   },
                 ),
@@ -860,7 +860,7 @@ class _PostVideosState extends State<OnlyPostVideo> with WidgetsBindingObserver,
                                                       child: Padding(
                                                         padding: const EdgeInsets.only(left: 3.0,right: 3),
                                                         child: TextButton(onPressed: () {
-                                                          print('contact tap');
+                                                          printVm('contact tap');
                                                           // getChatsEntrepriseData( datas[index].user!, datas[index], datas[index].entrepriseData!).then((chat) async {
                                                           //   userProvider.chat.messages=chat.messages;
                                                           //

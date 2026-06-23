@@ -1,4 +1,6 @@
-// user_ad_detail_page.dart
+﻿// user_ad_detail_page.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/user/userPubs/user_create_advertisement_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -195,7 +197,7 @@ class _UserAdDetailPageState extends State<UserAdDetailPage> {
             );
           }
         }).catchError((error) {
-          print('Erreur chargement vidéo: $error');
+          printVm('Erreur chargement vidéo: $error');
           if (mounted) {
             setState(() => _isVideoInitialized = false);
             _showVideoErrorDialog(videoUrl);

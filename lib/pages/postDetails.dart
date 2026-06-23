@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
@@ -129,7 +129,7 @@ class _DetailsPostState extends State<DetailsPost>
         });
       }
     } catch (e) {
-      print('Erreur lors de la vérification des favoris: $e');
+      printVm('Erreur lors de la vérification des favoris: $e');
     }
   }
 
@@ -566,27 +566,27 @@ class _DetailsPostState extends State<DetailsPost>
     _prefs = await SharedPreferences.getInstance();
 
     final userId = authProvider.loginUserData?.id;
-    print('🔍 _loadSuggestionsModalPreference - userId: $userId');
+    printVm('🔍 _loadSuggestionsModalPreference - userId: $userId');
     if (userId == null) {
-      print('⚠️ userId est null, impossible de charger la préférence');
+      printVm('⚠️ userId est null, impossible de charger la préférence');
       return;
     }
     final key = 'has_seen_suggestions_modal_video_$userId';
     _hasSeenSuggestionsModal = _prefs.getBool(key) ?? false;
-    print('📖 Clé lue: $key, valeur: $_hasSeenSuggestionsModal');
+    printVm('📖 Clé lue: $key, valeur: $_hasSeenSuggestionsModal');
     setState(() {});
   }
 
   Future<void> _markSuggestionsModalSeen() async {
     final userId = authProvider.loginUserData?.id;
-    print('🔍 _markSuggestionsModalSeen - userId: $userId');
+    printVm('🔍 _markSuggestionsModalSeen - userId: $userId');
     if (userId == null) {
-      print('⚠️ userId est null, impossible de sauvegarder');
+      printVm('⚠️ userId est null, impossible de sauvegarder');
       return;
     }
     final key = 'has_seen_suggestions_modal_video_$userId';
     await _prefs.setBool(key, true);
-    print('💾 Clé sauvegardée: $key = true');
+    printVm('💾 Clé sauvegardée: $key = true');
     setState(() {
       _hasSeenSuggestionsModal = true;
     });
@@ -774,13 +774,13 @@ class _DetailsPostState extends State<DetailsPost>
 
         onAdLoaded: () {
           authProvider.incrementCreatorCoins(postId: widget.post.id!, creatorId: widget.post.user_id!, currentUserId:authProvider.loginUserData.id!);
-          print('✅ Native Ad Afrolook chargée: $key');
+          printVm('✅ Native Ad Afrolook chargée: $key');
         },
       ),
       // child: BannerAdWidget(
       //   onAdLoaded: () {
       //
-      //     print('✅ Bannière Afrolook chargée: $key');
+      //     printVm('✅ Bannière Afrolook chargée: $key');
 
 
     //   },
@@ -848,7 +848,7 @@ class _DetailsPostState extends State<DetailsPost>
         });
       }
     } catch (e) {
-      print('Erreur chargement publicité: $e');
+      printVm('Erreur chargement publicité: $e');
     } finally {
       setState(() => _isLoadingAd = false);
     }
@@ -1456,7 +1456,7 @@ class _DetailsPostState extends State<DetailsPost>
         return file;
       }
     } catch (e) {
-      print('Erreur préchargement audio $postId: $e');
+      printVm('Erreur préchargement audio $postId: $e');
     }
 
     return null;
@@ -1512,7 +1512,7 @@ class _DetailsPostState extends State<DetailsPost>
         });
       }
     } catch (e) {
-      print('Erreur lecture audio: $e');
+      printVm('Erreur lecture audio: $e');
       _showAudioError();
       setState(() {
         _isAudioLoading = false;
@@ -1575,9 +1575,9 @@ class _DetailsPostState extends State<DetailsPost>
       // Notifier le parent
       // widget.onAdClicked?.call(post, ad);
 
-      print('✅ Clic enregistré pour la pub: ${ad.id}');
+      printVm('✅ Clic enregistré pour la pub: ${ad.id}');
     } catch (e) {
-      print('❌ Erreur lors de l\'enregistrement du clic: $e');
+      printVm('❌ Erreur lors de l\'enregistrement du clic: $e');
       _clickedInSession.remove(clickKey);
     }
   }
@@ -2196,7 +2196,7 @@ class _DetailsPostState extends State<DetailsPost>
         ),
       );
     } catch (e) {
-      print('Erreur toggle favori: $e');
+      printVm('Erreur toggle favori: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -2297,7 +2297,7 @@ class _DetailsPostState extends State<DetailsPost>
         );
       }
     } catch (e) {
-      print('Erreur création notification favori: $e');
+      printVm('Erreur création notification favori: $e');
     }
   }
 
@@ -2352,7 +2352,7 @@ class _DetailsPostState extends State<DetailsPost>
         });
       }
     } catch (e) {
-      print('Erreur lors de la vérification du vote: $e');
+      printVm('Erreur lors de la vérification du vote: $e');
     }
   }
 
@@ -2374,7 +2374,7 @@ class _DetailsPostState extends State<DetailsPost>
 
       // 🔥 Vérifier si l'utilisateur a déjà vu le post
       if (widget.post.users_vue_id!.contains(currentUserId)) {
-        print('⏭️ Vue déjà enregistrée pour cet utilisateur');
+        printVm('⏭️ Vue déjà enregistrée pour cet utilisateur');
         return;
       }
       authProvider. incrementPostTotalInteractions(postId: widget.post.id!);
@@ -2393,9 +2393,9 @@ class _DetailsPostState extends State<DetailsPost>
       });
 
       PostViewService.recordAuthorView(widget.post, currentUserId);
-      print('✅ Vue unique enregistrée pour ${widget.post.id}');
+      printVm('✅ Vue unique enregistrée pour ${widget.post.id}');
     } catch (e) {
-      print("Erreur incrémentation vues: $e");
+      printVm("Erreur incrémentation vues: $e");
     }
   }
 
@@ -2422,7 +2422,7 @@ class _DetailsPostState extends State<DetailsPost>
 
         // ❌ Si moins de 2 jours -> ne pas compter
         if (difference < 2) {
-          print(
+          printVm(
               '⏭️ Post ${widget.post.id} déjà vu il y a $difference jour(s) - Vue NON comptée');
 
           if (!widget.post.users_vue_id!.contains(currentUserId)) {
@@ -2454,9 +2454,9 @@ class _DetailsPostState extends State<DetailsPost>
       });
 
       PostViewService.recordAuthorView(widget.post, currentUserId);
-      print('✅ Vue enregistrée pour ${widget.post.id}');
+      printVm('✅ Vue enregistrée pour ${widget.post.id}');
     } catch (e) {
-      print("Erreur incrémentation vues: $e");
+      printVm("Erreur incrémentation vues: $e");
     }
   }
 
@@ -2480,7 +2480,7 @@ class _DetailsPostState extends State<DetailsPost>
         });
       }
     } catch (e) {
-      print('Erreur chargement challenge: $e');
+      printVm('Erreur chargement challenge: $e');
     } finally {
       setState(() {
         _loadingChallenge = false;
@@ -2583,7 +2583,7 @@ class _DetailsPostState extends State<DetailsPost>
         await _processVoteNormal(user.uid);
       }
     } catch (e) {
-      print("Erreur lors de la préparation du vote: $e");
+      printVm("Erreur lors de la préparation du vote: $e");
       _showError('Erreur lors de la préparation du vote: $e');
     }
   }
@@ -2611,7 +2611,7 @@ class _DetailsPostState extends State<DetailsPost>
           });
         }
       } else {
-        print('Challenge non trouvé: ${widget.post.challenge_id}');
+        printVm('Challenge non trouvé: ${widget.post.challenge_id}');
         if (mounted) {
           setState(() {
             _challenge = null;
@@ -2619,7 +2619,7 @@ class _DetailsPostState extends State<DetailsPost>
         }
       }
     } catch (e) {
-      print('Erreur rechargement challenge: $e');
+      printVm('Erreur rechargement challenge: $e');
       if (mounted) {
         setState(() {
           _challenge = null;
@@ -2645,7 +2645,7 @@ class _DetailsPostState extends State<DetailsPost>
 
       // Récupérer l'ID unique de l'appareil
       final String deviceId = await DeviceInfoService.getDeviceId();
-      print("Vérification appareil pour vote: $deviceId");
+      printVm("Vérification appareil pour vote: $deviceId");
 
       // Vérifier si l'appareil a déjà voté (uniquement si ID valide)
       if (DeviceInfoService.isDeviceIdValid(deviceId) &&
@@ -2746,7 +2746,7 @@ class _DetailsPostState extends State<DetailsPost>
           userVotant: authProvider.loginUserData!,
           userVote: widget.post!.user!);
     } catch (e) {
-      print("Erreur lors du vote avec challenge: $e");
+      printVm("Erreur lors du vote avec challenge: $e");
 
       // Message d'erreur spécifique pour les violations
       if (e.toString().contains('VIOLATION DÉTECTÉE')) {
@@ -2850,7 +2850,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           userVotant: authProvider.loginUserData!,
           userVote: widget.post!.user!);
     } catch (e) {
-      print("Erreur lors du vote avec challenge: $e");
+      printVm("Erreur lors du vote avec challenge: $e");
       _showError('ERREUR LORS DU VOTE: ${e.toString()}\nVeuillez réessayer.');
     } finally {
       if (mounted) {
@@ -2927,7 +2927,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
 
       _showSuccess('🎉 Vote enregistré !');
     } catch (e) {
-      print("Erreur lors du vote normal: $e");
+      printVm("Erreur lors du vote normal: $e");
       _showError('Erreur lors du vote: ${e.toString()}');
     } finally {
       if (mounted) {
@@ -3211,7 +3211,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         ),
       );
     } catch (e) {
-      print("Erreur like: $e");
+      printVm("Erreur like: $e");
 
       // Message d'erreur spécifique
       String errorMessage = "Erreur lors du like";
@@ -3278,7 +3278,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         );
       }
     } catch (e) {
-      print("Erreur like: $e");
+      printVm("Erreur like: $e");
     }
   }
   Future<void> _handleLike3() async {
@@ -3286,26 +3286,26 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       // Vérifications préalables
       final userId = authProvider.loginUserData.id;
       if (userId == null) {
-        print("❌ Like: utilisateur non connecté");
+        printVm("❌ Like: utilisateur non connecté");
         return;
       }
 
       final postId = widget.post.id;
       if (postId == null) {
-        print("❌ Like: post sans ID");
+        printVm("❌ Like: post sans ID");
         return;
       }
 
       final usersLoveId = widget.post.users_love_id;
       if (usersLoveId == null) {
-        print("❌ Like: users_love_id est null, initialisation");
+        printVm("❌ Like: users_love_id est null, initialisation");
         // Option: initialiser la liste vide dans le post localement
         widget.post.users_love_id = [];
       }
 
       // Vérifier si l'utilisateur a déjà liké
       if (usersLoveId != null && usersLoveId.contains(userId)) {
-        print("❌ Like: déjà liké");
+        printVm("❌ Like: déjà liké");
         return;
       }
 
@@ -3377,7 +3377,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           });
         } else {
           final minutesPassed = (timeSinceLastNotification / (60 * 1000 * 1000)).toStringAsFixed(1);
-          print("⏱️ Notification limitée pour @${targetUser?.pseudo ?? 'inconnu'} - Dernière notification il y a $minutesPassed minutes");
+          printVm("⏱️ Notification limitée pour @${targetUser?.pseudo ?? 'inconnu'} - Dernière notification il y a $minutesPassed minutes");
         }
       }
 
@@ -3410,7 +3410,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         ),
       );
     } catch (e) {
-      print("❌ Erreur like: $e");
+      printVm("❌ Erreur like: $e");
     }
   }
 
@@ -3419,25 +3419,25 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       // Vérifications préalables
       final userId = authProvider.loginUserData.id;
       if (userId == null) {
-        print("❌ Like: utilisateur non connecté");
+        printVm("❌ Like: utilisateur non connecté");
         return;
       }
 
       final postId = widget.post.id;
       if (postId == null) {
-        print("❌ Like: post sans ID");
+        printVm("❌ Like: post sans ID");
         return;
       }
 
       final usersLoveId = widget.post.users_love_id;
       if (usersLoveId == null) {
-        print("❌ Like: users_love_id est null, initialisation");
+        printVm("❌ Like: users_love_id est null, initialisation");
         widget.post.users_love_id = [];
       }
 
       // // Vérifier si l'utilisateur a déjà liké
       // if (usersLoveId != null && usersLoveId.contains(userId)) {
-      //   print("❌ Like: déjà liké");
+      //   printVm("❌ Like: déjà liké");
       //   return;
       // }
 
@@ -3530,7 +3530,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             });
           } else {
             final minutesPassed = (timeSinceLastNotification / (60 * 1000 * 1000)).toStringAsFixed(1);
-            print("⏱️ Notification limitée pour @${targetUser?.pseudo ?? 'inconnu'} - Dernière notification il y a $minutesPassed minutes");
+            printVm("⏱️ Notification limitée pour @${targetUser?.pseudo ?? 'inconnu'} - Dernière notification il y a $minutesPassed minutes");
           }
         }
 
@@ -3568,7 +3568,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       //   ),
       // );
     } catch (e) {
-      // print("❌ Erreur like: $e");
+      // printVm("❌ Erreur like: $e");
       // ScaffoldMessenger.of(context).showSnackBar(
       //   SnackBar(
       //     content: Text('Erreur: $e'),
@@ -3665,7 +3665,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           .doc(transaction.id)
           .set(transaction.toJson());
     } catch (e) {
-      print("Erreur création transaction: $e");
+      printVm("Erreur création transaction: $e");
     }
   }
 
@@ -3787,7 +3787,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         _showInsufficientBalanceDialog();
       }
     } catch (e) {
-      print("Erreur envoi cadeau: $e");
+      printVm("Erreur envoi cadeau: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: _colors.danger,
@@ -4075,7 +4075,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         _showInsufficientBalanceDialog();
       }
     } catch (e) {
-      print("Erreur republication: $e");
+      printVm("Erreur republication: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: _colors.danger,
@@ -4711,7 +4711,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           indicatorColor: _isLookChallenge ? _colors.primary : _colors.accent,
           indicatorBackgroundColor: _colors.textSecondary,
           onPageChanged: (value) {
-            print('Page changed: $value');
+            printVm('Page changed: $value');
           },
           isLoop: true,
           children: post.images!
@@ -5155,7 +5155,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       indicatorColor: _isLookChallenge ? _colors.primary : _colors.accent,
       indicatorBackgroundColor: _colors.textSecondary,
       onPageChanged: (value) {
-        print('Page changed: $value');
+        printVm('Page changed: $value');
       },
       isLoop: true,
       children: images
@@ -5932,7 +5932,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         postDataType: widget.post.dataType,
       );
     } catch (e) {
-      print("Erreur partage: $e");
+      printVm("Erreur partage: $e");
     } finally {
       // Désactiver le chargement même en cas d'erreur
       if (mounted) {

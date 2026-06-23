@@ -1,28 +1,51 @@
-import 'dart:async';
+﻿import 'dart:async';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'dart:io';
 import 'dart:typed_data';
+
 import 'package:afrotok/models/model_data.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:firebase_storage/firebase_storage.dart';
+
 import 'package:flutter/foundation.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:image_picker/image_picker.dart';
+
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+
 import 'package:provider/provider.dart';
+
 import 'package:uuid/uuid.dart';
+
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+
 import 'package:path_provider/path_provider.dart';
+
 import 'package:iconsax/iconsax.dart';
 
 import '../../../providers/authProvider.dart';
+
 import '../../../providers/postProvider.dart';
+
 import '../../../providers/userProvider.dart';
+
 import '../../../theme/app_colors.dart';
+
 import '../../../services/postService/massNotificationService.dart';
+
 import '../../../services/postService/post_cooldown_service.dart';
+
 import '../../../services/utils/abonnement_utils.dart';
+
 import '../../pub/rewarded_ad_widget.dart';
+
 import '../../user/userAbonnementPage.dart';
+
 import '../../user/userPubs/user_my_advertisements_page.dart';
 
 class UserPostLookImageTab extends StatefulWidget {
@@ -46,8 +69,6 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
   late PostProvider postProvider;
   late UserAuthProvider authProvider;
   late UserProvider userProvider;
-
-
 
   bool onTap = false;
   bool _canPost = true;
@@ -323,7 +344,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
         setState(() => _canPost = true);
       }
     } catch (e) {
-      print("Erreur vérification cooldown: $e");
+      printVm("Erreur vérification cooldown: $e");
       setState(() => _canPost = true);
     }
   }
@@ -385,7 +406,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
           _imageNames.add(image.name);
         });
       } catch (e) {
-        print("Erreur lors de la compression: $e");
+        printVm("Erreur lors de la compression: $e");
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erreur lors du traitement de l\'image', textAlign: TextAlign.center, style: TextStyle(color: _c.danger)),
@@ -406,7 +427,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
       );
       return result;
     } catch (e) {
-      print("Erreur compression: $e");
+      printVm("Erreur compression: $e");
       return bytes;
     }
   }
@@ -946,7 +967,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                 RewardedAdWidget(
                   key: _rewardedAdKey,
                   onUserEarnedReward: (double amount, String name) {
-                    print('RewardedAdWidget - amount : $amount -- name: $name');
+                    printVm('RewardedAdWidget - amount : $amount -- name: $name');
                     setState(() {
                       _canPost = true;
                       _timeRemaining = '';
@@ -1458,7 +1479,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
           });
         }
 
-        print('✅ Post créé avec ID: $postId, ${_selectedImages.length} images${_isAdvertisement ? ' (Publicité en attente)' : ''}');
+        printVm('✅ Post créé avec ID: $postId, ${_selectedImages.length} images${_isAdvertisement ? ' (Publicité en attente)' : ''}');
 
         _descriptionController.clear();
         setState(() {
@@ -1546,7 +1567,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
         _checkPostCooldown();
 
       } catch (e) {
-        print("❌ Erreur lors de la publication: $e");
+        printVm("❌ Erreur lors de la publication: $e");
 
         if (Navigator.canPop(context)) {
           Navigator.pop(context);
@@ -1901,5 +1922,4 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
     );
   }
 }
-
 

@@ -1,4 +1,6 @@
-// recent_posts_provider.dart
+﻿// recent_posts_provider.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:afrotok/models/model_data.dart';
@@ -94,7 +96,7 @@ class RecentPostsProvider extends ChangeNotifier {
     } catch (e) {
       _isLoading = false;
       notifyListeners();
-      print('Error loading initial posts: $e');
+      printVm('Error loading initial posts: $e');
     }
   }
 
@@ -151,14 +153,14 @@ class RecentPostsProvider extends ChangeNotifier {
             added++;
           }
         } catch (e) {
-          print('Error parsing post ${doc.id}: $e');
+          printVm('Error parsing post ${doc.id}: $e');
         }
       }
 
-      print('✅ Batch $queryType: $added posts ajoutés');
+      printVm('✅ Batch $queryType: $added posts ajoutés');
 
     } catch (e) {
-      print('❌ Error batch $queryType: $e');
+      printVm('❌ Error batch $queryType: $e');
     }
   }
 
@@ -224,7 +226,7 @@ class RecentPostsProvider extends ChangeNotifier {
               }
             }
           } catch (e) {
-            print('Error parsing post ${doc.id}: $e');
+            printVm('Error parsing post ${doc.id}: $e');
           }
         }
       }
@@ -238,7 +240,7 @@ class RecentPostsProvider extends ChangeNotifier {
     } catch (e) {
       _isLoading = false;
       notifyListeners();
-      print('Error loading more posts: $e');
+      printVm('Error loading more posts: $e');
     }
   }
 

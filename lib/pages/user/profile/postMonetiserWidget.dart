@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:provider/provider.dart';
@@ -41,15 +41,15 @@ class _PostMonetiserWidgetState extends State<PostMonetiserWidget> {
         .get();
 
     if (!postMonetiserSnapshot.exists) {
-      print("PostMonetiser introuvable");
+      printVm("PostMonetiser introuvable");
       isProcessing = false;
       return;
     }
 
     PostMonetiser postMonetiser = PostMonetiser.fromJson(postMonetiserSnapshot.data() as Map<String, dynamic>);
     double montant = postMonetiser.solde! * 25;
-    print("PostMonetiser ${postMonetiser.toJson()}");
-    print("montant $montant");
+    printVm("PostMonetiser ${postMonetiser.toJson()}");
+    printVm("montant $montant");
 
     // Vérifier que le solde dépasse 2000
     if (montant < 2000.0) {
@@ -81,7 +81,7 @@ class _PostMonetiserWidgetState extends State<PostMonetiserWidget> {
         .get();
 
     if (!userSnapshot.exists) {
-      print("Utilisateur introuvable");
+      printVm("Utilisateur introuvable");
       isProcessing = false;
       return;
     }
@@ -122,7 +122,7 @@ class _PostMonetiserWidgetState extends State<PostMonetiserWidget> {
       },
     );
 
-    print("Solde encaissé avec succès.");
+    printVm("Solde encaissé avec succès.");
     isProcessing = false;
   }
   @override

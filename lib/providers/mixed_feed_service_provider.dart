@@ -1,4 +1,6 @@
-// mixed_feed_service_provider.dart
+﻿// mixed_feed_service_provider.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:flutter/material.dart';
@@ -65,12 +67,12 @@ class MixedFeedServiceProvider extends ChangeNotifier {
       _isLoadingImmediatePosts = false;
       _status = 'Posts immédiats prêts - ${_mixedFeedService!.immediatePosts.length} posts';
 
-      print('✅ Provider: Posts immédiats chargés - ${_mixedFeedService!.immediatePosts.length} posts');
+      printVm('✅ Provider: Posts immédiats chargés - ${_mixedFeedService!.immediatePosts.length} posts');
 
     } catch (e) {
       _isLoadingImmediatePosts = false;
       _status = 'Erreur chargement posts immédiats';
-      print('❌ Provider: Erreur posts immédiats: $e');
+      printVm('❌ Provider: Erreur posts immédiats: $e');
     } finally {
       notifyListeners();
     }
@@ -91,11 +93,11 @@ class MixedFeedServiceProvider extends ChangeNotifier {
       _isPreparing = false;
       _status = 'Prêt - ${_mixedFeedService!.preparedPostsCount} posts';
 
-      print('✅ Provider: Préparation terminée avec ${_mixedFeedService!.preparedPostsCount} posts');
+      printVm('✅ Provider: Préparation terminée avec ${_mixedFeedService!.preparedPostsCount} posts');
     } catch (e) {
       _isPreparing = false;
       _status = 'Erreur de préparation';
-      print('❌ Provider: Erreur préparation: $e');
+      printVm('❌ Provider: Erreur préparation: $e');
     } finally {
       notifyListeners();
     }

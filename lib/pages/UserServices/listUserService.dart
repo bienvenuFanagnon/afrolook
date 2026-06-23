@@ -1,4 +1,4 @@
-import 'package:afrotok/pages/UserServices/detailsUserService.dart';
+﻿import 'package:afrotok/pages/UserServices/detailsUserService.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -61,7 +61,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
       final userCountry = _getCountryNameFromCode(userCountryCode);
 
       if (userCountry.isNotEmpty) {
-        print('🌍 Filtrage par pays utilisateur: $userCountry ($userCountryCode)');
+        printVm('🌍 Filtrage par pays utilisateur: $userCountry ($userCountryCode)');
 
         // Appliquer le filtre par pays
         await postProvider.getUserServices(
@@ -71,7 +71,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
 
         // Si aucun service trouvé pour son pays, recharger sans filtre
         if (postProvider.userServices.isEmpty) {
-          print('⚠️ Aucun service trouvé pour le pays $userCountry, chargement sans filtre');
+          printVm('⚠️ Aucun service trouvé pour le pays $userCountry, chargement sans filtre');
            postProvider.resetServicePagination();
           await postProvider.getUserServices();
         }
@@ -80,7 +80,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
         await postProvider.getUserServices();
       }
     } catch (e) {
-      print('❌ Erreur lors de l\'initialisation: $e');
+      printVm('❌ Erreur lors de l\'initialisation: $e');
       // En cas d'erreur, charger normalement
       final postProvider = Provider.of<PostProvider>(context, listen: false);
       await postProvider.getUserServices();

@@ -1,4 +1,6 @@
-// providers/coin_gift_provider.dart
+﻿// providers/coin_gift_provider.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
@@ -56,7 +58,7 @@ class CoinGiftUserProvider with ChangeNotifier {
           .map((doc) => PostGift.fromJson(doc.data()))
           .toList();
     } catch (e) {
-      print('Erreur getPostGifts: $e');
+      printVm('Erreur getPostGifts: $e');
       return [];
     }
   }

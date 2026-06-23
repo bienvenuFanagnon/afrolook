@@ -1,4 +1,6 @@
-// widgets/post_gifts_list.dart
+﻿// widgets/post_gifts_list.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -65,7 +67,7 @@ class _PostGiftsListState extends State<PostGiftsList> {
         });
       }
     } catch (e) {
-      print('Erreur chargement cadeaux: $e');
+      printVm('Erreur chargement cadeaux: $e');
       if (mounted) {
         setState(() {
           _hasError = true;

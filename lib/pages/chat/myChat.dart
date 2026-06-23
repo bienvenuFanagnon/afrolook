@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:io';
 import 'package:afrotok/models/chatmodels/message.dart';
 import 'package:afrotok/models/chatmodels/models.dart';
@@ -247,7 +247,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         });
       }
     } catch (e) {
-      print('⚠️ Erreur chargement messages plus anciens: $e');
+      printVm('⚠️ Erreur chargement messages plus anciens: $e');
     } finally {
       if (mounted) setState(() => _isLoadingMore = false);
     }
@@ -293,7 +293,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         }
         await batch.commit();
       } catch (e) {
-        print('⚠️ Erreur marquage messages lus: $e');
+        printVm('⚠️ Erreur marquage messages lus: $e');
       }
     });
   }
@@ -814,7 +814,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         }
       }
     } catch (e) {
-      print("Erreur audio: $e");
+      printVm("Erreur audio: $e");
       _showErrorSnackbar("Erreur lors de la lecture audio");
       setState(() {
         _isAudioLoading = false;
@@ -1104,7 +1104,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         );
       }
     } catch (e) {
-      print("Erreur notification: $e");
+      printVm("Erreur notification: $e");
     }
   }
 
@@ -1461,7 +1461,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         ));
       }
     } catch (e) {
-      print('Erreur ouverture post partage: $e');
+      printVm('Erreur ouverture post partage: $e');
     }
   }
 

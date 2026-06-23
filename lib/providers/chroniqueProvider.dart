@@ -1,4 +1,6 @@
-// providers/chronique_provider.dart
+﻿// providers/chronique_provider.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -77,7 +79,7 @@ class ChroniqueProvider with ChangeNotifier {
       }
       return 0;
     } catch (e) {
-      print('Erreur lors de la récupération du nombre de likes: $e');
+      printVm('Erreur lors de la récupération du nombre de likes: $e');
       return 0;
     }
   }
@@ -134,7 +136,7 @@ class ChroniqueProvider with ChangeNotifier {
         }
       }
     } catch (error) {
-      print('Erreur décrémentation compteur: $error');
+      printVm('Erreur décrémentation compteur: $error');
     }
   }
 
@@ -199,7 +201,7 @@ class ChroniqueProvider with ChangeNotifier {
           .map((doc) => Chronique.fromMap(doc.data() as Map<String, dynamic>, doc.id))
           .toList();
     } catch (error) {
-      print('Erreur getActiveChroniquesBatch: $error');
+      printVm('Erreur getActiveChroniquesBatch: $error');
       return [];
     }
   }
@@ -213,7 +215,7 @@ class ChroniqueProvider with ChangeNotifier {
       }
       return null;
     } catch (error) {
-      print('Erreur getChroniqueById: $error');
+      printVm('Erreur getChroniqueById: $error');
       return null;
     }
   }
@@ -231,7 +233,7 @@ class ChroniqueProvider with ChangeNotifier {
 
   Future<void> addLike(String chroniqueId, String userId) async {
     try {
-      print('like chronique addlike: $chroniqueId');
+      printVm('like chronique addlike: $chroniqueId');
 
       await _firestore.collection('chroniques').doc(chroniqueId).update({
         'likers': FieldValue.arrayUnion([userId]),
@@ -281,7 +283,7 @@ class ChroniqueProvider with ChangeNotifier {
         try {
           await _storage.refFromURL(mediaUrl).delete();
         } catch (e) {
-          print('Erreur suppression média: $e');
+          printVm('Erreur suppression média: $e');
         }
       }
       await _firestore.collection('chroniques').doc(chroniqueId).delete();
@@ -329,7 +331,7 @@ class ChroniqueProvider with ChangeNotifier {
           try {
             await _storage.refFromURL(chronique.mediaUrl!).delete();
           } catch (e) {
-            print('Erreur suppression média expiré: $e');
+            printVm('Erreur suppression média expiré: $e');
           }
         }
         await doc.reference.delete();
@@ -402,7 +404,7 @@ class ChroniqueProvider with ChangeNotifier {
       });
       notifyListeners();
     } catch (e) {
-      print('Erreur lors du like du message: $e');
+      printVm('Erreur lors du like du message: $e');
       throw e;
     }
   }
@@ -417,7 +419,7 @@ class ChroniqueProvider with ChangeNotifier {
       }
       return false;
     } catch (e) {
-      print('Erreur lors de la vérification du like message: $e');
+      printVm('Erreur lors de la vérification du like message: $e');
       return false;
     }
   }
@@ -581,7 +583,7 @@ class ChroniqueProvider with ChangeNotifier {
 //       }
 //       return 0;
 //     } catch (e) {
-//       print('Erreur lors de la récupération du nombre de likes: $e');
+//       printVm('Erreur lors de la récupération du nombre de likes: $e');
 //       return 0;
 //     }
 //   }
@@ -816,7 +818,7 @@ class ChroniqueProvider with ChangeNotifier {
 //         }
 //       }
 //     } catch (error) {
-//       print('Erreur décrémentation compteur: $error');
+//       printVm('Erreur décrémentation compteur: $error');
 //     }
 //   }
 //
@@ -888,7 +890,7 @@ class ChroniqueProvider with ChangeNotifier {
 //
 //       notifyListeners();
 //     } catch (e) {
-//       print('Erreur lors du like du message: $e');
+//       printVm('Erreur lors du like du message: $e');
 //       throw e;
 //     }
 //   }
@@ -907,7 +909,7 @@ class ChroniqueProvider with ChangeNotifier {
 //       }
 //       return false;
 //     } catch (e) {
-//       print('Erreur lors de la vérification du like message: $e');
+//       printVm('Erreur lors de la vérification du like message: $e');
 //       return false;
 //     }
 //   }
@@ -1024,7 +1026,7 @@ class ChroniqueProvider with ChangeNotifier {
 // //
 // //       notifyListeners();
 // //     } catch (e) {
-// //       print('Erreur lors du like du message: $e');
+// //       printVm('Erreur lors du like du message: $e');
 // //       throw e;
 // //     }
 // //   }
@@ -1045,7 +1047,7 @@ class ChroniqueProvider with ChangeNotifier {
 // //       }
 // //       return false;
 // //     } catch (e) {
-// //       print('Erreur lors de la vérification du like message: $e');
+// //       printVm('Erreur lors de la vérification du like message: $e');
 // //       return false;
 // //     }
 // //   }

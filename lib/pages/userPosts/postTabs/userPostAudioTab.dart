@@ -1,32 +1,59 @@
 import 'dart:async';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'dart:io';
 import 'package:afrotok/models/model_data.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:firebase_storage/firebase_storage.dart';
+
 import 'package:flutter/foundation.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:image_picker/image_picker.dart';
+
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+
 import 'package:provider/provider.dart';
+
 import 'package:uuid/uuid.dart';
+
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+
 import 'package:path/path.dart' as Path;
+
 import 'package:iconsax/iconsax.dart';
+
 import 'package:permission_handler/permission_handler.dart';
+
 import 'package:record/record.dart';
+
 import 'package:audioplayers/audioplayers.dart';
+
 import 'package:path_provider/path_provider.dart';
+
 import 'package:file_picker/file_picker.dart';
 
 import '../../../providers/authProvider.dart';
+
 import '../../../providers/postProvider.dart';
+
 import '../../../providers/userProvider.dart';
+
 import '../../../theme/app_colors.dart';
+
 import '../../../services/postService/massNotificationService.dart';
+
 import '../../../services/postService/post_cooldown_service.dart';
+
 import '../../../services/utils/abonnement_utils.dart';
+
 import '../../pub/rewarded_ad_widget.dart';
+
 import '../../user/userAbonnementPage.dart';
+
 import '../../widgetGlobal.dart';
 
 class UserPostLookAudioTab extends StatefulWidget {
@@ -100,7 +127,6 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
     'GAMER': {'label': 'Games story', 'icon': Icons.gamepad},
   };
 
-
   late AppColors _c;
   final Color _audioColor = Color(0xFF2196F3);
 
@@ -109,7 +135,6 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
   // Restrictions
   int _maxCharacters = 300;
   int _cooldownMinutes = 60;
-
 
 // ✅ Ajoutez la clé pour la pub récompensée
   final GlobalKey<RewardedAdWidgetState> _rewardedAdKey = GlobalKey();
@@ -193,7 +218,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
     if (user.role == UserRole.ADM.name) {
       _maxCharacters = 5000;
       _cooldownMinutes = 0;
-      print('🔓 Mode Admin');
+      printVm('🔓 Mode Admin');
       return;
     }
 
@@ -202,12 +227,12 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
     if (isPremium) {
       _maxCharacters = 3000;
       _cooldownMinutes = 0;
-      print('🌟 Mode Premium');
+      printVm('🌟 Mode Premium');
     } else {
       _maxCharacters = 300;
       // ✅ POUR LES TESTS : Garder cooldown mais on le simule dans initState
       _cooldownMinutes = 60; // Garder la valeur normale
-      print('🔒 Mode Gratuit');
+      printVm('🔒 Mode Gratuit');
     }
   }
 
@@ -463,7 +488,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
       await player.dispose();
       return duration?.inSeconds ?? 0;
     } catch (e) {
-      print("Erreur obtention durée: $e");
+      printVm("Erreur obtention durée: $e");
       return 0;
     }
   }
@@ -490,7 +515,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
         });
       }
     } catch (e) {
-      print("Erreur lecture audio: $e");
+      printVm("Erreur lecture audio: $e");
       _showErrorSnackbar("Erreur lors de la lecture");
       setState(() {
         _isPlaying = false;
@@ -1732,7 +1757,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
 
       _checkPostCooldown();
     } catch (e) {
-      print("❌ Erreur publication: $e");
+      printVm("❌ Erreur publication: $e");
       if (Navigator.canPop(context)) Navigator.pop(context);
       setState(() => onTap = false);
       _showErrorSnackbar('Erreur lors de la publication');

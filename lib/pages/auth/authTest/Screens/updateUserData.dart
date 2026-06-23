@@ -1,4 +1,4 @@
-import 'package:afrotok/pages/component/consoleWidget.dart';
+﻿import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/splashChargement.dart';
 import 'package:csc_picker_plus/csc_picker_plus.dart';
 import 'package:flutter/material.dart';
@@ -114,7 +114,8 @@ class UpdateUserData extends StatefulWidget {
   _UpdateUserDataState createState() => _UpdateUserDataState();
 }
 
-class _UpdateUserDataState extends State<UpdateUserData> {
+class _UpdateUserDataState extends State<UpdateUserData>
+    with WidgetsBindingObserver {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   String countryValue = "";
   String stateValue = "";
@@ -124,6 +125,7 @@ class _UpdateUserDataState extends State<UpdateUserData> {
   String? detectedCountryCode;
   String? detectedCountryName;
   bool hasRequestedLocation = false;
+  bool _showingPermissionModal = false;
 
   // Couleurs de la marque
   final Color primaryBlack = Colors.black;
@@ -134,49 +136,128 @@ class _UpdateUserDataState extends State<UpdateUserData> {
     return countryCodes[country] ?? "";
   }
   Future<void> _getCountryCodeInBackground() async {
-    // Ne pas exécuter sur le web car la géolocalisation ne fonctionne pas
-    if (kIsWeb) {
-      print("Plateforme Web: La géolocalisation n'est pas disponible");
-      return;
-    }
-
-    // Vérifier si on a déjà fait la demande
+    if (kIsWeb) return;
     if (hasRequestedLocation) return;
 
-    setState(() {
-      hasRequestedLocation = true;
-    });
+    setState(() => hasRequestedLocation = true);
 
-    // Demander la permission de localisation en arrière-plan
-    PermissionStatus permission = await Permission.location.request();
+    final PermissionStatus permission = await Permission.location.request();
 
     if (permission.isGranted) {
       try {
-        // Récupérer la position actuelle
         final position = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 10),
+          timeLimit: const Duration(seconds: 10),
         );
-
-        // Récupérer les informations d'adresse
-        List<Placemark> placemarks = await placemarkFromCoordinates(
-            position.latitude,
-            position.longitude
-        );
-
-        if (placemarks.isNotEmpty) {
+        final placemarks = await placemarkFromCoordinates(
+            position.latitude, position.longitude);
+        if (placemarks.isNotEmpty && mounted) {
           setState(() {
             detectedCountryCode = placemarks[0].isoCountryCode;
             detectedCountryName = placemarks[0].country;
           });
-
-          print("Localisation détectée en arrière-plan (Mobile): $detectedCountryName ($detectedCountryCode)");
         }
       } catch (e) {
-        print("Erreur lors de la récupération de la localisation: $e");
+        printVm("Erreur géolocalisation: $e");
       }
     } else {
-      print("Permission de localisation non accordée sur mobile");
+      // Permission refusée → modal bloquant
+      _showLocationPermissionModal();
+    }
+  }
+
+  void _showLocationPermissionModal() {
+    if (_showingPermissionModal || !mounted) return;
+    setState(() => _showingPermissionModal = true);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => WillPopScope(
+        onWillPop: () async => false,
+        child: Dialog(
+          backgroundColor: Colors.grey[900],
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icône
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [primaryRed, primaryYellow],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.location_on,
+                      color: Colors.black, size: 40),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  "Localisation requise",
+                  style: TextStyle(
+                    color: primaryYellow,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  "Afrolook utilise ta localisation pour te connecter avec des personnes et des contenus près de toi, et pour t'offrir la meilleure expérience possible.\n\nCette autorisation est indispensable pour continuer.",
+                  style: TextStyle(color: Colors.grey[300], fontSize: 14, height: 1.5),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.settings, color: Colors.black),
+                    label: const Text(
+                      "Ouvrir les paramètres",
+                      style: TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryYellow,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                      elevation: 0,
+                    ),
+                    onPressed: () => openAppSettings(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _showingPermissionModal) {
+      // L'utilisateur revient des paramètres — vérifier si la permission est accordée
+      Permission.location.status.then((status) {
+        if (status.isGranted && mounted) {
+          Navigator.of(context, rootNavigator: true).pop();
+          setState(() {
+            _showingPermissionModal = false;
+            hasRequestedLocation = false; // permet de relancer
+          });
+          _getCountryCodeInBackground();
+        }
+      });
     }
   }
 
@@ -202,7 +283,7 @@ class _UpdateUserDataState extends State<UpdateUserData> {
           return placemarks[0].isoCountryCode;
         }
       } catch (e) {
-        print("Erreur: $e");
+        printVm("Erreur: $e");
       }
     }
 
@@ -247,13 +328,13 @@ class _UpdateUserDataState extends State<UpdateUserData> {
         userData["countryCode"] = realCountryCode ?? detectedCountryCode ?? "";
         userData["realCountry"] = detectedCountryName ?? "";
 
-        print("=== Informations utilisateur (Mobile) ===");
-        print("Pays choisi par l'utilisateur: $countryValue");
-        print("Région choisie: $stateValue");
-        print("Ville choisie: $cityValue");
-        print("=== Informations réelles (Localisation mobile) ===");
-        print("Vrai pays: ${detectedCountryName ?? "Non détecté"}");
-        print("Vrai code pays: ${realCountryCode ?? "Non détecté"}");
+        printVm("=== Informations utilisateur (Mobile) ===");
+        printVm("Pays choisi par l'utilisateur: $countryValue");
+        printVm("Région choisie: $stateValue");
+        printVm("Ville choisie: $cityValue");
+        printVm("=== Informations réelles (Localisation mobile) ===");
+        printVm("Vrai pays: ${detectedCountryName ?? "Non détecté"}");
+        printVm("Vrai code pays: ${realCountryCode ?? "Non détecté"}");
       } else {
         // Sur le web, on n'utilise que les informations choisies
 
@@ -261,14 +342,14 @@ class _UpdateUserDataState extends State<UpdateUserData> {
 
         userData["countryCode"] = selectedCode;
         userData["realCountry"] = countryValue;
-        print("=== Informations utilisateur (Web) ===");
-        print("Pays choisi par l'utilisateur: $countryValue");
-        print("Pays choisi par l'utilisateur code: $selectedCode");
-        print("Région choisie: $stateValue");
-        print("Ville choisie: $cityValue");
-        print("userData: $userData");
-        print("=== Note ===");
-        print("Géolocalisation non disponible sur le web");
+        printVm("=== Informations utilisateur (Web) ===");
+        printVm("Pays choisi par l'utilisateur: $countryValue");
+        printVm("Pays choisi par l'utilisateur code: $selectedCode");
+        printVm("Région choisie: $stateValue");
+        printVm("Ville choisie: $cityValue");
+        printVm("userData: $userData");
+        printVm("=== Note ===");
+        printVm("Géolocalisation non disponible sur le web");
       }
 
       authProvider.loginUserData.countryData = userData;
@@ -311,16 +392,20 @@ class _UpdateUserDataState extends State<UpdateUserData> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
 
-    // Récupérer la localisation en arrière-plan uniquement sur mobile
     if (!kIsWeb) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _getCountryCodeInBackground();
       });
-    } else {
-      print("Plateforme Web: Désactivation de la géolocalisation automatique");
     }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   @override
@@ -594,8 +679,6 @@ class _UpdateUserDataState extends State<UpdateUserData> {
   }
 }
 
-
-// import 'package:afrotok/pages/splashChargement.dart';
 // import 'package:csc_picker_plus/csc_picker_plus.dart';
 // import 'package:flutter/material.dart';
 // import 'package:geocoding/geocoding.dart';
@@ -633,12 +716,12 @@ class _UpdateUserDataState extends State<UpdateUserData> {
 //       String? countryCode = await getCountryCode();
 //
 //       if (countryCode != null) {
-//         print("Code pays : $countryCode");
+//         printVm("Code pays : $countryCode");
 //         // Continuez à utiliser ce code pour enregistrer l'utilisateur dans votre base de données
 //       } else {
-//         print("Impossible de récupérer le code pays");
+//         printVm("Impossible de récupérer le code pays");
 //       }
-//       print("Code pays : $countryCode");
+//       printVm("Code pays : $countryCode");
 //
 //       Map<String, String> userData = {
 //         "country": countryValue,
@@ -674,7 +757,7 @@ class _UpdateUserDataState extends State<UpdateUserData> {
 // setState(() {
 //   isLoading=false;
 // });
-//       print("Données enregistrées: $userData");
+//       printVm("Données enregistrées: $userData");
 //     }
 //   }
 //
@@ -697,12 +780,12 @@ class _UpdateUserDataState extends State<UpdateUserData> {
 //           return placemarks[0].isoCountryCode;  // Code du pays, ex: "US", "FR"
 //         }
 //       } catch (e) {
-//         print("Erreur lors de la récupération du pays: $e");
+//         printVm("Erreur lors de la récupération du pays: $e");
 //         return null;
 //       }
 //     } else {
 //       // Si la permission n'est pas accordée, vous pouvez redemander ou afficher un message
-//       print("Permission de localisation non accordée.");
+//       printVm("Permission de localisation non accordée.");
 //       return null;
 //     }
 //     return null;  // Retourner null si aucune donnée valide n'est trouvée
@@ -713,10 +796,10 @@ class _UpdateUserDataState extends State<UpdateUserData> {
 //     String? countryCode = await getCountryCode();
 //
 //     if (countryCode != null) {
-//       print("Code pays : $countryCode");
+//       printVm("Code pays : $countryCode");
 //       // Continuez à utiliser ce code pour enregistrer l'utilisateur dans votre base de données
 //     } else {
-//       print("Impossible de récupérer le code pays");
+//       printVm("Impossible de récupérer le code pays");
 //     }
 //   }
 //

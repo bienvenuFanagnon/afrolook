@@ -1,4 +1,6 @@
-// lib/providers/creator_provider.dart
+﻿// lib/providers/creator_provider.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../models/dating_data.dart';
@@ -116,7 +118,7 @@ class CreatorProvider extends ChangeNotifier {
       );
       notifyListeners();
     } catch (e) {
-      print('Erreur vérification abonnement: $e');
+      printVm('Erreur vérification abonnement: $e');
     }
   }
 

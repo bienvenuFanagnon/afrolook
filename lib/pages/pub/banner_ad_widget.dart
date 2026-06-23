@@ -1,9 +1,15 @@
-import 'dart:io';
+﻿import 'dart:io';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:flutter/material.dart';
 import 'package:stack_appodeal_flutter/stack_appodeal_flutter.dart'; // ✅ Nouveau SDK
+
 import 'package:provider/provider.dart';
+
 import '../../../providers/authProvider.dart';
+
 import '../../../services/utils/abonnement_utils.dart';
+
 import '../user/userAbonnementPage.dart';
 
 class BannerAdWidget extends StatefulWidget {
@@ -35,20 +41,20 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   void _initBannerCallbacks() {
     Appodeal.setBannerCallbacks(
       onBannerLoaded: (isPrecache) {
-        print('✅ [APPODEAL BANNER] Chargée');
+        printVm('✅ [APPODEAL BANNER] Chargée');
         if (mounted) {
           setState(() => _isAdLoaded = true);
           widget.onAdLoaded?.call();
         }
       },
       onBannerFailedToLoad: () {
-        print('❌ [APPODEAL BANNER] Échec du chargement');
+        printVm('❌ [APPODEAL BANNER] Échec du chargement');
         if (mounted) {
           setState(() => _isAdLoaded = false);
         }
       },
-      onBannerClicked: () => print('🖱️ [APPODEAL BANNER] Clic'),
-      onBannerShown: () => print('👁️ [APPODEAL BANNER] Impression'),
+      onBannerClicked: () => printVm('🖱️ [APPODEAL BANNER] Clic'),
+      onBannerShown: () => printVm('👁️ [APPODEAL BANNER] Impression'),
     );
   }
 
@@ -450,7 +456,6 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   }
 }
 
-
 // import 'package:flutter/material.dart';
 //
 // import 'package:provider/provider.dart';
@@ -502,7 +507,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
 //         }
 //       }
 //     } catch (e) {
-//       print('Erreur vérification premium: $e');
+//       printVm('Erreur vérification premium: $e');
 //       _isPremium = false;
 //     } finally {
 //       if (mounted) {
@@ -834,12 +839,12 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
 //   void loadAd() {
 //     // Si l'utilisateur est premium, ne pas charger la pub
 //     if (_isPremium) {
-//       print('📢 [BANNER] Utilisateur Premium - Pas de publicité affichée');
+//       printVm('📢 [BANNER] Utilisateur Premium - Pas de publicité affichée');
 //       setLoaded();
 //       return;
 //     }
 //
-//     print('📢 [BANNER] Chargement avec ID: ${AdService.bannerAdId} (${AdService.currentMode})');
+//     printVm('📢 [BANNER] Chargement avec ID: ${AdService.bannerAdId} (${AdService.currentMode})');
 //
 //     _bannerAd = BannerAd(
 //       adUnitId: AdService.bannerAdId,
@@ -847,7 +852,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
 //       request: const AdRequest(),
 //       listener: BannerAdListener(
 //         onAdLoaded: (ad) {
-//           print('✅ [BANNER] Chargé avec succès');
+//           printVm('✅ [BANNER] Chargé avec succès');
 //           if (mounted) {
 //             setState(() {
 //               _isAdLoaded = true;
@@ -857,7 +862,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
 //           }
 //         },
 //         onAdFailedToLoad: (ad, error) {
-//           print('❌ [BANNER] Erreur: $error');
+//           printVm('❌ [BANNER] Erreur: $error');
 //           ad.dispose();
 //           if (mounted) {
 //             setError(error.message);

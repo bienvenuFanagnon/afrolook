@@ -1,4 +1,6 @@
-// services/live_service.dart
+﻿// services/live_service.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/model_data.dart';
@@ -66,7 +68,7 @@ class LiveService {
       };
 
     } catch (e) {
-      print('Erreur vérification live: $e');
+      printVm('Erreur vérification live: $e');
       return {
         'canCreate': false,
         'message': 'Erreur de vérification',
@@ -95,7 +97,7 @@ class LiveService {
       });
 
     } catch (e) {
-      print('Erreur incrémentation live: $e');
+      printVm('Erreur incrémentation live: $e');
     }
   }
 
@@ -165,7 +167,7 @@ class LiveService {
       }
 
     } catch (e) {
-      print('Erreur restrictions live: $e');
+      printVm('Erreur restrictions live: $e');
       return _getDefaultRestrictions(false);
     }
   }

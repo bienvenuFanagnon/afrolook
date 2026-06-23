@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -186,7 +186,7 @@ class PostProvider extends ChangeNotifier {
       _suggestionsLoaded = true;
 
     } catch (e) {
-      print('Erreur chargement suggestions (images/vidéos) : $e');
+      printVm('Erreur chargement suggestions (images/vidéos) : $e');
     } finally {
       _isLoadingSuggestions = false;
       notifyListeners();
@@ -237,7 +237,7 @@ class PostProvider extends ChangeNotifier {
           query = query.where("category", isEqualTo: _selectedCategory);
         }
       } catch (e) {
-        print('⚠️ Erreur filtre catégorie (peut-être besoin d\'index): $e');
+        printVm('⚠️ Erreur filtre catégorie (peut-être besoin d\'index): $e');
         // Continuer sans ce filtre
       }
 
@@ -246,7 +246,7 @@ class PostProvider extends ChangeNotifier {
           query = query.where("country", isEqualTo: _selectedCountry);
         }
       } catch (e) {
-        print('⚠️ Erreur filtre pays (peut-être besoin d\'index): $e');
+        printVm('⚠️ Erreur filtre pays (peut-être besoin d\'index): $e');
         // Continuer sans ce filtre
       }
 
@@ -255,7 +255,7 @@ class PostProvider extends ChangeNotifier {
           query = query.where("city", isEqualTo: _selectedCity);
         }
       } catch (e) {
-        print('⚠️ Erreur filtre ville (peut-être besoin d\'index): $e');
+        printVm('⚠️ Erreur filtre ville (peut-être besoin d\'index): $e');
         // Continuer sans ce filtre
       }
 
@@ -301,7 +301,7 @@ class PostProvider extends ChangeNotifier {
                 service.user = user;
               }
             } catch (e) {
-              print('❌ Erreur récupération user pour service ${service.id}: $e');
+              printVm('❌ Erreur récupération user pour service ${service.id}: $e');
               // Créer un utilisateur minimal pour éviter les nulls
               service.user = UserData(
                 // id: service.userId,
@@ -311,7 +311,7 @@ class PostProvider extends ChangeNotifier {
 
             newServices.add(service);
           } catch (e) {
-            print('❌ Erreur parsing service: $e');
+            printVm('❌ Erreur parsing service: $e');
             continue; // Ignorer ce service et passer au suivant
           }
         }
@@ -347,7 +347,7 @@ class PostProvider extends ChangeNotifier {
         _hasMoreServices = newServices.length == limit;
       }
     } catch (e) {
-      print('❌ Erreur critique chargement services: $e');
+      printVm('❌ Erreur critique chargement services: $e');
 
       // En cas d'erreur, réinitialiser pour permettre une nouvelle tentative
       if (!loadMore) {
@@ -443,7 +443,7 @@ class PostProvider extends ChangeNotifier {
   //             service.user = user;
   //           }
   //         } catch (e) {
-  //           print('Erreur récupération user: $e');
+  //           printVm('Erreur récupération user: $e');
   //         }
   //
   //         newServices.add(service);
@@ -476,7 +476,7 @@ class PostProvider extends ChangeNotifier {
   //       _hasMoreServices = newServices.length == limit;
   //     }
   //   } catch (e) {
-  //     print('Erreur chargement services: $e');
+  //     printVm('Erreur chargement services: $e');
   //   }
   //
   //   _isLoadingServices = false;
@@ -510,7 +510,7 @@ class PostProvider extends ChangeNotifier {
 
       return services;
     } catch (e) {
-      print('Erreur récupération service: $e');
+      printVm('Erreur récupération service: $e');
       return [];
     }
   }
@@ -523,7 +523,7 @@ class PostProvider extends ChangeNotifier {
           .update(service.toJson());
       return true;
     } catch (e) {
-      print('Erreur mise à jour service: $e');
+      printVm('Erreur mise à jour service: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erreur lors de la mise à jour'),
@@ -553,7 +553,7 @@ class PostProvider extends ChangeNotifier {
 
       return cities.toList()..sort();
     } catch (e) {
-      print('Erreur récupération villes: $e');
+      printVm('Erreur récupération villes: $e');
       return [];
     }
   }
@@ -909,9 +909,9 @@ class PostProvider extends ChangeNotifier {
         'allPostIds': FieldValue.arrayUnion([postId]),
       });
 
-      print("✅ Post $postId ajouté à AppDefaultData.allPostIds");
+      printVm("✅ Post $postId ajouté à AppDefaultData.allPostIds");
     } catch (e) {
-      print("❌ Erreur lors de l'ajout du postId à AppDefaultData: $e");
+      printVm("❌ Erreur lors de l'ajout du postId à AppDefaultData: $e");
     }
   }
 
@@ -1009,25 +1009,25 @@ class PostProvider extends ChangeNotifier {
         if (!(post.users_partage_id?.contains(userId) ?? false)) {
           post.users_partage_id?.add(userId);
           shouldIncrement = true;
-          print('nouveau partager ${post.toJson()}');
+          printVm('nouveau partager ${post.toJson()}');
 
         }else{
-          print('deja partager ${post.toJson()}');
+          printVm('deja partager ${post.toJson()}');
 
         }
         break;
       default:
-        print('Invalid interaction type');
+        printVm('Invalid interaction type');
         return;
     }
-    print('mise à jour de post avant ${post.toJson()}');
+    printVm('mise à jour de post avant ${post.toJson()}');
 
     // Incrémenter le solde si nécessaire
     if (shouldIncrement) {
       post.solde = (post.solde ?? 0.0) + 1.1;
     }
-    print('mise à jour de post money');
-    print('mise à jour de post apres ${post.toJson()}');
+    printVm('mise à jour de post money');
+    printVm('mise à jour de post apres ${post.toJson()}');
 
     // Mettre à jour ou créer le post dans Firestore
     await collection.doc(post.id).update(post.toJson());
@@ -1257,7 +1257,7 @@ class PostProvider extends ChangeNotifier {
       }
 
     } catch (e) {
-      print("Erreur récupération canaux: $e");
+      printVm("Erreur récupération canaux: $e");
       throw e;
     }
   }
@@ -1285,13 +1285,13 @@ class PostProvider extends ChangeNotifier {
             canal.user = UserData.fromJson(userDoc.data()!);
           }
         } catch (e) {
-          print('Erreur récupération créateur: $e');
+          printVm('Erreur récupération créateur: $e');
         }
       }
 
       return canal;
     } catch (e) {
-      print('Erreur enrichissement canal ${doc.id}: $e');
+      printVm('Erreur enrichissement canal ${doc.id}: $e');
       rethrow;
     }
   }
@@ -1326,7 +1326,7 @@ class PostProvider extends ChangeNotifier {
                 canal.user = UserData.fromJson(creatorDoc.data()!);
               }
             } catch (e) {
-              print('Erreur récupération créateur: $e');
+              printVm('Erreur récupération créateur: $e');
             }
 
             yield canal;
@@ -1334,7 +1334,7 @@ class PostProvider extends ChangeNotifier {
         }
       }
     } catch (e) {
-      print("Erreur récupération canaux admin: $e");
+      printVm("Erreur récupération canaux admin: $e");
       throw e;
     }
   }
@@ -1532,7 +1532,7 @@ class PostProvider extends ChangeNotifier {
 
       return newPosts;
     } catch (e) {
-      print("Erreur chargement posts: $e");
+      printVm("Erreur chargement posts: $e");
       return [];
     }
   }
@@ -1990,7 +1990,7 @@ class PostProvider extends ChangeNotifier {
           // Use the query for pagination
           // ...
         },
-        onError: (e) => print("Error completing: $e"),
+        onError: (e) => printVm("Error completing: $e"),
       );
     }else{
 
@@ -2015,7 +2015,7 @@ class PostProvider extends ChangeNotifier {
           // Use the query for pagination
           // ...
         },
-        onError: (e) => print("Error completing: $e"),
+        onError: (e) => printVm("Error completing: $e"),
       );
     }
 
@@ -2040,7 +2040,7 @@ class PostProvider extends ChangeNotifier {
         // Use the query for pagination
         // ...
       },
-      onError: (e) => print("Error completing: $e"),
+      onError: (e) => printVm("Error completing: $e"),
     );
 
     // Effectuer une requête pour récupérer les posts
@@ -2621,7 +2621,7 @@ class PostProvider extends ChangeNotifier {
 
 
 
-      print('list UserServices ${listArticles.length}');
+      printVm('list UserServices ${listArticles.length}');
       hasData=true;
       // teams.shuffle();
 
@@ -2631,7 +2631,7 @@ class PostProvider extends ChangeNotifier {
       return listArticles;
       // return teams;
     }catch(e){
-      print("erreur ${e}");
+      printVm("erreur ${e}");
       hasData=false;
       return [];
     }
@@ -2666,7 +2666,7 @@ class PostProvider extends ChangeNotifier {
 
 
 
-      print('list UserServices ${listArticles.length}');
+      printVm('list UserServices ${listArticles.length}');
       hasData=true;
       // teams.shuffle();
 
@@ -2676,7 +2676,7 @@ class PostProvider extends ChangeNotifier {
       return listArticles;
       // return teams;
     }catch(e){
-      print("erreur ${e}");
+      printVm("erreur ${e}");
       hasData=false;
       return [];
     }
@@ -2712,7 +2712,7 @@ class PostProvider extends ChangeNotifier {
 
 
 
-      print('list UserServices ${listArticles.length}');
+      printVm('list UserServices ${listArticles.length}');
       hasData=true;
       // teams.shuffle();
 
@@ -2722,7 +2722,7 @@ class PostProvider extends ChangeNotifier {
       return listArticles;
       // return teams;
     }catch(e){
-      print("erreur ${e}");
+      printVm("erreur ${e}");
       hasData=false;
       return [];
     }
@@ -2757,7 +2757,7 @@ class PostProvider extends ChangeNotifier {
 
 
 
-      print('list UserServices ${listArticles.length}');
+      printVm('list UserServices ${listArticles.length}');
       hasData=true;
       // teams.shuffle();
 
@@ -2767,7 +2767,7 @@ class PostProvider extends ChangeNotifier {
       return listArticles;
       // return teams;
     }catch(e){
-      print("erreur ${e}");
+      printVm("erreur ${e}");
       hasData=false;
       return [];
     }
@@ -2787,7 +2787,7 @@ class PostProvider extends ChangeNotifier {
 
       return true;
     }catch(e){
-      print("erreur update  : ${e}");
+      printVm("erreur update  : ${e}");
       return false;
     }
   }
@@ -2803,7 +2803,7 @@ class PostProvider extends ChangeNotifier {
 
       return true;
     }catch(e){
-      print("erreur update  : ${e}");
+      printVm("erreur update  : ${e}");
       return false;
     }
   }
@@ -3568,7 +3568,7 @@ class PostProvider extends ChangeNotifier {
       return postComments;
 
     } catch (e) {
-      print('Erreur chargement commentaires: $e');
+      printVm('Erreur chargement commentaires: $e');
       return [];
     }
   }
@@ -3585,7 +3585,7 @@ class PostProvider extends ChangeNotifier {
         return UserData.fromJson(querySnapshot.docs.first.data());
       }
     } catch (e) {
-      print('Erreur chargement user $userId: $e');
+      printVm('Erreur chargement user $userId: $e');
     }
     return null;
   }
@@ -3696,7 +3696,7 @@ class PostProvider extends ChangeNotifier {
         return Canal.fromJson(doc.data() as Map<String, dynamic>);
       }).toList();
     } catch (e) {
-      print('Erreur getCanauxLimited: $e');
+      printVm('Erreur getCanauxLimited: $e');
       return [];
     }
   }
@@ -3715,7 +3715,7 @@ class PostProvider extends ChangeNotifier {
         return Post.fromJson(doc.data() as Map<String, dynamic>);
       }).toList();
     } catch (e) {
-      print('Erreur getCanalPostsLimited: $e');
+      printVm('Erreur getCanalPostsLimited: $e');
       return [];
     }
   }

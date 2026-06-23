@@ -1,26 +1,38 @@
 ﻿import 'dart:async';
+import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/pages/contenuPayant/userAbonnerInfos.dart';
 import 'package:flutter/material.dart';
+
 import 'package:provider/provider.dart';
+
 import 'package:cached_network_image/cached_network_image.dart';
+
 import 'package:video_player/video_player.dart';
+
 import 'package:chewie/chewie.dart';
+
 import 'package:lottie/lottie.dart';
 
 import '../../models/model_data.dart';
+
 import '../../providers/contenuPayantProvider.dart';
+
 import '../../providers/userProvider.dart';
+
 import '../../providers/authProvider.dart';
+
 import '../../widgets/chat/generic_share_sheet.dart';
 
 import '../../services/linkService.dart';
+
 import '../../theme/app_colors.dart';
+
 import '../pub/native_ad_widget.dart';
 
 import 'dart:async';
-import 'dart:math';
 
+import 'dart:math';
 
 class ContentDetailScreen extends StatefulWidget {
   final ContentPaie content;
@@ -601,7 +613,7 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
       child: MrecAdWidget(
         key: ValueKey(key),
         onAdLoaded: () {
-          print('✅ Native Ad Afrolook chargée: $key');
+          printVm('✅ Native Ad Afrolook chargée: $key');
         },
       ),
     );
@@ -1059,12 +1071,12 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //         // templateType: TemplateType.medium, // ou TemplateType.small
 //
 //         onAdLoaded: () {
-//           print('✅ Native Ad Afrolook chargée: $key');
+//           printVm('✅ Native Ad Afrolook chargée: $key');
 //         },
 //       ),
 //       // child: BannerAdWidget(
 //       //   onAdLoaded: () {
-//       //     print('✅ Bannière Afrolook chargée: $key');
+//       //     printVm('✅ Bannière Afrolook chargée: $key');
 //       //   },
 //       // ),
 //     );
@@ -1239,7 +1251,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //       await Future.delayed(Duration(milliseconds: 500));
 //
 //     } catch (e) {
-//       print('Erreur lors du partage: $e');
+//       printVm('Erreur lors du partage: $e');
 //       if (mounted) {
 //         ScaffoldMessenger.of(context).showSnackBar(
 //           SnackBar(

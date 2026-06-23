@@ -1,7 +1,9 @@
-
+﻿
 // services/pronostic_payment_service.dart
 
 
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
@@ -25,7 +27,7 @@ class PronosticPaymentService {
       final doc = await _firestore.collection('Users').doc(userId).get();
       return (doc.data()?['votre_solde_principal'] ?? 0).toDouble();
     } catch (e) {
-      print('Erreur récupération solde: $e');
+      printVm('Erreur récupération solde: $e');
       return 0.0;
     }
   }
@@ -82,7 +84,7 @@ class PronosticPaymentService {
         return true;
       });
     } catch (e) {
-      print('Erreur lors du débit: $e');
+      printVm('Erreur lors du débit: $e');
       return false;
     }
   }
@@ -96,7 +98,7 @@ class PronosticPaymentService {
     try {
       // ✅ 1. Vérification
       if (gagnantsIds.isEmpty) {
-        print('Aucun gagnant à créditer');
+        printVm('Aucun gagnant à créditer');
         return false;
       }
 
@@ -123,7 +125,7 @@ class PronosticPaymentService {
 
       if (!success) return false;
 
-      print("✅ Soldes crédités avec succès");
+      printVm("✅ Soldes crédités avec succès");
 
       // ✅ 3. CRÉER LES TRANSACTIONS (hors transaction Firestore)
       await Future.wait(
@@ -137,7 +139,7 @@ class PronosticPaymentService {
         )),
       );
 
-      print("✅ Transactions enregistrées");
+      printVm("✅ Transactions enregistrées");
 
       // ✅ 4. ENVOI NOTIFICATION
       final message =
@@ -155,12 +157,12 @@ class PronosticPaymentService {
         chatId: '',
       );
 
-      print("✅ Notifications envoyées");
+      printVm("✅ Notifications envoyées");
 
       return true;
     } catch (e, stack) {
-      print('❌ Erreur lors du crédit des gains: $e');
-      print('Stack trace: $stack');
+      printVm('❌ Erreur lors du crédit des gains: $e');
+      printVm('Stack trace: $stack');
       return false;
     }
   }
@@ -174,7 +176,7 @@ class PronosticPaymentService {
       }
       return null;
     } catch (e) {
-      print('Erreur dans _getAppDataId: $e');
+      printVm('Erreur dans _getAppDataId: $e');
       return null;
     }
   }
@@ -199,7 +201,7 @@ class PronosticPaymentService {
         'statut': StatutTransaction.VALIDER.name,
       });
     } catch (e) {
-      print('Erreur création transaction: $e');
+      printVm('Erreur création transaction: $e');
     }
   }
 

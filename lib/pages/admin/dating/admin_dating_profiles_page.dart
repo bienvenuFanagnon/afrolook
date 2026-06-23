@@ -1,4 +1,6 @@
-// lib/pages/admin/dating/admin_dating_profiles_page.dart
+﻿// lib/pages/admin/dating/admin_dating_profiles_page.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../models/dating_data.dart';
@@ -115,7 +117,7 @@ class _AdminDatingProfilesPageState extends State<AdminDatingProfilesPage>
         _statsLoading = false;
       });
     } catch (e) {
-      print('Erreur chargement statistiques admin dating: $e');
+      printVm('Erreur chargement statistiques admin dating: $e');
       setState(() => _statsLoading = false);
     }
   }
@@ -141,7 +143,7 @@ class _AdminDatingProfilesPageState extends State<AdminDatingProfilesPage>
         _verificationsLoading = false;
       });
     } catch (e) {
-      print('Erreur chargement demandes de vérification: $e');
+      printVm('Erreur chargement demandes de vérification: $e');
       setState(() => _verificationsLoading = false);
     }
   }
@@ -286,7 +288,7 @@ class _AdminDatingProfilesPageState extends State<AdminDatingProfilesPage>
         _isLoadingMore = false;
       });
     } catch (e) {
-      print('Erreur chargement profils admin: $e');
+      printVm('Erreur chargement profils admin: $e');
       setState(() {
         _isLoading = false;
         _isLoadingMore = false;

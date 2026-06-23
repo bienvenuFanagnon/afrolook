@@ -1,18 +1,31 @@
-import 'package:contained_tab_bar_view_with_custom_page_navigator/contained_tab_bar_view_with_custom_page_navigator.dart';
+﻿import 'package:contained_tab_bar_view_with_custom_page_navigator/contained_tab_bar_view_with_custom_page_navigator.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
 import 'package:intl_phone_field/intl_phone_field.dart';
+
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+
 import 'package:provider/provider.dart';
 
 import '../../../../../../constant/constColors.dart';
+
 import '../../../../../../constant/sizeButtons.dart';
+
 import '../../../../../../constant/sizeText.dart';
+
 import '../../../../../../constant/textCustom.dart';
+
 import '../../../../../../providers/authProvider.dart';
+
 import '../../../components/already_have_an_account_acheck.dart';
+
 import '../../../constants.dart';
+
 import '../../Signup/components/signup_form.dart';
+
 import '../../Signup/signup_screen.dart';
 
 class LoginForm extends StatefulWidget {
@@ -38,8 +51,6 @@ class _LoginFormState extends State<LoginForm> {
   late bool inputTap= false;
   final _auth = FirebaseAuth.instance;
 
-
-
   // string for displaying the error Message
   String? errorMessage;
   void signIn(String email, String password) async {
@@ -57,7 +68,6 @@ class _LoginFormState extends State<LoginForm> {
 
           //serviceProvider.getLoginUser( _auth.currentUser!.uid!,context),
 
-
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
               content: Text('Connexion réussie',style: TextStyle(color: Colors.green),),
             ),),
@@ -74,7 +84,6 @@ class _LoginFormState extends State<LoginForm> {
           setState(() {
             tap= false;
           })
-
 
         });
       } on FirebaseAuthException catch (error) {
@@ -108,7 +117,7 @@ class _LoginFormState extends State<LoginForm> {
           content: Text(errorMessage.toString(),style: TextStyle(color: Colors.red),),
         );
             ScaffoldMessenger.of(context).showSnackBar(snackBar);
-        print(error.code);
+        printVm(error.code);
       }
     }
   }
@@ -140,10 +149,10 @@ class _LoginFormState extends State<LoginForm> {
                   initialCountryCode: 'TG',
                   onChanged: (phone) {
                     telephoneController.text = phone.completeNumber;
-                    print(phone.completeNumber);
+                    printVm(phone.completeNumber);
                   },
                   onCountryChanged: (country) {
-                    print('Country changed to: ' + country.name);
+                    printVm('Country changed to: ' + country.name);
                   },
                   validator: (value) {
                     if (value!.completeNumber.isEmpty) {
@@ -188,7 +197,7 @@ class _LoginFormState extends State<LoginForm> {
                       });
                       if (_formKey.currentState!.validate()) {
                         // Afficher une SnackBar
-                        print("phone ${telephoneController.text}");
+                        printVm("phone ${telephoneController.text}");
 
                         if (telephoneController.text.isNotEmpty) {
                           signIn( telephoneController.text,motDePasseController.text);
@@ -205,12 +214,10 @@ class _LoginFormState extends State<LoginForm> {
                         setState(() {
                           tap=false;
 
-
                         });
                       }else{
                         setState(() {
                           tap=false;
-
 
                         });
                       }

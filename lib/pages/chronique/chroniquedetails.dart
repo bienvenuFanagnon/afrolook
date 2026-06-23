@@ -1,4 +1,6 @@
-// pages/chronique/chronique_detail_page.dart
+﻿// pages/chronique/chronique_detail_page.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -209,7 +211,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
       }
     });
 
-    print('🔄 Refresh likes - hasLiked: $hasLiked, likesCount: $likesCount, likers: ${currentChronique.likers}');
+    printVm('🔄 Refresh likes - hasLiked: $hasLiked, likesCount: $likesCount, likers: ${currentChronique.likers}');
   }
   Future<void> _loadInitialChroniques() async {
     // Chemin rapide : données déjà chargées par la section (pas de requête Firestore)
@@ -264,7 +266,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
       }
       setState(() => _isLoading = false);
     } catch (e) {
-      print('Erreur chargement chroniques: $e');
+      printVm('Erreur chargement chroniques: $e');
       setState(() => _isLoading = false);
     }
   }
@@ -329,7 +331,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
         setState(() => _hasMore = false);
       }
     } catch (e) {
-      print('Erreur chargement plus de chroniques: $e');
+      printVm('Erreur chargement plus de chroniques: $e');
     } finally {
       setState(() => _isLoadingMore = false);
     }
@@ -457,7 +459,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
           _likesCountMap[currentChronique.id!] = (_likesCountMap[currentChronique.id!] ?? 1) - 1;
           _hasLikedCurrent = false;
         });
-        print('Erreur like: $e');
+        printVm('Erreur like: $e');
       }
     }
   }
@@ -472,7 +474,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
         await _sendCommentLikeNotification(authProvider, currentChronique, message);
       }
     } catch (e) {
-      print('Erreur like message: $e');
+      printVm('Erreur like message: $e');
     }
   }
 
@@ -499,7 +501,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
       );
       _messageController.clear();
     } catch (e) {
-      print('Erreur envoi message: $e');
+      printVm('Erreur envoi message: $e');
     }
   }
 

@@ -1,4 +1,6 @@
-// widgets/pronostics_carousel_widget.dart
+﻿// widgets/pronostics_carousel_widget.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/pronostics/pronostics_feed_page.dart';
 import 'package:afrotok/pages/pronostics/pronostic_detail_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -74,7 +76,7 @@ class _PronosticsCarouselWidgetState extends State<PronosticsCarouselWidget> {
         _isLoading = false;
       });
     } catch (e) {
-      print('Erreur chargement pronostics carousel: $e');
+      printVm('Erreur chargement pronostics carousel: $e');
       setState(() => _isLoading = false);
     }
   }

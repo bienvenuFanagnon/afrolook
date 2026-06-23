@@ -1,4 +1,6 @@
-// lib/pages/admin/dating/admin_profile_detail_page.dart
+﻿// lib/pages/admin/dating/admin_profile_detail_page.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../models/dating_data.dart';
@@ -102,7 +104,7 @@ class _AdminProfileDetailPageState extends State<AdminProfileDetailPage> {
         setState(() => _subscriptionPlan = snapshot.docs.first.data()['planCode']?.toString());
       }
     } catch (e) {
-      print('Erreur chargement abonnement: $e');
+      printVm('Erreur chargement abonnement: $e');
     }
   }
 

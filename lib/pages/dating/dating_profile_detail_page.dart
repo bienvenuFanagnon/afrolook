@@ -1,4 +1,6 @@
-// lib/pages/dating/dating_profile_detail_page.dart
+﻿// lib/pages/dating/dating_profile_detail_page.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 
 import 'package:provider/provider.dart';
@@ -119,7 +121,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
         });
       }
     } catch (e) {
-      print('❌ Erreur chargement statut vérification: $e');
+      printVm('❌ Erreur chargement statut vérification: $e');
     }
   }
 
@@ -171,7 +173,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
         );
       }
     } catch (e) {
-      print('❌ Erreur demande de vérification: $e');
+      printVm('❌ Erreur demande de vérification: $e');
     }
   }
 
@@ -261,7 +263,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
         setState(() => _isLoading = false);
       }
     } catch (e) {
-      print('❌ Erreur chargement user data: $e');
+      printVm('❌ Erreur chargement user data: $e');
       setState(() => _isLoading = false);
     }
   }
@@ -270,7 +272,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
     final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     final currentUserId = authProvider.loginUserData.id;
     if (currentUserId == null) {
-      print('⚠️ _loadUnreadNotificationsCount: currentUserId is null');
+      printVm('⚠️ _loadUnreadNotificationsCount: currentUserId is null');
       return;
     }
 
@@ -282,8 +284,8 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       // Ajoutez ici tous les types dating que vous utilisez
     ];
 
-    print('🔔 Chargement compteur notifications non lues pour $currentUserId');
-    print('📋 Types recherchés: $datingTypes');
+    printVm('🔔 Chargement compteur notifications non lues pour $currentUserId');
+    printVm('📋 Types recherchés: $datingTypes');
 
     try {
       final snapshot = await firestore
@@ -293,16 +295,16 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           .where('is_open', isEqualTo: false)
           .get();
 
-      print('📊 ${snapshot.docs.length} notifications non lues trouvées');
+      printVm('📊 ${snapshot.docs.length} notifications non lues trouvées');
       for (var doc in snapshot.docs) {
-        print('   - ${doc.id} | type: ${doc['type']}');
+        printVm('   - ${doc.id} | type: ${doc['type']}');
       }
 
       setState(() {
         _unreadNotificationsCount = snapshot.docs.length;
       });
     } catch (e) {
-      print('❌ Erreur chargement compteur notifications: $e');
+      printVm('❌ Erreur chargement compteur notifications: $e');
     }
   }
 
@@ -335,7 +337,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
         });
       }
     } catch (e) {
-      print('❌ Erreur chargement compteur matchs/likes: $e');
+      printVm('❌ Erreur chargement compteur matchs/likes: $e');
     }
   }
 
@@ -353,7 +355,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
         _isCheckingCreator = false;
       });
     } catch (e) {
-      print('❌ Erreur vérification créateur: $e');
+      printVm('❌ Erreur vérification créateur: $e');
       setState(() => _isCheckingCreator = false);
     }
   }
@@ -384,7 +386,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
         if (endAt > now) {
           _remainingLikes = subscription['remainingLikes'] ?? _getDefaultLikes(_currentSubscriptionPlan!);
           _remainingSuperLikes = subscription['remainingSuperLikes'] ?? _getDefaultSuperLikes(_currentSubscriptionPlan!);
-          print('📌 Abonnement actif: $_currentSubscriptionPlan');
+          printVm('📌 Abonnement actif: $_currentSubscriptionPlan');
         } else {
           _currentSubscriptionPlan = null;
           _remainingLikes = _getDefaultLikes('gratuit');
@@ -410,7 +412,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
         _isCheckingSubscription = false;
       });
     } catch (e) {
-      print('❌ Erreur chargement abonnement: $e');
+      printVm('❌ Erreur chargement abonnement: $e');
       _remainingLikes = 5;
       _remainingSuperLikes = 1;
       setState(() => _isCheckingSubscription = false);
@@ -441,7 +443,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
 
       if (mounted) setState(() => _profileOwnerSubscriptionPlan = plan);
     } catch (e) {
-      print('❌ Erreur chargement abonnement du profil consulté: $e');
+      printVm('❌ Erreur chargement abonnement du profil consulté: $e');
     }
   }
 
@@ -508,7 +510,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
         });
       }
     } catch (e) {
-      print('❌ Erreur mise à jour likes: $e');
+      printVm('❌ Erreur mise à jour likes: $e');
     }
   }
 
@@ -542,7 +544,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
         });
       }
     } catch (e) {
-      print('❌ Erreur mise à jour score: $e');
+      printVm('❌ Erreur mise à jour score: $e');
     }
   }
 
@@ -601,7 +603,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
         }
       });
     } catch (e) {
-      print('❌ Erreur enregistrement visite: $e');
+      printVm('❌ Erreur enregistrement visite: $e');
     }
   }
 
@@ -618,7 +620,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
         });
       }
     } catch (e) {
-      print('❌ Erreur chargement visiteurs: $e');
+      printVm('❌ Erreur chargement visiteurs: $e');
     }
   }
 
@@ -636,7 +638,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           .get();
       setState(() => _isLiked = snapshot.docs.isNotEmpty);
     } catch (e) {
-      print('❌ Erreur vérification like: $e');
+      printVm('❌ Erreur vérification like: $e');
     }
   }
 
@@ -654,7 +656,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           .get();
       setState(() => _isCoupDeCoeur = snapshot.docs.isNotEmpty);
     } catch (e) {
-      print('❌ Erreur vérification coup de cœur: $e');
+      printVm('❌ Erreur vérification coup de cœur: $e');
     }
   }
   Future<void> _handleLike() async {
@@ -753,7 +755,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
         _showMatchDialog();
       }
     } catch (e) {
-      print('❌ Erreur like: $e');
+      printVm('❌ Erreur like: $e');
       _showSnackBar(AppLocalizations.of(context).datingErrorSending, Colors.red);
     } finally {
       if (mounted) setState(() => _isProcessing = false);
@@ -897,7 +899,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
         }
       }
     } catch (e) {
-      print('❌ Erreur coup de cœur: $e');
+      printVm('❌ Erreur coup de cœur: $e');
       _showSnackBar(AppLocalizations.of(context).datingErrorSending, Colors.red);
     } finally {
       if (mounted) setState(() => _isProcessing = false);
@@ -1164,13 +1166,13 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
         // templateType: TemplateType.small, // ou TemplateType.small
 
         onAdLoaded: () {
-          print('✅ Native Ad Afrolook chargée: $key');
+          printVm('✅ Native Ad Afrolook chargée: $key');
         },
       ),
       // child: BannerAdWidget(
       //   onAdLoaded: () {
       //
-      //     print('✅ Bannière Afrolook chargée: $key');
+      //     printVm('✅ Bannière Afrolook chargée: $key');
       //   },
       // ),
     );
@@ -1281,7 +1283,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       });
       return connection;
     } catch (e) {
-      print('❌ Erreur création connexion: $e');
+      printVm('❌ Erreur création connexion: $e');
       return null;
     }
   }

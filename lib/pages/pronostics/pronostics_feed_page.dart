@@ -1,5 +1,7 @@
-// pages/pronostics/pronostics_feed_page.dart
+﻿// pages/pronostics/pronostics_feed_page.dart
 
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/postComments.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/providers/postProvider.dart';
@@ -71,7 +73,7 @@ class _PronosticsFeedPageState extends State<PronosticsFeedPage> with SingleTick
 
       // Vérifier si l'utilisateur a déjà vu
       if (usersViewed.contains(userId)) {
-        print("⏭️ L'utilisateur a déjà vu ce post");
+        printVm("⏭️ L'utilisateur a déjà vu ce post");
         return;
       }
 
@@ -81,10 +83,10 @@ class _PronosticsFeedPageState extends State<PronosticsFeedPage> with SingleTick
         'users_vue_id': FieldValue.arrayUnion([userId]),
       });
 
-      print("✅ Vue enregistrée pour $userId");
+      printVm("✅ Vue enregistrée pour $userId");
 
     } catch (e) {
-      print("Erreur enregistrement vue : $e");
+      printVm("Erreur enregistrement vue : $e");
     }
   }
 
@@ -182,7 +184,7 @@ class _PronosticsFeedPageState extends State<PronosticsFeedPage> with SingleTick
         _isLoading = false;
       });
     } catch (e) {
-      print('Erreur chargement pronostics: $e');
+      printVm('Erreur chargement pronostics: $e');
       setState(() => _isLoading = false);
     }
   }
@@ -249,7 +251,7 @@ class _PronosticsFeedPageState extends State<PronosticsFeedPage> with SingleTick
         _isLoadingHistory = false;
       });
     } catch (e) {
-      print('Erreur chargement historique: $e');
+      printVm('Erreur chargement historique: $e');
       setState(() => _isLoadingHistory = false);
     }
   }
@@ -295,7 +297,7 @@ class _PronosticsFeedPageState extends State<PronosticsFeedPage> with SingleTick
         });
       }
     } catch (e) {
-      print('Erreur toggle favori: $e');
+      printVm('Erreur toggle favori: $e');
     } finally {
       setState(() {
         _isProcessingFavorite[postId] = false;
@@ -321,7 +323,7 @@ class _PronosticsFeedPageState extends State<PronosticsFeedPage> with SingleTick
       FeedInteractionService.onPostLoved(post, _authProvider.loginUserData.id!);
       recordUniquePostView(post);
     } catch (e) {
-      print("Erreur like: $e");
+      printVm("Erreur like: $e");
     }
   }
 
@@ -357,7 +359,7 @@ class _PronosticsFeedPageState extends State<PronosticsFeedPage> with SingleTick
       });
       recordUniquePostView(post);
     } catch (e) {
-      print("Erreur partage: $e");
+      printVm("Erreur partage: $e");
     } finally {
       if (mounted) {
         setState(() {

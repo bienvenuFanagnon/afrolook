@@ -1,30 +1,51 @@
-import 'package:afrotok/models/model_data.dart';
+﻿import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:afrotok/pages/cryptoMarket/portefolioPage.dart';
 import 'package:flutter/material.dart';
 
 import 'package:provider/provider.dart';
+
 import 'dart:math';
+
 import '../../models/crypto_model.dart';
+
 import '../../providers/authProvider.dart';
+
 import '../../providers/crypto_market_provider.dart';
+
 import 'package:iconsax/iconsax.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../pub/native_ad_widget.dart';
+
 import 'admin_crypto_page.dart';
+
 import 'crypto_detail_page.dart';
+
 import 'package:afrotok/models/model_data.dart';
+
 import 'package:afrotok/pages/cryptoMarket/portefolioPage.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:provider/provider.dart';
+
 import 'dart:math';
+
 import '../../models/crypto_model.dart';
+
 import '../../providers/authProvider.dart';
+
 import '../../providers/crypto_market_provider.dart';
+
 import 'package:iconsax/iconsax.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'admin_crypto_page.dart';
+
 import 'crypto_detail_page.dart';
 
 class CryptoMarketPage extends StatefulWidget {
@@ -771,7 +792,7 @@ String timetrade = '24H';
       child: MrecAdWidget(
         // templateType: TemplateType.small,
         onAdLoaded: () {
-          print('✅ Native Ad chargée dans top10: $key');
+          printVm('✅ Native Ad chargée dans top10: $key');
         },
       ),
     );
@@ -1853,6 +1874,4 @@ String timetrade = '24H';
     );
   }
 }
-
-
 

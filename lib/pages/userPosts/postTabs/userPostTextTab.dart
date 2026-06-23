@@ -1,18 +1,31 @@
 import 'dart:async';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:afrotok/models/model_data.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+
 import 'package:provider/provider.dart';
 
 import '../../../providers/authProvider.dart';
+
 import '../../../providers/postProvider.dart';
+
 import '../../../providers/userProvider.dart';
+
 import '../../../theme/app_colors.dart';
+
 import '../../../services/postService/massNotificationService.dart';
+
 import '../../../services/postService/post_cooldown_service.dart';
+
 import '../../../services/utils/abonnement_utils.dart';
+
 import '../../pub/rewarded_ad_widget.dart';
+
 import '../../user/userAbonnementPage.dart';
 
 class UserPubText extends StatefulWidget {
@@ -68,7 +81,6 @@ class _UserPubTextState extends State<UserPubText> {
   late AppColors _c;
   late MassNotificationService _notificationService;
 
-
   // Dans _UserPubTextState, ajoutez ces variables
   bool _showRewardedAd = false;
   bool _canUseRewardedAd = true;
@@ -88,7 +100,7 @@ class _UserPubTextState extends State<UserPubText> {
     //     _canPost = false;
     //     // 30 secondes en microsecondes
     //     _startCooldownTimer(300 * 1000000);
-    //     print('🧪 MODE TEST: Cooldown de 30 secondes activé');
+    //     printVm('🧪 MODE TEST: Cooldown de 30 secondes activé');
     //   });
     // });
     _countrySearchController.addListener(_filterCountries);
@@ -218,7 +230,7 @@ class _UserPubTextState extends State<UserPubText> {
     if (user.role == UserRole.ADM.name) {
       _maxCharacters = 5000;
       _cooldownMinutes = 0;
-      print('🔓 Mode Admin');
+      printVm('🔓 Mode Admin');
       return;
     }
 
@@ -227,12 +239,12 @@ class _UserPubTextState extends State<UserPubText> {
     if (isPremium) {
       _maxCharacters = 3000;
       _cooldownMinutes = 0;
-      print('🌟 Mode Premium');
+      printVm('🌟 Mode Premium');
     } else {
       _maxCharacters = 300;
       // ✅ POUR LES TESTS : Garder cooldown mais on le simule dans initState
       _cooldownMinutes = 60; // Garder la valeur normale
-      print('🔒 Mode Gratuit');
+      printVm('🔒 Mode Gratuit');
     }
   }
   void _setupRestrictions() {
@@ -243,7 +255,7 @@ class _UserPubTextState extends State<UserPubText> {
     if (user.role == UserRole.ADM.name) {
       _maxCharacters = 5000;
       _cooldownMinutes = 0;
-      print('🔓 Mode Admin activé: pas de restrictions');
+      printVm('🔓 Mode Admin activé: pas de restrictions');
       return;
     }
 
@@ -254,12 +266,12 @@ class _UserPubTextState extends State<UserPubText> {
       // Abonnement Premium
       _maxCharacters = 3000;
       _cooldownMinutes = 0; // Pas de cooldown pour les premium
-      print('🌟 Mode Premium: 3000 caractères, pas de cooldown');
+      printVm('🌟 Mode Premium: 3000 caractères, pas de cooldown');
     } else {
       // Abonnement Gratuit
       _maxCharacters = 300;
       _cooldownMinutes = 60; // 60 minutes de cooldown
-      print('🔒 Mode Gratuit: 300 caractères, cooldown 60min');
+      printVm('🔒 Mode Gratuit: 300 caractères, cooldown 60min');
     }
   }
 
@@ -302,7 +314,7 @@ class _UserPubTextState extends State<UserPubText> {
         });
       }
     } catch (e) {
-      print("Erreur vérification cooldown: $e");
+      printVm("Erreur vérification cooldown: $e");
       setState(() {
         _canPost = true;
       });
@@ -1186,7 +1198,7 @@ class _UserPubTextState extends State<UserPubText> {
                 RewardedAdWidget(
                   key: _rewardedAdKey,
                   onUserEarnedReward: (double amount, String name) {
-                    print('RewardedAdWidget - amount : $amount -- name: $name');
+                    printVm('RewardedAdWidget - amount : $amount -- name: $name');
                     setState(() {
                       _canPost = true;
                       _timeRemaining = '';
@@ -1760,7 +1772,6 @@ class _UserPubTextState extends State<UserPubText> {
           post.availableCountries = _selectedCountries.map((c) => c.code).toList();
         }
 
-
         if (widget.canal != null) {
           post.canal_id = widget.canal!.id;
           post.categorie = "CANAL";
@@ -1769,7 +1780,7 @@ class _UserPubTextState extends State<UserPubText> {
         // Sauvegarder le post dans Firestore
         await FirebaseFirestore.instance.collection('Posts').doc(postId).set(post.toJson());
 
-        print('✅ Post texte créé avec ID: $postId, ${_selectAllCountries ? 'Tous pays' : '${_selectedCountries.length} pays'}');
+        printVm('✅ Post texte créé avec ID: $postId, ${_selectAllCountries ? 'Tous pays' : '${_selectedCountries.length} pays'}');
 
         // Notifier les abonnés en arrière-plan
         // if (authProvider.loginUserData.id != null) {
@@ -1871,7 +1882,7 @@ class _UserPubTextState extends State<UserPubText> {
         );
 
       } catch (e) {
-        print("❌ Erreur lors de la publication: $e");
+        printVm("❌ Erreur lors de la publication: $e");
 
         // Fermer le dialog en cas d'erreur
         if (Navigator.canPop(context)) {
@@ -1902,7 +1913,7 @@ class _UserPubTextState extends State<UserPubText> {
   void _notifySubscribersInBackground(String postId, String authorId) {
     Future.microtask(() async {
       try {
-        print('🚀 Démarrage notification abonnés pour le post texte $postId');
+        printVm('🚀 Démarrage notification abonnés pour le post texte $postId');
         final startTime = DateTime.now();
 
         await _notificationService.notifySubscribersAboutNewPost(
@@ -1913,7 +1924,7 @@ class _UserPubTextState extends State<UserPubText> {
         final endTime = DateTime.now();
         final duration = endTime.difference(startTime);
 
-        print('✅ Notification abonnés terminée en ${duration.inSeconds} secondes');
+        printVm('✅ Notification abonnés terminée en ${duration.inSeconds} secondes');
 
         await FirebaseFirestore.instance
             .collection('NotificationLogs')
@@ -1928,7 +1939,7 @@ class _UserPubTextState extends State<UserPubText> {
         });
 
       } catch (e) {
-        print('⚠️ Erreur lors de la notification des abonnés: $e');
+        printVm('⚠️ Erreur lors de la notification des abonnés: $e');
 
         await FirebaseFirestore.instance
             .collection('NotificationLogs')

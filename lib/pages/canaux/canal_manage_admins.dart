@@ -1,10 +1,17 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
+
 import '../../providers/authProvider.dart';
+
 import '../../providers/userProvider.dart';
+
 import '../../models/model_data.dart';
+
 import '../../theme/app_colors.dart';
+
 import '../../l10n/app_localizations.dart';
 
 class CanalManageAdminsPage extends StatefulWidget {
@@ -67,7 +74,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
         _currentAdmins = await _fetchUsersByIds(widget.canal.adminIds!);
       }
     } catch (e) {
-      print('Erreur chargement admins: $e');
+      printVm('Erreur chargement admins: $e');
     } finally {
       setState(() {
         _isLoadingAdmins = false;
@@ -114,7 +121,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
         _isSearching = false;
       });
     } catch (e) {
-      print('Erreur recherche utilisateurs: $e');
+      printVm('Erreur recherche utilisateurs: $e');
       setState(() {
         _isSearching = false;
       });
@@ -154,7 +161,6 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
         // Créer une notification pour l'utilisateur
         await _createAdminNotification(user);
 
-
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('✅ ${user.pseudo} est maintenant administrateur'),
@@ -164,7 +170,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
         );
       }
     } catch (e) {
-      print('Erreur ajout admin: $e');
+      printVm('Erreur ajout admin: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('❌ Erreur lors de l\'ajout'),
@@ -210,7 +216,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
         ),
       );
     } catch (e) {
-      print('Erreur retrait admin: $e');
+      printVm('Erreur retrait admin: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('❌ Erreur lors du retrait'),
@@ -245,7 +251,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
         ),
       );
     } catch (e) {
-      print('Erreur mise à jour permission: $e');
+      printVm('Erreur mise à jour permission: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('❌ Erreur lors de la mise à jour'),
@@ -276,7 +282,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
         ),
       );
     } catch (e) {
-      print('Erreur mise à jour permissions générales: $e');
+      printVm('Erreur mise à jour permissions générales: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('❌ Erreur lors de la mise à jour'),
@@ -321,7 +327,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
         );
       }
     } catch (e) {
-      print('Erreur création notification: $e');
+      printVm('Erreur création notification: $e');
     }
   }
 
@@ -340,7 +346,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
       final results = await Future.wait(futures);
       return results.whereType<UserData>().toList();
     } catch (e) {
-      print('Erreur récupération utilisateurs: $e');
+      printVm('Erreur récupération utilisateurs: $e');
       return [];
     }
   }

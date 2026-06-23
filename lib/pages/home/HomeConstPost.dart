@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:math';
 import 'package:afrotok/pages/challenge/postChallengeWidget.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -288,7 +288,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
     if (safeEndMicros <= startMicros) return [];
 
-    print("📜 Chargement anciens posts entre $startDate et $endDate");
+    printVm("📜 Chargement anciens posts entre $startDate et $endDate");
 
     Query query = _firestore.collection('Posts');
 
@@ -308,7 +308,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     final snapshot = await query.get();
 
     if (snapshot.docs.isEmpty) {
-      print("⚠️ Aucun post trouvé dans cette période");
+      printVm("⚠️ Aucun post trouvé dans cette période");
       return [];
     }
 
@@ -358,7 +358,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           break;
         }
 
-        print("↩️ Fenêtre vide, tentative de repli (${attempt + 1}/${maxFallbacks + 1})");
+        printVm("↩️ Fenêtre vide, tentative de repli (${attempt + 1}/${maxFallbacks + 1})");
       }
 
       if (validOldPosts.isNotEmpty) {
@@ -366,14 +366,14 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
         _oldPostsCache.addAll(validOldPosts);
 
-        print(
+        printVm(
           "✅ ${validOldPosts.length} anciens posts ajoutés (cache: ${_oldPostsCache.length})",
         );
       } else {
-        print("⚠️ Aucun post valide après filtrage (toutes les tentatives vides)");
+        printVm("⚠️ Aucun post valide après filtrage (toutes les tentatives vides)");
       }
     } catch (e) {
-      print("❌ Erreur chargement anciens posts: $e");
+      printVm("❌ Erreur chargement anciens posts: $e");
     } finally {
       _isLoadingOldPosts = false;
     }
@@ -420,7 +420,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 // Appeler _startOldPostsLoading() dans _initializeData() après _loadInitialPosts
   Future<bool> _shouldStartTimer() async {
     if (_isUserPremium()) {
-      print('⏱️ [Timer] Utilisateur premium → timer non démarré');
+      printVm('⏱️ [Timer] Utilisateur premium → timer non démarré');
       return false;
     }
 
@@ -429,18 +429,18 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     if (lastPopupDateStr != null) {
       final lastDate = DateTime.parse(lastPopupDateStr);
       final diffDays = DateTime.now().difference(lastDate).inDays;
-      print('⏱️ [Timer] Dernière popup: $lastPopupDateStr, différence jours: $diffDays');
+      printVm('⏱️ [Timer] Dernière popup: $lastPopupDateStr, différence jours: $diffDays');
       if (diffDays < 2) {
-        print('⏱️ [Timer] Délai de 2 jours non écoulé → timer non démarré');
+        printVm('⏱️ [Timer] Délai de 2 jours non écoulé → timer non démarré');
         return false;
       }
     }
 
-    print('⏱️ [Timer] Conditions OK : non premium et cooldown passé');
+    printVm('⏱️ [Timer] Conditions OK : non premium et cooldown passé');
     return true;
   }
   void _startStayTimer() async {
-    print('⏱️ [Timer] Démarrage demandé...');
+    printVm('⏱️ [Timer] Démarrage demandé...');
 
     bool shouldStart = await _shouldStartTimer();
     if (!shouldStart) return;
@@ -450,46 +450,46 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   void _stopStayTimer() {
     // if (_stayTimer != null && _stayTimer!.isActive) {
     //   _stayTimer!.cancel();
-    //   print('⏱️ [Timer] Timer annulé');
+    //   printVm('⏱️ [Timer] Timer annulé');
     // }
   }
 
   bool _isUserPremium() {
     final user = authProvider.loginUserData;
     if (user == null) {
-      print('🔍 [Premium] Utilisateur null');
+      printVm('🔍 [Premium] Utilisateur null');
       return false;
     }
     final isPremium = AbonnementUtils.isPremiumActive(user.abonnement);
-    print('🔍 [Premium] Abonnement utilisateur: ${user.abonnement} => isPremium = $isPremium');
+    printVm('🔍 [Premium] Abonnement utilisateur: ${user.abonnement} => isPremium = $isPremium');
     return isPremium;
   }
 
   Future<void> _checkAndShowSupportPopup() async {
-    print('🔔 [Popup] Vérification des conditions...');
+    printVm('🔔 [Popup] Vérification des conditions...');
     if (!_isPageVisible) {
-      print('🔔 [Popup] Page non visible → annulé');
+      printVm('🔔 [Popup] Page non visible → annulé');
       return;
     }
     if (_isSupportDialogShowing) {
-      print('🔔 [Popup] Popup déjà en cours d\'affichage → annulé');
+      printVm('🔔 [Popup] Popup déjà en cours d\'affichage → annulé');
       return;
     }
     if (_isUserPremium()) {
-      print('🔔 [Popup] Utilisateur premium → pas de popup');
+      printVm('🔔 [Popup] Utilisateur premium → pas de popup');
       return;
     }
 
     final prefs = await SharedPreferences.getInstance();
     final lastPopupDateStr = prefs.getString(_lastPopupDateKey!);
-    print('🔔 [Popup] Dernière date enregistrée: $lastPopupDateStr');
+    printVm('🔔 [Popup] Dernière date enregistrée: $lastPopupDateStr');
 
     if (lastPopupDateStr != null) {
       final lastDate = DateTime.parse(lastPopupDateStr);
       final diffDays = DateTime.now().difference(lastDate).inDays;
-      print('🔔 [Popup] Différence en jours: $diffDays');
+      printVm('🔔 [Popup] Différence en jours: $diffDays');
       if (diffDays < 2) {
-        print('🔔 [Popup] Cooldown actif (moins de 2 jours) → popup ignoré');
+        printVm('🔔 [Popup] Cooldown actif (moins de 2 jours) → popup ignoré');
         return;
       }
     }
@@ -497,9 +497,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     // Enregistrer la date actuelle
     final nowStr = DateTime.now().toIso8601String();
     await prefs.setString(_lastPopupDateKey!, nowStr);
-    print('🔔 [Popup] Date enregistrée: $nowStr');
+    printVm('🔔 [Popup] Date enregistrée: $nowStr');
 
-    print('🔔 [Popup] Affichage du popup...');
+    printVm('🔔 [Popup] Affichage du popup...');
     _showSupportDialog();
   }
   void _showSupportDialog() {
@@ -634,17 +634,17 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   void _initializeData() async {
     // 1. Détecter le pays de l'utilisateur
     _selectedCountryCode = authProvider.loginUserData.countryData?['countryCode']?.toUpperCase();
-    print('Pays utilisateur détecté: ${_selectedCountryCode}');
+    printVm('Pays utilisateur détecté: ${_selectedCountryCode}');
 
     // 🔥 MODIFICATION: Pour EVENEMENT, forcer le mode COUNTRY (pas de mix)
     if (widget.type == TabBarType.EVENEMENT.name) {
       _currentFilter = 'COUNTRY';  // Forcer le pays de l'utilisateur seulement
-      print('🎯 Mode EVENEMENT activé - Filtre: COUNTRY (${_selectedCountryCode})');
+      printVm('🎯 Mode EVENEMENT activé - Filtre: COUNTRY (${_selectedCountryCode})');
     } else if (_selectedCountryCode != null) {
       // 🔥 Par défaut: filtre sur le pays de l'utilisateur (au lieu de "Tous")
       // L'utilisateur peut toujours changer via la modale de filtre (_showCountryFilterModal).
       _currentFilter = 'COUNTRY';
-      print('🌍 Filtre par défaut: COUNTRY (pays utilisateur: ${_selectedCountryCode})');
+      printVm('🌍 Filtre par défaut: COUNTRY (pays utilisateur: ${_selectedCountryCode})');
     } else {
       _currentFilter = 'MIXED';     // Fallback si pays utilisateur inconnu
     }
@@ -724,7 +724,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
             post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
             cachedPosts.add(post);
           } catch (e) {
-            print('⚠️ Cache: erreur parsing post: $e');
+            printVm('⚠️ Cache: erreur parsing post: $e');
           }
         }
       }
@@ -750,7 +750,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
               cachedChroniques.add(chronique);
             }
           } catch (e) {
-            print('⚠️ Cache: erreur parsing chronique: $e');
+            printVm('⚠️ Cache: erreur parsing chronique: $e');
           }
         }
       }
@@ -764,7 +764,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
             _userDataCache[userId] = userData;
             _userVerificationStatus[userId] = userData.isVerify ?? false;
           } catch (e) {
-            print('⚠️ Cache: erreur parsing auteur chronique: $e');
+            printVm('⚠️ Cache: erreur parsing auteur chronique: $e');
           }
         });
       }
@@ -777,7 +777,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           try {
             cachedSuggestedUsers.add(UserData.fromJson(Map<String, dynamic>.from(u as Map)));
           } catch (e) {
-            print('⚠️ Cache: erreur parsing profil suggéré: $e');
+            printVm('⚠️ Cache: erreur parsing profil suggéré: $e');
           }
         }
       }
@@ -790,7 +790,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           try {
             cachedCanaux.add(Canal.fromJson(Map<String, dynamic>.from(c as Map)));
           } catch (e) {
-            print('⚠️ Cache: erreur parsing canal: $e');
+            printVm('⚠️ Cache: erreur parsing canal: $e');
           }
         }
       }
@@ -803,7 +803,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           try {
             cachedArticles.add(ArticleData.fromJson(Map<String, dynamic>.from(a as Map)));
           } catch (e) {
-            print('⚠️ Cache: erreur parsing article boosté: $e');
+            printVm('⚠️ Cache: erreur parsing article boosté: $e');
           }
         }
       }
@@ -832,10 +832,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         }
       });
 
-      print('⚡ Feed affiché instantanément depuis le cache local ($_feedCacheKey)');
+      printVm('⚡ Feed affiché instantanément depuis le cache local ($_feedCacheKey)');
       return cachedPosts.isNotEmpty;
     } catch (e) {
-      print('⚠️ Erreur _loadFromCacheAndDisplay: $e');
+      printVm('⚠️ Erreur _loadFromCacheAndDisplay: $e');
       return false;
     }
   }
@@ -904,14 +904,14 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
       await FeedCacheService.saveFeedData(_feedCacheKey, data);
     } catch (e) {
-      print('⚠️ Erreur _saveFeedToCache: $e');
+      printVm('⚠️ Erreur _saveFeedToCache: $e');
     }
   }
 
   void _initializeData2() async {
     // 1. Détecter le pays de l'utilisateur
     _selectedCountryCode = authProvider.loginUserData.countryData?['countryCode']?.toUpperCase();
-    print('Pays utilisateur détecté: ${_selectedCountryCode}');
+    printVm('Pays utilisateur détecté: ${_selectedCountryCode}');
 
     // 2. Par défaut: mode "Tous les pays"
     _currentFilter = 'MIXED';
@@ -956,7 +956,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     // Arrêter tout timer existant
     _backgroundLoadTimer?.cancel();
 
-    print('🚀 Démarrage du chargement background (max: $_maxBackgroundPosts posts)');
+    printVm('🚀 Démarrage du chargement background (max: $_maxBackgroundPosts posts)');
 
     // Démarrer un nouveau timer pour le chargement background
     _backgroundLoadTimer = Timer.periodic(Duration(seconds: 2), (timer) async {
@@ -985,7 +985,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       if (_backgroundPostsLoaded >= _maxBackgroundPosts ||
           !_hasMorePosts ||
           !_useBackgroundLoading) {
-        print('⏹️ Arrêt du chargement background (posts background: $_backgroundPostsLoaded)');
+        printVm('⏹️ Arrêt du chargement background (posts background: $_backgroundPostsLoaded)');
         timer.cancel();
         _useBackgroundLoading = false; // Passer en mode manuel
       }
@@ -1004,7 +1004,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       return;
     }
 
-    print('🔄 Chargement background... ($_backgroundPostsLoaded/$_maxBackgroundPosts)');
+    printVm('🔄 Chargement background... ($_backgroundPostsLoaded/$_maxBackgroundPosts)');
 
     setState(() {
       _isLoadingBackground = true;
@@ -1025,7 +1025,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           _backgroundPostsLoaded += newPosts.length;
         });
 
-        print('✅ ${newPosts.length} posts chargés en background (total: $_totalPostsLoaded, background: $_backgroundPostsLoaded)');
+        printVm('✅ ${newPosts.length} posts chargés en background (total: $_totalPostsLoaded, background: $_backgroundPostsLoaded)');
       }
 
       // Vérifier s'il reste des posts à charger
@@ -1039,11 +1039,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       // Si on atteint la limite de background, désactiver
       if (_backgroundPostsLoaded >= _maxBackgroundPosts) {
         _useBackgroundLoading = false;
-        print('📊 Passage en mode chargement manuel (limite background atteinte)');
+        printVm('📊 Passage en mode chargement manuel (limite background atteinte)');
       }
 
     } catch (e) {
-      print('❌ Erreur chargement background: $e');
+      printVm('❌ Erreur chargement background: $e');
     } finally {
       setState(() {
         _isLoadingBackground = false;
@@ -1533,7 +1533,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       _isLoadingPosts = false;
     });
 
-    print('✅ Filtre appliqué: $_currentFilter - Pays: $_selectedCountryCode');
+    printVm('✅ Filtre appliqué: $_currentFilter - Pays: $_selectedCountryCode');
   }
 
   // ===========================================================================
@@ -1639,7 +1639,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         });
       }
 
-      print('✅ ${newPosts.length} posts chargés avec filtre: $_currentFilter');
+      printVm('✅ ${newPosts.length} posts chargés avec filtre: $_currentFilter');
 
       // Sauvegarder en cache pour le prochain lancement (contenu à jour)
       if (newPosts.isNotEmpty) {
@@ -1647,7 +1647,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       }
 
     } catch (e) {
-      print('❌ Erreur chargement posts: $e');
+      printVm('❌ Erreur chargement posts: $e');
       setState(() {
         _hasErrorPosts = true;
       });
@@ -1664,7 +1664,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   // ===========================================================================
 
   Future<void> _loadAllCountriesMixed(Set<String> loadedIds, List<Post> newPosts, int limit) async {
-    print('🌍 Chargement mode "Tous les pays" - limite: $limit');
+    printVm('🌍 Chargement mode "Tous les pays" - limite: $limit');
 
     int attempts = 0;
     int maxAttempts = 3;
@@ -1703,7 +1703,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   }
 
   Future<void> _loadMixedPostsSmart(Set<String> loadedIds, List<Post> newPosts, String userCountryCode, int limit) async {
-    print('🔄 Chargement mode "Mix intelligent" - limite: $limit');
+    printVm('🔄 Chargement mode "Mix intelligent" - limite: $limit');
 
     // 1. Posts du pays utilisateur (40%)
     int countryPostsNeeded = (limit * 0.4).ceil();
@@ -1763,7 +1763,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       );
       _addFetchedToList(posts, loadedIds, newPosts, limit);
     } catch (e) {
-      print('❌ Erreur chargement pays $countryCode: $e');
+      printVm('❌ Erreur chargement pays $countryCode: $e');
     }
   }
 
@@ -1805,7 +1805,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       });
       newPosts.addAll(tempEvents);
     } catch (e) {
-      print('❌ Erreur chargement événements: $e');
+      printVm('❌ Erreur chargement événements: $e');
     }
   }
 
@@ -1842,7 +1842,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       );
       _addFetchedToList(posts, loadedIds, newPosts, limit);
     } catch (e) {
-      print('❌ Erreur chargement posts ALL: $e');
+      printVm('❌ Erreur chargement posts ALL: $e');
     }
   }
   Future<void> _loadOtherCountriesPosts(
@@ -1864,7 +1864,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       );
       _addFetchedToList(posts, loadedIds, newPosts, limit);
     } catch (e) {
-      print('❌ Erreur chargement autres pays: $e');
+      printVm('❌ Erreur chargement autres pays: $e');
     }
   }
 
@@ -1907,7 +1907,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           _totalPostsLoaded += newPosts.length;
         });
 
-        print('📱 ${newPosts.length} posts chargés manuellement (total: $_totalPostsLoaded)');
+        printVm('📱 ${newPosts.length} posts chargés manuellement (total: $_totalPostsLoaded)');
       }
 
       _hasMorePosts = newPosts.length >= (_manualLoadLimit ~/ 2);
@@ -1918,7 +1918,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       }
 
     } catch (e) {
-      print('❌ Erreur chargement manuel: $e');
+      printVm('❌ Erreur chargement manuel: $e');
       _hasMorePosts = false;
       if (_oldPostsCache.isNotEmpty) _injectOldPostsAndResume();
     } finally {
@@ -2073,7 +2073,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       });
       _saveFeedToCache();
     } catch (e) {
-      print('Error loading suggested users: $e');
+      printVm('Error loading suggested users: $e');
     } finally {
       setState(() {
         _isLoadingSuggestedUsers = false;
@@ -2098,7 +2098,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       });
       _saveFeedToCache();
     } catch (e) {
-      print('Error loading articles: $e');
+      printVm('Error loading articles: $e');
     } finally {
       setState(() {
         _isLoadingArticles = false;
@@ -2121,7 +2121,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       });
       _saveFeedToCache();
     } catch (e) {
-      print('Error loading canaux: $e');
+      printVm('Error loading canaux: $e');
     } finally {
       setState(() {
         _isLoadingCanaux = false;
@@ -2140,7 +2140,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       }
       _saveFeedToCache();
     } catch (e) {
-      print('❌ Erreur chargement chroniques: $e');
+      printVm('❌ Erreur chargement chroniques: $e');
     } finally {
       setState(() => _isLoadingChroniques = false);
     }
@@ -2181,7 +2181,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         setState(() {});
       }
     } catch (e) {
-      print('❌ Erreur chargement données chroniques: $e');
+      printVm('❌ Erreur chargement données chroniques: $e');
     }
   }
 
@@ -2347,22 +2347,25 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
   Widget _buildProfilesSection() {
     final l10n = AppLocalizations.of(context);
+    final currentUser = authProvider.loginUserData;
+    final pendingIds = Set<String>.from(
+      currentUser.mesInvitationsEnvoyerId ?? [],
+    );
     return FeedProfilesSection(
       users: _suggestedUsers,
       isLoading: _isLoadingSuggestedUsers,
       title: l10n.sectionDiscoverProfiles,
       seeAllLabel: l10n.commonSeeAll,
       onShowProfile: _showUserDetails,
+      currentUserId: currentUser.id ?? '',
+      pendingInvitationUserIds: pendingIds,
     );
   }
 
-  void _showUserDetails(UserData user) async {
-    final users = await authProvider.getUserById(user.id!);
-    if (users.isNotEmpty && mounted) {
-      final w = MediaQuery.of(context).size.width;
-      final h = MediaQuery.of(context).size.height;
-      showUserDetailsModalDialog(users.first, w, h, context);
-    }
+  void _showUserDetails(UserData user) {
+    final w = MediaQuery.of(context).size.width;
+    final h = MediaQuery.of(context).size.height;
+    showUserDetailsModalDialog(user, w, h, context);
   }
 
   // ===========================================================================
@@ -3093,7 +3096,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
       // ❌ Si moins de 2 jours -> ne pas compter la vue
       if (difference < 2) {
-        print(
+        printVm(
             '⏭️ Post ${post.id} déjà vu il y a $difference jour(s) par $currentUserId - Vue NON comptée');
 
         post.users_vue_id ??= [];
@@ -3147,12 +3150,12 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       }
 
       PostViewService.recordAuthorView(post, currentUserId);
-      print('✅ Vue comptée pour post ${post.id} par $currentUserId');
+      printVm('✅ Vue comptée pour post ${post.id} par $currentUserId');
 
 
 
     } catch (e) {
-      print('Error recording post view: $e');
+      printVm('Error recording post view: $e');
     }
   }
 
@@ -3171,9 +3174,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       // Incrémenter l'interaction UNE SEULE FOIS par session
       await authProvider.incrementPostTotalInteractions(postId: post.id!);
       await _prefs.setBool(interactionKey, true);
-      print('✅ Total interactions +1 pour le post ${post.id} (première vue de la session)');
+      printVm('✅ Total interactions +1 pour le post ${post.id} (première vue de la session)');
     } else {
-      print('⏭️ Interaction déjà comptée dans cette session pour le post ${post.id}');
+      printVm('⏭️ Interaction déjà comptée dans cette session pour le post ${post.id}');
     }
   }
 
@@ -3190,7 +3193,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
     // Si déjà vu aujourd'hui, NE PAS COMPTER la vue
     if (lastViewDate == todayDate) {
-      print('⏭️ Post ${post.id} déjà vu aujourd\'hui par $currentUserId - Vue NON comptée');
+      printVm('⏭️ Post ${post.id} déjà vu aujourd\'hui par $currentUserId - Vue NON comptée');
 
       // ✅ On met quand même à jour l'UI locale pour montrer que le post est vu
       if (!post.users_vue_id!.contains(currentUserId)) {
@@ -3245,10 +3248,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         authProvider.loginUserData.viewedPostIds!.add(post.id!);
       }
 
-      print('✅ Vue comptée pour post ${post.id} par $currentUserId le $todayDate');
+      printVm('✅ Vue comptée pour post ${post.id} par $currentUserId le $todayDate');
 
     } catch (e) {
-      print('Error recording post view: $e');
+      printVm('Error recording post view: $e');
     }
   }
   Future<void> _recordPostView2(Post post) async {
@@ -3291,7 +3294,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       }
 
     } catch (e) {
-      print('Error recording post view: $e');
+      printVm('Error recording post view: $e');
       _postsViewedInSession.remove(post.id!);
     }
   }

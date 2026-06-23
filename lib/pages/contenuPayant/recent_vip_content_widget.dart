@@ -1,20 +1,34 @@
-import 'dart:io';
+﻿import 'dart:io';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'dart:typed_data';
 
 import 'package:afrotok/models/model_data.dart';
+
 import 'package:afrotok/pages/contenuPayant/contentDetails.dart';
+
 import 'package:afrotok/pages/contenuPayant/contentDetailsEbook.dart';
+
 import 'package:afrotok/pages/contenuPayant/contentSerie.dart';
+
 import 'package:afrotok/providers/contenuPayantProvider.dart';
+
 import 'package:cached_network_image/cached_network_image.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:path_provider/path_provider.dart';
+
 import 'package:provider/provider.dart';
+
 import 'package:video_thumbnail/video_thumbnail.dart';
 
 import '../../theme/app_colors.dart';
+
 import '../../l10n/app_localizations.dart';
+
 import '../../providers/authProvider.dart';
+
 import 'TableauDeBord.dart';
 
 class RecentVIPContentWidget extends StatefulWidget {
@@ -79,7 +93,7 @@ class _RecentVIPContentWidgetState extends State<RecentVIPContentWidget> {
         return await File(path).readAsBytes();
       }
     } catch (e) {
-      print('Erreur génération miniature : $e');
+      printVm('Erreur génération miniature : $e');
     }
     return null;
   }

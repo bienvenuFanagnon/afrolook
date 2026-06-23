@@ -1,4 +1,4 @@
-import 'package:afrotok/pages/component/consoleWidget.dart';
+﻿import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -43,7 +43,7 @@ class ContentProvider with ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
-      print('Error loading other user ContentPaies: $e');
+      printVm('Error loading other user ContentPaies: $e');
     }
   }
   List<ContentCategory> _categories = [
@@ -232,7 +232,7 @@ class ContentProvider with ChangeNotifier {
 
       return recent;
     } catch (e) {
-      print('Erreur chargement récents contenus : $e');
+      printVm('Erreur chargement récents contenus : $e');
       return [];
     }
   }
@@ -262,7 +262,7 @@ class ContentProvider with ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
-      print('Error incrementing shares: $e');
+      printVm('Error incrementing shares: $e');
     }
   }
 
@@ -303,7 +303,7 @@ class ContentProvider with ChangeNotifier {
       await loadContentPaiesByCategory();
       notifyListeners();
     } catch (e) {
-      print('Error liking content: $e');
+      printVm('Error liking content: $e');
     }
   }
 
@@ -345,7 +345,7 @@ class ContentProvider with ChangeNotifier {
       // Recharger les données
       notifyListeners();
     } catch (e) {
-      print('Error disliking content: $e');
+      printVm('Error disliking content: $e');
     }
   }
 
@@ -376,7 +376,7 @@ class ContentProvider with ChangeNotifier {
       await loadContentPaiesByCategory();
       notifyListeners();
     } catch (e) {
-      print('Error removing like from content: $e');
+      printVm('Error removing like from content: $e');
     }
   }
 
@@ -406,7 +406,7 @@ class ContentProvider with ChangeNotifier {
       await loadContentPaiesByCategory();
       notifyListeners();
     } catch (e) {
-      print('Error removing dislike from content: $e');
+      printVm('Error removing dislike from content: $e');
     }
   }
 
@@ -422,7 +422,7 @@ class ContentProvider with ChangeNotifier {
       }
       return false;
     } catch (e) {
-      print('Error checking if content is liked: $e');
+      printVm('Error checking if content is liked: $e');
       return false;
     }
   }
@@ -438,7 +438,7 @@ class ContentProvider with ChangeNotifier {
       }
       return false;
     } catch (e) {
-      print('Error checking if content is disliked: $e');
+      printVm('Error checking if content is disliked: $e');
       return false;
     }
   }
@@ -478,7 +478,7 @@ class ContentProvider with ChangeNotifier {
       await loadEpisodes();
       notifyListeners();
     } catch (e) {
-      print('Error liking episode: $e');
+      printVm('Error liking episode: $e');
     }
   }
 // Dans votre ContentProvider, modifiez les méthodes dislike :
@@ -523,7 +523,7 @@ class ContentProvider with ChangeNotifier {
       // Recharger les données
       notifyListeners();
     } catch (e) {
-      print('Error disliking episode: $e');
+      printVm('Error disliking episode: $e');
     }
   }
 
@@ -552,7 +552,7 @@ class ContentProvider with ChangeNotifier {
       await loadEpisodes();
       notifyListeners();
     } catch (e) {
-      print('Error removing like from episode: $e');
+      printVm('Error removing like from episode: $e');
     }
   }
 
@@ -580,7 +580,7 @@ class ContentProvider with ChangeNotifier {
       await loadEpisodes();
       notifyListeners();
     } catch (e) {
-      print('Error removing dislike from episode: $e');
+      printVm('Error removing dislike from episode: $e');
     }
   }
 
@@ -596,7 +596,7 @@ class ContentProvider with ChangeNotifier {
       }
       return false;
     } catch (e) {
-      print('Error checking if episode is liked: $e');
+      printVm('Error checking if episode is liked: $e');
       return false;
     }
   }
@@ -612,7 +612,7 @@ class ContentProvider with ChangeNotifier {
       }
       return false;
     } catch (e) {
-      print('Error checking if episode is disliked: $e');
+      printVm('Error checking if episode is disliked: $e');
       return false;
     }
   }
@@ -632,9 +632,9 @@ class ContentProvider with ChangeNotifier {
           .toList();
 
       notifyListeners();
-      print("All ContentPaies loaded: ${_allContentPaies.length}");
+      printVm("All ContentPaies loaded: ${_allContentPaies.length}");
     } catch (e) {
-      print('Error loading all ContentPaies: $e');
+      printVm('Error loading all ContentPaies: $e');
     }
   }
 
@@ -674,7 +674,7 @@ class ContentProvider with ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
-      print('Error loading featured ContentPaies: $e');
+      printVm('Error loading featured ContentPaies: $e');
     }
   }
   Future<void> loadFeaturedContentPaies2() async {
@@ -692,7 +692,7 @@ class ContentProvider with ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
-      print('Error loading featured ContentPaies: $e');
+      printVm('Error loading featured ContentPaies: $e');
     }
   }
   Future<void> loadCategories() async {
@@ -701,7 +701,7 @@ class ContentProvider with ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
-      print('Erreur chargement catégories: $e');
+      printVm('Erreur chargement catégories: $e');
     }
   }
 
@@ -714,7 +714,7 @@ class ContentProvider with ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
-      print('Error loading categories: $e');
+      printVm('Error loading categories: $e');
     }
   }
 
@@ -735,7 +735,7 @@ class ContentProvider with ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
-      print('Error loading ContentPaies by category: $e');
+      printVm('Error loading ContentPaies by category: $e');
     }
   }
 
@@ -755,7 +755,7 @@ class ContentProvider with ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
-      print('Error loading user ContentPaies: $e');
+      printVm('Error loading user ContentPaies: $e');
     }
   }
 
@@ -777,7 +777,7 @@ class ContentProvider with ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
-      print('Error loading user purchases: $e');
+      printVm('Error loading user purchases: $e');
     }
   }
 
@@ -794,7 +794,7 @@ class ContentProvider with ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
-      print('Error loading episodes: $e');
+      printVm('Error loading episodes: $e');
     }
   }
 
@@ -810,7 +810,7 @@ class ContentProvider with ChangeNotifier {
           .map((doc) => Episode.fromJson({...doc.data(), 'id': doc.id}))
           .toList();
     } catch (e) {
-      print('Error getting episodes for series: $e');
+      printVm('Error getting episodes for series: $e');
       return [];
     }
   }
@@ -943,7 +943,7 @@ class ContentProvider with ChangeNotifier {
 
       return PurchaseResult.success;
     } catch (e) {
-      print('Error purchasing ContentPaie: $e');
+      printVm('Error purchasing ContentPaie: $e');
       _showErrorModal(context, e.toString());
       return PurchaseResult.error;
     }
@@ -1229,7 +1229,7 @@ class ContentProvider with ChangeNotifier {
       // await loadUserContentPaies();
       return true;
     } catch (e) {
-      print('Error adding ContentPaie: $e');
+      printVm('Error adding ContentPaie: $e');
       return false;
     }
   }
@@ -1244,7 +1244,7 @@ class ContentProvider with ChangeNotifier {
           .get();
 
       if (existingEpisode.docs.isNotEmpty) {
-        print('Un épisode avec ce numéro existe déjà pour cette série');
+        printVm('Un épisode avec ce numéro existe déjà pour cette série');
         return false;
       }
 
@@ -1261,7 +1261,7 @@ class ContentProvider with ChangeNotifier {
 
       return true;
     } catch (e) {
-      print('Error adding episode: $e');
+      printVm('Error adding episode: $e');
       return false;
     }
   }
@@ -1272,7 +1272,7 @@ class ContentProvider with ChangeNotifier {
       await loadUserContentPaies();
       return true;
     } catch (e) {
-      print('Error updating ContentPaie: $e');
+      printVm('Error updating ContentPaie: $e');
       return false;
     }
   }
@@ -1289,7 +1289,7 @@ class ContentProvider with ChangeNotifier {
       await loadEpisodes();
       return true;
     } catch (e) {
-      print('Error updating episode: $e');
+      printVm('Error updating episode: $e');
       return false;
     }
   }
@@ -1312,7 +1312,7 @@ class ContentProvider with ChangeNotifier {
       await loadEpisodes();
       return true;
     } catch (e) {
-      print('Error deleting ContentPaie: $e');
+      printVm('Error deleting ContentPaie: $e');
       return false;
     }
   }
@@ -1335,7 +1335,7 @@ class ContentProvider with ChangeNotifier {
       }
       return false;
     } catch (e) {
-      print('Error deleting episode: $e');
+      printVm('Error deleting episode: $e');
       return false;
     }
   }
@@ -1363,7 +1363,7 @@ class ContentProvider with ChangeNotifier {
       // Éliminer les doublons
       return results.toSet().toList();
     } catch (e) {
-      print('Error searching ContentPaies: $e');
+      printVm('Error searching ContentPaies: $e');
       return [];
     }
   }
@@ -1393,7 +1393,7 @@ class ContentProvider with ChangeNotifier {
   //         .map((doc) => Episode.fromJson({...doc.data(), 'id': doc.id}))
   //         .toList();
   //   } catch (e) {
-  //     print('Error searching episodes: $e');
+  //     printVm('Error searching episodes: $e');
   //     return [];
   //   }
   // }
@@ -1422,7 +1422,7 @@ class ContentProvider with ChangeNotifier {
         await loadContentPaiesByCategory();
       }
     } catch (e) {
-      print('Error incrementing views: $e');
+      printVm('Error incrementing views: $e');
     }
   }
 
@@ -1449,7 +1449,7 @@ class ContentProvider with ChangeNotifier {
         await loadContentPaiesByCategory();
       }
     } catch (e) {
-      print('Error toggling like: $e');
+      printVm('Error toggling like: $e');
     }
   }
 
@@ -1461,7 +1461,7 @@ class ContentProvider with ChangeNotifier {
       }
       return null;
     } catch (e) {
-      print('Error getting ContentPaie by ID: $e');
+      printVm('Error getting ContentPaie by ID: $e');
       return null;
     }
   }
@@ -1474,7 +1474,7 @@ class ContentProvider with ChangeNotifier {
       }
       return null;
     } catch (e) {
-      print('Error getting episode by ID: $e');
+      printVm('Error getting episode by ID: $e');
       return null;
     }
   }

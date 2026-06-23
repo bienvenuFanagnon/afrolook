@@ -1,4 +1,6 @@
-// pages/chronique/my_chroniques_page.dart
+﻿// pages/chronique/my_chroniques_page.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -40,14 +42,14 @@ class _MyChroniquesPageState extends State<MyChroniquesPage> {
           });
         }
       }, onError: (error) {
-        print('Erreur stream mes chroniques: $error');
+        printVm('Erreur stream mes chroniques: $error');
         if (mounted) {
           setState(() => _isLoading = false);
         }
       });
 
     } catch (e) {
-      print('Erreur initialisation stream mes chroniques: $e');
+      printVm('Erreur initialisation stream mes chroniques: $e');
       if (mounted) {
         setState(() => _isLoading = false);
       }

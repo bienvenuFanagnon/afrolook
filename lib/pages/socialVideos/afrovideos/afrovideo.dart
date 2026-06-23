@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:afrotok/pages/socialVideos/afrovideos/videoWidget.dart';
 import 'package:animated_icon/animated_icon.dart';
@@ -721,7 +721,7 @@ class _AfroVideoState extends State<AfroVideo> with WidgetsBindingObserver, Tick
                   }
                 } catch (e) {
                   setState(() => _isLoading = false);
-                  print("Erreur : $e");
+                  printVm("Erreur : $e");
                 }
               },
 
@@ -863,7 +863,7 @@ class _AfroVideoState extends State<AfroVideo> with WidgetsBindingObserver, Tick
                       }
                     } catch (e) {
                       setState(() => _isLoading = false);
-                      print("Erreur : $e");
+                      printVm("Erreur : $e");
                     }
                   },
                 ),

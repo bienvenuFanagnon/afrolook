@@ -1,4 +1,6 @@
-// Service de préparation des posts - VERSION CORRIGÉE
+﻿// Service de préparation des posts - VERSION CORRIGÉE
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'dart:math' as Math;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/model_data.dart';
@@ -8,8 +10,8 @@ class PostPreparationService {
 
   static Future<List<String>> preparePostsForUser(String? userId, {int maxPosts = 50}) async {
     try {
-      print('🚀 ========= PRÉPARATION POSTS =========');
-      print('👤 Utilisateur: ${userId ?? "Anonyme"}');
+      printVm('🚀 ========= PRÉPARATION POSTS =========');
+      printVm('👤 Utilisateur: ${userId ?? "Anonyme"}');
 
       if (userId == null) {
         return await _preparePostsForAnonymousUser(maxPosts);
@@ -18,7 +20,7 @@ class PostPreparationService {
       return await _preparePostsForLoggedInUser(userId, maxPosts);
 
     } catch (e) {
-      print('❌ Erreur préparation posts: $e');
+      printVm('❌ Erreur préparation posts: $e');
       return await _getFallbackPosts(maxPosts);
     }
   }
@@ -31,13 +33,13 @@ class PostPreparationService {
     final followingIds = userData.userAbonnesIds ?? [];
     final viewedPostIds = userData.viewedPostIds ?? [];
 
-    print('📋 DONNÉES UTILISATEUR:');
-    print('   - Abonnements: ${followingIds.length}');
-    print('   - Posts déjà vus: ${viewedPostIds.length}');
+    printVm('📋 DONNÉES UTILISATEUR:');
+    printVm('   - Abonnements: ${followingIds.length}');
+    printVm('   - Posts déjà vus: ${viewedPostIds.length}');
 
     // 2. Récupérer les posts récents
     final recentPosts = await _getRecentPostsOnly(200);
-    print('📝 POSTS RÉCENTS: ${recentPosts.length}');
+    printVm('📝 POSTS RÉCENTS: ${recentPosts.length}');
 
     // 3. Appliquer l'algorithme de priorité
     final preparedPosts = await _applyPriorityAlgorithm(
@@ -47,7 +49,7 @@ class PostPreparationService {
         maxPosts
     );
 
-    print('✅ PRÉPARATION TERMINÉE: ${preparedPosts.length} posts');
+    printVm('✅ PRÉPARATION TERMINÉE: ${preparedPosts.length} posts');
     stopwatch.stop();
 
     return preparedPosts;
@@ -92,11 +94,11 @@ class PostPreparationService {
       }
     }
 
-    print('📊 CATÉGORISATION:');
-    print('   - Abonnements non vus: ${followingUnseen.length}');
-    print('   - Abonnements vus: ${followingSeen.length}');
-    print('   - Autres non vus: ${otherUnseen.length}');
-    print('   - Autres vus: ${otherSeen.length}');
+    printVm('📊 CATÉGORISATION:');
+    printVm('   - Abonnements non vus: ${followingUnseen.length}');
+    printVm('   - Abonnements vus: ${followingSeen.length}');
+    printVm('   - Autres non vus: ${otherUnseen.length}');
+    printVm('   - Autres vus: ${otherSeen.length}');
 
     // Préparer les posts selon la priorité
     final preparedPosts = <String>[];
@@ -118,59 +120,59 @@ class PostPreparationService {
     }
 
     // PHASE 1: Posts non vus des abonnements (priorité maximale)
-    print('\n🎯 PHASE 1: Posts non vus abonnements');
+    printVm('\n🎯 PHASE 1: Posts non vus abonnements');
     for (final post in followingUnseen) {
       if (preparedPosts.length >= maxPosts) break;
 
       final postId = takeLatestPostFromUser(post.user_id!);
       if (postId != null) {
         preparedPosts.add(postId);
-        print('   ✅ Ajouté: ${post.id} (abonnement non vu)');
+        printVm('   ✅ Ajouté: ${post.id} (abonnement non vu)');
       }
     }
 
     // PHASE 2: Posts non vus des autres utilisateurs
-    print('\n🎯 PHASE 2: Posts non vus autres');
+    printVm('\n🎯 PHASE 2: Posts non vus autres');
     for (final post in otherUnseen) {
       if (preparedPosts.length >= maxPosts) break;
 
       final postId = takeLatestPostFromUser(post.user_id!);
       if (postId != null) {
         preparedPosts.add(postId);
-        print('   ✅ Ajouté: ${post.id} (autre non vu)');
+        printVm('   ✅ Ajouté: ${post.id} (autre non vu)');
       }
     }
 
     // PHASE 3: Posts vus des abonnements (si besoin)
     if (preparedPosts.length < maxPosts) {
-      print('\n🎯 PHASE 3: Posts vus abonnements');
+      printVm('\n🎯 PHASE 3: Posts vus abonnements');
       for (final post in followingSeen) {
         if (preparedPosts.length >= maxPosts) break;
 
         final postId = takeLatestPostFromUser(post.user_id!);
         if (postId != null) {
           preparedPosts.add(postId);
-          print('   🔄 Ajouté: ${post.id} (abonnement vu)');
+          printVm('   🔄 Ajouté: ${post.id} (abonnement vu)');
         }
       }
     }
 
     // PHASE 4: Posts vus des autres (si besoin)
     if (preparedPosts.length < maxPosts) {
-      print('\n🎯 PHASE 4: Posts vus autres');
+      printVm('\n🎯 PHASE 4: Posts vus autres');
       for (final post in otherSeen) {
         if (preparedPosts.length >= maxPosts) break;
 
         final postId = takeLatestPostFromUser(post.user_id!);
         if (postId != null) {
           preparedPosts.add(postId);
-          print('   🔄 Ajouté: ${post.id} (autre vu)');
+          printVm('   🔄 Ajouté: ${post.id} (autre vu)');
         }
       }
     }
 
-    print('\n📦 RÉSULTAT FINAL: ${preparedPosts.length} posts');
-    print('   - Priorité: Non vus abonnements > Non vus autres > Vus abonnements > Vus autres');
+    printVm('\n📦 RÉSULTAT FINAL: ${preparedPosts.length} posts');
+    printVm('   - Priorité: Non vus abonnements > Non vus autres > Vus abonnements > Vus autres');
 
     return preparedPosts.take(maxPosts).toList();
   }
@@ -182,7 +184,7 @@ class PostPreparationService {
           ? UserData.fromJson(userDoc.data() as Map<String, dynamic>)
           : UserData(viewedPostIds: [], userAbonnesIds: []);
     } catch (e) {
-      print('⚠️ Erreur récupération user data: $e');
+      printVm('⚠️ Erreur récupération user data: $e');
       return UserData(viewedPostIds: [], userAbonnesIds: []);
     }
   }
@@ -206,7 +208,7 @@ class PostPreparationService {
         return post;
       }).toList();
     } catch (e) {
-      print('⚠️ Fallback: récupération tous posts récents');
+      printVm('⚠️ Fallback: récupération tous posts récents');
       final postsSnapshot = await _firestore
           .collection('Posts')
           .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
@@ -224,7 +226,7 @@ class PostPreparationService {
   }
 
   static Future<List<String>> _preparePostsForAnonymousUser(int maxPosts) async {
-    print('🔓 Mode utilisateur anonyme');
+    printVm('🔓 Mode utilisateur anonyme');
     final posts = await _firestore
         .collection('Posts')
         .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
@@ -237,7 +239,7 @@ class PostPreparationService {
   }
 
   static Future<List<String>> _getFallbackPosts(int maxPosts) async {
-    print('🔄 Fallback rapide');
+    printVm('🔄 Fallback rapide');
     final posts = await _firestore
         .collection('Posts')
         .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
@@ -260,15 +262,15 @@ class AppInitializer {
 
   static Future<void> initializeApp({String? userId, bool isRefresh = false}) async {
     if (isRefresh) {
-      print('\n🔄 ========= RAFRAÎCHISSEMENT =========');
+      printVm('\n🔄 ========= RAFRAÎCHISSEMENT =========');
       preparedPostIds = [];
       isPostsPrepared = false;
       isBackgroundPreparationDone = false;
     } else {
-      print('\n🎪 ========= INITIALISATION =========');
+      printVm('\n🎪 ========= INITIALISATION =========');
     }
 
-    print('👤 ID: ${userId ?? "Anonyme"}');
+    printVm('👤 ID: ${userId ?? "Anonyme"}');
 
     final stopwatch = Stopwatch()..start();
 
@@ -282,13 +284,13 @@ class AppInitializer {
       isPostsPrepared = true;
       lastPreparationTime = DateTime.now();
 
-      print('✅ ${preparedPostIds.length} posts préparés en ${stopwatch.elapsedMilliseconds}ms');
+      printVm('✅ ${preparedPostIds.length} posts préparés en ${stopwatch.elapsedMilliseconds}ms');
 
       // Lancer la préparation en arrière-plan pour les 50 posts
       _startBackgroundPreparation(userId);
 
     } catch (e) {
-      print('❌ Erreur: $e');
+      printVm('❌ Erreur: $e');
       preparedPostIds = await _getUltraFastFallback();
       isPostsPrepared = true;
       _startBackgroundPreparation(userId);
@@ -300,16 +302,16 @@ class AppInitializer {
   static void _startBackgroundPreparation(String? userId) {
     Future.microtask(() async {
       try {
-        print('🔄 Début préparation arrière-plan...');
+        printVm('🔄 Début préparation arrière-plan...');
         backgroundPostIds = await PostPreparationService.preparePostsForUser(
             userId,
             maxPosts: 50
         );
         isBackgroundPreparationDone = true;
-        print('✅ Préparation arrière-plan terminée: ${backgroundPostIds.length} posts');
+        printVm('✅ Préparation arrière-plan terminée: ${backgroundPostIds.length} posts');
 
       } catch (e) {
-        print('❌ Erreur préparation arrière-plan: $e');
+        printVm('❌ Erreur préparation arrière-plan: $e');
       }
     });
   }
@@ -341,7 +343,7 @@ class AppInitializer {
     final newPosts = backgroundPostIds.skip(preparedPostIds.length).take(8).toList();
     preparedPostIds.addAll(newPosts);
 
-    print('📥 Chargement posts supplémentaires: ${newPosts.length}');
+    printVm('📥 Chargement posts supplémentaires: ${newPosts.length}');
     return newPosts;
   }
 

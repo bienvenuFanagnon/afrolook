@@ -1,4 +1,4 @@
-
+﻿
 import 'dart:math';
 
 import 'package:afrotok/pages/contact.dart';
@@ -232,7 +232,7 @@ class _LoginPageUserState extends State<LoginPageUser> {
 
   // Méthode pour gérer les erreurs FirebaseAuth
   void _handleFirebaseAuthError(FirebaseAuthException error) {
-    print("Une erreur indéfinie : ${error.code}");
+    printVm("Une erreur indéfinie : ${error.code}");
 
     switch (error.code) {
       case "invalid-email":

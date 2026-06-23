@@ -1,4 +1,6 @@
-// pages/chronique/chronique_home_page.dart
+﻿// pages/chronique/chronique_home_page.dart
+
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -105,7 +107,7 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
       }
 
     } catch (e) {
-      print('Erreur chargement initial: $e');
+      printVm('Erreur chargement initial: $e');
       setState(() {
         _isLoading = false;
         _isFirstLoad = false;
@@ -188,7 +190,7 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
         });
       }
     } catch (e) {
-      print('Erreur génération thumbnail pour ${chronique.id}: $e');
+      printVm('Erreur génération thumbnail pour ${chronique.id}: $e');
     } finally {
       _generatingThumbnails.remove(chronique.id);
     }
@@ -233,7 +235,7 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
         _isLoading = false;
       });
     } catch (e) {
-      print('Erreur chargement supplémentaire: $e');
+      printVm('Erreur chargement supplémentaire: $e');
       setState(() => _isLoading = false);
     }
   }
@@ -338,7 +340,7 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
       ),
       child: MrecAdWidget(
         onAdLoaded: () {
-          print('✅ Native Ad Afrolook chargée: $key');
+          printVm('✅ Native Ad Afrolook chargée: $key');
         },
       ),
     );
@@ -940,7 +942,7 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
 //         _isFirstLoad = false;
 //       });
 //     } catch (e) {
-//       print('Erreur chargement initial: $e');
+//       printVm('Erreur chargement initial: $e');
 //       setState(() {
 //         _isLoading = false;
 //         _isFirstLoad = false;
@@ -964,7 +966,7 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
 //               _videoThumbnails[chronique.id!] = thumbnail;
 //             }
 //           } catch (e) {
-//             print('Erreur génération thumbnail: $e');
+//             printVm('Erreur génération thumbnail: $e');
 //           }
 //         }
 //       }
@@ -1010,7 +1012,7 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
 //         _isLoading = false;
 //       });
 //     } catch (e) {
-//       print('Erreur chargement supplémentaire: $e');
+//       printVm('Erreur chargement supplémentaire: $e');
 //       setState(() => _isLoading = false);
 //     }
 //   }
@@ -1118,12 +1120,12 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
 //         // templateType: TemplateType.small, // ou TemplateType.small
 //
 //         onAdLoaded: () {
-//           print('✅ Native Ad Afrolook chargée: $key');
+//           printVm('✅ Native Ad Afrolook chargée: $key');
 //         },
 //       ),
 //       // child: BannerAdWidget(
 //       //   onAdLoaded: () {
-//       //     print('✅ Bannière Afrolook chargée: $key');
+//       //     printVm('✅ Bannière Afrolook chargée: $key');
 //       //   },
 //       // ),
 //     );

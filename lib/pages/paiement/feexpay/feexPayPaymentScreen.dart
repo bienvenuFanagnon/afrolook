@@ -1,10 +1,17 @@
-import 'dart:convert';
+﻿import 'dart:convert';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:cloud_functions/cloud_functions.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:url_launcher/url_launcher.dart';
+
 import 'package:intl/intl.dart';
 
 class FeexPayPaymentScreen extends StatefulWidget {
@@ -214,14 +221,13 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
       final userPays = widget.amount;
       final amountToSendToFeexPay = (userPays / (1 + feexpayFeePercent / 100)).ceil();
 
-      print('=== CALCUL DES FRAIS AFROLOOK ===');
-      print('Opérateur: $_selectedOperator ($operatorCode)');
-      print('Frais FeexPay: $feexpayFeePercent%');
-      print('Montant à payer: $userPays FCFA');
-      print('Montant à envoyer: $amountToSendToFeexPay FCFA');
+      printVm('=== CALCUL DES FRAIS AFROLOOK ===');
+      printVm('Opérateur: $_selectedOperator ($operatorCode)');
+      printVm('Frais FeexPay: $feexpayFeePercent%');
+      printVm('Montant à payer: $userPays FCFA');
+      printVm('Montant à envoyer: $amountToSendToFeexPay FCFA');
 
       // ✅ Gestion sécurisée de callback_info
-
 
       final params = {
         'token': widget.token,
@@ -276,7 +282,7 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
         _showErrorDialog(result.data['message'] ?? 'Échec du paiement');
       }
     } catch (e) {
-      print('Erreur: $e');
+      printVm('Erreur: $e');
       _showErrorDialog('Erreur technique. Veuillez réessayer.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -508,10 +514,10 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen> {
       final pending = result.data['pending'] == true;
       final message = result.data['message'] ?? '';
 
-      print('=== VÉRIFICATION #$_checkCount/$_maxChecks ===');
-      print('Status: $status');
-      print('Success: $success');
-      print('Pending: $pending');
+      printVm('=== VÉRIFICATION #$_checkCount/$_maxChecks ===');
+      printVm('Status: $status');
+      printVm('Success: $success');
+      printVm('Pending: $pending');
 
       if (status == 'completed' || success == true) {
         if (mounted) {
@@ -550,7 +556,7 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen> {
         }
       }
     } catch (e) {
-      print('Erreur: $e');
+      printVm('Erreur: $e');
       if (mounted && _checkCount < _maxChecks) {
         setState(() {
           _message = '⚠️ Erreur, réessai dans 10 secondes... ($_checkCount/$_maxChecks)';

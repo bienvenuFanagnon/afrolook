@@ -1,4 +1,5 @@
-import 'dart:convert';
+﻿import 'dart:convert';
+import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -28,7 +29,7 @@ class ChatCacheService {
       await prefs.setString(_key(chatId), jsonEncode(jsonList));
     } catch (e) {
       // Le cache est un confort, jamais bloquant.
-      print('⚠️ ChatCacheService.saveMessages error ($chatId): $e');
+      printVm('⚠️ ChatCacheService.saveMessages error ($chatId): $e');
     }
   }
 
@@ -48,7 +49,7 @@ class ChatCacheService {
           .whereType<Message>()
           .toList();
     } catch (e) {
-      print('⚠️ ChatCacheService.loadMessages error ($chatId): $e');
+      printVm('⚠️ ChatCacheService.loadMessages error ($chatId): $e');
       return [];
     }
   }

@@ -1,4 +1,4 @@
-import 'package:afrotok/models/model_data.dart';
+﻿import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/afroshop/marketPlace/acceuil/home_afroshop.dart';
 import 'package:afrotok/pages/auth/authTest/constants.dart';
 import 'package:afrotok/pages/canaux/detailsCanal.dart';
@@ -81,7 +81,7 @@ class _MesNotificationState extends State<MesNotification> {
             .toList();
       });
     } catch (e) {
-      print("Erreur chargement types: $e");
+      printVm("Erreur chargement types: $e");
     }
   }
   Future<void> _loadInitialNotifications() async {
@@ -97,7 +97,7 @@ class _MesNotificationState extends State<MesNotification> {
     try {
       await _loadNotificationsBatch();
     } catch (e) {
-      print("Erreur chargement notifications: $e");
+      printVm("Erreur chargement notifications: $e");
       _showErrorSnackBar(_l10n.notifErrorLoadingNotifications);
     } finally {
       setState(() {
@@ -116,7 +116,7 @@ class _MesNotificationState extends State<MesNotification> {
     try {
       await _loadNotificationsBatch();
     } catch (e) {
-      print("Erreur chargement plus: $e");
+      printVm("Erreur chargement plus: $e");
     } finally {
       setState(() {
         _isLoadingMore = false;
@@ -201,7 +201,7 @@ class _MesNotificationState extends State<MesNotification> {
         setState(() {});
       }
     } catch (e) {
-      print("Erreur chargement user $userId: $e");
+      printVm("Erreur chargement user $userId: $e");
     }
   }
 
@@ -221,7 +221,7 @@ class _MesNotificationState extends State<MesNotification> {
         setState(() {});
       }
     } catch (e) {
-      print("Erreur chargement canal $canalId: $e");
+      printVm("Erreur chargement canal $canalId: $e");
     }
   }
 
@@ -339,7 +339,7 @@ class _MesNotificationState extends State<MesNotification> {
       await _navigateToNotificationTarget(notification);
 
     } catch (e) {
-      print("Erreur traitement notification: $e");
+      printVm("Erreur traitement notification: $e");
       _showErrorSnackBar(_l10n.notifErrorOpening);
       _hideLoadingOverlay();
       setState(() {
@@ -479,7 +479,7 @@ class _MesNotificationState extends State<MesNotification> {
       }
     } catch (e) {
       _hideLoadingOverlay();
-      print("Erreur navigation: $e");
+      printVm("Erreur navigation: $e");
       _showErrorSnackBar(_l10n.notifErrorOpening);
       setState(() {
         _isHandlingNotification = false;
@@ -580,7 +580,7 @@ class _MesNotificationState extends State<MesNotification> {
       }
     } catch (e) {
       _hideLoadingOverlay();
-      print("Erreur post notification: $e");
+      printVm("Erreur post notification: $e");
       _showErrorSnackBar(_l10n.notifErrorLoadingPost);
       setState(() {
         _isHandlingNotification = false;
@@ -618,7 +618,7 @@ class _MesNotificationState extends State<MesNotification> {
       }
     } catch (e) {
       _hideLoadingOverlay();
-      print("Erreur service notification: $e");
+      printVm("Erreur service notification: $e");
       _showErrorSnackBar(_l10n.notifErrorLoadingService);
       setState(() {
         _isHandlingNotification = false;
@@ -1005,26 +1005,46 @@ class _MesNotificationState extends State<MesNotification> {
   }
 
   Future<void> _markAllAsRead() async {
+    final userId = _authProvider.loginUserData.id!;
     try {
-      final batch = _firestore.batch();
-      for (var notif in _notifications.where((n) => !n.is_open!)) {
-        batch.update(_firestore.collection('Notifications').doc(notif.id), {
-          'is_open': true,
-          'users_id_view': FieldValue.arrayUnion([_authProvider.loginUserData.id!])
-        });
-      }
-      await batch.commit();
+      // Requête directe Firestore — ne dépend pas de ce qui est chargé en mémoire
+      // On traite par lots de 500 (limite Firestore batch)
+      QuerySnapshot snap;
+      int totalMarked = 0;
 
-      setState(() {
-        for (var notif in _notifications) {
-          notif.is_open = true;
+      do {
+        snap = await _firestore
+            .collection('Notifications')
+            .where('receiver_id', isEqualTo: userId)
+            .where('is_open', isEqualTo: false)
+            .limit(500)
+            .get();
+
+        if (snap.docs.isEmpty) break;
+
+        final batch = _firestore.batch();
+        for (final doc in snap.docs) {
+          batch.update(doc.reference, {
+            'is_open': true,
+            'users_id_view': FieldValue.arrayUnion([userId]),
+          });
         }
-      });
+        await batch.commit();
+        totalMarked += snap.docs.length;
+      } while (snap.docs.length == 500);
 
-      _showSuccessSnackBar(_l10n.notifAllMarkedAsRead);
+      // Mettre à jour aussi la liste locale déjà chargée
+      if (mounted) {
+        setState(() {
+          for (final notif in _notifications) {
+            notif.is_open = true;
+          }
+        });
+        _showSuccessSnackBar(_l10n.notifAllMarkedAsRead);
+      }
     } catch (e) {
-      print("Erreur marquer tout comme lu: $e");
-      _showErrorSnackBar(_l10n.notifErrorMarkingAsRead);
+      printVm("Erreur marquer tout comme lu: $e");
+      if (mounted) _showErrorSnackBar(_l10n.notifErrorMarkingAsRead);
     }
   }
 
@@ -1329,7 +1349,7 @@ class _MesNotificationState extends State<MesNotification> {
 //     try {
 //       await _loadNotificationsBatch();
 //     } catch (e) {
-//       print("Erreur chargement notifications: $e");
+//       printVm("Erreur chargement notifications: $e");
 //       _showErrorSnackBar(_l10n.notifErrorLoadingNotifications);
 //     } finally {
 //       setState(() {
@@ -1348,7 +1368,7 @@ class _MesNotificationState extends State<MesNotification> {
 //     try {
 //       await _loadNotificationsBatch();
 //     } catch (e) {
-//       print("Erreur chargement plus: $e");
+//       printVm("Erreur chargement plus: $e");
 //     } finally {
 //       setState(() {
 //         _isLoadingMore = false;
@@ -1425,7 +1445,7 @@ class _MesNotificationState extends State<MesNotification> {
 //         setState(() {});
 //       }
 //     } catch (e) {
-//       print("Erreur chargement user $userId: $e");
+//       printVm("Erreur chargement user $userId: $e");
 //     }
 //   }
 //
@@ -1446,7 +1466,7 @@ class _MesNotificationState extends State<MesNotification> {
 //         setState(() {});
 //       }
 //     } catch (e) {
-//       print("Erreur chargement canal $canalId: $e");
+//       printVm("Erreur chargement canal $canalId: $e");
 //     }
 //   }
 //
@@ -1614,7 +1634,7 @@ class _MesNotificationState extends State<MesNotification> {
 //       await _navigateToNotificationTarget(notification);
 //
 //     } catch (e) {
-//       print("Erreur traitement notification: $e");
+//       printVm("Erreur traitement notification: $e");
 //       _showErrorSnackBar("Erreur lors de l'ouverture");
 //       _hideLoadingOverlay();
 //       setState(() {
@@ -1730,7 +1750,7 @@ class _MesNotificationState extends State<MesNotification> {
 //       }
 //     } catch (e) {
 //       _hideLoadingOverlay();
-//       print("Erreur navigation: $e");
+//       printVm("Erreur navigation: $e");
 //       _showErrorSnackBar("Erreur lors de l'ouverture");
 //       setState(() {
 //         _isHandlingNotification = false;
@@ -1809,7 +1829,7 @@ class _MesNotificationState extends State<MesNotification> {
 //       }
 //     } catch (e) {
 //       _hideLoadingOverlay();
-//       print("Erreur post notification: $e");
+//       printVm("Erreur post notification: $e");
 //       _showErrorSnackBar(_l10n.notifErrorLoadingPost);
 //       setState(() {
 //         _isHandlingNotification = false;
@@ -1847,7 +1867,7 @@ class _MesNotificationState extends State<MesNotification> {
 //       }
 //     } catch (e) {
 //       _hideLoadingOverlay();
-//       print("Erreur service notification: $e");
+//       printVm("Erreur service notification: $e");
 //       _showErrorSnackBar(_l10n.notifErrorLoadingService);
 //       setState(() {
 //         _isHandlingNotification = false;
@@ -2122,7 +2142,7 @@ class _MesNotificationState extends State<MesNotification> {
 //
 //       _showSuccessSnackBar("Toutes les notifications sont marquées comme lues");
 //     } catch (e) {
-//       print("Erreur marquer tout comme lu: $e");
+//       printVm("Erreur marquer tout comme lu: $e");
 //       _showErrorSnackBar("Erreur lors du marquage comme lu");
 //     }
 //   }

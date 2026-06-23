@@ -1,11 +1,16 @@
 import 'package:afrotok/pages/paiement/newDepot.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../models/dating_data.dart';
-import '../../providers/authProvider.dart';
-import '../../providers/dating/coin_provider.dart';
-import '../../l10n/app_localizations.dart';
 
+import '../../models/dating_data.dart';
+
+import '../../providers/authProvider.dart';
+
+import '../../providers/dating/coin_provider.dart';
+
+import '../../l10n/app_localizations.dart';
 
 class BuyCoinsPage extends StatefulWidget {
   const BuyCoinsPage({Key? key}) : super(key: key);
@@ -160,17 +165,17 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
       CoinProvider provider,
       ) async {
     final t = AppLocalizations.of(context);
-    print('📱 === Achat de pièces ===');
-    print('📦 Pack: ${package.name}');
-    print('💰 Coût: ${package.priceXof} FCFA');
-    print('🎁 Pièces: ${package.coinsAmount}');
+    printVm('📱 === Achat de pièces ===');
+    printVm('📦 Pack: ${package.name}');
+    printVm('💰 Coût: ${package.priceXof} FCFA');
+    printVm('🎁 Pièces: ${package.coinsAmount}');
 
     final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     final currentBalance = authProvider.loginUserData.votre_solde_principal ?? 0;
-    print('💳 Solde actuel: $currentBalance FCFA');
+    printVm('💳 Solde actuel: $currentBalance FCFA');
 
     if (currentBalance < package.priceXof) {
-      print('❌ Solde insuffisant');
+      printVm('❌ Solde insuffisant');
       _showErrorDialog(t.datingInsufficientBalance,
           t.datingInsufficientBalanceMessagePack
               .replaceAll('{balance}', currentBalance.toStringAsFixed(0))
@@ -274,11 +279,11 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
     );
 
     if (confirm != true) {
-      print('❌ Achat annulé par l\'utilisateur');
+      printVm('❌ Achat annulé par l\'utilisateur');
       return;
     }
 
-    print('🔄 Exécution de l\'achat...');
+    printVm('🔄 Exécution de l\'achat...');
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -305,7 +310,7 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
       Navigator.pop(context); // ferme le dialog de chargement
     }
     if (success && mounted) {
-      print('✅ Achat réussi ! ${package.coinsAmount} pièces ajoutées');
+      printVm('✅ Achat réussi ! ${package.coinsAmount} pièces ajoutées');
 
       // Recharger les données utilisateur
       await authProvider.refreshUserData();
@@ -317,7 +322,7 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
         if (mounted) Navigator.pop(context);
       });
     } else if (mounted) {
-      print('❌ Échec de l\'achat');
+      printVm('❌ Échec de l\'achat');
       _showErrorDialog(t.datingErrorTitle, t.datingPurchaseErrorMessage);
     }
   }
@@ -422,7 +427,7 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
     final currentBalance = authProvider.loginUserData.votre_solde_principal ?? 0;
     final currentCoins = authProvider.loginUserData.coinsBalance ?? 0;
 
-    print('📱 Build BuyCoinsPage - Solde: $currentBalance FCFA, Pièces: $currentCoins');
+    printVm('📱 Build BuyCoinsPage - Solde: $currentBalance FCFA, Pièces: $currentCoins');
 
     return Scaffold(
       backgroundColor: primaryBlack,
