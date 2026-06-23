@@ -1,7 +1,8 @@
-﻿import 'dart:math';
+import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -10,28 +11,49 @@ import 'package:workmanager/workmanager.dart';
 import '../firebase_options.dart';
 import '../pages/component/consoleWidget.dart';
 
-/// =======================================================
-/// GLOBAL
-/// =======================================================
+// ═══════════════════════════════════════════════════════════════
+// GLOBAL
+// ═══════════════════════════════════════════════════════════════
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-FlutterLocalNotificationsPlugin();
+    FlutterLocalNotificationsPlugin();
 
-const String afrolookTask = "afrolookTask";
-const String afrolookTestTask = "afrolookTestTask";
+const String afrolookTask     = 'afrolookTask';
+const String afrolookTestTask = 'afrolookTestTask';
 
 /// Clé SharedPreferences où SessionUserFirebaseService stocke l'userId
 const String _sessionTokenKey = 'token';
 
-/// Clé locale pour éviter de re-montrer des notifs déjà affichées
-const String _shownNotifIdsKey = 'wm_shown_notif_ids';
+/// Clé SharedPreferences où on stocke les derniers counts par catégorie
+const String _countsKey = 'wm_last_counts';
 
-/// Nombre max de notifications affichées par run WorkManager
-const int _maxNotifsPerRun = 3;
+/// Clé pour le timestamp du dernier check (pour les groupes)
+const String _lastCheckKey = 'wm_last_check_ts';
 
-/// =======================================================
-/// WORKMANAGER CALLBACK
-/// =======================================================
+/// Clé pour le cooldown par catégorie (dernier affichage) — prod uniquement
+const String _lastShownKey = 'wm_last_shown_ts';
+
+/// Cooldown minimum entre deux notifications de la même catégorie (prod)
+const Duration _categoryCoooldown = Duration(minutes: 30);
+
+/// IDs fixes par catégorie — la notif remplace la précédente au lieu d'empiler
+const int _notifIdMessages     = 1001;
+const int _notifIdGroups       = 1002;
+const int _notifIdInvitations  = 1003;
+const int _notifIdDating       = 1004;
+const int _notifIdApp          = 1005;
+
+/// Types de notifications dating (collection Notifications)
+const List<String> _datingTypes = [
+  'DATING_LIKE',
+  'DATING_MATCH',
+  'DATING_SUPER_LIKE',
+  'DATING_MESSAGE',
+];
+
+// ═══════════════════════════════════════════════════════════════
+// WORKMANAGER CALLBACK
+// ═══════════════════════════════════════════════════════════════
 
 @pragma('vm:entry-point')
 void callbackDispatcher() {
@@ -40,21 +62,21 @@ void callbackDispatcher() {
       debugPrint('WORKMANAGER EXECUTÉ: $task à ${DateTime.now()}');
 
       WidgetsFlutterBinding.ensureInitialized();
-      // Initialisation Firebase avec options — obligatoire dans l'isolate WorkManager
+
       if (Firebase.apps.isEmpty) {
         await Firebase.initializeApp(
           options: DefaultFirebaseOptions.currentPlatform,
         );
       }
+
       await initLocalNotifications();
 
       if (task == afrolookTestTask) {
         printVm('registerOneOffTask est lancé ...');
-        await sendTestAfrolookNotification();
+        await _sendDebugTestNotification();
         return true;
       }
 
-      // Récupère l'userId de la session active
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString(_sessionTokenKey);
 
@@ -63,19 +85,18 @@ void callbackDispatcher() {
         return true;
       }
 
-      await _fetchAndShowUserNotifications(userId, prefs);
+      await _runNotificationCheck(userId, prefs);
       return true;
     } catch (e, stack) {
-      debugPrint("❌ WorkManager error: $e");
-      debugPrint(stack.toString());
+      debugPrint('❌ WorkManager error: $e\n$stack');
       return false;
     }
   });
 }
 
-/// =======================================================
-/// REGISTER WORKMANAGER
-/// =======================================================
+// ═══════════════════════════════════════════════════════════════
+// REGISTER
+// ═══════════════════════════════════════════════════════════════
 
 Future<void> registerAfrolookWorkManager() async {
   await Workmanager().initialize(
@@ -88,119 +109,265 @@ Future<void> registerAfrolookWorkManager() async {
     afrolookTask,
     frequency: const Duration(minutes: 15),
     initialDelay: const Duration(seconds: 10),
-    existingWorkPolicy: ExistingPeriodicWorkPolicy.replace,
+    existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
   );
 }
 
-/// =======================================================
-/// CORE LOGIC — Notifications Firestore de l'utilisateur
-/// =======================================================
+// ═══════════════════════════════════════════════════════════════
+// LOGIQUE PRINCIPALE
+// ═══════════════════════════════════════════════════════════════
 
-/// Récupère les notifications non vues de [userId] depuis Firestore,
-/// affiche jusqu'à [_maxNotifsPerRun] notifications locales,
-/// puis marque chacune comme vue (users_id_view + cache local).
-Future<void> _fetchAndShowUserNotifications(
+Future<void> _runNotificationCheck(
   String userId,
   SharedPreferences prefs,
 ) async {
   final firestore = FirebaseFirestore.instance;
+  final now = DateTime.now().millisecondsSinceEpoch;
+  final lastCheck = prefs.getInt(_lastCheckKey) ?? (now - const Duration(hours: 24).inMilliseconds);
 
-  // Cache local des IDs déjà affichés (backup si l'update Firestore échoue)
-  final shownIds = (prefs.getStringList(_shownNotifIdsKey) ?? []).toSet();
+  // Charger les derniers counts enregistrés
+  final lastCounts = _loadLastCounts(prefs);
 
-  // Notifications destinées à cet utilisateur (requête simple, 1 seul where = pas d'index composite)
-  final sinceMs = DateTime.now().subtract(const Duration(days: 7)).millisecondsSinceEpoch;
-  QuerySnapshot snapshot;
+  // Lancer les requêtes en parallèle (1 read Firestore par catégorie)
+  final intResults = await Future.wait<int>([
+    _countUnreadDirectMessages(firestore, userId),
+    _countUnreadGroupMessages(firestore, userId, lastCheck),
+    _countPendingInvitations(firestore, userId),
+  ]);
+  final countNotifs = await _countUnreadNotifications(firestore, userId);
+
+  final countMessages    = intResults[0];
+  final countGroups      = intResults[1];
+  final countInvitations = intResults[2];
+  final countDating      = countNotifs['dating'] ?? 0;
+  final countApp         = countNotifs['app'] ?? 0;
+
+  debugPrint('WorkManager counts → msgs:$countMessages grps:$countGroups inv:$countInvitations dating:$countDating app:$countApp');
+
+  // Charger les timestamps de dernier affichage par catégorie
+  final lastShown = _loadLastShown(prefs);
+  final isDebug   = !kReleaseMode;
+
+  // Afficher une notif par catégorie uniquement si le count a augmenté
+  // ET si le cooldown est respecté (ignoré en debug)
+  bool anyShown = false;
+
+  Future<void> maybeShow({
+    required String category,
+    required int current,
+    required int previous,
+    required Future<void> Function() showFn,
+  }) async {
+    if (current <= 0) return;
+    if (current <= previous) return; // rien de nouveau
+    final lastShownTs = lastShown[category] ?? 0;
+    if (!isDebug && (now - lastShownTs) < _categoryCoooldown.inMilliseconds) return;
+    await showFn();
+    lastShown[category] = now;
+    anyShown = true;
+  }
+
+  await maybeShow(
+    category: 'messages',
+    current: countMessages,
+    previous: lastCounts['messages'] ?? 0,
+    showFn: () => _showCategoryNotification(
+      id: _notifIdMessages,
+      title: '$countMessages nouveau${countMessages > 1 ? 'x' : ''} message${countMessages > 1 ? 's' : ''}',
+      body: 'Tu as des messages non lus dans tes conversations.',
+      icon: '💬',
+    ),
+  );
+
+  await maybeShow(
+    category: 'groups',
+    current: countGroups,
+    previous: lastCounts['groups'] ?? 0,
+    showFn: () => _showCategoryNotification(
+      id: _notifIdGroups,
+      title: '$countGroups groupe${countGroups > 1 ? 's' : ''} actif${countGroups > 1 ? 's' : ''}',
+      body: 'Des messages t\'attendent dans tes groupes.',
+      icon: '👥',
+    ),
+  );
+
+  await maybeShow(
+    category: 'invitations',
+    current: countInvitations,
+    previous: lastCounts['invitations'] ?? 0,
+    showFn: () => _showCategoryNotification(
+      id: _notifIdInvitations,
+      title: '$countInvitations demande${countInvitations > 1 ? 's' : ''} d\'amitié',
+      body: '${countInvitations > 1 ? 'Des personnes veulent' : 'Une personne veut'} te rejoindre sur Afrolook.',
+      icon: '🤝',
+    ),
+  );
+
+  await maybeShow(
+    category: 'dating',
+    current: countDating,
+    previous: lastCounts['dating'] ?? 0,
+    showFn: () => _showCategoryNotification(
+      id: _notifIdDating,
+      title: '$countDating notification${countDating > 1 ? 's' : ''} AfroLove',
+      body: countDating > 1
+          ? 'Tu as des likes, matchs ou messages non lus sur AfroLove.'
+          : 'Quelqu\'un t\'a aimé ou t\'a envoyé un message sur AfroLove.',
+      icon: '❤️',
+    ),
+  );
+
+  await maybeShow(
+    category: 'app',
+    current: countApp,
+    previous: lastCounts['app'] ?? 0,
+    showFn: () => _showCategoryNotification(
+      id: _notifIdApp,
+      title: '$countApp notification${countApp > 1 ? 's' : ''}',
+      body: 'Tu as des interactions non lues sur tes publications.',
+      icon: '🔔',
+    ),
+  );
+
+  // Sauvegarder les nouveaux counts et timestamps
+  _saveLastCounts(prefs, {
+    'messages':    countMessages,
+    'groups':      countGroups,
+    'invitations': countInvitations,
+    'dating':      countDating,
+    'app':         countApp,
+  });
+  _saveLastShown(prefs, lastShown);
+  await prefs.setInt(_lastCheckKey, now);
+
+  if (anyShown) {
+    debugPrint('✅ WorkManager: notifications affichées pour $userId');
+  } else {
+    debugPrint('⏭ WorkManager: aucune nouvelle activité pour $userId');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// REQUÊTES FIRESTORE — 1 par catégorie, lecture minimale
+// ═══════════════════════════════════════════════════════════════
+
+/// Messages directs non lus destinés à cet utilisateur
+Future<int> _countUnreadDirectMessages(
+  FirebaseFirestore db,
+  String userId,
+) async {
   try {
-    snapshot = await firestore
-        .collection('Notifications')
-        .where('receiver_id', isEqualTo: userId)
+    final snap = await db
+        .collection('Messages')
+        .where('receiverBy', isEqualTo: userId)
+        .where('message_state', isEqualTo: 'NONLU')
+        .where('is_valide', isEqualTo: true)
         .limit(50)
         .get();
+    return snap.docs.length;
   } catch (e) {
-    debugPrint('❌ WorkManager Firestore query error: $e');
-    return;
+    debugPrint('❌ WM countDirectMessages: $e');
+    return 0;
   }
+}
 
-  // Filtre côté client : non vues + moins de 7 jours + pas encore affichées localement
-  // Note : certaines notifs (Cloud Functions) écrivent 'createdAt' (camelCase),
-  //        d'autres (Flutter) écrivent 'created_at' (snake_case) — on accepte les deux.
-  final unread = snapshot.docs.where((doc) {
-    final data = doc.data() as Map<String, dynamic>;
-    final notifId = (data['id'] as String?) ?? doc.id;
-    if (shownIds.contains(notifId)) return false;
-    final viewers = List<String>.from(data['users_id_view'] ?? []);
-    if (viewers.contains(userId)) return false;
-    final createdAt = (data['created_at'] as int?)
-        ?? (data['createdAt'] as int?)
-        ?? 0;
-    return createdAt > sinceMs;
-  }).toList()
+/// Nombre de groupes ayant eu une activité depuis le dernier check
+/// (proxy : last_message_at > lastCheck)
+Future<int> _countUnreadGroupMessages(
+  FirebaseFirestore db,
+  String userId,
+  int lastCheckMs,
+) async {
+  try {
+    final snap = await db
+        .collection('GroupChats')
+        .where('member_ids', arrayContains: userId)
+        .limit(30)
+        .get();
 
-  // Tri côté client : plus récentes en premier
-  ..sort((a, b) {
-    final aData = a.data() as Map<String, dynamic>;
-    final bData = b.data() as Map<String, dynamic>;
-    final aTs = (aData['created_at'] as int?) ?? (aData['createdAt'] as int?) ?? 0;
-    final bTs = (bData['created_at'] as int?) ?? (bData['createdAt'] as int?) ?? 0;
-    return bTs.compareTo(aTs);
-  });
-
-  if (unread.isEmpty) {
-    debugPrint('⏭ WorkManager: aucune nouvelle notification pour $userId');
-    return;
-  }
-
-  final toShow = unread.take(_maxNotifsPerRun).toList();
-  final newShownIds = <String>[];
-
-  for (final doc in toShow) {
-    final data = doc.data() as Map<String, dynamic>;
-    final notifId = (data['id'] as String?) ?? doc.id;
-    final titre = (data['titre'] as String?)?.isNotEmpty == true
-        ? data['titre'] as String
-        : 'Afrolook';
-    final description = (data['description'] as String?) ?? '';
-
-    await _showNotification(title: titre, body: description);
-
-    // Marquer comme vu dans Firestore
-    try {
-      await doc.reference.update({
-        'users_id_view': FieldValue.arrayUnion([userId]),
-      });
-    } catch (e) {
-      debugPrint('⚠️ WorkManager: impossible de marquer la notif $notifId: $e');
+    int active = 0;
+    for (final doc in snap.docs) {
+      final data = doc.data();
+      final lastMsgAt = (data['last_message_at'] as int?) ?? 0;
+      if (lastMsgAt > lastCheckMs) active++;
     }
-
-    newShownIds.add(notifId);
+    return active;
+  } catch (e) {
+    debugPrint('❌ WM countGroupMessages: $e');
+    return 0;
   }
-
-  // Mettre à jour le cache local (conserver max 500 entrées)
-  final updated = {...shownIds, ...newShownIds}.toList();
-  if (updated.length > 500) updated.removeRange(0, updated.length - 500);
-  await prefs.setStringList(_shownNotifIdsKey, updated);
-
-  debugPrint('✅ WorkManager: ${toShow.length} notifications affichées pour $userId');
 }
 
-/// =======================================================
-/// NOTIFICATION UI
-/// =======================================================
+/// Invitations en attente
+Future<int> _countPendingInvitations(
+  FirebaseFirestore db,
+  String userId,
+) async {
+  try {
+    final snap = await db
+        .collection('Invitations')
+        .where('receiver_id', isEqualTo: userId)
+        .where('status', isEqualTo: 'ENCOURS')
+        .limit(50)
+        .get();
+    return snap.docs.length;
+  } catch (e) {
+    debugPrint('❌ WM countInvitations: $e');
+    return 0;
+  }
+}
+
+/// Notifications non lues — séparées en dating vs app
+Future<Map<String, int>> _countUnreadNotifications(
+  FirebaseFirestore db,
+  String userId,
+) async {
+  try {
+    final snap = await db
+        .collection('Notifications')
+        .where('receiver_id', isEqualTo: userId)
+        .where('is_open', isEqualTo: false)
+        .limit(100)
+        .get();
+
+    int dating = 0;
+    int app    = 0;
+
+    for (final doc in snap.docs) {
+      final type = (doc.data()['type'] as String?) ?? '';
+      if (_datingTypes.contains(type)) {
+        dating++;
+      } else {
+        app++;
+      }
+    }
+    return {'dating': dating, 'app': app};
+  } catch (e) {
+    debugPrint('❌ WM countNotifications: $e');
+    return {'dating': 0, 'app': 0};
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AFFICHAGE NOTIFICATION — style BigText (Facebook/Snapchat)
+// ═══════════════════════════════════════════════════════════════
+
 Future<void> initLocalNotifications() async {
-  const AndroidInitializationSettings initializationSettingsAndroid =
+  const AndroidInitializationSettings android =
       AndroidInitializationSettings('@drawable/notification_icon');
-
-  final InitializationSettings initializationSettings =
-      InitializationSettings(android: initializationSettingsAndroid);
-
-  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  await flutterLocalNotificationsPlugin.initialize(
+    InitializationSettings(android: android),
+  );
 }
 
-Future<void> _showNotification({
+Future<void> _showCategoryNotification({
+  required int id,
   required String title,
   required String body,
+  required String icon,
 }) async {
+  final fullTitle = '$icon $title';
+
   final androidDetails = AndroidNotificationDetails(
     'afrolook_channel',
     'Afrolook Notifications',
@@ -209,130 +376,108 @@ Future<void> _showNotification({
     priority: Priority.high,
     showWhen: true,
     color: const Color(0xFF1FAA59),
-    // Icône colorée de l'app (grand cercle à droite, style Facebook/Snapchat)
+    // Grand cercle coloré de l'app (style Facebook)
     largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
-    // Texte expandable au clic (style notification étendue)
+    // Texte expandable au clic vers le bas
     styleInformation: BigTextStyleInformation(
       body,
       htmlFormatBigText: false,
-      contentTitle: title,
+      contentTitle: fullTitle,
       htmlFormatContentTitle: false,
       summaryText: 'Afrolook',
-      htmlFormatSummaryText: false,
     ),
-    // Priorité haute = apparaît en tête de liste
+    // Groupe visuel — toutes les notifs Afrolook s'empilent ensemble
+    groupKey: 'afrolook_group',
     channelShowBadge: true,
     playSound: true,
     enableVibration: true,
     visibility: NotificationVisibility.public,
   );
 
-  final details = NotificationDetails(android: androidDetails);
-
   await flutterLocalNotificationsPlugin.show(
-    DateTime.now().millisecondsSinceEpoch % 100000,
-    title,
+    id,
+    fullTitle,
     body,
-    details,
+    NotificationDetails(android: androidDetails),
   );
 }
 
-/// =======================================================
-/// MANUAL TEST
-/// =======================================================
+// ═══════════════════════════════════════════════════════════════
+// PERSISTANCE ANTI-ABUS
+// ═══════════════════════════════════════════════════════════════
 
-
-Future<void> sendTestAfrolookNotification() async {
-  final prefs = await SharedPreferences.getInstance();
-
-  final today = DateTime.now();
-  final todayKey = '${today.year}-${today.month}-${today.day}';
-
-  final lastSentDate = prefs.getString('daily_notification_date');
-
-  // ❌ Déjà envoyée aujourd’hui → on sort
-  // if (lastSentDate == todayKey) return;
-
-  // ✅ Liste de messages très addictifs et variés
-  final List<String> messages = [
-    "Le réseau social africain où ton contenu peut devenir une source de revenus",
-    "Découvre de nouvelles opportunités chaque jour sur notre plateforme",
-    "Publie, partage et fais grandir ta communauté africaine",
-    "Ton talent mérite d’être vu : rejoins-nous aujourd’hui",
-    "Chaque jour est une chance de booster ton contenu",
-    "Des créateurs africains explosent en ce moment : connecte-toi !",
-    "Les tendances du jour sont là, ne les rate pas !",
-    "Ton contenu peut rapporter gros si tu es actif aujourd’hui",
-    "Le buzz africain t’attend sur notre plateforme",
-    "Chaque partage peut transformer ton talent en argent",
-  ];
-
-  // ✅ Éviter répétition des messages
-  final shown = prefs.getStringList("testShown") ?? [];
-  List<String> remaining = messages.where((m) => !shown.contains(m)).toList();
-
-  if (remaining.isEmpty) {
-    shown.clear();
-    remaining = messages;
+Map<String, int> _loadLastCounts(SharedPreferences prefs) {
+  try {
+    final raw = prefs.getString(_countsKey);
+    if (raw == null) return {};
+    final decoded = jsonDecode(raw) as Map<String, dynamic>;
+    return decoded.map((k, v) => MapEntry(k, (v as num).toInt()));
+  } catch (_) {
+    return {};
   }
-
-  final random = Random();
-  final message = remaining[random.nextInt(remaining.length)];
-
-  // ⚡ Envoyer la notification
-  await _showNotification(
-    title: "🔥 Afrolook",
-    body: message,
-  );
-
-  // 💾 Mémoriser le message pour éviter répétition
-  shown.add(message);
-  await prefs.setStringList("testShown", shown);
-
-  // 💾 Mémoriser la date pour ne pas renvoyer aujourd'hui
-  await prefs.setString('daily_notification_date', todayKey);
 }
 
+void _saveLastCounts(SharedPreferences prefs, Map<String, int> counts) {
+  prefs.setString(_countsKey, jsonEncode(counts));
+}
+
+Map<String, int> _loadLastShown(SharedPreferences prefs) {
+  try {
+    final raw = prefs.getString(_lastShownKey);
+    if (raw == null) return {};
+    final decoded = jsonDecode(raw) as Map<String, dynamic>;
+    return decoded.map((k, v) => MapEntry(k, (v as num).toInt()));
+  } catch (_) {
+    return {};
+  }
+}
+
+void _saveLastShown(SharedPreferences prefs, Map<String, int> shown) {
+  prefs.setString(_lastShownKey, jsonEncode(shown));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TEST DEBUG
+// ═══════════════════════════════════════════════════════════════
+
+Future<void> _sendDebugTestNotification() async {
+  await _showCategoryNotification(
+    id: 9999,
+    title: 'WorkManager opérationnel',
+    body: 'Le système de notifications en arrière-plan fonctionne correctement.',
+    icon: '✅',
+  );
+}
+
+// Alias public conservé pour compatibilité
+Future<void> sendTestAfrolookNotification() => _sendDebugTestNotification();
 
 Future<void> initializeCanalFields() async {
   final firestore = FirebaseFirestore.instance;
-
   try {
     printVm('🚀 Démarrage initialisation des champs des canaux...');
-
     final canals = await firestore.collection('Canaux').get();
     int updatedCount = 0;
-
     for (final doc in canals.docs) {
       final canalData = doc.data();
-
-      // Vérifier et initialiser les champs
       final updates = <String, dynamic>{};
-
       if (canalData['adminIds'] == null) {
-        updates['adminIds'] = [canalData['userId']]; // Le créateur est admin par défaut
+        updates['adminIds'] = [canalData['userId']];
       }
-
       if (canalData['allowedPostersIds'] == null) {
-        updates['allowedPostersIds'] = [canalData['userId']]; // Le créateur peut poster
+        updates['allowedPostersIds'] = [canalData['userId']];
       }
-
       if (canalData['allowAllMembersToPost'] == null) {
-        updates['allowAllMembersToPost'] = false; // Par défaut, seuls les autorisés peuvent poster
+        updates['allowAllMembersToPost'] = false;
       }
-
-      // Ajouter timestamp de mise à jour
       updates['updatedAt'] = DateTime.now().microsecondsSinceEpoch;
-
       if (updates.isNotEmpty) {
         await doc.reference.update(updates);
         updatedCount++;
         printVm('✅ Canal ${doc.id} mis à jour');
       }
     }
-
     printVm('🎉 Initialisation terminée : $updatedCount canaux mis à jour');
-
   } catch (e) {
     printVm('❌ Erreur lors de l\'initialisation: $e');
   }
