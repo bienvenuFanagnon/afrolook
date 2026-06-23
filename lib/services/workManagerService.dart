@@ -189,29 +189,45 @@ Future<void> _fetchAndShowUserNotifications(
 /// =======================================================
 Future<void> initLocalNotifications() async {
   const AndroidInitializationSettings initializationSettingsAndroid =
-  AndroidInitializationSettings('@mipmap/ic_launcher');
+      AndroidInitializationSettings('@drawable/notification_icon');
 
   final InitializationSettings initializationSettings =
-  InitializationSettings(android: initializationSettingsAndroid);
+      InitializationSettings(android: initializationSettingsAndroid);
 
-  await flutterLocalNotificationsPlugin.initialize(
-    initializationSettings,
-  );
+  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
 }
+
 Future<void> _showNotification({
   required String title,
   required String body,
-})
-async {
-  const androidDetails = AndroidNotificationDetails(
+}) async {
+  final androidDetails = AndroidNotificationDetails(
     'afrolook_channel',
     'Afrolook Notifications',
+    channelDescription: 'Notifications de l\'application Afrolook',
     importance: Importance.max,
     priority: Priority.high,
     showWhen: true,
+    color: const Color(0xFF1FAA59),
+    // Icône colorée de l'app (grand cercle à droite, style Facebook/Snapchat)
+    largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+    // Texte expandable au clic (style notification étendue)
+    styleInformation: BigTextStyleInformation(
+      body,
+      htmlFormatBigText: false,
+      contentTitle: title,
+      htmlFormatContentTitle: false,
+      summaryText: 'Afrolook',
+      htmlFormatSummaryText: false,
+    ),
+    // Priorité haute = apparaît en tête de liste
+    channelShowBadge: true,
+    playSound: true,
+    enableVibration: true,
+    visibility: NotificationVisibility.public,
   );
 
-  const details = NotificationDetails(android: androidDetails);
+  final details = NotificationDetails(android: androidDetails);
 
   await flutterLocalNotificationsPlugin.show(
     DateTime.now().millisecondsSinceEpoch % 100000,
