@@ -85,7 +85,7 @@ void callbackDispatcher() {
         return true;
       }
 
-      await _runNotificationCheck(userId, prefs);
+      await _runNotificationCheck(userId, prefs, debugMode: !kReleaseMode);
       return true;
     } catch (e, stack) {
       debugPrint('❌ WorkManager error: $e\n$stack');
@@ -119,16 +119,25 @@ Future<void> registerAfrolookWorkManager() async {
 
 Future<void> _runNotificationCheck(
   String userId,
-  SharedPreferences prefs,
-) async {
+  SharedPreferences prefs, {
+  bool debugMode = false,
+}) async {
   final firestore = FirebaseFirestore.instance;
   final now = DateTime.now().millisecondsSinceEpoch;
   final lastCheck = prefs.getInt(_lastCheckKey) ?? (now - const Duration(hours: 24).inMilliseconds);
 
-  // Charger les derniers counts enregistrés
-  final lastCounts = _loadLastCounts(prefs);
+  if (debugMode) {
+    // ── MODE DEBUG : affiche les dernières notifications sans filtre non-lu ──
+    debugPrint('🔧 WorkManager DEBUG — récupération des dernières notifications...');
+    await _runDebugNotificationPreview(firestore, userId);
+    await prefs.setInt(_lastCheckKey, now);
+    return;
+  }
 
-  // Lancer les requêtes en parallèle (1 read Firestore par catégorie)
+  // ── MODE PRODUCTION : uniquement si le count a augmenté ──
+  final lastCounts = _loadLastCounts(prefs);
+  final lastShown  = _loadLastShown(prefs);
+
   final intResults = await Future.wait<int>([
     _countUnreadDirectMessages(firestore, userId),
     _countUnreadGroupMessages(firestore, userId, lastCheck),
@@ -144,12 +153,6 @@ Future<void> _runNotificationCheck(
 
   debugPrint('WorkManager counts → msgs:$countMessages grps:$countGroups inv:$countInvitations dating:$countDating app:$countApp');
 
-  // Charger les timestamps de dernier affichage par catégorie
-  final lastShown = _loadLastShown(prefs);
-  final isDebug   = !kReleaseMode;
-
-  // Afficher une notif par catégorie uniquement si le count a augmenté
-  // ET si le cooldown est respecté (ignoré en debug)
   bool anyShown = false;
 
   Future<void> maybeShow({
@@ -159,9 +162,9 @@ Future<void> _runNotificationCheck(
     required Future<void> Function() showFn,
   }) async {
     if (current <= 0) return;
-    if (current <= previous) return; // rien de nouveau
+    if (current <= previous) return;
     final lastShownTs = lastShown[category] ?? 0;
-    if (!isDebug && (now - lastShownTs) < _categoryCoooldown.inMilliseconds) return;
+    if ((now - lastShownTs) < _categoryCoooldown.inMilliseconds) return;
     await showFn();
     lastShown[category] = now;
     anyShown = true;
@@ -229,7 +232,6 @@ Future<void> _runNotificationCheck(
     ),
   );
 
-  // Sauvegarder les nouveaux counts et timestamps
   _saveLastCounts(prefs, {
     'messages':    countMessages,
     'groups':      countGroups,
@@ -245,6 +247,88 @@ Future<void> _runNotificationCheck(
   } else {
     debugPrint('⏭ WorkManager: aucune nouvelle activité pour $userId');
   }
+}
+
+/// Mode debug : affiche un aperçu des dernières notifications de chaque catégorie
+/// sans tenir compte du statut lu/non-lu — pour valider que le système fonctionne.
+Future<void> _runDebugNotificationPreview(
+  FirebaseFirestore firestore,
+  String userId,
+) async {
+  // Derniers messages directs
+  try {
+    final msgs = await firestore
+        .collection('Messages')
+        .where('receiverBy', isEqualTo: userId)
+        .where('is_valide', isEqualTo: true)
+        .limit(5)
+        .get();
+    if (msgs.docs.isNotEmpty) {
+      await _showCategoryNotification(
+        id: _notifIdMessages,
+        title: '💬 ${msgs.docs.length} conversation(s) [DEBUG]',
+        body: 'Aperçu — ${msgs.docs.length} message(s) récents dans tes conversations.',
+        icon: '💬',
+      );
+    }
+  } catch (e) {
+    debugPrint('❌ WM debug msgs: $e');
+  }
+
+  // Dernières notifications Firestore (toutes, lues ou non)
+  try {
+    final notifs = await firestore
+        .collection('Notifications')
+        .where('receiver_id', isEqualTo: userId)
+        .limit(5)
+        .get();
+
+    int dating = 0, app = 0;
+    for (final doc in notifs.docs) {
+      final type = (doc.data()['type'] as String?) ?? '';
+      _datingTypes.contains(type) ? dating++ : app++;
+    }
+
+    if (dating > 0) {
+      await _showCategoryNotification(
+        id: _notifIdDating,
+        title: '❤️ $dating notification(s) AfroLove [DEBUG]',
+        body: 'Aperçu — $dating notification(s) AfroLove récentes.',
+        icon: '❤️',
+      );
+    }
+    if (app > 0) {
+      await _showCategoryNotification(
+        id: _notifIdApp,
+        title: '🔔 $app notification(s) app [DEBUG]',
+        body: 'Aperçu — $app notification(s) récentes (likes, comments...).',
+        icon: '🔔',
+      );
+    }
+  } catch (e) {
+    debugPrint('❌ WM debug notifs: $e');
+  }
+
+  // Invitations (toutes, acceptées ou non)
+  try {
+    final invits = await firestore
+        .collection('Invitations')
+        .where('receiver_id', isEqualTo: userId)
+        .limit(5)
+        .get();
+    if (invits.docs.isNotEmpty) {
+      await _showCategoryNotification(
+        id: _notifIdInvitations,
+        title: '🤝 ${invits.docs.length} invitation(s) [DEBUG]',
+        body: 'Aperçu — ${invits.docs.length} invitation(s) d\'amitié.',
+        icon: '🤝',
+      );
+    }
+  } catch (e) {
+    debugPrint('❌ WM debug invits: $e');
+  }
+
+  debugPrint('✅ WorkManager DEBUG : aperçu affiché pour $userId');
 }
 
 // ═══════════════════════════════════════════════════════════════

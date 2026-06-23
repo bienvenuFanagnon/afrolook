@@ -150,13 +150,24 @@ Future<void> main() async {
       callbackDispatcher,
       isInDebugMode: false,
     );
-    await Workmanager().registerPeriodicTask(
-      afrolookTask,
-      afrolookTask,
-      frequency: const Duration(minutes: 15),
-      initialDelay: const Duration(seconds: 10),
-      existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
-    );
+    if (kReleaseMode) {
+      // PRODUCTION : tâche périodique toutes les 15 min
+      await Workmanager().registerPeriodicTask(
+        afrolookTask,
+        afrolookTask,
+        frequency: const Duration(minutes: 15),
+        initialDelay: const Duration(seconds: 10),
+        existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
+      );
+    } else {
+      // DEBUG : exécution immédiate à chaque lancement pour tester
+      await Workmanager().registerOneOffTask(
+        '${afrolookTask}_debug',
+        afrolookTask,
+        initialDelay: Duration.zero,
+      );
+      debugPrint('🔧 WorkManager DEBUG : one-off task lancée');
+    }
   }
 
   // FlutterDownloader
