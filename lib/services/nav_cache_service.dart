@@ -1,4 +1,6 @@
-import 'dart:convert';
+﻿import 'dart:convert';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -16,7 +18,7 @@ class NavigationCacheService {
   Future<void> storePendingNavigation(Map<String, dynamic> data) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyPendingNavigation, jsonEncode(data));
-    print("💾 [CACHE] Navigation stockée: $data");
+    printVm("💾 [CACHE] Navigation stockée: $data");
   }
 
   // Récupérer et VIDER le cache
@@ -29,7 +31,7 @@ class NavigationCacheService {
     // Supprimer immédiatement du cache
     await prefs.remove(_keyPendingNavigation);
 
-    print("🗑️ [CACHE] Cache vidé après lecture");
+    printVm("🗑️ [CACHE] Cache vidé après lecture");
     return jsonDecode(jsonString) as Map<String, dynamic>;
   }
 
@@ -90,6 +92,13 @@ class NavigationCacheService {
   Future<void> storeArticleNavigation() async {
     await storePendingNavigation({
       'type': 'article',
+    });
+  }
+
+  Future<void> storeGroupNavigation(String joinCode) async {
+    await storePendingNavigation({
+      'type': 'group',
+      'joinCode': joinCode,
     });
   }
 }

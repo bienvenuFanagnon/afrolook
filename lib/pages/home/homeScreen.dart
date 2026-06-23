@@ -1,6 +1,7 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
+import 'package:afrotok/services/linkService.dart';
 import 'package:afrotok/pages/canaux/listCanal.dart';
 import 'package:afrotok/pages/challengeMonth/challenge_month_page.dart';
 import 'package:afrotok/pages/chat/chatXilo.dart';
@@ -73,6 +74,9 @@ import '../../providers/authProvider.dart';
 import '../component/consoleWidget.dart';
 import '../contenuPayant/TableauDeBord.dart';
 
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../cryptoMarket/cryptoMarketpage.dart';
@@ -105,6 +109,7 @@ import '../../providers/locale_provider.dart';
 import '../../providers/sound_provider.dart';
 import 'HomeConstPost.dart';
 import '../../l10n/app_localizations.dart';
+import '../../services/migrations/unread_reset_migration.dart';
 
 class MyHomePage extends StatefulWidget {
 
@@ -216,12 +221,12 @@ class _MyHomePageState extends State<MyHomePage>
     // Utiliser le service préchargé ou en créer un nouveau
     if (widget.preloadedFeedService != null) {
       _mixedFeedService = widget.preloadedFeedService!;
-      print('🎯 Service de feed préchargé utilisé: ${_mixedFeedService!.preparedPostsCount} posts prêts');
+      printVm('🎯 Service de feed préchargé utilisé: ${_mixedFeedService!.preparedPostsCount} posts prêts');
 
       // 🔥 CHARGER LE CONTENU GLOBAL DEPUIS LA PAGE
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         await _mixedFeedService!.loadGlobalContentFromPage();
-        print('🌍 Contenu global chargé depuis MyHomePage');
+        printVm('🌍 Contenu global chargé depuis MyHomePage');
       });
     } else {
       // Créer un nouveau service si pas de service préchargé
@@ -239,7 +244,7 @@ class _MyHomePageState extends State<MyHomePage>
         if (currentUserId != null) {
           // await _mixedFeedService!.preparePostsOnly();
           await _mixedFeedService!.loadGlobalContentFromPage();
-          print('🔄 Nouveau service créé: ${_mixedFeedService!.preparedPostsCount} posts prêts');
+          printVm('🔄 Nouveau service créé: ${_mixedFeedService!.preparedPostsCount} posts prêts');
         }
       });
     }
@@ -296,7 +301,7 @@ class _MyHomePageState extends State<MyHomePage>
   void _listenUnreadNotifications() {
     String _currentUserId = authProvider.loginUserData!.id!;
     if (_currentUserId == null) {
-      print('⚠️ _listenUnreadNotifications: currentUserId is null');
+      printVm('⚠️ _listenUnreadNotifications: currentUserId is null');
       return;
     }
 
@@ -307,8 +312,8 @@ class _MyHomePageState extends State<MyHomePage>
       'DATING_MESSAGE',
     ];
 
-    print('🔔 Listening for unread dating notifications for user: $_currentUserId');
-    print('📋 Types recherchés: $datingTypes');
+    printVm('🔔 Listening for unread dating notifications for user: $_currentUserId');
+    printVm('📋 Types recherchés: $datingTypes');
 
     firestore
         .collection('Notifications')
@@ -317,13 +322,13 @@ class _MyHomePageState extends State<MyHomePage>
         .where('is_open', isEqualTo: false)
         .snapshots()
         .listen((snapshot) {
-      print('📬 Snapshot reçu: ${snapshot.docs.length} documents');
+      printVm('📬 Snapshot reçu: ${snapshot.docs.length} documents');
       for (var doc in snapshot.docs) {
-        print('   - ${doc.id} | type: ${doc['type']} | is_open: ${doc['is_open']}');
+        printVm('   - ${doc.id} | type: ${doc['type']} | is_open: ${doc['is_open']}');
       }
       if (mounted) setState(() => _unreadNotificationsCount = snapshot.docs.length);
     }, onError: (e) {
-      print('❌ Erreur dans le stream des notifications: $e');
+      printVm('❌ Erreur dans le stream des notifications: $e');
     });
   }
 
@@ -1105,49 +1110,44 @@ class _MyHomePageState extends State<MyHomePage>
     }
   }
 
-  Stream<int> getNbrMessageNonLu() async* {
-// Obtenez la liste des utilisateurs
-    //List<DocumentSnapshot> users = await usersQuery.sget();
-    Chat usersChat = Chat();
-    List<Chat> listChats = [];
-    int nbr = 0;
-    printVm("message lenght");
+  Stream<int> getNbrMessageNonLu() {
+    final userId = authProvider.loginUserData.id!;
+    final ctrl = StreamController<int>();
+    int directCount = 0;
+    int groupCount = 0;
 
-    // Définissez la requête
-    var friendsStream = FirebaseFirestore.instance
+    final directSub = FirebaseFirestore.instance
         .collection('Messages')
-        .where(Filter.or(
-      Filter('send_by', isEqualTo: authProvider.loginUserData.id!),
-      Filter('receiverBy', isEqualTo: authProvider.loginUserData.id!),
-    ))
+        .where('receiverBy', isEqualTo: userId)
         .where('message_state', isEqualTo: MessageState.NONLU.name)
-        .where('receiverBy', isEqualTo: authProvider.loginUserData.id!)
-    //.orderBy('createdAt', descending: false)
+        .snapshots()
+        .listen((snap) {
+      directCount = snap.docs.length;
+      printVm("messages directs non lus: $directCount");
+      if (!ctrl.isClosed) ctrl.add(directCount + groupCount);
+    });
 
-        .snapshots();
+    final groupSub = FirebaseFirestore.instance
+        .collection('GroupChats')
+        .where('member_ids', arrayContains: userId)
+        .snapshots()
+        .listen((snap) {
+      groupCount = 0;
+      for (final doc in snap.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final unreadCounts = data['unread_counts'] as Map<String, dynamic>? ?? {};
+        groupCount += (unreadCounts[userId] as int?) ?? 0;
+      }
+      printVm("messages groupes non lus: $groupCount");
+      if (!ctrl.isClosed) ctrl.add(directCount + groupCount);
+    });
 
-    List<Message> listmessage = [];
+    ctrl.onCancel = () {
+      directSub.cancel();
+      groupSub.cancel();
+    };
 
-    await for (var friendSnapshot in friendsStream) {
-      listmessage = friendSnapshot.docs
-          .map((doc) => Message.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
-      //  userProvider.chat.messages=listmessage;
-      // printVm("message lgt: ${listmessage.length}");
-
-/*
-        for(Message msg in listmessage){
-          if (msg.receiverBy!=authProvider.loginUserData.id) {
-          nbr=nbr+1;
-          }
-
-        }
-
- */
-      printVm("message t: ${listmessage.length}");
-      // printVm("message lgt: ${nbr}");
-      yield listmessage.length;
-    }
+    return ctrl.stream;
   }
 
 
@@ -1277,6 +1277,52 @@ class _MyHomePageState extends State<MyHomePage>
     }
   }
 
+  /// Met à jour silencieusement le pays de l'utilisateur via GPS, une fois par mois.
+  Future<void> _checkAndUpdateCountryMonthly() async {
+    if (kIsWeb) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final lastUpdateMs = prefs.getInt('countryLastUpdatedMs');
+      final now = DateTime.now().millisecondsSinceEpoch;
+      const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+
+      if (lastUpdateMs != null && (now - lastUpdateMs) < thirtyDaysMs) return;
+
+      // Ne pas demander la permission ici — seulement si déjà accordée
+      final status = await Permission.location.status;
+      if (!status.isGranted) return;
+
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.low,
+        timeLimit: const Duration(seconds: 8),
+      );
+
+      final placemarks =
+          await placemarkFromCoordinates(position.latitude, position.longitude);
+      if (placemarks.isEmpty) return;
+
+      final pm = placemarks.first;
+      final newCode = pm.isoCountryCode ?? '';
+      if (newCode.isEmpty) return;
+
+      final existing =
+          Map<String, String>.from(authProvider.loginUserData.countryData ?? {});
+      authProvider.loginUserData.countryData = {
+        ...existing,
+        'countryCode': newCode,
+        'country': pm.country ?? existing['country'] ?? '',
+        'state': pm.administrativeArea ?? existing['state'] ?? '',
+        'city': pm.locality ?? existing['city'] ?? '',
+      };
+
+      await authProvider.updateUserCountryCode(authProvider.loginUserData);
+      await prefs.setInt('countryLastUpdatedMs', now);
+      printVm('🌍 Pays mis à jour automatiquement: $newCode');
+    } catch (e) {
+      printVm('⚠️ Mise à jour pays mensuelle échouée: $e');
+    }
+  }
+
   @override
   void initState() {
     // _changeColor();
@@ -1299,6 +1345,9 @@ class _MyHomePageState extends State<MyHomePage>
       if (uid != null) {
         _presenceService.startHeartbeat(uid);
       }
+
+      // Mise à jour silencieuse du pays en arrière-plan (max 1x/mois)
+      _checkAndUpdateCountryMonthly();
     });
     _initializeFeedService();
     // Initialisation du listener de cycle de vie
@@ -1429,6 +1478,11 @@ class _MyHomePageState extends State<MyHomePage>
       case 'article':
         _navigateToNotifications();
         break;
+      case 'group':
+        if (dest.joinCode != null) {
+          AppLinkService().navigateToGroup(context, dest.joinCode!);
+        }
+        break;
     // 'home' : ne rien faire
     }
   }
@@ -1535,20 +1589,20 @@ class _MyHomePageState extends State<MyHomePage>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    print('🔄 GESTION ÉTAT APPLICATION NATIVE: $state');
+    printVm('🔄 GESTION ÉTAT APPLICATION NATIVE: $state');
 
     final String? uid = authProvider.loginUserData?.id;
     if (uid == null) return;
 
     switch (state) {
       case AppLifecycleState.resumed:
-        print('🟢 REPRISE APPLICATION : Relance du Heartbeat');
+        printVm('🟢 REPRISE APPLICATION : Relance du Heartbeat');
         _presenceService.startHeartbeat(uid);
         break;
 
       case AppLifecycleState.paused:
       case AppLifecycleState.detached:
-        print('🔴 FIN DE SESSION OU ARRIÈRE-PLAN PROLONGÉ : Forcer Offline');
+        printVm('🔴 FIN DE SESSION OU ARRIÈRE-PLAN PROLONGÉ : Forcer Offline');
         _presenceService.setForceOffline();
         break;
 
@@ -1637,22 +1691,6 @@ class _MyHomePageState extends State<MyHomePage>
                               ),
                             );
                           },
-                        ),
-                      ),
-                      // Dating / Tinder
-                      GestureDetector(
-                        onTap: () async {
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => const DatingSwipePage()));
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => const DatingNotificationsPage()));
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 6),
-                          child: badges.Badge(
-                            showBadge: _unreadNotificationsCount > 0,
-                            badgeStyle: badges.BadgeStyle(badgeColor: colors.accent),
-                            badgeContent: Text(_unreadNotificationsCount > 9 ? '9+' : '$_unreadNotificationsCount', style: TextStyle(fontSize: 8, color: colors.onAccent)),
-                            child: Icon(Fontisto.tinder, color: colors.danger, size: actionIconSize),
-                          ),
                         ),
                       ),
                       // Filtre (issu de la section "Découvrir")
@@ -1800,6 +1838,31 @@ class _MyHomePageState extends State<MyHomePage>
                           badge: 0,
                           colors: colors,
                           size: navIconSize,
+                        ),
+                      ),
+                      // Afrolove (dating)
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const DatingSwipePage()));
+                        },
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            badges.Badge(
+                              showBadge: _unreadNotificationsCount > 0,
+                              badgeStyle: badges.BadgeStyle(
+                                badgeColor: colors.accent,
+                                padding: const EdgeInsets.all(3),
+                              ),
+                              badgeContent: Text(
+                                _unreadNotificationsCount > 9 ? '9+' : '$_unreadNotificationsCount',
+                                style: TextStyle(fontSize: 8, color: colors.onAccent),
+                              ),
+                              child: Icon(Fontisto.tinder, color: Colors.red, size: navIconSize),
+                            ),
+                            const SizedBox(height: 2),
+                            Text('Afrolove', style: TextStyle(fontSize: 9, color: colors.textSecondary, fontWeight: FontWeight.w500)),
+                          ],
                         ),
                       ),
                       // Lives

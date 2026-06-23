@@ -1,14 +1,17 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../../models/model_data.dart';
 import '../../../providers/authProvider.dart';
+import '../../../services/utils/abonnement_utils.dart';
 import '../../../theme/app_colors.dart';
 
 class CreateGroupPage extends StatefulWidget {
@@ -24,8 +27,10 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
 
   final _nameController = TextEditingController();
   final _descController = TextEditingController();
+  final _priceController = TextEditingController();
   File? _groupImage;
   bool _isCreating = false;
+  bool _isPrivate = false;
 
   // Membres sélectionnés (hors owner)
   final List<UserData> _selectedMembers = [];
@@ -43,6 +48,7 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
   void dispose() {
     _nameController.dispose();
     _descController.dispose();
+    _priceController.dispose();
     super.dispose();
   }
 
@@ -116,14 +122,39 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
       return;
     }
 
+    final isGold = AbonnementUtils.canCreatePrivateGroup(_auth.loginUserData.abonnement);
+    final subscriptionPrice = _isPrivate && isGold
+        ? (double.tryParse(_priceController.text.trim()) ?? 0.0)
+        : 0.0;
+
+    // Vérifier la limite de groupes (Premium : 2 max, Gold : illimité)
+    final myId = _auth.loginUserData.id!;
+    final maxGroups = AbonnementUtils.maxGroupsOwned(_auth.loginUserData.abonnement);
+    if (maxGroups != null && maxGroups > 0) {
+      final existingSnap = await FirebaseFirestore.instance
+          .collection('GroupChats')
+          .where('owner_id', isEqualTo: myId)
+          .get();
+      if (existingSnap.docs.length >= maxGroups) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+              'Limite atteinte : $maxGroups groupe${maxGroups > 1 ? 's' : ''} maximum (Premium). '
+              'Passez Gold pour des groupes illimités.',
+            ),
+            backgroundColor: Colors.orange,
+          ));
+        }
+        return;
+      }
+    }
+
     setState(() => _isCreating = true);
 
     try {
-      final myId = _auth.loginUserData.id!;
       final groupId = FirebaseFirestore.instance.collection('GroupChats').doc().id;
       final now = DateTime.now().millisecondsSinceEpoch;
 
-      // Upload image si sélectionnée
       String? imageUrl;
       if (_groupImage != null) {
         final ref = FirebaseStorage.instance.ref().child('group_images/$groupId.jpg');
@@ -131,21 +162,27 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
         imageUrl = await ref.getDownloadURL();
       }
 
-      // Générer une clé AES pour le groupe (simple: base64 random 32 bytes)
-      // On utilise le même service que pour les chats 1-1
       final keyData = _generateGroupKey();
+      final joinCode = isGold ? _generateJoinCode() : null;
+      final joinCodeExpiresAt = isGold
+          ? DateTime.now().add(const Duration(days: 30)).millisecondsSinceEpoch
+          : null;
 
       final allMemberIds = [myId, ..._selectedMembers.map((m) => m.id!).where((id) => id.isNotEmpty)];
 
-      // Créer le document GroupChats
       await FirebaseFirestore.instance.collection('GroupChats').doc(groupId).set({
         'id': groupId,
         'name': name,
         'description': _descController.text.trim(),
         'image_url': imageUrl,
         'owner_id': myId,
-        'member_ids': allMemberIds,  // tableau pour requêtes arrayContains
+        'member_ids': allMemberIds,
         'is_frozen': false,
+        'is_private': _isPrivate && isGold,
+        'subscription_price': subscriptionPrice,
+        'join_code': joinCode,
+        'join_code_expires_at': joinCodeExpiresAt,
+        'paid_subscribers': {},
         'created_at': now,
         'updated_at': now,
         'last_message': '',
@@ -224,9 +261,14 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
   }
 
   String _generateGroupKey() {
-    // Génère une clé pseudo-aléatoire en base64 (32 chars hex)
     final rand = DateTime.now().microsecondsSinceEpoch.toRadixString(16).padLeft(16, '0');
-    return rand * 2; // 32 hex chars
+    return rand * 2;
+  }
+
+  String _generateJoinCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    final rng = Random.secure();
+    return List.generate(8, (_) => chars[rng.nextInt(chars.length)]).join();
   }
 
   @override
@@ -288,61 +330,191 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
   }
 
   Widget _buildGroupHeader() {
+    final isGold = AbonnementUtils.canCreatePrivateGroup(_auth.loginUserData.abonnement);
+
     return Padding(
       padding: const EdgeInsets.all(20),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          GestureDetector(
-            onTap: _pickImage,
-            child: Stack(
-              children: [
-                CircleAvatar(
-                  radius: 36,
-                  backgroundColor: _colors.surfaceVariant,
-                  backgroundImage: _groupImage != null ? FileImage(_groupImage!) : null,
-                  child: _groupImage == null
-                      ? Icon(Icons.group_rounded, color: _colors.textSecondary, size: 32)
-                      : null,
+          Row(
+            children: [
+              GestureDetector(
+                onTap: _pickImage,
+                child: Stack(
+                  children: [
+                    CircleAvatar(
+                      radius: 36,
+                      backgroundColor: _colors.surfaceVariant,
+                      backgroundImage: _groupImage != null ? FileImage(_groupImage!) : null,
+                      child: _groupImage == null
+                          ? Icon(Icons.group_rounded, color: _colors.textSecondary, size: 32)
+                          : null,
+                    ),
+                    Positioned(
+                      bottom: 0, right: 0,
+                      child: Container(
+                        width: 22, height: 22,
+                        decoration: BoxDecoration(color: _colors.primary, shape: BoxShape.circle),
+                        child: const Icon(Icons.camera_alt_rounded, size: 12, color: Colors.white),
+                      ),
+                    ),
+                  ],
                 ),
-                Positioned(
-                  bottom: 0, right: 0,
-                  child: Container(
-                    width: 22, height: 22,
-                    decoration: BoxDecoration(color: _colors.primary, shape: BoxShape.circle),
-                    child: const Icon(Icons.camera_alt_rounded, size: 12, color: Colors.white),
-                  ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: _nameController,
+                      style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w600),
+                      decoration: InputDecoration(
+                        hintText: 'Nom du groupe',
+                        hintStyle: TextStyle(color: _colors.textSecondary),
+                        border: InputBorder.none,
+                      ),
+                    ),
+                    Divider(color: _colors.border.withOpacity(0.5), height: 1),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _descController,
+                      style: TextStyle(color: _colors.textPrimary, fontSize: 13),
+                      decoration: InputDecoration(
+                        hintText: 'Description (optionnel)',
+                        hintStyle: TextStyle(color: _colors.textSecondary, fontSize: 13),
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              children: [
-                TextField(
-                  controller: _nameController,
-                  style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w600),
-                  decoration: InputDecoration(
-                    hintText: 'Nom du groupe',
-                    hintStyle: TextStyle(color: _colors.textSecondary),
-                    border: InputBorder.none,
-                  ),
-                ),
-                Divider(color: _colors.border.withOpacity(0.5), height: 1),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _descController,
-                  style: TextStyle(color: _colors.textPrimary, fontSize: 13),
-                  decoration: InputDecoration(
-                    hintText: 'Description (optionnel)',
-                    hintStyle: TextStyle(color: _colors.textSecondary, fontSize: 13),
-                    border: InputBorder.none,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          const SizedBox(height: 16),
+          _buildGoldPrivateSection(isGold),
         ],
+      ),
+    );
+  }
+
+  Widget _buildGoldPrivateSection(bool isGold) {
+    return GestureDetector(
+      onTap: isGold ? null : () => Navigator.pushNamed(context, '/abonnement'),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFD700).withOpacity(isGold ? 0.08 : 0.04),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFFFD700).withOpacity(isGold ? 0.4 : 0.2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.workspace_premium, color: Color(0xFFFFD700), size: 16),
+                const SizedBox(width: 6),
+                Text(
+                  'Options Gold',
+                  style: TextStyle(
+                    color: isGold ? _colors.textPrimary : _colors.textSecondary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                ),
+                const Spacer(),
+                if (isGold) ...[
+                  Transform.scale(
+                    scale: 0.85,
+                    child: Switch(
+                      value: _isPrivate,
+                      onChanged: (v) => setState(() => _isPrivate = v),
+                      activeColor: const Color(0xFFFFD700),
+                    ),
+                  ),
+                  Text(
+                    'Privé',
+                    style: TextStyle(color: _colors.textPrimary, fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                ] else
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFD700).withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.lock_rounded, size: 11, color: Color(0xFFFFD700)),
+                        SizedBox(width: 4),
+                        Text('Gold requis', style: TextStyle(color: Color(0xFFFFD700), fontSize: 11, fontWeight: FontWeight.w700)),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+            if (!isGold) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Créez des groupes privés payants avec un code d\'accès unique. Passez Gold pour débloquer.',
+                style: TextStyle(color: _colors.textSecondary, fontSize: 12, height: 1.4),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => Navigator.pushNamed(context, '/abonnement'),
+                  icon: const Icon(Icons.workspace_premium, size: 14, color: Color(0xFFFFD700)),
+                  label: const Text('Passer Gold', style: TextStyle(color: Color(0xFFFFD700), fontWeight: FontWeight.w700, fontSize: 13)),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFFFFD700)),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ),
+            ],
+            if (isGold && _isPrivate) ...[
+              const SizedBox(height: 10),
+              Text(
+                'Prix d\'abonnement mensuel (FCFA)',
+                style: TextStyle(color: _colors.textSecondary, fontSize: 12),
+              ),
+              const SizedBox(height: 6),
+              TextField(
+                controller: _priceController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d.]'))],
+                style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w600),
+                decoration: InputDecoration(
+                  hintText: 'ex: 500',
+                  hintStyle: TextStyle(color: _colors.textSecondary),
+                  suffix: Text('FCFA/mois', style: TextStyle(color: _colors.textSecondary, fontSize: 12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: _colors.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: _colors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Color(0xFFFFD700), width: 1.5),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '70% vous revient · 30% plateforme · Code unique généré automatiquement',
+                style: TextStyle(color: _colors.textSecondary, fontSize: 11),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

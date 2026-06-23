@@ -1,4 +1,4 @@
-// app_link_service.dart
+﻿// app_link_service.dart
 import 'dart:async';
 import 'package:afrotok/pages/contenuPayant/contentDetailsEbook.dart';
 import 'package:afrotok/pages/home/homeScreen.dart';
@@ -11,9 +11,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../models/model_data.dart';
+import 'utils/abonnement_utils.dart';
 import '../pages/LiveAgora/livePage.dart';
 import '../pages/LiveAgora/livesAgora.dart';
 import '../pages/afroshop/marketPlace/acceuil/produit_details.dart';
+import '../pages/chat/group/group_chat_page.dart';
 import '../pages/component/consoleWidget.dart';
 import '../pages/contenuPayant/contentDetails.dart';
 import '../pages/postDetails.dart';
@@ -22,6 +24,7 @@ import '../pages/pronostics/pronostic_detail_page.dart';
 import '../providers/authProvider.dart';
 import '../providers/postProvider.dart';
 import '../providers/userProvider.dart';
+import '../theme/app_colors.dart';
 
 // Types de liens supportés
 enum AppLinkType {
@@ -31,6 +34,7 @@ enum AppLinkType {
   post,
   article,
   service,
+  group,
   unknown
 }
 
@@ -63,11 +67,11 @@ class AppLinkService {
     try {
       final initialUri = await appLinks.getInitialLink();
       if (initialUri != null) {
-        print('Lien initial détecté: $initialUri');
+        printVm('Lien initial détecté: $initialUri');
         _handleIncomingLink(initialUri, isInitial: true);
       }
     } catch (e) {
-      print('Erreur récupération lien initial: $e');
+      printVm('Erreur récupération lien initial: $e');
     }
 
     _isInitialized = true;
@@ -80,18 +84,18 @@ class AppLinkService {
     // Contrôle spécifique pour les liens initiaux
     if (isInitial) {
       if (_initialLinkProcessed) {
-        print('Lien initial déjà traité, ignore: $linkString');
+        printVm('Lien initial déjà traité, ignore: $linkString');
         return;
       }
       if (_lastProcessedInitialLink == linkString) {
-        print('Lien initial identique au précédent, ignore: $linkString');
+        printVm('Lien initial identique au précédent, ignore: $linkString');
         return;
       }
       _lastProcessedInitialLink = linkString;
       _initialLinkProcessed = true;
     }
 
-    print('Lien reçu (initial: $isInitial): $uri');
+    printVm('Lien reçu (initial: $isInitial): $uri');
 
     // Vérifier le domaine et le préfixe
     if (uri.host == '$domaineName' && uri.path.startsWith('/share')) {
@@ -102,7 +106,7 @@ class AppLinkService {
         final id = segments.length >= 3 ? segments[2] : null;
 
         final type = _parseLinkType(typeString);
-        print("Notifier les écouteurs qu'un nouveau lien est disponible");
+        printVm("Notifier les écouteurs qu'un nouveau lien est disponible");
 
         // Notifier les écouteurs avec l'information "isInitial"
         _linkController.add(PendingLink(
@@ -121,12 +125,12 @@ class AppLinkService {
   void resetInitialLinkState() {
     _initialLinkProcessed = false;
     _lastProcessedInitialLink = null;
-    print('État des liens initiaux réinitialisé');
+    printVm('État des liens initiaux réinitialisé');
   }
 
   // Parser le type de lien
   AppLinkType _parseLinkType(String typeString) {
-    print("Lien typeString : ${typeString}");
+    printVm("Lien typeString : ${typeString}");
 
     switch (typeString.toLowerCase()) {
       case 'profil':
@@ -141,6 +145,8 @@ class AppLinkService {
         return AppLinkType.article;
       case 'service':
         return AppLinkType.service;
+      case 'group':
+        return AppLinkType.group;
       default:
         return AppLinkType.unknown;
     }
@@ -177,6 +183,8 @@ class AppLinkService {
         return 'article';
       case AppLinkType.service:
         return 'service';
+      case AppLinkType.group:
+        return 'group';
       default:
         return 'unknown';
     }
@@ -265,6 +273,10 @@ class AppLinkService {
             "💰 Monétise tes compétences : jusqu'à 100 000 FCFA/mois dès 100 vues !\n"
             "🚀 Opportunités et revenus garantis.";
 
+      case AppLinkType.group:
+        return "👑 Rejoins mon groupe privé sur AfroLook !\n"
+            "Clique sur le lien pour rejoindre directement :";
+
       default:
         return "🌟 AfroLook - Le réseau social africain qui paie ton talent !\n"
             "💰 À partir de 100 vues, gagne entre 15 000 et 100 000 FCFA/mois !\n"
@@ -280,7 +292,7 @@ class AppLinkService {
     try {
       await Share.share(text);
     } catch (e) {
-      print('Erreur lors du partage: $e');
+      printVm('Erreur lors du partage: $e');
     }
   }
 
@@ -335,7 +347,9 @@ class AppLinkService {
       case 'post':
         await _navigateToPost(context, id!);
         break;
-
+      case 'group':
+        await _navigateToGroup(context, id!);
+        break;
       default:
         await _navigateToHome(context);
     }
@@ -351,7 +365,7 @@ class AppLinkService {
 
     // Vérifier si le token existe
     final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    final token = await authProvider.getToken(); // fonction qui récupère le token
+    final token = await authProvider.getToken();
 
     if (token == null || token.isEmpty) {
       Navigator.pushReplacementNamed(context, '/login');
@@ -379,11 +393,309 @@ class AppLinkService {
         await _navigateToPost(context, id);
         break;
 
+      case 'group':
+        await _navigateToGroup(context, id);
+        break;
+
       default:
         await _navigateToHome(context);
     }
   }
 
+
+  /// Point d'entrée public pour naviguer vers un groupe depuis l'extérieur (ex: homeScreen)
+  Future<void> navigateToGroup(BuildContext context, String joinCode) =>
+      _navigateToGroup(context, joinCode);
+
+  // Navigation vers un groupe via son code d'invitation
+  Future<void> _navigateToGroup(BuildContext context, String joinCode) async {
+    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    final myId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final now = DateTime.now().millisecondsSinceEpoch;
+
+    // Afficher le modal de chargement immédiatement
+    bool loadingDismissed = false;
+    void dismissLoading() {
+      if (!loadingDismissed && context.mounted) {
+        loadingDismissed = true;
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+    }
+
+    if (context.mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => PopScope(
+          canPop: false,
+          child: Dialog(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+              decoration: BoxDecoration(
+                color: AppColors.of(context).surface,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: const Color(0xFFFFD700).withOpacity(0.35),
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    'Chargement du groupe…',
+                    style: TextStyle(
+                      color: AppColors.of(context).textPrimary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Vérification du lien d\'invitation',
+                    style: TextStyle(
+                      color: AppColors.of(context).textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('GroupChats')
+          .where('join_code', isEqualTo: joinCode)
+          .limit(1)
+          .get();
+
+      if (snap.docs.isEmpty) {
+        dismissLoading();
+        if (context.mounted) _showGroupLinkDialog(context, title: 'Groupe introuvable', message: 'Ce lien d\'invitation n\'est plus valide.');
+        return;
+      }
+
+      final groupDoc = snap.docs.first;
+      final groupData = groupDoc.data();
+      final groupId = groupDoc.id;
+      groupData['id'] = groupId;
+
+      // Code expiré
+      final codeExpiresAt = groupData['join_code_expires_at'] as int?;
+      if (codeExpiresAt != null && codeExpiresAt < now) {
+        dismissLoading();
+        if (context.mounted) _showGroupLinkDialog(context, title: 'Lien expiré', message: 'Ce lien d\'invitation de 30 jours a expiré. Demandez un nouveau code au propriétaire du groupe.');
+        return;
+      }
+
+      // Groupe gelé
+      if (groupData['is_frozen'] == true) {
+        dismissLoading();
+        if (context.mounted) _showGroupLinkDialog(context, title: groupData['name'] as String? ?? 'Groupe', message: 'Ce groupe est actuellement suspendu. Le propriétaire doit renouveler son abonnement Gold pour rouvrir les accès.');
+        return;
+      }
+
+      // Vérifier que le proprio est encore actif
+      final ownerId = groupData['owner_id'] as String?;
+      if (ownerId != null) {
+        final ownerDoc = await FirebaseFirestore.instance.collection('Users').doc(ownerId).get();
+        final ownerData = ownerDoc.data();
+        if (ownerData != null) {
+          final ab = AfrolookAbonnement.fromJson(ownerData['abonnement'] as Map<String, dynamic>? ?? {});
+          if (!ab.estPremium) {
+            dismissLoading();
+            if (context.mounted) _showGroupLinkDialog(context, title: groupData['name'] as String? ?? 'Groupe', message: 'Le propriétaire de ce groupe n\'a plus de plan actif. Le groupe est temporairement en lecture seule.');
+            return;
+          }
+        }
+      }
+
+      final memberIds = (groupData['member_ids'] as List<dynamic>? ?? []).cast<String>();
+      final groupName = groupData['name'] as String? ?? '';
+      final groupImage = groupData['image_url'] as String?;
+
+      dismissLoading();
+
+      // Déjà membre → ouvrir directement
+      if (memberIds.contains(myId)) {
+        if (context.mounted) {
+          Navigator.push(context, MaterialPageRoute(
+            builder: (_) => GroupChatPage(groupId: groupId, groupName: groupName, groupImageUrl: groupImage),
+          ));
+        }
+        return;
+      }
+
+      // Pas encore membre → dialog de confirmation
+      if (context.mounted) {
+        _showJoinGroupDialog(context, groupData: groupData, groupId: groupId, groupName: groupName, groupImage: groupImage, myId: myId, authProvider: authProvider);
+      }
+    } catch (e) {
+      dismissLoading();
+      printVm('Erreur navigation groupe: $e');
+    }
+  }
+
+  void _showJoinGroupDialog(BuildContext context, {
+    required Map<String, dynamic> groupData,
+    required String groupId,
+    required String groupName,
+    required String? groupImage,
+    required String myId,
+    required UserAuthProvider authProvider,
+  }) {
+    final colors = AppColors.of(context);
+    final memberCount = groupData['member_count'] as int? ?? 0;
+    final isPrivate = groupData['is_private'] == true;
+    final price = (groupData['subscription_price'] as num?)?.toDouble() ?? 0.0;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: colors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            if (groupImage != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(groupImage, width: 40, height: 40, fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const Icon(Icons.group, size: 40),
+                ),
+              )
+            else
+              Icon(Icons.group_rounded, size: 40, color: colors.primary),
+            const SizedBox(width: 12),
+            Expanded(child: Text(groupName, style: TextStyle(color: colors.textPrimary, fontSize: 16, fontWeight: FontWeight.w700))),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('$memberCount membre${memberCount > 1 ? 's' : ''}', style: TextStyle(color: colors.textSecondary, fontSize: 14)),
+            if (isPrivate && price > 0) ...[
+              const SizedBox(height: 8),
+              Text('Groupe privé · ${price.toStringAsFixed(0)} FCFA/mois', style: const TextStyle(color: Color(0xFFFFD700), fontSize: 13, fontWeight: FontWeight.w600)),
+            ],
+            const SizedBox(height: 12),
+            Text('Voulez-vous rejoindre ce groupe ?', style: TextStyle(color: colors.textPrimary, fontSize: 15)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Annuler', style: TextStyle(color: colors.textSecondary)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFD700), foregroundColor: Colors.black),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await _doJoinGroup(context, groupId: groupId, groupName: groupName, groupImage: groupImage, myId: myId, authProvider: authProvider, groupData: groupData);
+            },
+            child: const Text('Rejoindre', style: TextStyle(fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _doJoinGroup(BuildContext context, {
+    required String groupId,
+    required String groupName,
+    required String? groupImage,
+    required String myId,
+    required UserAuthProvider authProvider,
+    Map<String, dynamic> groupData = const {},
+  }) async {
+    try {
+      // Vérifier la limite de membres (Premium owner : 100 max, Gold : illimité)
+      final ownerId = groupData['owner_id'] as String? ?? '';
+      if (ownerId.isNotEmpty) {
+        final ownerDoc = await FirebaseFirestore.instance.collection('Users').doc(ownerId).get();
+        if (ownerDoc.exists) {
+          final ownerAbJson = ownerDoc.data()?['abonnement'] as Map<String, dynamic>?;
+          final ownerAb = ownerAbJson != null ? AfrolookAbonnement.fromJson(ownerAbJson) : null;
+          final maxMembers = AbonnementUtils.maxGroupMembers(ownerAb);
+          final currentCount = groupData['member_count'] as int?
+              ?? (groupData['member_ids'] as List<dynamic>? ?? []).length;
+          if (maxMembers != null && currentCount >= maxMembers) {
+            if (context.mounted) {
+              _showGroupLinkDialog(context,
+                title: 'Groupe complet',
+                message: 'Ce groupe a atteint sa limite de $maxMembers membres (plan Premium).',
+              );
+            }
+            return;
+          }
+        }
+      }
+
+      // Groupe privé payant : ne pas ajouter comme membre avant paiement
+      final isPrivate = groupData['is_private'] == true;
+      final price = (groupData['subscription_price'] as num?)?.toDouble() ?? 0.0;
+      if (isPrivate && price > 0) {
+        final paidSubs = (groupData['paid_subscribers'] as Map<String, dynamic>?) ?? {};
+        final expiryMs = paidSubs[myId] as int?;
+        final isPaid = expiryMs != null && expiryMs > DateTime.now().millisecondsSinceEpoch;
+        if (!isPaid) {
+          // Rediriger vers le groupe — _checkPaidSubscription demandera le paiement
+          if (context.mounted) {
+            Navigator.push(context, MaterialPageRoute(
+              builder: (_) => GroupChatPage(groupId: groupId, groupName: groupName, groupImageUrl: groupImage),
+            ));
+          }
+          return;
+        }
+      }
+
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final myPseudo = authProvider.loginUserData.pseudo ?? '';
+      final myImageUrl = authProvider.loginUserData.imageUrl ?? '';
+
+      await FirebaseFirestore.instance
+          .collection('GroupChats').doc(groupId).collection('members').doc(myId)
+          .set({'user_id': myId, 'pseudo': myPseudo, 'image_url': myImageUrl, 'role': 'member', 'joined_at': now});
+      await FirebaseFirestore.instance.collection('GroupChats').doc(groupId).update({
+        'member_ids': FieldValue.arrayUnion([myId]),
+        'member_count': FieldValue.increment(1),
+      });
+
+      if (context.mounted) {
+        Navigator.push(context, MaterialPageRoute(
+          builder: (_) => GroupChatPage(groupId: groupId, groupName: groupName, groupImageUrl: groupImage),
+        ));
+      }
+    } catch (e) {
+      printVm('Erreur rejoindre groupe: $e');
+    }
+  }
+
+  void _showGroupLinkDialog(BuildContext context, {required String title, required String message}) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(title),
+        content: Text(message),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))],
+      ),
+    );
+  }
 
   Future<void> _navigateToHome(BuildContext context) async {
     Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => MyHomePage(title: "",isOpenLink: true,),),
@@ -416,7 +728,7 @@ class AppLinkService {
         );
       }
     } catch (e) {
-      print('Erreur chargement profil: $e');
+      printVm('Erreur chargement profil: $e');
     }
   }
 
@@ -450,7 +762,7 @@ class AppLinkService {
 
       }
     } catch (e) {
-      print('Erreur chargement ContentPaie: $e');
+      printVm('Erreur chargement ContentPaie: $e');
     }
   }
 
@@ -497,7 +809,7 @@ class AppLinkService {
         ),
       );
     } catch (e) {
-      print('Erreur chargement live: $e');
+      printVm('Erreur chargement live: $e');
       _showLiveEndedDialog(context, "Impossible de charger le live.");
     }
   }
@@ -558,7 +870,7 @@ class AppLinkService {
         }
       });
     } catch (e) {
-      print('Erreur chargement post: $e');
+      printVm('Erreur chargement post: $e');
     }
   }
 
@@ -590,7 +902,7 @@ class AppLinkService {
         // );
       }
     } catch (e) {
-      print('Erreur chargement article: $e');
+      printVm('Erreur chargement article: $e');
     }
   }
 
@@ -616,7 +928,7 @@ class AppLinkService {
         // );
       }
     } catch (e) {
-      print('Erreur chargement service: $e');
+      printVm('Erreur chargement service: $e');
     }
   }
 
@@ -632,7 +944,7 @@ class AppLinkService {
         return UserData.fromJson(userDoc.data() as Map<String, dynamic>);
       }
     } catch (e) {
-      print('Erreur récupération utilisateur: $e');
+      printVm('Erreur récupération utilisateur: $e');
     }
     return null;
   }
@@ -675,22 +987,22 @@ class DynamicLinkService {
       final PendingDynamicLinkData? initialLink = await dynamicLinks.getInitialLink();
       if (initialLink != null && initialLink.link != null) {
         Uri deepLink = initialLink.link;
-        print('Dynamic Link reçu au démarrage : $deepLink');
+        printVm('Dynamic Link reçu au démarrage : $deepLink');
         onLinkCallback(deepLink);
       }
     } catch (e) {
-      print('Erreur getInitialLink : $e');
+      printVm('Erreur getInitialLink : $e');
     }
 
     // 2. Cas : application déjà lancée / en arrière-plan → écouter les nouveaux liens
     dynamicLinks.onLink.listen((PendingDynamicLinkData? dynamicLinkData) {
       if (dynamicLinkData != null && dynamicLinkData.link != null) {
         Uri deepLink = dynamicLinkData.link;
-        print('Dynamic Link reçu via onLink : $deepLink');
+        printVm('Dynamic Link reçu via onLink : $deepLink');
         onLinkCallback(deepLink);
       }
     }).onError((error) {
-      print('Erreur onLink listener : $error');
+      printVm('Erreur onLink listener : $error');
     });
   }
 }

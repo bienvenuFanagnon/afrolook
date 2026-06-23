@@ -1,5 +1,5 @@
 # SUIVI REFONTE UI — AFROLOOK V2
-_Dernière mise à jour : 22 juin 2026 (session 78)_
+_Dernière mise à jour : 23 juin 2026 (session 79)_
 
 ---
 
@@ -255,6 +255,59 @@ Tout est fait en **français**.
 - Pub = post ordinaire à 100% (même dimensions, même header avatar/nom, même zone média)
 - Overlay badge "SPONSORISÉ" en haut à droite (semi-transparent, petite police)
 - Rangée stats compacte (vues + CTR) + bouton CTA gradient rouge en dessous du post
+
+### Session 79 (23 juin 2026) — Système de groupes Gold/Premium + deep links groupes + modals de restriction
+
+**Fonctionnalités implémentées :**
+
+**1. Limites de groupes selon le plan**
+- `lib/services/utils/abonnement_utils.dart` : 2 nouvelles méthodes statiques
+  - `maxGroupsOwned()` : null = illimité (Gold), 2 (Premium), 0 (gratuit)
+  - `maxGroupMembers()` : null = illimité (Gold), 100 (Premium), null (gratuit)
+- `lib/pages/chat/group/create_group_page.dart` : vérification du nombre de groupes existants avant création → SnackBar orange si limite atteinte
+- `lib/pages/user/conversation/listUserConv.dart` : vérification `maxGroupMembers` de l'owner avant jointure → SnackBar rouge si groupe plein
+- `lib/services/linkService.dart` : même vérification dans `_doJoinGroup()` (via dialog)
+
+**2. Page abonnement mise à jour**
+- `lib/pages/user/userAbonnementPage.dart` :
+  - Refresh automatique du plan après souscription : `refreshUserData()` appelé → plus besoin de relancer l'app
+  - Premium : "2 groupes max · 100 membres/groupe"
+  - Gold : "Groupes illimités · Membres illimités · Liens externes cliquables dans les messages"
+
+**3. Liens cliquables dans les messages de groupe (Gold)**
+- `lib/pages/chat/group/group_chat_page.dart` : toggle `allow_external_links` en Firestore
+  - `flutter_linkify` + `url_launcher` : `Linkify` widget à la place de `Text` quand activé
+  - Toggle affiché dans `group_info_page.dart` (feature #7 Gold)
+
+**4. Deep link groupe — navigation complète**
+- 3 maillons cassés corrigés :
+  - `lib/main.dart` `_initDeepLinks()` : ajout du `case 'group'` → `NavigationCacheService().storeGroupNavigation(cleanId)`
+  - `lib/pages/splashChargement.dart` : `DestinationData` étendu avec `joinCode`, 2 switch `case 'group'` ajoutés
+  - `lib/pages/home/homeScreen.dart` : `case 'group'` dans `_handleInitialDestination()` → `AppLinkService().navigateToGroup()`
+- Modal de chargement pendant la résolution du deep link (`CircularProgressIndicator` gold + "Chargement du groupe…")
+
+**5. Infos membres dans group_info_page.dart**
+- Compteur "X / 100 MEMBRE(S)" pour propriétaire Premium, "X MEMBRE(S)" sinon
+- Icône `Icons.tune_rounded` visible sur chaque tile membre pour ouvrir le gestionnaire de permissions (remplace le long-press invisible)
+- Fix `_showEditPriceSheet()` : `async` + `await showModalBottomSheet` + `controller.dispose()` après fermeture → plus de crash TextEditingController
+- Fix `_showPermissionsDialog()` : `ConstrainedBox(maxHeight: 70%)` + `Flexible + SingleChildScrollView` → plus de RenderFlex overflow
+
+**6. Modals de restriction dans les groupes**
+- `lib/pages/chat/group/group_chat_page.dart` :
+  - `_writeBlockReason()` et `_shareBlockReason()` : retournent un named record `({title, message, icon, color})` selon la cause (gelé, readOnly, perm individuelle, perm globale)
+  - `_showRestrictionModal()` : dialog avec icône colorée + titre + message + bouton "Compris"
+  - Zone de saisie bloquée : `GestureDetector` → ouvre le modal au tap
+  - Envoi bloqué (`_sendTextMessage`, `_sendImageMessage`) : modal au lieu de SnackBar silencieux
+  - Partage bloqué `_showShareBlockedSnackbar()` : remplacé par modal
+
+**7. PostShareSheet — modal au lieu de SnackBar**
+- `lib/widgets/chat/post_share_sheet.dart` : `ScaffoldMessenger.showSnackBar()` (caché derrière le bottom sheet) remplacé par `showDialog()` avec design cohérent (icône bloc/flocon + message + bouton Compris)
+  - Groupe gelé : icône `ac_unit_rounded`
+  - Partage non autorisé : icône `block_rounded`
+
+**Résultat** : 0 regression — toutes les vérifications centralisées via `AbonnementUtils` et `GroupPermissionUtils`.
+
+---
 
 ### Session 78 (22 juin 2026) — Fix double-flash feed au démarrage
 
@@ -3297,4 +3350,192 @@ bool get isOfficialAccount => officialBadge == true && officialAccountStatus == 
 - Dialogs utilisent `AppColors.of(context)` directement
 
 **Commit :** à pusher sur `refonte_claude`
+
+---
+
+## SYSTÈME D'ABONNEMENTS UTILISATEUR — REFONTE COMPLÈTE (Session 79+)
+
+_Ajouté : 22 juin 2026_
+
+### Vue d'ensemble
+
+L'abonnement est **individuel par compte utilisateur** (un seul plan actif par personne). Changer de plan affecte toutes les fonctionnalités de l'app. Le **point de contrôle unique** est `AbonnementUtils` dans `lib/services/utils/abonnement_utils.dart` — toutes les pages passent par ce service pour décider ce qu'un utilisateur peut faire.
+
+### Plans
+
+| Plan | Prix base | Type Firestore |
+|---|---|---|
+| Gratuit | 0 FCFA | `'gratuit'` |
+| Premium | 200 FCFA/mois | `'premium'` |
+| Gold | 500 FCFA/mois | `'gold'` |
+
+**Règle d'héritage :** Gold ⊃ Premium. `estPremium` retourne `true` pour Premium ET Gold.
+
+### Réductions multi-mois
+
+**Premium (base 200 FCFA/mois) :**
+
+| Durée | Prix total | Réduction |
+|---|---|---|
+| 1 mois | 200 F | — |
+| 2 mois | 400 F | — |
+| 3 mois | 500 F | -100 F |
+| 6 mois | 1 000 F | -200 F |
+| 12 mois | 1 900 F | -500 F |
+
+**Gold (base 500 FCFA/mois) :**
+
+| Durée | Prix total | Réduction |
+|---|---|---|
+| 1 mois | 500 F | — |
+| 2 mois | 950 F | -50 F |
+| 3 mois | 1 350 F | -150 F |
+| 6 mois | 2 500 F | -500 F |
+| 12 mois | 4 500 F | -1 500 F |
+
+### Avantages par plan
+
+| Fonctionnalité | Gratuit | Premium | Gold |
+|---|---|---|---|
+| Messagerie privée | ✅ | ✅ | ✅ |
+| Rejoindre groupes publics | ✅ | ✅ | ✅ |
+| Posts visibles dans son pays | ✅ | ✅ | ✅ |
+| 1 photo par look | ✅ | ✅ | ✅ |
+| Créer & gérer des groupes chat | ❌ | ✅ | ✅ |
+| Posts visibles partout en Afrique | ❌ | ✅ | ✅ |
+| 3 photos par look | ❌ | ✅ | ✅ |
+| Live HD · latence 500ms | ❌ | ✅ | ✅ |
+| Mode fantôme · connexion cachée | ❌ | ✅ | ✅ |
+| Emojis 3D · Stickers exclusifs | ❌ | ✅ | ✅ |
+| Badge Premium ⭐ | ❌ | ✅ | ✅ |
+| **Groupes privés payants** (70%/30%) | ❌ | ❌ | ✅ |
+| **Code unique — rejoindre par code** | ❌ | ❌ | ✅ |
+| **Carousel pub dans page Groupes** | ❌ | ❌ | ✅ |
+| **Badge Gold 👑** | ❌ | ❌ | ✅ |
+
+### Logique abonnement groupe privé
+
+- À l'expiration Gold du propriétaire : groupe passe en **lecture seule** (`is_frozen: true`)
+- À l'expiration de l'abonnement d'un membre à un groupe privé : **pas d'expulsion automatique**
+- Au moment où le membre tente de ré-entrer : vérification → si expiré → dialog de renouvellement
+- Le suivi des abonnements individuels aux groupes se fait dans `GroupChats.paid_subscribers` : `{ userId: expiry_ms }`
+
+---
+
+### Fichiers à modifier
+
+#### 1. `lib/models/model_data.dart` — Modèle central
+
+**Champs `AfrolookAbonnement` à ajouter/modifier :**
+- `type` : `'gratuit'` | `'premium'` | `'gold'` (ajout de `'gold'`)
+- Nouveau getter `bool get estGold` : `type == 'gold' && estActif && !dateFin.isBefore(DateTime.now())`
+- Modifier `bool get estPremium` : `(type == 'premium' || type == 'gold') && estActif && !dateFin.isBefore(...)`
+- Nouvelle factory `AfrolookAbonnement.gold({int dureeMois = 1})`
+- Nouvelle méthode statique `calculerPrixGold(int dureeMois)` — table de prix Gold
+- Nouvelle constante `prixGoldBase = 500.0`
+- Map `reductionsGold` séparé de `reductions` (Premium)
+- Nouvelle méthode statique `getAvantagesGold()` — liste des avantages Gold
+- Mise à jour `fromJson` : gère `type == 'gold'`, expiration Gold → retour gratuit
+- Mise à jour `toJson` : si gold expiré → retour gratuit
+- Mise à jour `getLiveRestrictions` : Gold = même que Premium
+
+**Nouveaux champs Firestore `GroupChats` (pas dans model_data — direct Map<String,dynamic>) :**
+- `join_code` : String 8 chars (généré à la création si propriétaire Gold)
+- `is_private` : bool
+- `subscription_price` : double (FCFA/mois pour rejoindre le groupe)
+- `paid_subscribers` : Map<userId, expiry_ms>
+
+#### 2. `lib/services/utils/abonnement_utils.dart` — Point de contrôle unique
+
+**Nouvelles méthodes statiques à ajouter :**
+```dart
+static bool isGold(AfrolookAbonnement? abonnement) => abonnement?.estGold == true;
+static bool canCreatePrivateGroup(AfrolookAbonnement? abonnement) => abonnement?.estGold == true;
+static bool canUseGroupJoinCode(AfrolookAbonnement? abonnement) => abonnement?.estGold == true;
+static bool canAppearInGoldCarousel(AfrolookAbonnement? abonnement) => abonnement?.estGold == true;
+static bool canCreateGroup(AfrolookAbonnement? abonnement) => abonnement?.estPremium == true;
+```
+
+**Mise à jour `getUserBadge()` :**
+- Ajouter priorité Gold (avant Premium, après officiel) :
+  - `else if (isGold(abonnement))` → badge 👑 doré (gradient `FFD700` → `FF8C00`)
+
+**Mise à jour `calculerPrix` → renommer `calculerPrixPremium`, ajouter `calculerPrixGold`**
+
+#### 3. `lib/services/abonnement_service.dart` — Service d'abonnement
+
+**Modifications :**
+- Renommer `souscrirePremium` → conserver tel quel (compatibilité pages existantes)
+- Ajouter `souscrireGold({required int dureeMois, required UserData user, required BuildContext context})`
+  - Même logique que `souscrirePremium` mais avec `AfrolookAbonnement.gold()`
+  - Transaction type `ABONNEMENT_GOLD`
+  - Bloque si Gold déjà actif (comme Premium bloque si Premium actif)
+- Ajouter `souscrireGenerique({required String planType, ...})` — appelé par la nouvelle page
+
+#### 4. `lib/pages/user/userAbonnementPage.dart` — Page abonnement
+
+**Réécriture complète :**
+- 3 onglets : Gratuit / Premium / Gold
+- Pour chaque plan payant : sélecteur de durée (chips horizontaux) + résumé prix + bouton paiement
+- Section renouvellement si abonnement actif (Premium ou Gold)
+- Badge et couleur par plan : ⭐ orange/jaune pour Premium, 👑 or pour Gold
+- Info renouvellement groupes privés : "pas d'expulsion automatique, demandé à la prochaine entrée"
+- Appelle `_abonnementService.souscrireGenerique(planType: 'premium'|'gold', dureeMois: ...)`
+
+#### 5. `lib/pages/user/conversation/listUserConv.dart` — Page groupes/conversations
+
+**Ajouts dans l'onglet 'groups' :**
+- Barre "Rejoindre par code" (visible uniquement dans le filtre 'groups')
+  - Input champ code → bouton Chercher
+  - Recherche Firestore : `GroupChats.where('join_code', isEqualTo: code)`
+  - Vérification : charger le propriétaire → `estGold` doit être `true`
+  - Si Gold OK → modal de confirmation → `addUserToGroup(groupId, userId)`
+  - Si propriétaire plus Gold → message "Ce groupe n'accepte plus de nouveaux membres par code"
+- Carousel Gold groups (visible uniquement dans le filtre 'groups')
+  - Requête : `GroupChats.where('is_private', isEqualTo: false).limit(20)` filtrés par propriétaire Gold
+  - Ordre **aléatoire** à chaque affichage (`..shuffle()`)
+  - Cards horizontaux scrollables : image groupe + nom + nb membres + badge 👑 GOLD
+  - Tap → ouvrir page du groupe (si déjà membre) ou modal "Rejoindre"
+
+#### 6. `lib/pages/chat/group/create_group_page.dart` — Création groupe
+
+**Ajouts :**
+- Si propriétaire Gold : option "Groupe privé" (switch) + champ "Prix abonnement (FCFA/mois)"
+- Génération automatique `join_code` si Gold : `_generateJoinCode()` → 8 chars alphanumériques uniques
+- Sauvegarder `join_code`, `is_private`, `subscription_price` dans `GroupChats`
+
+#### 7. `lib/pages/chat/group/group_chat_page.dart` — Chat groupe
+
+**Ajouts :**
+- À l'ouverture du groupe : si `is_private == true`, vérifier `paid_subscribers[userId]`
+  - Si absent ou expiré → dialog "Renouveler votre abonnement au groupe"
+  - Dialog : prix + bouton payer sur solde principal + annuler
+  - Si solde insuffisant → bouton Recharger
+  - Paiement : 70% au propriétaire (`_creditCreator`), 30% app
+  - Mise à jour `paid_subscribers[userId] = DateTime.now().add(30 jours).ms`
+
+#### 8. `lib/pages/chat/group/group_info_page.dart` — Info groupe
+
+**Afficher :**
+- Badge "Privé" si `is_private == true`
+- Code unique si Gold et propriétaire : `join_code` avec bouton copier + partager
+
+---
+
+### Pages qui N'ont PAS besoin d'être modifiées
+
+Les 75 pages qui vérifient `estPremium` restent inchangées car Gold satisfait `estPremium == true`. Seules les fonctions **exclusivement Gold** nécessitent un nouveau check `estGold`.
+
+### Statut d'implémentation
+
+| Étape | Statut |
+|---|---|
+| Modèle `AfrolookAbonnement` (Gold type + getters) | ✅ Session 79 |
+| `AbonnementUtils` (nouvelles méthodes + badge Gold) | ✅ Session 79 |
+| `AbonnementService.souscrireGold()` | ✅ Session 79 |
+| Page abonnement — réécriture 3 plans | ✅ Session 79 |
+| `listUserConv.dart` — search-by-code + carousel Gold | ✅ Session 80 |
+| `create_group_page.dart` — join_code + is_private | ✅ Session 80 |
+| `group_chat_page.dart` — vérif abonnement privé à l'entrée | ✅ Session 80 |
+| `group_info_page.dart` — affichage code + badge privé | ✅ Session 80 |
 

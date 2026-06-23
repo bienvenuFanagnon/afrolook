@@ -1,31 +1,55 @@
-import 'dart:convert';
+﻿import 'dart:convert';
+import 'dart:math';
+import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/models/chatmodels/message.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:flutter/cupertino.dart';
+
 import 'package:flutter/widgets.dart';
+
 import 'package:flutter_slidable/flutter_slidable.dart';
+
 import 'package:intl/intl.dart';
+
 import 'package:local_auth/local_auth.dart';
+
 import 'package:page_transition/page_transition.dart';
+
 import 'package:provider/provider.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../models/model_data.dart';
+import '../../../services/utils/abonnement_utils.dart';
+
 import '../../../providers/authProvider.dart';
+
 import '../../../theme/app_colors.dart';
+
 import '../../../l10n/app_localizations.dart';
+
 import '../../../services/chat_service.dart';
+
 import '../../../services/encryption_service.dart';
+
 import '../../../pages/chat/myChat.dart';
+
 import 'package:share_plus/share_plus.dart';
 
 import '../../home/user_presence_widget.dart';
+
 import '../../pub/native_ad_widget.dart';
+
 import '../../chat/group/create_group_page.dart';
+
 import '../../chat/group/group_chat_page.dart';
 
 class ListUserChatsOptimized extends StatefulWidget {
@@ -74,6 +98,16 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   List<Map<String, dynamic>> _groups = [];
   bool _loadingGroups = false;
   String get _groupCacheKey => 'group_list_${authProvider.loginUserData.id ?? ''}';
+
+  // Groupes Gold (carousel pub)
+  List<Map<String, dynamic>> _goldGroups = [];
+  bool _loadingGoldGroups = false;
+
+  // Recherche par code de groupe
+  final TextEditingController _codeSearchController = TextEditingController();
+  bool _codeSearching = false;
+  Map<String, dynamic>? _codeSearchResult;
+  String? _codeSearchError;
 
   // Filtre d'affichage : 'all' | 'users' | 'groups'
   String _chatFilter = 'all';
@@ -205,6 +239,215 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       if (mounted) setState(() { _groups = groups; _loadingGroups = false; });
     } catch (e) {
       if (mounted) setState(() => _loadingGroups = false);
+    }
+    _loadGoldGroups();
+  }
+
+  Future<void> _loadGoldGroups() async {
+    if (!mounted) return;
+    setState(() => _loadingGoldGroups = true);
+    try {
+      // Charger les utilisateurs Gold
+      final usersSnap = await FirebaseFirestore.instance
+          .collection('Users')
+          .where('abonnement.type', isEqualTo: 'gold')
+          .limit(50)
+          .get();
+
+      final now = DateTime.now();
+      final goldUserIds = usersSnap.docs.where((d) {
+        final ab = d.data()['abonnement'] as Map<String, dynamic>?;
+        if (ab == null) return false;
+        final dateFinStr = ab['dateFin'] as String?;
+        if (dateFinStr == null) return false;
+        final dateFin = DateTime.tryParse(dateFinStr);
+        return dateFin != null && dateFin.isAfter(now);
+      }).map((d) => d.id).toList();
+
+      if (goldUserIds.isEmpty) {
+        if (mounted) setState(() { _goldGroups = []; _loadingGoldGroups = false; });
+        return;
+      }
+
+      // Charger les groupes de ces utilisateurs Gold (max 20)
+      final groupsSnap = await FirebaseFirestore.instance
+          .collection('GroupChats')
+          .where('owner_id', whereIn: goldUserIds.take(10).toList())
+          .where('is_frozen', isEqualTo: false)
+          .limit(20)
+          .get();
+
+      final groups = groupsSnap.docs.map((d) => d.data()).toList();
+      // Mélange aléatoire à chaque affichage
+      groups.shuffle(Random());
+
+      if (mounted) setState(() { _goldGroups = groups; _loadingGoldGroups = false; });
+    } catch (_) {
+      if (mounted) setState(() => _loadingGoldGroups = false);
+    }
+  }
+
+  Future<void> _searchGroupByCode(String code) async {
+    final trimmed = code.trim().toUpperCase();
+    if (trimmed.length < 4) return;
+    if (!mounted) return;
+    setState(() { _codeSearching = true; _codeSearchResult = null; _codeSearchError = null; });
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('GroupChats')
+          .where('join_code', isEqualTo: trimmed)
+          .limit(1)
+          .get();
+
+      if (snap.docs.isEmpty) {
+        if (mounted) setState(() { _codeSearchError = 'Aucun groupe trouvé pour ce code.'; _codeSearching = false; });
+        return;
+      }
+
+      final groupData = snap.docs.first.data();
+
+      // Vérifier que le code n'a pas expiré (30 jours)
+      final codeExpiresAt = groupData['join_code_expires_at'] as int?;
+      if (codeExpiresAt != null && codeExpiresAt < DateTime.now().millisecondsSinceEpoch) {
+        if (mounted) setState(() { _codeSearchError = 'Ce code a expiré. Demandez un nouveau code au propriétaire.'; _codeSearching = false; });
+        return;
+      }
+
+      // Vérifier que le groupe n'est pas gelé
+      if (groupData['is_frozen'] == true) {
+        if (mounted) setState(() { _codeSearchError = 'Ce groupe est suspendu. Le propriétaire doit renouveler son plan Gold.'; _codeSearching = false; });
+        return;
+      }
+
+      // Vérifier que le propriétaire est toujours Gold
+      final ownerId = groupData['owner_id'] as String?;
+      if (ownerId != null) {
+        final ownerDoc = await FirebaseFirestore.instance.collection('Users').doc(ownerId).get();
+        final ab = ownerDoc.data()?['abonnement'] as Map<String, dynamic>?;
+        if (ab == null || ab['type'] != 'gold') {
+          if (mounted) setState(() { _codeSearchError = 'Le propriétaire de ce groupe n\'est plus Gold.'; _codeSearching = false; });
+          return;
+        }
+        final dateFinStr = ab['dateFin'] as String?;
+        final dateFin = dateFinStr != null ? DateTime.tryParse(dateFinStr) : null;
+        if (dateFin == null || dateFin.isBefore(DateTime.now())) {
+          if (mounted) setState(() { _codeSearchError = 'Le propriétaire de ce groupe n\'est plus Gold.'; _codeSearching = false; });
+          return;
+        }
+      }
+
+      if (mounted) setState(() { _codeSearchResult = groupData; _codeSearching = false; });
+    } catch (e) {
+      if (mounted) setState(() { _codeSearchError = 'Erreur de recherche.'; _codeSearching = false; });
+    }
+  }
+
+  Future<void> _joinGroupByCode(Map<String, dynamic> groupData) async {
+    final myId = authProvider.loginUserData.id!;
+    final groupId = groupData['id'] as String?;
+    if (groupId == null) return;
+
+    final memberIds = (groupData['member_ids'] as List<dynamic>? ?? []).cast<String>();
+    if (memberIds.contains(myId)) {
+      // Déjà membre — ouvrir directement
+      if (mounted) {
+        Navigator.push(context, MaterialPageRoute(
+          builder: (_) => GroupChatPage(
+            groupId: groupId,
+            groupName: groupData['name'] as String? ?? '',
+            groupImageUrl: groupData['image_url'] as String?,
+          ),
+        )).then((_) => _loadGroups());
+      }
+      return;
+    }
+
+    // Vérifier la limite de membres (Premium owner : 100 max, Gold : illimité)
+    final ownerId = groupData['owner_id'] as String? ?? '';
+    if (ownerId.isNotEmpty) {
+      try {
+        final ownerDoc = await FirebaseFirestore.instance.collection('Users').doc(ownerId).get();
+        if (ownerDoc.exists) {
+          final ownerAbJson = ownerDoc.data()?['abonnement'] as Map<String, dynamic>?;
+          final ownerAb = ownerAbJson != null ? AfrolookAbonnement.fromJson(ownerAbJson) : null;
+          final maxMembers = AbonnementUtils.maxGroupMembers(ownerAb);
+          final currentCount = groupData['member_count'] as int?
+              ?? (groupData['member_ids'] as List<dynamic>? ?? []).length;
+          if (maxMembers != null && currentCount >= maxMembers) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                content: Text('Ce groupe est complet (100 membres maximum pour ce plan).'),
+                backgroundColor: Colors.red,
+              ));
+            }
+            return;
+          }
+        }
+      } catch (_) {}
+    }
+
+    // Groupe privé payant : vérifier que l'utilisateur a un abonnement actif
+    final isPrivate = groupData['is_private'] == true;
+    final price = (groupData['subscription_price'] as num?)?.toDouble() ?? 0.0;
+    if (isPrivate && price > 0) {
+      final paidSubs = (groupData['paid_subscribers'] as Map<String, dynamic>?) ?? {};
+      final expiryMs = paidSubs[myId] as int?;
+      final isPaid = expiryMs != null && expiryMs > DateTime.now().millisecondsSinceEpoch;
+      if (!isPaid) {
+        // Ouvrir le groupe sans ajouter comme membre — le paiement sera demandé à l'entrée
+        if (mounted) {
+          setState(() { _codeSearchResult = null; _codeSearchController.clear(); });
+          Navigator.push(context, MaterialPageRoute(
+            builder: (_) => GroupChatPage(
+              groupId: groupId,
+              groupName: groupData['name'] as String? ?? '',
+              groupImageUrl: groupData['image_url'] as String?,
+            ),
+          )).then((_) => _loadGroups());
+        }
+        return;
+      }
+    }
+
+    try {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final myPseudo = authProvider.loginUserData.pseudo ?? '';
+      final myImageUrl = authProvider.loginUserData.imageUrl ?? '';
+
+      await FirebaseFirestore.instance
+          .collection('GroupChats')
+          .doc(groupId)
+          .collection('members')
+          .doc(myId)
+          .set({
+        'user_id': myId,
+        'pseudo': myPseudo,
+        'image_url': myImageUrl,
+        'role': 'member',
+        'joined_at': now,
+      });
+      await FirebaseFirestore.instance.collection('GroupChats').doc(groupId).update({
+        'member_ids': FieldValue.arrayUnion([myId]),
+        'member_count': FieldValue.increment(1),
+      });
+
+      if (mounted) {
+        setState(() { _codeSearchResult = null; _codeSearchController.clear(); });
+        _loadGroups();
+        Navigator.push(context, MaterialPageRoute(
+          builder: (_) => GroupChatPage(
+            groupId: groupId,
+            groupName: groupData['name'] as String? ?? '',
+            groupImageUrl: groupData['image_url'] as String?,
+          ),
+        )).then((_) => _loadGroups());
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur : $e'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
@@ -355,7 +598,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       }
       return null;
     } catch (e) {
-      print("❌ [CHAT_SERVICE] Erreur: $e");
+      printVm("❌ [CHAT_SERVICE] Erreur: $e");
       return null;
     }
   }
@@ -371,7 +614,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
         return UserData.fromJson(userDoc.data()!);
       }
     } catch (e) {
-      print("❌ [USER_DATA] Erreur: $e");
+      printVm("❌ [USER_DATA] Erreur: $e");
     }
     return null;
   }
@@ -401,7 +644,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
         return msg;
       }
     } catch (e) {
-      print("❌ [LAST_MESSAGE] Erreur: $e");
+      printVm("❌ [LAST_MESSAGE] Erreur: $e");
     }
     return null;
   }
@@ -580,7 +823,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
         });
       }
     } catch (e) {
-      print('Erreur chargement amis récents: $e');
+      printVm('Erreur chargement amis récents: $e');
       if (mounted) {
         setState(() {
           _loadingRecentFriends = false;
@@ -620,7 +863,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
         });
       }
     } catch (e) {
-      print("Erreur recherche: $e");
+      printVm("Erreur recherche: $e");
       if (mounted) {
         setState(() {
           _isSearchLoading = false;
@@ -650,7 +893,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
         ),
       );
     } catch (e) {
-      print("Erreur ouverture chat: $e");
+      printVm("Erreur ouverture chat: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -691,7 +934,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
         ),
       );
     } catch (e) {
-      print("Erreur création chat: $e");
+      printVm("Erreur création chat: $e");
     }
   }
 
@@ -699,6 +942,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   void dispose() {
     _searchController.dispose();
     _scrollController.dispose();
+    _codeSearchController.dispose();
     super.dispose();
   }
 
@@ -884,8 +1128,19 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
               color: _colors.surface,
               onSelected: (value) {
                 if (value == 'archives') _showArchivedChats();
+                if (value == 'mark_all_read') _markAllAsRead();
               },
               itemBuilder: (_) => [
+                PopupMenuItem(
+                  value: 'mark_all_read',
+                  child: Row(
+                    children: [
+                      Icon(Icons.done_all, color: _colors.primary, size: 20),
+                      const SizedBox(width: 10),
+                      Text('Tout marquer comme lu', style: TextStyle(color: _colors.textPrimary)),
+                    ],
+                  ),
+                ),
                 PopupMenuItem(
                   value: 'archives',
                   child: Row(
@@ -1098,14 +1353,264 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   }
 
   Widget _buildGroupsVerticalList() {
-    return ListView.builder(
+    final hasGoldGroups = _goldGroups.isNotEmpty;
+
+    return ListView(
       controller: _scrollController,
       padding: const EdgeInsets.symmetric(vertical: 4),
-      itemCount: _groups.length + 1,
-      itemBuilder: (_, index) {
-        if (index == _groups.length) return _buildArchiveTile();
-        return _buildGroupTile(_groups[index]);
+      children: [
+        // ── Recherche par code Gold ───────────────────────────────────────
+        _buildCodeSearchBar(),
+
+        // Résultat de recherche par code
+        if (_codeSearching)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          ),
+        if (_codeSearchError != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Text(_codeSearchError!, style: const TextStyle(color: Colors.red, fontSize: 13)),
+          ),
+        if (_codeSearchResult != null)
+          _buildCodeSearchResultTile(_codeSearchResult!),
+
+        // ── Carousel Gold ─────────────────────────────────────────────────
+        if (hasGoldGroups || _loadingGoldGroups) ...[
+          _buildGoldCarouselSection(),
+        ],
+
+        // ── Mes groupes ───────────────────────────────────────────────────
+        if (_groups.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Text(
+              'MES GROUPES',
+              style: TextStyle(color: _colors.textSecondary, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.8),
+            ),
+          ),
+        ],
+        ..._groups.map((g) => _buildGroupTile(g)),
+        _buildArchiveTile(),
+      ],
+    );
+  }
+
+  Widget _buildCodeSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _codeSearchController,
+                  style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w700, letterSpacing: 1.5, fontSize: 15),
+                  textCapitalization: TextCapitalization.characters,
+                  decoration: InputDecoration(
+                    hintText: 'Code du groupe (ex: AB3D7K2M)',
+                    hintStyle: TextStyle(color: _colors.textSecondary, fontSize: 13, letterSpacing: 0, fontWeight: FontWeight.w400),
+                    prefixIcon: const Icon(Icons.key_rounded, color: Color(0xFFFFD700), size: 20),
+                    filled: true,
+                    fillColor: _colors.surface,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: _colors.border.withOpacity(0.4)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: _colors.border.withOpacity(0.3)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFFFFD700), width: 1.5),
+                    ),
+                  ),
+                  onSubmitted: _searchGroupByCode,
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () => _searchGroupByCode(_codeSearchController.text),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFFFD700), Color(0xFFFF8C00)],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.search_rounded, color: Colors.white, size: 20),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCodeSearchResultTile(Map<String, dynamic> group) {
+    final name = group['name'] as String? ?? '';
+    final imageUrl = group['image_url'] as String? ?? '';
+    final isPrivate = group['is_private'] == true;
+    final price = (group['subscription_price'] as num?)?.toDouble() ?? 0.0;
+    final memberCount = group['member_count'] as int? ?? 0;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFD700).withOpacity(0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.5)),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: _colors.surfaceVariant,
+              backgroundImage: imageUrl.isNotEmpty ? CachedNetworkImageProvider(imageUrl) : null,
+              child: imageUrl.isEmpty ? Icon(Icons.group_rounded, color: _colors.textSecondary) : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(name, style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w700, fontSize: 14)),
+                      if (isPrivate) ...[
+                        const SizedBox(width: 6),
+                        const Text('🔒', style: TextStyle(fontSize: 12)),
+                      ],
+                    ],
+                  ),
+                  Text(
+                    '$memberCount membres${isPrivate && price > 0 ? ' · ${price.toStringAsFixed(0)} FCFA/mois' : ''}',
+                    style: TextStyle(color: _colors.textSecondary, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => _joinGroupByCode(group),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFD700),
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+              ),
+              child: const Text('Rejoindre'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGoldCarouselSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+          child: Row(
+            children: [
+              const Icon(Icons.workspace_premium, color: Color(0xFFFFD700), size: 16),
+              const SizedBox(width: 6),
+              Text(
+                'Groupes Gold',
+                style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w700, fontSize: 13),
+              ),
+              const SizedBox(width: 4),
+              Text('· découvrez', style: TextStyle(color: _colors.textSecondary, fontSize: 12)),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: 100,
+          child: _loadingGoldGroups
+              ? const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFFD700)))
+              : ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  itemCount: _goldGroups.length,
+                  itemBuilder: (_, i) => _buildGoldGroupCard(_goldGroups[i]),
+                ),
+        ),
+        const SizedBox(height: 8),
+      ],
+    );
+  }
+
+  Widget _buildGoldGroupCard(Map<String, dynamic> group) {
+    final name = group['name'] as String? ?? '';
+    final imageUrl = group['image_url'] as String? ?? '';
+    final memberCount = group['member_count'] as int? ?? 0;
+    final groupId = group['id'] as String? ?? '';
+    final isPrivate = group['is_private'] == true;
+    final price = (group['subscription_price'] as num?)?.toDouble() ?? 0.0;
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(
+          builder: (_) => GroupChatPage(
+            groupId: groupId,
+            groupName: name,
+            groupImageUrl: imageUrl.isNotEmpty ? imageUrl : null,
+          ),
+        )).then((_) => _loadGroups());
       },
+      child: Container(
+        width: 80,
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        child: Column(
+          children: [
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                CircleAvatar(
+                  radius: 30,
+                  backgroundColor: _colors.surfaceVariant,
+                  backgroundImage: imageUrl.isNotEmpty ? CachedNetworkImageProvider(imageUrl) : null,
+                  child: imageUrl.isEmpty ? Icon(Icons.group_rounded, color: _colors.textSecondary, size: 24) : null,
+                ),
+                if (isPrivate)
+                  Positioned(
+                    bottom: 0, right: 0,
+                    child: Container(
+                      width: 18, height: 18,
+                      decoration: const BoxDecoration(color: Color(0xFFFFD700), shape: BoxShape.circle),
+                      child: const Icon(Icons.lock_rounded, size: 10, color: Colors.white),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: _colors.textPrimary, fontSize: 11, fontWeight: FontWeight.w600),
+            ),
+            Text(
+              isPrivate && price > 0
+                  ? '${price.toStringAsFixed(0)}F/m'
+                  : '$memberCount mbr',
+              style: TextStyle(color: _colors.textSecondary, fontSize: 10),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1293,6 +1798,62 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       trailing: Icon(Icons.chevron_right_rounded, color: _colors.textSecondary),
       onTap: _showArchivedChats,
     );
+  }
+
+  Future<void> _markAllAsRead() async {
+    final userId = authProvider.loginUserData.id!;
+    final firestore = FirebaseFirestore.instance;
+
+    try {
+      // 1. Messages directs non lus
+      final directSnap = await firestore
+          .collection('Messages')
+          .where('receiverBy', isEqualTo: userId)
+          .where('message_state', isEqualTo: MessageState.NONLU.name)
+          .get();
+
+      final batch = firestore.batch();
+      for (final doc in directSnap.docs) {
+        batch.update(doc.reference, {'message_state': MessageState.LU.name});
+      }
+
+      // 2. GroupChats — remettre unread_counts.$userId à 0
+      final groupSnap = await firestore
+          .collection('GroupChats')
+          .where('member_ids', arrayContains: userId)
+          .get();
+
+      for (final doc in groupSnap.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final unreadCounts = data['unread_counts'] as Map<String, dynamic>? ?? {};
+        if ((unreadCounts[userId] as int? ?? 0) > 0) {
+          batch.update(doc.reference, {'unread_counts.$userId': 0});
+        }
+      }
+
+      await batch.commit();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Tous les messages marqués comme lus'),
+            backgroundColor: _colors.primary,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur : $e'),
+            backgroundColor: _colors.danger,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   void _showArchivedChats() {
@@ -1969,7 +2530,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       ),
       child: MrecAdWidget(
         onAdLoaded: () {
-          print('✅ Native Ad chargée: $key');
+          printVm('✅ Native Ad chargée: $key');
         },
       ),
     );

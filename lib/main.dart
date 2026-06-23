@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
@@ -124,7 +124,7 @@ Future<void> main() async {
   try {
     _cameras = await availableCameras();
   } catch (e) {
-    print("Erreur initialisation caméra : $e");
+    printVm("Erreur initialisation caméra : $e");
     _cameras = [];
   }
 
@@ -150,9 +150,9 @@ Future<void> main() async {
     Workmanager().registerPeriodicTask(
       afrolookTask,
       afrolookTask,
-      frequency: const Duration(hours: 5),
+      frequency: const Duration(minutes: 15),
       initialDelay: const Duration(seconds: 10),
-      existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
+      existingWorkPolicy: ExistingPeriodicWorkPolicy.replace,
     );
   }
 
@@ -187,7 +187,7 @@ class _MyAppState extends State<MyApp> {
 
     // Listener pour les clics de notification (stocke dans cache et redémarre)
     OneSignal.Notifications.addClickListener((event) async {
-      print("📱 [NOTIFICATION] Clic détecté");
+      printVm("📱 [NOTIFICATION] Clic détecté");
 
       await Future.delayed(const Duration(milliseconds: 300));
 
@@ -236,7 +236,7 @@ class _MyAppState extends State<MyApp> {
         }
       }
 
-      print("💾 [NOTIFICATION] Données stockées dans le cache");
+      printVm("💾 [NOTIFICATION] Données stockées dans le cache");
 
       // Redémarrer l'application
       _navigateToSplashAndClearStack();
@@ -245,6 +245,8 @@ class _MyAppState extends State<MyApp> {
 
   void _initDeepLinks() {
     AppLinks().uriLinkStream.listen((Uri? uri) async {
+      printVm("🔗 [DEEPLINK] url Reçu: $uri");
+
       if (uri != null) {
         final segments = uri.pathSegments;
         if (segments.length >= 3 && segments[0] == 'share') {
@@ -252,16 +254,18 @@ class _MyAppState extends State<MyApp> {
           final cleanId = rawId.split('?')[0].split('#')[0];
           final typeStr = segments[1];
 
-          print("🔗 [DEEPLINK] Reçu: type=$typeStr, id=$cleanId");
+          printVm("🔗 [DEEPLINK] Reçu: type=$typeStr, id=$cleanId");
 
           if (typeStr.toLowerCase() == 'chronique') {
             await NavigationCacheService().storeChroniqueNavigation(cleanId);
+          } else if (typeStr.toLowerCase() == 'group') {
+            await NavigationCacheService().storeGroupNavigation(cleanId);
           } else {
             String postType = typeStr.toLowerCase() == 'video' ? 'VIDEO' : 'IMAGE';
             await NavigationCacheService().storePostNavigation(cleanId, postType);
           }
 
-          print("💾 [DEEPLINK] Données stockées dans le cache");
+          printVm("💾 [DEEPLINK] Données stockées dans le cache");
 
           // Redémarrer l'application
           _navigateToSplashAndClearStack();
@@ -483,7 +487,7 @@ class _MyAppState extends State<MyApp> {
 //   try {
 //     _cameras = await availableCameras();
 //   } catch (e) {
-//     print("Erreur initialisation caméra : $e");
+//     printVm("Erreur initialisation caméra : $e");
 //     _cameras = []; // On initialise avec une liste vide pour éviter l'erreur 'late initialization'
 //   }
 //
@@ -505,9 +509,9 @@ class _MyAppState extends State<MyApp> {
 //   // Le reste de ton code...
 //   FirebaseAuth.instance.authStateChanges().listen((User? user) {
 //     if (user == null) {
-//       print('Utilisateur non connecté');
+//       printVm('Utilisateur non connecté');
 //     } else {
-//       print('Utilisateur connecté: ${user.uid}');
+//       printVm('Utilisateur connecté: ${user.uid}');
 //     }
 //   });
 //
@@ -586,7 +590,7 @@ class _MyAppState extends State<MyApp> {
 //   void onClickNotification() {
 //     try {
 //       OneSignal.Notifications.addClickListener((event) async {
-//         print("notif additionalData: ${event.notification.additionalData}");
+//         printVm("notif additionalData: ${event.notification.additionalData}");
 //
 //         // Petit délai pour laisser l'app s'initialiser
 //         await Future.delayed(const Duration(milliseconds: 300));
@@ -664,7 +668,7 @@ class _MyAppState extends State<MyApp> {
 //               ),
 //             );
 //           } catch (e) {
-//             print("Erreur message: $e");
+//             printVm("Erreur message: $e");
 //             navigatorKey.currentState?.push(
 //               MaterialPageRoute(builder: (context) => MyHomePage(title: "")),
 //             );
@@ -768,8 +772,8 @@ class _MyAppState extends State<MyApp> {
 //         // if (segments.length >= 3 && segments[0] == 'share') {
 //         //   final typeStr = segments[1];
 //         //   final id = segments[2];
-//         //   print("Type1: $typeStr");
-//         //   print("ID: $id");
+//         //   printVm("Type1: $typeStr");
+//         //   printVm("ID: $id");
 //         //   _appLinkService.handleNavigation(navigatorKey.currentContext!, id, typeStr);
 //         // }
 //         if (segments.length >= 3 && segments[0] == 'share') {
@@ -782,15 +786,15 @@ class _MyAppState extends State<MyApp> {
 //           final typeStr = segments[1];
 //           final id = cleanId; // Utilise l'ID nettoyé
 //
-//           print("Type1: $typeStr");
-//           print("ID original: $rawId");
-//           print("ID nettoyé: $id");
+//           printVm("Type1: $typeStr");
+//           printVm("ID original: $rawId");
+//           printVm("ID nettoyé: $id");
 //
 //           _appLinkService.handleNavigation(navigatorKey.currentContext!, id, typeStr);
 //         }
 //       }
 //     }, onError: (err) {
-//       print("Erreur de lien: $err");
+//       printVm("Erreur de lien: $err");
 //     });
 //   }
 //   final DynamicLinkService _dynamicLinkService = DynamicLinkService();

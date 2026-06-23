@@ -3,53 +3,107 @@ import 'package:flutter/material.dart';
 
 import '../../models/model_data.dart';
 
-
-
+/// Point de contrôle unique pour tous les droits liés à l'abonnement.
+/// Toute vérification de permission passe par ici — jamais directement
+/// par `abonnement?.estPremium` dans les pages.
+///
+/// Plans : 'gratuit' < 'premium' < 'gold'
+/// Gold ⊃ Premium : estPremium retourne true pour Premium ET Gold.
 class AbonnementUtils {
-  // Vérifier si l'utilisateur peut faire un live HD
-  static bool canLiveHD(AfrolookAbonnement? abonnement) {
-    return abonnement?.estPremium == true;
+  // ── Checks de plan ───────────────────────────────────────────────────────
+
+  static bool isPremiumActive(AfrolookAbonnement? abonnement) =>
+      abonnement?.estPremium == true;
+
+  static bool isGold(AfrolookAbonnement? abonnement) =>
+      abonnement?.estGold == true;
+
+  // ── Fonctionnalités Live ──────────────────────────────────────────────────
+
+  static bool canLiveHD(AfrolookAbonnement? abonnement) =>
+      abonnement?.estPremium == true;
+
+  static int getLiveLatency(AfrolookAbonnement? abonnement) =>
+      abonnement?.estPremium == true ? 500 : 2000;
+
+  // ── Fonctionnalités Posts ─────────────────────────────────────────────────
+
+  static bool canPostMultiplePhotos(AfrolookAbonnement? abonnement) =>
+      abonnement?.estPremium == true;
+
+  static int getMaxPhotosPerLook(AfrolookAbonnement? abonnement) =>
+      abonnement?.estPremium == true ? 10 : 1;
+
+  static bool hasTimeRestriction(AfrolookAbonnement? abonnement) =>
+      abonnement?.estPremium != true;
+
+  static int getRestrictionTime(AfrolookAbonnement? abonnement) =>
+      abonnement?.estPremium == true ? 0 : 60;
+
+  static bool canJoinChallengesFreely(AfrolookAbonnement? abonnement) =>
+      abonnement?.estPremium == true;
+
+  static bool canShareMoreText(AfrolookAbonnement? abonnement) =>
+      abonnement?.estPremium == true;
+
+  static bool canJoinSponsorEvents(AfrolookAbonnement? abonnement) =>
+      abonnement?.estPremium == true;
+
+  // ── Fonctionnalités Groupes (Premium + Gold) ──────────────────────────────
+
+  /// Créer et gérer un groupe de chat (Premium ou Gold)
+  static bool canCreateGroup(AfrolookAbonnement? abonnement) =>
+      abonnement?.estPremium == true;
+
+  /// Nombre max de groupes possédés (null = illimité, 0 = aucun)
+  /// Premium → 2, Gold → illimité
+  static int? maxGroupsOwned(AfrolookAbonnement? abonnement) {
+    if (abonnement?.estGold == true) return null;
+    if (abonnement?.estPremium == true) return 2;
+    return 0;
   }
 
-  // Vérifier la latence autorisée
-  static int getLiveLatency(AfrolookAbonnement? abonnement) {
-    return abonnement?.estPremium == true ? 500 : 2000;
+  /// Nombre max de membres par groupe (null = illimité)
+  /// Premium → 100, Gold → illimité
+  static int? maxGroupMembers(AfrolookAbonnement? abonnement) {
+    if (abonnement?.estGold == true) return null;
+    if (abonnement?.estPremium == true) return 100;
+    return null;
   }
 
-  // Vérifier si peut poster plusieurs photos
-  static bool canPostMultiplePhotos(AfrolookAbonnement? abonnement) {
-    return abonnement?.estPremium == true;
+  // ── Fonctionnalités Groupes (Gold uniquement) ─────────────────────────────
+
+  /// Créer un groupe privé payant (Gold only)
+  static bool canCreatePrivateGroup(AfrolookAbonnement? abonnement) =>
+      abonnement?.estGold == true;
+
+  /// Générer et partager un code unique de groupe (Gold only)
+  static bool canUseGroupJoinCode(AfrolookAbonnement? abonnement) =>
+      abonnement?.estGold == true;
+
+  /// Le groupe du propriétaire apparaît dans le carousel pub (Gold only)
+  static bool canAppearInGoldCarousel(AfrolookAbonnement? abonnement) =>
+      abonnement?.estGold == true;
+
+  // ── Dates et expiration ───────────────────────────────────────────────────
+
+  static bool isExpiringSoon(AfrolookAbonnement? abonnement) =>
+      abonnement?.expireBientot == true;
+
+  static int getDaysRemaining(AfrolookAbonnement? abonnement) =>
+      abonnement?.joursRestants ?? 0;
+
+  static bool isExpired(AfrolookAbonnement? abonnement) =>
+      abonnement?.estExpire == true;
+
+  static String getFormattedEndDate(AfrolookAbonnement? abonnement) {
+    if (abonnement == null || abonnement.type == 'gratuit') return 'Illimité';
+    final d = abonnement.dateFin;
+    return '${d.day}/${d.month}/${d.year}';
   }
 
-  // Nombre maximum de photos par look
-  static int getMaxPhotosPerLook(AfrolookAbonnement? abonnement) {
-    return abonnement?.estPremium == true ? 10 : 1;
-  }
-
-  // Vérifier la restriction de temps
-  static bool hasTimeRestriction(AfrolookAbonnement? abonnement) {
-    return abonnement?.estPremium != true;
-  }
-
-  // Temps de restriction en minutes
-  static int getRestrictionTime(AfrolookAbonnement? abonnement) {
-    return abonnement?.estPremium == true ? 0 : 60;
-  }
-
-  // Vérifier si peut participer aux challenges librement
-  static bool canJoinChallengesFreely(AfrolookAbonnement? abonnement) {
-    return abonnement?.estPremium == true;
-  }
-
-  // Vérifier si peut partager plus de texte
-  static bool canShareMoreText(AfrolookAbonnement? abonnement) {
-    return abonnement?.estPremium == true;
-  }
-
-  // Vérifier si peut participer aux événements sponsors
-  static bool canJoinSponsorEvents(AfrolookAbonnement? abonnement) {
-    return abonnement?.estPremium == true;
-  }
+  // ── Badge utilisateur — source unique ────────────────────────────────────
+  // Priorité : isVerify > officiel personnel > officiel institutionnel > Gold > Premium
 
   static const _personalOfficialTypes = {
     'influencer', 'artist', 'publicFigure', 'entrepreneur'
@@ -58,8 +112,6 @@ class AbonnementUtils {
     'company', 'stateInstitution', 'media', 'journalist', 'ngo', 'association', 'other'
   };
 
-  // Obtenir le badge utilisateur — source unique pour toute l'app
-  // Priorité : isVerify > officialBadge (personnel = orange, institutionnel = bleu carré) > premium (or)
   static Widget getUserBadge({
     AfrolookAbonnement? abonnement,
     required bool isVerified,
@@ -70,18 +122,19 @@ class AbonnementUtils {
     bool withBackground = false,
   }) {
     final isPremium = isPremiumOverride ?? abonnement?.estPremium == true;
+    final isGoldUser = abonnement?.estGold == true;
 
     Widget? badge;
 
-    // 1. Badge bleu admin : utilisateur vérifié par l'administrateur
+    // 1. Vérifié admin (bleu)
     if (isVerified) {
       badge = Icon(Icons.verified, color: Colors.blue, size: size);
     }
-    // 2. Badge orange cercle : compte officiel personnel (influenceur, artiste…)
+    // 2. Compte officiel personnel (orange)
     else if (officialBadge && _personalOfficialTypes.contains(officialAccountType)) {
       badge = Icon(Icons.verified, color: Colors.orange, size: size);
     }
-    // 3. Badge bleu carré : compte officiel institutionnel (entreprise, média…)
+    // 3. Compte officiel institutionnel (bleu carré)
     else if (officialBadge && _institutionalOfficialTypes.contains(officialAccountType)) {
       badge = Container(
         width: size,
@@ -93,7 +146,24 @@ class AbonnementUtils {
         child: Icon(Icons.verified, color: Colors.white, size: size * 0.75),
       );
     }
-    // 4. Badge or : utilisateur premium (sans badge officiel)
+    // 4. Badge Gold 👑 (gradient or)
+    else if (isGoldUser) {
+      badge = Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFFD700), Color(0xFFFF8C00)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 1.5),
+        ),
+        child: Icon(Icons.workspace_premium, color: Colors.white, size: size * 0.6),
+      );
+    }
+    // 5. Badge Premium ⭐ (gradient rose-or)
     else if (isPremium) {
       badge = Container(
         width: size,
@@ -113,7 +183,6 @@ class AbonnementUtils {
 
     if (!withBackground) return badge;
 
-    // Fond rond blanc derrière le badge
     return Container(
       width: size + 6,
       height: size + 6,
@@ -130,37 +199,5 @@ class AbonnementUtils {
       ),
       child: Center(child: badge),
     );
-  }
-
-  // Vérifier si l'abonnement expire bientôt
-  static bool isExpiringSoon(AfrolookAbonnement? abonnement) {
-    return abonnement?.expireBientot == true;
-  }
-
-  // Obtenir les jours restants - CORRECTION ICI
-  static int getDaysRemaining(AfrolookAbonnement? abonnement) {
-    return abonnement?.joursRestants ?? 0;
-  }
-
-  // Vérifier si l'abonnement est expiré
-  static bool isExpired(AfrolookAbonnement? abonnement) {
-    return abonnement?.estExpire == true;
-  }
-
-  // Vérifier si premium actif
-  static bool isPremiumActive(AfrolookAbonnement? abonnement) {
-    return abonnement?.estPremium == true;
-  }
-
-  // Obtenir la date de fin formatée
-  static String getFormattedEndDate(AfrolookAbonnement? abonnement) {
-    if (abonnement == null) return 'N/A';
-
-    if (abonnement.type == 'gratuit') {
-      return 'Illimité';
-    }
-
-    final dateFin = abonnement.dateFin;
-    return '${dateFin.day}/${dateFin.month}/${dateFin.year}';
   }
 }

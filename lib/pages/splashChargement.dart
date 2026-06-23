@@ -1,29 +1,50 @@
-import 'dart:async';
+﻿import 'dart:async';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:intl/intl.dart';
+
 import 'package:video_player/video_player.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
+
 import '../models/chatmodels/message.dart';
+
 import '../theme/app_colors.dart';
+
 import '../models/model_data.dart';
+
 import '../providers/authProvider.dart';
+
 import '../providers/chroniqueProvider.dart';
+
 import '../providers/contenuPayantProvider.dart';
+
 import '../providers/postProvider.dart';
+
 import '../providers/userProvider.dart';
+
 import '../providers/feed_provider.dart';
+
 import '../services/cache/startup_cache_service.dart';
+
 import '../services/feed/feed_repository.dart';
+
 import '../services/nav_cache_service.dart';
+
 import '../services/sessions/session_service.dart';
+
 import 'auth/authTest/Screens/Login/loginPageUser.dart';
+
 import 'auth/authTest/Screens/updateUserData.dart';
 
 import 'home/homeScreen.dart';
-
 
 class DestinationData {
   final String type;
@@ -32,7 +53,8 @@ class DestinationData {
   final String? chroniqueId;
   final String? chatId;
   final String? sendUserId;
-  DestinationData({required this.type, this.post, this.chat, this.chroniqueId, this.chatId, this.sendUserId});
+  final String? joinCode;
+  DestinationData({required this.type, this.post, this.chat, this.chroniqueId, this.chatId, this.sendUserId, this.joinCode});
 }
 
 class SplashChargement extends StatefulWidget {
@@ -72,6 +94,7 @@ class _SplashChargementState extends State<SplashChargement> {
   String? _pendingChatId;
   String? _pendingSendUserId;
   String? _pendingChroniqueId;
+  String? _pendingJoinCode;
   String? _pendingNavigationType;
 
   Post? _loadedPost;
@@ -95,11 +118,11 @@ class _SplashChargementState extends State<SplashChargement> {
   Future<bool> _checkSessionAndRedirect() async {
     // 1. Vérifier si on a un token stocké
    return  await SessionUserFirebaseService.getStoredUserId().then((value) async {
-     print('🔍 Aucun token trouvé: $value');
+     printVm('🔍 Aucun token trouvé: $value');
 
      final storedUserId = value;
       if (storedUserId == null) {
-        print('🔍 Aucun token trouvé, redirection vers login');
+        printVm('🔍 Aucun token trouvé, redirection vers login');
         _redirectToLogin();
         return false;
       }
@@ -108,7 +131,7 @@ class _SplashChargementState extends State<SplashChargement> {
       final canStayConnected = await SessionUserFirebaseService.canStayConnected();
 
       if (!canStayConnected) {
-        print('🔍 Session expirée (> 3 jours), redirection vers login');
+        printVm('🔍 Session expirée (> 3 jours), redirection vers login');
         await SessionUserFirebaseService.clearSession();
         _redirectToLogin();
         return false;
@@ -116,12 +139,10 @@ class _SplashChargementState extends State<SplashChargement> {
 
       // 4. Session valide, mettre à jour la date d'activité
       await SessionUserFirebaseService.updateLastActive();
-      print('✅ Session valide pour: $storedUserId');
+      printVm('✅ Session valide pour: $storedUserId');
        return true;
 
      },);
-
-
 
   }
 
@@ -161,7 +182,7 @@ class _SplashChargementState extends State<SplashChargement> {
       }
       await _checkIfShouldPlayVideo();
     } catch (e) {
-      print("❌ Erreur initialisation : $e");
+      printVm("❌ Erreur initialisation : $e");
       setState(() { _hasError = true; _errorMessage = e.toString(); });
       _isProcessing = false;
     }
@@ -181,7 +202,7 @@ class _SplashChargementState extends State<SplashChargement> {
         }
         _loadedPost = post;
       }
-    } catch (e) { print("❌ Erreur chargement post : $e"); }
+    } catch (e) { printVm("❌ Erreur chargement post : $e"); }
     finally { if (mounted) setState(() => _isLoadingTarget = false); }
   }
 
@@ -213,14 +234,14 @@ class _SplashChargementState extends State<SplashChargement> {
       }
       chat.messages = messagesSnapshot.docs.map((d) => Message.fromJson(d.data() as Map<String, dynamic>)).toList();
       _loadedChat = chat;
-    } catch (e) { print("❌ Erreur chargement chat : $e"); }
+    } catch (e) { printVm("❌ Erreur chargement chat : $e"); }
     finally { if (mounted) setState(() => _isLoadingTarget = false); }
   }
 
   void _navigateToHomeWithDestination() {
     if (_hasNavigated) return;
     _hasNavigated = true;
-    print("🚀 [SPLASH] Navigation vers Home avec destination ${_destinationToSend?.type}");
+    printVm("🚀 [SPLASH] Navigation vers Home avec destination ${_destinationToSend?.type}");
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => MyHomePage(title: '', initialDestination: _destinationToSend)),
@@ -242,7 +263,7 @@ class _SplashChargementState extends State<SplashChargement> {
         if (mounted) setState(() { isFinished = true; isLoadingVideo = false; });
       }
     } catch (e) {
-      print("❌ Erreur vérification vidéo : $e");
+      printVm("❌ Erreur vérification vidéo : $e");
       shouldPlayVideo = false;
       if (mounted) setState(() { isFinished = true; isLoadingVideo = false; });
     }
@@ -355,14 +376,14 @@ class _SplashChargementState extends State<SplashChargement> {
   Future<void> _handleAuthenticatedUserById(String userId) async {
     if (_authHandled || _isAuthCompleted || _hasNavigated) return;
     _authHandled = true;
-    print("🔐 [SPLASH] _handleAuthenticatedUserById start for $userId");
+    printVm("🔐 [SPLASH] _handleAuthenticatedUserById start for $userId");
 
     // ── Cache-first : tenter de servir depuis le cache local ────────────────
     final cachedUser = await StartupCacheService.loadUserData();
     final cachedApp = await StartupCacheService.loadAppData();
 
     if (cachedUser != null && cachedUser.id == userId) {
-      print("⚡ [SPLASH] Cache hit — navigation immédiate");
+      printVm("⚡ [SPLASH] Cache hit — navigation immédiate");
       authProvider.loginUserData = cachedUser;
       if (cachedApp != null) authProvider.appDefaultData = cachedApp;
 
@@ -384,7 +405,7 @@ class _SplashChargementState extends State<SplashChargement> {
     }
 
     // ── Cache miss : chargement Firestore séquentiel ─────────────────────────
-    print("🌐 [SPLASH] Cache miss — chargement Firestore pour $userId");
+    printVm("🌐 [SPLASH] Cache miss — chargement Firestore pour $userId");
     try {
       setState(() => _loadingText = "Chargement des données...");
       await authProvider.getAppData();
@@ -413,7 +434,7 @@ class _SplashChargementState extends State<SplashChargement> {
       await _prepareDestination();
 
     } catch (e) {
-      print("❌ [AUTH] Erreur : $e");
+      printVm("❌ [AUTH] Erreur : $e");
       if (mounted) setState(() { _hasError = true; _errorMessage = e.toString(); });
     }
   }
@@ -425,9 +446,9 @@ class _SplashChargementState extends State<SplashChargement> {
         await authProvider.getLoginUser(userId);
         await StartupCacheService.saveUserData(authProvider.loginUserData);
         await StartupCacheService.saveAppData(authProvider.appDefaultData);
-        print("✅ [SPLASH] Background refresh terminé");
+        printVm("✅ [SPLASH] Background refresh terminé");
       } catch (e) {
-        print("⚠️ [SPLASH] Background refresh échoué (ignoré): $e");
+        printVm("⚠️ [SPLASH] Background refresh échoué (ignoré): $e");
       }
 
       // Préchargement silencieux du feed home + contenu global pour que
@@ -456,7 +477,7 @@ class _SplashChargementState extends State<SplashChargement> {
           subscriptionPostIds: user.newPostsFromSubscriptions,
         );
       } catch (e) {
-        print("⚠️ [SPLASH] Preload feed échoué (ignoré): $e");
+        printVm("⚠️ [SPLASH] Preload feed échoué (ignoré): $e");
       }
     });
   }
@@ -466,20 +487,20 @@ class _SplashChargementState extends State<SplashChargement> {
       await FirebaseFirestore.instance.collection('Users').doc(userId).update({
         'last_time_active': DateTime.now().millisecondsSinceEpoch,
       });
-      print('✅ last_time_active mis à jour pour: $userId');
+      printVm('✅ last_time_active mis à jour pour: $userId');
     } catch (e) {
-      print('❌ Erreur mise à jour last_time_active: $e');
+      printVm('❌ Erreur mise à jour last_time_active: $e');
     }
   }
 
   Future<void> _prepareDestination() async {
-    print("🔍 [SPLASH] Chargement du cache...");
+    printVm("🔍 [SPLASH] Chargement du cache...");
     await NavigationCacheService().getAndClearPendingNavigation().then((value) {
       _cachedNavigation = value;
       if (_cachedNavigation != null) {
-        print("✅ [SPLASH] Cache trouvé : $_cachedNavigation");
+        printVm("✅ [SPLASH] Cache trouvé : $_cachedNavigation");
         _pendingNavigationType = _cachedNavigation!['type'];
-        print("✅ [SPLASH] Cache trouvé _pendingNavigationType : $_pendingNavigationType");
+        printVm("✅ [SPLASH] Cache trouvé _pendingNavigationType : $_pendingNavigationType");
 
         switch (_pendingNavigationType) {
           case 'post':
@@ -493,21 +514,24 @@ class _SplashChargementState extends State<SplashChargement> {
           case 'chronique':
             _pendingChroniqueId = _cachedNavigation!['chroniqueId'];
             break;
+          case 'group':
+            _pendingJoinCode = _cachedNavigation!['joinCode'] as String?;
+            break;
           default: break;
         }
       } else {
         if (_hasNavigated) return;
         _hasNavigated = true;
-        print("🚀 [SPLASH] Navigation vers Home avec destination ${_destinationToSend?.type}");
+        printVm("🚀 [SPLASH] Navigation vers Home avec destination ${_destinationToSend?.type}");
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => MyHomePage(title: '', initialDestination: _destinationToSend)),
         );
-        print("📦 [SPLASH] Aucune navigation en cache");
+        printVm("📦 [SPLASH] Aucune navigation en cache");
       }
     });
 
-    print("📦 2 [SPLASH] _prepareDestination - pendingType = $_pendingNavigationType");
+    printVm("📦 2 [SPLASH] _prepareDestination - pendingType = $_pendingNavigationType");
     if (_pendingNavigationType == null) {
       _destinationToSend = DestinationData(type: 'home');
       return;
@@ -540,14 +564,17 @@ class _SplashChargementState extends State<SplashChargement> {
       case 'article':
         _destinationToSend = DestinationData(type: 'article');
         break;
+      case 'group':
+        _destinationToSend = DestinationData(type: 'group', joinCode: _pendingJoinCode);
+        break;
       default:
         _destinationToSend = DestinationData(type: 'home');
     }
-    print("✅ [SPLASH] Destination créée : ${_destinationToSend?.type}");
+    printVm("✅ [SPLASH] Destination créée : ${_destinationToSend?.type}");
 
     if (_hasNavigated) return;
     _hasNavigated = true;
-    print("🚀 [SPLASH] Navigation vers Home avec destination ${_destinationToSend?.type}");
+    printVm("🚀 [SPLASH] Navigation vers Home avec destination ${_destinationToSend?.type}");
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => MyHomePage(title: '', initialDestination: _destinationToSend)),
@@ -688,7 +715,7 @@ class _SplashChargementState extends State<SplashChargement> {
 //     final storedUserId = await SessionUserFirebaseService.getStoredUserId();
 //
 //     if (storedUserId == null) {
-//       print('🔍 Aucun token trouvé, redirection vers login');
+//       printVm('🔍 Aucun token trouvé, redirection vers login');
 //       _redirectToLogin();
 //       return false;
 //     }
@@ -697,7 +724,7 @@ class _SplashChargementState extends State<SplashChargement> {
 //     final canStayConnected = await SessionUserFirebaseService.canStayConnected();
 //
 //     if (!canStayConnected) {
-//       print('🔍 Session expirée (> 3 jours), redirection vers login');
+//       printVm('🔍 Session expirée (> 3 jours), redirection vers login');
 //       await SessionUserFirebaseService.clearSession();
 //       _redirectToLogin();
 //       return false;
@@ -707,7 +734,7 @@ class _SplashChargementState extends State<SplashChargement> {
 //     final isInactive = await SessionUserFirebaseService.isUserInactive(storedUserId);
 //
 //     if (isInactive) {
-//       print('🔍 Utilisateur inactif (> 3 jours sans connexion app), redirection vers login');
+//       printVm('🔍 Utilisateur inactif (> 3 jours sans connexion app), redirection vers login');
 //       await SessionUserFirebaseService.clearSession();
 //       _redirectToLogin();
 //       return false;
@@ -715,16 +742,16 @@ class _SplashChargementState extends State<SplashChargement> {
 //
 //     // 4. Session valide, mettre à jour la date d'activité
 //     await SessionUserFirebaseService.updateLastActive();
-//     print('✅ Session valide pour: $storedUserId');
+//     printVm('✅ Session valide pour: $storedUserId');
 //
 //     return true;
 //   }
 //
 //   Future<void> _loadCachedNavigationOnce() async {
-//     print("🔍 [SPLASH] Chargement du cache...");
+//     printVm("🔍 [SPLASH] Chargement du cache...");
 //     _cachedNavigation = await NavigationCacheService().getAndClearPendingNavigation();
 //     if (_cachedNavigation != null) {
-//       print("✅ [SPLASH] Cache trouvé : $_cachedNavigation");
+//       printVm("✅ [SPLASH] Cache trouvé : $_cachedNavigation");
 //       _pendingNavigationType = _cachedNavigation!['type'];
 //       switch (_pendingNavigationType) {
 //         case 'post':
@@ -741,7 +768,7 @@ class _SplashChargementState extends State<SplashChargement> {
 //         default: break;
 //       }
 //     } else {
-//       print("📦 [SPLASH] Aucune navigation en cache");
+//       printVm("📦 [SPLASH] Aucune navigation en cache");
 //     }
 //     // Signaler que le cache est prêt
 //     if (!_cacheReady.isCompleted) _cacheReady.complete();
@@ -763,7 +790,7 @@ class _SplashChargementState extends State<SplashChargement> {
 //       }
 //       await _checkIfShouldPlayVideo();
 //     } catch (e) {
-//       print("❌ Erreur initialisation : $e");
+//       printVm("❌ Erreur initialisation : $e");
 //       setState(() { _hasError = true; _errorMessage = e.toString(); });
 //       _isProcessing = false;
 //     }
@@ -785,7 +812,7 @@ class _SplashChargementState extends State<SplashChargement> {
 //         }
 //         _loadedPost = post;
 //       }
-//     } catch (e) { print("❌ Erreur chargement post : $e"); }
+//     } catch (e) { printVm("❌ Erreur chargement post : $e"); }
 //     finally { if (mounted) setState(() => _isLoadingTarget = false); }
 //   }
 //
@@ -809,14 +836,14 @@ class _SplashChargementState extends State<SplashChargement> {
 //           .get();
 //       chat.messages = messagesSnapshot.docs.map((d) => Message.fromJson(d.data() as Map<String, dynamic>)).toList();
 //       _loadedChat = chat;
-//     } catch (e) { print("❌ Erreur chargement chat : $e"); }
+//     } catch (e) { printVm("❌ Erreur chargement chat : $e"); }
 //     finally { if (mounted) setState(() => _isLoadingTarget = false); }
 //   }
 //
 //   void _navigateToHomeWithDestination() {
 //     if (_hasNavigated) return;
 //     _hasNavigated = true;
-//     print("🚀 [SPLASH] Navigation vers Home avec destination ${_destinationToSend?.type}");
+//     printVm("🚀 [SPLASH] Navigation vers Home avec destination ${_destinationToSend?.type}");
 //     Navigator.pushReplacement(
 //       context,
 //       MaterialPageRoute(builder: (_) => MyHomePage(title: '', initialDestination: _destinationToSend)),
@@ -840,7 +867,7 @@ class _SplashChargementState extends State<SplashChargement> {
 //         if (mounted) setState(() { isFinished = true; isLoadingVideo = false; });
 //       }
 //     } catch (e) {
-//       print("❌ Erreur vérification vidéo : $e");
+//       printVm("❌ Erreur vérification vidéo : $e");
 //       shouldPlayVideo = false;
 //       if (mounted) setState(() { isFinished = true; isLoadingVideo = false; });
 //     }
@@ -1053,12 +1080,12 @@ class _SplashChargementState extends State<SplashChargement> {
 //
 //                           if (canStayConnected) {
 //                             // Session valide, on essaie de reconnecter automatiquement
-//                             print('🔄 Tentative de reconnexion automatique pour: $storedUserId');
+//                             printVm('🔄 Tentative de reconnexion automatique pour: $storedUserId');
 //                             // Ici vous pouvez déclencher une reconnexion silencieuse
 //                             // Ou simplement rediriger vers login avec message
 //                             _redirectToLogin();
 //                           } else {
-//                             print('🔍 Session expirée, redirection vers login');
+//                             printVm('🔍 Session expirée, redirection vers login');
 //                             await SessionUserFirebaseService.clearSession();
 //                             _redirectToLogin();
 //                           }
@@ -1097,21 +1124,21 @@ class _SplashChargementState extends State<SplashChargement> {
 //       await FirebaseFirestore.instance.collection('Users').doc(userId).update({
 //         'last_time_active': DateTime.now().millisecondsSinceEpoch,
 //       });
-//       print('✅ last_time_active mis à jour pour: $userId');
+//       printVm('✅ last_time_active mis à jour pour: $userId');
 //     } catch (e) {
-//       print('❌ Erreur mise à jour last_time_active: $e');
+//       printVm('❌ Erreur mise à jour last_time_active: $e');
 //     }
 //   }
 //
 //   Future<void> _prepareDestination() async {
 //
-//     print("🔍 [SPLASH] Chargement du cache...");
+//     printVm("🔍 [SPLASH] Chargement du cache...");
 //     await NavigationCacheService().getAndClearPendingNavigation().then((value) {
 //       _cachedNavigation = value;
 //       if (_cachedNavigation != null) {
-//         print("✅ [SPLASH] Cache trouvé : $_cachedNavigation");
+//         printVm("✅ [SPLASH] Cache trouvé : $_cachedNavigation");
 //         _pendingNavigationType = _cachedNavigation!['type'];
-//         print("✅ [SPLASH] Cache trouvé _pendingNavigationType : $_pendingNavigationType");
+//         printVm("✅ [SPLASH] Cache trouvé _pendingNavigationType : $_pendingNavigationType");
 //
 //         switch (_pendingNavigationType) {
 //           case 'post':
@@ -1130,18 +1157,18 @@ class _SplashChargementState extends State<SplashChargement> {
 //       } else {
 //         if (_hasNavigated) return;
 //         _hasNavigated = true;
-//         print("🚀 [SPLASH] Navigation vers Home avec destination ${_destinationToSend?.type}");
+//         printVm("🚀 [SPLASH] Navigation vers Home avec destination ${_destinationToSend?.type}");
 //         Navigator.pushReplacement(
 //           context,
 //           MaterialPageRoute(builder: (_) => MyHomePage(title: '', initialDestination: _destinationToSend)),
 //         );
-//         print("📦 [SPLASH] Aucune navigation en cache");
+//         printVm("📦 [SPLASH] Aucune navigation en cache");
 //       }
 //     },);
 //
 //     // Signaler que le cache est prêt
 //     // if (!_cacheReady.isCompleted) _cacheReady.complete();
-//     print("📦 2 [SPLASH] _prepareDestination - pendingType = $_pendingNavigationType");
+//     printVm("📦 2 [SPLASH] _prepareDestination - pendingType = $_pendingNavigationType");
 //     if (_pendingNavigationType == null) {
 //       _destinationToSend = DestinationData(type: 'home');
 //       return;
@@ -1177,11 +1204,11 @@ class _SplashChargementState extends State<SplashChargement> {
 //       default:
 //         _destinationToSend = DestinationData(type: 'home');
 //     }
-//     print("✅ [SPLASH] Destination créée : ${_destinationToSend?.type}");
+//     printVm("✅ [SPLASH] Destination créée : ${_destinationToSend?.type}");
 //
 //     if (_hasNavigated) return;
 //     _hasNavigated = true;
-//     print("🚀 [SPLASH] Navigation vers Home avec destination ${_destinationToSend?.type}");
+//     printVm("🚀 [SPLASH] Navigation vers Home avec destination ${_destinationToSend?.type}");
 //     Navigator.pushReplacement(
 //       context,
 //       MaterialPageRoute(builder: (_) => MyHomePage(title: '', initialDestination: _destinationToSend)),
@@ -1192,7 +1219,7 @@ class _SplashChargementState extends State<SplashChargement> {
 //   Future<void> _handleAuthenticatedUser(User user) async {
 //     if (_authHandled || _isAuthCompleted || _hasNavigated) return;
 //     _authHandled = true;
-//     print("🔐 [SPLASH] _handleAuthenticatedUser start for ${user.uid}");
+//     printVm("🔐 [SPLASH] _handleAuthenticatedUser start for ${user.uid}");
 //
 //     // Sauvegarder la session dans SharedPreferences
 //     await SessionUserFirebaseService.saveUserSession(user.uid);
@@ -1221,7 +1248,7 @@ class _SplashChargementState extends State<SplashChargement> {
 //       await _prepareDestination();
 //
 //     } catch (e) {
-//       print("❌ [AUTH] Erreur : $e");
+//       printVm("❌ [AUTH] Erreur : $e");
 //       if (mounted) setState(() { _hasError = true; _errorMessage = e.toString(); });
 //     }
 //   }

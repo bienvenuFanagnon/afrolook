@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../models/model_data.dart';
 import '../../pages/chat/group/group_chat_page.dart';
 import '../../providers/authProvider.dart';
+import '../../services/utils/group_permission_utils.dart';
 import '../../theme/app_colors.dart';
 
 /// Bottom sheet pour envoyer un post dans une conversation directe ou un groupe.
@@ -155,6 +156,76 @@ class _PostShareSheetState extends State<PostShareSheet>
     final groupName = group['name'] as String? ?? '';
     final groupImage = group['image_url'] as String?;
     if (_sendingId != null) return;
+
+    // Vérification centralisée des permissions de partage
+    final myId = _auth.loginUserData.id!;
+    final memberDoc = await FirebaseFirestore.instance
+        .collection('GroupChats').doc(groupId).collection('members').doc(myId).get();
+    final role = memberDoc.data()?['role'] as String? ?? 'member';
+    final groupData = await GroupPermissionUtils.loadGroupData(groupId);
+    if (!GroupPermissionUtils.canShare(groupData: groupData, userId: myId, userRole: role)) {
+      if (mounted) {
+        final isFrozen = GroupPermissionUtils.isGroupFrozen(groupData);
+        showDialog(
+          context: context,
+          builder: (ctx) => Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundColor: Colors.red.withOpacity(0.12),
+                    child: Icon(
+                      isFrozen ? Icons.ac_unit_rounded : Icons.block_rounded,
+                      color: Colors.red,
+                      size: 30,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    isFrozen ? 'Groupe gelé' : 'Partage non autorisé',
+                    style: TextStyle(
+                      color: _colors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    isFrozen
+                        ? 'Ce groupe est gelé car le propriétaire n\'est plus abonné Gold. Aucun partage n\'est possible.'
+                        : 'L\'administrateur a désactivé le partage dans ce groupe.',
+                    style: TextStyle(color: _colors.textSecondary, fontSize: 14),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _colors.primary,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: const Text('Compris',
+                          style: TextStyle(
+                              color: Colors.white, fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
     setState(() => _sendingId = groupId);
     try {
       final me = _auth.loginUserData;
