@@ -614,7 +614,7 @@ Future<void> _showCategoryNotification({
     priority: Priority.high,
     showWhen: true,
     color: const Color(0xFF1FAA59),
-    largeIcon: largeBitmap ?? const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+    largeIcon: largeBitmap ?? const DrawableResourceAndroidBitmap('@mipmap/launcher_icon'),
     // Texte expandable au clic vers le bas
     styleInformation: BigTextStyleInformation(
       body,

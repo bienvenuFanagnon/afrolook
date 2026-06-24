@@ -71,6 +71,7 @@ import 'package:afrotok/providers/dating/coin_provider.dart';
 import 'package:afrotok/providers/dating/creator_provider.dart';
 import 'package:afrotok/providers/dating/dating_provider.dart';
 import 'package:afrotok/providers/feed_provider.dart';
+import 'package:afrotok/providers/gold_groups_provider.dart';
 import 'package:afrotok/providers/mixed_feed_service_provider.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:afrotok/providers/profilLikeProvider.dart';
@@ -335,6 +336,7 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (_) => CryptoPortfolioProvider()),
         ChangeNotifierProvider(create: (_) => MixedFeedServiceProvider()),
         ChangeNotifierProvider(create: (_) => FeedProvider()),
+        ChangeNotifierProvider(create: (_) => GoldGroupsProvider()),
         ChangeNotifierProvider(create: (_) => PronosticProvider()),
         ChangeNotifierProvider(create: (_) => SoundProvider()),
         ChangeNotifierProxyProvider<UserAuthProvider, CoinGiftUserProvider>(

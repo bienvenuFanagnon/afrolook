@@ -93,7 +93,7 @@ class _CreatorContentFormPageState extends State<CreatorContentFormPage>
   }
 
   Future<void> _initVideoPlayer(String url) async {
-    _videoController = VideoPlayerController.network(url);
+    _videoController = VideoPlayerController.networkUrl(Uri.parse(url));
     await _videoController!.initialize();
     _chewieController = ChewieController(
       videoPlayerController: _videoController!,

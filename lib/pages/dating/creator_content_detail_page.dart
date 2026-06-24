@@ -70,7 +70,7 @@ class _CreatorContentDetailPageState extends State<CreatorContentDetailPage> {
 
   void _initVideoPlayer() {
     if (widget.content.mediaType == MediaType.video && widget.content.mediaUrl.isNotEmpty) {
-      _videoController = VideoPlayerController.network(widget.content.mediaUrl);
+      _videoController = VideoPlayerController.networkUrl(Uri.parse(widget.content.mediaUrl));
       _chewieController = ChewieController(
         videoPlayerController: _videoController!,
         autoPlay: false,

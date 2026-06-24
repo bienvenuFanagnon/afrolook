@@ -35,8 +35,11 @@ class GroupPermissionUtils {
     // Règle absolue : gelé = personne n'écrit
     if (isGroupFrozen(groupData)) return false;
 
-    // Mode lecture seule : seuls owner/admin écrivent
-    if (isReadOnly(groupData) && userRole == 'member') return false;
+    // Owner et admin peuvent toujours écrire (lecture seule, default_can_write=false, etc.)
+    if (userRole == 'owner' || userRole == 'admin') return true;
+
+    // Mode lecture seule : membres bloqués
+    if (isReadOnly(groupData)) return false;
 
     // Permission individuelle (priorité sur le défaut)
     final perms = _memberPerms(groupData, userId);
@@ -53,8 +56,11 @@ class GroupPermissionUtils {
     required String userId,
     required String userRole,
   }) {
-    // Gelé = personne ne partage
+    // Gelé = personne ne partage (seule règle absolue)
     if (isGroupFrozen(groupData)) return false;
+
+    // Owner et admin ne sont jamais bloqués par les restrictions de partage
+    if (userRole == 'owner' || userRole == 'admin') return true;
 
     // Permission individuelle
     final perms = _memberPerms(groupData, userId);

@@ -136,8 +136,8 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
         : widget.content.videoUrl ?? '';
     if (videoUrl!.isEmpty) return;
     final String optimizedUrl = _authProvider.convertToCdnUrl(videoUrl, _authProvider.appDefaultData);
-    _videoPlayerController = VideoPlayerController.network(optimizedUrl);
-    // _videoPlayerController = VideoPlayerController.network(videoUrl);
+    _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(optimizedUrl));
+    // _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(videoUrl));
     await _videoPlayerController!.initialize();
     _videoDuration = _videoPlayerController!.value.duration.inSeconds.toDouble();
 
@@ -173,7 +173,7 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
     final String optimizedUrl = _authProvider.convertToCdnUrl(videoUrl, _authProvider.appDefaultData);
 
     // Récupérer la durée de la vidéo (besoin d'un contrôleur temporaire)
-    final tempController = VideoPlayerController.network(optimizedUrl);
+    final tempController = VideoPlayerController.networkUrl(Uri.parse(optimizedUrl));
     await tempController.initialize();
     _videoDuration = tempController.value.duration.inSeconds.toDouble();
     await tempController.dispose();
@@ -184,19 +184,19 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
     double endPos = max(0, _videoDuration - _capsuleDuration);
 
     // Charger la capsule début
-    _capsuleStartController = VideoPlayerController.network(optimizedUrl);
+    _capsuleStartController = VideoPlayerController.networkUrl(Uri.parse(optimizedUrl));
     await _capsuleStartController!.initialize();
     await _capsuleStartController!.seekTo(Duration(seconds: startPos.toInt()));
     await _capsuleStartController!.pause();
 
     // Charger la capsule milieu
-    _capsuleMiddleController = VideoPlayerController.network(optimizedUrl);
+    _capsuleMiddleController = VideoPlayerController.networkUrl(Uri.parse(optimizedUrl));
     await _capsuleMiddleController!.initialize();
     await _capsuleMiddleController!.seekTo(Duration(seconds: middlePos.toInt()));
     await _capsuleMiddleController!.pause();
 
     // Charger la capsule fin
-    _capsuleEndController = VideoPlayerController.network(optimizedUrl);
+    _capsuleEndController = VideoPlayerController.networkUrl(Uri.parse(optimizedUrl));
     await _capsuleEndController!.initialize();
     await _capsuleEndController!.seekTo(Duration(seconds: endPos.toInt()));
     await _capsuleEndController!.pause();
@@ -1393,7 +1393,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //     // bool canWatch = (isSeries ? _currentEpisode?.isFree ?? false : widget.content.isFree) || hasPurchased;
 //
 //     if (canWatch && videoUrl!.isNotEmpty) {
-//       _videoPlayerController = VideoPlayerController.network(videoUrl);
+//       _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(videoUrl));
 //       await _videoPlayerController.initialize();
 //
 //       _chewieController = ChewieController(

@@ -107,6 +107,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/theme_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../providers/sound_provider.dart';
+import '../../providers/gold_groups_provider.dart';
 import 'HomeConstPost.dart';
 import '../../l10n/app_localizations.dart';
 import '../../services/migrations/unread_reset_migration.dart';
@@ -1348,6 +1349,9 @@ class _MyHomePageState extends State<MyHomePage>
 
       // Mise à jour silencieuse du pays en arrière-plan (max 1x/mois)
       _checkAndUpdateCountryMonthly();
+
+      // Préchargement des groupes Gold/officiels pour la liste des groupes
+      context.read<GoldGroupsProvider>().load();
     });
     _initializeFeedService();
     // Initialisation du listener de cycle de vie

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import 'package:video_player/video_player.dart';
 
@@ -28,7 +28,7 @@ class _VideoCarouselState extends State<VideoCarousel> {
 
   void _initializeVideoControllers() {
     _videoControllers = videoUrls
-        .map((url) => VideoPlayerController.network(url)
+        .map((url) => VideoPlayerController.networkUrl(Uri.parse(url))
       ..setLooping(true)
       ..initialize().then((_) {
         if (mounted) setState(() {});

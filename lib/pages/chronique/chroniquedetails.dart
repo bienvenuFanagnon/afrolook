@@ -371,7 +371,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
 
     if (currentChronique.type == ChroniqueType.VIDEO && currentChronique.mediaUrl != null) {
       _videoController?.dispose();
-      _videoController = VideoPlayerController.network(currentChronique.mediaUrl!)
+      _videoController = VideoPlayerController.networkUrl(Uri.parse(currentChronique.mediaUrl!))
         ..initialize().then((_) {
           setState(() => _isVideoInitialized = true);
           _videoController!.play();
@@ -958,7 +958,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
       final url = VideoPreloadManager.urlResolver != null
           ? VideoPreloadManager.urlResolver!(post.url_media!)
           : post.url_media!;
-      final controller = VideoPlayerController.network(url);
+      final controller = VideoPlayerController.networkUrl(Uri.parse(url));
       controller.initialize().then((_) {
         if (!mounted || _currentAdId != ad.id) {
           controller.dispose();

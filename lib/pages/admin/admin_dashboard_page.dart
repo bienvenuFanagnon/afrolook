@@ -589,6 +589,14 @@ class _ModulesGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final modules = [
       _ModuleItem(
+        icon: Icons.groups_rounded,
+        label: 'Groupe Afrolook',
+        desc: 'Créer & migrer le groupe officiel',
+        iconBg: const Color(0xFFE6F1FB),
+        iconColor: Colors.blue,
+        page: const AfrolookGroupMigrationPage(),
+      ),
+      _ModuleItem(
         icon: Icons.verified_rounded,
         label: 'Comptes officiels',
         desc: 'Valider et gérer les demandes',
@@ -653,14 +661,6 @@ class _ModulesGrid extends StatelessWidget {
         iconBg: const Color(0xFFFCEBEB),
         iconColor: const Color(0xFFA32D2D),
         page: AdminPronosticsPage(),
-      ),
-      _ModuleItem(
-        icon: Icons.groups_rounded,
-        label: 'Groupe Afrolook',
-        desc: 'Créer & migrer le groupe officiel',
-        iconBg: const Color(0xFFE6F1FB),
-        iconColor: Colors.blue,
-        page: const AfrolookGroupMigrationPage(),
       ),
     ];
 

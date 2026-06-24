@@ -284,7 +284,7 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
     _preloadingIndices.add(index);
     try {
       final optimizedUrl = authProvider.convertToCdnUrl(post.url_media!, authProvider.appDefaultData);
-      final controller = VideoPlayerController.network(optimizedUrl);
+      final controller = VideoPlayerController.networkUrl(Uri.parse(optimizedUrl));
       await controller.initialize();
       _preloadedControllers[index] = controller;
     } catch (e) {
@@ -365,7 +365,7 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
 
     try {
       final String optimizedUrl = authProvider.convertToCdnUrl(post.url_media!, authProvider.appDefaultData);
-      _currentVideoController = VideoPlayerController.network(optimizedUrl);
+      _currentVideoController = VideoPlayerController.networkUrl(Uri.parse(optimizedUrl));
       await _currentVideoController!.initialize();
       _chewieController = ChewieController(
         videoPlayerController: _currentVideoController!,

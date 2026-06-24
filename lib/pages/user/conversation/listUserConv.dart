@@ -31,6 +31,7 @@ import '../../../models/model_data.dart';
 import '../../../services/utils/abonnement_utils.dart';
 
 import '../../../providers/authProvider.dart';
+import '../../../providers/gold_groups_provider.dart';
 
 import '../../../theme/app_colors.dart';
 
@@ -45,6 +46,8 @@ import '../../../pages/chat/myChat.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../home/user_presence_widget.dart';
+
+import '../../../widgets/user_badge_widget.dart';
 
 import '../../pub/native_ad_widget.dart';
 
@@ -99,9 +102,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   bool _loadingGroups = false;
   String get _groupCacheKey => 'group_list_${authProvider.loginUserData.id ?? ''}';
 
-  // Groupes Gold (carousel pub)
-  List<Map<String, dynamic>> _goldGroups = [];
-  bool _loadingGoldGroups = false;
+  // Groupes Gold (carousel pub) — géré par GoldGroupsProvider
 
   // Recherche par code de groupe
   final TextEditingController _codeSearchController = TextEditingController();
@@ -243,48 +244,9 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     _loadGoldGroups();
   }
 
-  Future<void> _loadGoldGroups() async {
-    if (!mounted) return;
-    setState(() => _loadingGoldGroups = true);
-    try {
-      // Charger les utilisateurs Gold
-      final usersSnap = await FirebaseFirestore.instance
-          .collection('Users')
-          .where('abonnement.type', isEqualTo: 'gold')
-          .limit(50)
-          .get();
-
-      final now = DateTime.now();
-      final goldUserIds = usersSnap.docs.where((d) {
-        final ab = d.data()['abonnement'] as Map<String, dynamic>?;
-        if (ab == null) return false;
-        final dateFinStr = ab['dateFin'] as String?;
-        if (dateFinStr == null) return false;
-        final dateFin = DateTime.tryParse(dateFinStr);
-        return dateFin != null && dateFin.isAfter(now);
-      }).map((d) => d.id).toList();
-
-      if (goldUserIds.isEmpty) {
-        if (mounted) setState(() { _goldGroups = []; _loadingGoldGroups = false; });
-        return;
-      }
-
-      // Charger les groupes de ces utilisateurs Gold (max 20)
-      final groupsSnap = await FirebaseFirestore.instance
-          .collection('GroupChats')
-          .where('owner_id', whereIn: goldUserIds.take(10).toList())
-          .where('is_frozen', isEqualTo: false)
-          .limit(20)
-          .get();
-
-      final groups = groupsSnap.docs.map((d) => d.data()).toList();
-      // Mélange aléatoire à chaque affichage
-      groups.shuffle(Random());
-
-      if (mounted) setState(() { _goldGroups = groups; _loadingGoldGroups = false; });
-    } catch (_) {
-      if (mounted) setState(() => _loadingGoldGroups = false);
-    }
+  void _loadGoldGroups() {
+    // Délégué au GoldGroupsProvider — charge si pas encore fait, sinon réutilise le cache
+    context.read<GoldGroupsProvider>().load();
   }
 
   Future<void> _searchGroupByCode(String code) async {
@@ -1353,8 +1315,6 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   }
 
   Widget _buildGroupsVerticalList() {
-    final hasGoldGroups = _goldGroups.isNotEmpty;
-
     return ListView(
       controller: _scrollController,
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -1377,9 +1337,13 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
           _buildCodeSearchResultTile(_codeSearchResult!),
 
         // ── Carousel Gold ─────────────────────────────────────────────────
-        if (hasGoldGroups || _loadingGoldGroups) ...[
-          _buildGoldCarouselSection(),
-        ],
+        Consumer<GoldGroupsProvider>(
+          builder: (_, provider, __) {
+            if (!provider.isLoaded && !provider.loading) return const SizedBox.shrink();
+            if (provider.groups.isEmpty && !provider.loading) return const SizedBox.shrink();
+            return _buildGoldCarouselSection();
+          },
+        ),
 
         // ── Mes groupes ───────────────────────────────────────────────────
         if (_groups.isNotEmpty) ...[
@@ -1517,37 +1481,41 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   }
 
   Widget _buildGoldCarouselSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
-          child: Row(
-            children: [
-              const Icon(Icons.workspace_premium, color: Color(0xFFFFD700), size: 16),
-              const SizedBox(width: 6),
-              Text(
-                'Groupes Gold',
-                style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w700, fontSize: 13),
+    return Consumer<GoldGroupsProvider>(
+      builder: (_, provider, __) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+              child: Row(
+                children: [
+                  const Icon(Icons.workspace_premium, color: Color(0xFFFFD700), size: 16),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Groupes Gold',
+                    style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w700, fontSize: 13),
+                  ),
+                  const SizedBox(width: 4),
+                  Text('· découvrez', style: TextStyle(color: _colors.textSecondary, fontSize: 12)),
+                ],
               ),
-              const SizedBox(width: 4),
-              Text('· découvrez', style: TextStyle(color: _colors.textSecondary, fontSize: 12)),
-            ],
-          ),
-        ),
-        SizedBox(
-          height: 100,
-          child: _loadingGoldGroups
-              ? const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFFD700)))
-              : ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  itemCount: _goldGroups.length,
-                  itemBuilder: (_, i) => _buildGoldGroupCard(_goldGroups[i]),
-                ),
-        ),
-        const SizedBox(height: 8),
-      ],
+            ),
+            SizedBox(
+              height: 100,
+              child: provider.loading && !provider.isLoaded
+                  ? const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFFD700)))
+                  : ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      itemCount: provider.groups.length,
+                      itemBuilder: (_, i) => _buildGoldGroupCard(provider.groups[i]),
+                    ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        );
+      },
     );
   }
 
@@ -1557,6 +1525,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     final memberCount = group['member_count'] as int? ?? 0;
     final groupId = group['id'] as String? ?? '';
     final isPrivate = group['is_private'] == true;
+    final isOfficial = group['is_official'] == true;
     final price = (group['subscription_price'] as num?)?.toDouble() ?? 0.0;
 
     return GestureDetector(
@@ -1583,7 +1552,16 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
                   backgroundImage: imageUrl.isNotEmpty ? CachedNetworkImageProvider(imageUrl) : null,
                   child: imageUrl.isEmpty ? Icon(Icons.group_rounded, color: _colors.textSecondary, size: 24) : null,
                 ),
-                if (isPrivate)
+                if (isOfficial)
+                  Positioned(
+                    bottom: 0, right: 0,
+                    child: Container(
+                      width: 18, height: 18,
+                      decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                      child: const Icon(Icons.verified_rounded, size: 14, color: Colors.blue),
+                    ),
+                  )
+                else if (isPrivate)
                   Positioned(
                     bottom: 0, right: 0,
                     child: Container(
@@ -1615,7 +1593,8 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   }
 
   Widget _buildGroupTile(Map<String, dynamic> group) {
-    final name = group['name'] as String? ?? '';
+    final rawName = group['name'] as String? ?? '';
+    final name = rawName.length > 50 ? '${rawName.substring(0, 50)}...' : rawName;
     final imageUrl = group['image_url'] as String? ?? '';
     final lastMsg = group['last_message'] as String? ?? '';
     final lastMsgAt = group['last_message_at'] as int? ?? 0;
@@ -1649,16 +1628,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
                 ? Icon(Icons.group_rounded, color: _colors.textSecondary, size: 24)
                 : null,
           ),
-          if (isOfficial)
-            Positioned(
-              bottom: 0, right: 0,
-              child: Container(
-                width: 16, height: 16,
-                decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                child: const Icon(Icons.verified_rounded, size: 14, color: Colors.blue),
-              ),
-            )
-          else if (isFrozen)
+          if (isFrozen)
             Positioned(
               bottom: 0, right: 0,
               child: Container(
@@ -2058,6 +2028,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
           isPinned: isPinned,
           isPro: isPro,
           messageType: lastMessage?.messageType,
+          chatFriend: chat.chatFriend,
         ),
       ),
     );
@@ -2598,6 +2569,7 @@ class ConversationList extends StatefulWidget {
   final bool isPinned;
   final bool isPro;
   final String? messageType;
+  final UserData? chatFriend;
 
   const ConversationList({
     Key? key,
@@ -2617,6 +2589,7 @@ class ConversationList extends StatefulWidget {
     this.isPinned = false,
     this.isPro = false,
     this.messageType,
+    this.chatFriend,
   }) : super(key: key);
 
   @override
@@ -2696,6 +2669,17 @@ class _ConversationListState extends State<ConversationList> {
             showTextStatus: false,
           ),
         ),
+        // Badge abonnement en bas à gauche
+        if (widget.chatFriend != null)
+          Positioned(
+            bottom: 0,
+            left: 0,
+            child: UserBadgeWidget(
+              user: widget.chatFriend,
+              size: 13,
+              withBackground: true,
+            ),
+          ),
       ],
     );
   }

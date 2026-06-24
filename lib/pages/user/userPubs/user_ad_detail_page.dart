@@ -178,7 +178,7 @@ class _UserAdDetailPageState extends State<UserAdDetailPage> {
     if (dataType == 'VIDEO' && videoUrl != null) {
       // Initialisation du lecteur vidéo avec gestion d'erreur
       if (_videoController == null) {
-        _videoController = VideoPlayerController.network(videoUrl);
+        _videoController = VideoPlayerController.networkUrl(Uri.parse(videoUrl));
         _videoController!.initialize().then((_) {
           if (mounted) {
             setState(() => _isVideoInitialized = true);

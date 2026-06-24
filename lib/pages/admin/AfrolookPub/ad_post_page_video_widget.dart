@@ -173,7 +173,7 @@ class _AdPostWidgetState extends State<AdPostWidget> {
       return;
     }
     try {
-      _videoController = VideoPlayerController.network(post.url_media!);
+      _videoController = VideoPlayerController.networkUrl(Uri.parse(post.url_media!));
       await _videoController!.initialize();
       // Suppression de l'aspectRatio forcé : la vidéo prend tout l'espace disponible
       _chewieController = ChewieController(

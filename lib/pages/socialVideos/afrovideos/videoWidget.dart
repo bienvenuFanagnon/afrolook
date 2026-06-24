@@ -1,4 +1,4 @@
-
+﻿
 
 import 'package:chewie/chewie.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -44,7 +44,7 @@ class _VideoWidgetState extends State<VideoWidget> {
   }
 
   void videoInit() {
-    videoPlayerController = VideoPlayerController.network(widget.post.url_media!);
+    videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(widget.post.url_media!));
     _initializeVideoPlayerFuture = videoPlayerController.initialize().then((_) {
       setState(() {
         _chewieController = ChewieController(

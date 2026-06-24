@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:afrotok/pages/user/profile/profileDetail/model/user.dart';
 import 'package:animated_icon/animated_icon.dart';
@@ -638,7 +638,7 @@ class _VideoPostItemState extends State<_VideoPostItem> {
   }
 
   void _initializeVideo() async {
-    _videoController = VideoPlayerController.network(widget.post.url_media!);
+    _videoController = VideoPlayerController.networkUrl(Uri.parse(widget.post.url_media!));
     await _videoController.initialize();
 
     _chewieController = ChewieController(
@@ -1044,7 +1044,7 @@ class _FullScreenVideoPageState extends State<FullScreenVideoPage> {
   }
 
   void _initializeVideo() async {
-    _videoController = VideoPlayerController.network(widget.post.url_media!);
+    _videoController = VideoPlayerController.networkUrl(Uri.parse(widget.post.url_media!));
     await _videoController.initialize();
 
     _chewieController = ChewieController(
