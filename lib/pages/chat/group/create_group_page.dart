@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -28,7 +27,7 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
   final _nameController = TextEditingController();
   final _descController = TextEditingController();
   final _priceController = TextEditingController();
-  File? _groupImage;
+  Uint8List? _groupImageBytes;
   bool _isCreating = false;
   bool _isPrivate = false;
 
@@ -94,7 +93,10 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
-    if (picked != null && mounted) setState(() => _groupImage = File(picked.path));
+    if (picked != null) {
+      final bytes = await picked.readAsBytes();
+      if (mounted) setState(() => _groupImageBytes = bytes);
+    }
   }
 
   void _toggleMember(UserData user) {
@@ -106,6 +108,7 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
       }
     });
   }
+
 
   Future<void> _createGroup() async {
     final name = _nameController.text.trim();
@@ -152,6 +155,22 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
       }
     }
 
+    // Vérifier que le nom n'est pas déjà pris
+    final nameSnap = await FirebaseFirestore.instance
+        .collection('GroupChats')
+        .where('name', isEqualTo: name)
+        .limit(1)
+        .get();
+    if (!mounted) return;
+    if (nameSnap.docs.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Ce nom de groupe est déjà pris. Choisissez un autre nom.'),
+        backgroundColor: Colors.red,
+        duration: Duration(seconds: 3),
+      ));
+      return;
+    }
+
     setState(() => _isCreating = true);
 
     try {
@@ -159,9 +178,9 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
       final now = DateTime.now().millisecondsSinceEpoch;
 
       String? imageUrl;
-      if (_groupImage != null) {
+      if (_groupImageBytes != null) {
         final ref = FirebaseStorage.instance.ref().child('group_images/$groupId.jpg');
-        await ref.putFile(_groupImage!);
+        await ref.putData(_groupImageBytes!);
         imageUrl = await ref.getDownloadURL();
       }
 
@@ -354,8 +373,8 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
                     CircleAvatar(
                       radius: 36,
                       backgroundColor: _colors.surfaceVariant,
-                      backgroundImage: _groupImage != null ? FileImage(_groupImage!) : null,
-                      child: _groupImage == null
+                      backgroundImage: _groupImageBytes != null ? MemoryImage(_groupImageBytes!) : null,
+                      child: _groupImageBytes == null
                           ? Icon(Icons.group_rounded, color: _colors.textSecondary, size: 32)
                           : null,
                     ),

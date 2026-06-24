@@ -2,8 +2,10 @@ import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -33,11 +35,29 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
   bool _loading = true;
   String _myRole = 'member';
 
+  // Pagination membres
+  static const _pageSize = 10;
+  bool _hasMoreMembers = false;
+  bool _loadingMoreMembers = false;
+  DocumentSnapshot? _lastMemberDoc;
+
+  // Recherche membres (admin/owner)
+  final _searchCtrl = TextEditingController();
+  List<Map<String, dynamic>> _searchResults = [];
+  bool _isSearching = false;
+  bool _searchLoading = false;
+
   @override
   void initState() {
     super.initState();
     _auth = Provider.of<UserAuthProvider>(context, listen: false);
     _loadGroup();
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _loadGroup() async {
@@ -47,26 +67,341 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
           .collection('GroupChats')
           .doc(widget.groupId)
           .get();
-      final membersSnap = await FirebaseFirestore.instance
+
+      // Charger les 10 premiers membres + le membre courant (pour connaître son rôle)
+      final membersRef = FirebaseFirestore.instance
           .collection('GroupChats')
           .doc(widget.groupId)
-          .collection('members')
+          .collection('members');
+
+      final firstPageSnap = await membersRef
+          .orderBy('joined_at')
+          .limit(_pageSize)
           .get();
 
-      final members = membersSnap.docs.map((d) => d.data()).toList();
-      final myMember = members.firstWhere((m) => m['user_id'] == myId, orElse: () => {});
+      final members = firstPageSnap.docs.map((d) => d.data()).toList();
+
+      // Récupérer le rôle du membre courant (peut ne pas être dans la 1ère page)
+      String myRole = 'member';
+      final myInPage = members.where((m) => m['user_id'] == myId);
+      if (myInPage.isNotEmpty) {
+        myRole = myInPage.first['role'] as String? ?? 'member';
+      } else {
+        final myDoc = await membersRef.doc(myId).get();
+        if (myDoc.exists) myRole = myDoc.data()?['role'] as String? ?? 'member';
+      }
 
       if (mounted) {
         setState(() {
           _groupData = groupDoc.data() ?? {};
           _members = members;
-          _myRole = myMember['role'] as String? ?? 'member';
+          _myRole = myRole;
+          _lastMemberDoc = firstPageSnap.docs.isNotEmpty ? firstPageSnap.docs.last : null;
+          _hasMoreMembers = firstPageSnap.docs.length >= _pageSize;
           _loading = false;
         });
       }
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  Future<void> _loadMoreMembers() async {
+    if (_loadingMoreMembers || !_hasMoreMembers || _lastMemberDoc == null) return;
+    setState(() => _loadingMoreMembers = true);
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('GroupChats')
+          .doc(widget.groupId)
+          .collection('members')
+          .orderBy('joined_at')
+          .startAfterDocument(_lastMemberDoc!)
+          .limit(_pageSize)
+          .get();
+
+      if (mounted) {
+        setState(() {
+          _members.addAll(snap.docs.map((d) => d.data()));
+          _lastMemberDoc = snap.docs.isNotEmpty ? snap.docs.last : _lastMemberDoc;
+          _hasMoreMembers = snap.docs.length >= _pageSize;
+          _loadingMoreMembers = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingMoreMembers = false);
+    }
+  }
+
+  Future<void> _searchMembers(String query) async {
+    query = query.trim();
+    if (query.length < 2) {
+      setState(() { _isSearching = false; _searchResults = []; });
+      return;
+    }
+    setState(() { _isSearching = true; _searchLoading = true; _searchResults = []; });
+
+    final db = FirebaseFirestore.instance;
+    final membersRef = db.collection('GroupChats').doc(widget.groupId).collection('members');
+    final memberIds = (_groupData['member_ids'] as List<dynamic>? ?? []).cast<String>().toSet();
+    final results = <Map<String, dynamic>>[];
+    final seen = <String>{};
+
+    // 1. Recherche par pseudo dans la sous-collection members
+    try {
+      final pseudoSnap = await membersRef
+          .where('pseudo', isGreaterThanOrEqualTo: query)
+          .where('pseudo', isLessThanOrEqualTo: '$query')
+          .limit(20)
+          .get();
+      for (final d in pseudoSnap.docs) {
+        final uid = d.data()['user_id'] as String? ?? d.id;
+        if (!seen.contains(uid)) { seen.add(uid); results.add(d.data()); }
+      }
+    } catch (_) {}
+
+    // 2. Recherche par email dans Users → vérifier membership
+    try {
+      final emailSnap = await db
+          .collection('Users')
+          .where('email', isEqualTo: query.toLowerCase())
+          .limit(5)
+          .get();
+      for (final d in emailSnap.docs) {
+        final uid = d.id;
+        if (!seen.contains(uid) && memberIds.contains(uid)) {
+          // Récupérer la fiche member pour avoir le rôle
+          final memberDoc = await membersRef.doc(uid).get();
+          final memberData = memberDoc.data();
+          if (memberData != null) {
+            seen.add(uid);
+            results.add(memberData);
+          }
+        }
+      }
+    } catch (_) {}
+
+    if (mounted) setState(() { _searchResults = results; _searchLoading = false; });
+  }
+
+  bool _uploadingImage = false;
+
+  Future<void> _changeGroupImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+      maxWidth: 800,
+    );
+    if (picked == null) return;
+
+    setState(() => _uploadingImage = true);
+    try {
+      final bytes = await picked.readAsBytes();
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('group_covers/${widget.groupId}.jpg');
+      await ref.putData(bytes);
+      final url = await ref.getDownloadURL();
+
+      await FirebaseFirestore.instance
+          .collection('GroupChats')
+          .doc(widget.groupId)
+          .update({'image_url': url});
+
+      if (mounted) {
+        setState(() => _groupData['image_url'] = url);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Photo du groupe mise à jour'),
+            backgroundColor: _colors.primary,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur : $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _uploadingImage = false);
+    }
+  }
+
+  Future<void> _renameGroup() async {
+    final currentName = _groupData['name'] as String? ?? widget.groupName;
+    final ctrl = TextEditingController(text: currentName);
+    String? errorMsg;
+    bool saving = false;
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModal) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: _colors.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: _colors.border.withOpacity(0.3)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                      color: _colors.border,
+                      borderRadius: BorderRadius.circular(2)),
+                ),
+                Text('Renommer le groupe',
+                    style: TextStyle(
+                        color: _colors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16)),
+                const SizedBox(height: 4),
+                Text(
+                  'Le nom doit être unique. Les noms des groupes officiels Afrolook sont réservés.',
+                  style: TextStyle(color: _colors.textSecondary, fontSize: 12),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: ctrl,
+                  autofocus: true,
+                  maxLength: 50,
+                  style: TextStyle(color: _colors.textPrimary),
+                  decoration: InputDecoration(
+                    labelText: 'Nouveau nom',
+                    labelStyle: TextStyle(color: _colors.textSecondary, fontSize: 13),
+                    errorText: errorMsg,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: _colors.border.withOpacity(0.5)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: _colors.primary),
+                    ),
+                    counterStyle: TextStyle(color: _colors.textSecondary, fontSize: 11),
+                  ),
+                  onChanged: (_) {
+                    if (errorMsg != null) setModal(() => errorMsg = null);
+                  },
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: saving
+                        ? null
+                        : () async {
+                            final newName = ctrl.text.trim();
+                            if (newName.isEmpty) {
+                              setModal(() => errorMsg = 'Le nom ne peut pas être vide.');
+                              return;
+                            }
+                            if (newName == currentName) {
+                              Navigator.pop(ctx);
+                              return;
+                            }
+
+                            setModal(() { saving = true; errorMsg = null; });
+
+                            // Vérifier unicité + noms officiels réservés
+                            try {
+                              final snap = await FirebaseFirestore.instance
+                                  .collection('GroupChats')
+                                  .where('name', isEqualTo: newName)
+                                  .limit(2)
+                                  .get();
+
+                              // Exclure le groupe courant
+                              final conflicts = snap.docs
+                                  .where((d) => d.id != widget.groupId)
+                                  .toList();
+
+                              if (conflicts.isNotEmpty) {
+                                final isOfficial =
+                                    conflicts.first.data()['is_official'] == true;
+                                setModal(() {
+                                  saving = false;
+                                  errorMsg = isOfficial
+                                      ? 'Ce nom est réservé à un groupe officiel Afrolook.'
+                                      : 'Ce nom est déjà pris par un autre groupe.';
+                                });
+                                return;
+                              }
+
+                              // Appliquer le renommage
+                              await FirebaseFirestore.instance
+                                  .collection('GroupChats')
+                                  .doc(widget.groupId)
+                                  .update({'name': newName});
+
+                              if (mounted) {
+                                setState(() => _groupData['name'] = newName);
+                                Navigator.pop(ctx);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Groupe renommé en "$newName"'),
+                                    backgroundColor: _colors.primary,
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10)),
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              setModal(() {
+                                saving = false;
+                                errorMsg = 'Erreur : $e';
+                              });
+                            }
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _colors.primary,
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: _colors.primary.withOpacity(0.5),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                    child: saving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white))
+                        : const Text('Enregistrer',
+                            style: TextStyle(
+                                fontWeight: FontWeight.w700, fontSize: 15)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    ctrl.dispose();
   }
 
   Future<void> _removeMember(String userId) async {
@@ -493,13 +828,102 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                   final isOwner = _myRole == 'owner';
                   final myAb = isOwner ? _auth.loginUserData.abonnement : null;
                   final maxM = AbonnementUtils.maxGroupMembers(myAb);
+                  final total = _groupData['member_count'] as int? ?? _members.length;
                   final countLabel = isOwner && maxM != null
-                      ? '${_members.length} / $maxM MEMBRE(S)'
-                      : '${_members.length} MEMBRE(S)';
+                      ? '$total / $maxM MEMBRE(S)'
+                      : '$total MEMBRE(S)';
                   return _buildSectionTitle(countLabel);
                 }),
                 const SizedBox(height: 8),
-                ..._members.map((m) => _buildMemberTile(m, isOwnerOrAdmin)),
+
+                // Barre de recherche membres (admin/owner)
+                if (isOwnerOrAdmin) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                    child: TextField(
+                      controller: _searchCtrl,
+                      style: TextStyle(color: _colors.textPrimary, fontSize: 14),
+                      onChanged: _searchMembers,
+                      decoration: InputDecoration(
+                        hintText: 'Rechercher par pseudo ou email...',
+                        hintStyle: TextStyle(color: _colors.textSecondary.withOpacity(0.6), fontSize: 13),
+                        prefixIcon: Icon(Icons.search_rounded, color: _colors.textSecondary, size: 18),
+                        suffixIcon: _isSearching
+                            ? IconButton(
+                                icon: Icon(Icons.close_rounded, color: _colors.textSecondary, size: 18),
+                                onPressed: () {
+                                  _searchCtrl.clear();
+                                  setState(() { _isSearching = false; _searchResults = []; });
+                                },
+                              )
+                            : null,
+                        filled: true,
+                        fillColor: _colors.surface,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: _colors.border.withOpacity(0.3)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: _colors.border.withOpacity(0.3)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: _colors.primary),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                ],
+
+                // Résultats de recherche ou liste paginée
+                if (_isSearching) ...[
+                  if (_searchLoading)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                    )
+                  else if (_searchResults.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      child: Text(
+                        'Aucun membre trouvé.',
+                        style: TextStyle(color: _colors.textSecondary, fontSize: 13),
+                      ),
+                    )
+                  else
+                    ..._searchResults.map((m) => _buildMemberTile(m, isOwnerOrAdmin)),
+                ] else ...[
+                  ..._members.map((m) => _buildMemberTile(m, isOwnerOrAdmin)),
+
+                  // Bouton "Charger plus"
+                  if (_hasMoreMembers) ...[
+                    const SizedBox(height: 4),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      child: _loadingMoreMembers
+                          ? const Center(child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 12),
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ))
+                          : OutlinedButton.icon(
+                              onPressed: _loadMoreMembers,
+                              icon: Icon(Icons.expand_more_rounded, color: _colors.primary, size: 18),
+                              label: Text(
+                                'Charger 10 membres de plus',
+                                style: TextStyle(color: _colors.primary, fontSize: 13),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(color: _colors.primary.withOpacity(0.4)),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
+                    ),
+                  ],
+                ],
                 const SizedBox(height: 16),
 
                 // Quitter le groupe
@@ -526,42 +950,95 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
   Widget _buildGroupHeader(String? imageUrl, bool isFrozen) {
     final isPrivate = _groupData['is_private'] == true;
     final subscriptionPrice = (_groupData['subscription_price'] as num?)?.toDouble() ?? 0.0;
+    final isOwnerOrAdmin = _myRole == 'owner' || _myRole == 'admin';
 
     return Column(
       children: [
         const SizedBox(height: 20),
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            CircleAvatar(
-              radius: 44,
-              backgroundColor: _colors.surfaceVariant,
-              backgroundImage: imageUrl != null && imageUrl.isNotEmpty
-                  ? CachedNetworkImageProvider(imageUrl)
-                  : null,
-              child: imageUrl == null || imageUrl.isEmpty
-                  ? Icon(Icons.group_rounded, color: _colors.textSecondary, size: 40)
-                  : null,
-            ),
-            if (isFrozen)
-              Positioned(
-                bottom: 0, right: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(color: Colors.orange, shape: BoxShape.circle),
-                  child: const Icon(Icons.pause_rounded, size: 14, color: Colors.white),
+        GestureDetector(
+          onTap: isOwnerOrAdmin ? _changeGroupImage : null,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Overlay de chargement
+              if (_uploadingImage)
+                Container(
+                  width: 88,
+                  height: 88,
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white),
+                  ),
+                )
+              else
+                CircleAvatar(
+                  radius: 44,
+                  backgroundColor: _colors.surfaceVariant,
+                  backgroundImage: imageUrl != null && imageUrl.isNotEmpty
+                      ? CachedNetworkImageProvider(imageUrl)
+                      : null,
+                  child: imageUrl == null || imageUrl.isEmpty
+                      ? Icon(Icons.group_rounded, color: _colors.textSecondary, size: 40)
+                      : null,
                 ),
-              ),
-          ],
+              if (isFrozen && !_uploadingImage)
+                Positioned(
+                  bottom: 0, right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(color: Colors.orange, shape: BoxShape.circle),
+                    child: const Icon(Icons.pause_rounded, size: 14, color: Colors.white),
+                  ),
+                ),
+              // Badge caméra (owner/admin, pas pendant l'upload)
+              if (isOwnerOrAdmin && !_uploadingImage)
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: _colors.primary,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: _colors.background, width: 2),
+                    ),
+                    child: const Icon(Icons.camera_alt_rounded,
+                        size: 14, color: Colors.white),
+                  ),
+                ),
+            ],
+          ),
         ),
         const SizedBox(height: 12),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              _groupData['name'] as String? ?? widget.groupName,
-              style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w800, fontSize: 18),
+            Flexible(
+              child: Text(
+                _groupData['name'] as String? ?? widget.groupName,
+                style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w800, fontSize: 18),
+                textAlign: TextAlign.center,
+              ),
             ),
+            if (isOwnerOrAdmin) ...[
+              const SizedBox(width: 6),
+              GestureDetector(
+                onTap: _renameGroup,
+                child: Container(
+                  padding: const EdgeInsets.all(5),
+                  decoration: BoxDecoration(
+                    color: _colors.surfaceVariant,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.edit_rounded, size: 14, color: _colors.primary),
+                ),
+              ),
+            ],
             if (isPrivate) ...[
               const SizedBox(width: 6),
               Container(

@@ -1,10 +1,13 @@
-﻿import 'dart:io';
-import 'dart:ui';
+﻿import 'dart:ui';
+
+import 'package:cross_file/cross_file.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import '../../widgets/smart_video_player.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
@@ -356,6 +359,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   /// Réutilise un contrôleur déjà préchargé par [VideoPreloadManager] si
   /// disponible (préchargement Facebook-style des voisins).
   Future<void> _preInitializeVideo() async {
+    // Sur web, SmartVideoPlayer gère l'affichage nativement — pas de VideoPlayerController
+    if (kIsWeb) return;
     if (_isLockedContent) {
       printVm('🎬 Vidéo verrouillée - pré-initialisation bloquée');
       return;
@@ -379,7 +384,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
             widget.post.url_media!,
             _authProvider.appDefaultData
         );
-        _videoController = VideoPlayerController.network(optimizedUrl);
+        _videoController = VideoPlayerController.networkUrl(Uri.parse(optimizedUrl));
 
         // Attendre l'initialisation (chargement des métadonnées)
         await _videoController!.initialize();
@@ -463,6 +468,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   }
 
   Future<void> _generateAndUploadThumbnail() async {
+    // VideoThumbnail + dart:io File indisponibles sur Flutter Web
+    if (kIsWeb) return;
     if (_isGeneratingThumbnail) return;
     setState(() => _isGeneratingThumbnail = true);
 
@@ -483,7 +490,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
 
       final fileName = 'thumbnails/thumb_${widget.post.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final ref = FirebaseStorage.instance.ref().child(fileName);
-      final uploadTask = ref.putFile(File(thumbnailFile));
+      final bytes = await XFile(thumbnailFile).readAsBytes();
+      final uploadTask = ref.putData(bytes);
       final snapshot = await uploadTask;
       final downloadUrl = await snapshot.ref.getDownloadURL();
 
@@ -575,9 +583,9 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       if (preloaded != null) {
         _videoController = preloaded;
       } else {
-        // _videoController = VideoPlayerController.network(widget.post.url_media!);
+        // _videoController = VideoPlayerController.networkUrl(Uri.parse(widget.post.url_media!));
         final String optimizedUrl = _authProvider. convertToCdnUrl(widget.post.url_media!, _authProvider.appDefaultData);
-        _videoController = VideoPlayerController.network(optimizedUrl);
+        _videoController = VideoPlayerController.networkUrl(Uri.parse(optimizedUrl));
         await _videoController!.initialize();
       }
 
@@ -1421,7 +1429,16 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
           children: [
             ClipRRect(
               borderRadius: const BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
-              child: _isVideoInitialized && _chewieController != null && !isLocked
+              child: kIsWeb && !isLocked && widget.post.url_media != null
+                  ? AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: SmartVideoPlayer(
+                        url: _authProvider.convertToCdnUrl(widget.post.url_media!, _authProvider.appDefaultData),
+                        autoPlay: false,
+                        showControls: true,
+                      ),
+                    )
+                  : _isVideoInitialized && _chewieController != null && !isLocked
                   ? AspectRatio(aspectRatio: 16 / 9, child: Chewie(controller: _chewieController!))
                   : _isGeneratingThumbnail
                   ? Container(height: h * 0.25, width: double.infinity, color: colors.shimmerBase,
@@ -1501,7 +1518,17 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
             // --- Conteneur vidéo agrandi ---
             ClipRRect(
               borderRadius: const BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
-              child: _isVideoInitialized && _chewieController != null && !isLocked
+              child: kIsWeb && !isLocked && widget.post.url_media != null
+                  ? SizedBox(
+                width: double.infinity,
+                height: videoHeight,
+                child: SmartVideoPlayer(
+                  url: _authProvider.convertToCdnUrl(widget.post.url_media!, _authProvider.appDefaultData),
+                  autoPlay: false,
+                  showControls: true,
+                ),
+              )
+                  : _isVideoInitialized && _chewieController != null && !isLocked
                   ? SizedBox(
                 width: double.infinity,
                 height: videoHeight,

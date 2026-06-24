@@ -1,4 +1,5 @@
-﻿import 'package:video_player/video_player.dart';
+﻿import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:video_player/video_player.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 /// Gestionnaire global de préchargement des vidéos du feed Home/Sport.
@@ -55,13 +56,16 @@ class VideoPreloadManager {
   /// n'est pas déjà préchargée ou en cours de préchargement.
   static Future<void> preload(String postId, String? urlMedia) async {
     if (urlMedia == null || urlMedia.isEmpty) return;
+    // Sur Flutter Web, video_player_web ne supporte pas le préchargement
+    // (erreur 'isSupported'). Le navigateur gère nativement le buffering.
+    if (kIsWeb) return;
     if (_preloadedControllers.containsKey(postId)) return;
     if (_preloadingIds.contains(postId)) return;
 
     _preloadingIds.add(postId);
     try {
       final url = urlResolver != null ? urlResolver!(urlMedia) : urlMedia;
-      final controller = VideoPlayerController.network(url);
+      final controller = VideoPlayerController.networkUrl(Uri.parse(url));
       await controller.initialize();
       // Couper le son par défaut tant que la vidéo n'est pas active :
       // le volume définitif sera appliqué via MediaPlaybackManager

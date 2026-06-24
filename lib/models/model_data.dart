@@ -1470,8 +1470,8 @@ class Post {
     status = json['status'];
     type = json['type'];
     description = json['description'];
-    createdAt = json['created_at'];
-    updatedAt = json['updated_at'];
+    createdAt = _tsToMs(json['created_at']);
+    updatedAt = _tsToMs(json['updated_at']);
     dataType = json['dataType'];
     url_media = json['url_media'];
     contact_whatsapp = json['contact_whatsapp'] ?? "";
@@ -1518,8 +1518,8 @@ class Post {
     hasBeenSeenByCurrentUser = false;
 
     feedScore = (json['feedScore'] as num?)?.toDouble() ?? 0.5;
-    lastScoreUpdate = json['lastScoreUpdate'];
-    recentEngagement = json['recentEngagement'];
+    lastScoreUpdate = _tsToMs(json['lastScoreUpdate']);
+    recentEngagement = _tsToMs(json['recentEngagement']);
     isBoosted = json['isBoosted'] ?? false;
     uniqueViewsCount = json['uniqueViewsCount'] ?? 0;
 
@@ -1570,6 +1570,14 @@ class Post {
 
   }
 
+  /// Convertit un champ potentiellement Timestamp Firestore en int (ms) pour JSON.
+  static int? _tsToMs(dynamic v) {
+    if (v == null) return null;
+    if (v is int) return v;
+    if (v is Timestamp) return v.millisecondsSinceEpoch;
+    return null;
+  }
+
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = {};
     data['id'] = id;
@@ -1579,8 +1587,8 @@ class Post {
     data['popularity'] = popularity;
     data['type'] = type;
     data['description'] = description;
-    data['created_at'] = createdAt;
-    data['updated_at'] = updatedAt;
+    data['created_at'] = _tsToMs(createdAt);
+    data['updated_at'] = _tsToMs(updatedAt);
     data['url_media'] = url_media;
     data['colorDomine'] = colorDomine;
     data['colorSecondaire'] = colorSecondaire;
@@ -1617,8 +1625,8 @@ class Post {
     data['seen_by_users_map'] = seenByUsersMap ?? {};
     // NOUVEAUX CHAMPS
     data['feedScore'] = feedScore;
-    data['lastScoreUpdate'] = lastScoreUpdate;
-    data['recentEngagement'] = recentEngagement;
+    data['lastScoreUpdate'] = _tsToMs(lastScoreUpdate);
+    data['recentEngagement'] = _tsToMs(recentEngagement);
     data['isBoosted'] = isBoosted;
     data['uniqueViewsCount'] = uniqueViewsCount;
 
@@ -1639,7 +1647,7 @@ class Post {
     data['adSupportCount'] = adSupportCount;
     // Dans toJson
     data['isPortrait'] = isPortrait;
-    if (eventDate != null)  data['eventDate'] = eventDate;
+    if (eventDate != null) data['eventDate'] = _tsToMs(eventDate);
     return data;
   }
 

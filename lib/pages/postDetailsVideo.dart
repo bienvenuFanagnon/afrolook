@@ -1,7 +1,6 @@
 ﻿import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
-import 'dart:io';
 import 'dart:math';
 
 import 'dart:typed_data';
@@ -24,7 +23,10 @@ import 'package:afrotok/pages/pub/rewarded_ad_widget.dart';
 
 import 'package:afrotok/pages/widgetGlobal.dart';
 
+import 'package:cross_file/cross_file.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:afrotok/widgets/smart_video_player.dart';
 
 import 'package:flutter_linkify/flutter_linkify.dart';
 
@@ -465,6 +467,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
   }
   // ==================== GÉNÉRATION DE MINIATURE ====================
   Future<void> _ensureThumbnailForPost(Post post) async {
+    // VideoThumbnail + dart:io File ne fonctionnent pas sur Flutter Web
+    if (kIsWeb) return;
     // Si déjà une thumbnail ou en cours de génération, on ignore
     if (post.thumbnail != null && post.thumbnail!.isNotEmpty) return;
     if (_generatingThumbnails.contains(post.id)) return;
@@ -497,8 +501,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       // Upload vers Firebase Storage
       final fileName = 'thumbnails/thumb_${post.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final ref = FirebaseStorage.instance.ref().child(fileName);
-      final uploadTask = ref.putFile(File(thumbnailFile));
-      final snapshot = await uploadTask;
+      final bytes = await XFile(thumbnailFile).readAsBytes();
+      final snapshot = await ref.putData(bytes);
       final downloadUrl = await snapshot.ref.getDownloadURL();
 
       // Mettre à jour Firestore
@@ -795,13 +799,15 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
   }
 
   Future<void> _initializeVideo() async {
+    // Sur web, SmartVideoPlayer gère l'affichage nativement via <video> HTML
+    if (kIsWeb) return;
     if (_currentPost.url_media == null || _currentPost.url_media!.isEmpty) return;
     _videoController?.dispose();
     _chewieController?.dispose();
     try {
       final String optimizedUrl = authProvider.convertToCdnUrl(_currentPost.url_media!, authProvider.appDefaultData);
-      _videoController = VideoPlayerController.network(optimizedUrl);
-      // _videoController = VideoPlayerController.network(_currentPost.url_media!);
+      _videoController = VideoPlayerController.networkUrl(Uri.parse(optimizedUrl));
+      // _videoController = VideoPlayerController.networkUrl(Uri.parse(_currentPost.url_media!));
       await _videoController!.initialize();
       _chewieController = ChewieController(
         videoPlayerController: _videoController!,
@@ -1510,6 +1516,21 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
 
   // Les autres widgets (video player, header, etc.) restent strictement identiques à l'original
   Widget _buildVideoPlayer() {
+    // Sur Flutter Web : lecteur HTML natif (contourne video_player_web)
+    if (kIsWeb) {
+      final url = _currentPost.url_media;
+      if (url == null || url.isEmpty) {
+        return Container(
+          color: _afroBlack,
+          height: MediaQuery.of(context).size.width * 9 / 16,
+          child: const Center(child: Icon(Icons.play_circle_outline, color: Colors.white54, size: 48)),
+        );
+      }
+      return AspectRatio(
+        aspectRatio: 16 / 9,
+        child: SmartVideoPlayer(url: url, autoPlay: true, progressColor: _afroGreen),
+      );
+    }
     if (!_isVideoInitialized || _chewieController == null) {
       return Container(
         color: _afroBlack,

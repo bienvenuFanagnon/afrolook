@@ -1,5 +1,5 @@
 # SUIVI REFONTE UI — AFROLOOK V2
-_Dernière mise à jour : 23 juin 2026 (session 80)_
+_Dernière mise à jour : 24 juin 2026 (session 82)_
 
 ---
 
@@ -3584,4 +3584,88 @@ Les 75 pages qui vérifient `estPremium` restent inchangées car Gold satisfait 
 | `create_group_page.dart` — join_code + is_private | ✅ Session 80 |
 | `group_chat_page.dart` — vérif abonnement privé à l'entrée | ✅ Session 80 |
 | `group_info_page.dart` — affichage code + badge privé | ✅ Session 80 |
+
+---
+
+## SESSION 82 — Flutter Web vidéo + Group chat permissions + HomeConstPage performance
+
+### 1. Flutter Web — Lecture vidéo (sessions 81→82)
+
+**Problème :** Les vidéos ne se lisaient pas du tout sur Flutter Web (`Cannot read properties of undefined (reading 'isSupported')` — bug dans `video_player_web`).
+
+**Solution : `SmartVideoPlayer` — bypass complet de `video_player_web` sur web**
+
+Nouveaux fichiers :
+- `lib/widgets/smart_video_player.dart` — export conditionnel selon la plateforme
+- `lib/widgets/smart_video_player_web.dart` — implémentation web avec `<video>` HTML natif via `dart:ui_web` + `HtmlElementView`
+- `lib/widgets/smart_video_player_native.dart` — implémentation mobile avec Chewie
+- `lib/widgets/smart_video_player_stub.dart` — fallback non supporté
+
+**Fichiers modifiés :**
+- `lib/pages/postDetailsVideo.dart` — `kIsWeb` guard + `SmartVideoPlayer` sur web
+- `lib/pages/post_video_format_tel_details.dart` — idem
+- `lib/pages/userPosts/youTube_video_card.dart` — idem + `XFile.readAsBytes()` pour upload cross-platform
+- `lib/pages/userPosts/video_preload_manager.dart` — `kIsWeb` guard
+- `lib/pages/chat/group/group_chat_page.dart` — `XFile` au lieu de `dart:io File` pour upload
+- `lib/pages/chat/group/group_info_page.dart` — idem
+- `lib/pages/chat/group/create_group_page.dart` — idem
+
+**CORS Firebase Storage :** `cors.json` appliqué sur `gs://afrolooki.appspot.com` avec headers `Accept-Ranges`, `Content-Range`, `Range` pour le streaming vidéo.
+
+---
+
+### 2. Group Chat — Flash de permissions (session 82)
+
+**Problème :** À l'ouverture d'un groupe, les banners (frozen/read-only/no-write) et la barre d'input s'affichaient avec `_myRole = 'member'` (défaut) avant la fin du chargement des vraies permissions → flash visible.
+
+**Solution :** Ajout du flag `bool _permissionsLoaded = false` dans `group_chat_page.dart`.
+- `_loadGroup()` → set `_permissionsLoaded = true` dans le même `setState` que le rôle
+- Dans `build()` : banners et barre d'input enveloppés dans `if (_permissionsLoaded)` → invisibles jusqu'à ce que les permissions soient connues
+
+**Fichier modifié :** `lib/pages/chat/group/group_chat_page.dart`
+
+---
+
+### 3. HomeConstPage — Layout jump + performance (session 82)
+
+**Problème :** En arrivant sur la page home, le premier post s'affichait depuis le cache, puis les sections (chroniques, profils) apparaissaient et décalaient tout le contenu vers le bas.
+
+**Cause racine 1 :** `Post.toJson()` mettait des objets `Timestamp` Firestore bruts → `jsonEncode` explosait silencieusement → **aucun post n'était jamais sauvegardé en cache**.
+
+**Cause racine 2 :** Les sections (chroniques, profils) étaient chargées depuis le cache dans `_loadFromCacheAndDisplay()` avec leurs données, mais leurs flags `_isLoadingX` restaient `true` → les sections se cachaient quand même malgré le cache.
+
+**Solution architecture `HomeBootCache` :**
+
+Nouveau fichier : `lib/pages/home/home_boot_cache.dart`
+- Singleton `HomeBootCache` avec clé stable `home_boot_<userId>` (sans dépendance pays/filtre)
+- Stocke 5 posts max + chroniques + profils suggérés
+- `preload(userId)` appelé dans `_navigateToHomeWithDestination()` du splash **avant** navigation (< 10ms depuis SharedPreferences)
+- `save(...)` appelé dans `_loadSuggestedUsersInBackground()` après chaque refresh réseau
+
+**Fichiers modifiés :**
+
+`lib/models/model_data.dart` — `Post` :
+- Ajout méthode statique `_tsToMs(dynamic v)` → convertit `Timestamp` Firestore en `int` (ms)
+- `Post.toJson()` : `created_at`, `updated_at`, `lastScoreUpdate`, `recentEngagement`, `eventDate` → tous passent par `_tsToMs()`
+- `Post.fromJson()` : idem pour normaliser les Timestamps venant de Firestore
+
+`lib/pages/home/HomeConstPost.dart` :
+- `_loadFromCacheAndDisplay()` : ajout de `_isLoadingChroniques = false`, `_isLoadingSuggestedUsers = false`, `_isLoadingCanaux = false`, `_isLoadingArticles = false` quand le cache a de la donnée → sections visibles immédiatement depuis le cache
+- Loaders réseau : `setState(() => _isLoadingX = true)` conditionnel sur `_dataList.isEmpty` → pas de flash si le cache a déjà fourni les données
+- `initState()` : lecture synchrone de `HomeBootCache.instance` **avant le premier build** — premier frame déjà peuplé
+- 1ère visite (sans cache) : sections lancées **en parallèle** avec les posts au lieu d'attendre la fin du chargement posts
+
+`lib/pages/splashChargement.dart` :
+- `_navigateToHomeWithDestination()` → `async` + `await HomeBootCache.preload(userId)` avant navigation
+- Refactoring `_prepareDestination()` : `.then()` → `await` direct pour supporter l'`await` de navigation
+
+**Sections feed :**
+- `lib/widgets/feed/sections/feed_profiles_section.dart` — `if (isLoading || users.isEmpty) return SizedBox.shrink()` → rien affiché pendant le chargement (comportement voulu)
+- `lib/widgets/feed/sections/feed_articles_section.dart` — idem
+- `lib/widgets/feed/sections/feed_canaux_section.dart` — idem
+
+**Comportement final :**
+- **2ème session+** : posts + chroniques + profils s'affichent sur le **premier frame** sans shimmer, sans jump
+- **1ère session** : posts et sections chargent en parallèle depuis le réseau, boot cache sauvegardé pour la prochaine ouverture
+- Refresh réseau silencieux en arrière-plan sans faire disparaître les sections déjà affichées
 

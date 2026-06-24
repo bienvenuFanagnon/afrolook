@@ -52,6 +52,7 @@ import '../../widgets/feed/sections/feed_state_widgets.dart';
 import '../../widgets/feed/sections/feed_filter_bar.dart';
 import '../../widgets/feed/sections/feed_ad_widgets.dart';
 import '../../services/feed/feed_repository.dart';
+import 'home_boot_cache.dart';
 
 
 // Constantes de couleur
@@ -123,21 +124,28 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
 
   // Données supplémentaires - chargement séparé
+  // Initialisés à true → skeleton visible dès le premier build,
+  // avant même que le cache des posts s'affiche. Évite le saut de layout
+  // quand les sections s'insèrent après coup au-dessus des posts.
   List<ArticleData> _articles = [];
-  bool _isLoadingArticles = false;
+  bool _isLoadingArticles = true;
+  bool _hasStartedLoadArticles = false;
 
   List<Canal> _canaux = [];
-  bool _isLoadingCanaux = false;
+  bool _isLoadingCanaux = true;
+  bool _hasStartedLoadCanaux = false;
 
   List<UserData> _suggestedUsers = [];
-  bool _isLoadingSuggestedUsers = false;
+  bool _isLoadingSuggestedUsers = true;
+  bool _hasStartedLoadSuggestedUsers = false;
   Timer? _stayTimer;
   bool _isPageVisible = true;
   bool _isSupportDialogShowing = false;
   String? _lastPopupDateKey = 'last_support_ad_popup_date';
   // Chroniques
   List<Chronique> _chroniques = [];
-  bool _isLoadingChroniques = false;
+  bool _isLoadingChroniques = true;
+  bool _hasStartedLoadChroniques = false;
   Map<String, List<Chronique>> _groupedChroniques = {};
   final Map<String, Uint8List> _videoThumbnails = {};
   final Map<String, bool> _userVerificationStatus = {};
@@ -195,6 +203,26 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     userProvider = Provider.of<UserProvider>(context, listen: false);
     postProvider = Provider.of<PostProvider>(context, listen: false);
     mixedFeedProvider = Provider.of<MixedFeedServiceProvider>(context, listen: false);
+
+    // Lecture synchrone du boot cache (pré-chargé avant navigation dans le splash).
+    // Le premier build dispose déjà des données → zéro shimmer pour les sessions
+    // suivantes.
+    final boot = HomeBootCache.instance;
+    if (boot.isReady) {
+      _posts = List.from(boot.posts);
+      _loadedPostIds.addAll(boot.posts.map((p) => p.id ?? '').where((id) => id.isNotEmpty));
+      _totalPostsLoaded = boot.posts.length;
+      _isLoadingPosts = false;
+      _isFirstLoad = false;
+      if (boot.chroniques.isNotEmpty) {
+        _chroniques = List.from(boot.chroniques);
+        _isLoadingChroniques = false;
+      }
+      if (boot.suggestedUsers.isNotEmpty) {
+        _suggestedUsers = List.from(boot.suggestedUsers);
+        _isLoadingSuggestedUsers = false;
+      }
+    }
 
     // Configuration initiale
     _initializeAnimations();
@@ -674,14 +702,17 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         _loadAllAdditionalDataInParallel();
       });
     } else {
-      // Pas de cache : on attend les premiers posts avant tout le reste,
-      // garantissant que _loadedPostIds est peuplé avant _startOldPostsLoading.
-      await _loadInitialPosts();
-      _startOldPostsLoading();
-      _startBackgroundLoading();
+      // Pas de cache : lancer les sections EN PARALLÈLE avec les posts.
+      // Les sections (chroniques, profils, canaux, articles) n'ont pas besoin
+      // de _loadedPostIds → elles peuvent démarrer tout de suite.
+      // _startOldPostsLoading() attend la fin de _loadInitialPosts() car il
+      // utilise _loadedPostIds pour dédupliquer.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _loadAllAdditionalDataInParallel();
       });
+      await _loadInitialPosts();
+      _startOldPostsLoading();
+      _startBackgroundLoading();
     }
   }
 
@@ -820,15 +851,19 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         }
         if (cachedChroniques.isNotEmpty) {
           _chroniques = cachedChroniques;
+          _isLoadingChroniques = false; // données dispo depuis le cache → pas de jump
         }
         if (cachedSuggestedUsers.isNotEmpty) {
           _suggestedUsers = cachedSuggestedUsers;
+          _isLoadingSuggestedUsers = false; // données dispo depuis le cache → pas de jump
         }
         if (cachedCanaux.isNotEmpty) {
           _canaux = cachedCanaux;
+          _isLoadingCanaux = false;
         }
         if (cachedArticles.isNotEmpty) {
           _articles = cachedArticles;
+          _isLoadingArticles = false;
         }
       });
 
@@ -2055,11 +2090,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   }
 
   Future<void> _loadSuggestedUsersInBackground() async {
-    if (_isLoadingSuggestedUsers) return;
-
-    setState(() {
-      _isLoadingSuggestedUsers = true;
-    });
+    if (_hasStartedLoadSuggestedUsers) return;
+    _hasStartedLoadSuggestedUsers = true;
+    // Ne montrer le chargement que s'il n'y a pas encore de données (pas de cache)
+    if (mounted && _suggestedUsers.isEmpty) setState(() => _isLoadingSuggestedUsers = true);
 
     try {
       final users = await userProvider.getProfileUsers(
@@ -2072,6 +2106,18 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         _suggestedUsers = users..shuffle();
       });
       _saveFeedToCache();
+      // Mettre à jour le boot cache avec les données fraîches du réseau.
+      // On le fait ici car suggestedUsers est typiquement le dernier loader
+      // à terminer, garantissant que _posts et _chroniques sont déjà peuplés.
+      final userId = authProvider.loginUserData.id ?? '';
+      if (userId.isNotEmpty) {
+        HomeBootCache.save(
+          userId: userId,
+          posts: _posts,
+          chroniques: _chroniques,
+          suggestedUsers: _suggestedUsers,
+        );
+      }
     } catch (e) {
       printVm('Error loading suggested users: $e');
     } finally {
@@ -2082,11 +2128,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   }
 
   Future<void> _loadArticlesInBackground() async {
-    if (_isLoadingArticles) return;
-
-    setState(() {
-      _isLoadingArticles = true;
-    });
+    if (_hasStartedLoadArticles) return;
+    _hasStartedLoadArticles = true;
+    if (mounted && _articles.isEmpty) setState(() => _isLoadingArticles = true);
 
     try {
       final articleResults = await categorieProduitProvider.getArticleBooster(
@@ -2107,11 +2151,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   }
 
   Future<void> _loadCanauxInBackground() async {
-    if (_isLoadingCanaux) return;
-
-    setState(() {
-      _isLoadingCanaux = true;
-    });
+    if (_hasStartedLoadCanaux) return;
+    _hasStartedLoadCanaux = true;
+    if (mounted && _canaux.isEmpty) setState(() => _isLoadingCanaux = true);
 
     try {
       final canalResults = await postProvider.getCanauxHome();
@@ -2130,8 +2172,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   }
 
   Future<void> _loadChroniquesInBackground() async {
-    if (_isLoadingChroniques) return;
-    setState(() => _isLoadingChroniques = true);
+    if (_hasStartedLoadChroniques) return;
+    _hasStartedLoadChroniques = true;
+    if (mounted && _chroniques.isEmpty) setState(() => _isLoadingChroniques = true);
     try {
       final validChroniques = await FeedRepository().fetchChroniques(limit: 6);
       setState(() => _chroniques = validChroniques);
@@ -2320,9 +2363,44 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   // ===========================================================================
 
   Widget _buildChroniquesSection() {
-    if (_isLoadingChroniques || _chroniques.isEmpty) {
-      return SizedBox.shrink();
+    if (_isLoadingChroniques) {
+      // Skeleton stories — même hauteur que ChroniqueSectionComponent
+      return SizedBox(
+        height: 120,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: 5,
+          itemBuilder: (_, __) => Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 62,
+                  height: 62,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  width: 50,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
     }
+    if (_chroniques.isEmpty) return const SizedBox.shrink();
 
     return ChroniqueSectionComponent(
       videoThumbnails: _videoThumbnails,
@@ -2692,15 +2770,12 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     contentWidgets.add(_buildFilterChips());
     contentWidgets.add(const SizedBox(height: 8));
 
-    final chroniquesSection = _buildChroniquesSection();
-    if (chroniquesSection is! SizedBox) contentWidgets.add(chroniquesSection);
-
-    final profilesSection = _buildProfilesSection();
-    if (profilesSection is! SizedBox) {
-      contentWidgets.add(profilesSection);
-      contentWidgets.add(_buildAdMrec(key: 'ad_native_user'));
-      contentWidgets.add(const SizedBox(height: 8));
-    }
+    // Sections toujours présentes dès le premier build (skeleton si en cours de
+    // chargement) → aucun décalage de layout quand les données arrivent.
+    contentWidgets.add(_buildChroniquesSection());
+    contentWidgets.add(_buildProfilesSection());
+    contentWidgets.add(_buildAdMrec(key: 'ad_native_user'));
+    contentWidgets.add(const SizedBox(height: 8));
 
     int postIndex = 0;
     for (int i = 0; i < finalPosts.length; i++) {
@@ -2726,15 +2801,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
       if (postIndex % 3 == 0) {
         if (postIndex % 6 == 3) {
-          final articlesSection = _buildArticlesSection();
-          if (articlesSection is! SizedBox) contentWidgets.add(articlesSection);
+          contentWidgets.add(_buildArticlesSection());
         } else if (postIndex % 6 == 0) {
-          final canauxSection = _buildCanauxSection();
-          if (canauxSection is! SizedBox) {
-            contentWidgets.add(const RecentVIPContentWidget());
-            contentWidgets.add(canauxSection);
-            // contentWidgets.add(_buildAdAdvertisement(key: 'ad_vert$postIndex'));
-          }
+          contentWidgets.add(const RecentVIPContentWidget());
+          contentWidgets.add(_buildCanauxSection());
         }
       }
     }

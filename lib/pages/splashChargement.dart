@@ -47,6 +47,7 @@ import 'auth/authTest/Screens/Login/loginPageUser.dart';
 import 'auth/authTest/Screens/updateUserData.dart';
 
 import 'home/homeScreen.dart';
+import 'home/home_boot_cache.dart';
 
 class DestinationData {
   final String type;
@@ -240,9 +241,17 @@ class _SplashChargementState extends State<SplashChargement> {
     finally { if (mounted) setState(() => _isLoadingTarget = false); }
   }
 
-  void _navigateToHomeWithDestination() {
+  Future<void> _navigateToHomeWithDestination() async {
     if (_hasNavigated) return;
     _hasNavigated = true;
+    // Précharger le boot cache (< 10 ms depuis SharedPreferences)
+    // avant d'ouvrir HomeScreen pour que initState() lise les données
+    // de façon synchrone sans aucun setState.
+    final userId = authProvider.loginUserData.id ?? '';
+    if (userId.isNotEmpty) {
+      await HomeBootCache.preload(userId);
+    }
+    if (!mounted) return;
     printVm("🚀 [SPLASH] Navigation vers Home avec destination ${_destinationToSend?.type}");
     Navigator.pushReplacement(
       context,
@@ -533,41 +542,34 @@ class _SplashChargementState extends State<SplashChargement> {
 
   Future<void> _prepareDestination() async {
     printVm("🔍 [SPLASH] Chargement du cache...");
-    await NavigationCacheService().getAndClearPendingNavigation().then((value) {
-      _cachedNavigation = value;
-      if (_cachedNavigation != null) {
-        printVm("✅ [SPLASH] Cache trouvé : $_cachedNavigation");
-        _pendingNavigationType = _cachedNavigation!['type'];
-        printVm("✅ [SPLASH] Cache trouvé _pendingNavigationType : $_pendingNavigationType");
+    final navValue = await NavigationCacheService().getAndClearPendingNavigation();
+    _cachedNavigation = navValue;
+    if (_cachedNavigation != null) {
+      printVm("✅ [SPLASH] Cache trouvé : $_cachedNavigation");
+      _pendingNavigationType = _cachedNavigation!['type'];
+      printVm("✅ [SPLASH] Cache trouvé _pendingNavigationType : $_pendingNavigationType");
 
-        switch (_pendingNavigationType) {
-          case 'post':
-            _pendingPostId = _cachedNavigation!['postId'];
-            _pendingPostType = _cachedNavigation!['postType'] ?? '';
-            break;
-          case 'message':
-            _pendingChatId = _cachedNavigation!['chatId'];
-            _pendingSendUserId = _cachedNavigation!['sendUserId'];
-            break;
-          case 'chronique':
-            _pendingChroniqueId = _cachedNavigation!['chroniqueId'];
-            break;
-          case 'group':
-            _pendingJoinCode = _cachedNavigation!['joinCode'] as String?;
-            break;
-          default: break;
-        }
-      } else {
-        if (_hasNavigated) return;
-        _hasNavigated = true;
-        printVm("🚀 [SPLASH] Navigation vers Home avec destination ${_destinationToSend?.type}");
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => MyHomePage(title: '', initialDestination: _destinationToSend)),
-        );
-        printVm("📦 [SPLASH] Aucune navigation en cache");
+      switch (_pendingNavigationType) {
+        case 'post':
+          _pendingPostId = _cachedNavigation!['postId'];
+          _pendingPostType = _cachedNavigation!['postType'] ?? '';
+          break;
+        case 'message':
+          _pendingChatId = _cachedNavigation!['chatId'];
+          _pendingSendUserId = _cachedNavigation!['sendUserId'];
+          break;
+        case 'chronique':
+          _pendingChroniqueId = _cachedNavigation!['chroniqueId'];
+          break;
+        case 'group':
+          _pendingJoinCode = _cachedNavigation!['joinCode'] as String?;
+          break;
+        default: break;
       }
-    });
+    } else {
+      await _navigateToHomeWithDestination();
+      printVm("📦 [SPLASH] Aucune navigation en cache");
+    }
 
     printVm("📦 2 [SPLASH] _prepareDestination - pendingType = $_pendingNavigationType");
     if (_pendingNavigationType == null) {
@@ -609,14 +611,7 @@ class _SplashChargementState extends State<SplashChargement> {
         _destinationToSend = DestinationData(type: 'home');
     }
     printVm("✅ [SPLASH] Destination créée : ${_destinationToSend?.type}");
-
-    if (_hasNavigated) return;
-    _hasNavigated = true;
-    printVm("🚀 [SPLASH] Navigation vers Home avec destination ${_destinationToSend?.type}");
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => MyHomePage(title: '', initialDestination: _destinationToSend)),
-    );
+    await _navigateToHomeWithDestination();
   }
 
   void _redirectToLogin() {

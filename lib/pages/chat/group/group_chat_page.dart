@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -14,7 +13,9 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../models/model_data.dart';
 import '../../../providers/authProvider.dart';
+import '../../../services/utils/country_list.dart';
 import '../../../services/utils/group_permission_utils.dart';
+import '../../../widgets/smart_video_player.dart';
 import '../../../widgets/user_badge_widget.dart';
 import '../../../theme/app_colors.dart';
 import '../../component/showUserDetails.dart';
@@ -59,11 +60,13 @@ class _GroupChatPageState extends State<GroupChatPage> {
   bool _isMuted = false;
   bool _isReadOnly = false;
   bool _sendHidden = false; // mode message invisible (Gold owner uniquement)
+  bool _ownerIsGold = false; // vidéo réservée Gold
   String _myRole = 'member';
   Map<String, dynamic> _myPermissions = {};
   Map<String, dynamic> _groupData = {};
   List<Map<String, dynamic>> _messages = [];
   bool _isLoadingMessages = true;
+  bool _permissionsLoaded = false;
   final Map<String, Map<String, dynamic>> _senderBadgeCache = {};
 
   // Reponse
@@ -135,6 +138,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
           _isMuted = mutedGroups.contains(widget.groupId);
           _myRole = role;
           _myPermissions = perms;
+          _permissionsLoaded = true;
         });
       }
       await _checkOwnerPremium(data);
@@ -169,11 +173,14 @@ class _GroupChatPageState extends State<GroupChatPage> {
       final abonnementJson = ownerData['abonnement'] as Map<String, dynamic>?;
 
       bool isStillActive = false;
+      bool ownerGold = ownerData['role'] == 'ADM'; // admin = Gold à vie
       if (abonnementJson != null) {
         final ab = AfrolookAbonnement.fromJson(abonnementJson);
         // Premium OU Gold permettent de garder un groupe actif
         isStillActive = ab.estPremium;
+        if (ab.estGold) ownerGold = true;
       }
+      if (mounted) setState(() => _ownerIsGold = ownerGold);
 
       final isFrozenNow = _groupData['is_frozen'] == true;
       if (!isStillActive && !isFrozenNow) {
@@ -735,14 +742,14 @@ class _GroupChatPageState extends State<GroupChatPage> {
     _lastSentAt = DateTime.now().millisecondsSinceEpoch;
 
     try {
-      final file = File(picked.path);
+      final bytes = await picked.readAsBytes();
       final now = DateTime.now().millisecondsSinceEpoch;
       final msgId = _firestore.collection('GroupMessages').doc().id;
 
       final ref = FirebaseStorage.instance
           .ref()
           .child('group_images/${widget.groupId}/$msgId.jpg');
-      await ref.putFile(file);
+      await ref.putData(bytes);
       final url = await ref.getDownloadURL();
 
       await _firestore.collection('GroupMessages').doc(msgId).set({
@@ -775,6 +782,143 @@ class _GroupChatPageState extends State<GroupChatPage> {
       await _firestore.collection('GroupChats').doc(widget.groupId).update(groupUpdateImg);
 
       await _sendGroupNotification('Photo');
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _isSending = false);
+    }
+  }
+
+  static const int _maxVideoBytes = 30 * 1024 * 1024;       // 30 Mo par vidéo
+  static const int _maxDailyVideoBytes = 150 * 1024 * 1024; // 150 Mo par jour
+
+  Future<void> _sendVideoMessage() async {
+    if (!_canSend) return;
+    if (!_userCanWrite) {
+      final r = _writeBlockReason();
+      _showRestrictionModal(title: r.title, message: r.message, icon: r.icon, color: r.color);
+      return;
+    }
+    final myId = _auth.loginUserData.id!;
+    if (!_isMember(myId)) return;
+
+    // ── Vérification Gold du propriétaire ───────────────────────────────────
+    if (!_ownerIsGold) {
+      _showRestrictionModal(
+        title: 'Fonctionnalité Gold',
+        message: 'L\'envoi de vidéos est réservé aux groupes dont le propriétaire a le plan Gold.',
+        icon: Icons.workspace_premium_rounded,
+        color: const Color(0xFFFFD700),
+      );
+      return;
+    }
+
+    final picker = ImagePicker();
+    final picked = await picker.pickVideo(source: ImageSource.gallery);
+    if (picked == null) return;
+
+    final bytes = await picked.readAsBytes();
+    final sizeBytes = bytes.length;
+
+    // ── Vérification taille unitaire (30 Mo) ───────────────────────────────
+    if (sizeBytes > _maxVideoBytes) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Vidéo trop lourde — maximum 30 Mo par vidéo'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+      return;
+    }
+
+    // ── Vérification quota journalier (150 Mo) ─────────────────────────────
+    final today = DateTime.now();
+    final todayStr =
+        '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+
+    final rawStats = _groupData['video_daily_stats'] as Map<String, dynamic>?;
+    final statsDate = rawStats?['date'] as String? ?? '';
+    final usedBytes =
+        statsDate == todayStr ? (rawStats?['bytes'] as int? ?? 0) : 0;
+
+    if (usedBytes + sizeBytes > _maxDailyVideoBytes) {
+      final usedMo = (usedBytes / (1024 * 1024)).toStringAsFixed(1);
+      if (mounted) {
+        _showRestrictionModal(
+          title: 'Limite journalière atteinte',
+          message:
+              'Ce groupe a atteint sa limite de 150 Mo de vidéos pour aujourd\'hui.\n'
+              'Déjà utilisé : $usedMo Mo / 150 Mo.\n'
+              'Revenez demain pour envoyer de nouvelles vidéos.',
+          icon: Icons.data_usage_rounded,
+          color: Colors.orange,
+        );
+      }
+      return;
+    }
+
+    setState(() => _isSending = true);
+    _lastSentAt = DateTime.now().millisecondsSinceEpoch;
+
+    try {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final msgId = _firestore.collection('GroupMessages').doc().id;
+
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('group_videos/${widget.groupId}/$msgId.mp4');
+      await ref.putData(bytes);
+      final url = await ref.getDownloadURL();
+
+      await _firestore.collection('GroupMessages').doc(msgId).set({
+        'id': msgId,
+        'group_id': widget.groupId,
+        'send_by': myId,
+        'sender_pseudo': _auth.loginUserData.pseudo ?? '',
+        'sender_image': _auth.loginUserData.imageUrl ?? '',
+        'message': url,
+        'message_type': 'video',
+        'is_valide': true,
+        'is_deleted': false,
+        'is_encrypted': false,
+        'create_at_time_spam': now,
+        'message_state': 'NONLU',
+      });
+
+      final otherMembers = (_groupData['member_ids'] as List<dynamic>? ?? [])
+          .cast<String>()
+          .where((id) => id != myId)
+          .toList();
+      final groupUpdate = <String, dynamic>{
+        'last_message': 'Vidéo',
+        'last_message_at': now,
+        'updated_at': now,
+        // Mettre à jour le quota journalier
+        'video_daily_stats': {
+          'date': todayStr,
+          'bytes': usedBytes + sizeBytes,
+        },
+      };
+      for (final id in otherMembers) {
+        groupUpdate['unread_counts.$id'] = FieldValue.increment(1);
+      }
+      await _firestore.collection('GroupChats').doc(widget.groupId).update(groupUpdate);
+
+      // Mettre à jour le cache local pour bloquer immédiatement si dépassement
+      if (mounted) {
+        setState(() {
+          _groupData['video_daily_stats'] = {
+            'date': todayStr,
+            'bytes': usedBytes + sizeBytes,
+          };
+        });
+      }
+
+      await _sendGroupNotification('Vidéo');
     } catch (_) {
     } finally {
       if (mounted) setState(() => _isSending = false);
@@ -1070,6 +1214,27 @@ class _GroupChatPageState extends State<GroupChatPage> {
                     ),
                 ],
               ],
+              // ── Ciblage par pays (groupes officiels, admin/owner) ──────────
+              if (_isAdminOrOwner && _groupData['is_official'] == true && !isDeleted) ...[
+                const Divider(height: 1, indent: 16, endIndent: 16),
+                ListTile(
+                  leading: const Icon(Icons.public_rounded, color: Color(0xFF185FA5)),
+                  title: const Text('Cibler par pays', style: TextStyle(color: Color(0xFF185FA5))),
+                  subtitle: Builder(builder: (_) {
+                    final vc = (msg['visible_countries'] as List<dynamic>?)?.cast<String>();
+                    if (vc == null || vc.isEmpty || vc.contains('ALL')) {
+                      return const Text('Visible dans tous les pays', style: TextStyle(fontSize: 12));
+                    }
+                    return Text('${vc.length} pays ciblé${vc.length > 1 ? 's' : ''}',
+                        style: const TextStyle(fontSize: 12));
+                  }),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _showCountryTargetingSheet(msg);
+                  },
+                ),
+              ],
+
               if (canDelete && !isDeleted)
                 ListTile(
                   leading: const Icon(Icons.delete_outline_rounded, color: Colors.red),
@@ -1247,6 +1412,291 @@ class _GroupChatPageState extends State<GroupChatPage> {
     }
   }
 
+  // ── Ciblage par pays ──────────────────────────────────────────────────────
+
+  void _showCountryTargetingSheet(Map<String, dynamic> msg) {
+    final msgId = msg['id'] as String?;
+    if (msgId == null) return;
+
+    final current = ((msg['visible_countries'] as List<dynamic>?)?.cast<String>() ?? []).toSet();
+    // Si 'ALL' est dans la liste, on considère qu'il n'y a pas de ciblage
+    final initialSelected = current.contains('ALL') ? <String>{} : Set<String>.from(current);
+    final selected = <String>{...initialSelected};
+    final searchCtrl = TextEditingController();
+    final countries = kCountries.where((c) => c['code'] != 'ALL').toList();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModal) {
+          final query = searchCtrl.text.toLowerCase();
+          final filtered = query.isEmpty
+              ? countries
+              : countries
+                  .where((c) =>
+                      (c['name']!).toLowerCase().contains(query) ||
+                      (c['code']!).toLowerCase().contains(query))
+                  .toList();
+
+          return Container(
+            height: MediaQuery.of(ctx).size.height * 0.85,
+            margin: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+            decoration: BoxDecoration(
+              color: _colors.surface,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              children: [
+                // Handle
+                Container(
+                  margin: const EdgeInsets.symmetric(vertical: 10),
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                      color: _colors.border, borderRadius: BorderRadius.circular(2)),
+                ),
+
+                // Titre
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.public_rounded, color: Color(0xFF185FA5), size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Cibler par pays',
+                          style: TextStyle(
+                              color: _colors.textPrimary,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16),
+                        ),
+                      ),
+                      if (selected.isNotEmpty)
+                        Chip(
+                          label: Text('${selected.length}',
+                              style: const TextStyle(color: Colors.white, fontSize: 12)),
+                          backgroundColor: const Color(0xFF185FA5),
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          padding: EdgeInsets.zero,
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Option "Tous les pays"
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: InkWell(
+                    onTap: () {
+                      setModal(() => selected.clear());
+                    },
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: selected.isEmpty
+                            ? const Color(0xFF185FA5).withOpacity(0.1)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: selected.isEmpty
+                              ? const Color(0xFF185FA5).withOpacity(0.4)
+                              : _colors.border.withOpacity(0.2),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Text('🌍', style: TextStyle(fontSize: 20)),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Tous les pays',
+                              style: TextStyle(
+                                color: selected.isEmpty
+                                    ? const Color(0xFF185FA5)
+                                    : _colors.textPrimary,
+                                fontWeight: selected.isEmpty
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          if (selected.isEmpty)
+                            const Icon(Icons.check_rounded,
+                                color: Color(0xFF185FA5), size: 18),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Recherche
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: TextField(
+                    controller: searchCtrl,
+                    onChanged: (v) => setModal(() {}),
+                    style: TextStyle(color: _colors.textPrimary, fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: 'Rechercher un pays...',
+                      hintStyle: TextStyle(color: _colors.textSecondary.withOpacity(0.6), fontSize: 13),
+                      prefixIcon: Icon(Icons.search_rounded, color: _colors.textSecondary, size: 18),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: _colors.border.withOpacity(0.4)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: _colors.border.withOpacity(0.4)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: _colors.primary),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                      isDense: true,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+
+                // Liste des pays
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    itemCount: filtered.length,
+                    itemBuilder: (_, i) {
+                      final c = filtered[i];
+                      final code = c['code']!;
+                      final name = c['name']!;
+                      final flag = c['flag']!;
+                      final isSelected = selected.contains(code);
+                      return InkWell(
+                        onTap: () => setModal(() {
+                          if (isSelected) {
+                            selected.remove(code);
+                          } else {
+                            selected.add(code);
+                          }
+                        }),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                          child: Row(
+                            children: [
+                              Text(flag, style: const TextStyle(fontSize: 20)),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(name,
+                                    style: TextStyle(
+                                        color: _colors.textPrimary,
+                                        fontSize: 14)),
+                              ),
+                              if (isSelected)
+                                Container(
+                                  width: 20,
+                                  height: 20,
+                                  decoration: const BoxDecoration(
+                                      color: Color(0xFF185FA5),
+                                      shape: BoxShape.circle),
+                                  child: const Icon(Icons.check_rounded,
+                                      color: Colors.white, size: 13),
+                                )
+                              else
+                                Container(
+                                  width: 20,
+                                  height: 20,
+                                  decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                          color: _colors.border.withOpacity(0.4))),
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+
+                // Boutons
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: _colors.textSecondary,
+                            side: BorderSide(color: _colors.border.withOpacity(0.4)),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: const Text('Annuler'),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            Navigator.pop(ctx);
+                            final countries = selected.isEmpty
+                                ? ['ALL']
+                                : selected.toList();
+                            await _setMessageVisibleCountries(msgId, countries);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF185FA5),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            elevation: 0,
+                          ),
+                          child: Text(
+                            selected.isEmpty ? 'Tous les pays' : 'Confirmer (${selected.length})',
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _setMessageVisibleCountries(String msgId, List<String> countries) async {
+    try {
+      if (countries.isEmpty || countries.contains('ALL')) {
+        await _firestore.collection('GroupMessages').doc(msgId).update({
+          'visible_countries': FieldValue.delete(),
+        });
+      } else {
+        await _firestore.collection('GroupMessages').doc(msgId).update({
+          'visible_countries': countries,
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur : $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
   String _formatTime(int tsMs) {
     final date = DateTime.fromMillisecondsSinceEpoch(tsMs);
     return '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
@@ -1264,9 +1714,11 @@ class _GroupChatPageState extends State<GroupChatPage> {
       appBar: _buildAppBar(),
       body: Column(
         children: [
-          if (_isFrozen) _buildFrozenBanner(),
-          if (!_isFrozen && _isReadOnly) _buildReadOnlyBanner(),
-          if (!_isFrozen && !_isReadOnly && !_userCanWrite) _buildNoWritePermissionBanner(),
+          if (_permissionsLoaded) ...[
+            if (_isFrozen) _buildFrozenBanner(),
+            if (!_isFrozen && _isReadOnly) _buildReadOnlyBanner(),
+            if (!_isFrozen && !_isReadOnly && !_userCanWrite) _buildNoWritePermissionBanner(),
+          ],
           Expanded(
             child: _isLoadingMessages
                 ? Center(child: CircularProgressIndicator(color: _colors.primary, strokeWidth: 2))
@@ -1283,8 +1735,10 @@ class _GroupChatPageState extends State<GroupChatPage> {
                         },
                       ),
           ),
-          if (_userCanWrite) _buildInputBar(),
-          if (!_userCanWrite) _buildBlockedInputPlaceholder(),
+          if (_permissionsLoaded) ...[
+            if (_userCanWrite) _buildInputBar(),
+            if (!_userCanWrite) _buildBlockedInputPlaceholder(),
+          ],
         ],
       ),
     );
@@ -1423,15 +1877,15 @@ class _GroupChatPageState extends State<GroupChatPage> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: _colors.primary.withOpacity(0.08),
+      color: _colors.textSecondary.withOpacity(0.06),
       child: Row(
         children: [
-          Icon(Icons.edit_off_rounded, color: _colors.primary, size: 16),
+          Icon(Icons.edit_off_rounded, color: _colors.textSecondary, size: 15),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               'Lecture seule — seuls les admins peuvent écrire',
-              style: TextStyle(color: _colors.primary, fontSize: 12, fontWeight: FontWeight.w600),
+              style: TextStyle(color: _colors.textSecondary, fontSize: 12),
             ),
           ),
         ],
@@ -1443,15 +1897,15 @@ class _GroupChatPageState extends State<GroupChatPage> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: Colors.red.withOpacity(0.08),
-      child: const Row(
+      color: _colors.textSecondary.withOpacity(0.06),
+      child: Row(
         children: [
-          Icon(Icons.block_rounded, color: Colors.red, size: 16),
-          SizedBox(width: 8),
+          Icon(Icons.block_rounded, color: _colors.textSecondary, size: 15),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               'Écriture désactivée par le propriétaire du groupe',
-              style: TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.w600),
+              style: TextStyle(color: _colors.textSecondary, fontSize: 12),
             ),
           ),
         ],
@@ -1460,25 +1914,19 @@ class _GroupChatPageState extends State<GroupChatPage> {
   }
 
   Widget _buildBlockedInputPlaceholder() {
-    String reason;
-    IconData icon;
-    Color color;
+    final String reason;
 
     if (_isFrozen) {
       reason = 'Groupe gelé — propriétaire plus Gold';
-      icon = Icons.lock_outline_rounded;
-      color = Colors.orange;
     } else if (_isReadOnly && !_isAdminOrOwner) {
       reason = 'Groupe en lecture seule';
-      icon = Icons.edit_off_rounded;
-      color = _colors.textSecondary;
     } else {
       reason = 'Écriture non autorisée dans ce groupe';
-      icon = Icons.block_rounded;
-      color = Colors.red;
     }
 
     final r = _writeBlockReason();
+    // Couleur neutre pour tous les cas de blocage d'écriture (sauf frozen = orange)
+    final displayColor = _isFrozen ? Colors.orange : _colors.textSecondary;
     return GestureDetector(
       onTap: () => _showRestrictionModal(
         title: r.title,
@@ -1487,7 +1935,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
         color: r.color,
       ),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: _colors.surface,
           border: Border(top: BorderSide(color: _colors.border.withOpacity(0.3))),
@@ -1495,12 +1943,12 @@ class _GroupChatPageState extends State<GroupChatPage> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(r.icon, color: r.color, size: 16),
+            Icon(r.icon, color: displayColor, size: 15),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(reason, style: TextStyle(color: r.color, fontSize: 13)),
+              child: Text(reason, style: TextStyle(color: displayColor, fontSize: 12)),
             ),
-            Icon(Icons.info_outline_rounded, color: r.color.withOpacity(0.6), size: 15),
+            Icon(Icons.info_outline_rounded, color: displayColor.withOpacity(0.5), size: 14),
           ],
         ),
       ),
@@ -1541,6 +1989,25 @@ class _GroupChatPageState extends State<GroupChatPage> {
 
     if (isSystem) return _buildSystemMessage(msg);
 
+    // ── Filtrage ciblage pays ─────────────────────────────────────────────────
+    // Applicable uniquement dans les groupes officiels, pour les membres (non admin)
+    if (!isDeleted && _groupData['is_official'] == true && !_isAdminOrOwner) {
+      final vc = (msg['visible_countries'] as List<dynamic>?)?.cast<String>();
+      if (vc != null && vc.isNotEmpty && !vc.contains('ALL')) {
+        final myCountry = (_auth.loginUserData.countryData as Map<String, dynamic>?)?['countryCode'] as String?;
+        if (myCountry == null || !vc.contains(myCountry)) {
+          return const SizedBox.shrink();
+        }
+      }
+    }
+
+    final visibleCountries = !isDeleted && _groupData['is_official'] == true && _isAdminOrOwner
+        ? (msg['visible_countries'] as List<dynamic>?)?.cast<String>()
+        : null;
+    final hasCountryTarget = visibleCountries != null &&
+        visibleCountries.isNotEmpty &&
+        !visibleCountries.contains('ALL');
+
     final text = isDeleted ? 'Message supprime' : (msg['message'] as String? ?? '');
     final type = isDeleted ? 'text' : (msg['message_type'] as String? ?? 'text');
     final pseudo = msg['sender_pseudo'] as String? ?? '';
@@ -1556,6 +2023,11 @@ class _GroupChatPageState extends State<GroupChatPage> {
     final replyType = msg['reply_to_type'] as String?;
     final hasReply = replyId != null && replyId.isNotEmpty;
 
+    final rawReactions = msg['reactions'] as Map<String, dynamic>? ?? {};
+    final reactions = rawReactions.map((k, v) => MapEntry(k, List<String>.from(v as List? ?? [])));
+    final hasReactions = reactions.values.any((list) => list.isNotEmpty);
+    final msgId = msg['id'] as String? ?? '';
+
     return GestureDetector(
       onLongPress: isDeleted ? null : () => _showMessageOptions(msg, isMe),
       child: Padding(
@@ -1563,7 +2035,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
           left: isMe ? 60 : 8,
           right: isMe ? 8 : 60,
           top: 3,
-          bottom: 3,
+          bottom: hasReactions ? 6 : 3,
         ),
         child: Row(
           mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
@@ -1595,7 +2067,19 @@ class _GroupChatPageState extends State<GroupChatPage> {
               const SizedBox(width: 6),
             ],
             Flexible(
-              child: Container(
+              child: Column(
+                crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                children: [
+                  // Bulle + bouton réaction côte à côte
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      if (isMe && !isDeleted) ...[
+                        _buildAddReactionButton(msgId, reactions),
+                        const SizedBox(width: 4),
+                      ],
+                      Flexible(child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: isMe
@@ -1669,6 +2153,8 @@ class _GroupChatPageState extends State<GroupChatPage> {
                           ),
                         ),
                       )
+                    else if (type == 'video')
+                      _buildVideoCard(text, isMe)
                     else if (type == 'post')
                       _buildSharedPostCard(msg, isMe)
                     else if (type == 'link_share')
@@ -1719,6 +2205,23 @@ class _GroupChatPageState extends State<GroupChatPage> {
                             ),
                             const SizedBox(width: 4),
                           ],
+                          // Indicateur ciblage pays (visible admin/owner uniquement)
+                          if (hasCountryTarget) ...[
+                            const Icon(Icons.public_rounded,
+                                size: 11, color: Color(0xFF185FA5)),
+                            const SizedBox(width: 2),
+                            Text(
+                              visibleCountries.take(2).map(countryFlag).join(''),
+                              style: const TextStyle(fontSize: 9),
+                            ),
+                            if (visibleCountries.length > 2)
+                              Text(
+                                '+${visibleCountries.length - 2}',
+                                style: const TextStyle(
+                                    fontSize: 9, color: Color(0xFF185FA5)),
+                              ),
+                            const SizedBox(width: 4),
+                          ],
                           Text(
                             timeStr,
                             style: TextStyle(
@@ -1736,6 +2239,236 @@ class _GroupChatPageState extends State<GroupChatPage> {
                       ),
                     ),
                   ],
+                ),
+              )),
+              if (!isMe && !isDeleted) ...[
+                const SizedBox(width: 4),
+                _buildAddReactionButton(msgId, reactions),
+              ],
+            ],
+          ),
+          // Pilules de réactions
+          if (hasReactions)
+            _buildReactionsBar(msgId, reactions, isMe),
+        ],
+      ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddReactionButton(String msgId, Map<String, List<String>> reactions) {
+    return GestureDetector(
+      onTap: () => _showReactionPicker(msgId, reactions),
+      child: Container(
+        width: 24,
+        height: 24,
+        margin: const EdgeInsets.only(bottom: 4),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: _colors.surface,
+          border: Border.all(color: _colors.border.withOpacity(0.4)),
+        ),
+        child: Center(
+          child: Text('+', style: TextStyle(
+            fontSize: 14, color: _colors.textSecondary, height: 1,
+          )),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReactionsBar(String msgId, Map<String, List<String>> reactions, bool isMe) {
+    final myId = _auth.loginUserData.id ?? '';
+    final sorted = reactions.entries
+        .where((e) => e.value.isNotEmpty)
+        .toList()
+      ..sort((a, b) => b.value.length.compareTo(a.value.length));
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Wrap(
+        spacing: 4,
+        runSpacing: 4,
+        alignment: isMe ? WrapAlignment.end : WrapAlignment.start,
+        children: sorted.map((entry) {
+          final emoji = entry.key;
+          final users = entry.value;
+          final mine = users.contains(myId);
+          return GestureDetector(
+            onTap: () => _toggleReaction(msgId, emoji),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              decoration: BoxDecoration(
+                color: mine
+                    ? _colors.primary.withOpacity(0.12)
+                    : _colors.surface,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: mine
+                      ? _colors.primary.withOpacity(0.4)
+                      : _colors.border.withOpacity(0.3),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(emoji, style: const TextStyle(fontSize: 13)),
+                  const SizedBox(width: 3),
+                  Text(
+                    '${users.length}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: mine ? _colors.primary : _colors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Future<void> _toggleReaction(String msgId, String emoji) async {
+    if (msgId.isEmpty) return;
+    final myId = _auth.loginUserData.id ?? '';
+    if (myId.isEmpty) return;
+    final msgRef = FirebaseFirestore.instance.collection('GroupMessages').doc(msgId);
+
+    await FirebaseFirestore.instance.runTransaction((tx) async {
+      final doc = await tx.get(msgRef);
+      final raw = doc.data()?['reactions'] as Map<String, dynamic>? ?? {};
+      final reactions = raw.map((k, v) =>
+          MapEntry(k, List<String>.from(v as List? ?? [])));
+
+      for (final e in reactions.keys.where((e) => e != emoji)) {
+        reactions[e]!.remove(myId);
+      }
+
+      final target = reactions[emoji] ?? <String>[];
+      if (target.contains(myId)) {
+        target.remove(myId);
+      } else {
+        target.add(myId);
+      }
+      reactions[emoji] = target;
+      reactions.removeWhere((_, v) => v.isEmpty);
+
+      tx.update(msgRef, {'reactions': reactions});
+    });
+  }
+
+  void _showReactionPicker(String msgId, Map<String, List<String>> currentReactions) {
+    final myId = _auth.loginUserData.id ?? '';
+
+    String? myCurrentEmoji;
+    for (final e in currentReactions.entries) {
+      if (e.value.contains(myId)) { myCurrentEmoji = e.key; break; }
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => Container(
+        height: MediaQuery.of(ctx).size.height * 0.58,
+        decoration: BoxDecoration(
+          color: _colors.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            // Handle
+            Container(
+              width: 36,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                  color: _colors.border, borderRadius: BorderRadius.circular(2)),
+            ),
+
+            // Titre + réaction actuelle
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Text(
+                    'Réagir au message',
+                    style: TextStyle(
+                        color: _colors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14),
+                  ),
+                  const Spacer(),
+                  if (myCurrentEmoji != null)
+                    GestureDetector(
+                      onTap: () async {
+                        Navigator.pop(ctx);
+                        await _toggleReaction(msgId, myCurrentEmoji!);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: _colors.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                              color: _colors.primary.withOpacity(0.4)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(myCurrentEmoji,
+                                style: const TextStyle(fontSize: 16)),
+                            const SizedBox(width: 5),
+                            Text('Retirer',
+                                style: TextStyle(
+                                    color: _colors.primary,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // Picker complet avec toutes les catégories
+            Expanded(
+              child: EmojiPicker(
+                onEmojiSelected: (_, emoji) async {
+                  Navigator.pop(ctx);
+                  await _toggleReaction(msgId, emoji.emoji);
+                },
+                config: Config(
+                  height: MediaQuery.of(ctx).size.height * 0.58 - 80,
+                  emojiViewConfig: EmojiViewConfig(
+                    columns: 9,
+                    emojiSizeMax: 26,
+                    backgroundColor: _colors.surface,
+                  ),
+                  categoryViewConfig: CategoryViewConfig(
+                    backgroundColor: _colors.surfaceVariant,
+                    indicatorColor: _colors.primary,
+                    iconColorSelected: _colors.primary,
+                    iconColor: _colors.textSecondary,
+                  ),
+                  searchViewConfig: SearchViewConfig(
+                    backgroundColor: _colors.surface,
+                    buttonIconColor: _colors.primary,
+                  ),
+                  skinToneConfig: const SkinToneConfig(),
+                  bottomActionBarConfig: BottomActionBarConfig(
+                    backgroundColor: _colors.surfaceVariant,
+                    buttonColor: _colors.primary,
+                  ),
                 ),
               ),
             ),
@@ -2152,6 +2885,68 @@ class _GroupChatPageState extends State<GroupChatPage> {
     );
   }
 
+  Widget _buildVideoCard(String url, bool isMe) {
+    return GestureDetector(
+      onTap: () {
+        showDialog(
+          context: context,
+          builder: (_) => Dialog(
+            backgroundColor: Colors.black,
+            insetPadding: const EdgeInsets.all(12),
+            child: AspectRatio(
+              aspectRatio: 16 / 9,
+              child: SmartVideoPlayer(
+                url: url,
+                autoPlay: true,
+                looping: false,
+              ),
+            ),
+          ),
+        );
+      },
+      child: Container(
+        width: 200,
+        height: 130,
+        decoration: BoxDecoration(
+          color: isMe ? Colors.white.withOpacity(0.12) : _colors.surfaceVariant,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Icon(Icons.videocam_rounded,
+                size: 40,
+                color: isMe ? Colors.white54 : _colors.textSecondary),
+            Positioned(
+              bottom: 6,
+              left: 8,
+              child: Text(
+                'Vidéo — appuyer pour lire',
+                style: TextStyle(
+                  color: isMe ? Colors.white70 : _colors.textSecondary,
+                  fontSize: 10,
+                ),
+              ),
+            ),
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: (isMe ? Colors.white : _colors.primary).withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.play_arrow_rounded,
+                color: isMe ? Colors.white : _colors.primary,
+                size: 28,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ─── INPUT BAR ───────────────────────────────────────────────────────────────
 
   Widget _buildInputBar() {
@@ -2199,6 +2994,16 @@ class _GroupChatPageState extends State<GroupChatPage> {
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 8, right: 4),
                     child: Icon(Icons.image_rounded,
+                        color: _userCanShare ? _colors.primary : _colors.textSecondary.withOpacity(0.4),
+                        size: 24),
+                  ),
+                ),
+                // Vidéo
+                GestureDetector(
+                  onTap: _userCanShare ? _sendVideoMessage : () => _showShareBlockedSnackbar(),
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 8, right: 4),
+                    child: Icon(Icons.videocam_rounded,
                         color: _userCanShare ? _colors.primary : _colors.textSecondary.withOpacity(0.4),
                         size: 24),
                   ),

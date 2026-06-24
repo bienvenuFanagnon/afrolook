@@ -28,7 +28,9 @@ import 'package:afrotok/pages/widgetGlobal.dart';
 
 import 'package:flutter/gestures.dart';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:afrotok/widgets/smart_video_player.dart';
 
 import 'package:video_player/video_player.dart';
 
@@ -467,6 +469,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   // ==================== MÉTHODES DE PRÉCHARGEMENT ====================
 
   Future<void> _preloadVideoAtIndex(int index) async {
+    // Sur web, video_player_web échoue avec 'isSupported' — pas de préchargement
+    if (kIsWeb) return;
     if (index < 0 || index >= _feedItems.length) return;
     final item = _feedItems[index];
     if (item is! Post) return;
@@ -479,7 +483,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
     try {
       final optimizedUrl = authProvider.convertToCdnUrl(post.url_media!, authProvider.appDefaultData);
-      final controller = VideoPlayerController.network(optimizedUrl);
+      final controller = VideoPlayerController.networkUrl(Uri.parse(optimizedUrl));
       await controller.initialize();
       // NE PAS jouer, NE PAS mettre en pause, NE PAS seek
       // L'initialisation seule suffit à remplir le buffer
@@ -523,6 +527,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   // ==================== VIDEO INIT & PLAYBACK (MODIFIÉE) ====================
 
   Future<void> _initializeVideo(Post post, {int? index}) async {
+    // Sur web, SmartVideoPlayer gère l'affichage nativement via <video> HTML
+    if (kIsWeb) return;
     // Si un index est fourni et qu'un contrôleur préchargé existe, on l'utilise
     if (index != null && _preloadedControllers.containsKey(index)) {
       final preloadedController = _preloadedControllers[index]!;
@@ -581,7 +587,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
     try {
       final String optimizedUrl = authProvider.convertToCdnUrl(post.url_media!, authProvider.appDefaultData);
-      _currentVideoController = VideoPlayerController.network(optimizedUrl);
+      _currentVideoController = VideoPlayerController.networkUrl(Uri.parse(optimizedUrl));
       await _currentVideoController!.initialize();
       _chewieController = ChewieController(
         videoPlayerController: _currentVideoController!,
@@ -2015,6 +2021,17 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   // ==================== UI BUILD ====================
 
   Widget _buildVideoPlayer(Post post) {
+    // Sur Flutter Web : lecteur HTML natif (contourne video_player_web)
+    if (kIsWeb) {
+      final url = post.url_media;
+      if (url == null || url.isEmpty) {
+        return Container(
+          color: _afroBlack,
+          child: const Center(child: Icon(Icons.play_circle_outline, color: Colors.white54, size: 48)),
+        );
+      }
+      return SmartVideoPlayer(url: url, autoPlay: true, looping: true, progressColor: _afroGreen);
+    }
     if (!_isVideoInitialized) {
       return Container(
         color: _afroBlack,
