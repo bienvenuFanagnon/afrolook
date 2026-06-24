@@ -134,7 +134,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
 
   // Restrictions
   int _maxCharacters = 300;
-  int _cooldownMinutes = 60;
+  int _cooldownMinutes = 5;
 
 // ✅ Ajoutez la clé pour la pub récompensée
   final GlobalKey<RewardedAdWidgetState> _rewardedAdKey = GlobalKey();
@@ -231,7 +231,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
     } else {
       _maxCharacters = 300;
       // ✅ POUR LES TESTS : Garder cooldown mais on le simule dans initState
-      _cooldownMinutes = 60; // Garder la valeur normale
+      _cooldownMinutes = 5;
       printVm('🔒 Mode Gratuit');
     }
   }
@@ -241,30 +241,10 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
       setState(() => _canPost = true);
       return;
     }
-
-    try {
-      final userPosts = await FirebaseFirestore.instance
-          .collection('Posts')
-          .where('user_id', isEqualTo: authProvider.loginUserData.id)
-          .orderBy('created_at', descending: true)
-          .limit(1)
-          .get();
-
-      if (userPosts.docs.isNotEmpty) {
-        final lastPost = userPosts.docs.first;
-        final lastPostTime = lastPost['created_at'] as int;
-        final now = DateTime.now().microsecondsSinceEpoch;
-        final cooldownInMicroseconds = _cooldownMinutes * 60 * 1000000;
-
-        if (now - lastPostTime < cooldownInMicroseconds) {
-          _startCooldownTimer(cooldownInMicroseconds - (now - lastPostTime));
-        } else {
-          setState(() => _canPost = true);
-        }
-      } else {
-        setState(() => _canPost = true);
-      }
-    } catch (e) {
+    final remaining = await PostCooldownService.localRemainingSeconds();
+    if (remaining > 0) {
+      _startCooldownTimer(remaining * 1000000);
+    } else {
       setState(() => _canPost = true);
     }
   }
@@ -1555,24 +1535,10 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
   }
 
   Future<void> _publishPost() async {
+    if (onTap) return;
 
     if (!_canPost && _cooldownMinutes > 0) {
-      _showRewardedAdOption(); // Proposer la pub
-      return;
-    }
-
-    // Vérification serveur : cooldown 5 min universel (anti-fraude)
-    final cooldown = await PostCooldownService.check();
-    if (!cooldown.canPost) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(
-            '⏳ Attendez ${PostCooldownService.formatRemaining(cooldown.remainingSeconds)} avant de publier à nouveau.',
-            textAlign: TextAlign.center,
-          ),
-          duration: const Duration(seconds: 4),
-        ));
-      }
+      _showRewardedAdOption();
       return;
     }
 
@@ -1601,6 +1567,22 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => onTap = true);
+
+    // Vérification serveur : cooldown 5 min universel (anti-fraude)
+    final cooldown = await PostCooldownService.check();
+    if (!cooldown.canPost) {
+      setState(() => onTap = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+            '⏳ Attendez ${PostCooldownService.formatRemaining(cooldown.remainingSeconds)} avant de publier à nouveau.',
+            textAlign: TextAlign.center,
+          ),
+          duration: const Duration(seconds: 4),
+        ));
+      }
+      return;
+    }
 
     try {
       showDialog(
@@ -1669,6 +1651,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
       }
 
       await FirebaseFirestore.instance.collection('Posts').doc(postId).set(post.toJson());
+      await PostCooldownService.markPosted();
 
       // Nettoyage
       _descriptionController.clear();

@@ -243,7 +243,7 @@ class _UserPubTextState extends State<UserPubText> {
     } else {
       _maxCharacters = 300;
       // ✅ POUR LES TESTS : Garder cooldown mais on le simule dans initState
-      _cooldownMinutes = 60; // Garder la valeur normale
+      _cooldownMinutes = 5;
       printVm('🔒 Mode Gratuit');
     }
   }
@@ -270,54 +270,21 @@ class _UserPubTextState extends State<UserPubText> {
     } else {
       // Abonnement Gratuit
       _maxCharacters = 300;
-      _cooldownMinutes = 60; // 60 minutes de cooldown
+      _cooldownMinutes = 5;
       printVm('🔒 Mode Gratuit: 300 caractères, cooldown 60min');
     }
   }
 
   Future<void> _checkPostCooldown() async {
-    // Si pas de cooldown (premium ou admin), on peut poster
     if (_cooldownMinutes == 0) {
-      setState(() {
-        _canPost = true;
-      });
+      setState(() => _canPost = true);
       return;
     }
-
-    try {
-      final userPosts = await firestore
-          .collection('Posts')
-          .where('user_id', isEqualTo: authProvider.loginUserData.id)
-          .orderBy('created_at', descending: true)
-          .limit(1)
-          .get();
-
-      if (userPosts.docs.isNotEmpty) {
-        final lastPost = userPosts.docs.first;
-        final lastPostTime = lastPost['created_at'] as int;
-        final now = DateTime.now().microsecondsSinceEpoch;
-        final cooldownInMicroseconds = _cooldownMinutes * 60 * 1000000;
-
-        final timeSinceLastPost = now - lastPostTime;
-
-        if (timeSinceLastPost < cooldownInMicroseconds) {
-          final remainingTime = cooldownInMicroseconds - timeSinceLastPost;
-          _startCooldownTimer(remainingTime);
-        } else {
-          setState(() {
-            _canPost = true;
-          });
-        }
-      } else {
-        setState(() {
-          _canPost = true;
-        });
-      }
-    } catch (e) {
-      printVm("Erreur vérification cooldown: $e");
-      setState(() {
-        _canPost = true;
-      });
+    final remaining = await PostCooldownService.localRemainingSeconds();
+    if (remaining > 0) {
+      _startCooldownTimer(remaining * 1000000);
+    } else {
+      setState(() => _canPost = true);
     }
   }
 
@@ -1598,6 +1565,9 @@ class _UserPubTextState extends State<UserPubText> {
   }
 
   Future<void> _publishPost() async {
+    // Protection double-tap : bloquer immédiatement avant tout await
+    if (onTap) return;
+
     if (widget.canal != null) {
       final currentUserId = authProvider.loginUserData.id;
       final isOwner = currentUserId == widget.canal!.userId;
@@ -1642,9 +1612,13 @@ class _UserPubTextState extends State<UserPubText> {
       return;
     }
 
+    // Désactiver le bouton AVANT le premier await pour éviter double-soumission
+    setState(() => onTap = true);
+
     // Vérification serveur : cooldown 5 min universel (anti-fraude)
     final cooldown = await PostCooldownService.check();
     if (!cooldown.canPost) {
+      setState(() => onTap = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(
@@ -1705,10 +1679,6 @@ class _UserPubTextState extends State<UserPubText> {
           return;
         }
       }
-
-      setState(() {
-        onTap = true;
-      });
 
       try {
         // Afficher un indicateur de progression
@@ -1779,6 +1749,7 @@ class _UserPubTextState extends State<UserPubText> {
 
         // Sauvegarder le post dans Firestore
         await FirebaseFirestore.instance.collection('Posts').doc(postId).set(post.toJson());
+        await PostCooldownService.markPosted();
 
         printVm('✅ Post texte créé avec ID: $postId, ${_selectAllCountries ? 'Tous pays' : '${_selectedCountries.length} pays'}');
 

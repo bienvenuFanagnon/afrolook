@@ -95,7 +95,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
   // 🔥 NOUVELLE LIMITE UNIQUE POUR TOUS : 30 Mo (TEMPORAIRE)
   static const int _maxVideoSizeMB = 30;
 
-  int _cooldownMinutes = 60;
+  int _cooldownMinutes = 5;
 
   double aspectRatio = 0.0;
 
@@ -401,8 +401,8 @@ class _UserPubVideoState extends State<UserPubVideo> {
       printVm('🌟 Mode Premium: 3000 caractères, 30 Mo (limite temporaire), pas de cooldown');
     } else {
       _maxCharacters = 300;
-      _cooldownMinutes = 60;
-      printVm('🔒 Mode Gratuit: 300 caractères, 30 Mo (limite temporaire), cooldown 60min');
+      _cooldownMinutes = 5;
+      printVm('🔒 Mode Gratuit: 300 caractères, 30 Mo (limite temporaire), cooldown 5min');
     }
   }
 
@@ -411,30 +411,10 @@ class _UserPubVideoState extends State<UserPubVideo> {
       setState(() => _canPost = true);
       return;
     }
-    try {
-      final userPosts = await firestore
-          .collection('Posts')
-          .where('user_id', isEqualTo: authProvider.loginUserData.id)
-          .orderBy('created_at', descending: true)
-          .limit(1)
-          .get();
-      if (userPosts.docs.isNotEmpty) {
-        final lastPost = userPosts.docs.first;
-        final lastPostTime = lastPost['created_at'] as int;
-        final now = DateTime.now().microsecondsSinceEpoch;
-        final cooldownInMicroseconds = _cooldownMinutes * 60 * 1000000;
-        final timeSinceLastPost = now - lastPostTime;
-        if (timeSinceLastPost < cooldownInMicroseconds) {
-          final remainingTime = cooldownInMicroseconds - timeSinceLastPost;
-          _startCooldownTimer(remainingTime);
-        } else {
-          setState(() => _canPost = true);
-        }
-      } else {
-        setState(() => _canPost = true);
-      }
-    } catch (e) {
-      printVm("Erreur vérification cooldown: $e");
+    final remaining = await PostCooldownService.localRemainingSeconds();
+    if (remaining > 0) {
+      _startCooldownTimer(remaining * 1000000);
+    } else {
       setState(() => _canPost = true);
     }
   }
@@ -1507,6 +1487,8 @@ class _UserPubVideoState extends State<UserPubVideo> {
   }
 
   Future<void> _publishVideo() async {
+    if (onTap) return;
+
     if (widget.canal != null) {
       final currentUserId = authProvider.loginUserData.id;
       final isOwner = currentUserId == widget.canal!.userId;
@@ -1529,9 +1511,12 @@ class _UserPubVideoState extends State<UserPubVideo> {
       return;
     }
 
+    setState(() => onTap = true);
+
     // Vérification serveur : cooldown 5 min universel (anti-fraude)
     final cooldown = await PostCooldownService.check();
     if (!cooldown.canPost) {
+      setState(() => onTap = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(
@@ -1608,10 +1593,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
       }
 
       try {
-        setState(() {
-          onTap = true;
-          _uploadProgress = 0;
-        });
+        setState(() => _uploadProgress = 0);
 
         showDialog(
           context: context,
@@ -1676,6 +1658,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
         post.url_media = fileURL;
 
         await FirebaseFirestore.instance.collection('Posts').doc(postId).set(post.toJson());
+        await PostCooldownService.markPosted();
 
         String? thumbnailUrl;
         if (_useCustomThumbnail && (_customThumbnailFile != null || _customThumbnailBytes != null)) {

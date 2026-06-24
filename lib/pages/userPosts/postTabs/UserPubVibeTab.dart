@@ -241,7 +241,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
       _maxCharacters = 150;
       _maxVideoSizeMB = 50;
       _maxVideoDurationSeconds = 30;
-      _cooldownMinutes = 30;
+      _cooldownMinutes = 5;
     }
   }
 
@@ -250,31 +250,10 @@ class _UserPubVibeState extends State<UserPubVibe> {
       setState(() => _canPost = true);
       return;
     }
-    try {
-      final userPosts = await firestore
-          .collection('Posts')
-          .where('user_id', isEqualTo: authProvider.loginUserData.id)
-          .where('typeTabbar', isEqualTo: 'VIBE')
-          .orderBy('created_at', descending: true)
-          .limit(1)
-          .get();
-      if (userPosts.docs.isNotEmpty) {
-        final lastPost = userPosts.docs.first;
-        final lastPostTime = lastPost['created_at'] as int;
-        final now = DateTime.now().microsecondsSinceEpoch;
-        final cooldownInMicroseconds = _cooldownMinutes * 60 * 1000000;
-        final timeSinceLastPost = now - lastPostTime;
-        if (timeSinceLastPost < cooldownInMicroseconds) {
-          final remainingTime = cooldownInMicroseconds - timeSinceLastPost;
-          _startCooldownTimer(remainingTime);
-        } else {
-          setState(() => _canPost = true);
-        }
-      } else {
-        setState(() => _canPost = true);
-      }
-    } catch (e) {
-      printVm("Erreur vérification cooldown: $e");
+    final remaining = await PostCooldownService.localRemainingSeconds();
+    if (remaining > 0) {
+      _startCooldownTimer(remaining * 1000000);
+    } else {
       setState(() => _canPost = true);
     }
   }
@@ -1170,6 +1149,8 @@ class _UserPubVibeState extends State<UserPubVibe> {
   }
 
   Future<void> _publishVideo() async {
+    if (onTap) return;
+
     if (widget.canal != null) {
       final currentUserId = authProvider.loginUserData.id;
       final isOwner = currentUserId == widget.canal!.userId;
@@ -1192,9 +1173,12 @@ class _UserPubVibeState extends State<UserPubVibe> {
       return;
     }
 
+    setState(() => onTap = true);
+
     // Vérification serveur : cooldown 5 min universel (anti-fraude)
     final cooldown = await PostCooldownService.check();
     if (!cooldown.canPost) {
+      setState(() => onTap = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(
@@ -1246,10 +1230,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
       }
 
       try {
-        setState(() {
-          onTap = true;
-          _uploadProgress = 0;
-        });
+        setState(() => _uploadProgress = 0);
 
         showDialog(
           context: context,
@@ -1322,6 +1303,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
         post.url_media = fileURL;
 
         await FirebaseFirestore.instance.collection('Posts').doc(postId).set(post.toJson());
+        await PostCooldownService.markPosted();
 
         String? thumbnailUrl;
         if (_useCustomThumbnail && (_customThumbnailFile != null || _customThumbnailBytes != null)) {

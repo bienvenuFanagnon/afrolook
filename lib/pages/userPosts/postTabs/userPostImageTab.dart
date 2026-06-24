@@ -311,7 +311,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
     } else {
       _maxImages = 1;
       _maxCharacters = 300;
-      _cooldownMinutes = 60;
+      _cooldownMinutes = 5;
     }
   }
 
@@ -320,31 +320,11 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
       setState(() => _canPost = true);
       return;
     }
-
-    try {
-      final userPosts = await FirebaseFirestore.instance
-          .collection('Posts')
-          .where('user_id', isEqualTo: authProvider.loginUserData.id)
-          .orderBy('created_at', descending: true)
-          .limit(1)
-          .get();
-
-      if (userPosts.docs.isNotEmpty) {
-        final lastPost = userPosts.docs.first;
-        final lastPostTime = lastPost['created_at'] as int;
-        final now = DateTime.now().microsecondsSinceEpoch;
-        final cooldownInMicroseconds = _cooldownMinutes * 60 * 1000000;
-
-        if (now - lastPostTime < cooldownInMicroseconds) {
-          _startCooldownTimer(cooldownInMicroseconds - (now - lastPostTime));
-        } else {
-          setState(() => _canPost = true);
-        }
-      } else {
-        setState(() => _canPost = true);
-      }
-    } catch (e) {
-      printVm("Erreur vérification cooldown: $e");
+    // Lecture du cache local (SharedPreferences) — partagé entre tous les onglets
+    final remaining = await PostCooldownService.localRemainingSeconds();
+    if (remaining > 0) {
+      _startCooldownTimer(remaining * 1000000); // secondes → microsecondes
+    } else {
       setState(() => _canPost = true);
     }
   }
@@ -1256,14 +1236,21 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
   }
 
   Future<void> _publishPost() async {
+    // Protection double-tap : bloquer immédiatement avant tout await
+    if (onTap) return;
+
     if (!_canPost && _cooldownMinutes > 0) {
       _showRewardedAdOption();
       return;
     }
 
+    // Désactiver le bouton AVANT le premier await pour éviter double-soumission
+    setState(() => onTap = true);
+
     // Vérification serveur : cooldown 5 min universel (anti-fraude)
     final cooldown = await PostCooldownService.check();
     if (!cooldown.canPost) {
+      setState(() => onTap = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(
@@ -1371,8 +1358,6 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
         }
       }
 
-      setState(() => onTap = true);
-
       try {
         showDialog(
           context: context,
@@ -1448,6 +1433,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
 
         // Sauvegarder le post
         await FirebaseFirestore.instance.collection('Posts').doc(postId).set(post.toJson());
+        await PostCooldownService.markPosted();
 
         // Si c'est une publicité, créer l'entrée dans Advertisement
         if (_isAdvertisement) {
