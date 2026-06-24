@@ -6,6 +6,7 @@ import '../../providers/authProvider.dart';
 import '../../theme/app_colors.dart';
 import '../user/profile/adminprofil.dart';
 import 'AfrolookPub/afrolookAdminPubPage.dart';
+import 'afrolook_group_migration_page.dart';
 import 'admin_email_screen.dart';
 import 'dating/admin_dating_profiles_page.dart';
 import 'influencer_requests_page.dart';
@@ -652,6 +653,14 @@ class _ModulesGrid extends StatelessWidget {
         iconBg: const Color(0xFFFCEBEB),
         iconColor: const Color(0xFFA32D2D),
         page: AdminPronosticsPage(),
+      ),
+      _ModuleItem(
+        icon: Icons.groups_rounded,
+        label: 'Groupe Afrolook',
+        desc: 'Créer & migrer le groupe officiel',
+        iconBg: const Color(0xFFE6F1FB),
+        iconColor: Colors.blue,
+        page: const AfrolookGroupMigrationPage(),
       ),
     ];
 

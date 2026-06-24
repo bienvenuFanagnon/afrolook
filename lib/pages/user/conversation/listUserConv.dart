@@ -1620,6 +1620,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     final lastMsg = group['last_message'] as String? ?? '';
     final lastMsgAt = group['last_message_at'] as int? ?? 0;
     final isFrozen = group['is_frozen'] == true;
+    final isOfficial = group['is_official'] == true;
     final memberCount = group['member_count'] as int? ?? 0;
     final myId = authProvider.loginUserData.id ?? '';
     final unreadCounts = group['unread_counts'] as Map<String, dynamic>? ?? {};
@@ -1648,7 +1649,16 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
                 ? Icon(Icons.group_rounded, color: _colors.textSecondary, size: 24)
                 : null,
           ),
-          if (isFrozen)
+          if (isOfficial)
+            Positioned(
+              bottom: 0, right: 0,
+              child: Container(
+                width: 16, height: 16,
+                decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                child: const Icon(Icons.verified_rounded, size: 14, color: Colors.blue),
+              ),
+            )
+          else if (isFrozen)
             Positioned(
               bottom: 0, right: 0,
               child: Container(
@@ -1662,10 +1672,21 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       title: Row(
         children: [
           Expanded(
-            child: Text(
-              name,
-              style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w700, fontSize: 15),
-              overflow: TextOverflow.ellipsis,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(
+                    name,
+                    style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w700, fontSize: 15),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (isOfficial) ...[
+                  const SizedBox(width: 4),
+                  const Icon(Icons.verified_rounded, color: Colors.blue, size: 14),
+                ],
+              ],
             ),
           ),
           if (timeStr.isNotEmpty)

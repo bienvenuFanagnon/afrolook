@@ -1295,6 +1295,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
   AppBar _buildAppBar() {
     final imageUrl = _groupData['image_url'] as String? ?? widget.groupImageUrl;
     final memberCount = _groupData['member_count'] as int?;
+    final isOfficial = _groupData['is_official'] == true;
 
     return AppBar(
       backgroundColor: _colors.background,
@@ -1342,11 +1343,22 @@ class _GroupChatPageState extends State<GroupChatPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    _groupData['name'] as String? ?? widget.groupName,
-                    style: TextStyle(
-                        color: _colors.textPrimary, fontWeight: FontWeight.w700, fontSize: 15),
-                    overflow: TextOverflow.ellipsis,
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          _groupData['name'] as String? ?? widget.groupName,
+                          style: TextStyle(
+                              color: _colors.textPrimary, fontWeight: FontWeight.w700, fontSize: 15),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (isOfficial) ...[
+                        const SizedBox(width: 4),
+                        const Icon(Icons.verified_rounded, color: Colors.blue, size: 14),
+                      ],
+                    ],
                   ),
                   Text(
                     memberCount != null ? '$memberCount membres' : 'Groupe',

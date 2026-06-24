@@ -94,6 +94,31 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
   }
 
   Future<void> _leaveGroup() async {
+    // Groupe obligatoire — impossible de quitter
+    if (_groupData['cannot_leave'] == true) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(children: [
+            const Icon(Icons.lock_rounded, color: Colors.blue, size: 20),
+            const SizedBox(width: 8),
+            const Text('Groupe officiel', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+          ]),
+          content: const Text(
+            'Ce groupe est le groupe officiel d\'Afrolook. Tous les membres y sont inscrits automatiquement et ne peuvent pas le quitter.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Compris', style: TextStyle(fontWeight: FontWeight.w700)),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     final myId = _auth.loginUserData.id!;
     final myPseudo = _auth.loginUserData.pseudo ?? '';
     final confirmed = await _showConfirmDialog(

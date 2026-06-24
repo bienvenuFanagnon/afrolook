@@ -122,14 +122,17 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
       return;
     }
 
-    final isGold = AbonnementUtils.canCreatePrivateGroup(_auth.loginUserData.abonnement);
+    final myRole = _auth.loginUserData.role;
+    final isGold = AbonnementUtils.canCreatePrivateGroup(
+        _auth.loginUserData.abonnement, role: myRole);
     final subscriptionPrice = _isPrivate && isGold
         ? (double.tryParse(_priceController.text.trim()) ?? 0.0)
         : 0.0;
 
-    // Vérifier la limite de groupes (Premium : 2 max, Gold : illimité)
+    // Vérifier la limite de groupes (Admin : illimité · Gold : illimité · Premium : 2)
     final myId = _auth.loginUserData.id!;
-    final maxGroups = AbonnementUtils.maxGroupsOwned(_auth.loginUserData.abonnement);
+    final maxGroups = AbonnementUtils.maxGroupsOwned(
+        _auth.loginUserData.abonnement, role: myRole);
     if (maxGroups != null && maxGroups > 0) {
       final existingSnap = await FirebaseFirestore.instance
           .collection('GroupChats')
@@ -170,6 +173,8 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
 
       final allMemberIds = [myId, ..._selectedMembers.map((m) => m.id!).where((id) => id.isNotEmpty)];
 
+      final isAdminOwner = AbonnementUtils.isAdmin(myRole);
+
       await FirebaseFirestore.instance.collection('GroupChats').doc(groupId).set({
         'id': groupId,
         'name': name,
@@ -189,6 +194,8 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
         'last_message_at': now,
         'member_count': allMemberIds.length,
         'ephemeral_duration': 0,
+        // Groupes créés par un admin = groupes officiels de la plateforme
+        if (isAdminOwner) 'is_official': true,
       });
 
       // Clé de groupe
@@ -330,7 +337,8 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
   }
 
   Widget _buildGroupHeader() {
-    final isGold = AbonnementUtils.canCreatePrivateGroup(_auth.loginUserData.abonnement);
+    final isGold = AbonnementUtils.canCreatePrivateGroup(
+        _auth.loginUserData.abonnement, role: _auth.loginUserData.role);
 
     return Padding(
       padding: const EdgeInsets.all(20),

@@ -36,6 +36,8 @@ import '../services/cache/startup_cache_service.dart';
 
 import '../services/feed/feed_repository.dart';
 
+import '../services/utils/afrolook_defaults.dart';
+
 import '../services/nav_cache_service.dart';
 
 import '../services/sessions/session_service.dart';
@@ -399,7 +401,8 @@ class _SplashChargementState extends State<SplashChargement> {
       setState(() => _isAuthCompleted = true);
       await _prepareDestination();
 
-      // Rafraîchissement silencieux en arrière-plan
+      // Auto-join groupe Afrolook + rafraîchissement silencieux en arrière-plan
+      unawaited(_autoJoinAfrolookGroup(userId));
       _backgroundRefresh(userId);
       return;
     }
@@ -430,12 +433,47 @@ class _SplashChargementState extends State<SplashChargement> {
         return;
       }
 
+      unawaited(_autoJoinAfrolookGroup(userId));
       setState(() => _isAuthCompleted = true);
       await _prepareDestination();
 
     } catch (e) {
       printVm("❌ [AUTH] Erreur : $e");
       if (mounted) setState(() { _hasError = true; _errorMessage = e.toString(); });
+    }
+  }
+
+  /// Auto-rejoint le groupe officiel Afrolook si l'utilisateur n'en est pas membre.
+  /// Silencieux — ne bloque jamais le login.
+  Future<void> _autoJoinAfrolookGroup(String userId) async {
+    try {
+      final groupRef = FirebaseFirestore.instance
+          .collection('GroupChats')
+          .doc(kAfrolookGroupId);
+      final groupDoc = await groupRef.get();
+      if (!groupDoc.exists) return; // groupe pas encore créé
+
+      final memberIds = (groupDoc.data()?['member_ids'] as List<dynamic>? ?? []).cast<String>();
+      if (memberIds.contains(userId)) return; // déjà membre
+
+      final userDoc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
+      final ud = userDoc.data();
+      final now = DateTime.now().millisecondsSinceEpoch;
+
+      await groupRef.collection('members').doc(userId).set({
+        'user_id': userId,
+        'pseudo': ud?['pseudo'] ?? '',
+        'image_url': ud?['imageUrl'] ?? '',
+        'role': 'member',
+        'joined_at': now,
+      });
+      await groupRef.update({
+        'member_ids': FieldValue.arrayUnion([userId]),
+        'member_count': FieldValue.increment(1),
+      });
+      printVm('✅ [SPLASH] Auto-join groupe Afrolook pour $userId');
+    } catch (e) {
+      printVm('⚠️ [SPLASH] Auto-join Afrolook ignoré : $e');
     }
   }
 

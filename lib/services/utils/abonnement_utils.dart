@@ -49,41 +49,52 @@ class AbonnementUtils {
   static bool canJoinSponsorEvents(AfrolookAbonnement? abonnement) =>
       abonnement?.estPremium == true;
 
+  // ── Admin — traité comme Gold permanent ──────────────────────────────────
+
+  /// Un admin plateforme (role == 'ADM') est effectivement Gold sans expiry.
+  static bool isAdmin(String? role) => role == 'ADM';
+
+  /// Vérifie Gold en tenant compte du rôle admin.
+  static bool isEffectivelyGold(AfrolookAbonnement? abonnement, String? role) =>
+      role == 'ADM' || abonnement?.estGold == true;
+
   // ── Fonctionnalités Groupes (Premium + Gold) ──────────────────────────────
 
-  /// Créer et gérer un groupe de chat (Premium ou Gold)
-  static bool canCreateGroup(AfrolookAbonnement? abonnement) =>
-      abonnement?.estPremium == true;
+  /// Créer et gérer un groupe de chat (Premium, Gold ou Admin)
+  static bool canCreateGroup(AfrolookAbonnement? abonnement, {String? role}) =>
+      role == 'ADM' || abonnement?.estPremium == true;
 
   /// Nombre max de groupes possédés (null = illimité, 0 = aucun)
-  /// Premium → 2, Gold → illimité
-  static int? maxGroupsOwned(AfrolookAbonnement? abonnement) {
+  /// Admin → illimité · Gold → illimité · Premium → 2 · Gratuit → 0
+  static int? maxGroupsOwned(AfrolookAbonnement? abonnement, {String? role}) {
+    if (role == 'ADM') return null;
     if (abonnement?.estGold == true) return null;
     if (abonnement?.estPremium == true) return 2;
     return 0;
   }
 
   /// Nombre max de membres par groupe (null = illimité)
-  /// Premium → 100, Gold → illimité
-  static int? maxGroupMembers(AfrolookAbonnement? abonnement) {
+  /// Admin → illimité · Gold → illimité · Premium → 100
+  static int? maxGroupMembers(AfrolookAbonnement? abonnement, {String? role}) {
+    if (role == 'ADM') return null;
     if (abonnement?.estGold == true) return null;
     if (abonnement?.estPremium == true) return 100;
     return null;
   }
 
-  // ── Fonctionnalités Groupes (Gold uniquement) ─────────────────────────────
+  // ── Fonctionnalités Groupes (Gold uniquement ou Admin) ───────────────────
 
-  /// Créer un groupe privé payant (Gold only)
-  static bool canCreatePrivateGroup(AfrolookAbonnement? abonnement) =>
-      abonnement?.estGold == true;
+  /// Créer un groupe privé payant (Gold ou Admin)
+  static bool canCreatePrivateGroup(AfrolookAbonnement? abonnement, {String? role}) =>
+      role == 'ADM' || abonnement?.estGold == true;
 
-  /// Générer et partager un code unique de groupe (Gold only)
-  static bool canUseGroupJoinCode(AfrolookAbonnement? abonnement) =>
-      abonnement?.estGold == true;
+  /// Générer et partager un code unique de groupe (Gold ou Admin)
+  static bool canUseGroupJoinCode(AfrolookAbonnement? abonnement, {String? role}) =>
+      role == 'ADM' || abonnement?.estGold == true;
 
-  /// Le groupe du propriétaire apparaît dans le carousel pub (Gold only)
-  static bool canAppearInGoldCarousel(AfrolookAbonnement? abonnement) =>
-      abonnement?.estGold == true;
+  /// Le groupe du propriétaire apparaît dans le carousel pub (Gold ou Admin)
+  static bool canAppearInGoldCarousel(AfrolookAbonnement? abonnement, {String? role}) =>
+      role == 'ADM' || abonnement?.estGold == true;
 
   // ── Dates et expiration ───────────────────────────────────────────────────
 
