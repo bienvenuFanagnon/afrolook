@@ -1,5 +1,5 @@
 # SUIVI REFONTE UI — AFROLOOK V2
-_Dernière mise à jour : 24 juin 2026 (session 82)_
+_Dernière mise à jour : 24 juin 2026 (session 83)_
 
 ---
 
@@ -255,6 +255,33 @@ Tout est fait en **français**.
 - Pub = post ordinaire à 100% (même dimensions, même header avatar/nom, même zone média)
 - Overlay badge "SPONSORISÉ" en haut à droite (semi-transparent, petite police)
 - Rangée stats compacte (vues + CTR) + bouton CTA gradient rouge en dessous du post
+
+### Session 83 (24 juin 2026) — Fix largeur bulles chat simple + HomeBootCache + flash permissions groupe
+
+**1. Bulles de texte chat simple — largeur adaptative**
+- `lib/widgets/chat/chat_bubble_widget.dart` — `TextBubble` :
+  - **Problème** : la `Column` avec `Align(bottomRight, MessageMeta)` forçait la bulle à prendre toute la largeur disponible (jusqu'à `maxWidth: 72%`), même pour 1 ou 2 mots.
+  - **Fix** : envelopper le `Container` avec `IntrinsicWidth` + `minWidth: 80` + passer `crossAxisAlignment` de `start` à `stretch` dans la `Column`.
+  - Résultat : bulles courtes = largueur du texte, bulles longues = 72% max.
+
+**2. HomeBootCache — pré-chargement splash pour posts instantanés**
+- `lib/pages/home/home_boot_cache.dart` créé (singleton) :
+  - Clé stable `home_boot_<userId>`, stocke 5 posts + chroniques + 8 profils suggérés.
+  - `preload(userId)` appelé dans le splash AVANT navigation, < 20 ms.
+  - `save()` appelé après chaque refresh réseau réussi.
+  - `Post.toJson()` corrigé : `_tsToMs()` convertit `Timestamp` → `int` (fix sérialisation silencieuse).
+- `lib/pages/home/HomeConstPost.dart` : lecture synchrone dans `initState()` (0 setState, 0 shimmer au premier build).
+- `lib/pages/splashChargement.dart` : `_navigateToHomeWithDestination()` rendue async + `await HomeBootCache.preload(userId)`.
+
+**3. Flash permissions groupe (group_chat_page.dart)**
+- Banners et barre de saisie s'affichaient avec de mauvaises permissions avant `_loadGroup()`.
+- Fix : `bool _permissionsLoaded = false` + gate `if (_permissionsLoaded)` sur banners + input.
+
+**4. Sections feed — rien pendant le chargement**
+- `feed_profiles_section.dart`, `feed_articles_section.dart`, `feed_canaux_section.dart` :
+  - `if (isLoading || data.isEmpty) return SizedBox.shrink()` — plus aucun skeleton pour les sections.
+
+---
 
 ### Session 80 (23 juin 2026) — WorkManager : grandes icônes dynamiques + audit Cloud Functions
 

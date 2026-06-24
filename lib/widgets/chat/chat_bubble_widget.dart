@@ -332,50 +332,55 @@ class TextBubble extends StatelessWidget {
 
     Widget bubble = GestureDetector(
       onLongPress: onLongPress,
-      child: Container(
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.72),
-        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
-        decoration: BoxDecoration(
-          gradient: isMe
-              ? LinearGradient(
-                  colors: [colors.primary, Color.lerp(colors.primary, const Color(0xFF1abc9c), 0.6)!],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                )
-              : null,
-          color: isMe ? null : colors.surface,
-          borderRadius: isMe ? sentRadius : receivedRadius,
-          border: isMe ? null : Border.all(color: colors.border.withOpacity(0.5)),
-          boxShadow: [
-            BoxShadow(
-              color: isMe ? colors.primary.withOpacity(0.25) : Colors.black.withOpacity(0.15),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (hasReply)
-              GestureDetector(
-                onTap: onTapReply,
-                child: _ReplyPreview(reply: message.replyMessage, isMe: isMe),
+      child: IntrinsicWidth(
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.72,
+            minWidth: 80,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
+          decoration: BoxDecoration(
+            gradient: isMe
+                ? LinearGradient(
+                    colors: [colors.primary, Color.lerp(colors.primary, const Color(0xFF1abc9c), 0.6)!],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : null,
+            color: isMe ? null : colors.surface,
+            borderRadius: isMe ? sentRadius : receivedRadius,
+            border: isMe ? null : Border.all(color: colors.border.withOpacity(0.5)),
+            boxShadow: [
+              BoxShadow(
+                color: isMe ? colors.primary.withOpacity(0.25) : Colors.black.withOpacity(0.15),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
-            Text(
-              message.message,
-              style: TextStyle(
-                fontSize: 14,
-                color: isMe ? Colors.white : colors.textPrimary,
-                height: 1.4,
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (hasReply)
+                GestureDetector(
+                  onTap: onTapReply,
+                  child: _ReplyPreview(reply: message.replyMessage, isMe: isMe),
+                ),
+              Text(
+                message.message,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isMe ? Colors.white : colors.textPrimary,
+                  height: 1.4,
+                ),
               ),
-            ),
-            const SizedBox(height: 3),
-            Align(
-              alignment: Alignment.bottomRight,
-              child: MessageMeta(message: message, isMe: isMe),
-            ),
-          ],
+              const SizedBox(height: 3),
+              Align(
+                alignment: Alignment.bottomRight,
+                child: MessageMeta(message: message, isMe: isMe),
+              ),
+            ],
+          ),
         ),
       ),
     );
