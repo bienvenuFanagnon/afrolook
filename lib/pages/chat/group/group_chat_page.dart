@@ -799,6 +799,16 @@ class _GroupChatPageState extends State<GroupChatPage> {
     final myId = _auth.loginUserData.id!;
     if (!_isMember(myId)) return;
 
+    if (!_ownerIsGold) {
+      _showRestrictionModal(
+        title: 'Fonctionnalité Gold',
+        message: 'L\'envoi de plusieurs images est réservé aux groupes dont le propriétaire a le plan Gold.',
+        icon: Icons.workspace_premium_rounded,
+        color: const Color(0xFFFFD700),
+      );
+      return;
+    }
+
     final picker = ImagePicker();
     final pickedList = await picker.pickMultiImage(imageQuality: 75, limit: 5);
     if (pickedList.isEmpty) return;
