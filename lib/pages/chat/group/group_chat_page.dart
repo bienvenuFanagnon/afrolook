@@ -789,6 +789,76 @@ class _GroupChatPageState extends State<GroupChatPage> {
     }
   }
 
+  Future<void> _sendMultiImageMessage() async {
+    if (!_canSend) return;
+    if (!_userCanWrite) {
+      final r = _writeBlockReason();
+      _showRestrictionModal(title: r.title, message: r.message, icon: r.icon, color: r.color);
+      return;
+    }
+    final myId = _auth.loginUserData.id!;
+    if (!_isMember(myId)) return;
+
+    final picker = ImagePicker();
+    final pickedList = await picker.pickMultiImage(imageQuality: 75, limit: 5);
+    if (pickedList.isEmpty) return;
+    final limited = pickedList.take(5).toList();
+
+    setState(() => _isSending = true);
+    _lastSentAt = DateTime.now().millisecondsSinceEpoch;
+
+    try {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final msgId = _firestore.collection('GroupMessages').doc().id;
+
+      // Upload en parallèle
+      final urls = await Future.wait(
+        limited.asMap().entries.map((e) async {
+          final bytes = await e.value.readAsBytes();
+          final ref = FirebaseStorage.instance
+              .ref()
+              .child('group_images/${widget.groupId}/${msgId}_${e.key}.jpg');
+          await ref.putData(bytes);
+          return await ref.getDownloadURL();
+        }),
+      );
+
+      await _firestore.collection('GroupMessages').doc(msgId).set({
+        'id': msgId,
+        'group_id': widget.groupId,
+        'send_by': myId,
+        'sender_pseudo': _auth.loginUserData.pseudo ?? '',
+        'sender_image': _auth.loginUserData.imageUrl ?? '',
+        'message': urls.first,
+        'image_urls': urls,
+        'message_type': 'multi_image',
+        'is_valide': true,
+        'is_deleted': false,
+        'is_encrypted': false,
+        'create_at_time_spam': now,
+        'message_state': 'NONLU',
+      });
+
+      final otherMembers = (_groupData['member_ids'] as List<dynamic>? ?? [])
+          .cast<String>()
+          .where((id) => id != myId)
+          .toList();
+      final groupUpdate = <String, dynamic>{
+        'last_message': '📷 ${urls.length} photo(s)',
+        'last_message_at': now,
+        'updated_at': now,
+      };
+      for (final id in otherMembers) {
+        groupUpdate['unread_counts.$id'] = FieldValue.increment(1);
+      }
+      await _firestore.collection('GroupChats').doc(widget.groupId).update(groupUpdate);
+      await _sendGroupNotification('📷 ${urls.length} photo(s)');
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _isSending = false);
+    }
+  }
+
   static const int _maxVideoBytes = 30 * 1024 * 1024;       // 30 Mo par vidéo
   static const int _maxDailyVideoBytes = 150 * 1024 * 1024; // 150 Mo par jour
 
@@ -2154,6 +2224,8 @@ class _GroupChatPageState extends State<GroupChatPage> {
                           ),
                         ),
                       )
+                    else if (type == 'multi_image')
+                      _buildMultiImageGrid(msg, isMe)
                     else if (type == 'video')
                       _buildVideoCard(text, isMe)
                     else if (type == 'post')
@@ -2474,6 +2546,70 @@ class _GroupChatPageState extends State<GroupChatPage> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMultiImageGrid(Map<String, dynamic> msg, bool isMe) {
+    final urls = (msg['image_urls'] as List<dynamic>?)?.cast<String>() ?? [];
+    if (urls.isEmpty) return const SizedBox.shrink();
+
+    const double totalW = 190.0;
+    const double gap = 2.0;
+    final thumbW = (totalW - gap) / 2;
+
+    if (urls.length == 1) {
+      return _buildGridThumb(urls[0], totalW, totalW * 0.75);
+    }
+    if (urls.length == 2) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildGridThumb(urls[0], thumbW, thumbW),
+          const SizedBox(width: gap),
+          _buildGridThumb(urls[1], thumbW, thumbW),
+        ],
+      );
+    }
+    // 3-5 : première image pleine largeur, reste en grille 2 colonnes
+    final rest = urls.skip(1).toList();
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildGridThumb(urls[0], totalW, totalW * 0.55),
+        const SizedBox(height: gap),
+        Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: rest.map((u) => _buildGridThumb(u, thumbW, thumbW)).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGridThumb(String url, double w, double h) {
+    return GestureDetector(
+      onTap: () => _openImage(url),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: CachedNetworkImage(
+          imageUrl: url,
+          width: w,
+          height: h,
+          fit: BoxFit.cover,
+          placeholder: (_, __) => Container(
+            width: w,
+            height: h,
+            color: _colors.surfaceVariant,
+            child: Icon(Icons.image_rounded,
+                color: _colors.textSecondary, size: 20),
+          ),
+          errorWidget: (_, __, ___) => Container(
+            width: w,
+            height: h,
+            color: _colors.surfaceVariant,
+          ),
         ),
       ),
     );
@@ -3041,8 +3177,24 @@ class _GroupChatPageState extends State<GroupChatPage> {
                                     : _showShareBlockedSnackbar();
                               },
                               child: Padding(
-                                padding: const EdgeInsets.only(bottom: 8, right: 6),
+                                padding: const EdgeInsets.only(bottom: 8, right: 4),
                                 child: Icon(Icons.videocam_rounded,
+                                    color: _userCanShare
+                                        ? _colors.primary
+                                        : _colors.textSecondary.withOpacity(0.4),
+                                    size: 24),
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                setState(() => _showAttachMenu = false);
+                                _userCanShare
+                                    ? _sendMultiImageMessage()
+                                    : _showShareBlockedSnackbar();
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.only(bottom: 8, right: 6),
+                                child: Icon(Icons.photo_library_rounded,
                                     color: _userCanShare
                                         ? _colors.primary
                                         : _colors.textSecondary.withOpacity(0.4),
