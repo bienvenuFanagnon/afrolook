@@ -57,6 +57,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
   bool _isSending = false;
   bool _isPaymentProcessing = false;
   bool _showEmojiPicker = false;
+  bool _showAttachMenu = false;
   bool _isMuted = false;
   bool _isReadOnly = false;
   bool _sendHidden = false; // mode message invisible (Gold owner uniquement)
@@ -2988,25 +2989,69 @@ class _GroupChatPageState extends State<GroupChatPage> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                // Image
+                // Bouton "+" — ouvre/ferme le menu pièces jointes
                 GestureDetector(
-                  onTap: _userCanShare ? _sendImageMessage : () => _showShareBlockedSnackbar(),
+                  onTap: () {
+                    setState(() {
+                      _showAttachMenu = !_showAttachMenu;
+                      if (_showAttachMenu && _showEmojiPicker) {
+                        _showEmojiPicker = false;
+                      }
+                    });
+                  },
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 8, right: 4),
-                    child: Icon(Icons.image_rounded,
-                        color: _userCanShare ? _colors.primary : _colors.textSecondary.withOpacity(0.4),
-                        size: 24),
+                    child: AnimatedRotation(
+                      turns: _showAttachMenu ? 0.125 : 0,
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeOut,
+                      child: Icon(Icons.add_rounded, color: _colors.primary, size: 26),
+                    ),
                   ),
                 ),
-                // Vidéo
-                GestureDetector(
-                  onTap: _userCanShare ? _sendVideoMessage : () => _showShareBlockedSnackbar(),
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 8, right: 4),
-                    child: Icon(Icons.videocam_rounded,
-                        color: _userCanShare ? _colors.primary : _colors.textSecondary.withOpacity(0.4),
-                        size: 24),
-                  ),
+                // Menu pièces jointes (image + vidéo + futurs)
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOut,
+                  child: _showAttachMenu
+                      ? Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            GestureDetector(
+                              onTap: () {
+                                setState(() => _showAttachMenu = false);
+                                _userCanShare
+                                    ? _sendImageMessage()
+                                    : _showShareBlockedSnackbar();
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.only(bottom: 8, right: 4),
+                                child: Icon(Icons.image_rounded,
+                                    color: _userCanShare
+                                        ? _colors.primary
+                                        : _colors.textSecondary.withOpacity(0.4),
+                                    size: 24),
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                setState(() => _showAttachMenu = false);
+                                _userCanShare
+                                    ? _sendVideoMessage()
+                                    : _showShareBlockedSnackbar();
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.only(bottom: 8, right: 6),
+                                child: Icon(Icons.videocam_rounded,
+                                    color: _userCanShare
+                                        ? _colors.primary
+                                        : _colors.textSecondary.withOpacity(0.4),
+                                    size: 24),
+                              ),
+                            ),
+                          ],
+                        )
+                      : const SizedBox.shrink(),
                 ),
                 // Emoji
                 GestureDetector(
@@ -3014,6 +3059,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
                     setState(() {
                       _showEmojiPicker = !_showEmojiPicker;
                       if (_showEmojiPicker) {
+                        _showAttachMenu = false;
                         _focusNode.unfocus();
                       } else {
                         _focusNode.requestFocus();
@@ -3070,7 +3116,12 @@ class _GroupChatPageState extends State<GroupChatPage> {
                             horizontal: 14, vertical: 10),
                       ),
                       onTap: () {
-                        if (_showEmojiPicker) setState(() => _showEmojiPicker = false);
+                        if (_showEmojiPicker || _showAttachMenu) {
+                          setState(() {
+                            _showEmojiPicker = false;
+                            _showAttachMenu = false;
+                          });
+                        }
                       },
                     ),
                   ),
