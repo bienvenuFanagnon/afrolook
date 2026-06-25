@@ -286,21 +286,14 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   Future<void> _loadGroups() async {
     try {
       final myId = authProvider.loginUserData.id!;
-      // Pas d'orderBy Firestore : les documents sans last_message_at (groupes officiels
-      // sans messages) seraient exclus par Firestore. On trie côté client.
       final snap = await FirebaseFirestore.instance
           .collection('GroupChats')
           .where('member_ids', arrayContains: myId)
           .get();
-
-      final groups = snap.docs.map((d) => d.data()).toList();
-      groups.sort((a, b) {
-        final aAt = (a['last_message_at'] as int?) ?? 0;
-        final bAt = (b['last_message_at'] as int?) ?? 0;
-        return bAt.compareTo(aAt);
-      });
-      await _saveGroupCache(groups);
-      if (mounted) setState(() { _groups = groups; _loadingGroups = false; });
+      // Met à jour _memberGroups et passe par _mergeAndSetGroups pour ne pas
+      // écraser les _ownedGroups (groupes propriétaire non dans member_ids)
+      _memberGroups = snap.docs.map((d) => d.data()).toList();
+      _mergeAndSetGroups();
     } catch (e) {
       if (mounted) setState(() => _loadingGroups = false);
     }

@@ -886,6 +886,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
       }
 
       await _firestore.collection('GroupMessages').doc(msgId).set(msgData);
+
       final otherMembers = (_groupData['member_ids'] as List<dynamic>? ?? [])
           .cast<String>()
           .where((id) => id != myId)
@@ -898,10 +899,15 @@ class _GroupChatPageState extends State<GroupChatPage> {
       for (final id in otherMembers) {
         groupUpdate['unread_counts.$id'] = FieldValue.increment(1);
       }
-      await _firestore.collection('GroupChats').doc(widget.groupId).update(groupUpdate);
+      try {
+        await _firestore.collection('GroupChats').doc(widget.groupId).update(groupUpdate);
+      } catch (e) {
+        debugPrint('[GroupChatPage] GroupChats.update failed: $e');
+      }
 
       await _sendGroupNotification(text);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[GroupChatPage] _sendTextMessage error: $e');
     } finally {
       if (mounted) setState(() => _isSending = false);
     }
@@ -962,10 +968,15 @@ class _GroupChatPageState extends State<GroupChatPage> {
       for (final id in otherMembersImg) {
         groupUpdateImg['unread_counts.$id'] = FieldValue.increment(1);
       }
-      await _firestore.collection('GroupChats').doc(widget.groupId).update(groupUpdateImg);
+      try {
+        await _firestore.collection('GroupChats').doc(widget.groupId).update(groupUpdateImg);
+      } catch (e) {
+        debugPrint('[GroupChatPage] GroupChats.update (image) failed: $e');
+      }
 
       await _sendGroupNotification('Photo');
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[GroupChatPage] _sendImageMessage error: $e');
     } finally {
       if (mounted) setState(() => _isSending = false);
     }
@@ -1043,9 +1054,14 @@ class _GroupChatPageState extends State<GroupChatPage> {
       for (final id in otherMembers) {
         groupUpdate['unread_counts.$id'] = FieldValue.increment(1);
       }
-      await _firestore.collection('GroupChats').doc(widget.groupId).update(groupUpdate);
+      try {
+        await _firestore.collection('GroupChats').doc(widget.groupId).update(groupUpdate);
+      } catch (e) {
+        debugPrint('[GroupChatPage] GroupChats.update (multi_image) failed: $e');
+      }
       await _sendGroupNotification('📷 ${urls.length} photo(s)');
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[GroupChatPage] _sendMultiImageMessage error: $e');
     } finally {
       if (mounted) setState(() => _isSending = false);
     }
@@ -1169,20 +1185,24 @@ class _GroupChatPageState extends State<GroupChatPage> {
       for (final id in otherMembers) {
         groupUpdate['unread_counts.$id'] = FieldValue.increment(1);
       }
-      await _firestore.collection('GroupChats').doc(widget.groupId).update(groupUpdate);
-
-      // Mettre à jour le cache local pour bloquer immédiatement si dépassement
-      if (mounted) {
-        setState(() {
-          _groupData['video_daily_stats'] = {
-            'date': todayStr,
-            'bytes': usedBytes + sizeBytes,
-          };
-        });
+      try {
+        await _firestore.collection('GroupChats').doc(widget.groupId).update(groupUpdate);
+        // Mettre à jour le cache local pour bloquer immédiatement si dépassement
+        if (mounted) {
+          setState(() {
+            _groupData['video_daily_stats'] = {
+              'date': todayStr,
+              'bytes': usedBytes + sizeBytes,
+            };
+          });
+        }
+      } catch (e) {
+        debugPrint('[GroupChatPage] GroupChats.update (video) failed: $e');
       }
 
       await _sendGroupNotification('Vidéo');
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[GroupChatPage] _sendVideoMessage error: $e');
     } finally {
       if (mounted) setState(() => _isSending = false);
     }
