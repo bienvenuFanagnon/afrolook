@@ -223,6 +223,7 @@ class _GenericShareSheetState extends State<GenericShareSheet>
       final groupUpdate = <String, dynamic>{
         'last_message': '📎 ${widget.title}',
         'last_message_at': now,
+        'updated_at': now,
       };
       for (final id in otherMembers) {
         groupUpdate['unread_counts.$id'] = FieldValue.increment(1);

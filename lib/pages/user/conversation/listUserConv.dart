@@ -1533,6 +1533,9 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     final isPrivate = group['is_private'] == true;
     final isOfficial = group['is_official'] == true;
     final price = (group['subscription_price'] as num?)?.toDouble() ?? 0.0;
+    final myId = authProvider.loginUserData.id ?? '';
+    final unreadCounts = group['unread_counts'] as Map<String, dynamic>? ?? {};
+    final unreadCount = (unreadCounts[myId] as int?) ?? 0;
 
     return GestureDetector(
       onTap: () {
@@ -1542,7 +1545,10 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
             groupName: name,
             groupImageUrl: imageUrl.isNotEmpty ? imageUrl : null,
           ),
-        )).then((_) => _loadGroups());
+        )).then((_) {
+          context.read<GoldGroupsProvider>().load(force: true);
+          _loadGroups();
+        });
       },
       child: Container(
         width: 80,
@@ -1550,6 +1556,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
         child: Column(
           children: [
             Stack(
+              clipBehavior: Clip.none,
               alignment: Alignment.center,
               children: [
                 CircleAvatar(
@@ -1576,6 +1583,25 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
                       child: const Icon(Icons.lock_rounded, size: 10, color: Colors.white),
                     ),
                   ),
+                // Badge non-lus
+                if (unreadCount > 0)
+                  Positioned(
+                    top: -4, right: -4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                      constraints: const BoxConstraints(minWidth: 18),
+                      decoration: BoxDecoration(
+                        color: _colors.primary,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 1.5),
+                      ),
+                      child: Text(
+                        unreadCount > 99 ? '99+' : '$unreadCount',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
               ],
             ),
             const SizedBox(height: 4),
@@ -1584,7 +1610,11 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
-              style: TextStyle(color: _colors.textPrimary, fontSize: 11, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                color: _colors.textPrimary,
+                fontSize: 11,
+                fontWeight: unreadCount > 0 ? FontWeight.w700 : FontWeight.w600,
+              ),
             ),
             Text(
               isPrivate && price > 0

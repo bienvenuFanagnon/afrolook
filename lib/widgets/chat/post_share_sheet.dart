@@ -266,6 +266,7 @@ class _PostShareSheetState extends State<PostShareSheet>
       final groupUpdate = <String, dynamic>{
         'last_message': _lastMsgLabel(post),
         'last_message_at': now,
+        'updated_at': now,
       };
       for (final id in otherMembers) {
         groupUpdate['unread_counts.$id'] = FieldValue.increment(1);
