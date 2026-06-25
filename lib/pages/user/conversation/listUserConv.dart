@@ -101,6 +101,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   List<Map<String, dynamic>> _groups = [];
   bool _loadingGroups = false;
   String get _groupCacheKey => 'group_list_${authProvider.loginUserData.id ?? ''}';
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _groupsStreamSub;
 
   // Groupes Gold (carousel pub) — géré par GoldGroupsProvider
 
@@ -220,10 +221,33 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
 
     // Charge archives, cache conv, cache groupes, puis lance le stream Firebase
     _loadArchiveCache();
-    _loadGroupCache().then((_) => _loadGroups());
+    _loadGroupCache().then((_) => _initGroupsStream());
     _loadConvCache().then((_) => _initChatsStream());
     _loadRecentFriends();
     _checkBiometricLock();
+  }
+
+  void _initGroupsStream() {
+    final myId = authProvider.loginUserData.id!;
+    _groupsStreamSub?.cancel();
+    if (mounted) setState(() => _loadingGroups = true);
+    _groupsStreamSub = FirebaseFirestore.instance
+        .collection('GroupChats')
+        .where('member_ids', arrayContains: myId)
+        .snapshots()
+        .listen((snap) {
+      final groups = snap.docs.map((d) => d.data()).toList();
+      groups.sort((a, b) {
+        final aAt = (a['last_message_at'] as int?) ?? 0;
+        final bAt = (b['last_message_at'] as int?) ?? 0;
+        return bAt.compareTo(aAt);
+      });
+      _saveGroupCache(groups);
+      if (mounted) setState(() { _groups = groups; _loadingGroups = false; });
+    }, onError: (_) {
+      if (mounted) setState(() => _loadingGroups = false);
+    });
+    _loadGoldGroups();
   }
 
   Future<void> _loadGroups() async {
@@ -908,6 +932,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
 
   @override
   void dispose() {
+    _groupsStreamSub?.cancel();
     _searchController.dispose();
     _scrollController.dispose();
     _codeSearchController.dispose();
