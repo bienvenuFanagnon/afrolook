@@ -159,6 +159,11 @@ class _GenericShareSheetState extends State<GenericShareSheet>
     final groupImage = group['image_url'] as String?;
     if (_sendingId != null) return;
 
+    // Capturer les références context AVANT tout await
+    final nav = Navigator.of(context);
+    final scaffoldMsg = ScaffoldMessenger.of(context);
+    final primaryColor = AppColors.of(context).primary;
+
     final myId = _auth.loginUserData.id!;
     final memberDoc = await FirebaseFirestore.instance
         .collection('GroupChats')
@@ -242,8 +247,17 @@ class _GenericShareSheetState extends State<GenericShareSheet>
     } catch (_) {
       if (mounted) setState(() => _sendingId = null);
     }
-    if (sent) {
-      _doneAndOpenGroup(groupId: groupId, groupName: groupName, groupImage: groupImage);
+    if (sent && mounted) {
+      setState(() => _sendingId = null);
+      nav.pop();
+      scaffoldMsg.showSnackBar(SnackBar(
+        content: const Text('Envoyé !'),
+        backgroundColor: primaryColor,
+        duration: const Duration(seconds: 2),
+      ));
+      nav.push(MaterialPageRoute(
+        builder: (_) => GroupChatPage(groupId: groupId, groupName: groupName, groupImageUrl: groupImage),
+      ));
     }
   }
 
@@ -317,23 +331,6 @@ class _GenericShareSheetState extends State<GenericShareSheet>
       content: const Text('Envoyé !'),
       backgroundColor: color,
       duration: const Duration(seconds: 2),
-    ));
-  }
-
-  void _doneAndOpenGroup({required String groupId, required String groupName, String? groupImage}) {
-    if (!mounted) return;
-    setState(() => _sendingId = null);
-    final nav = Navigator.of(context);
-    final snack = ScaffoldMessenger.of(context);
-    final color = AppColors.of(context).primary;
-    nav.pop();
-    snack.showSnackBar(SnackBar(
-      content: const Text('Envoyé !'),
-      backgroundColor: color,
-      duration: const Duration(seconds: 2),
-    ));
-    nav.push(MaterialPageRoute(
-      builder: (_) => GroupChatPage(groupId: groupId, groupName: groupName, groupImageUrl: groupImage),
     ));
   }
 

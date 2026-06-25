@@ -3780,6 +3780,50 @@ bool get _userCanShare => _isAppAdmin || (!_isBlocked && GroupPermissionUtils.ca
 
 ---
 
+---
+
+## Session 87 — Fix navigation après partage + fix temps réel groupes
+
+### 1. Fix navigation après partage de post vers un groupe (CRITIQUE)
+
+**Problème :** Après partage d'un post depuis une page détail (post_share_sheet / generic_share_sheet), le bottom sheet restait ouvert et il n'y avait aucune navigation vers le groupe.
+
+**Cause racine :** `_doneAndOpenGroup` appelait `Navigator.of(context)`, `ScaffoldMessenger.of(context)` et `AppColors.of(context)` après des `await` — le BuildContext est invalidé après une gap async, ce qui causait une exception silencieuse.
+
+**Solution dans `lib/widgets/chat/post_share_sheet.dart` et `lib/widgets/chat/generic_share_sheet.dart` :**
+- Capture de `nav = Navigator.of(context)`, `scaffoldMsg = ScaffoldMessenger.of(context)`, `primaryColor = AppColors.of(context).primary` AVANT le premier `await` dans `_sendToGroup`
+- Navigation inline après le try-catch en utilisant les références capturées
+- Méthode `_doneAndOpenGroup` supprimée (code mort)
+
+### 2. Fix groupes officiels — temps réel + badge non-lus + date à jour
+
+**Problème :** La liste des chats de groupe n'était pas mise à jour en temps réel quand des messages/posts étaient partagés depuis d'autres pages.
+
+**Cause :** Les groupes officiels utilisaient un `get()` (lecture unique) alors que les chats directs utilisaient `snapshots()` (stream temps réel).
+
+**Solution dans `lib/pages/user/conversation/listUserConv.dart` :**
+- Ajout d'un `StreamSubscription` (`_groupsStreamSub`) alimenté par `.snapshots()` sur la collection `GroupChats`
+- `_initGroupsStream()` : écoute Firestore en temps réel, met à jour la liste à chaque changement
+- `initState` : appelle `_loadGroupCache().then((_) => _initGroupsStream())`
+- `dispose()` : `_groupsStreamSub?.cancel()`
+- `_buildGoldGroupCard` : badge unread_counts affiché (Positioned top:-4/right:-4), `fontWeight` w700 si non-lus
+- Retour depuis GroupChatPage : `load(force: true)` sur `GoldGroupsProvider` pour forcer le rechargement
+
+### 3. Fix `updated_at` manquant lors du partage vers un groupe
+
+**Problème :** Partager un post dans un groupe ne mettait pas à jour `updated_at`, donc le groupe ne remontait pas en tête de la liste.
+
+**Solution :** Ajout de `'updated_at': now` dans `groupUpdate` dans les deux share sheets (`post_share_sheet.dart` et `generic_share_sheet.dart`).
+
+### 4. Fix navigation PostComments → page détail correcte
+
+**Problème :** Le bouton "voir le post" dans PostComments naviguait toujours vers `DetailsPost`, quel que soit le type.
+
+**Solution dans `lib/pages/postComments.dart` :**
+- Routage 3 voies : `VIDEO + isPortrait=true` → `PostDetailsVideoFormatTel`, `VIDEO + isPortrait=false` → `VideoYoutubePageDetails`, sinon → `DetailsPost`
+
+---
+
 ### Règle de sécurité (rappel)
 - Commission split : 75% parrain affiché dans l'UI, 25% revenus app — **ne jamais afficher les 25% dans l'UI**
 - ADM est Gold permanent

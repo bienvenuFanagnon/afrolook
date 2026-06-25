@@ -161,6 +161,11 @@ class _PostShareSheetState extends State<PostShareSheet>
     final groupImage = group['image_url'] as String?;
     if (_sendingId != null) return;
 
+    // Capturer les références context AVANT tout await
+    final nav = Navigator.of(context);
+    final scaffoldMsg = ScaffoldMessenger.of(context);
+    final primaryColor = AppColors.of(context).primary;
+
     // Vérification centralisée des permissions de partage
     final myId = _auth.loginUserData.id!;
     final memberDoc = await FirebaseFirestore.instance
@@ -288,8 +293,21 @@ class _PostShareSheetState extends State<PostShareSheet>
     } catch (_) {
       if (mounted) setState(() => _sendingId = null);
     }
-    if (sent) {
-      _doneAndOpenGroup(groupId: groupId, groupName: groupName, groupImage: groupImage);
+    if (sent && mounted) {
+      setState(() => _sendingId = null);
+      nav.pop();
+      scaffoldMsg.showSnackBar(SnackBar(
+        content: const Text('Post envoyé !'),
+        backgroundColor: primaryColor,
+        duration: const Duration(seconds: 2),
+      ));
+      nav.push(MaterialPageRoute(
+        builder: (_) => GroupChatPage(
+          groupId: groupId,
+          groupName: groupName,
+          groupImageUrl: groupImage,
+        ),
+      ));
     }
   }
 
@@ -366,31 +384,6 @@ class _PostShareSheetState extends State<PostShareSheet>
       content: const Text('Post envoyé !'),
       backgroundColor: color,
       duration: const Duration(seconds: 2),
-    ));
-  }
-
-  void _doneAndOpenGroup({
-    required String groupId,
-    required String groupName,
-    String? groupImage,
-  }) {
-    if (!mounted) return;
-    setState(() => _sendingId = null);
-    final nav = Navigator.of(context);
-    final msg = ScaffoldMessenger.of(context);
-    final color = AppColors.of(context).primary;
-    nav.pop();
-    msg.showSnackBar(SnackBar(
-      content: const Text('Post envoyé !'),
-      backgroundColor: color,
-      duration: const Duration(seconds: 2),
-    ));
-    nav.push(MaterialPageRoute(
-      builder: (_) => GroupChatPage(
-        groupId: groupId,
-        groupName: groupName,
-        groupImageUrl: groupImage,
-      ),
     ));
   }
 

@@ -1,4 +1,5 @@
-﻿import 'dart:convert';
+﻿import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
@@ -101,6 +102,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   List<Map<String, dynamic>> _groups = [];
   bool _loadingGroups = false;
   String get _groupCacheKey => 'group_list_${authProvider.loginUserData.id ?? ''}';
+
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _groupsStreamSub;
 
   // Groupes Gold (carousel pub) — géré par GoldGroupsProvider
