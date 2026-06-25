@@ -91,13 +91,17 @@ class _PostShareSheetState extends State<PostShareSheet>
       final snap = await FirebaseFirestore.instance
           .collection('GroupChats')
           .where('member_ids', arrayContains: myId)
-          .orderBy('last_message_at', descending: true)
-          .limit(20)
           .get();
 
+      final sorted = snap.docs.map((d) => {'id': d.id, ...d.data()}).toList()
+        ..sort((a, b) {
+          final aAt = (a['last_message_at'] as int?) ?? 0;
+          final bAt = (b['last_message_at'] as int?) ?? 0;
+          return bAt.compareTo(aAt);
+        });
       if (mounted) {
         setState(() {
-          _groups = snap.docs.map((d) => {'id': d.id, ...d.data()}).toList();
+          _groups = sorted;
           _loadingGroups = false;
         });
       }
@@ -255,13 +259,21 @@ class _PostShareSheetState extends State<PostShareSheet>
         'reply_to_id': '',
         'create_at_time_spam': now,
       });
+      final otherMembers = (group['member_ids'] as List<dynamic>? ?? [])
+          .cast<String>()
+          .where((id) => id != me.id)
+          .toList();
+      final groupUpdate = <String, dynamic>{
+        'last_message': _lastMsgLabel(post),
+        'last_message_at': now,
+      };
+      for (final id in otherMembers) {
+        groupUpdate['unread_counts.$id'] = FieldValue.increment(1);
+      }
       await FirebaseFirestore.instance
           .collection('GroupChats')
           .doc(groupId)
-          .update({
-        'last_message': _lastMsgLabel(post),
-        'last_message_at': now,
-      });
+          .update(groupUpdate);
       // Notifier chaque membre du groupe
       _notifyGroupMembers(
         group: group,
