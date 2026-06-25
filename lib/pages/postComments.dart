@@ -1,6 +1,8 @@
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/showUserDetails.dart';
 import 'package:afrotok/pages/postDetails.dart';
+import 'package:afrotok/pages/postDetailsVideo.dart';
+import 'package:afrotok/pages/post_video_format_tel_details.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
@@ -471,9 +473,18 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                       ),
                     ),
                     TextButton(
-                      onPressed: () => Navigator.push(context, MaterialPageRoute(
-                        builder: (_) => DetailsPost(post: widget.post),
-                      )),
+                      onPressed: () {
+                        final post = widget.post;
+                        final isVideo = post.dataType == 'VIDEO';
+                        final isPortrait = post.isPortrait ?? true;
+                        Navigator.push(context, MaterialPageRoute(
+                          builder: (_) => isVideo
+                              ? (isPortrait
+                                  ? PostDetailsVideoFormatTel(initialPost: post)
+                                  : VideoYoutubePageDetails(initialPost: post))
+                              : DetailsPost(post: post),
+                        ));
+                      },
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         shape: RoundedRectangleBorder(
