@@ -66,6 +66,7 @@ import 'canaux/detailsCanal.dart';
 import 'coins/coin_gift_dialog.dart';
 import 'coins/coin_recharge_screen.dart';
 import 'coins/post_gifts_list.dart';
+import '../widgets/gifts/quick_gift_bar.dart';
 import '../widgets/chat/post_share_sheet.dart';
 
 // Couleurs migrées vers AppColors (_colors.*) dans _DetailsPostState
@@ -2067,61 +2068,15 @@ class _DetailsPostState extends State<DetailsPost>
   Widget _buildSupportButton() {
     final hasAccess = _hasAccessToContent();
     final isOwner = authProvider.loginUserData.id == widget.post.user_id;
-    final count = widget.post.adSupportCount ?? 0;
-
-    return Container(
-      margin: EdgeInsets.symmetric(vertical: 8),
-      child: GestureDetector(
-        // onTap: hasAccess && !_isSupporting && !isOwner ? _handleSupportAd : null,
-        onTap:  _handleGift,
-        child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: _colors.surfaceVariant,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: _colors.accent.withOpacity(0.5)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (_isSupporting)
-                SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: _colors.accent),
-                )
-              else
-                Icon(Icons.volunteer_activism, color: _colors.accent, size: 18),
-              SizedBox(width: 6),
-              Text(
-                'Soutenir le créateur',
-                style: TextStyle(
-                  color: _colors.textPrimary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              if (count > 0) ...[
-                SizedBox(width: 6),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: _colors.accent.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '$count',
-                    style: TextStyle(
-                      color: _colors.accent,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
+    if (isOwner || !hasAccess) return SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: QuickGiftBar(
+        receiverId: widget.post.user_id!,
+        receiverName: widget.post.user?.pseudo ?? 'Créateur',
+        receiverAvatar: widget.post.user?.imageUrl ?? '',
+        post: widget.post,
+        giftCount: widget.post.totalGiftCoinsSentOnThisPost ?? 0,
       ),
     );
   }
@@ -6052,15 +6007,24 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             isLocked: !hasAccess,
           ),
         ),
-        GestureDetector(
-          onTap: hasAccess ? _showGiftDialog : null,
-          child: _buildStatItem(
-            icon: Icons.card_giftcard,
-            count: post.totalGiftCoinsSentOnThisPost ?? 0,
-            label: 'Cadeaux',
-            isLocked: !hasAccess,
-          ),
-        ),
+        Builder(builder: (ctx) {
+          final isOwner = authProvider.loginUserData.id == post.user_id;
+          if (isOwner || !hasAccess) {
+            return _buildStatItem(
+              icon: Icons.card_giftcard,
+              count: post.totalGiftCoinsSentOnThisPost ?? 0,
+              label: 'Cadeaux',
+              isLocked: !hasAccess,
+            );
+          }
+          return QuickGiftBar(
+            receiverId: post.user_id!,
+            receiverName: post.user?.pseudo ?? 'Créateur',
+            receiverAvatar: post.user?.imageUrl ?? '',
+            post: post,
+            giftCount: post.totalGiftCoinsSentOnThisPost ?? 0,
+          );
+        }),
         _isSharing
             ? SizedBox(
           width: 40, // Ajustez selon la taille de vos boutons
@@ -6135,120 +6099,6 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           ),
         ),
       ],
-    );
-  }
-
-
-  Widget _buildActionButtons(Post post) {
-    final hasAccess = _hasAccessToContent();
-
-    return Container(
-      margin: EdgeInsets.symmetric(vertical: 0),
-      padding: EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          // Bouton Like
-          ScaleTransition(
-            scale: _scaleAnimation,
-            child: IconButton(
-              icon: Icon(
-                Icons.favorite_border,
-                color: _colors.danger,
-                size: 30,
-              ),
-
-              // icon: Icon(
-              //   isIn(post.users_love_id!, authProvider.loginUserData.id!)
-              //       ? Icons.favorite
-              //       : Icons.favorite_border,
-              //   color: !hasAccess
-              //       ? _colors.textSecondary.withOpacity(0.3)
-              //       : (isIn(post.users_love_id!, authProvider.loginUserData.id!)
-              //           ? Colors.red
-              //           : Colors.white),
-              //   size: 30,
-              // ),
-              onPressed: hasAccess ? _handleLike : null,
-            ),
-          ),
-
-          // Bouton Commentaire
-          IconButton(
-            icon: Icon(Icons.chat_bubble_outline,
-                color: !hasAccess
-                    ? _colors.textSecondary.withOpacity(0.3)
-                    : _colors.textPrimary,
-                size: 30),
-            onPressed: hasAccess
-                ? () async {
-                    await firestore
-                        .collection('Posts')
-                        .doc(widget.post.id)
-                        .update({
-                      'popularity': FieldValue.increment(1),
-                    });
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => PostComments(post: widget.post),
-                      ),
-                    );
-                  }
-                : null,
-          ),
-
-          // Bouton Favoris (NOUVEAU)
-          IconButton(
-            icon: Icon(_isFavorite ? Icons.bookmark : Icons.bookmark_border,
-                color: !hasAccess
-                    ? _colors.textSecondary.withOpacity(0.3)
-                    : (_isFavorite ? _colors.accent : _colors.textPrimary),
-                size: 30),
-            onPressed:
-                hasAccess && !_isProcessingFavorite ? _toggleFavorite : null,
-          ),
-
-          // Bouton Cadeau
-          IconButton(
-            icon: Icon(Icons.card_giftcard,
-                color: !hasAccess
-                    ? _colors.textSecondary.withOpacity(0.3)
-                    : _colors.warning,
-                size: 30),
-            onPressed: hasAccess ? _showGiftDialog : null,
-          ),
-
-          // // Bouton Republier
-          // IconButton(
-          //   icon: Icon(Icons.repeat,
-          //       color: !hasAccess
-          //           ? _colors.textSecondary.withOpacity(0.3)
-          //           : Colors.green,
-          //       size: 30),
-          //   onPressed: hasAccess ? _showRepostDialog : null,
-          // ),
-
-          // Bouton Partager
-          _isSharing
-              ? SizedBox(
-            width: 40, // Ajustez selon la taille de vos boutons
-            height: 40,
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: CircularProgressIndicator(strokeWidth: 2, color: _colors.accent), // ou votre couleur _afroTextSecondary
-),
-          )
-              :IconButton(
-            icon: Icon(Icons.share,
-                color: !hasAccess
-                    ? _colors.textSecondary.withOpacity(0.3)
-                    : _colors.textPrimary,
-                size: 30),
-            onPressed: hasAccess ? _showShareOptions : null,
-          ),
-        ],
-      ),
     );
   }
 
@@ -6335,8 +6185,6 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                       SizedBox(height: 20),
                       Divider(color: _colors.divider),
                       _buildStatsRow(updatedPost),
-                      Divider(color: _colors.divider),
-                      _buildActionButtons(updatedPost),
                       // _buildAdMrec(key: 'ad_details_post'),
 
                       PostGiftsList(

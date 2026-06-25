@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../models/coin_pack.dart';
 import '../../models/model_data.dart';
 import '../../providers/coin_gift_provider.dart';
+import '../../services/quick_gift_service.dart';
 import 'coin_recharge_screen.dart';
 
 class CoinGiftDialog extends StatefulWidget {
@@ -35,6 +36,7 @@ class CoinGiftDialog extends StatefulWidget {
 
 class _CoinGiftDialogState extends State<CoinGiftDialog> {
   int _selectedIndex = 0;
+  int _quantity = 1;
   bool _isLoading = false;
   late CoinGiftUserProvider _coinProvider;
   int _currentBalance = 0;
@@ -281,103 +283,136 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
         // Mais on change la couleur si le solde est insuffisant
 
         return GestureDetector(
-          onTap: () => setState(() => _selectedIndex = index),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            decoration: BoxDecoration(
-              gradient: isSelected
-                  ? const LinearGradient(
-                colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              )
-                  : const LinearGradient(
-                colors: [Color(0xFF2D2D2D), Color(0xFF1A1A1A)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isSelected
-                    ? Colors.white
-                    : (_currentBalance >= pack.coins
-                    ? const Color(0xFFFFD700).withOpacity(0.3)
-                    : Colors.red.withOpacity(0.3)),
-                width: isSelected ? 2 : 1,
-              ),
-            ),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(pack.icon, style: const TextStyle(fontSize: 26)),
-                  const SizedBox(height: 4),
-                  Text(
-                    pack.displayLabel,
-                    style: TextStyle(
-                      color: isSelected ? Colors.black : Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 10,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+          onTap: () => setState(() {
+            if (_selectedIndex == index) {
+              _quantity++;
+            } else {
+              _selectedIndex = index;
+              _quantity = 1;
+            }
+          }),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                decoration: BoxDecoration(
+                  gradient: isSelected
+                      ? const LinearGradient(
+                    colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                      : const LinearGradient(
+                    colors: [Color(0xFF2D2D2D), Color(0xFF1A1A1A)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  const SizedBox(height: 3),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? Colors.black.withOpacity(0.2)
-                          : (_currentBalance >= pack.coins
-                          ? Colors.black.withOpacity(0.5)
-                          : Colors.red.withOpacity(0.2)),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('🪙',
-                            style: TextStyle(
-                                fontSize: 8,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isSelected
+                        ? Colors.white
+                        : (_currentBalance >= pack.coins
+                        ? const Color(0xFFFFD700).withOpacity(0.3)
+                        : Colors.red.withOpacity(0.3)),
+                    width: isSelected ? 2 : 1,
+                  ),
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(pack.icon, style: const TextStyle(fontSize: 26)),
+                      const SizedBox(height: 4),
+                      Text(
+                        pack.displayLabel,
+                        style: TextStyle(
+                          color: isSelected ? Colors.black : Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 10,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 3),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? Colors.black.withOpacity(0.2)
+                              : (_currentBalance >= pack.coins
+                              ? Colors.black.withOpacity(0.5)
+                              : Colors.red.withOpacity(0.2)),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text('🪙',
+                                style: TextStyle(
+                                    fontSize: 8,
+                                    color: isSelected
+                                        ? Colors.black
+                                        : (_currentBalance >= pack.coins
+                                        ? const Color(0xFFFFD700)
+                                        : Colors.red)
+                                )
+                            ),
+                            const SizedBox(width: 2),
+                            Text(
+                              _formatNumber(pack.coins),
+                              style: TextStyle(
                                 color: isSelected
                                     ? Colors.black
                                     : (_currentBalance >= pack.coins
                                     ? const Color(0xFFFFD700)
-                                    : Colors.red)
-                            )
-                        ),
-                        const SizedBox(width: 2),
-                        Text(
-                          _formatNumber(pack.coins),
-                          style: TextStyle(
-                            color: isSelected
-                                ? Colors.black
-                                : (_currentBalance >= pack.coins
-                                ? const Color(0xFFFFD700)
-                                : Colors.red),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 9,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Petit indicateur si solde insuffisant (optionnel)
-                  if (_currentBalance < pack.coins && !isSelected)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Text(
-                        'Insuffisant',
-                        style: TextStyle(
-                          color: Colors.red.withOpacity(0.7),
-                          fontSize: 7,
+                                    : Colors.red),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 9,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                ],
+                      // Petit indicateur si solde insuffisant (optionnel)
+                      if (_currentBalance < pack.coins && !isSelected)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            'Insuffisant',
+                            style: TextStyle(
+                              color: Colors.red.withOpacity(0.7),
+                              fontSize: 7,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               ),
-            ),
+              // Quantity badge
+              if (isSelected && _quantity > 1)
+                Positioned(
+                  top: -6,
+                  right: -6,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.white, width: 1.5),
+                    ),
+                    child: Text(
+                      'x$_quantity',
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+            ],
           ),
         );
       },
@@ -386,7 +421,8 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
 
   Widget _buildActions() {
     final selectedPack = _giftPacks[_selectedIndex];
-    final hasEnoughCoins = _currentBalance >= selectedPack.coins;
+    final totalCost = selectedPack.coins * _quantity;
+    final hasEnoughCoins = _currentBalance >= totalCost;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -423,10 +459,13 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
                   : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('🪙 ${_formatNumber(selectedPack.coins)}',
-                      style: const TextStyle(fontWeight: FontWeight.bold)
+                  Text(
+                    _quantity > 1
+                        ? '${_quantity}x ${selectedPack.icon}  🪙 ${_formatNumber(totalCost)}'
+                        : '🪙 ${_formatNumber(totalCost)}',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 6),
                   Text(
                     hasEnoughCoins ? 'Envoyer' : 'Solde faible',
                     style: const TextStyle(fontWeight: FontWeight.bold,fontSize: 13),
@@ -450,13 +489,14 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
   /// re-synchronisé via `_coinProvider.refreshBalance` (déjà utilisé par le
   /// provider existant) et une erreur est affichée.
   Future<void> _sendGift(CoinPack pack) async {
-    if (_currentBalance < pack.coins) {
+    final totalCost = pack.coins * _quantity;
+    if (_currentBalance < totalCost) {
       _showInsufficientBalanceDialog();
       return;
     }
 
     // 1. Optimistic update locale du solde affiché + fermeture immédiate
-    setState(() => _currentBalance -= pack.coins);
+    setState(() => _currentBalance -= totalCost);
 
     if (mounted) {
       Navigator.pop(context);
@@ -464,16 +504,19 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
     }
 
     if (widget.isLive && widget.liveId != null) {
-      _recordLiveGift(widget.liveId!, pack.coins);
+      _recordLiveGift(widget.liveId!, totalCost);
     }
     widget.onGiftSuccess?.call();
 
-    // 2. Écriture Firestore réelle en arrière-plan (fire-and-forget)
+    // 2. Enregistrer dans les récents
+    unawaited(QuickGiftService.recordRecentGift(pack));
+
+    // 3. Écriture Firestore réelle en arrière-plan (fire-and-forget)
     final senderId = _coinProvider.currentUser!.id!;
     unawaited(_coinProvider.sendGift(
       senderId: senderId,
       receiverId: widget.receiverId,
-      coinsAmount: pack.coins,
+      coinsAmount: totalCost,
       post: widget.post!,
       context: context,
       giftPack: pack,
@@ -482,10 +525,6 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
       },
     ).then((success) {
       if (!success) {
-        // Rollback : resynchroniser le solde réel depuis Firestore.
-        // notifyListeners() (déclenché par refreshBalance) met à jour le
-        // solde affiché ailleurs dans l'app — la modale étant déjà fermée,
-        // on ne tente pas d'afficher de SnackBar sur son contexte.
         debugPrint('❌ Échec de l\'envoi du cadeau (solde insuffisant côté serveur), resynchronisation du solde');
         _coinProvider.refreshBalance(senderId);
       }

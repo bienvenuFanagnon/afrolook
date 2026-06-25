@@ -36,6 +36,7 @@ import '../../providers/coin_gift_provider.dart';
 import '../../services/linkService.dart';
 import '../coins/coin_gift_dialog.dart';
 import '../coins/coin_recharge_screen.dart';
+import '../../widgets/gifts/quick_gift_bar.dart';
 import '../component/showUserDetails.dart';
 import '../postComments.dart';
 import '../postDetailsVideo.dart';
@@ -1647,11 +1648,29 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
           _buildActionButton(icon: Icons.bar_chart, count: widget.post.totalInteractions ?? 0, color: colors.textSecondary, onPressed: hasAccess ? _navigateToDetails : null),
           _buildActionButton(icon: FontAwesome.heart_o, count: widget.post.loves ?? 0, color: isLiked ? colors.danger : colors.textSecondary, onPressed: hasAccess ? _handleLike : null),
           _buildFavoriteButton(hasAccess),
-          _buildActionButton(icon: FontAwesome.gift, count: widget.post.totalGiftCoinsSentOnThisPost ?? 0, color: colors.textSecondary, onPressed: hasAccess ? _handleGift : null),
-          _isSharing
-              ? const SizedBox(width: 40, height: 40, child: Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator(strokeWidth: 2)))
-              : _buildActionButton(icon: Icons.share, count: widget.post.partage ?? 0, color: colors.textSecondary, onPressed: hasAccess ? _handleShare : null),
-        ],
+          if (hasAccess && _authProvider.loginUserData.id != widget.post.user_id)
+            QuickGiftBar(
+              receiverId: widget.post.user_id!,
+              receiverName: widget.post.user?.pseudo ?? 'Créateur',
+              receiverAvatar: widget.post.user?.imageUrl ?? '',
+              post: widget.post,
+              giftCount: widget.post.totalGiftCoinsSentOnThisPost ?? 0,
+              onGiftSuccess: () async {
+                setState(() {
+                  widget.post.users_cadeau_id ??= [];
+                  if (!widget.post.users_cadeau_id!.contains(_authProvider.loginUserData.id!)) {
+                    widget.post.users_cadeau_id!.add(_authProvider.loginUserData.id!);
+                  }
+                });
+                await _coinProvider.refreshBalance(_authProvider.loginUserData.id!);
+              },
+            )
+          else
+            _buildActionButton(icon: FontAwesome.gift, count: widget.post.totalGiftCoinsSentOnThisPost ?? 0, color: colors.textSecondary, onPressed: null),
+        //   _isSharing
+        //       ? const SizedBox(width: 40, height: 40, child: Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator(strokeWidth: 2)))
+        //       : _buildActionButton(icon: Icons.share, count: widget.post.partage ?? 0, color: colors.textSecondary, onPressed: hasAccess ? _handleShare : null),
+         ],
       ),
     );
   }

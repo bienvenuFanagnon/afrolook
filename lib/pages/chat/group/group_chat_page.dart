@@ -56,12 +56,16 @@ class _GroupChatPageState extends State<GroupChatPage> {
   bool _isFrozen = false;
   bool _isSending = false;
   bool _isPaymentProcessing = false;
+  bool _isJoiningGroup = false;
+  bool _isAppAdmin = false;
+  bool _isBlocked = false;
   bool _showEmojiPicker = false;
   bool _showAttachMenu = false;
   bool _isMuted = false;
   bool _isReadOnly = false;
-  bool _sendHidden = false; // mode message invisible (Gold owner uniquement)
-  bool _ownerIsGold = false; // vidéo réservée Gold
+  bool _sendHidden = false;
+  bool _ownerIsGold = false;
+  int _seenByPage = 10;
   String _myRole = 'member';
   Map<String, dynamic> _myPermissions = {};
   Map<String, dynamic> _groupData = {};
@@ -80,17 +84,24 @@ class _GroupChatPageState extends State<GroupChatPage> {
   // ── Permissions calculées ─────────────────────────────────────────────────
   bool get _isAdminOrOwner => _myRole == 'owner' || _myRole == 'admin';
 
-  bool get _userCanWrite => GroupPermissionUtils.canWrite(
-        groupData: _groupData,
-        userId: _auth.loginUserData.id ?? '',
-        userRole: _myRole,
-      );
+  // ADM de l'app : tous les droits sans restriction (même groupe bloqué/gelé)
+  bool get _userCanWrite =>
+      _isAppAdmin ||
+      (!_isBlocked &&
+          GroupPermissionUtils.canWrite(
+            groupData: _groupData,
+            userId: _auth.loginUserData.id ?? '',
+            userRole: _myRole,
+          ));
 
-  bool get _userCanShare => GroupPermissionUtils.canShare(
-        groupData: _groupData,
-        userId: _auth.loginUserData.id ?? '',
-        userRole: _myRole,
-      );
+  bool get _userCanShare =>
+      _isAppAdmin ||
+      (!_isBlocked &&
+          GroupPermissionUtils.canShare(
+            groupData: _groupData,
+            userId: _auth.loginUserData.id ?? '',
+            userRole: _myRole,
+          ));
 
   bool get _hiddenMsgsEnabled =>
       GroupPermissionUtils.hiddenMessagesEnabled(_groupData);
@@ -119,6 +130,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
   Future<void> _loadGroup() async {
     try {
       final myId = _auth.loginUserData.id!;
+      final isAppAdmin = _auth.loginUserData.role == 'ADM';
       final groupDoc = await _firestore.collection('GroupChats').doc(widget.groupId).get();
       final data = groupDoc.data() ?? {};
       final userDoc = await _firestore.collection('Users').doc(myId).get();
@@ -135,14 +147,28 @@ class _GroupChatPageState extends State<GroupChatPage> {
         setState(() {
           _groupData = data;
           _isFrozen = data['is_frozen'] == true;
+          _isBlocked = data['is_blocked'] == true;
           _isReadOnly = data['is_read_only'] == true;
           _isMuted = mutedGroups.contains(widget.groupId);
+          _isAppAdmin = isAppAdmin;
           _myRole = role;
           _myPermissions = perms;
           _permissionsLoaded = true;
         });
       }
       await _checkOwnerPremium(data);
+
+      // Vérifier l'adhésion pour les groupes gratuits (sauf ADM)
+      if (mounted && !isAppAdmin) {
+        final ownerId = data['owner_id'] as String?;
+        final isPrivate = data['is_private'] == true;
+        final price = (data['subscription_price'] as num?)?.toDouble() ?? 0.0;
+        if (myId != ownerId && !_isMember(myId)) {
+          if (!isPrivate || price <= 0) {
+            _showJoinGroupModal();
+          }
+        }
+      }
     } catch (_) {}
   }
 
@@ -287,6 +313,162 @@ class _GroupChatPageState extends State<GroupChatPage> {
       icon: Icons.share_rounded,
       color: Colors.red,
     );
+  }
+
+  // ── Modal rejoindre un groupe gratuit ────────────────────────────────────
+  void _showJoinGroupModal() {
+    final groupName = _groupData['name'] as String? ?? widget.groupName;
+    final imageUrl = _groupData['image_url'] as String? ?? widget.groupImageUrl;
+    final memberCount = (_groupData['member_count'] as int?) ?? 0;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: _colors.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: _colors.primary.withOpacity(0.2)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircleAvatar(
+                  radius: 34,
+                  backgroundColor: _colors.surfaceVariant,
+                  backgroundImage: imageUrl != null && imageUrl.isNotEmpty
+                      ? CachedNetworkImageProvider(imageUrl)
+                      : null,
+                  child: imageUrl == null || imageUrl.isEmpty
+                      ? Icon(Icons.group_rounded, color: _colors.textSecondary, size: 32)
+                      : null,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  groupName,
+                  style: TextStyle(
+                    color: _colors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 17,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '$memberCount membre${memberCount > 1 ? 's' : ''}',
+                  style: TextStyle(color: _colors.textSecondary, fontSize: 13),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Vous n\'êtes pas encore membre de ce groupe. Rejoignez-le pour lire et envoyer des messages.',
+                  style: TextStyle(
+                    color: _colors.textSecondary,
+                    fontSize: 13,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          Navigator.pop(context);
+                        },
+                        style: TextButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        child: Text(
+                          'Retour',
+                          style: TextStyle(
+                              color: _colors.textSecondary,
+                              fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _isJoiningGroup
+                            ? null
+                            : () async {
+                                setDialogState(() => _isJoiningGroup = true);
+                                await _joinGroup();
+                                if (ctx.mounted) Navigator.pop(ctx);
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _colors.primary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        child: _isJoiningGroup
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                    color: Colors.white, strokeWidth: 2),
+                              )
+                            : const Text('Rejoindre',
+                                style: TextStyle(fontWeight: FontWeight.w700)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _joinGroup() async {
+    final myId = _auth.loginUserData.id!;
+    try {
+      await _firestore
+          .collection('GroupChats')
+          .doc(widget.groupId)
+          .collection('members')
+          .doc(myId)
+          .set({
+        'user_id': myId,
+        'pseudo': _auth.loginUserData.pseudo ?? '',
+        'image_url': _auth.loginUserData.imageUrl ?? '',
+        'role': 'member',
+        'joined_at': DateTime.now().millisecondsSinceEpoch,
+      });
+      await _firestore.collection('GroupChats').doc(widget.groupId).update({
+        'member_ids': FieldValue.arrayUnion([myId]),
+        'member_count': FieldValue.increment(1),
+      });
+      // Mettre à jour l'état local pour éviter un rechargement complet
+      if (mounted) {
+        setState(() {
+          _isJoiningGroup = false;
+          _myRole = 'member';
+          final ids = List<dynamic>.from(
+              (_groupData['member_ids'] as List<dynamic>?) ?? []);
+          if (!ids.contains(myId)) {
+            ids.add(myId);
+            _groupData['member_ids'] = ids;
+          }
+          _groupData['member_count'] =
+              ((_groupData['member_count'] as int?) ?? 0) + 1;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isJoiningGroup = false);
+    }
   }
 
   // ── Modal d'explication de restriction ───────────────────────────────────
@@ -665,7 +847,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
     if (text.isEmpty) return;
 
     final myId = _auth.loginUserData.id!;
-    if (!_isMember(myId)) return;
+    if (!_isAppAdmin && !_isMember(myId)) return;
 
     setState(() => _isSending = true);
     _textController.clear();
@@ -733,7 +915,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
       return;
     }
     final myId = _auth.loginUserData.id!;
-    if (!_isMember(myId)) return;
+    if (!_isAppAdmin && !_isMember(myId)) return;
 
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 75);
@@ -797,7 +979,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
       return;
     }
     final myId = _auth.loginUserData.id!;
-    if (!_isMember(myId)) return;
+    if (!_isAppAdmin && !_isMember(myId)) return;
 
     if (!_ownerIsGold) {
       _showRestrictionModal(
@@ -880,7 +1062,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
       return;
     }
     final myId = _auth.loginUserData.id!;
-    if (!_isMember(myId)) return;
+    if (!_isAppAdmin && !_isMember(myId)) return;
 
     // ── Vérification Gold du propriétaire ───────────────────────────────────
     if (!_ownerIsGold) {
@@ -1078,8 +1260,10 @@ class _GroupChatPageState extends State<GroupChatPage> {
   }
 
   Future<void> _markMessagesRead() async {
+    final myId = _auth.loginUserData.id!;
+    // Ne pas créer de faux receipts pour les admins non-membres
+    if (_isAppAdmin && !_isMember(myId)) return;
     try {
-      final myId = _auth.loginUserData.id!;
       final now = DateTime.now().millisecondsSinceEpoch;
       await Future.wait([
         _firestore
@@ -1087,7 +1271,12 @@ class _GroupChatPageState extends State<GroupChatPage> {
             .doc(widget.groupId)
             .collection('reads')
             .doc(myId)
-            .set({'user_id': myId, 'last_read_at': now}),
+            .set({
+          'user_id': myId,
+          'pseudo': _auth.loginUserData.pseudo ?? '',
+          'image_url': _auth.loginUserData.imageUrl ?? '',
+          'last_read_at': now,
+        }),
         _firestore
             .collection('GroupChats')
             .doc(widget.groupId)
@@ -1097,73 +1286,165 @@ class _GroupChatPageState extends State<GroupChatPage> {
   }
 
   Future<void> _showMessageReaders(Map<String, dynamic> msg) async {
+    if (!_ownerIsGold && !_isAppAdmin) {
+      _showRestrictionModal(
+        title: 'Fonctionnalité Gold',
+        message: 'La liste des membres ayant lu un message est réservée aux groupes Gold.',
+        icon: Icons.workspace_premium_rounded,
+        color: const Color(0xFFFFD700),
+      );
+      return;
+    }
+
     final msgTime = msg['create_at_time_spam'] as int? ?? 0;
     final myId = _auth.loginUserData.id!;
+
     try {
       final snap = await _firestore
           .collection('GroupChats')
           .doc(widget.groupId)
           .collection('reads')
           .get();
-      final readers = <Map<String, dynamic>>[];
+
+      final allReaders = <Map<String, dynamic>>[];
       for (final doc in snap.docs) {
         final data = doc.data();
         final userId = data['user_id'] as String? ?? '';
         if (userId == myId) continue;
         final lastRead = data['last_read_at'] as int? ?? 0;
         if (lastRead >= msgTime) {
-          final userDoc = await _firestore.collection('Users').doc(userId).get();
-          final userData = userDoc.data() ?? {};
-          if (userData['incognitoMode'] == true) continue;
-          readers.add(userData);
+          allReaders.add(data);
         }
       }
+
       if (!mounted) return;
+      setState(() => _seenByPage = 10);
+
       showModalBottomSheet(
         context: context,
         backgroundColor: Colors.transparent,
-        builder: (_) => Container(
-          margin: const EdgeInsets.fromLTRB(12, 0, 12, 16),
-          decoration: BoxDecoration(
-            color: _colors.surfaceVariant,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: _colors.border.withOpacity(0.3)),
-          ),
-          child: SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  margin: const EdgeInsets.symmetric(vertical: 10),
-                  width: 36, height: 4,
-                  decoration: BoxDecoration(color: _colors.border, borderRadius: BorderRadius.circular(2)),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    readers.isEmpty ? 'Personne n\'a encore lu ce message' : '${readers.length} lu par',
-                    style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w700, fontSize: 15),
-                  ),
-                ),
-                ...readers.map((u) {
-                  final pseudo = u['pseudo'] as String? ?? '';
-                  final img = u['imageUrl'] as String? ?? '';
-                  return ListTile(
-                    leading: CircleAvatar(
-                      radius: 18,
-                      backgroundColor: _colors.surfaceVariant,
-                      backgroundImage: img.isNotEmpty ? CachedNetworkImageProvider(img) : null,
-                      child: img.isEmpty ? Icon(Icons.person, size: 16, color: _colors.textSecondary) : null,
+        isScrollControlled: true,
+        builder: (_) => StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            final visible = allReaders.take(_seenByPage).toList();
+            final hasMore = allReaders.length > _seenByPage;
+
+            return Container(
+              margin: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.6,
+              ),
+              decoration: BoxDecoration(
+                color: _colors.surfaceVariant,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: _colors.border.withOpacity(0.3)),
+              ),
+              child: SafeArea(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      margin: const EdgeInsets.symmetric(vertical: 10),
+                      width: 36,
+                      height: 4,
+                      decoration: BoxDecoration(
+                          color: _colors.border, borderRadius: BorderRadius.circular(2)),
                     ),
-                    title: Text('@$pseudo', style: TextStyle(color: _colors.textPrimary, fontSize: 14)),
-                  );
-                }),
-                const SizedBox(height: 8),
-              ],
-            ),
-          ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                      child: Row(
+                        children: [
+                          Icon(Icons.visibility_rounded, color: _colors.primary, size: 18),
+                          const SizedBox(width: 8),
+                          Text(
+                            allReaders.isEmpty
+                                ? 'Personne n\'a encore lu ce message'
+                                : 'Vu par ${allReaders.length} membre${allReaders.length > 1 ? 's' : ''}',
+                            style: TextStyle(
+                                color: _colors.textPrimary,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (allReaders.isNotEmpty)
+                      Flexible(
+                        child: ListView(
+                          shrinkWrap: true,
+                          padding: const EdgeInsets.only(bottom: 8),
+                          children: [
+                            ...visible.map((u) {
+                              final pseudo = u['pseudo'] as String? ?? '';
+                              final img = u['image_url'] as String? ?? '';
+                              final readAt = u['last_read_at'] as int? ?? 0;
+                              final timeStr = readAt > 0
+                                  ? () {
+                                      final d = DateTime.fromMillisecondsSinceEpoch(readAt);
+                                      return '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+                                    }()
+                                  : '';
+                              return ListTile(
+                                contentPadding:
+                                    const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                                leading: CircleAvatar(
+                                  radius: 18,
+                                  backgroundColor: _colors.surfaceVariant,
+                                  backgroundImage:
+                                      img.isNotEmpty ? CachedNetworkImageProvider(img) : null,
+                                  child: img.isEmpty
+                                      ? Icon(Icons.person, size: 16, color: _colors.textSecondary)
+                                      : null,
+                                ),
+                                title: Text('@$pseudo',
+                                    style: TextStyle(
+                                        color: _colors.textPrimary, fontSize: 14)),
+                                trailing: timeStr.isNotEmpty
+                                    ? Text(timeStr,
+                                        style: TextStyle(
+                                            color: _colors.textSecondary, fontSize: 12))
+                                    : null,
+                              );
+                            }),
+                            if (hasMore)
+                              TextButton(
+                                onPressed: () {
+                                  setState(() => _seenByPage += 10);
+                                  setSheetState(() {});
+                                },
+                                child: Text(
+                                  'Voir plus (${allReaders.length - _seenByPage} restants)',
+                                  style: TextStyle(color: _colors.primary),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    const SizedBox(height: 4),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
       );
+    } catch (_) {}
+  }
+
+  Future<void> _toggleGroupBlock() async {
+    final action = _isBlocked ? 'Débloquer' : 'Bloquer';
+    final desc = _isBlocked
+        ? 'Les membres pourront à nouveau envoyer des messages.'
+        : 'Plus aucun membre ne pourra envoyer de messages dans ce groupe.';
+    final confirm = await _showConfirmDialog('$action le groupe', desc);
+    if (!confirm) return;
+    try {
+      final newBlocked = !_isBlocked;
+      await _firestore
+          .collection('GroupChats')
+          .doc(widget.groupId)
+          .update({'is_blocked': newBlocked});
+      if (mounted) setState(() => _isBlocked = newBlocked);
     } catch (_) {}
   }
 
@@ -1316,6 +1597,17 @@ class _GroupChatPageState extends State<GroupChatPage> {
                 ),
               ],
 
+              if (!isDeleted && (_ownerIsGold || _isAppAdmin)) ...[
+                const Divider(height: 1, indent: 16, endIndent: 16),
+                ListTile(
+                  leading: Icon(Icons.visibility_rounded, color: _colors.primary),
+                  title: Text('Vu par', style: TextStyle(color: _colors.textPrimary)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _showMessageReaders(msg);
+                  },
+                ),
+              ],
               if (canDelete && !isDeleted)
                 ListTile(
                   leading: const Icon(Icons.delete_outline_rounded, color: Colors.red),
@@ -1796,9 +2088,12 @@ class _GroupChatPageState extends State<GroupChatPage> {
       body: Column(
         children: [
           if (_permissionsLoaded) ...[
-            if (_isFrozen) _buildFrozenBanner(),
-            if (!_isFrozen && _isReadOnly) _buildReadOnlyBanner(),
-            if (!_isFrozen && !_isReadOnly && !_userCanWrite) _buildNoWritePermissionBanner(),
+            if (_isBlocked) _buildBlockedBanner(),
+            if (!_isBlocked && _isFrozen) _buildFrozenBanner(),
+            if (!_isBlocked && !_isFrozen && _isReadOnly) _buildReadOnlyBanner(),
+            if (!_isBlocked && !_isFrozen && !_isReadOnly && !_userCanWrite && !_isAppAdmin)
+              _buildNoWritePermissionBanner(),
+            if (_isAppAdmin) _buildAdminBanner(),
           ],
           Expanded(
             child: _isLoadingMessages
@@ -1906,15 +2201,26 @@ class _GroupChatPageState extends State<GroupChatPage> {
         ),
       ),
       actions: [
-        IconButton(
-          tooltip: _isMuted ? 'Réactiver les notifications' : 'Désactiver les notifications',
-          icon: Icon(
-            _isMuted ? Icons.notifications_off_outlined : Icons.notifications_none_rounded,
-            color: _isMuted ? _colors.textSecondary : _colors.primary,
-            size: 22,
+        if (_isAppAdmin)
+          IconButton(
+            tooltip: _isBlocked ? 'Débloquer le groupe' : 'Bloquer le groupe',
+            icon: Icon(
+              _isBlocked ? Icons.lock_open_rounded : Icons.block_rounded,
+              color: _isBlocked ? Colors.green : Colors.red,
+              size: 22,
+            ),
+            onPressed: _toggleGroupBlock,
           ),
-          onPressed: _toggleMute,
-        ),
+        if (!_isAppAdmin)
+          IconButton(
+            tooltip: _isMuted ? 'Réactiver les notifications' : 'Désactiver les notifications',
+            icon: Icon(
+              _isMuted ? Icons.notifications_off_outlined : Icons.notifications_none_rounded,
+              color: _isMuted ? _colors.textSecondary : _colors.primary,
+              size: 22,
+            ),
+            onPressed: _toggleMute,
+          ),
         IconButton(
           icon: Icon(Icons.info_outline_rounded, color: _colors.primary, size: 22),
           onPressed: () => Navigator.push(
@@ -1994,7 +2300,89 @@ class _GroupChatPageState extends State<GroupChatPage> {
     );
   }
 
+  Widget _buildAdminBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: Colors.deepPurple.withOpacity(0.10),
+      child: Row(
+        children: [
+          const Icon(Icons.admin_panel_settings_rounded, color: Colors.deepPurple, size: 15),
+          const SizedBox(width: 8),
+          const Expanded(
+            child: Text(
+              'Mode administrateur Afrolook — lecture seule',
+              style: TextStyle(color: Colors.deepPurple, fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBlockedBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: Colors.red.withOpacity(0.08),
+      child: Row(
+        children: [
+          const Icon(Icons.block_rounded, color: Colors.red, size: 15),
+          const SizedBox(width: 8),
+          const Expanded(
+            child: Text(
+              'Groupe bloqué par l\'administration — aucun message ne peut être envoyé.',
+              style: TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBlockedInputPlaceholder() {
+    if (_isAppAdmin) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: _colors.surface,
+          border: Border(top: BorderSide(color: _colors.border.withOpacity(0.3))),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.admin_panel_settings_rounded, color: Colors.deepPurple, size: 15),
+            const SizedBox(width: 8),
+            const Text(
+              'Mode administrateur — lecture seule',
+              style: TextStyle(color: Colors.deepPurple, fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_isBlocked) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: _colors.surface,
+          border: Border(top: BorderSide(color: Colors.red.withOpacity(0.3))),
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.block_rounded, color: Colors.red, size: 15),
+            SizedBox(width: 8),
+            Text(
+              'Groupe bloqué par l\'administration',
+              style: TextStyle(color: Colors.red, fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      );
+    }
+
     final String reason;
 
     if (_isFrozen) {
@@ -2006,7 +2394,6 @@ class _GroupChatPageState extends State<GroupChatPage> {
     }
 
     final r = _writeBlockReason();
-    // Couleur neutre pour tous les cas de blocage d'écriture (sauf frozen = orange)
     final displayColor = _isFrozen ? Colors.orange : _colors.textSecondary;
     return GestureDetector(
       onTap: () => _showRestrictionModal(

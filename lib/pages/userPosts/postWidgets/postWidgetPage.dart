@@ -34,6 +34,7 @@ import '../../../services/utils/abonnement_utils.dart';
 import '../../../widgets/user_badge_widget.dart';
 import '../../coins/coin_gift_dialog.dart';
 import '../../coins/coin_recharge_screen.dart';
+import '../../../widgets/gifts/quick_gift_bar.dart';
 import '../../coins/post_gifts_list.dart';
 import '../../component/consoleWidget.dart';
 import '../../home/homeWidget.dart';
@@ -465,78 +466,24 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     });
   }
   Widget _buildSupportButton(bool hasAccess) {
-    final colors = AppColors.of(context);
     final isOwner = authProvider.loginUserData.id == widget.post.user_id;
-
-    return Container(
-      constraints: BoxConstraints(minWidth: 60),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: hasAccess
-              ? colors.supportAccent.withOpacity(0.5)
-              : colors.textSecondary.withOpacity(0.2),
-          width: 1,
-        ),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(20),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          // onTap: hasAccess && !_isSupporting && !isOwner ? _handleSupportAd : null,
-          onTap: _handleGift,
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (_isSupporting)
-                  SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: colors.supportAccent,
-                    ),
-                  )
-                else
-                  Icon(
-                    Icons.volunteer_activism,
-                    size: 14,
-                    color: hasAccess
-                        ? colors.supportAccent
-                        : colors.textSecondary.withOpacity(0.3),
-                  ),
-                SizedBox(width: 4),
-                Text(
-                  AppLocalizations.of(context).postSupportCreator,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: hasAccess
-                        ? colors.supportAccent
-                        : colors.textSecondary.withOpacity(0.3),
-                  ),
-                ),
-                if ((widget.post.adSupportCount ?? 0) > 0) ...[
-                  SizedBox(width: 4),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: colors.supportAccent.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      _formatCount(widget.post.adSupportCount ?? 0),
-                      style: TextStyle(fontSize: 10, color: colors.supportAccent),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
+    if (isOwner) return const SizedBox.shrink();
+    return QuickGiftBar(
+      receiverId: widget.post.user_id!,
+      receiverName: widget.post.user?.pseudo ?? 'Créateur',
+      receiverAvatar: widget.post.user?.imageUrl ?? '',
+      post: widget.post,
+      giftCount: widget.post.totalGiftCoinsSentOnThisPost ?? 0,
+      onGiftSuccess: () async {
+        setState(() {
+          widget.post.users_cadeau_id ??= [];
+          if (!widget.post.users_cadeau_id!.contains(authProvider.loginUserData.id!)) {
+            widget.post.users_cadeau_id!.add(authProvider.loginUserData.id!);
+          }
+        });
+        final coinProvider = Provider.of<CoinGiftUserProvider>(context, listen: false);
+        await coinProvider.refreshBalance(authProvider.loginUserData.id!);
+      },
     );
   }
   @override
@@ -2275,16 +2222,12 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           _buildFavoriteButton(hasAccess),
 
           // Cadeau
-          _buildActionButton(
-            icon: FontAwesome.gift,
-            count: widget.post.totalGiftCoinsSentOnThisPost ?? 0,
-            color: colors.textSecondary,
-            onPressed: hasAccess ? () {
-              recordUniquePostView();
-              _handleGift();
-              // 🔥 APPEL DU CALLBACK (optionnel pour cadeau)
-            } : null,
-          ),
+            _buildActionButton(
+              icon: FontAwesome.gift,
+              count: widget.post.totalGiftCoinsSentOnThisPost ?? 0,
+              color: colors.textSecondary,
+              onPressed: null,
+            ),
 
           // Partager
           _isSharing

@@ -33,6 +33,7 @@ import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../theme/app_colors.dart';
+import '../widgets/gifts/quick_gift_bar.dart';
 
 import '../providers/locale_provider.dart';
 
@@ -1604,17 +1605,6 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     );
   }
 
-  Widget _buildStatsRow() {
-    return Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
-      // _buildStatItem(Icons.remove_red_eye, _currentPost.vues ?? 0, 'Vues'),
-      _buildStatItem(Icons.bar_chart, _currentPost.totalInteractions ?? 0, 'Interactions'),
-
-      _buildStatItem(Icons.favorite_border, _currentPost.loves ?? 0, 'J\'aime'),
-      _buildStatItem(Icons.chat_bubble, _currentPost.comments ?? 0, 'Commentaires'),
-      _buildStatItem(Icons.card_giftcard, _currentPost.totalGiftCoinsSentOnThisPost ?? 0, 'Cadeaux'),
-      _buildStatItem(_isFavorite ? Icons.bookmark : Icons.bookmark_border, _currentPost.favoritesCount ?? 0, 'Favoris'),
-    ]);
-  }
 
   Widget _buildStatItem(IconData icon, int count, String label) {
     return Column(children: [
@@ -1634,23 +1624,43 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
   Widget _buildActionButtons() {
     final isLiked = _currentPost.users_love_id?.contains(authProvider.loginUserData.id) ?? false;
     final hasAccess = !_isLockedContent();
+    final isOwner = authProvider.loginUserData.id == _currentPost.user_id;
     return Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-      IconButton(icon: Icon( Icons.favorite_border, color: _afroRed, size: 28), onPressed: hasAccess ? _handleLike : null),
-      // IconButton(icon: Icon(isLiked ? Icons.favorite : Icons.favorite_border, color: isLiked ? _afroRed : Colors.white, size: 28), onPressed: hasAccess ? _handleLike : null),
-      IconButton(icon: Icon(Icons.chat_bubble_outline, color: Colors.white, size: 28), onPressed: hasAccess ? _showCommentsModal : null),
-      IconButton(icon: Icon(_isFavorite ? Icons.bookmark : Icons.bookmark_border, color: _isFavorite ? _afroYellow : Colors.white, size: 28), onPressed: hasAccess ? _toggleFavorite : null),
-      IconButton(icon: Icon(Icons.card_giftcard, color: _afroYellow, size: 28), onPressed: () {
-        if(hasAccess){
-          _showGiftDialog(_currentPost);
-        }
-      },),
+      GestureDetector(
+        onTap: hasAccess ? _handleLike : null,
+        child: _buildStatItem(
+          isLiked ? Icons.favorite : Icons.favorite_border,
+          _currentPost.loves ?? 0,
+          'J\'aime',
+        ),
+      ),
+      GestureDetector(
+        onTap: hasAccess ? _showCommentsModal : null,
+        child: _buildStatItem(Icons.chat_bubble_outline, _currentPost.comments ?? 0, 'Commentaires'),
+      ),
+      GestureDetector(
+        onTap: hasAccess ? _toggleFavorite : null,
+        child: _buildStatItem(
+          _isFavorite ? Icons.bookmark : Icons.bookmark_border,
+          _currentPost.favoritesCount ?? 0,
+          'Favoris',
+        ),
+      ),
+      if (isOwner || !hasAccess)
+        _buildStatItem(Icons.card_giftcard, _currentPost.totalGiftCoinsSentOnThisPost ?? 0, 'Cadeaux')
+      else
+        QuickGiftBar(
+          receiverId: _currentPost.user_id!,
+          receiverName: _currentPost.user?.pseudo ?? 'Créateur',
+          receiverAvatar: _currentPost.user?.imageUrl ?? '',
+          post: _currentPost,
+          giftCount: _currentPost.totalGiftCoinsSentOnThisPost ?? 0,
+        ),
       _isSharing
           ? const SizedBox(width: 28, height: 28, child: CircularProgressIndicator(strokeWidth: 2))
-          : IconButton(
-              icon: const Icon(Icons.share, color: Colors.white, size: 28),
-              onPressed: hasAccess
-                  ? () => _showShareOptions(_currentPost)
-                  : null,
+          : GestureDetector(
+              onTap: hasAccess ? () => _showShareOptions(_currentPost) : null,
+              child: _buildStatItem(Icons.share, _currentPost.partage ?? 0, 'Partage'),
             ),
     ]);
   }
@@ -1706,27 +1716,6 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     }
   }
 
-  Widget _buildSupportButton(Post post) {
-    final isOwner = authProvider.loginUserData.id == _currentPost.user_id;
-    if (isOwner) return SizedBox.shrink();
-    final hasAccess = !_isLockedContent();
-    if (!hasAccess) return SizedBox.shrink();
-    return GestureDetector(
-      // onTap: _isSupporting ? null : _handleSupportAd,
-      onTap:  () {
-        _handleGift(post);
-      },
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(color: _afroDarkGrey, borderRadius: BorderRadius.circular(20), border: Border.all(color: _afroYellow.withOpacity(0.5))),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          _isSupporting ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(Icons.volunteer_activism, color: _afroYellow, size: 16),
-          SizedBox(width: 6),
-          Text('Soutenir le créateur', style: TextStyle(color: Colors.white, fontSize: 12)),
-        ]),
-      ),
-    );
-  }
 
   Future<void> _handleSupportAd() async {
     final userId = authProvider.loginUserData.id;
@@ -2012,11 +2001,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
                     _translatedDescriptions[_currentPost.id] ?? _currentPost.description!,
                   ),
                 SizedBox(height: 12),
-                _buildStatsRow(),
-                SizedBox(height: 12),
                 _buildActionButtons(),
                 SizedBox(height: 8),
-                _buildSupportButton(_currentPost),
                 PostGiftsList(
                   postId: _currentPost.id!,
                   compactLevel: CompactLevel.light,

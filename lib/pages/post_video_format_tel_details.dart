@@ -73,6 +73,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'coins/coin_gift_dialog.dart';
 
 import 'coins/coin_recharge_screen.dart';
+import '../widgets/gifts/quick_gift_bar.dart';
 
 import 'coins/post_gifts_list.dart';
 
@@ -2149,22 +2150,22 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
           if (!isOwner)
             Padding(
               padding: const EdgeInsets.only(top: 12),
-              child: GestureDetector(
-                onTap: () => _handleGift(post),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(color: _afroDarkGrey.withOpacity(0.8), borderRadius: BorderRadius.circular(20), border: Border.all(color: _afroYellow.withOpacity(0.5))),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _isSupporting
-                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: _afroYellow))
-                          : const Icon(Icons.volunteer_activism, color: _afroYellow, size: 16),
-                      const SizedBox(width: 6),
-                      const Text('Soutenir le créateur', style: TextStyle(color: Colors.white, fontSize: 12)),
-                    ],
-                  ),
-                ),
+              child: QuickGiftBar(
+                receiverId: post.user_id!,
+                receiverName: post.user?.pseudo ?? 'Créateur',
+                receiverAvatar: post.user?.imageUrl ?? '',
+                post: post,
+                giftCount: post.totalGiftCoinsSentOnThisPost ?? 0,
+                onGiftSuccess: () async {
+                  setState(() {
+                    post.users_cadeau_id ??= [];
+                    if (!post.users_cadeau_id!.contains(authProvider.loginUserData.id!)) {
+                      post.users_cadeau_id!.add(authProvider.loginUserData.id!);
+                    }
+                  });
+                  final coinProvider = Provider.of<CoinGiftUserProvider>(context, listen: false);
+                  await coinProvider.refreshBalance(authProvider.loginUserData.id!);
+                },
               ),
             ),
           PostGiftsList(postId: post.id!, compactLevel: CompactLevel.light, maxDisplayItems: 10),

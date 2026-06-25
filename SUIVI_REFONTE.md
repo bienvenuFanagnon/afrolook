@@ -3696,3 +3696,90 @@ Nouveau fichier : `lib/pages/home/home_boot_cache.dart`
 - **1ère session** : posts et sections chargent en parallèle depuis le réseau, boot cache sauvegardé pour la prochaine ouverture
 - Refresh réseau silencieux en arrière-plan sans faire disparaître les sections déjà affichées
 
+
+---
+
+## Session 86 — Cadeaux accès rapide (QuickGiftBar) + Fix admin groupe
+
+### 1. QuickGiftBar — Raccourcis cadeaux (3 slots)
+
+**Objectif :** Remplacer le bouton "Soutenir le créateur" par 3 bulles de cadeaux à accès rapide + bouton "+" sur les posts et pages détail.
+
+**Nouveaux fichiers :**
+
+- `lib/services/quick_gift_service.dart` — Gestion SharedPreferences pour l'historique récent (max 10) et les cadeaux épinglés (max 3). Clés : `quick_gift_recent_v1`, `quick_gift_pinned_v1`. Méthodes : `recordRecentGift`, `getRecentGifts`, `pinGift`, `unpinGift`, `getPinnedGifts`, `getShortcuts` (défauts 🔥💎👑).
+- `lib/widgets/gifts/quick_gift_bar.dart` — Widget StatefulWidget avec :
+  - 3 bulles cliquables (icône emoji, bordure dorée si épinglé, badge doré)
+  - Bouton "+" → ouvre `CoinGiftDialog`
+  - Compteur total pièces cadeaux affiché sous les bulles
+  - Envoi optimiste : toast immédiat, Firestore fire-and-forget en arrière-plan
+  - Debounce 1,5s anti double-envoi
+  - Long press → bottom sheet (épingler/désépingler/ouvrir modal)
+  - Toast animé slide-from-top avec dégradé doré (auto-dismiss 1,4s)
+
+**Fichiers modifiés :**
+
+`lib/pages/coins/coin_gift_dialog.dart` :
+- Ajout `int _quantity = 1` — tap sur la même case → incrémente la quantité, tap autre case → reset à 1
+- Badge `x$_quantity` sur la case sélectionnée
+- Bouton envoi affiche `3x 💎  🪙 300` (coût total)
+- `_sendGift()` utilise `totalCost = pack.coins * _quantity`
+- Enregistrement dans `QuickGiftService.recordRecentGift` après envoi réussi
+
+`pubspec.yaml` : ajout `shared_preferences: ^2.3.3` (déclaration explicite)
+
+**Widgets de carte post modifiés :**
+
+`lib/pages/userPosts/postWidgets/postWidgetPage.dart` (HomePostUsersWidget) :
+- `_buildSupportButton(hasAccess)` → `QuickGiftBar` si non-propriétaire, sinon `SizedBox.shrink()`
+- `_buildPostActions()` → cadeau remplacé par `QuickGiftBar` si non-propriétaire et accès ok
+
+`lib/pages/userPosts/youTube_video_card.dart` (YouTubeVideoCard) :
+- `_buildPostActions()` → cadeau remplacé par `QuickGiftBar` si non-propriétaire et accès ok
+
+`lib/pages/post_video_format_tel_details.dart` (PostDetailsVideoFormatTel) :
+- Bouton "Soutenir le créateur" (container) remplacé par `QuickGiftBar` si non-propriétaire
+
+**Pages détail modifiées :**
+
+`lib/pages/postDetails.dart` (DetailsPost) :
+- Import `quick_gift_bar.dart` ajouté
+- `_buildSupportButton()` réécrit → `QuickGiftBar` si non-propriétaire et accès ok, sinon `SizedBox.shrink()`
+- `_buildStatsRow()` → section cadeau remplacée par `QuickGiftBar` via `Builder` (lecture seule si propriétaire ou accès verrouillé)
+- Appel `_buildActionButtons(updatedPost)` + Divider supprimés (doublon de `_buildStatsRow`)
+- Méthode `_buildActionButtons()` supprimée
+
+`lib/pages/postDetailsVideo.dart` (VideoYoutubePageDetails) :
+- Import `quick_gift_bar.dart` ajouté
+- `_buildActionButtons()` réécrit : chaque bouton affiche icône + compteur + label (style `_buildStatItem`) et est cliquable — cadeau remplacé par `QuickGiftBar`
+- `_buildStatsRow()` supprimée (doublon unifié dans `_buildActionButtons`)
+- `_buildSupportButton()` supprimée (doublon)
+- Appels `_buildStatsRow()` et `_buildSupportButton(_currentPost)` retirés du build
+
+---
+
+### 2. Fix — Admin app (role == 'ADM') bloqué en read-only dans les groupes
+
+**Problème :** L'admin app entrant dans un groupe restait en mode lecture seule (pas de champ de saisie).
+
+**Cause :** `_userCanWrite` contenait `!_isAppAdmin && ...` → toujours `false` pour ADM.
+
+**Solution dans `lib/pages/chat/group/group_chat_page.dart` :**
+
+```dart
+// Avant (buggy)
+bool get _userCanWrite => !_isAppAdmin && !_isBlocked && GroupPermissionUtils.canWrite(...)
+
+// Après (corrigé)
+bool get _userCanWrite => _isAppAdmin || (!_isBlocked && GroupPermissionUtils.canWrite(...))
+bool get _userCanShare => _isAppAdmin || (!_isBlocked && GroupPermissionUtils.canShare(...))
+```
+
+- 4 méthodes d'envoi (texte, image, vidéo, document) : `if (!_isMember(myId)) return;` → `if (!_isAppAdmin && !_isMember(myId)) return;`
+- ADM a toujours tous les droits d'écriture dans n'importe quel groupe, quel que soit son statut de membre
+
+---
+
+### Règle de sécurité (rappel)
+- Commission split : 75% parrain affiché dans l'UI, 25% revenus app — **ne jamais afficher les 25% dans l'UI**
+- ADM est Gold permanent
