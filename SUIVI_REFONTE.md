@@ -3824,6 +3824,41 @@ bool get _userCanShare => _isAppAdmin || (!_isBlocked && GroupPermissionUtils.ca
 
 ---
 
+---
+
+## Session 88 — Fix groupes officiels (badge bleu) : temps réel + ADM + navigation
+
+### Problèmes résolus
+
+**1. Navigation après partage toujours bloquée pour ADM**
+- **Cause** : `_sendToGroup` faisait 2 `await` pour vérifier les permissions depuis `members` subcollection. Pour un ADM non dans `member_ids`, le `role` revenait à 'member'. De plus, `catch (_) {}` avalait les erreurs Firestore silencieusement → `sent = false` → pas de navigation.
+- **Solution** dans `lib/widgets/chat/post_share_sheet.dart` et `lib/widgets/chat/generic_share_sheet.dart` :
+  - Vérification `isAppAdmin = _auth.loginUserData.role == 'ADM'` AVANT tout `await`
+  - Si ADM : skip complet du bloc de permission (comme dans `group_chat_page.dart`)
+  - `catch` maintenant loggue l'erreur : `catch (e, st) { debugPrint(...); }`
+
+**2. Carousel GoldGroupsProvider jamais mis à jour en temps réel**
+- **Cause** : `GoldGroupsProvider` utilisait `get()` avec cache 10 min — aucune mise à jour quand des messages arrivaient.
+- **Solution** dans `lib/providers/gold_groups_provider.dart` :
+  - Ajout d'un `StreamSubscription` (`_officialSub`) sur les groupes officiels (`is_official == true`)
+  - `startStream()` lancé automatiquement depuis `load()` — stream alimenté par Firestore `snapshots()`
+  - `_rebuildGroups()` : fusionne official groups (stream) + gold user groups (one-time), trié par `last_message_at` desc
+  - `dispose()` ajouté pour `_officialSub?.cancel()`
+  - Les gold user groups (groupes des utilisateurs Gold) gardent le `get()` one-time
+
+**3. Groupes pas triés dans le carousel**
+- Avant : les groupes officiels n'étaient pas triés (shuffle aléatoire)
+- Maintenant : `_rebuildGroups()` trie par `last_message_at` desc → les groupes avec messages récents remontent
+
+**4. Groupes dont l'ADM est propriétaire absents de `_groups`**
+- **Cause** : `_initGroupsStream` ne queryait que `member_ids arrayContains myId`. Pour ADM qui entre dans ses groupes sans être ajouté à `member_ids`, ces groupes n'apparaissaient pas dans la liste.
+- **Solution** dans `lib/pages/user/conversation/listUserConv.dart` :
+  - Ajout d'un second `StreamSubscription` (`_ownedGroupsStreamSub`) : `owner_id == myId`
+  - `_mergeAndSetGroups()` : fusionne les 2 streams, déduplique par `id`, trie par `last_message_at`
+  - `dispose()` : `_ownedGroupsStreamSub?.cancel()`
+
+---
+
 ### Règle de sécurité (rappel)
 - Commission split : 75% parrain affiché dans l'UI, 25% revenus app — **ne jamais afficher les 25% dans l'UI**
 - ADM est Gold permanent
