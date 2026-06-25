@@ -165,35 +165,38 @@ class _GenericShareSheetState extends State<GenericShareSheet>
     final primaryColor = AppColors.of(context).primary;
 
     final myId = _auth.loginUserData.id!;
-    final memberDoc = await FirebaseFirestore.instance
-        .collection('GroupChats')
-        .doc(groupId)
-        .collection('members')
-        .doc(myId)
-        .get();
-    final role = memberDoc.data()?['role'] as String? ?? 'member';
+    final isAppAdmin = _auth.loginUserData.role == 'ADM';
 
-    // Vérification centralisée des permissions de partage
-    final groupData = await GroupPermissionUtils.loadGroupData(groupId);
-    final canShare = GroupPermissionUtils.canShare(
-      groupData: groupData,
-      userId: myId,
-      userRole: role,
-    );
-    if (!canShare) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              GroupPermissionUtils.isGroupFrozen(groupData)
-                  ? 'Groupe gelé — le propriétaire n\'est plus Gold.'
-                  : 'Partage non autorisé dans ce groupe.',
+    // Vérification permissions — ignorée pour l'admin app
+    if (!isAppAdmin) {
+      final memberDoc = await FirebaseFirestore.instance
+          .collection('GroupChats')
+          .doc(groupId)
+          .collection('members')
+          .doc(myId)
+          .get();
+      final role = memberDoc.data()?['role'] as String? ?? 'member';
+      final groupData = await GroupPermissionUtils.loadGroupData(groupId);
+      final canShare = GroupPermissionUtils.canShare(
+        groupData: groupData,
+        userId: myId,
+        userRole: role,
+      );
+      if (!canShare) {
+        if (mounted) {
+          scaffoldMsg.showSnackBar(
+            SnackBar(
+              content: Text(
+                GroupPermissionUtils.isGroupFrozen(groupData)
+                    ? 'Groupe gelé — le propriétaire n\'est plus Gold.'
+                    : 'Partage non autorisé dans ce groupe.',
+              ),
+              backgroundColor: Colors.red,
             ),
-            backgroundColor: Colors.red,
-          ),
-        );
+          );
+        }
+        return;
       }
-      return;
     }
 
     setState(() => _sendingId = groupId);
@@ -244,7 +247,8 @@ class _GenericShareSheetState extends State<GenericShareSheet>
         itemId: widget.itemId,
       );
       sent = true;
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('[GenericShareSheet] _sendToGroup error: $e\n$st');
       if (mounted) setState(() => _sendingId = null);
     }
     if (sent && mounted) {

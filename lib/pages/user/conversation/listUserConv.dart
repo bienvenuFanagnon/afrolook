@@ -104,6 +104,8 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   String get _groupCacheKey => 'group_list_${authProvider.loginUserData.id ?? ''}';
 
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _groupsStreamSub;
+  // Second stream pour les groupes dont l'utilisateur est propriétaire (ADM non dans member_ids)
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _ownedGroupsStreamSub;
 
   // Groupes Gold (carousel pub) — géré par GoldGroupsProvider
 
@@ -229,26 +231,55 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     _checkBiometricLock();
   }
 
+  // Cache intermédiaire pour fusionner les deux streams
+  List<Map<String, dynamic>> _memberGroups = [];
+  List<Map<String, dynamic>> _ownedGroups = [];
+
+  void _mergeAndSetGroups() {
+    final seen = <String>{};
+    final merged = <Map<String, dynamic>>[];
+    for (final g in [..._memberGroups, ..._ownedGroups]) {
+      final id = g['id'] as String? ?? '';
+      if (id.isNotEmpty && seen.add(id)) merged.add(g);
+    }
+    merged.sort((a, b) {
+      final aAt = (a['last_message_at'] as int?) ?? 0;
+      final bAt = (b['last_message_at'] as int?) ?? 0;
+      return bAt.compareTo(aAt);
+    });
+    _saveGroupCache(merged);
+    if (mounted) setState(() { _groups = merged; _loadingGroups = false; });
+  }
+
   void _initGroupsStream() {
     final myId = authProvider.loginUserData.id!;
     _groupsStreamSub?.cancel();
+    _ownedGroupsStreamSub?.cancel();
     if (mounted) setState(() => _loadingGroups = true);
+
+    // Stream 1 : groupes où l'utilisateur est membre
     _groupsStreamSub = FirebaseFirestore.instance
         .collection('GroupChats')
         .where('member_ids', arrayContains: myId)
         .snapshots()
         .listen((snap) {
-      final groups = snap.docs.map((d) => d.data()).toList();
-      groups.sort((a, b) {
-        final aAt = (a['last_message_at'] as int?) ?? 0;
-        final bAt = (b['last_message_at'] as int?) ?? 0;
-        return bAt.compareTo(aAt);
-      });
-      _saveGroupCache(groups);
-      if (mounted) setState(() { _groups = groups; _loadingGroups = false; });
+      _memberGroups = snap.docs.map((d) => d.data()).toList();
+      _mergeAndSetGroups();
     }, onError: (_) {
       if (mounted) setState(() => _loadingGroups = false);
     });
+
+    // Stream 2 : groupes dont l'utilisateur est propriétaire
+    // (utile pour ADM qui entre dans ses propres groupes sans être dans member_ids)
+    _ownedGroupsStreamSub = FirebaseFirestore.instance
+        .collection('GroupChats')
+        .where('owner_id', isEqualTo: myId)
+        .snapshots()
+        .listen((snap) {
+      _ownedGroups = snap.docs.map((d) => d.data()).toList();
+      _mergeAndSetGroups();
+    }, onError: (_) {});
+
     _loadGoldGroups();
   }
 
@@ -935,6 +966,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   @override
   void dispose() {
     _groupsStreamSub?.cancel();
+    _ownedGroupsStreamSub?.cancel();
     _searchController.dispose();
     _scrollController.dispose();
     _codeSearchController.dispose();
