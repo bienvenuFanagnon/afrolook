@@ -231,6 +231,7 @@ class _PostShareSheetState extends State<PostShareSheet>
     }
 
     setState(() => _sendingId = groupId);
+    var sent = false;
     try {
       final me = _auth.loginUserData;
       final post = widget.post;
@@ -283,9 +284,12 @@ class _PostShareSheetState extends State<PostShareSheet>
         notifDesc: post.description?.isNotEmpty == true ? post.description! : _lastMsgLabel(post),
         postId: post.id ?? '',
       );
-      _doneAndOpenGroup(groupId: groupId, groupName: groupName, groupImage: groupImage);
+      sent = true;
     } catch (_) {
       if (mounted) setState(() => _sendingId = null);
+    }
+    if (sent) {
+      _doneAndOpenGroup(groupId: groupId, groupName: groupName, groupImage: groupImage);
     }
   }
 

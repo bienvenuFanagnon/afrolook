@@ -192,6 +192,7 @@ class _GenericShareSheetState extends State<GenericShareSheet>
     }
 
     setState(() => _sendingId = groupId);
+    var sent = false;
     try {
       final me = _auth.loginUserData;
       final now = DateTime.now().millisecondsSinceEpoch;
@@ -237,9 +238,12 @@ class _GenericShareSheetState extends State<GenericShareSheet>
         notifDesc: widget.title,
         itemId: widget.itemId,
       );
-      _doneAndOpenGroup(groupId: groupId, groupName: groupName, groupImage: groupImage);
+      sent = true;
     } catch (_) {
       if (mounted) setState(() => _sendingId = null);
+    }
+    if (sent) {
+      _doneAndOpenGroup(groupId: groupId, groupName: groupName, groupImage: groupImage);
     }
   }
 
