@@ -111,6 +111,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   bool _isSharing = false;
   String? _translatedDescription;
   late UserAuthProvider authProvider;
+  late CoinGiftUserProvider _coinProvider;
+
   late PostProvider postProvider;
   late UserProvider userProvider;
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -262,6 +264,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     super.initState();
     printVm("index du post: ${widget.index}");
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    _coinProvider = Provider.of<CoinGiftUserProvider>(context, listen: false);
+
     postProvider = Provider.of<PostProvider>(context, listen: false);
     userProvider = Provider.of<UserProvider>(context, listen: false);
     appDefaultData = authProvider.appDefaultData;
@@ -2222,6 +2226,24 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           _buildFavoriteButton(hasAccess),
 
           // Cadeau
+          if (hasAccess && authProvider.loginUserData.id != widget.post.user_id)
+            QuickGiftBar(
+              receiverId: widget.post.user_id!,
+              receiverName: widget.post.user?.pseudo ?? 'Créateur',
+              receiverAvatar: widget.post.user?.imageUrl ?? '',
+              post: widget.post,
+              giftCount: widget.post.totalGiftCoinsSentOnThisPost ?? 0,
+              onGiftSuccess: () async {
+                setState(() {
+                  widget.post.users_cadeau_id ??= [];
+                  if (!widget.post.users_cadeau_id!.contains(authProvider.loginUserData.id!)) {
+                    widget.post.users_cadeau_id!.add(authProvider.loginUserData.id!);
+                  }
+                });
+                await  _coinProvider.refreshBalance(authProvider.loginUserData.id!);
+              },
+            )
+          else
             _buildActionButton(
               icon: FontAwesome.gift,
               count: widget.post.totalGiftCoinsSentOnThisPost ?? 0,
@@ -2230,25 +2252,25 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
             ),
 
           // Partager
-          _isSharing
-              ? SizedBox(
-            width: 40, // Ajustez selon la taille de vos boutons
-            height: 40,
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: CircularProgressIndicator(strokeWidth: 2, color: colors.textSecondary),
-            ),
-          )
-              : _buildActionButton(
-            icon: Icons.share,
-            count: widget.post.partage ?? 0,
-            color: colors.textSecondary,
-            onPressed: hasAccess ? () {
-              _handleShare();
-              recordUniquePostView();
-              // Le callback est déjà appelé dans _handleShare ou ici
-            } : null,
-          ),
+          // _isSharing
+          //     ? SizedBox(
+          //   width: 40, // Ajustez selon la taille de vos boutons
+          //   height: 40,
+          //   child: Padding(
+          //     padding: const EdgeInsets.all(8.0),
+          //     child: CircularProgressIndicator(strokeWidth: 2, color: colors.textSecondary),
+          //   ),
+          // )
+          //     : _buildActionButton(
+          //   icon: Icons.share,
+          //   count: widget.post.partage ?? 0,
+          //   color: colors.textSecondary,
+          //   onPressed: hasAccess ? () {
+          //     _handleShare();
+          //     recordUniquePostView();
+          //     // Le callback est déjà appelé dans _handleShare ou ici
+          //   } : null,
+          // ),
         ],
       ),
     );

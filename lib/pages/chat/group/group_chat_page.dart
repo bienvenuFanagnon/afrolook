@@ -887,28 +887,25 @@ class _GroupChatPageState extends State<GroupChatPage> {
 
       await _firestore.collection('GroupMessages').doc(msgId).set(msgData);
 
+      // Message visible dans le chat — libérer l'UI immédiatement
+      if (mounted) setState(() => _isSending = false);
+
+      // Mises à jour en arrière-plan (non bloquantes pour l'UI)
       final otherMembers = (_groupData['member_ids'] as List<dynamic>? ?? [])
           .cast<String>()
-          .where((id) => id != myId)
+          .where((id) => id.isNotEmpty && id != myId)
           .toList();
-      final groupUpdate = <String, dynamic>{
+
+      _firestore.collection('GroupChats').doc(widget.groupId).update({
         'last_message': text,
         'last_message_at': now,
         'updated_at': now,
-      };
-      for (final id in otherMembers) {
-        groupUpdate['unread_counts.$id'] = FieldValue.increment(1);
-      }
-      try {
-        await _firestore.collection('GroupChats').doc(widget.groupId).update(groupUpdate);
-      } catch (e) {
-        debugPrint('[GroupChatPage] GroupChats.update failed: $e');
-      }
+      }).catchError((e) => debugPrint('[GroupChatPage] last_message update failed: $e'));
 
-      await _sendGroupNotification(text);
+      _updateUnreadCounts(otherMembers);
+
     } catch (e) {
       debugPrint('[GroupChatPage] _sendTextMessage error: $e');
-    } finally {
       if (mounted) setState(() => _isSending = false);
     }
   }
@@ -956,28 +953,24 @@ class _GroupChatPageState extends State<GroupChatPage> {
         'message_state': 'NONLU',
       });
 
+      // Photo visible — libérer l'UI immédiatement
+      if (mounted) setState(() => _isSending = false);
+
       final otherMembersImg = (_groupData['member_ids'] as List<dynamic>? ?? [])
           .cast<String>()
-          .where((id) => id != myId)
+          .where((id) => id.isNotEmpty && id != myId)
           .toList();
-      final groupUpdateImg = <String, dynamic>{
+
+      _firestore.collection('GroupChats').doc(widget.groupId).update({
         'last_message': 'Photo',
         'last_message_at': now,
         'updated_at': now,
-      };
-      for (final id in otherMembersImg) {
-        groupUpdateImg['unread_counts.$id'] = FieldValue.increment(1);
-      }
-      try {
-        await _firestore.collection('GroupChats').doc(widget.groupId).update(groupUpdateImg);
-      } catch (e) {
-        debugPrint('[GroupChatPage] GroupChats.update (image) failed: $e');
-      }
+      }).catchError((e) => debugPrint('[GroupChatPage] last_message (image) failed: $e'));
 
-      await _sendGroupNotification('Photo');
+      _updateUnreadCounts(otherMembersImg);
+
     } catch (e) {
       debugPrint('[GroupChatPage] _sendImageMessage error: $e');
-    } finally {
       if (mounted) setState(() => _isSending = false);
     }
   }
@@ -1042,27 +1035,22 @@ class _GroupChatPageState extends State<GroupChatPage> {
         'message_state': 'NONLU',
       });
 
+      if (mounted) setState(() => _isSending = false);
+
       final otherMembers = (_groupData['member_ids'] as List<dynamic>? ?? [])
           .cast<String>()
-          .where((id) => id != myId)
+          .where((id) => id.isNotEmpty && id != myId)
           .toList();
-      final groupUpdate = <String, dynamic>{
+
+      _firestore.collection('GroupChats').doc(widget.groupId).update({
         'last_message': '📷 ${urls.length} photo(s)',
         'last_message_at': now,
         'updated_at': now,
-      };
-      for (final id in otherMembers) {
-        groupUpdate['unread_counts.$id'] = FieldValue.increment(1);
-      }
-      try {
-        await _firestore.collection('GroupChats').doc(widget.groupId).update(groupUpdate);
-      } catch (e) {
-        debugPrint('[GroupChatPage] GroupChats.update (multi_image) failed: $e');
-      }
-      await _sendGroupNotification('📷 ${urls.length} photo(s)');
+      }).catchError((e) => debugPrint('[GroupChatPage] last_message (multi_image) update failed: $e'));
+
+      _updateUnreadCounts(otherMembers);
     } catch (e) {
       debugPrint('[GroupChatPage] _sendMultiImageMessage error: $e');
-    } finally {
       if (mounted) setState(() => _isSending = false);
     }
   }
@@ -1168,26 +1156,22 @@ class _GroupChatPageState extends State<GroupChatPage> {
         'message_state': 'NONLU',
       });
 
+      if (mounted) setState(() => _isSending = false);
+
       final otherMembers = (_groupData['member_ids'] as List<dynamic>? ?? [])
           .cast<String>()
-          .where((id) => id != myId)
+          .where((id) => id.isNotEmpty && id != myId)
           .toList();
-      final groupUpdate = <String, dynamic>{
+
+      _firestore.collection('GroupChats').doc(widget.groupId).update({
         'last_message': 'Vidéo',
         'last_message_at': now,
         'updated_at': now,
-        // Mettre à jour le quota journalier
         'video_daily_stats': {
           'date': todayStr,
           'bytes': usedBytes + sizeBytes,
         },
-      };
-      for (final id in otherMembers) {
-        groupUpdate['unread_counts.$id'] = FieldValue.increment(1);
-      }
-      try {
-        await _firestore.collection('GroupChats').doc(widget.groupId).update(groupUpdate);
-        // Mettre à jour le cache local pour bloquer immédiatement si dépassement
+      }).then((_) {
         if (mounted) {
           setState(() {
             _groupData['video_daily_stats'] = {
@@ -1196,14 +1180,11 @@ class _GroupChatPageState extends State<GroupChatPage> {
             };
           });
         }
-      } catch (e) {
-        debugPrint('[GroupChatPage] GroupChats.update (video) failed: $e');
-      }
+      }).catchError((e) => debugPrint('[GroupChatPage] last_message (video) update failed: $e'));
 
-      await _sendGroupNotification('Vidéo');
+      _updateUnreadCounts(otherMembers);
     } catch (e) {
       debugPrint('[GroupChatPage] _sendVideoMessage error: $e');
-    } finally {
       if (mounted) setState(() => _isSending = false);
     }
   }
@@ -1232,51 +1213,20 @@ class _GroupChatPageState extends State<GroupChatPage> {
     } catch (_) {}
   }
 
-  // ─── NOTIFICATIONS ONESIGNAL ─────────────────────────────────────────────────
+  // ─── UNREAD COUNTS (chunked pour groupes avec 500+ membres) ──────────────────
 
-  Future<void> _sendGroupNotification(String msgContent) async {
-    try {
-      final myId = _auth.loginUserData.id!;
-      final memberIds = (_groupData['member_ids'] as List<dynamic>? ?? [])
-          .cast<String>()
-          .where((id) => id != myId)
-          .toList();
-
-      if (memberIds.isEmpty) return;
-
-      final groupName = _groupData['name'] as String? ?? widget.groupName;
-      final senderPseudo = _auth.loginUserData.pseudo ?? '';
-      final notifMsg = '@$senderPseudo dans $groupName: $msgContent';
-
-      // Batch par chunks de 30 (limite Firestore whereIn)
-      for (var i = 0; i < memberIds.length; i += 30) {
-        final chunk = memberIds.sublist(i, min(i + 30, memberIds.length));
-        final snap = await _firestore
-            .collection('Users')
-            .where('id', whereIn: chunk)
-            .get();
-
-        for (final doc in snap.docs) {
-          final data = doc.data();
-          final mutedGroups = (data['muted_groups'] as List<dynamic>? ?? []).cast<String>();
-          if (mutedGroups.contains(widget.groupId)) continue;
-          final oneSignalId = data['oneIgnalUserid'] as String?;
-          if (oneSignalId != null && oneSignalId.length > 5) {
-            await _auth.sendNotification(
-              userIds: [oneSignalId],
-              smallImage: _auth.loginUserData.imageUrl ?? '',
-              send_user_id: myId,
-              recever_user_id: data['id'] as String? ?? '',
-              message: notifMsg,
-              type_notif: NotificationType.MESSAGE.name,
-              post_id: '',
-              post_type: '',
-              chat_id: widget.groupId,
-            );
-          }
-        }
+  void _updateUnreadCounts(List<String> memberIds) {
+    if (memberIds.isEmpty) return;
+    const chunkSize = 400;
+    for (var i = 0; i < memberIds.length; i += chunkSize) {
+      final chunk = memberIds.sublist(i, min(i + chunkSize, memberIds.length));
+      final unreadUpdate = <String, dynamic>{};
+      for (final id in chunk) {
+        unreadUpdate['unread_counts.$id'] = FieldValue.increment(1);
       }
-    } catch (_) {}
+      _firestore.collection('GroupChats').doc(widget.groupId).update(unreadUpdate)
+          .catchError((e) => debugPrint('[GroupChatPage] unread_counts update failed: $e | chunk[$i..${i + chunk.length - 1}]'));
+    }
   }
 
   Future<void> _markMessagesRead() async {

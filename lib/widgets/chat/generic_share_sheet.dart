@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -227,25 +229,23 @@ class _GenericShareSheetState extends State<GenericShareSheet>
       });
       final otherMembers = (group['member_ids'] as List<dynamic>? ?? [])
           .cast<String>()
-          .where((id) => id != me.id)
+          .where((id) => id.isNotEmpty && id != me.id)
           .toList();
-      final groupUpdate = <String, dynamic>{
+      await FirebaseFirestore.instance.collection('GroupChats').doc(groupId).update({
         'last_message': '📎 ${widget.title}',
         'last_message_at': now,
         'updated_at': now,
-      };
-      for (final id in otherMembers) {
-        groupUpdate['unread_counts.$id'] = FieldValue.increment(1);
+      });
+      const chunkSize = 400;
+      for (var i = 0; i < otherMembers.length; i += chunkSize) {
+        final chunk = otherMembers.sublist(i, min(i + chunkSize, otherMembers.length));
+        final unreadUpdate = <String, dynamic>{};
+        for (final id in chunk) {
+          unreadUpdate['unread_counts.$id'] = FieldValue.increment(1);
+        }
+        FirebaseFirestore.instance.collection('GroupChats').doc(groupId).update(unreadUpdate)
+            .catchError((e) => debugPrint('[GenericShareSheet] unread_counts update failed: $e | chunk[$i]'));
       }
-      await FirebaseFirestore.instance.collection('GroupChats').doc(groupId).update(groupUpdate);
-      // Notifier chaque membre du groupe
-      _notifyGroupMembers(
-        group: group,
-        now: now,
-        notifTitre: '${me.pseudo ?? ''} a partagé ${widget.subtitle}',
-        notifDesc: widget.title,
-        itemId: widget.itemId,
-      );
       sent = true;
     } catch (e, st) {
       debugPrint('[GenericShareSheet] _sendToGroup error: $e\n$st');
@@ -263,65 +263,6 @@ class _GenericShareSheetState extends State<GenericShareSheet>
         builder: (_) => GroupChatPage(groupId: groupId, groupName: groupName, groupImageUrl: groupImage),
       ));
     }
-  }
-
-  /// Enregistre une NotificationData + envoie un push OneSignal à chaque membre (sauf moi).
-  Future<void> _notifyGroupMembers({
-    required Map<String, dynamic> group,
-    required int now,
-    required String notifTitre,
-    required String notifDesc,
-    required String itemId,
-  }) async {
-    try {
-      final myId = _auth.loginUserData.id!;
-      final memberIds = List<String>.from(group['member_ids'] as List? ?? []);
-      final others = memberIds.where((id) => id != myId).toList();
-      if (others.isEmpty) return;
-
-      final firestore = FirebaseFirestore.instance;
-      final oneSignalIds = <String>[];
-
-      for (var i = 0; i < others.length; i += 10) {
-        final chunk = others.sublist(i, i + 10 > others.length ? others.length : i + 10);
-        final snap = await firestore.collection('Users').where(FieldPath.documentId, whereIn: chunk).get();
-        for (final doc in snap.docs) {
-          final data = doc.data();
-          final osId = data['oneIgnalUserid'] as String?;
-          if (osId != null && osId.length > 5) oneSignalIds.add(osId);
-          final notifId = firestore.collection('Notifications').doc().id;
-          final notif = NotificationData(
-            id: notifId,
-            titre: notifTitre,
-            description: notifDesc,
-            user_id: myId,
-            receiver_id: doc.id,
-            post_id: itemId,
-            type: NotificationType.MESSAGE.name,
-            status: PostStatus.VALIDE.name,
-            is_open: false,
-            users_id_view: [],
-            createdAt: now,
-            updatedAt: now,
-          );
-          firestore.collection('Notifications').doc(notifId).set(notif.toJson());
-        }
-      }
-
-      if (oneSignalIds.isNotEmpty) {
-        _auth.sendNotification(
-          userIds: oneSignalIds,
-          smallImage: _auth.loginUserData.imageUrl ?? '',
-          send_user_id: myId,
-          recever_user_id: group['id'] as String,
-          message: notifTitre,
-          type_notif: NotificationType.MESSAGE.name,
-          post_id: itemId,
-          post_type: widget.itemType,
-          chat_id: group['id'] as String,
-        );
-      }
-    } catch (_) {}
   }
 
   void _done() {

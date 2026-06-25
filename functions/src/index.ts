@@ -8,3 +8,4 @@ export * from "./posts/interactions";
 export * from "./posts/lifecycle";
 export * from "./notifications/bulk";
 export * from "./emails/email_functions";
+export * from "./chat/groupNotifications";
