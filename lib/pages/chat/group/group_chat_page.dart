@@ -1680,16 +1680,36 @@ class _GroupChatPageState extends State<GroupChatPage> {
                 ),
               ],
 
-              if (!isDeleted && (_ownerIsGold || _isAppAdmin)) ...[
+              if (!isDeleted && (_isAdminOrOwner || _isAppAdmin)) ...[
                 const Divider(height: 1, indent: 16, endIndent: 16),
-                ListTile(
-                  leading: Icon(Icons.visibility_rounded, color: _colors.primary),
-                  title: Text('Vu par', style: TextStyle(color: _colors.textPrimary)),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _showMessageReaders(msg);
-                  },
-                ),
+                Builder(builder: (_) {
+                  final canSee = _ownerIsGold || _isAppAdmin;
+                  return ListTile(
+                    leading: canSee
+                        ? Icon(Icons.visibility_rounded, color: _colors.primary)
+                        : const Icon(Icons.lock_rounded, color: Colors.amber),
+                    title: Text('Vu par',
+                        style: TextStyle(
+                          color: canSee ? _colors.textPrimary : _colors.textSecondary,
+                        )),
+                    subtitle: canSee
+                        ? null
+                        : const Text(
+                            'Réservé aux groupes Gold ou aux admins de l\'app',
+                            style: TextStyle(fontSize: 11, color: Colors.amber),
+                          ),
+                    trailing: canSee
+                        ? null
+                        : const Icon(Icons.workspace_premium_rounded,
+                            color: Colors.amber, size: 18),
+                    onTap: canSee
+                        ? () {
+                            Navigator.pop(ctx);
+                            _showMessageReaders(msg);
+                          }
+                        : null,
+                  );
+                }),
               ],
               if (canDelete && !isDeleted)
                 ListTile(
