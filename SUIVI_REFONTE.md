@@ -3862,3 +3862,80 @@ bool get _userCanShare => _isAppAdmin || (!_isBlocked && GroupPermissionUtils.ca
 ### Règle de sécurité (rappel)
 - Commission split : 75% parrain affiché dans l'UI, 25% revenus app — **ne jamais afficher les 25% dans l'UI**
 - ADM est Gold permanent
+
+---
+
+## Session 89 — Fix gains vues + suppression définitive chat groupe (multi-sélection)
+
+### 1. Fix page détails utilisateur admin — dates et rôle « non disponible »
+
+**Fichiers :** `lib/models/model_data.dart`, `lib/pages/auth/authTest/Screens/Signup/signup_up_form_step_2.dart`
+
+- `UserData.fromJson` : lecture `createdAt` (camelCase Firestore), `updatedAt`, `last_time_active` via `parseTimestamp()`
+- `parseTimestamp()` : détection automatique microsecondes (`> 9999999999999 → value ~/ 1000`) vs millisecondes vs `Timestamp` Firestore → corrige l'affichage aberrant « 58222 »
+- `toJson()` : inclusion `createdAt`, `updatedAt`, `role` pour l'écriture Firestore
+- Création de compte (`signup_up_form_step_2.dart`) : passage de `microsecondsSinceEpoch` → `millisecondsSinceEpoch`
+- Affichage rôle : fallback `'Utilisateur'` si champ vide
+
+### 2. Fix page gains par vues — affichage et calcul
+
+**Fichiers :** `lib/pages/user/mes_gains_post_page.dart`, `lib/services/postService/post_view_service.dart`, `lib/l10n/app_localizations.dart`
+
+**Taux :** 1 FCFA/vue (100 vues = 100 FCFA). Constante `_fcfaPerView = 1.0`.
+
+**Calcul dynamique du disponible :**
+- Avant : `postViewsAvailable` stocké en FCFA fixe → incohérent au changement de taux
+- Maintenant : `available = (totalPostUniqueViews × _fcfaPerView) − postViewsTotalCashed` (jamais stocké)
+- Transaction d'encaissement revalidée en Firestore (race-condition safe)
+
+**Vues uniques par post :**
+- `recordAuthorView` incrémente `postViewsMonthly.$month`, `postViewsMonthlyPostIds.$month` (arrayUnion), `postViewsPerPost.$postId`, `uniqueViewsCount` sur le post
+- Migration one-time (`postViewsMigrationDone`) recalcule depuis `uniqueViewsCount ?? vues` des posts
+
+**Bottom sheet mois — posts s'affichaient mais vues = 0 :**
+- Cause : `postViewsMonthly` pouvait être 0 après reset de `fixMonthlyData` (si `uniqueViewsCount` était nul sur les posts)
+- Fix : `_monthlyPostIds` (Map<String, List<String>>) lu directement depuis Firestore au chargement de la page
+- `_monthlyCard` fusionne `postViewsMonthly` + `postViewsMonthlyPostIds` : affiche `postViewsMonthly[mois]` si > 0, sinon `postViewsMonthlyPostIds[mois].length` (nombre de posts distincts vus ce mois)
+- Mois visibles proviennent de l'union des deux maps (plus aucun mois orphelin invisible)
+
+**Sous-titre stats :** affiche `totalViews vues` (non `postViewsAvailable / rate` → évite la confusion)
+
+### 3. Fix chat groupe — scroll initial + bouton bas + suppression définitive
+
+**Fichier :** `lib/pages/chat/group/group_chat_page.dart`
+
+**Scroll initial fiable :**
+- `_initialScrollDone` flag → premier chargement : `_scrollToBottomInitial()` (double `addPostFrameCallback`)
+- Messages suivants : `_scrollToBottomIfNearEnd()` (scroll auto seulement si `< 150px` du bas)
+- Bouton AppBar `keyboard_double_arrow_down` pour descendre manuellement
+
+**Suppression définitive (admin) :**
+- `_permanentDeleteMessage` : suppression physique Firestore (`doc.delete()`), aucune trace
+- Appui long sur messages déjà supprimés (`is_deleted: true`) autorisé pour l'admin
+- Modal options rendu scrollable (`isScrollControlled: true` + `ConstrainedBox 75%` + `SingleChildScrollView`)
+
+### 4. Sélection multiple pour suppression définitive (admin uniquement)
+
+**Fichier :** `lib/pages/chat/group/group_chat_page.dart`
+
+**Fonctionnement :**
+- Appui long (admin) → entre en mode sélection, sélectionne le message visé
+- `_isSelectionMode` + `Set<String> _selectedMsgIds` comme état
+- Tap en mode sélection → toggle sélection (checkbox circulaire à gauche de chaque bulle)
+- Fond animé (`AnimatedContainer`) teinté sur les messages sélectionnés
+- Avatar expéditeur masqué en mode sélection pour laisser la place aux checkboxes
+- `AbsorbPointer` implicite via `GestureDetector.behavior = HitTestBehavior.opaque` : neutralise les taps imbriqués (images, liens)
+- `_deleteSelectedMessages()` : `WriteBatch` Firestore par paquets de 400, suppression physique de tous les messages sélectionnés
+- `PopScope` : bouton retour Android quitte le mode sélection sans fermer la page
+
+**AppBar mode sélection :**
+- Fond teinté primaire
+- `✕` annule la sélection
+- Titre dynamique `"N message(s) sélectionné(s)"`
+- Bouton `🗑` rouge affiché dès qu'au moins 1 message est coché → confirme avant suppression
+
+---
+
+### Règle de sécurité (rappel)
+- Commission split : 75% parrain affiché dans l'UI, 25% revenus app — **ne jamais afficher les 25% dans l'UI**
+- ADM est Gold permanent

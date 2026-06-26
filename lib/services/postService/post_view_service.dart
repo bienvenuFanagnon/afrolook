@@ -41,10 +41,14 @@ class PostViewService {
     try {
       await _firestore.collection('Users').doc(authorId).update({
         'totalPostUniqueViews': FieldValue.increment(1),
-        'postViewsAvailable': FieldValue.increment(2.0),
         'postViewsMonthly.$month': FieldValue.increment(1),
         'postViewsMonthlyPostIds.$month': FieldValue.arrayUnion([postId]),
+        'postViewsPerPost.$postId': FieldValue.increment(1),
       });
+      // Met à jour le compteur du post pour l'affichage dans les gains
+      _firestore.collection('Posts').doc(postId).update({
+        'uniqueViewsCount': FieldValue.increment(1),
+      }).catchError((e) => printVm('PostViewService post update error: $e'));
     } catch (e) {
       printVm('PostViewService.recordAuthorView error: $e');
     }
@@ -60,16 +64,17 @@ class PostViewService {
       if (data['postViewsMigrationDone'] == true) return;
 
       final postIds = <String, List<String>>{};
-      final monthly = await _aggregateMonthlyViews(userId, postIds);
+      final perPost = <String, int>{};
+      final monthly = await _aggregateMonthlyViews(userId, postIds, perPost);
       final totalViews = monthly.values.fold(0, (a, b) => a + b);
 
       final Map<String, dynamic> monthlyUpdate = {};
       monthly.forEach((k, v) => monthlyUpdate['postViewsMonthly.$k'] = v);
       postIds.forEach((k, v) => monthlyUpdate['postViewsMonthlyPostIds.$k'] = v);
+      perPost.forEach((k, v) => monthlyUpdate['postViewsPerPost.$k'] = v);
 
       await _firestore.collection('Users').doc(userId).update({
         'totalPostUniqueViews': FieldValue.increment(totalViews),
-        'postViewsAvailable': FieldValue.increment(totalViews * 2.0),
         'postViewsMigrationDone': true,
         ...monthlyUpdate,
       });
@@ -102,8 +107,10 @@ class PostViewService {
   /// Requête commune : posts de l'utilisateur des 3 derniers mois,
   /// agrégés par mois avec détection automatique ms/µs.
   /// Si [postIdsCollector] est fourni, il est également peuplé (postId par mois).
+  /// Si [perPostCollector] est fourni, il reçoit les vues par postId.
   static Future<Map<String, int>> _aggregateMonthlyViews(String userId,
-      [Map<String, List<String>>? postIdsCollector]) async {
+      [Map<String, List<String>>? postIdsCollector,
+      Map<String, int>? perPostCollector]) async {
     final threeMonthsAgo = DateTime.now().subtract(const Duration(days: 90));
     final now = DateTime.now();
 
@@ -137,6 +144,9 @@ class PostViewService {
 
       if (postIdsCollector != null) {
         (postIdsCollector[key] ??= []).add(doc.id);
+      }
+      if (perPostCollector != null) {
+        perPostCollector[doc.id] = views;
       }
     }
 

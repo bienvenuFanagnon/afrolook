@@ -12,12 +12,13 @@ import '../../theme/app_colors.dart';
 import '../postDetails.dart';
 import '../postDetailsVideo.dart';
 
-const double _fcfaPerView = 2.0;
+const double _fcfaPerView = 1.0;
 const double _minEncaissement = 1000.0;
 
 class MesGainsPage extends StatefulWidget {
   final String userId;
-  const MesGainsPage({Key? key, required this.userId}) : super(key: key);
+  final bool isAdminView;
+  const MesGainsPage({Key? key, required this.userId, this.isAdminView = false}) : super(key: key);
 
   @override
   State<MesGainsPage> createState() => _MesGainsPageState();
@@ -32,6 +33,12 @@ class _MesGainsPageState extends State<MesGainsPage> {
   bool _isEncashing = false;
   bool _isLoadingHistory = false;
   bool _showAllMonths = false;
+  bool _isLoadingViewedUser = false;
+
+  UserData? _viewedUser;
+
+  // postViewsMonthlyPostIds lu directement depuis Firestore
+  Map<String, List<String>> _monthlyPostIds = {};
 
   List<Map<String, dynamic>> _history = [];
 
@@ -48,6 +55,27 @@ class _MesGainsPageState extends State<MesGainsPage> {
   }
 
   Future<void> _init() async {
+    if (widget.isAdminView) {
+      // Mode lecture admin : charger les données de l'utilisateur ciblé depuis Firestore
+      setState(() => _isLoadingViewedUser = true);
+      try {
+        final snap = await _firestore.collection('Users').doc(widget.userId).get();
+        if (snap.exists && mounted) {
+          final data = Map<String, dynamic>.from(snap.data()!);
+          data['id'] = snap.id;
+          final rawIds = data['postViewsMonthlyPostIds'] as Map<String, dynamic>?;
+          setState(() {
+            _viewedUser = UserData.fromJson(data);
+            _monthlyPostIds = rawIds?.map((k, v) =>
+                MapEntry(k, List<String>.from(v as List? ?? []))) ?? {};
+          });
+        }
+      } catch (_) {}
+      if (mounted) setState(() => _isLoadingViewedUser = false);
+      _loadHistory();
+      return;
+    }
+
     final auth = Provider.of<UserAuthProvider>(context, listen: false);
     final user = auth.loginUserData;
 
@@ -65,6 +93,17 @@ class _MesGainsPageState extends State<MesGainsPage> {
       await auth.refreshUserData();
       if (mounted) setState(() => _isMigrating = false);
     }
+    // Lire postViewsMonthlyPostIds directement depuis Firestore (source fiable des mois)
+    try {
+      final snap = await _firestore.collection('Users').doc(widget.userId).get();
+      if (snap.exists && mounted) {
+        final raw = snap.data()?['postViewsMonthlyPostIds'] as Map<String, dynamic>?;
+        setState(() {
+          _monthlyPostIds = raw?.map((k, v) =>
+              MapEntry(k, List<String>.from(v as List? ?? []))) ?? {};
+        });
+      }
+    } catch (_) {}
     _loadHistory();
   }
 
@@ -98,7 +137,9 @@ class _MesGainsPageState extends State<MesGainsPage> {
 
   Future<void> _encaisser(UserData user, AppLocalizations t, AppColors colors) async {
     final input = double.tryParse(_amountController.text.trim()) ?? 0;
-    final available = user.postViewsAvailable ?? 0;
+    final totalViews = user.totalPostUniqueViews ?? 0;
+    final cashed     = user.postViewsTotalCashed  ?? 0;
+    final available  = ((totalViews * _fcfaPerView) - cashed).clamp(0.0, double.infinity);
 
     if (input < _minEncaissement) { _snack(t.gainsErrMin, colors.danger); return; }
     if (input > available)        { _snack(t.gainsErrMax, colors.danger); return; }
@@ -111,11 +152,12 @@ class _MesGainsPageState extends State<MesGainsPage> {
       await _firestore.runTransaction((tx) async {
         final ref  = _firestore.collection('Users').doc(widget.userId);
         final snap = await tx.get(ref);
-        final cur  = (snap.data()?['postViewsAvailable'] as num?)?.toDouble() ?? 0;
-        if (input > cur) throw Exception('solde_insuffisant');
+        final views = (snap.data()?['totalPostUniqueViews'] as num?)?.toInt() ?? 0;
+        final cur   = (snap.data()?['postViewsTotalCashed'] as num?)?.toDouble() ?? 0;
+        final curAvailable = ((views * _fcfaPerView) - cur).clamp(0.0, double.infinity);
+        if (input > curAvailable) throw Exception('solde_insuffisant');
         tx.update(ref, {
-          'postViewsAvailable':   FieldValue.increment(-input),
-          'postViewsTotalCashed': FieldValue.increment(input),
+          'postViewsTotalCashed':  FieldValue.increment(input),
           'votre_solde_principal': FieldValue.increment(input),
           'votre_solde':           FieldValue.increment(input),
         });
@@ -152,18 +194,26 @@ class _MesGainsPageState extends State<MesGainsPage> {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final t = AppLocalizations.of(context);
-    final user = Provider.of<UserAuthProvider>(context).loginUserData;
+    final authUser = Provider.of<UserAuthProvider>(context).loginUserData;
+    final user = widget.isAdminView ? (_viewedUser ?? authUser) : authUser;
+
+    final isLoading = _isMigrating || (widget.isAdminView && _isLoadingViewedUser);
+
+    String titleText = t.gainsTitle;
+    if (widget.isAdminView && _viewedUser != null) {
+      titleText = 'Gains de @${_viewedUser!.pseudo ?? ''}';
+    }
 
     return Scaffold(
       backgroundColor: colors.background,
       appBar: AppBar(
-        title: Text(t.gainsTitle,
+        title: Text(titleText,
             style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold)),
         backgroundColor: colors.background,
         iconTheme: IconThemeData(color: colors.textPrimary),
         elevation: 0,
       ),
-      body: _isMigrating
+      body: isLoading
           ? _migrationLoader(colors, t)
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
@@ -172,8 +222,10 @@ class _MesGainsPageState extends State<MesGainsPage> {
                 children: [
                   _statsCard(user, colors, t),
                   const SizedBox(height: 16),
-                  _encaissCard(user, colors, t),
-                  const SizedBox(height: 16),
+                  if (!widget.isAdminView) ...[
+                    _encaissCard(user, colors, t),
+                    const SizedBox(height: 16),
+                  ],
                   _monthlyCard(user, colors, t),
                   const SizedBox(height: 16),
                   _historyCard(colors, t),
@@ -210,8 +262,8 @@ class _MesGainsPageState extends State<MesGainsPage> {
   // ── Carte statistiques ────────────────────────────────────
   Widget _statsCard(UserData user, AppColors colors, AppLocalizations t) {
     final totalViews = user.totalPostUniqueViews ?? 0;
-    final available  = user.postViewsAvailable   ?? 0;
     final cashed     = user.postViewsTotalCashed  ?? 0;
+    final available  = ((totalViews * _fcfaPerView) - cashed).clamp(0.0, double.infinity);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -242,7 +294,7 @@ class _MesGainsPageState extends State<MesGainsPage> {
           const SizedBox(height: 12),
           Row(children: [
             Expanded(child: _statChip(t.gainsAvailable, '${available.toInt()} FCFA', Icons.account_balance_wallet_outlined, colors.accent, colors,
-                subtitle: '${(available / _fcfaPerView).toInt()} vues')),
+                subtitle: '$totalViews vues')),
             const SizedBox(width: 12),
             Expanded(child: _statChip(t.gainsTotalCashed, '${cashed.toInt()} FCFA', Icons.check_circle_outline, colors.primary, colors)),
           ]),
@@ -376,21 +428,30 @@ class _MesGainsPageState extends State<MesGainsPage> {
   // ── Historique mensuel ────────────────────────────────────
   Widget _monthlyCard(UserData user, AppColors colors, AppLocalizations t) {
     final monthly = user.postViewsMonthly ?? {};
-    if (monthly.isEmpty) return const SizedBox.shrink();
+    // Fusionner les clés : postViewsMonthly + postViewsMonthlyPostIds (source fiable)
+    final allKeys = <String>{...monthly.keys, ..._monthlyPostIds.keys};
+    if (allKeys.isEmpty) return const SizedBox.shrink();
 
     final now = DateTime.now();
     final currentYear = now.year;
 
-    final sorted = monthly.entries.where((e) {
+    // Construire une map fusionnée : clé → nombre de vues
+    // On prend le max entre la valeur stockée et le nombre de posts IDs du mois
+    final merged = <String, int>{};
+    for (final key in allKeys) {
       try {
-        final p = e.key.split('-');
-        final year = int.parse(p[0]);
-        return year >= 2020 && year <= currentYear + 1;
-      } catch (_) { return false; }
-    }).toList()
-      ..sort((a, b) => b.key.compareTo(a.key));
+        final year = int.parse(key.split('-').first);
+        if (year < 2020 || year > currentYear + 1) continue;
+      } catch (_) { continue; }
+      final stored = monthly[key] ?? 0;
+      final idCount = _monthlyPostIds[key]?.length ?? 0;
+      merged[key] = stored > 0 ? stored : idCount;
+    }
 
-    if (sorted.isEmpty) return const SizedBox.shrink();
+    if (merged.isEmpty) return const SizedBox.shrink();
+
+    final sorted = merged.entries.toList()
+      ..sort((a, b) => b.key.compareTo(a.key));
 
     const int defaultVisible = 3;
     final visible = _showAllMonths ? sorted : sorted.take(defaultVisible).toList();
@@ -414,7 +475,7 @@ class _MesGainsPageState extends State<MesGainsPage> {
           ]),
           const SizedBox(height: 12),
           ...visible.map((e) {
-            final views = (e.value as num).toInt();
+            final views = e.value;
             final fcfa  = (views * _fcfaPerView).toInt();
             return GestureDetector(
               onTap: () => _showMonthPostsBottomSheet(widget.userId, e.key),
@@ -615,6 +676,7 @@ class _MonthPostsSheetState extends State<_MonthPostsSheet> {
 
   List<String> _allPostIds = [];
   int _idOffset = 0;
+  Map<String, int> _perPostViews = {};
 
   @override
   void initState() {
@@ -624,7 +686,13 @@ class _MonthPostsSheetState extends State<_MonthPostsSheet> {
 
   Future<void> _loadInitial() async {
     final userDoc = await widget.firestore.collection('Users').doc(widget.userId).get();
-    final monthlyIds = (userDoc.data()?['postViewsMonthlyPostIds'] as Map<String, dynamic>?) ?? {};
+    final data = userDoc.data() ?? {};
+
+    // Vues par post (source de vérité pour l'affichage)
+    final rawPerPost = data['postViewsPerPost'] as Map<String, dynamic>?;
+    _perPostViews = rawPerPost?.map((k, v) => MapEntry(k, (v as num).toInt())) ?? {};
+
+    final monthlyIds = (data['postViewsMonthlyPostIds'] as Map<String, dynamic>?) ?? {};
     final rawIds = monthlyIds[widget.monthKey];
     _allPostIds = rawIds is List ? List<String>.from(rawIds.whereType<String>()) : [];
 
@@ -642,10 +710,6 @@ class _MonthPostsSheetState extends State<_MonthPostsSheet> {
     final batch = _allPostIds.sublist(_idOffset, end);
     if (batch.isEmpty) { _hasMore = false; return; }
 
-    final parts = widget.monthKey.split('-');
-    final year  = int.parse(parts[0]);
-    final month = int.parse(parts[1]);
-
     final newPosts = <Post>[];
     for (int i = 0; i < batch.length; i += 30) {
       final sub = batch.sublist(i, (i + 30).clamp(0, batch.length));
@@ -659,27 +723,17 @@ class _MonthPostsSheetState extends State<_MonthPostsSheet> {
         return Post.fromJson(data);
       }).where((p) {
         if (p.isAdvertisement == true) return false;
-        // Filtre vues > 1
-        if ((p.seenByUsersCount ?? 0) < 1 && (p.uniqueViewsCount ?? 0) < 1) return false;
-        // Verification supplementaire : le post doit appartenir au mois selectionne
-        final dt = _parseDate(p.createdAt);
-        if (dt == null) return true; // si pas de date, on garde
-        return dt.year == year && dt.month == month;
+        return true;
       }));
     }
 
     _posts.addAll(newPosts);
-    _posts.sort((a, b) => (b.seenByUsersCount ?? 0).compareTo(a.seenByUsersCount ?? 0));
+    _posts.sort((a, b) => _viewsOf(b).compareTo(_viewsOf(a)));
     _idOffset = end;
     _hasMore = _idOffset < _allPostIds.length;
   }
 
   Future<void> _loadFallback() async {
-    final parts = widget.monthKey.split('-');
-    final year  = int.parse(parts[0]);
-    final month = int.parse(parts[1]);
-
-    // Charger plus de posts pour compenser le filtrage en memoire
     final snap = await widget.firestore
         .collection('Posts')
         .where('user_id', isEqualTo: widget.userId)
@@ -694,18 +748,17 @@ class _MonthPostsSheetState extends State<_MonthPostsSheet> {
       return Post.fromJson(data);
     }).where((p) {
       if (p.isAdvertisement == true) return false;
-      // Vues > 1
-      if ((p.seenByUsersCount ?? 0) < 1 && (p.uniqueViewsCount ?? 0) < 1) return false;
-      // Filtre par mois selectionne
-      final dt = _parseDate(p.createdAt);
-      if (dt == null) return false;
-      return dt.year == year && dt.month == month;
+      return _viewsOf(p) >= 1;
     }).toList()
-      ..sort((a, b) => (b.seenByUsersCount ?? 0).compareTo(a.seenByUsersCount ?? 0));
+      ..sort((a, b) => _viewsOf(b).compareTo(_viewsOf(a)));
 
     _posts.addAll(loaded);
     _hasMore = false;
   }
+
+  // Vues réelles d'un post : priorité postViewsPerPost du user > champs post
+  int _viewsOf(Post p) =>
+      _perPostViews[p.id] ?? p.users_vue_id!.length ?? p.vues ?? 0;
 
   Future<void> _loadMore() async {
     if (_isLoadingMore || !_hasMore) return;
@@ -816,7 +869,7 @@ class _MonthPostsSheetState extends State<_MonthPostsSheet> {
     final thumb = (post.thumbnail?.isNotEmpty == true)
         ? post.thumbnail
         : (post.images?.isNotEmpty == true ? post.images!.first : null);
-    final views = post.seenByUsersCount ?? 0;
+    final views = _viewsOf(post);
     final desc = post.description?.trim() ?? '';
 
     return GestureDetector(

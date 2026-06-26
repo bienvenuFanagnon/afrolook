@@ -393,8 +393,8 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
       // Configuration des données utilisateur
       authProvider.registerUser
         ..role = UserRole.USER.name!
-        ..updatedAt = DateTime.now().microsecondsSinceEpoch
-        ..createdAt = DateTime.now().microsecondsSinceEpoch;
+        ..updatedAt = DateTime.now().millisecondsSinceEpoch
+        ..createdAt = DateTime.now().millisecondsSinceEpoch;
 
       // Upload de l'image
       String imageUrl = await _uploadImage();

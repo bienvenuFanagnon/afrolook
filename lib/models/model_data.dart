@@ -1146,11 +1146,10 @@ class UserData {
     isVerify = json['isVerify'] ?? false;
 
     password = json['password']?.toString() ?? '';
-    role = json['role']?.toString() ?? '';
-    // createdAt = json['createdAt'];
-    // updatedAt = json['updatedAt'];
+    role = json['role']?.toString();
     createdAt = parseTimestamp(json['createdAt']);
     updatedAt = parseTimestamp(json['updatedAt']);
+    last_time_active = parseTimestamp(json['last_time_active']);
     userGlobalTags = (json['userGlobalTags'] as List<dynamic>?)
         ?.map((e) => int.tryParse(e.toString()) ?? 0)
         .toList() ?? [];
@@ -1292,16 +1291,21 @@ class UserData {
     // data['totalGiftCoinsSpent'] = totalGiftCoinsSpent;
     // data['totalGiftCoinsConverted'] = totalGiftCoinsConverted;
 
-    // Ajouter les autres champs déjà présents comme vu plus haut...
+    data['createdAt'] = createdAt;
+    data['updatedAt'] = updatedAt;
+    data['role'] = role;
     return data;
   }
   int? parseTimestamp(dynamic value) {
     if (value == null) return null;
 
-    if (value is int) return value;
+    if (value is int) {
+      // Valeur > ~year 2286 en ms → probablement en microsecondes, convertir
+      return value > 9999999999999 ? value ~/ 1000 : value;
+    }
 
     if (value is Timestamp) {
-      return value.microsecondsSinceEpoch;
+      return value.millisecondsSinceEpoch;
     }
 
     return null;

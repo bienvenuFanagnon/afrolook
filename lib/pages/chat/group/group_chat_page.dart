@@ -53,6 +53,9 @@ class _GroupChatPageState extends State<GroupChatPage> {
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
 
+  bool _initialScrollDone = false;
+  bool _isSelectionMode = false;
+  final Set<String> _selectedMsgIds = {};
   bool _isFrozen = false;
   bool _isSending = false;
   bool _isPaymentProcessing = false;
@@ -743,11 +746,17 @@ class _GroupChatPageState extends State<GroupChatPage> {
             // Filtrer les messages invisibles — visibles seulement par l'expéditeur
             .where((d) => GroupPermissionUtils.isMessageVisibleTo(d, myId))
             .toList();
+        final isFirst = !_initialScrollDone;
         setState(() {
           _messages = msgs;
           _isLoadingMessages = false;
+          _initialScrollDone = true;
         });
-        _scrollToBottom();
+        if (isFirst) {
+          _scrollToBottomInitial();
+        } else {
+          _scrollToBottomIfNearEnd();
+        }
         _markMessagesRead();
         // Charger les badges des expéditeurs
         final senderIds = msgs
@@ -759,16 +768,41 @@ class _GroupChatPageState extends State<GroupChatPage> {
     });
   }
 
-  void _scrollToBottom() {
+  // Premier chargement : double postFrame pour attendre le layout complet
+  void _scrollToBottomInitial() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+        }
+      });
+    });
+  }
+
+  // Nouveau message : scroll auto seulement si déjà en bas (< 150px de la fin)
+  void _scrollToBottomIfNearEnd() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollController.hasClients) return;
+      final pos = _scrollController.position;
+      final nearEnd = pos.maxScrollExtent - pos.pixels < 150;
+      if (nearEnd) {
         _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
+          pos.maxScrollExtent,
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOut,
         );
       }
     });
+  }
+
+  // Bouton AppBar : force le scroll en bas
+  void _scrollToBottom() {
+    if (!_scrollController.hasClients) return;
+    _scrollController.animateTo(
+      _scrollController.position.maxScrollExtent,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
   }
 
   // ─── ENVOI ───────────────────────────────────────────────────────────────────
@@ -1213,6 +1247,78 @@ class _GroupChatPageState extends State<GroupChatPage> {
     } catch (_) {}
   }
 
+  void _toggleMessageSelection(String msgId) {
+    if (msgId.isEmpty) return;
+    setState(() {
+      if (_selectedMsgIds.contains(msgId)) {
+        _selectedMsgIds.remove(msgId);
+        if (_selectedMsgIds.isEmpty) _isSelectionMode = false;
+      } else {
+        _selectedMsgIds.add(msgId);
+      }
+    });
+  }
+
+  void _exitSelectionMode() {
+    setState(() {
+      _isSelectionMode = false;
+      _selectedMsgIds.clear();
+    });
+  }
+
+  Future<void> _deleteSelectedMessages() async {
+    if (_selectedMsgIds.isEmpty) return;
+    final count = _selectedMsgIds.length;
+    final confirmed = await _showConfirmDialog(
+      'Suppression définitive',
+      'Supprimer définitivement $count message${count > 1 ? 's' : ''} ?\nAucune trace pour les membres.',
+    );
+    if (!confirmed) return;
+
+    try {
+      final ids = List<String>.from(_selectedMsgIds);
+      // Firestore batch : max 500 ops, on découpe si besoin
+      for (int i = 0; i < ids.length; i += 400) {
+        final chunk = ids.sublist(i, (i + 400).clamp(0, ids.length));
+        final batch = _firestore.batch();
+        for (final id in chunk) {
+          batch.delete(_firestore.collection('GroupMessages').doc(id));
+        }
+        await batch.commit();
+      }
+      _exitSelectionMode();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur : $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Future<void> _permanentDeleteMessage(Map<String, dynamic> msg) async {
+    final confirmed = await _showConfirmDialog(
+      'Suppression définitive',
+      'Ce message sera effacé définitivement pour tous les membres, sans aucune trace.',
+    );
+    if (!confirmed) return;
+
+    final msgId = msg['id'] as String?;
+    if (msgId == null) return;
+
+    try {
+      await _firestore.collection('GroupMessages').doc(msgId).delete();
+
+      // Mettre à jour last_message si c'était le dernier
+      final lastMsg = _groupData['last_message'] as String?;
+      if (lastMsg == msg['message']) {
+        await _firestore.collection('GroupChats').doc(widget.groupId).update({
+          'last_message': '',
+        });
+      }
+    } catch (_) {}
+  }
+
   // ─── UNREAD COUNTS (chunked pour groupes avec 500+ membres) ──────────────────
 
   void _updateUnreadCounts(List<String> memberIds) {
@@ -1461,6 +1567,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (ctx) => Container(
         margin: const EdgeInsets.fromLTRB(12, 0, 12, 16),
         decoration: BoxDecoration(
@@ -1469,9 +1576,14 @@ class _GroupChatPageState extends State<GroupChatPage> {
           border: Border.all(color: _colors.border.withOpacity(0.3)),
         ),
         child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(ctx).size.height * 0.75,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
               Container(
                 margin: const EdgeInsets.symmetric(vertical: 10),
                 width: 36,
@@ -1587,8 +1699,22 @@ class _GroupChatPageState extends State<GroupChatPage> {
                     _deleteMessage(msg);
                   },
                 ),
+              if (_isAppAdmin) ...[
+                const Divider(height: 1, indent: 16, endIndent: 16),
+                ListTile(
+                  leading: const Icon(Icons.delete_forever_rounded, color: Colors.red),
+                  title: const Text('Supprimer définitivement', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Aucune trace — admin seulement', style: TextStyle(fontSize: 11, color: Colors.red)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _permanentDeleteMessage(msg);
+                  },
+                ),
+              ],
               const SizedBox(height: 8),
-            ],
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -2052,7 +2178,12 @@ class _GroupChatPageState extends State<GroupChatPage> {
     _colors = AppColors.of(context);
     final myId = _auth.loginUserData.id!;
 
-    return Scaffold(
+    return PopScope(
+      canPop: !_isSelectionMode,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && _isSelectionMode) _exitSelectionMode();
+      },
+      child: Scaffold(
       backgroundColor: _colors.background,
       appBar: _buildAppBar(),
       body: Column(
@@ -2087,12 +2218,43 @@ class _GroupChatPageState extends State<GroupChatPage> {
           ],
         ],
       ),
-    );
+      ),  // Scaffold
+    );    // PopScope
   }
 
   // ─── APPBAR ──────────────────────────────────────────────────────────────────
 
   AppBar _buildAppBar() {
+    // ── Mode sélection multiple (admin) ──────────────────────────────────────
+    if (_isSelectionMode && _isAppAdmin) {
+      final count = _selectedMsgIds.length;
+      return AppBar(
+        backgroundColor: _colors.primary.withOpacity(0.12),
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.close_rounded, color: _colors.textPrimary),
+          onPressed: _exitSelectionMode,
+          tooltip: 'Annuler la sélection',
+        ),
+        title: Text(
+          count == 0
+              ? 'Sélectionner des messages'
+              : '$count message${count > 1 ? 's' : ''} sélectionné${count > 1 ? 's' : ''}',
+          style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        actions: [
+          if (count > 0)
+            IconButton(
+              tooltip: 'Supprimer définitivement',
+              icon: const Icon(Icons.delete_forever_rounded, color: Colors.red, size: 26),
+              onPressed: _deleteSelectedMessages,
+            ),
+          const SizedBox(width: 4),
+        ],
+      );
+    }
+
     final imageUrl = _groupData['image_url'] as String? ?? widget.groupImageUrl;
     final memberCount = _groupData['member_count'] as int?;
     final isOfficial = _groupData['is_official'] == true;
@@ -2191,6 +2353,11 @@ class _GroupChatPageState extends State<GroupChatPage> {
             ),
             onPressed: _toggleMute,
           ),
+        IconButton(
+          tooltip: 'Aller au dernier message',
+          icon: Icon(Icons.keyboard_double_arrow_down_rounded, color: _colors.primary, size: 22),
+          onPressed: _scrollToBottom,
+        ),
         IconButton(
           icon: Icon(Icons.info_outline_rounded, color: _colors.primary, size: 22),
           onPressed: () => Navigator.push(
@@ -2466,20 +2633,57 @@ class _GroupChatPageState extends State<GroupChatPage> {
     final hasReactions = reactions.values.any((list) => list.isNotEmpty);
     final msgId = msg['id'] as String? ?? '';
 
+    final isSelected = _isSelectionMode && _selectedMsgIds.contains(msgId);
+
     return GestureDetector(
-      onLongPress: isDeleted ? null : () => _showMessageOptions(msg, isMe),
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: isMe ? 60 : 8,
-          right: isMe ? 8 : 60,
-          top: 3,
-          bottom: hasReactions ? 6 : 3,
-        ),
-        child: Row(
-          mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            if (!isMe) ...[
+      behavior: HitTestBehavior.opaque,
+      onTap: (_isSelectionMode && _isAppAdmin)
+          ? () => _toggleMessageSelection(msgId)
+          : null,
+      onLongPress: _isSelectionMode
+          ? null
+          : _isAppAdmin
+              ? () {
+                  HapticFeedback.mediumImpact();
+                  setState(() {
+                    _isSelectionMode = true;
+                    _selectedMsgIds.add(msgId);
+                  });
+                }
+              : (isDeleted ? null : () => _showMessageOptions(msg, isMe)),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        color: isSelected ? _colors.primary.withOpacity(0.15) : Colors.transparent,
+        child: Padding(
+          padding: EdgeInsets.only(
+            left: (_isSelectionMode && _isAppAdmin) ? 4 : (isMe ? 60 : 8),
+            right: isMe ? 8 : 60,
+            top: 3,
+            bottom: hasReactions ? 6 : 3,
+          ),
+          child: Row(
+            mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+            // Checkbox sélection (admin, mode sélection)
+            if (_isSelectionMode && _isAppAdmin)
+              Padding(
+                padding: const EdgeInsets.only(right: 6, bottom: 4),
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: Checkbox(
+                    value: isSelected,
+                    onChanged: (_) => _toggleMessageSelection(msgId),
+                    activeColor: _colors.primary,
+                    shape: const CircleBorder(),
+                    side: BorderSide(color: _colors.border, width: 1.5),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              ),
+            if (!isMe && !(_isSelectionMode && _isAppAdmin)) ...[
               GestureDetector(
                 onTap: () => _showSenderProfile(msg['send_by'] as String? ?? ''),
                 child: Stack(
@@ -2696,6 +2900,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
           ],
         ),
       ),
+    ),  // AnimatedContainer
     );
   }
 

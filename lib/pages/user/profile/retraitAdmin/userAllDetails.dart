@@ -615,7 +615,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
           ElevatedButton.icon(
             onPressed: () {
               // Navigation vers la page des transactions de l'utilisateur
-              Navigator.push(context, MaterialPageRoute(builder: (context) => MesGainsPage(userId: widget.userId!,)));
+              Navigator.push(context, MaterialPageRoute(builder: (context) => MesGainsPage(userId: widget.userId!, isAdminView: true)));
 
             },
             style: ElevatedButton.styleFrom(
@@ -730,7 +730,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
           _buildDetailItem('Genre', _userData!.genre ?? 'Non renseigné'),
           _buildDetailItem('Adresse', _userData!.adresse ?? 'Non renseignée'),
           _buildDetailItem('Code parrainage', _userData!.codeParrainage ?? 'Aucun'),
-          _buildDetailItem('Rôle', _userData!.role ?? 'Utilisateur'),
+          _buildDetailItem('Rôle', (_userData!.role?.isNotEmpty == true ? _userData!.role! : 'Utilisateur')),
           _buildDetailItem('Date création', _formatDate(_userData!.createdAt ?? 0)),
           _buildDetailItem('Dernière activité', _formatDate(_userData!.last_time_active ?? 0)),
           SizedBox(height: 12),

@@ -1424,7 +1424,7 @@ class AppLocalizations {
   String get gainsStats => _t({'fr': 'Vos statistiques', 'en': 'Your statistics', 'es': 'Tus estadísticas', 'de': 'Ihre Statistiken', 'ar': 'إحصائياتك', 'pt': 'As suas estatísticas', 'zh': '您的统计数据', 'sw': 'Takwimu zako'});
   String get gainsTotalViews => _t({'fr': 'Total vues', 'en': 'Total views', 'es': 'Total vistas', 'de': 'Aufrufe gesamt', 'ar': 'إجمالي المشاهدات', 'pt': 'Total de visualizações', 'zh': '总观看次数', 'sw': 'Jumla ya maoni'});
   String get gainsPerView => _t({'fr': 'Taux (100 vues)', 'en': 'Rate (100 views)', 'es': 'Tasa (100 vistas)', 'de': 'Rate (100 Aufrufe)', 'ar': 'المعدل (100 مشاهدة)', 'pt': 'Taxa (100 vistas)', 'zh': '费率 (100次观看)', 'sw': 'Kiwango (maoni 100)'});
-  String get gainsPerViewRate => _t({'fr': '200 FCFA', 'en': '200 FCFA', 'es': '200 FCFA', 'de': '200 FCFA', 'ar': '200 فرنك', 'pt': '200 FCFA', 'zh': '200 FCFA', 'sw': 'FCFA 200'});
+  String get gainsPerViewRate => _t({'fr': '100 FCFA', 'en': '100 FCFA', 'es': '100 FCFA', 'de': '100 FCFA', 'ar': '100 فرنك', 'pt': '100 FCFA', 'zh': '100 FCFA', 'sw': 'FCFA 100'});
   String get gainsAvailable => _t({'fr': 'Disponible', 'en': 'Available', 'es': 'Disponible', 'de': 'Verfügbar', 'ar': 'متاح', 'pt': 'Disponível', 'zh': '可提现', 'sw': 'Inapatikana'});
   String get gainsTotalCashed => _t({'fr': 'Déjà encaissé', 'en': 'Already cashed out', 'es': 'Ya cobrado', 'de': 'Bereits ausgezahlt', 'ar': 'تم صرفه بالفعل', 'pt': 'Já levantado', 'zh': '已提现', 'sw': 'Tayari kulipiwa'});
   String get gainsEncaissTitle => _t({'fr': 'Encaisser vos gains', 'en': 'Cash out your earnings', 'es': 'Cobrar tus ganancias', 'de': 'Einnahmen auszahlen', 'ar': 'صرف أرباحك', 'pt': 'Levantar os seus ganhos', 'zh': '提现收益', 'sw': 'Toa mapato yako'});

@@ -2,6 +2,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:path_provider/path_provider.dart';
@@ -1464,6 +1465,19 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
               builder: (context) => DetailsPost(post: widget.post),
             ),
           ),
+          onLongPress: () {
+            final desc = fullText;
+            if (desc.isEmpty) return;
+            Clipboard.setData(ClipboardData(text: desc));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Description copiée'),
+                duration: const Duration(seconds: 2),
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            );
+          },
           child: HashTagText(
             text: displayedText,
             decoratedStyle: TextStyle(
@@ -1513,7 +1527,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   ),
                 ),
               ),
-              _buildSupportButton(true),
+              // _buildSupportButton(true),
               // SizedBox(width: 3,),
               //
               // buildTotalVues(
@@ -1527,7 +1541,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              _buildSupportButton(true),
+              // _buildSupportButton(true),
               // SizedBox(width: 3,),
               //
               // buildTotalVues(

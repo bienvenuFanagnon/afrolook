@@ -4529,23 +4529,37 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Utilisation de Linkify pour les liens et HashTagText pour les hashtags
-        Linkify(
-          onOpen: (link) async {
-            if (!await launchUrl(Uri.parse(link.url))) {
-              throw Exception('Could not launch ${link.url}');
-            }
+        GestureDetector(
+          onLongPress: () {
+            if (text.isEmpty) return;
+            Clipboard.setData(ClipboardData(text: text));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Description copiée'),
+                duration: const Duration(seconds: 2),
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            );
           },
-          text: displayedText,
-          style: TextStyle(
-            color: isLocked ? _colors.textSecondary : _colors.textPrimary,
-            fontSize: 14,
-            height: 1.4,
+          child: Linkify(
+            onOpen: (link) async {
+              if (!await launchUrl(Uri.parse(link.url))) {
+                throw Exception('Could not launch ${link.url}');
+              }
+            },
+            text: displayedText,
+            style: TextStyle(
+              color: isLocked ? _colors.textSecondary : _colors.textPrimary,
+              fontSize: 14,
+              height: 1.4,
+            ),
+            linkStyle: TextStyle(
+              color: _colors.info,
+              fontWeight: FontWeight.w500,
+            ),
+            options: LinkifyOptions(humanize: false),
           ),
-          linkStyle: TextStyle(
-            color: _colors.info,
-            fontWeight: FontWeight.w500,
-          ),
-          options: LinkifyOptions(humanize: false),
         ),
         if (isLong && !isLocked)
           Row(
