@@ -1552,6 +1552,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
   void _showMessageOptions(Map<String, dynamic> msg, bool isMe) {
     final isDeleted = msg['is_deleted'] == true;
     final canDelete = isMe || _hasPermission('can_delete_others');
+    final msgId = msg['id'] as String? ?? '';
     final myId = _auth.loginUserData.id ?? '';
     final sendBy = msg['send_by'] as String? ?? '';
     final isSender = sendBy == myId;
@@ -1701,6 +1702,18 @@ class _GroupChatPageState extends State<GroupChatPage> {
                 ),
               if (_isAppAdmin) ...[
                 const Divider(height: 1, indent: 16, endIndent: 16),
+                ListTile(
+                  leading: Icon(Icons.checklist_rounded, color: _colors.primary),
+                  title: Text('Sélection multiple', style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w600)),
+                  subtitle: const Text('Sélectionner plusieurs messages à supprimer', style: TextStyle(fontSize: 11)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    setState(() {
+                      _isSelectionMode = true;
+                      if (msgId.isNotEmpty) _selectedMsgIds.add(msgId);
+                    });
+                  },
+                ),
                 ListTile(
                   leading: const Icon(Icons.delete_forever_rounded, color: Colors.red),
                   title: const Text('Supprimer définitivement', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
@@ -2641,16 +2654,10 @@ class _GroupChatPageState extends State<GroupChatPage> {
           ? () => _toggleMessageSelection(msgId)
           : null,
       onLongPress: _isSelectionMode
-          ? null
-          : _isAppAdmin
-              ? () {
-                  HapticFeedback.mediumImpact();
-                  setState(() {
-                    _isSelectionMode = true;
-                    _selectedMsgIds.add(msgId);
-                  });
-                }
-              : (isDeleted ? null : () => _showMessageOptions(msg, isMe)),
+          ? () => _toggleMessageSelection(msgId)
+          : (isDeleted && !_isAppAdmin)
+              ? null
+              : () => _showMessageOptions(msg, isMe),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         color: isSelected ? _colors.primary.withOpacity(0.15) : Colors.transparent,
