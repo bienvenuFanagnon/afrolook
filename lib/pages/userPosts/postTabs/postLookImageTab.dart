@@ -304,19 +304,21 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
       return;
     }
 
-    // Vérification serveur : cooldown 5 min universel (anti-fraude)
-    final cooldown = await PostCooldownService.check();
-    if (!cooldown.canPost) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(
-            '⏳ Attendez ${PostCooldownService.formatRemaining(cooldown.remainingSeconds)} avant de publier à nouveau.',
-            textAlign: TextAlign.center,
-          ),
-          duration: const Duration(seconds: 4),
-        ));
+    // Vérification serveur uniquement pour les non-admin (admin = pas de cooldown)
+    if (authProvider.loginUserData.role != UserRole.ADM.name && _canPost) {
+      final cooldown = await PostCooldownService.check();
+      if (!cooldown.canPost) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+              '⏳ Attendez ${PostCooldownService.formatRemaining(cooldown.remainingSeconds)} avant de publier à nouveau.',
+              textAlign: TextAlign.center,
+            ),
+            duration: const Duration(seconds: 4),
+          ));
+        }
+        return;
       }
-      return;
     }
 
     try {

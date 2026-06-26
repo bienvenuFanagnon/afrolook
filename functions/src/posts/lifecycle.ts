@@ -4,6 +4,59 @@ import { FieldValue } from "firebase-admin/firestore";
 import { db } from "../shared/firebase";
 
 /**
+ * Firestore trigger : quand un post est créé, incrémente newPostsByCreator
+ * sur le document de chaque abonné du créateur.
+ * Traitement identique à l'envoi des notifications — continue même si
+ * l'utilisateur quitte l'app.
+ */
+export const updateFollowersNewPostCount = onDocumentCreated(
+  "Posts/{postId}",
+  async (event) => {
+    const post = event.data?.data();
+    if (!post) return;
+
+    const creatorId = post.user_id as string | undefined;
+    if (!creatorId) return;
+
+    // Seuls les posts "normaux" incrémentent le compteur
+    const allowedTypes = ["POST", "CHRONIQUE", "CHALLENGE", "CHALLENGEPARTICIPATION"];
+    if (!allowedTypes.includes(post.type)) return;
+
+    // Récupère la liste des abonnés du créateur
+    const creatorDoc = await db.collection("Users").doc(creatorId).get();
+    if (!creatorDoc.exists) return;
+
+    const followerIds: string[] = creatorDoc.data()?.userAbonnesIds ?? [];
+    if (followerIds.length === 0) return;
+
+    console.log(`Post ${event.params.postId} de ${creatorId} — mise à jour de ${followerIds.length} abonnés`);
+
+    // Firestore batch : max 500 opérations par batch.
+    // On utilise set+merge au lieu de update pour éviter un plantage si un
+    // document abonné n'existe plus (compte supprimé, ID orphelin, etc.).
+    // Chaque lot est dans son propre try-catch : un lot raté ne relance pas
+    // la fonction entière (ce qui causerait du double-comptage).
+    const BATCH_SIZE = 400;
+    for (let i = 0; i < followerIds.length; i += BATCH_SIZE) {
+      const chunk = followerIds.slice(i, i + BATCH_SIZE);
+      const batch = db.batch();
+      for (const followerId of chunk) {
+        const ref = db.collection("Users").doc(followerId);
+        batch.set(ref, {
+          newPostsByCreator: { [creatorId]: FieldValue.increment(1) },
+        }, { merge: true });
+      }
+      try {
+        await batch.commit();
+        console.log(`Lot ${Math.floor(i / BATCH_SIZE) + 1} commité (${chunk.length} abonnés)`);
+      } catch (err) {
+        console.error(`Lot ${Math.floor(i / BATCH_SIZE) + 1} échoué :`, err);
+      }
+    }
+  }
+);
+
+/**
  * Firestore trigger : détecte les nouveaux posts en statut PENDING
  * et les valide ou invalide selon une validation basique.
  */

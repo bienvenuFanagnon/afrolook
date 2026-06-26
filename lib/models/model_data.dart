@@ -867,6 +867,7 @@ class UserData {
   List<int>? userGlobalTags;
   List<UserAbonnes>? userAbonnes = [];
   List<String>? userAbonnesIds = [];
+  List<String>? followingIds = []; // créateurs que CET utilisateur suit (abonnements)
   List<String>? usersParrainer = [];
   List<String>? friendsIds = [];
   List<Friends>? friends = [];
@@ -934,6 +935,10 @@ class UserData {
   double? postViewsTotalCashed = 0.0;     // Total déjà encaissé (historique)
   Map<String, int>? postViewsMonthly = {}; // {"2026-06": 1500, ...} — affichage uniquement
   bool? postViewsMigrationDone = false;   // Flag migration one-time
+
+  // Posts non vus par créateur — mis à jour par Cloud Function à chaque post
+  // {"creatorId": 3, ...} — remis à zéro quand l'user ouvre la page du créateur
+  Map<String, int>? newPostsByCreator = {};
 
   // ── Compte officiel ───────────────────────────────────────────────────────
   String? officialAccountType;             // OfficialAccountCategory.id (null = non officiel)
@@ -1016,6 +1021,7 @@ class UserData {
     this.state = "OFFLINE",
     this.viewedVideos = const [],
     this.userAbonnesIds = const [],
+    this.followingIds = const [],
     this.newPostsFromSubscriptions = const [],
     this.viewedPostIds = const [],
     this.lastFeedUpdate = 0,
@@ -1158,6 +1164,10 @@ class UserData {
         ?.map((v) => v.toString())
         .toList() ?? [];
 
+    followingIds = (json['followingIds'] as List<dynamic>?)
+        ?.map((v) => v.toString())
+        .toList() ?? [];
+
     usersParrainer = (json['usersParrainer'] as List<dynamic>?)
         ?.map((v) => v.toString())
         .toList() ?? [];
@@ -1232,6 +1242,8 @@ class UserData {
     postViewsMonthly = (json['postViewsMonthly'] as Map<String, dynamic>?)
         ?.map((k, v) => MapEntry(k, (v as num).toInt())) ?? {};
     postViewsMigrationDone = json['postViewsMigrationDone'] ?? false;
+    newPostsByCreator = (json['newPostsByCreator'] as Map<String, dynamic>?)
+        ?.map((k, v) => MapEntry(k, (v as num).toInt())) ?? {};
 
     officialAccountType = json['officialAccountType'] as String?;
     officialAccountStatus = json['officialAccountStatus'] as String?;

@@ -2276,6 +2276,17 @@ if(actionType == 'comment'){
 
                   // await userProvider.getUsers(loginUserData!.id!);
                   loginUserData.userAbonnes!.add(userAbonne);
+                  // Mettre à jour followingIds sur le document de l'utilisateur courant
+                  await FirebaseFirestore.instance
+                      .collection('Users')
+                      .doc(loginUserData.id)
+                      .update({
+                    'followingIds': FieldValue.arrayUnion([updateUserData.id!]),
+                  });
+                  loginUserData.followingIds ??= [];
+                  if (!loginUserData.followingIds!.contains(updateUserData.id!)) {
+                    loginUserData.followingIds!.add(updateUserData.id!);
+                  }
                   await getCurrentUser(loginUserData!.id!);
 
                   // users.first.abonnes=users.first.abonnes!+1;
@@ -2402,17 +2413,30 @@ if(actionType == 'comment'){
       }
 
       // Mise à jour atomique dans Firestore
-      await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(updateUserData.id)
-          .update({
-        'userAbonnesIds': FieldValue.arrayUnion([currentUserId]),
-        'abonnes': FieldValue.increment(1),
-        // 'updatedAt': DateTime.now().microsecondsSinceEpoch,
-      });
+      await Future.wait([
+        // Doc du créateur : +1 abonné
+        FirebaseFirestore.instance
+            .collection('Users')
+            .doc(updateUserData.id)
+            .update({
+          'userAbonnesIds': FieldValue.arrayUnion([currentUserId]),
+          'abonnes': FieldValue.increment(1),
+        }),
+        // Doc de l'utilisateur courant : +1 following
+        FirebaseFirestore.instance
+            .collection('Users')
+            .doc(currentUserId)
+            .update({
+          'followingIds': FieldValue.arrayUnion([updateUserData.id!]),
+        }),
+      ]);
 
       // Mise à jour locale
       loginUserData.userAbonnes!.add(userAbonne);
+      loginUserData.followingIds ??= [];
+      if (!loginUserData.followingIds!.contains(updateUserData.id!)) {
+        loginUserData.followingIds!.add(updateUserData.id!);
+      }
       updateUserData.userAbonnesIds!.add(currentUserId);
       updateUserData.abonnes = (updateUserData.abonnes ?? 0) + 1;
       addPointsForAction(UserAction.abonne);

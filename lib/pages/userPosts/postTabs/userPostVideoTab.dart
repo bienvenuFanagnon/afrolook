@@ -1513,20 +1513,22 @@ class _UserPubVideoState extends State<UserPubVideo> {
 
     setState(() => onTap = true);
 
-    // Vérification serveur : cooldown 5 min universel (anti-fraude)
-    final cooldown = await PostCooldownService.check();
-    if (!cooldown.canPost) {
-      setState(() => onTap = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(
-            '⏳ Attendez ${PostCooldownService.formatRemaining(cooldown.remainingSeconds)} avant de publier à nouveau.',
-            textAlign: TextAlign.center,
-          ),
-          duration: const Duration(seconds: 4),
-        ));
+    // Vérification serveur uniquement si utilisateur soumis au cooldown
+    if (_cooldownMinutes > 0) {
+      final cooldown = await PostCooldownService.check();
+      if (!cooldown.canPost) {
+        setState(() => onTap = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+              '⏳ Attendez ${PostCooldownService.formatRemaining(cooldown.remainingSeconds)} avant de publier à nouveau.',
+              textAlign: TextAlign.center,
+            ),
+            duration: const Duration(seconds: 4),
+          ));
+        }
+        return;
       }
-      return;
     }
 
     if (_formKey.currentState!.validate()) {

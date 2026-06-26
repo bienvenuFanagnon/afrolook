@@ -235,6 +235,10 @@ class _CanalDetailsState extends State<CanalDetails> {
       await firestore.collection('Canaux').doc(widget.canal.id).update({
         'usersSuiviId': widget.canal.usersSuiviId,
       });
+      // Supprimer du doc User (dénormalisation symétrique)
+      firestore.collection('Users').doc(userId).update({
+        'canauxSuivisIds': FieldValue.arrayRemove([widget.canal.id]),
+      }).catchError((_) {});
 
       // Mettre à jour l'état local
       setState(() {
@@ -502,6 +506,11 @@ class _CanalDetailsState extends State<CanalDetails> {
     await firestore.collection('Canaux').doc(widget.canal.id).update({
       'usersSuiviId': widget.canal.usersSuiviId,
     });
+    // Dénormalisation : stocker l'ID du canal dans le doc User pour un accès O(1)
+    // (permet d'éviter la requête Canaux.where(arrayContains) aux prochaines sessions)
+    firestore.collection('Users').doc(userId).update({
+      'canauxSuivisIds': FieldValue.arrayUnion([widget.canal.id]),
+    }).catchError((_) {});
     addPointsForAction(UserAction.abonne);
     addPointsForOtherUserAction(widget.canal.userId!, UserAction.autre);
 

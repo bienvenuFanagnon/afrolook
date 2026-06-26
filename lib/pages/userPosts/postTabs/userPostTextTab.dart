@@ -1615,20 +1615,24 @@ class _UserPubTextState extends State<UserPubText> {
     // Désactiver le bouton AVANT le premier await pour éviter double-soumission
     setState(() => onTap = true);
 
-    // Vérification serveur : cooldown 5 min universel (anti-fraude)
-    final cooldown = await PostCooldownService.check();
-    if (!cooldown.canPost) {
-      setState(() => onTap = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(
-            '⏳ Attendez ${PostCooldownService.formatRemaining(cooldown.remainingSeconds)} avant de publier à nouveau.',
-            textAlign: TextAlign.center,
-          ),
-          duration: const Duration(seconds: 4),
-        ));
+    try {
+    // Vérification serveur : uniquement pour les utilisateurs soumis au cooldown
+    // (admin/premium ont _cooldownMinutes == 0 → pas besoin de requête CF)
+    if (_cooldownMinutes > 0) {
+      final cooldown = await PostCooldownService.check();
+      if (!cooldown.canPost) {
+        setState(() => onTap = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+              '⏳ Attendez ${PostCooldownService.formatRemaining(cooldown.remainingSeconds)} avant de publier à nouveau.',
+              textAlign: TextAlign.center,
+            ),
+            duration: const Duration(seconds: 4),
+          ));
+        }
+        return;
       }
-      return;
     }
 
     if (_formKey.currentState!.validate()) {
@@ -1637,6 +1641,7 @@ class _UserPubTextState extends State<UserPubText> {
       if (textLength > _maxCharacters) {
         final isPremium = AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement);
         if (!isPremium) {
+          setState(() => onTap = false);
           _showPremiumModal();
           return;
         }
@@ -1647,6 +1652,7 @@ class _UserPubTextState extends State<UserPubText> {
       final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
 
       if (!_selectAllCountries && _selectedCountries.isEmpty) {
+        setState(() => onTap = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -1662,6 +1668,7 @@ class _UserPubTextState extends State<UserPubText> {
       // Vérifier la limite de pays pour les gratuits
       if (!isPremium && !isAdmin) {
         if (_selectedCountries.isEmpty) {
+          setState(() => onTap = false);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -1675,6 +1682,7 @@ class _UserPubTextState extends State<UserPubText> {
         }
 
         if (_selectedCountries.length > _maxCountriesForFree) {
+          setState(() => onTap = false);
           _showCountryLimitModal();
           return;
         }
@@ -1877,6 +1885,14 @@ class _UserPubTextState extends State<UserPubText> {
 
       _checkPostCooldown();
       setState(() {});
+    }
+    } catch (e) {
+      // Filet de sécurité global : toute exception non capturée réinitialise le bouton
+      printVm('❌ Erreur inattendue dans _publishPost: $e');
+      if (Navigator.canPop(context)) Navigator.pop(context);
+    } finally {
+      // Garantit que le bouton se débloque toujours, quoi qu'il arrive
+      if (mounted) setState(() => onTap = false);
     }
   }
 

@@ -251,14 +251,23 @@ class _OtherUserPageState extends State<OtherUserPage> {
       }
 
       // Mise à jour dans Firestore
-      await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(userToUnfollow.id)
-          .update({
-        'userAbonnesIds': FieldValue.arrayRemove([currentUserId]),
-        'abonnes': FieldValue.increment(-1),
-        // 'updatedAt': DateTime.now().microsecondsSinceEpoch,
-      });
+      await Future.wait([
+        // Doc du créateur : -1 abonné
+        FirebaseFirestore.instance
+            .collection('Users')
+            .doc(userToUnfollow.id)
+            .update({
+          'userAbonnesIds': FieldValue.arrayRemove([currentUserId]),
+          'abonnes': FieldValue.increment(-1),
+        }),
+        // Doc de l'utilisateur courant : retirer du following
+        FirebaseFirestore.instance
+            .collection('Users')
+            .doc(currentUserId)
+            .update({
+          'followingIds': FieldValue.arrayRemove([userToUnfollow.id!]),
+        }),
+      ]);
 
       // Supprimer la relation d'abonnement si elle existe
       final querySnapshot = await FirebaseFirestore.instance
@@ -276,6 +285,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
       authProvider.loginUserData.userAbonnes?.removeWhere(
               (abonne) => abonne.abonneUserId == userToUnfollow.id
       );
+      authProvider.loginUserData.followingIds?.remove(userToUnfollow.id);
 
       userToUnfollow.userAbonnesIds?.remove(currentUserId);
       userToUnfollow.abonnes = (userToUnfollow.abonnes ?? 1) - 1;

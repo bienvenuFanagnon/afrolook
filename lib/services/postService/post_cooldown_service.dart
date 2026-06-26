@@ -44,11 +44,11 @@ class PostCooldownService {
       return (canPost: false, remainingSeconds: localRemaining);
     }
 
-    // 2. Vérification serveur
+    // 2. Vérification serveur — timeout court pour ne pas bloquer l'UI
     try {
       final callable = FirebaseFunctions.instance
           .httpsCallable('checkPostCooldownServer');
-      final result = await callable.call();
+      final result = await callable.call().timeout(const Duration(seconds: 5));
       final data = result.data as Map<String, dynamic>;
       final canPost = data['canPost'] as bool? ?? true;
       final remaining = data['remainingSeconds'] as int? ?? 0;

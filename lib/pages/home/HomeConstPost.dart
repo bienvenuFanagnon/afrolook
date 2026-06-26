@@ -52,6 +52,12 @@ import '../../widgets/feed/sections/feed_state_widgets.dart';
 import '../../widgets/feed/sections/feed_filter_bar.dart';
 import '../../widgets/feed/sections/feed_ad_widgets.dart';
 import '../../services/feed/feed_repository.dart';
+import '../../services/feed/feed_preload_service.dart';
+import '../../services/feed/discovery_boost_service.dart';
+import '../../services/active_creators_service.dart';
+import '../user/active_creators_list_page.dart';
+import '../user/creator_unseen_posts_page.dart';
+import '../user/following_unseen_feed_page.dart';
 import 'home_boot_cache.dart';
 
 
@@ -136,8 +142,15 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   bool _hasStartedLoadCanaux = false;
 
   List<UserData> _suggestedUsers = [];
+  List<ActiveCreator> _activeCreators = [];
   bool _isLoadingSuggestedUsers = true;
   bool _hasStartedLoadSuggestedUsers = false;
+  Map<String, int> _unseenCounts = {};
+  Map<String, int> _creatorLastActivityUs = {};
+  List<String> _followedCanalIds = [];
+  List<String> _followingIds = []; // créateurs que l'utilisateur SUIT (abonnements)
+  List<ActiveCanal> _recentCanaux = [];
+  final _activeCreatorsService = ActiveCreatorsService();
   Timer? _stayTimer;
   bool _isPageVisible = true;
   bool _isSupportDialogShowing = false;
@@ -681,7 +694,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     _useBackgroundLoading = true;
     _backgroundPostsLoaded = 0;
 
-    // 0. 🔥 Affichage instantané depuis le cache local (Facebook-style) avant
+    // 0a. Pré-chargement des posts non vus en arrière-plan (startup)
+    _startFeedPreload();
+
+    // 0b. 🔥 Affichage instantané depuis le cache local (Facebook-style) avant
     // même que le réseau ait répondu - skip si rien en cache.
     final bool hasCachedPosts = await _loadFromCacheAndDisplay();
 
@@ -1651,6 +1667,52 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           break;
       }
 
+      // ── Injecter les posts non vus des following en tête de feed ──────────────
+      final preload = FeedPreloadService.instance;
+      if (preload.isReady && preload.unseenFollowingPosts.isNotEmpty) {
+        final preloadedIds = <String>{};
+        for (final p in preload.unseenFollowingPosts) {
+          if (p.id != null && !loadedIds.contains(p.id)) {
+            preloadedIds.add(p.id!);
+          }
+        }
+        final unseenToPin = preload.unseenFollowingPosts
+            .where((p) => p.id != null && preloadedIds.contains(p.id))
+            .toList();
+
+        if (unseenToPin.isNotEmpty) {
+          // Placer les non-vus en tête, dédupliquer les autres
+          final regularPosts = newPosts
+              .where((p) => p.id != null && !preloadedIds.contains(p.id))
+              .toList();
+          newPosts = [...unseenToPin, ...regularPosts];
+          loadedIds.addAll(preloadedIds);
+        }
+      }
+
+      // ── Injecter les posts "Boost Découverte" toutes les 8 posts ─────────────
+      {
+        final me = authProvider.loginUserData;
+        final followedSet = Set<String>.from(me.userAbonnesIds ?? []);
+        final userCountry = me.countryData?['countryCode']?.toString().toUpperCase();
+        final boostSvc = DiscoveryBoostService.instance;
+        final boostPosts = boostSvc
+            .getBoostPosts(
+              followedSet: followedSet,
+              currentUserId: me.id ?? '',
+              userCountry: userCountry,
+            )
+            .where((p) => p.id != null && !loadedIds.contains(p.id))
+            .toList();
+
+        if (boostPosts.isNotEmpty) {
+          newPosts = boostSvc.injectIntoFeed(newPosts, boostPosts);
+          for (final p in boostPosts) {
+            if (p.id != null) loadedIds.add(p.id!);
+          }
+        }
+      }
+
       if (_posts.isEmpty) {
         // Aucun cache : afficher directement les posts réseau
         setState(() {
@@ -2078,38 +2140,146 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   }
 
   // ===========================================================================
+  // PRÉ-CHARGEMENT DES POSTS NON VUS (STARTUP)
+  // ===========================================================================
+
+  /// Lance le préchargement des posts non vus en arrière-plan.
+  /// Résultat disponible via FeedPreloadService.instance.unseenFollowingPosts.
+  void _startFeedPreload() {
+    final me = authProvider.loginUserData;
+    if (me.id == null) return;
+    // Fire-and-forget : ne bloque pas l'initialisation
+    FeedPreloadService.instance.preload(
+      me,
+      canalIds: _followedCanalIds,
+      followingIds: _followingIds,
+    );
+  }
+
+  Future<void> _loadDiscoveryBoostInBackground() async {
+    final me = authProvider.loginUserData;
+    if (me.id == null) return;
+    final followedSet = _followingIds.isNotEmpty
+        ? Set<String>.from(_followingIds)
+        : Set<String>.from(me.followingIds ?? []);
+    final userCountry = me.countryData?['countryCode']?.toString().toUpperCase();
+    await DiscoveryBoostService.instance.preload(
+      followedSet: followedSet,
+      currentUserId: me.id!,
+      userCountry: userCountry,
+    );
+    // Pas de setState : le boost est injecté à la prochaine construction de la liste
+  }
+
+  // ===========================================================================
   // CHARGEMENT DES DONNÉES SUPPLÉMENTAIRES (SÉPARÉ)
   // ===========================================================================
 
   Future<void> _loadAllAdditionalDataInParallel() async {
     // Charger tout en parallèle sans bloquer
     _loadSuggestedUsersInBackground();
+    _loadFollowedCanalIdsInBackground();
     _loadArticlesInBackground();
     _loadCanauxInBackground();
     _loadChroniquesInBackground();
+    _loadDiscoveryBoostInBackground();
+  }
+
+  Future<void> _loadFollowedCanalIdsInBackground() async {
+    final me = authProvider.loginUserData;
+    final userId = me.id ?? '';
+    if (userId.isEmpty) return;
+    try {
+      // Si followingIds est déjà dans le modèle (chargé depuis Firestore) → l'utiliser
+      // Sinon : migration one-time depuis la collection Abonnements
+      List<String> followingIds = me.followingIds ?? [];
+
+      final results = await Future.wait([
+        _activeCreatorsService.fetchFollowedCanalIds(userId),
+        // Migration : seulement si followingIds vide dans le document utilisateur
+        if (followingIds.isEmpty)
+          _activeCreatorsService.fetchFollowingIds(userId)
+        else
+          Future.value(<String>[]),
+      ]);
+      final canalIds = results[0];
+      final migratedIds = results[1];
+
+      // Migration : sauvegarder en Firestore pour ne plus faire cette requête
+      if (followingIds.isEmpty && migratedIds.isNotEmpty) {
+        followingIds = migratedIds;
+        me.followingIds = followingIds;
+        FirebaseFirestore.instance
+            .collection('Users')
+            .doc(userId)
+            .update({'followingIds': followingIds}).catchError((_) {});
+      }
+
+      if (!mounted) return;
+      setState(() {
+        if (canalIds.isNotEmpty) _followedCanalIds = canalIds;
+        if (followingIds.isNotEmpty) _followingIds = followingIds;
+      });
+      // Relancer le preload maintenant qu'on a les vrais following IDs
+      if (followingIds.isNotEmpty) _startFeedPreload();
+      final ids = _followedCanalIds;
+      if (ids.isEmpty) return;
+
+      // Essayer d'abord les canaux avec des posts récents (30j)
+      var canaux = await _activeCreatorsService
+          .fetchFollowedRecentCanaux(ids, limit: 5);
+
+      // Fallback : si aucun canal actif récemment, charger les canaux directement
+      // (l'utilisateur les a suivis → ils doivent s'afficher quoi qu'il arrive)
+      if (canaux.isEmpty) {
+        canaux = await _activeCreatorsService
+            .fetchFollowedCanauxDirect(ids, limit: 5);
+      }
+
+      if (mounted && canaux.isNotEmpty) {
+        setState(() => _recentCanaux = canaux);
+        // Relancer le preload maintenant qu'on a les IDs de canaux
+        _startFeedPreload();
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadSuggestedUsersInBackground() async {
     if (_hasStartedLoadSuggestedUsers) return;
     _hasStartedLoadSuggestedUsers = true;
-    // Ne montrer le chargement que s'il n'y a pas encore de données (pas de cache)
-    if (mounted && _suggestedUsers.isEmpty) setState(() => _isLoadingSuggestedUsers = true);
+    if (mounted && _suggestedUsers.isEmpty) {
+      setState(() => _isLoadingSuggestedUsers = true);
+    }
 
     try {
-      final users = await userProvider.getProfileUsers(
-        authProvider.loginUserData.id!,
-        context,
-        8, // Limité à 8 pour la performance
+      final me = authProvider.loginUserData;
+      // limit=20 : affiche jusqu'à 20 créateurs, dont TOUS ceux avec posts non vus
+      final creators = await _activeCreatorsService.resolve(
+        me,
+        limit: 20,
+        followingIds: _followingIds.isNotEmpty ? _followingIds : null,
       );
 
+      // Si aucun post non vu, mélanger pour varier l'ordre à chaque chargement
+      final hasUnseen = creators.any((c) => c.unseenCount > 0);
+      final ordered = hasUnseen ? creators : (List.of(creators)..shuffle());
+
+      if (!mounted) return;
       setState(() {
-        _suggestedUsers = users..shuffle();
+        _activeCreators = ordered;
+        _suggestedUsers = ordered.map((c) => c.user).toList();
+        _unseenCounts = {
+          for (final c in ordered)
+            if (c.unseenCount > 0 && c.user.id != null) c.user.id!: c.unseenCount,
+        };
+        _creatorLastActivityUs = {
+          for (final c in ordered)
+            if (c.user.id != null) c.user.id!: c.lastActivityUs,
+        };
       });
+
       _saveFeedToCache();
-      // Mettre à jour le boot cache avec les données fraîches du réseau.
-      // On le fait ici car suggestedUsers est typiquement le dernier loader
-      // à terminer, garantissant que _posts et _chroniques sont déjà peuplés.
-      final userId = authProvider.loginUserData.id ?? '';
+      final userId = me.id ?? '';
       if (userId.isNotEmpty) {
         HomeBootCache.save(
           userId: userId,
@@ -2119,11 +2289,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         );
       }
     } catch (e) {
-      printVm('Error loading suggested users: $e');
+      printVm('Error loading active creators: $e');
     } finally {
-      setState(() {
-        _isLoadingSuggestedUsers = false;
-      });
+      if (mounted) setState(() => _isLoadingSuggestedUsers = false);
     }
   }
 
@@ -2176,7 +2344,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     _hasStartedLoadChroniques = true;
     if (mounted && _chroniques.isEmpty) setState(() => _isLoadingChroniques = true);
     try {
-      final validChroniques = await FeedRepository().fetchChroniques(limit: 6);
+      // Timeout 8s pour éviter un skeleton infini si réseau lent
+      final validChroniques = await FeedRepository()
+          .fetchChroniques(limit: 6)
+          .timeout(const Duration(seconds: 8), onTimeout: () => []);
+      if (!mounted) return;
       setState(() => _chroniques = validChroniques);
       if (validChroniques.isNotEmpty) {
         await _loadChroniqueUserDataInBackground(validChroniques);
@@ -2185,7 +2357,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     } catch (e) {
       printVm('❌ Erreur chargement chroniques: $e');
     } finally {
-      setState(() => _isLoadingChroniques = false);
+      if (mounted) setState(() => _isLoadingChroniques = false);
     }
   }
 
@@ -2250,50 +2422,60 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       );
     }
   }
+
   Widget _buildPostWidget(Post post, double width, double height, int index) {
+    final isDiscovery = post.id != null &&
+        DiscoveryBoostService.instance.discoveryPostIds.contains(post.id);
+
     return VisibilityDetector(
       key: Key('post-${post.id}'),
       onVisibilityChanged: (VisibilityInfo info) {
         _handleVisibilityChanged(post, info);
       },
-      child: Container(
-        child: Stack(
-          children: [
-            // Badge de disponibilité/pays (existant)
-            // _buildAvailabilityBadge(post),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // ── Badge "Nouveau créateur" ─────────────────────────────────────────
+          if (isDiscovery)
+            _NewCreatorBadge(postId: post.id!, userId: post.user_id ?? ''),
 
-            // Contenu du post
-            post.type == PostType.PRONOSTIC.name
-                ? SizedBox.shrink()
-                : post.type == PostType.CHALLENGEPARTICIPATION.name
-                ? LookChallengePostWidget(post: post, height: height, width: width)
-                : (post.type == PostType.POST.name && post.dataType == PostDataType.VIDEO.name)
-                ? YouTubeVideoCard(
-              post: post,
-              index: index,
-              onNeighborhoodPreload: _preloadVideoNeighborhood,
-              currentFilterCountry: _currentFilter == 'ALL' || _currentFilter == 'MIXED' ? null : _selectedCountryCode,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => VideoYoutubePageDetails(initialPost: post),
-                  ),
-                );
-              },
-            )
-                : HomePostUsersWidget(
-              index: index,
-              post: post,
-              color: _getRandomColor(),
-              height: height * 0.6,
-              width: width,
-              isDegrade: true,
-              currentFilterCountry: _currentFilter == 'ALL' || _currentFilter == 'MIXED' ? null : _selectedCountryCode,
+          // ── Contenu du post ──────────────────────────────────────────────────
+          Container(
+            child: Stack(
+              children: [
+                post.type == PostType.PRONOSTIC.name
+                    ? SizedBox.shrink()
+                    : post.type == PostType.CHALLENGEPARTICIPATION.name
+                    ? LookChallengePostWidget(post: post, height: height, width: width)
+                    : (post.type == PostType.POST.name && post.dataType == PostDataType.VIDEO.name)
+                    ? YouTubeVideoCard(
+                  post: post,
+                  index: index,
+                  onNeighborhoodPreload: _preloadVideoNeighborhood,
+                  currentFilterCountry: _currentFilter == 'ALL' || _currentFilter == 'MIXED' ? null : _selectedCountryCode,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => VideoYoutubePageDetails(initialPost: post),
+                      ),
+                    );
+                  },
+                )
+                    : HomePostUsersWidget(
+                  index: index,
+                  post: post,
+                  color: _getRandomColor(),
+                  height: height * 0.6,
+                  width: width,
+                  isDegrade: true,
+                  currentFilterCountry: _currentFilter == 'ALL' || _currentFilter == 'MIXED' ? null : _selectedCountryCode,
+                ),
+              ],
             ),
-
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -2424,19 +2606,98 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   // ===========================================================================
 
   Widget _buildProfilesSection() {
-    final l10n = AppLocalizations.of(context);
     final currentUser = authProvider.loginUserData;
-    final pendingIds = Set<String>.from(
-      currentUser.mesInvitationsEnvoyerId ?? [],
-    );
+    final hasUnseen = _unseenCounts.values.any((c) => c > 0);
+    final hasFollowed = currentUser.userAbonnesIds?.isNotEmpty ?? false;
+    final hasCanaux = _recentCanaux.isNotEmpty;
+    final hasCreators = _suggestedUsers.isNotEmpty;
+    final String title;
+    if (hasUnseen) {
+      title = 'Vos Créateurs actifs';
+    } else if (hasFollowed || hasCreators) {
+      title = hasCanaux && !hasCreators
+          ? 'Vos Canaux suivis'
+          : 'Créateurs & Canaux';
+    } else if (hasCanaux) {
+      title = 'Vos Canaux suivis';
+    } else {
+      title = 'Créateurs à découvrir';
+    }
     return FeedProfilesSection(
       users: _suggestedUsers,
       isLoading: _isLoadingSuggestedUsers,
-      title: l10n.sectionDiscoverProfiles,
-      seeAllLabel: l10n.commonSeeAll,
+      title: title,
       onShowProfile: _showUserDetails,
-      currentUserId: currentUser.id ?? '',
-      pendingInvitationUserIds: pendingIds,
+      unseenCounts: _unseenCounts,
+      recentCanaux: _recentCanaux,
+      creatorLastActivityUs: _creatorLastActivityUs,
+      roundCards: true,
+      // "Voir plus" → feed des posts non vus si disponibles, sinon liste créateurs
+      onSeeAllOverride: () {
+        if (hasUnseen) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => FollowingUnseenFeedPage(
+                unseenCreatorIds: _unseenCounts.keys.toList(),
+                followedCanalIds: _followedCanalIds,
+                totalUnseen: _unseenCounts.values.fold(0, (a, b) => a + b),
+                currentUserId: currentUser.id ?? '',
+                viewedPostIds: currentUser.viewedPostIds ?? [],
+              ),
+            ),
+          );
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ActiveCreatorsListPage(
+                abonnesIds: _followingIds.isNotEmpty
+                    ? _followingIds
+                    : currentUser.userAbonnesIds ?? [],
+                viewedPostIds: currentUser.viewedPostIds ?? [],
+                currentUserId: currentUser.id ?? '',
+                unseenCounts: _unseenCounts,
+                followedCanalIds: _followedCanalIds,
+                recentCanaux: _recentCanaux,
+                preloadedCreators: _activeCreators,
+              ),
+            ),
+          );
+        }
+      },
+      // Tap sur une carte → toujours la page du créateur
+      onTapCard: (user) {
+        final unseen = _unseenCounts[user.id] ?? 0;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => CreatorUnseenPostsPage(
+              creator: user,
+              unseenCount: unseen,
+              viewedPostIds: currentUser.viewedPostIds ?? [],
+              currentUserId: currentUser.id ?? '',
+            ),
+          ),
+        ).then((_) {
+          // Retirer le count en mémoire pour ce créateur uniquement
+          if (mounted && user.id != null) {
+            setState(() {
+              _unseenCounts.remove(user.id);
+              _activeCreators = _activeCreators
+                  .map((c) => c.user.id == user.id
+                      ? ActiveCreator(
+                          user: c.user,
+                          unseenCount: 0,
+                          lastActivityUs: c.lastActivityUs,
+                        )
+                      : c)
+                  .toList();
+              authProvider.loginUserData.newPostsByCreator?.remove(user.id);
+            });
+          }
+        });
+      },
     );
   }
 
@@ -2479,225 +2740,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   // ===========================================================================
   // CONTENU PRINCIPAL
   // ===========================================================================
-
-  Widget _buildContent2() {
-    double height = MediaQuery.of(context).size.height;
-    double width = MediaQuery.of(context).size.width;
-
-    if (_isLoadingPosts && _posts.isEmpty) {
-      return _buildLoadingShimmer(width, height);
-    }
-
-    if (_hasErrorPosts && _posts.isEmpty) {
-      return _buildErrorWidget();
-    }
-
-    if (_posts.isEmpty) {
-      return _buildEmptyWidget();
-    }
-
-    List<Widget> contentWidgets = [];
-
-    // 1. Filtres
-    contentWidgets.add(_buildFilterChips());
-    contentWidgets.add(SizedBox(height: 8));
-
-    // 2. Chroniques (si chargées)
-    final chroniquesSection = _buildChroniquesSection();
-    if (chroniquesSection is! SizedBox) {
-      contentWidgets.add(chroniquesSection);
-    }
-
-    // 3. Profils utilisateurs (si chargés)
-    final profilesSection = _buildProfilesSection();
-    if (profilesSection is! SizedBox) {
-      contentWidgets.add(profilesSection);
-      contentWidgets.add(_buildAdMrec(key: 'ad_native_user'));
-
-      contentWidgets.add(SizedBox(height: 8));
-    }
-
-    // 4. Posts avec bannières
-    int postIndex = 0;
-    for (int i = 0; i < _posts.length; i++) {
-      final post = _posts[i];
-      if (postIndex == 0) {
-        contentWidgets.add( const PronosticsCarouselWidget(),);
-        // contentWidgets.add(_buildAdAdvertisement(key: 'ad_after_first'));
-      }
-      // Ajouter le post
-      contentWidgets.add(
-        GestureDetector(
-          onTap: () => _navigateToPostDetails(post),
-          child: _buildPostWidget(post, width, height,i),
-        ),
-      );
-
-      postIndex++;
-
-      // 🔴 AJOUT DES BANNIÈRES ADMOB
-      // Après le PREMIER post (postIndex == 1)
-      if (postIndex == 2) {
-        contentWidgets.add(_buildAdAdvertisement(key: 'ad_after_first'));
-        contentWidgets.add(TopDatingProfilesWidget());
-        contentWidgets.add(RecentVIPContentWidget(),);
-
-
-        // contentWidgets.add(_buildAdBanner(key: 'ad_list_post$postIndex'));
-        // contentWidgets.add(_buildAdMrec(key: 'ad_native_post$postIndex'));
-      }
-// Top dating : après le premier post, puis tous les 5 posts
-      //AJOUT DES BANNIÈRES ADMOB
-      // if (postIndex == 2) {
-      //   // contentWidgets.add(_buildAdBanner(key: 'ad_$postIndex'));
-      //
-      //   // contentWidgets.add(TopDatingProfilesWidget());
-      // } else if (postIndex > 1 && (postIndex - 1) % 5 == 0) {
-      //   contentWidgets.add(TopDatingProfilesWidget());
-      // }
-      // AdMOb Ensuite, tous les 3 posts (après le 4ème, 7ème, 10ème...)
-      // if (postIndex > 1 && (postIndex - 1) % 3 == 0) {
-      //   // contentWidgets.add(_buildAdAdvertisement(key: 'ad_after_first'));
-      //
-      //   contentWidgets.add(TopDatingProfilesWidget());
-      //   // contentWidgets.add(_buildAdBanner(key: 'ad_${postIndex}'));
-      // }
-
-      // Garder vos sections spéciales existantes
-      if (postIndex % 3 == 0) {
-        if (postIndex % 6 == 3) {
-          final articlesSection = _buildArticlesSection();
-          if (articlesSection is! SizedBox) {
-            contentWidgets.add(articlesSection);
-
-          }
-        } else if (postIndex % 6 == 0) {
-          final canauxSection = _buildCanauxSection();
-          if (canauxSection is! SizedBox) {
-            contentWidgets.add(canauxSection);
-            contentWidgets.add(RecentVIPContentWidget(),);
-            // contentWidgets.add(_buildAdBanner(key: 'ad_list_post$postIndex'));
-            contentWidgets.add(_buildAdAdvertisement(key: 'ad_vert$postIndex'));
-
-            // contentWidgets.add(_buildAdMrec(key: 'ad_native_post$postIndex'));
-
-          }
-        }
-      }
-    }
-    // 5. Indicateurs de chargement/fin
-    final colors = AppColors.of(context);
-    if (_isLoadingMorePosts) {
-      contentWidgets.add(
-        Container(
-          padding: EdgeInsets.symmetric(vertical: 20),
-          child: Center(
-            child: Column(
-              children: [
-                CircularProgressIndicator(color: colors.primary),
-                SizedBox(height: 10),
-                Text('Chargement de plus de posts...', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
-              ],
-            ),
-          ),
-        ),
-      );
-    } else if (_isLoadingBackground && _useBackgroundLoading) {
-      contentWidgets.add(
-        Container(
-          padding: EdgeInsets.symmetric(vertical: 16),
-          child: Center(
-            child: Column(
-              children: [
-                SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: colors.textSecondary,
-                  ),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Préparation de plus de contenu... ($_backgroundPostsLoaded/$_maxBackgroundPosts)',
-                  style: TextStyle(color: colors.textSecondary, fontSize: 11),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    } else if (!_hasMorePosts && _oldPostsCache.isEmpty) {
-      contentWidgets.add(
-        Container(
-          padding: EdgeInsets.symmetric(vertical: 30),
-          child: Center(
-            child: Column(
-              children: [
-                Icon(Icons.flag, color: colors.primary, size: 36),
-                SizedBox(height: 10),
-                Text(
-                  _getEndMessage(),
-                  style: TextStyle(color: colors.textSecondary, fontSize: 14),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: 5),
-                Text(
-                  'Revenez plus tard pour de nouveaux contenus',
-                  style: TextStyle(color: colors.textSecondary, fontSize: 11),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    } else if (!_useBackgroundLoading) {
-      // Bouton "Charger plus" quand le background est désactivé
-      contentWidgets.add(
-        Container(
-          padding: EdgeInsets.symmetric(vertical: 20),
-          child: Center(
-            child: Column(
-              children: [
-                Text(
-                  'Chargement automatique terminé',
-                  style: TextStyle(color: Colors.grey[500], fontSize: 12),
-                ),
-                SizedBox(height: 10),
-                ElevatedButton(
-                  onPressed: _loadMorePostsManually,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryGreen,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-                  ),
-                  child: Text(
-                    'Charger 5 posts de plus',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    return CustomScrollView(
-      controller: _scrollController,
-      slivers: [
-        SliverList(
-          delegate: SliverChildBuilderDelegate(
-                (context, index) => contentWidgets[index],
-            childCount: contentWidgets.length,
-          ),
-        ),
-      ],
-    );
-  }
 
 
 
@@ -2775,7 +2817,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     contentWidgets.add(_buildChroniquesSection());
     contentWidgets.add(_buildProfilesSection());
     contentWidgets.add(_buildAdMrec(key: 'ad_native_user'));
-    contentWidgets.add(const SizedBox(height: 8));
+    // contentWidgets.add(const SizedBox(height: 8));
 
     int postIndex = 0;
     for (int i = 0; i < finalPosts.length; i++) {
@@ -3543,6 +3585,47 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
             ),
           ),
         ),      ),
+    );
+  }
+}
+
+// ── Badge "Nouveau créateur" affiché au-dessus d'un post boosté ──────────────
+
+class _NewCreatorBadge extends StatelessWidget {
+  final String postId;
+  final String userId;
+
+  const _NewCreatorBadge({required this.postId, required this.userId});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF7B2FF7), Color(0xFFFF6B35)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: const [
+          Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 12),
+          SizedBox(width: 5),
+          Text(
+            'Nouveau créateur',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
