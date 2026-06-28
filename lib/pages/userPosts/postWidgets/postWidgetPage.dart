@@ -2641,14 +2641,15 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
   Future<void> _handleLike() async {
     try {
-      // Vérifier si l'utilisateur a déjà liké
-      // if (isIn(widget.post.users_love_id!, authProvider.loginUserData.id!)) {
-      //   return;
-      // }
-
-      // 🔥 Vérifier d'abord si l'utilisateur a assez de pièces pour le like
       final coinProvider = Provider.of<CoinGiftUserProvider>(context, listen: false);
-      final hasEnoughCoins = (coinProvider.giftCoinsBalance >= 2);
+      final userId = authProvider.loginUserData.id;
+      if (userId == null) return;
+
+      // Recharger le solde réel depuis Firestore avant de vérifier
+      // (le provider peut avoir un solde obsolète si le user n'était pas encore chargé)
+      await coinProvider.refreshBalance(userId);
+
+      final hasEnoughCoins = coinProvider.giftCoinsBalance >= 2;
 
       if (!hasEnoughCoins) {
         _showInsufficientCoinsForLikeDialog();

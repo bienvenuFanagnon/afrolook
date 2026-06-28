@@ -49,6 +49,11 @@ class _CreatorUnseenPostsPageState extends State<CreatorUnseenPostsPage> {
   bool _hasMore = true;
   static const _pageSize = 10;
 
+  // Compteur local mis à jour au fur et à mesure de la navigation
+  late int _localUnseenCount;
+  // Posts dont le compteur a déjà été décrémenté cette session (anti double-décrément)
+  final Set<String> _decrementedInSession = {};
+
   static const List<Color> _postColors = [
     Color(0xFF1A237E),
     Color(0xFF880E4F),
@@ -67,14 +72,11 @@ class _CreatorUnseenPostsPageState extends State<CreatorUnseenPostsPage> {
   @override
   void initState() {
     super.initState();
+    _localUnseenCount = widget.unseenCount;
     _loadPosts();
     _scrollController.addListener(_onScroll);
-    if (widget.unseenCount > 0 && widget.currentUserId.isNotEmpty) {
-      _service.resetCreatorCounter(
-        widget.currentUserId,
-        widget.creator.id ?? '',
-      );
-    }
+    // NE PAS appeler resetCreatorCounter() ici — le compteur doit être
+    // décrémenté post par post au fur et à mesure du scroll, pas dès l'ouverture.
   }
 
   @override
@@ -171,9 +173,24 @@ class _CreatorUnseenPostsPageState extends State<CreatorUnseenPostsPage> {
     final postId = post.id;
     if (postId == null || widget.currentUserId.isEmpty) return;
     if (_sessionViewedIds.contains(postId)) return;
-    _sessionViewedIds.add(postId);
+
+    // Ce post était-il non vu ? (pas dans viewedPostIds ET pas déjà décrémenté)
+    final wasUnseen = !widget.viewedPostIds.contains(postId) &&
+        !_decrementedInSession.contains(postId);
+
+    // Mise à jour immédiate de l'UI (badge "Non vu" + compteur header)
+    if (mounted) {
+      setState(() {
+        _sessionViewedIds.add(postId);
+        if (wasUnseen) {
+          _decrementedInSession.add(postId);
+          if (_localUnseenCount > 0) _localUnseenCount--;
+        }
+      });
+    }
 
     try {
+      // Enregistrer la vue sur le post et dans les vues utilisateur
       final batch = _db.batch();
       batch.update(_db.collection('Posts').doc(postId), {
         'users_vue_id': FieldValue.arrayUnion([widget.currentUserId]),
@@ -182,6 +199,22 @@ class _CreatorUnseenPostsPageState extends State<CreatorUnseenPostsPage> {
         'viewedPostIds': FieldValue.arrayUnion([postId]),
       });
       await batch.commit();
+
+      // Décrémenter le compteur créateur uniquement pour les posts non vus
+      if (wasUnseen) {
+        final creatorId = widget.creator.id ?? '';
+        if (creatorId.isNotEmpty) {
+          if (_localUnseenCount <= 0) {
+            // Tous les posts non vus ont été scrollés → reset complet
+            _service.resetCreatorCounter(widget.currentUserId, creatorId);
+          } else {
+            // Encore des posts non vus → décrémenter de 1
+            _db.collection('Users').doc(widget.currentUserId).update({
+              'newPostsByCreator.$creatorId': FieldValue.increment(-1),
+            });
+          }
+        }
+      }
     } catch (_) {}
   }
 
@@ -272,7 +305,7 @@ class _CreatorUnseenPostsPageState extends State<CreatorUnseenPostsPage> {
                             color: colors.textSecondary, size: 20)
                         : null,
                   ),
-                  if (widget.unseenCount > 0)
+                  if (_localUnseenCount > 0)
                     Positioned(
                       top: -3,
                       right: -3,
@@ -286,7 +319,7 @@ class _CreatorUnseenPostsPageState extends State<CreatorUnseenPostsPage> {
                               color: colors.surface, width: 1.5),
                         ),
                         child: Text(
-                          '${widget.unseenCount}',
+                          '$_localUnseenCount',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 8,
@@ -335,7 +368,7 @@ class _CreatorUnseenPostsPageState extends State<CreatorUnseenPostsPage> {
                             fontSize: 10,
                           ),
                         ),
-                        if (widget.unseenCount > 0) ...[
+                        if (_localUnseenCount > 0) ...[
                           const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -346,7 +379,7 @@ class _CreatorUnseenPostsPageState extends State<CreatorUnseenPostsPage> {
                               borderRadius: BorderRadius.circular(5),
                             ),
                             child: Text(
-                              '${widget.unseenCount} non vu${widget.unseenCount > 1 ? 's' : ''}',
+                              '$_localUnseenCount non vu${_localUnseenCount > 1 ? 's' : ''}',
                               style: TextStyle(
                                 color: colors.primary,
                                 fontSize: 9,

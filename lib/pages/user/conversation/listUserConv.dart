@@ -1,6 +1,5 @@
 ﻿import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/models/chatmodels/message.dart';
@@ -16,7 +15,6 @@ import 'package:flutter/widgets.dart';
 
 import 'package:flutter_slidable/flutter_slidable.dart';
 
-import 'package:intl/intl.dart';
 
 import 'package:local_auth/local_auth.dart';
 
@@ -40,7 +38,6 @@ import '../../../l10n/app_localizations.dart';
 
 import '../../../services/chat_service.dart';
 
-import '../../../services/encryption_service.dart';
 
 import '../../../pages/chat/myChat.dart';
 
@@ -55,6 +52,11 @@ import '../../pub/native_ad_widget.dart';
 import '../../chat/group/create_group_page.dart';
 
 import '../../chat/group/group_chat_page.dart';
+
+import '../../../services/active_creators_service.dart';
+import '../../../widgets/feed/sections/feed_profiles_section.dart';
+import '../creator_unseen_posts_page.dart';
+import '../active_creators_list_page.dart';
 
 class ListUserChatsOptimized extends StatefulWidget {
   const ListUserChatsOptimized({super.key});
@@ -83,13 +85,14 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   // Stream pour les mises à jour des messages en temps réel
   Stream<List<ChatWithLastMessage>>? _chatsStream;
 
-  // Amis récents (top 7 avec dernière activité)
-  List<UserData> _recentFriends = [];
-  bool _loadingRecentFriends = true;
-  static const int maxRecentFriends = 7;
-  // Un ami n'apparaît dans "Récemment actifs" que s'il s'est connecté au
-  // cours des 7 derniers jours (sinon section non pertinente / vide).
-  static const int _recentActiveThresholdMs = 7 * 24 * 60 * 60 * 1000;
+  // Section créateurs actifs (remplace les amis récents)
+  final _activeCreatorsService = ActiveCreatorsService();
+  List<UserData> _creators = [];
+  Map<String, int> _unseenCounts = {};
+  bool _loadingCreators = true;
+
+  // Guard : évite que le cache écrase les données Firebase déjà chargées
+  bool _firebaseLoaded = false;
 
   // Pour éviter les setState pendant le build
   bool _hasPendingUpdate = false;
@@ -168,7 +171,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
         }
         return ChatWithLastMessage(chat: chat, lastMessage: lastMsg);
       }).toList();
-      if (chats.isNotEmpty && mounted) {
+      if (!_firebaseLoaded && chats.isNotEmpty && mounted) {
         setState(() {
           _chats = chats;
           _isLoading = false;
@@ -223,11 +226,12 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
 
     _scrollController.addListener(_onScroll);
 
-    // Charge archives, cache conv, cache groupes, puis lance le stream Firebase
+    // Cache affiché immédiatement, stream Firebase en parallèle
     _loadArchiveCache();
     _loadGroupCache().then((_) => _initGroupsStream());
-    _loadConvCache().then((_) => _initChatsStream());
-    _loadRecentFriends();
+    _loadConvCache();   // affiche le cache instantanément
+    _initChatsStream(); // démarre le stream Firebase sans attendre le cache
+    _loadCreators();
     _checkBiometricLock();
   }
 
@@ -560,111 +564,76 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     _chatsStream = FirebaseFirestore.instance
         .collection('Chats')
         .where(Filter.or(
-      Filter('receiver_id', isEqualTo: authProvider.loginUserData.id!),
-      Filter('sender_id', isEqualTo: authProvider.loginUserData.id!),
-    ))
+          Filter('receiver_id', isEqualTo: authProvider.loginUserData.id!),
+          Filter('sender_id', isEqualTo: authProvider.loginUserData.id!),
+        ))
         .where("type", isEqualTo: ChatType.USER.name)
         .orderBy('updated_at', descending: true)
         .limit(50)
         .snapshots()
-        .asyncMap((snapshot) async {
-      List<ChatWithLastMessage> listChats = [];
-      final futures = snapshot.docs.map(_processChatDocument).toList();
-      final results = await Future.wait(futures);
-      listChats.addAll(results.whereType<ChatWithLastMessage>());
-      listChats.sort((a, b) => (b.chat.updatedAt ?? 0).compareTo(a.chat.updatedAt ?? 0));
-
-      if (mounted) {
-        setState(() {
-          _chats = listChats;
-          _isLoading = false;
-          _isRefreshing = false;
-          _hasMore = false;
-        });
-      }
-
-      _saveConvCache(listChats);
-      return listChats;
-    });
+        .asyncMap(_processChatsSnapshot);
   }
 
-  Future<ChatWithLastMessage?> _processChatDocument(QueryDocumentSnapshot chatDoc) async {
-    try {
-      Chat chat = Chat.fromJson(chatDoc.data() as Map<String, dynamic>);
+  Future<List<ChatWithLastMessage>> _processChatsSnapshot(QuerySnapshot snapshot) async {
+    final myId = authProvider.loginUserData.id!;
 
-      final otherUserId = authProvider.loginUserData.id == chat.receiverId
-          ? chat.senderId
-          : chat.receiverId;
-
-      if (otherUserId != null) {
-        final userData = await _getUserData(otherUserId);
-        if (userData != null) {
-          chat.chatFriend = userData;
-          chat.receiver = userData;
-
-          // Récupérer le dernier message avec déchiffrement
-          final lastMessage = await _getLastMessageForChat(
-            chat.docId!,
-            otherUserId: otherUserId,
-          );
-
-          return ChatWithLastMessage(
-            chat: chat,
-            lastMessage: lastMessage,
-          );
-        }
-      }
-      return null;
-    } catch (e) {
-      printVm("❌ [CHAT_SERVICE] Erreur: $e");
-      return null;
+    // 1. Parse tous les docs + collecter les IDs distincts des autres users
+    final chats = <Chat>[];
+    final otherIds = <String>{};
+    for (final doc in snapshot.docs) {
+      final chat = Chat.fromJson(doc.data() as Map<String, dynamic>);
+      chats.add(chat);
+      final oid = myId == chat.receiverId ? chat.senderId : chat.receiverId;
+      if (oid != null) otherIds.add(oid);
     }
-  }
 
-  Future<UserData?> _getUserData(String userId) async {
-    try {
-      final userDoc = await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(userId)
-          .get();
-
-      if (userDoc.exists) {
-        return UserData.fromJson(userDoc.data()!);
-      }
-    } catch (e) {
-      printVm("❌ [USER_DATA] Erreur: $e");
+    // 2. Batch fetch — 1 requête whereIn par tranche de 10 (au lieu de N requêtes)
+    final userMap = <String, UserData>{};
+    final ids = otherIds.toList();
+    final batchFutures = <Future<void>>[];
+    for (int i = 0; i < ids.length; i += 10) {
+      final chunk = ids.sublist(i, (i + 10).clamp(0, ids.length));
+      batchFutures.add(() async {
+        try {
+          final snap = await FirebaseFirestore.instance
+              .collection('Users')
+              .where(FieldPath.documentId, whereIn: chunk)
+              .get();
+          for (final d in snap.docs) {
+            final data = Map<String, dynamic>.from(d.data() as Map<String, dynamic>);
+            data['id'] = d.id;
+            userMap[d.id] = UserData.fromJson(data);
+          }
+        } catch (_) {}
+      }());
     }
-    return null;
-  }
+    await Future.wait(batchFutures);
 
-  Future<Message?> _getLastMessageForChat(String chatId, {String? otherUserId}) async {
-    try {
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection('Messages')
-          .where('chat_id', isEqualTo: chatId)
-          .where('is_valide', isEqualTo: true)
-          .orderBy('create_at_time_spam', descending: true)
-          .limit(1)
-          .get();
-
-      if (querySnapshot.docs.isNotEmpty) {
-        final msg = Message.fromJson(querySnapshot.docs.first.data());
-        // Déchiffrement si nécessaire
-        if (msg.is_encrypted && msg.message.startsWith('enc:v1:') && otherUserId != null) {
-          try {
-            final myId = authProvider.loginUserData.id!;
-            final key = await EncryptionService.getChatKey(chatId, myId, otherUserId);
-            if (key != null) {
-              msg.message = await EncryptionService.decryptText(key, msg.message);
-            }
-          } catch (_) {}
-        }
-        return msg;
-      }
-    } catch (e) {
-      printVm("❌ [LAST_MESSAGE] Erreur: $e");
+    // 3. Construire les résultats sans requête Messages :
+    //    ConversationList lit chat.lastMessage (string) directement depuis le doc
+    final result = <ChatWithLastMessage>[];
+    for (final chat in chats) {
+      final oid = myId == chat.receiverId ? chat.senderId : chat.receiverId;
+      if (oid == null) continue;
+      final user = userMap[oid];
+      if (user == null) continue;
+      chat.chatFriend = user;
+      chat.receiver = user;
+      result.add(ChatWithLastMessage(chat: chat, lastMessage: null));
     }
-    return null;
+
+    result.sort((a, b) => (b.chat.updatedAt ?? 0).compareTo(a.chat.updatedAt ?? 0));
+    _firebaseLoaded = true;
+    if (mounted) {
+      setState(() {
+        _chats = result;
+        _isLoading = false;
+        _isRefreshing = false;
+        _hasMore = false;
+      });
+    }
+    _saveConvCache(result);
+    return result;
   }
 
   // Stream pour écouter les nouveaux messages en temps réel et mettre à jour l'affichage
@@ -748,105 +717,34 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     }
   }
 
-  // Vérifier si un utilisateur est en ligne (dans les 10 minutes)
+
+
   bool _isUserOnline(UserData user) {
     final bool isConnected = user.state == UserState.ONLINE.name;
     final int lastTimeActive = user.last_time_active ?? 0;
     final int now = DateTime.now().millisecondsSinceEpoch;
     const int tenMinutesInMs = 600000;
-    final bool isUnderThreshold = (now - lastTimeActive) < tenMinutesInMs;
-    return isConnected && isUnderThreshold;
+    return isConnected && (now - lastTimeActive) < tenMinutesInMs;
   }
 
-  // Charger les 7 derniers amis actifs (basé sur last_time_active)
-  Future<void> _loadRecentFriends() async {
+  // Charger les créateurs actifs (newPostsByCreator + followings)
+  Future<void> _loadCreators() async {
     if (!mounted) return;
-
-    setState(() {
-      _loadingRecentFriends = true;
-    });
-
+    final me = authProvider.loginUserData;
     try {
-      // Récupérer les amis de l'utilisateur
-      final friendsSnapshot = await FirebaseFirestore.instance
-          .collection('Friends')
-          .where(Filter.or(
-        Filter('current_user_id', isEqualTo: authProvider.loginUserData.id!),
-        Filter('friend_id', isEqualTo: authProvider.loginUserData.id!),
-      ))
-          .get();
-
-      if (friendsSnapshot.docs.isEmpty) {
-        if (mounted) {
-          setState(() {
-            _loadingRecentFriends = false;
-          });
-        }
-        return;
-      }
-
-      // Récupérer tous les IDs des amis
-      List<String> friendIds = [];
-      for (var doc in friendsSnapshot.docs) {
-        final data = doc.data();
-        final friendId = authProvider.loginUserData.id == data['current_user_id']
-            ? data['friend_id']
-            : data['current_user_id'];
-        if (friendId != null && friendId != authProvider.loginUserData.id) {
-          friendIds.add(friendId as String);
-        }
-      }
-
-      if (friendIds.isEmpty) {
-        if (mounted) {
-          setState(() {
-            _loadingRecentFriends = false;
-          });
-        }
-        return;
-      }
-
-      // Récupérer tous les amis
-      List<UserData> allFriends = [];
-
-      for (int i = 0; i < friendIds.length; i += 10) {
-        final batch = friendIds.skip(i).take(10).toList();
-        final usersSnapshot = await FirebaseFirestore.instance
-            .collection('Users')
-            .where('id', whereIn: batch)
-            .get();
-
-        for (var doc in usersSnapshot.docs) {
-          allFriends.add(UserData.fromJson(doc.data()));
-        }
-      }
-
-      // Ne garder que les amis réellement actifs récemment (sinon on affiche
-      // des amis inactifs depuis des mois faute d'amis "récents").
-      final int now = DateTime.now().millisecondsSinceEpoch;
-      final recentlyActiveFriends = allFriends
-          .where((f) => (now - (f.last_time_active ?? 0)) < _recentActiveThresholdMs)
-          .toList();
-
-      // Trier par last_time_active décroissant (les plus récents d'abord)
-      recentlyActiveFriends.sort((a, b) => (b.last_time_active ?? 0).compareTo(a.last_time_active ?? 0));
-
-      // Prendre les 7 plus récents
-      final recentFriends = recentlyActiveFriends.take(maxRecentFriends).toList();
-
+      final list = await _activeCreatorsService.resolve(me, limit: 10);
       if (mounted) {
         setState(() {
-          _recentFriends = recentFriends;
-          _loadingRecentFriends = false;
+          _creators = list.map((c) => c.user).toList();
+          _unseenCounts = {
+            for (final c in list)
+              if (c.unseenCount > 0 && c.user.id != null) c.user.id!: c.unseenCount,
+          };
+          _loadingCreators = false;
         });
       }
-    } catch (e) {
-      printVm('Erreur chargement amis récents: $e');
-      if (mounted) {
-        setState(() {
-          _loadingRecentFriends = false;
-        });
-      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingCreators = false);
     }
   }
 
@@ -1013,10 +911,10 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       appBar: _buildAppBar(),
       body: Column(
         children: [
-          // Section amis récents (top 7 avec dernière activité)
-          if (!_isSearching && !_loadingRecentFriends && _recentFriends.isNotEmpty)
-            _buildRecentFriendsSection(),
-          if (!_isSearching && _recentFriends.isNotEmpty)
+          // Section créateurs actifs
+          if (!_isSearching)
+            _buildCreatorsSection(),
+          if (!_isSearching && (_loadingCreators || _creators.isNotEmpty))
             Divider(height: 1, color: _colors.textSecondary),
           // Bannière discrète de sync Firebase
           if (!_isSearching && _isRefreshing)
@@ -1179,107 +1077,58 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     );
   }
 
-  Widget _buildRecentFriendsSection() {
-    final bool hasMoreFriends = _recentFriends.length >= maxRecentFriends;
-
-    return Container(
-      height: 148,
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  _l10n.convRecentlyActive,
-                  style: TextStyle(
-                    color: _colors.primary,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.3,
-                  ),
-                ),
-                if (hasMoreFriends)
-                  GestureDetector(
-                    onTap: () => Navigator.pushNamed(context, '/amis'),
-                    child: Text(
-                      _l10n.convSeeMoreFriends,
-                      style: TextStyle(color: _colors.primary, fontSize: 13),
-                    ),
-                  ),
-              ],
+  Widget _buildCreatorsSection() {
+    final me = authProvider.loginUserData;
+    final hasUnseen = _unseenCounts.values.any((c) => c > 0);
+    final title = hasUnseen ? 'Posts non vus' : 'Vos créateurs';
+    return FeedProfilesSection(
+      users: _creators,
+      isLoading: _loadingCreators,
+      title: title,
+      onShowProfile: (_) {},
+      unseenCounts: _unseenCounts,
+      recentCanaux: const [],
+      creatorLastActivityUs: const {},
+      roundCards: true,
+      onSeeAllOverride: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ActiveCreatorsListPage(
+              abonnesIds: me.followingIds ?? me.userAbonnesIds ?? [],
+              viewedPostIds: me.viewedPostIds ?? [],
+              currentUserId: me.id ?? '',
+              unseenCounts: _unseenCounts,
+              followedCanalIds: const [],
+              recentCanaux: const [],
+              preloadedCreators: [],
             ),
           ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              itemCount: _recentFriends.length,
-              itemBuilder: (context, index) {
-                final user = _recentFriends[index];
-                final bool isOnline = _isUserOnline(user);
-                final String lastActiveText = _getLastActiveText(user.last_time_active ?? 0);
-                return GestureDetector(
-                  onTap: () => _createAndOpenChat(user),
-                  child: Container(
-                    width: 68,
-                    margin: const EdgeInsets.only(right: 10),
-                    child: Column(
-                      children: [
-                        _StoryRingAvatar(
-                          imageUrl: user.imageUrl,
-                          isOnline: isOnline,
-                          primaryColor: _colors.primary,
-                          userId: user.id!,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '@${user.pseudo ?? ""}',
-                          style: TextStyle(color: _colors.textPrimary, fontSize: 11),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          isOnline ? _l10n.convOnline : lastActiveText,
-                          style: TextStyle(
-                            color: isOnline ? _colors.primary : _colors.border,
-                            fontSize: 9,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
+        );
+      },
+      onTapCard: (user) {
+        final unseen = _unseenCounts[user.id] ?? 0;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => CreatorUnseenPostsPage(
+              creator: user,
+              unseenCount: unseen,
+              viewedPostIds: me.viewedPostIds ?? [],
+              currentUserId: me.id ?? '',
             ),
           ),
-        ],
-      ),
+        ).then((_) {
+          if (mounted && user.id != null) {
+            setState(() {
+              _unseenCounts.remove(user.id);
+              _creators = _creators.map((u) => u).toList();
+              authProvider.loginUserData.newPostsByCreator?.remove(user.id);
+            });
+          }
+        });
+      },
     );
-  }
-
-  String _getLastActiveText(int lastTimeActive) {
-    final DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(lastTimeActive);
-    final DateTime now = DateTime.now();
-    final Duration difference = now.difference(dateTime);
-
-    if (difference.inMinutes < 1) {
-      return _l10n.convJustNow;
-    } else if (difference.inMinutes < 60) {
-      return _l10n.notifMinutesAgo(difference.inMinutes);
-    } else if (difference.inHours < 24) {
-      return _l10n.notifHoursAgo(difference.inHours);
-    } else if (difference.inDays < 7) {
-      return _l10n.notifDaysAgo(difference.inDays);
-    } else {
-      return DateFormat('dd/MM').format(dateTime);
-    }
   }
 
   Widget _buildHeader() {
@@ -2009,7 +1858,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
                           ),
                           title: Text('@${friend?.pseudo ?? '...'}',
                               style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w600, fontSize: 14)),
-                          subtitle: Text(_getMessagePreview(cwm.lastMessage),
+                          subtitle: Text(cwm.lastMessage != null ? _getMessagePreview(cwm.lastMessage) : (cwm.chat.lastMessage ?? _l10n.convNoMessage),
                               style: TextStyle(color: _colors.textSecondary, fontSize: 12),
                               overflow: TextOverflow.ellipsis),
                           trailing: TextButton(
@@ -2891,79 +2740,3 @@ class _ConversationListState extends State<ConversationList> {
 }
 
 // ---------------------------------------------------------------------------
-// _StoryRingAvatar — avatar avec ring gradient animé pour la section amis récents
-// ---------------------------------------------------------------------------
-class _StoryRingAvatar extends StatefulWidget {
-  final String? imageUrl;
-  final bool isOnline;
-  final Color primaryColor;
-  final String userId;
-
-  const _StoryRingAvatar({
-    required this.imageUrl,
-    required this.isOnline,
-    required this.primaryColor,
-    required this.userId,
-  });
-
-  @override
-  State<_StoryRingAvatar> createState() => _StoryRingAvatarState();
-}
-
-class _StoryRingAvatarState extends State<_StoryRingAvatar> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scale;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1600),
-    );
-    _scale = Tween<double>(begin: 1.0, end: 1.08).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-    if (widget.isOnline) {
-      _controller.repeat(reverse: true);
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final ringWidget = Container(
-      width: 54, height: 54,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: LinearGradient(
-          colors: widget.isOnline
-              ? [widget.primaryColor, Color.lerp(widget.primaryColor, const Color(0xFF1abc9c), 0.6)!]
-              : [Colors.grey.shade600, Colors.grey.shade400],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: widget.isOnline
-            ? [BoxShadow(color: widget.primaryColor.withAlpha(90), blurRadius: 10, spreadRadius: 1)]
-            : [],
-      ),
-      padding: const EdgeInsets.all(2.5),
-      child: CircleAvatar(
-        radius: 24,
-        backgroundImage: (widget.imageUrl != null && widget.imageUrl!.isNotEmpty)
-            ? NetworkImage(widget.imageUrl!) as ImageProvider
-            : const AssetImage('assets/icon/amixilo3.png'),
-        backgroundColor: Colors.grey.shade800,
-      ),
-    );
-
-    if (!widget.isOnline) return ringWidget;
-
-    return ScaleTransition(scale: _scale, child: ringWidget);
-  }
-}

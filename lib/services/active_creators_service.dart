@@ -63,82 +63,58 @@ class ActiveCreatorsService {
     UserData me, {
     int limit = 10,
     List<String>? followingIds,
+    Map<String, int>? freshCounts,
   }) async {
-    final viewedSet = Set<String>.from(me.viewedPostIds ?? []);
-    final cfCounts = me.newPostsByCreator ?? {};
+    // freshCounts prioritaire sur me.newPostsByCreator (evite données stale du cache local)
+    final cfCounts = Map<String, int>.from(freshCounts ?? me.newPostsByCreator ?? {});
 
-    // Priorité : paramètre explicite > me.followingIds > Abonnements (migration fallback)
-    final List<String> abonnesIds = followingIds?.isNotEmpty == true
-        ? followingIds!
-        : (me.followingIds?.isNotEmpty == true
-            ? me.followingIds!
-            : await fetchFollowingIds(me.id ?? ''));
-
-    final Map<String, int> latestUs = {};
-    final Map<String, int> unseenPerCreator = {};
-    final int sinceUs = DateTime.now()
-        .subtract(const Duration(days: 30))
-        .microsecondsSinceEpoch;
-
-    // ── Phase A : CF hot-set ─────────────────────────────────────────────────
+    // ── Créateurs avec posts non vus (hot-set CF) ────────────────────────────
     final hotIds = cfCounts.entries
         .where((e) => e.value > 0)
         .map((e) => e.key)
         .toList();
 
+    final List<ActiveCreator> result = [];
+
     if (hotIds.isNotEmpty) {
-      await _queryPostsByCreators(
-        hotIds, sinceUs, viewedSet, latestUs, unseenPerCreator,
-        postsPerCreator: 20,
-      );
+      final users = await _fetchUsers(hotIds);
+      final creators = users
+          .where((u) => u.id != null)
+          .map((u) => ActiveCreator(
+                user: u,
+                unseenCount: cfCounts[u.id!] ?? 0,
+                lastActivityUs: 0,
+              ))
+          .toList()
+        ..sort((a, b) => b.unseenCount.compareTo(a.unseenCount));
+      result.addAll(creators);
     }
 
-    // ── Phase B : direct chunk query sur les followings restants ─────────────
-    // Exclure les IDs déjà traités en phase A.
-    final processedIds = Set<String>.from(latestUs.keys)..addAll(hotIds);
-    final supplementIds = abonnesIds
-        .where((id) => !processedIds.contains(id))
-        .take(150) // 5 chunks de 30 en parallèle → rapide
-        .toList();
-
-    if (supplementIds.isNotEmpty) {
-      await _queryPostsByCreators(
-        supplementIds, sinceUs, viewedSet, latestUs, unseenPerCreator,
-        postsPerCreator: 10,
-      );
+    // ── Compléter avec des followings récents (0 unseen) si besoin ──────────
+    // Une seule requête Users — pas de requête Posts.
+    if (result.length < limit) {
+      final following = followingIds?.isNotEmpty == true
+          ? followingIds!
+          : (me.followingIds ?? []);
+      final shown = <String>{...hotIds};
+      final toFetch = following
+          .where((id) => !shown.contains(id))
+          .take(limit - result.length)
+          .toList();
+      if (toFetch.isNotEmpty) {
+        final users = await _fetchUsers(toFetch);
+        result.addAll(users
+            .where((u) => u.id != null)
+            .map((u) =>
+                ActiveCreator(user: u, unseenCount: 0, lastActivityUs: 0)));
+      }
     }
 
-    // ── Construire et retourner le résultat trié ─────────────────────────────
-    if (latestUs.isEmpty) {
+    if (result.isEmpty) {
       return fetchPlatformRecentCreators(me.id ?? '', limit: limit);
     }
 
-    // Trier : non-vus d'abord, puis par activité récente
-    final sortedIds = latestUs.keys.toList()
-      ..sort((a, b) {
-        final aUnseen = (unseenPerCreator[a] ?? 0) > 0 ? 1 : 0;
-        final bUnseen = (unseenPerCreator[b] ?? 0) > 0 ? 1 : 0;
-        if (bUnseen != aUnseen) return bUnseen - aUnseen;
-        return (latestUs[b] ?? 0).compareTo(latestUs[a] ?? 0);
-      });
-
-    final topIds = sortedIds.take(limit).toList();
-    final users = await _fetchUsers(topIds);
-
-    return users
-        .where((u) => u.id != null)
-        .map((u) {
-          final uid = u.id!;
-          // viewedPostIds prioritaire ; CF en fallback si vp manquant
-          final vpCount = unseenPerCreator[uid] ?? 0;
-          final cfCount = cfCounts[uid] ?? 0;
-          return ActiveCreator(
-            user: u,
-            unseenCount: vpCount > 0 ? vpCount : cfCount,
-            lastActivityUs: latestUs[uid] ?? 0,
-          );
-        })
-        .toList()
+    return result.take(limit).toList()
       ..sort((a, b) {
         if (a.unseenCount > 0 && b.unseenCount == 0) return -1;
         if (b.unseenCount > 0 && a.unseenCount == 0) return 1;

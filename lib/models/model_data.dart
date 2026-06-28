@@ -1242,8 +1242,12 @@ class UserData {
     postViewsMonthly = (json['postViewsMonthly'] as Map<String, dynamic>?)
         ?.map((k, v) => MapEntry(k, (v as num).toInt())) ?? {};
     postViewsMigrationDone = json['postViewsMigrationDone'] ?? false;
-    newPostsByCreator = (json['newPostsByCreator'] as Map<String, dynamic>?)
-        ?.map((k, v) => MapEntry(k, (v as num).toInt())) ?? {};
+    newPostsByCreator = Map<String, int>.fromEntries(
+      ((json['newPostsByCreator'] as Map<String, dynamic>?) ?? {})
+          .entries
+          .where((e) => (e.value as num).toInt() > 0)
+          .map((e) => MapEntry(e.key, (e.value as num).toInt())),
+    );
 
     officialAccountType = json['officialAccountType'] as String?;
     officialAccountStatus = json['officialAccountStatus'] as String?;

@@ -1,5 +1,5 @@
 # SUIVI REFONTE UI — AFROLOOK V2
-_Dernière mise à jour : 24 juin 2026 (session 83)_
+_Dernière mise à jour : 28 juin 2026 (session 90)_
 
 ---
 
@@ -141,6 +141,13 @@ Tout est fait en **français**.
 | **Unification score (session 74)** | ✅ FAIT — `FeedScoringService.calculateEngagementScore()` public, `_computeScore` ne double-compte plus la fraîcheur |
 | **Requêtes Firestore parallèles (session 74)** | ✅ FAIT — `fetchFeed` FeedType.home passe de 5 awaits séquentiels à `Future.wait()` (dédup post-collection) |
 | **AppColors postWidgetPage (session 74)** | ✅ FAIT — 8 constantes hardcodées supprimées, badge événement + badge pays + dialog pièces migrés vers AppColors |
+| **Créateurs actifs — session 90** | ✅ FAIT — Section créateurs affichée instantanément avec vrais counts (pré-peuplé depuis `newPostsByCreator` en mémoire + fetch Firestore frais avant `resolve()`). Fix `model_data.dart` : filtre valeurs ≤0 dans `newPostsByCreator`. `active_creators_service` : param `freshCounts` pour contourner stale cache. |
+| **Chat liste — section créateurs (session 90)** | ✅ FAIT — `listUserConv.dart` : remplacement section amis actifs par section créateurs (`ActiveCreatorsService`), fetch utilisateurs en batch (`whereIn` par 10), cache+stream en parallèle (`_firebaseLoaded` guard), suppression de 2N requêtes individuelles |
+| **Chat groupe — réactions rapides (session 90)** | ✅ FAIT — `group_chat_page.dart` : 6 emojis rapides WhatsApp-style (❤️😂👍👎😮😢) dans le modal de réaction, mise en évidence emoji sélectionné, bouton `+` vers EmojiPicker complet |
+| **Like button — rechargement solde (session 90)** | ✅ FAIT — `postWidgetPage.dart` : `refreshBalance()` appelé avant vérification du solde pour éviter faux positif "pièces insuffisantes" |
+| **Chroniques — état vide + disparition (session 90)** | ✅ FAIT — `HomeConstPost.dart` : bouton "Nouvelle chronique" si section vide, rechargement au retour de `AddChroniquePage`. Fix timeout : `TimeoutException` catchée séparément → le cache n'est plus écrasé par `[]` en cas de lenteur réseau |
+| **`CreatorUnseenPostsPage` — tracking vues (session 90)** | ✅ FAIT — `creator_unseen_posts_page.dart` : suppression du `resetCreatorCounter()` immédiat à l'ouverture. Décrément post par post au scroll (`_localUnseenCount`, `_decrementedInSession`). `setState` sur `_sessionViewedIds` → badge "Non vu" disparaît en temps réel. Reset complet uniquement quand tous les posts non vus sont vus |
+| **Index Firestore manquant (session 90)** | ✅ FAIT — `firestore.indexes.json` : ajout index `Posts [canal_id ASC, createdAt DESC]` (camelCase, différent de `created_at` snake_case déjà existant). Utilisé par `feed_preload_service._fetchUnseenCanalPosts()`. **À déployer** : `firebase deploy --only firestore:indexes` |
 
 ---
 

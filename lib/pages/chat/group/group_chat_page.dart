@@ -3112,6 +3112,77 @@ class _GroupChatPageState extends State<GroupChatPage> {
             ),
             const SizedBox(height: 8),
 
+            // 6 réactions rapides (style WhatsApp)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  ...[
+                    ('❤️', 'Aimer'),
+                    ('😂', 'Rire'),
+                    ('👍', 'D\'accord'),
+                    ('👎', 'Non aimer'),
+                    ('😮', 'Surpris'),
+                    ('😢', 'Triste'),
+                  ].map((pair) {
+                    final emoji = pair.$1;
+                    final label = pair.$2;
+                    final isMine = myCurrentEmoji == emoji;
+                    return GestureDetector(
+                      onTap: () async {
+                        Navigator.pop(ctx);
+                        await _toggleReaction(msgId, emoji);
+                      },
+                      child: Column(
+                        children: [
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: isMine
+                                  ? _colors.primary.withOpacity(0.15)
+                                  : _colors.surfaceVariant,
+                              border: Border.all(
+                                color: isMine
+                                    ? _colors.primary.withOpacity(0.5)
+                                    : Colors.transparent,
+                                width: 2,
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(emoji, style: const TextStyle(fontSize: 22)),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            label,
+                            style: TextStyle(
+                              fontSize: 9,
+                              color: isMine ? _colors.primary : _colors.textSecondary,
+                              fontWeight: isMine ? FontWeight.w600 : FontWeight.normal,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Divider(height: 1, color: _colors.border.withOpacity(0.3)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  Text('Tous les emojis', style: TextStyle(color: _colors.textSecondary, fontSize: 12)),
+                ],
+              ),
+            ),
+
             // Picker complet avec toutes les catégories
             Expanded(
               child: EmojiPicker(

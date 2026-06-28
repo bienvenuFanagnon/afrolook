@@ -151,6 +151,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   List<String> _followingIds = []; // créateurs que l'utilisateur SUIT (abonnements)
   List<ActiveCanal> _recentCanaux = [];
   final _activeCreatorsService = ActiveCreatorsService();
+  // Posts déjà décrémentés dans cette session (évite double-décrément au scroll)
+  final _decrementedPostIds = <String>{};
   Timer? _stayTimer;
   bool _isPageVisible = true;
   bool _isSupportDialogShowing = false;
@@ -236,6 +238,13 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         _isLoadingSuggestedUsers = false;
       }
     }
+    // Pré-peupler les counts depuis newPostsByCreator (déjà en mémoire, 0 requête).
+    // Garantit que les boot users affichent leurs badges immédiatement, sans
+    // attendre que resolve() termine son fetch Firestore.
+    final cfCounts = Map<String, int>.from(
+        authProvider.loginUserData.newPostsByCreator ?? {});
+    cfCounts.removeWhere((_, v) => v <= 0);
+    if (cfCounts.isNotEmpty) _unseenCounts = cfCounts;
 
     // Configuration initiale
     _initializeAnimations();
@@ -2253,11 +2262,37 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
     try {
       final me = authProvider.loginUserData;
+      final userId = me.id ?? '';
+
+      // Fetch newPostsByCreator frais depuis Firestore pour éviter les valeurs
+      // stale du cache local (le listener auth peut ne pas avoir encore reçu la
+      // réponse serveur quand ce code s'exécute).
+      Map<String, int>? freshCounts;
+      if (userId.isNotEmpty) {
+        try {
+          final doc = await FirebaseFirestore.instance
+              .collection('Users')
+              .doc(userId)
+              .get();
+          final raw = doc.data()?['newPostsByCreator'] as Map<String, dynamic>? ?? {};
+          freshCounts = Map<String, int>.fromEntries(
+            raw.entries
+                .where((e) => (e.value as num? ?? 0).toInt() > 0)
+                .map((e) => MapEntry(e.key, (e.value as num).toInt())),
+          );
+          // Mise à jour immédiate des badges avant que resolve() finisse
+          if (mounted && freshCounts.isNotEmpty) {
+            setState(() => _unseenCounts = Map.from(freshCounts!));
+          }
+        } catch (_) {}
+      }
+
       // limit=20 : affiche jusqu'à 20 créateurs, dont TOUS ceux avec posts non vus
       final creators = await _activeCreatorsService.resolve(
         me,
         limit: 20,
         followingIds: _followingIds.isNotEmpty ? _followingIds : null,
+        freshCounts: freshCounts,
       );
 
       // Si aucun post non vu, mélanger pour varier l'ordre à chaque chargement
@@ -2279,7 +2314,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       });
 
       _saveFeedToCache();
-      final userId = me.id ?? '';
       if (userId.isNotEmpty) {
         HomeBootCache.save(
           userId: userId,
@@ -2344,16 +2378,25 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     _hasStartedLoadChroniques = true;
     if (mounted && _chroniques.isEmpty) setState(() => _isLoadingChroniques = true);
     try {
-      // Timeout 8s pour éviter un skeleton infini si réseau lent
-      final validChroniques = await FeedRepository()
-          .fetchChroniques(limit: 6)
-          .timeout(const Duration(seconds: 8), onTimeout: () => []);
-      if (!mounted) return;
-      setState(() => _chroniques = validChroniques);
-      if (validChroniques.isNotEmpty) {
-        await _loadChroniqueUserDataInBackground(validChroniques);
+      // Timeout 15s — si dépassé on garde le cache (pas d'écrasement par [])
+      List<Chronique>? validChroniques;
+      try {
+        validChroniques = await FeedRepository()
+            .fetchChroniques(limit: 6)
+            .timeout(const Duration(seconds: 15));
+      } on TimeoutException {
+        printVm('⏱ fetchChroniques timeout – cache conservé');
       }
-      _saveFeedToCache();
+      if (!mounted) return;
+      if (validChroniques != null) {
+        // Résultat réel reçu : mettre à jour (même si vide = toutes expirées)
+        setState(() => _chroniques = validChroniques!);
+        if (validChroniques.isNotEmpty) {
+          await _loadChroniqueUserDataInBackground(validChroniques);
+        }
+        _saveFeedToCache();
+      }
+      // Si null (timeout) : on garde _chroniques tel quel (boot cache ou données précédentes)
     } catch (e) {
       printVm('❌ Erreur chargement chroniques: $e');
     } finally {
@@ -2582,7 +2625,46 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         ),
       );
     }
-    if (_chroniques.isEmpty) return const SizedBox.shrink();
+    if (_chroniques.isEmpty) {
+      // Bouton "Nouvelle chronique" quand aucune chronique n'existe encore
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: GestureDetector(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => AddChroniquePage()),
+          ).then((_) {
+            // Relancer le chargement des chroniques au retour
+            if (!mounted) return;
+            setState(() { _hasStartedLoadChroniques = false; });
+            _loadChroniquesInBackground();
+          }),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              border: Border.all(color: AppColors.of(context).primary.withOpacity(0.5)),
+              borderRadius: BorderRadius.circular(30),
+              color: AppColors.of(context).primary.withOpacity(0.07),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.add_circle_outline, size: 18, color: AppColors.of(context).primary),
+                const SizedBox(width: 8),
+                Text(
+                  'Nouvelle chronique',
+                  style: TextStyle(
+                    color: AppColors.of(context).primary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return ChroniqueSectionComponent(
       videoThumbnails: _videoThumbnails,
@@ -2611,10 +2693,12 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     final hasFollowed = currentUser.userAbonnesIds?.isNotEmpty ?? false;
     final hasCanaux = _recentCanaux.isNotEmpty;
     final hasCreators = _suggestedUsers.isNotEmpty;
+    final hasFollowings = _followingIds.isNotEmpty ||
+        (currentUser.followingIds?.isNotEmpty ?? false);
     final String title;
     if (hasUnseen) {
       title = 'Vos Créateurs actifs';
-    } else if (hasFollowed || hasCreators) {
+    } else if (hasFollowings || hasCreators) {
       title = hasCanaux && !hasCreators
           ? 'Vos Canaux suivis'
           : 'Créateurs & Canaux';
@@ -2632,39 +2716,25 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       recentCanaux: _recentCanaux,
       creatorLastActivityUs: _creatorLastActivityUs,
       roundCards: true,
-      // "Voir plus" → feed des posts non vus si disponibles, sinon liste créateurs
+      // "Voir plus" → toujours la liste (ActiveCreatorsListPage)
+      // Cette page a déjà un bouton "Voir tous les posts non vus" pour le feed
       onSeeAllOverride: () {
-        if (hasUnseen) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => FollowingUnseenFeedPage(
-                unseenCreatorIds: _unseenCounts.keys.toList(),
-                followedCanalIds: _followedCanalIds,
-                totalUnseen: _unseenCounts.values.fold(0, (a, b) => a + b),
-                currentUserId: currentUser.id ?? '',
-                viewedPostIds: currentUser.viewedPostIds ?? [],
-              ),
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ActiveCreatorsListPage(
+              abonnesIds: _followingIds.isNotEmpty
+                  ? _followingIds
+                  : (currentUser.followingIds ?? currentUser.userAbonnesIds ?? []),
+              viewedPostIds: currentUser.viewedPostIds ?? [],
+              currentUserId: currentUser.id ?? '',
+              unseenCounts: _unseenCounts,
+              followedCanalIds: _followedCanalIds,
+              recentCanaux: _recentCanaux,
+              preloadedCreators: _activeCreators,
             ),
-          );
-        } else {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ActiveCreatorsListPage(
-                abonnesIds: _followingIds.isNotEmpty
-                    ? _followingIds
-                    : currentUser.userAbonnesIds ?? [],
-                viewedPostIds: currentUser.viewedPostIds ?? [],
-                currentUserId: currentUser.id ?? '',
-                unseenCounts: _unseenCounts,
-                followedCanalIds: _followedCanalIds,
-                recentCanaux: _recentCanaux,
-                preloadedCreators: _activeCreators,
-              ),
-            ),
-          );
-        }
+          ),
+        );
       },
       // Tap sur une carte → toujours la page du créateur
       onTapCard: (user) {
@@ -3191,6 +3261,64 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   Future<void> _recordPostView3(Post post) async {
 
   }
+
+  /// Décrémente newPostsByCreator quand un post est vu dans le feed.
+  /// Chaque post n'est décrémenté qu'une seule fois par session.
+  void _decrementCreatorUnseenCount(Post post) {
+    final postId = post.id;
+    final creatorId = post.user_id;
+    if (postId == null || creatorId == null) return;
+    if (_decrementedPostIds.contains(postId)) return;
+    _decrementedPostIds.add(postId);
+
+    final me = authProvider.loginUserData;
+    final counts = me.newPostsByCreator;
+    if (counts == null || !counts.containsKey(creatorId)) return;
+
+    final current = counts[creatorId] ?? 0;
+    if (current <= 0) return;
+
+    final newCount = current - 1;
+
+    // Mise à jour locale du modèle
+    if (newCount <= 0) {
+      counts.remove(creatorId);
+    } else {
+      counts[creatorId] = newCount;
+    }
+
+    // Mise à jour UI des badges
+    if (mounted) {
+      setState(() {
+        if (newCount <= 0) {
+          _unseenCounts.remove(creatorId);
+        } else {
+          _unseenCounts[creatorId] = newCount;
+        }
+        _activeCreators = _activeCreators.map((c) {
+          if (c.user.id != creatorId) return c;
+          return ActiveCreator(
+            user: c.user,
+            unseenCount: newCount,
+            lastActivityUs: c.lastActivityUs,
+          );
+        }).toList();
+      });
+    }
+
+    // Mise à jour Firestore en arrière-plan
+    final userId = me.id;
+    if (userId == null) return;
+    if (newCount <= 0) {
+      _activeCreatorsService.resetCreatorCounter(userId, creatorId);
+    } else {
+      FirebaseFirestore.instance
+          .collection('Users')
+          .doc(userId)
+          .update({'newPostsByCreator.$creatorId': FieldValue.increment(-1)})
+          .catchError((_) {});
+    }
+  }
   Future<void> _recordPostView(Post post) async {
     final currentUserId = authProvider.loginUserData.id;
     if (currentUserId == null || post.id == null) return;
@@ -3260,6 +3388,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         // ✅ 2. GESTION DE L'INTERACTION (par session)
         await _checkAndIncrementInteraction(post);
       }
+
+      // Décrémenter newPostsByCreator pour ce créateur
+      _decrementCreatorUnseenCount(post);
 
       PostViewService.recordAuthorView(post, currentUserId);
       printVm('✅ Vue comptée pour post ${post.id} par $currentUserId');
