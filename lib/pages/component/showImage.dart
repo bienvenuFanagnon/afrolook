@@ -28,7 +28,7 @@ void showImageDetailsModalDialog(String image, double w, double h,BuildContext c
                 Skeletonizer(
                     child: SizedBox(width: 120,height: 100, child:  ClipRRect(
                         borderRadius: BorderRadius.all(Radius.circular(10)),child: Image.asset('assets/images/404.png')))),
-                errorWidget: (context, url, error) =>  Container(width: 120,height: 100,child: Image.asset("assets/icon/user-removebg-preview.png",fit: BoxFit.cover,)),
+                errorWidget: (context, url, error) => Container(width: 120, height: 100, color: Colors.grey.shade200, child: const Icon(Icons.person, size: 40, color: Colors.grey)),
               ),
 
             ),

@@ -643,10 +643,10 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
         fit: BoxFit.cover,
       );
     }
-    // Image par défaut
-    return Image.asset(
-      'assets/icon/user-removebg-preview.png',
-      fit: BoxFit.cover,
+    // Pas d'image sélectionnée : icône par défaut
+    return Container(
+      color: Colors.grey.shade200,
+      child: const Icon(Icons.person, size: 60, color: Colors.grey),
     );
   }
 

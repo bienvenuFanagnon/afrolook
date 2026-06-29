@@ -686,10 +686,8 @@ class _PostViewState extends State<PostView>
                       errorWidget: (context, url, error) => Container(
                           width: 120,
                           height: 100,
-                          child: Image.asset(
-                            "assets/icon/user-removebg-preview.png",
-                            fit: BoxFit.cover,
-                          )),
+                          color: Colors.grey.shade200,
+                          child: const Icon(Icons.person, size: 40, color: Colors.grey)),
                     ),
                   ),
                 ),
@@ -918,10 +916,8 @@ class _PostViewState extends State<PostView>
                         errorWidget: (context, url, error) => Container(
                             width: w*0.45,
                             height: h*0.32,
-                            child: Image.asset(
-                              "assets/icon/user-removebg-preview.png",
-                              fit: BoxFit.cover,
-                            )),
+                            color: Colors.grey.shade200,
+                            child: const Icon(Icons.person, size: 40, color: Colors.grey)),
                       ),
                     ),
                     Positioned(
@@ -3245,13 +3241,13 @@ class _PostViewState extends State<PostView>
                                         child: Column(
                                           children: [
                                             Container(
-                                              child: CircleAvatar(
-                                                backgroundImage: AssetImage(
-                                                  "assets/icon/user-removebg-preview.png",
-                                                ),
-                                              ),
                                               height: 100,
                                               width: 100,
+                                              decoration: const BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: Color(0xFFE0E0E0),
+                                              ),
+                                              child: const Icon(Icons.person, size: 40, color: Colors.grey),
                                             ),
                                             SizedBox(
                                               height: 2,
@@ -3315,13 +3311,13 @@ class _PostViewState extends State<PostView>
                                         child: Column(
                                           children: [
                                             Container(
-                                              child: CircleAvatar(
-                                                backgroundImage: AssetImage(
-                                                  "assets/icon/user-removebg-preview.png",
-                                                ),
-                                              ),
                                               height: 100,
                                               width: 100,
+                                              decoration: const BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: Color(0xFFE0E0E0),
+                                              ),
+                                              child: const Icon(Icons.person, size: 40, color: Colors.grey),
                                             ),
                                             SizedBox(
                                               height: 2,
@@ -3397,13 +3393,13 @@ class _PostViewState extends State<PostView>
                   child: Column(
                     children: [
                       Container(
-                        child: CircleAvatar(
-                          backgroundImage: AssetImage(
-                            "assets/icon/user-removebg-preview.png",
-                          ),
-                        ),
                         width: w*0.45,
                         height: h*0.2,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Color(0xFFE0E0E0),
+                        ),
+                        child: const Icon(Icons.person, size: 40, color: Colors.grey),
                       ),
                       SizedBox(
                         height: 2,

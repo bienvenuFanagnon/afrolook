@@ -30,6 +30,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController telephoneController = TextEditingController();
   final TextEditingController pseudoController = TextEditingController();
   final TextEditingController motDePasseController = TextEditingController();
+  final TextEditingController confirmMotDePasseController = TextEditingController();
   final TextEditingController code_parrainageController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -53,7 +54,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     QuerySnapshot snapshot = await pseudos.get();
     final list = snapshot.docs.map((doc) =>
         UserPseudo.fromJson(doc.data() as Map<String, dynamic>)).toList();
-    bool existe = list.any((e) => e.name!.toLowerCase() == nom.toLowerCase());
+    bool existe = list.any((e) => (e.name ?? '').toLowerCase() == nom.toLowerCase());
 
     if (!existe) {
       try {
@@ -85,6 +86,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.initState();
     authProvider.initializeData();
     is_open = false;
+  }
+
+  @override
+  void dispose() {
+    telephoneController.dispose();
+    pseudoController.dispose();
+    motDePasseController.dispose();
+    confirmMotDePasseController.dispose();
+    code_parrainageController.dispose();
+    emailController.dispose();
+    super.dispose();
   }
 
   @override
@@ -277,7 +289,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     // Champ confirmation mot de passe
                     _buildPasswordField(
                       context: context,
-                      controller: TextEditingController(),
+                      controller: confirmMotDePasseController,
                       hintText: l10n.signupConfirmPasswordHint,
                       obscureText: _obscureConfirmPassword,
                       onToggle: () {
@@ -306,10 +318,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       height: 50,
                       child: ElevatedButton(
                         onPressed: onTap ? null : () async {
-                          if (_formKey.currentState!.validate()) {
-                            setState(() => onTap = true);
-
-                            if (!await verifierPseudo(pseudoController.text)) {
+                          if (!_formKey.currentState!.validate()) return;
+                          setState(() => onTap = true);
+                          try {
+                            final pseudoPris = await verifierPseudo(pseudoController.text);
+                            if (!pseudoPris) {
                               await authProvider.getAppData();
                               authProvider.initializeData();
                               authProvider.registerUser.numeroDeTelephone = telephoneController.text;
@@ -320,13 +333,27 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               authProvider.registerUser.password = motDePasseController.text;
                               authProvider.registerUser.email = emailController.text;
 
+                              if (!mounted) return;
                               Navigator.pop(context);
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(builder: (context) => SignUpFormEtap3()),
                               );
                             }
-                            setState(() => onTap = false);
+                          } catch (e, stack) {
+                            debugPrint('🔴 [SignUp] Erreur inscription: $e');
+                            debugPrint('$stack');
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Erreur : $e'),
+                                  duration: const Duration(seconds: 8),
+                                  backgroundColor: Colors.red.shade700,
+                                ),
+                              );
+                            }
+                          } finally {
+                            if (mounted) setState(() => onTap = false);
                           }
                         },
                         style: ElevatedButton.styleFrom(

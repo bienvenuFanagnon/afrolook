@@ -407,9 +407,7 @@ class _MyHomePageState extends State<MyHomePage>
                               child: CircleAvatar(
                                 backgroundImage: NetworkImage(
                                     '${authProvider.loginUserData.imageUrl!}'),
-                                onBackgroundImageError: (exception, stackTrace) =>
-                                    AssetImage(
-                                        "assets/icon/user-removebg-preview.png"),
+                                onBackgroundImageError: (_, __) {},
                               ),
                             ),
                             SizedBox(height: 2),

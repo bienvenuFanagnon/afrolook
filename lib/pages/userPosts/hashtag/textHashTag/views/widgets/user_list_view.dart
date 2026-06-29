@@ -76,9 +76,7 @@ class UserListView extends StatelessWidget {
                                 leading: CircleAvatar(
                                   backgroundImage: NetworkImage(
                                       '${user.avatar}'),
-                                  onBackgroundImageError: (exception, stackTrace) =>
-                                      AssetImage(
-                                          "assets/icon/user-removebg-preview.png"),
+                                  onBackgroundImageError: (_, __) {},
                                 ),
                                 title: Text(user.fullName),
                                 subtitle: Text("@${user.userName}"),

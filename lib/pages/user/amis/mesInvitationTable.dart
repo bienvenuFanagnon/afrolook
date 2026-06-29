@@ -59,7 +59,7 @@ class _MesInvitationsState extends State<MesInvitations> {
                 CircleAvatar(
                   backgroundImage: NetworkImage(invitation.inviteUser!.imageUrl!),
                   maxRadius: 30,
-                  onBackgroundImageError: (_, __) => const AssetImage('assets/icon/user-removebg-preview.png'),
+                  onBackgroundImageError: (_, __) {},
                 ),
                 const SizedBox(width: 16),
                 Row(

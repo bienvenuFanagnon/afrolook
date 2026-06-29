@@ -220,10 +220,8 @@ class _ProfileEntreprisePostVideoTabState
                     errorWidget: (context, url, error) => Container(
                         width: 120,
                         height: 100,
-                        child: Image.asset(
-                          "assets/icon/user-removebg-preview.png",
-                          fit: BoxFit.cover,
-                        )),
+                        color: Colors.grey.shade200,
+                        child: const Icon(Icons.person, size: 40, color: Colors.grey)),
                   ),
                 ),
               ),
