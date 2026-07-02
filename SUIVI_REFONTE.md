@@ -1,5 +1,5 @@
 # SUIVI REFONTE UI — AFROLOOK V2
-_Dernière mise à jour : 30 juin 2026 (session 91)_
+_Dernière mise à jour : 2 juillet 2026 (session 92)_
 
 ---
 
@@ -3949,3 +3949,84 @@ bool get _userCanShare => _isAppAdmin || (!_isBlocked && GroupPermissionUtils.ca
 ### Règle de sécurité (rappel)
 - Commission split : 75% parrain affiché dans l'UI, 25% revenus app — **ne jamais afficher les 25% dans l'UI**
 - ADM est Gold permanent
+
+---
+
+## Session 91 — Vérification session Firebase (Live + Abonnement)
+
+**Fichiers modifiés :**
+- `lib/pages/LiveAgora/livePage.dart` — SessionCheckerService avant connexion Agora
+- `lib/pages/entreprise/abonnement/Subscription.dart` — SessionCheckerService avant Firestore
+- Protection via `_sessionChecked` flag (évite double affichage) et `addPostFrameCallback`
+
+---
+
+## Session 92 — Système contenu payant : refonte UI complète + boost
+
+### Nouveaux fichiers créés
+
+| Fichier | Rôle |
+|---|---|
+| `lib/pages/contenuPayant/content_detail_page.dart` | Page détail universelle (tous types de contenu) |
+| `lib/pages/contenuPayant/widgets/boosted_content_strip.dart` | Strip horizontal contenus boostés (réutilisable) |
+| `lib/pages/contenuPayant/widgets/boost_modal.dart` | Modal de boost avec tarifs |
+| `lib/pages/contenuPayant/widgets/content_comments_section.dart` | Commentaires (max 100 chars) |
+
+### Fichiers modifiés
+
+| Fichier | Changement |
+|---|---|
+| `lib/models/model_data.dart` | 8 types ContentType + champs boost + coverImages + fileUrl |
+| `lib/pages/contenuPayant/TableauDeBord.dart` | Refonte complète : boosted strip + grille responsive + filtres par type + recherche |
+
+### Fonctionnalités implémentées
+
+**Modèle ContentPaie (extensions) :**
+- 8 types : VIDEO, EBOOK, FORMATION, TEMPLATE, PACK_ZIP, AUDIO, PRESET, BUNDLE
+- Champs boost : `isBoosted`, `boostStartDate`, `boostEndDate`, `boostedByAdmin`, `boostAmountPaid`
+- Nouveaux champs : `coverImages` (jusqu'à 3), `tutorialVideoUrl`, `fileUrl`, `fileSize`
+- Getter `isBoostActive` (vérifie `isBoosted && boostEndDate > now`)
+
+**TableauDeBord (page listing) :**
+- Section "⚡ CONTENUS VIP" (contenus boostés) toujours en haut
+- Grille responsive (maxCrossAxisExtent: 200) avec cover CDN
+- Tabs de filtre par type de contenu
+- Recherche textuelle (titre + hashtags)
+- Sort : récent / populaire / gratuit
+- FAB "+" pour les créateurs
+
+**BoostedContentStripWidget :**
+- Composant réutilisable à insérer dans HomeConstPost, HomeSportPost, etc.
+- Query Firestore : `isBoosted == true && boostEndDate > now`, limit 10
+- S'affiche uniquement s'il y a des contenus boostés actifs
+
+**ContentDetailPage :**
+- AppBar avec galerie de covers (swipe + dots indicateur)
+- Badge type + badge boosté
+- Aperçu verrouillé (3 images libres avant achat)
+- Section téléchargement sécurisé (post-achat)
+- Liste épisodes avec lock/unlock
+- Achat via Firestore batch (75/25 split)
+- Bouton "Booster" pour owner/admin
+- Menu contextuel owner/admin (booster, modifier, supprimer)
+- CDN URLs via `convertToCdnUrl()` sur toutes les images
+
+**BoostModal :**
+- Tarifs : 7j=1000F, 14j=1800F, 30j=3500F, 90j=9000F, 180j=16000F, 365j=28000F
+- Remises affichées (–10% à –33%)
+- Badge "⭐ POP" sur 1 mois
+- Admin : boost gratuit (`boostedByAdmin: true`)
+- Écrit dans Firestore : `isBoosted`, `boostStartDate`, `boostEndDate`, `boostDurationDays`, `boostAmountPaid`
+
+**ContentCommentsSection :**
+- Max 100 caractères (compteur visible)
+- StreamBuilder temps réel
+- Collection `ContentComments` : userId, pseudo, avatarUrl, text, createdAt
+- Incrémente `ContentPaie.comments` à l'envoi
+
+### TODO (prochaine session)
+- Intégrer `BoostedContentStripWidget` dans `HomeConstPost.dart` et `HomeSportPost.dart`
+- Créer admin management page (gestion contenus + boost gratuit + tarifs)
+- Étendre `ContentForm` aux 6 nouveaux types + upload fichier 200Mo + tuto vidéo 20Mo
+- Cloud Function pour expire boost quotidiennement
+- Cloud Function `getSecureDownloadUrl` pour URLs signées

@@ -4015,7 +4015,13 @@ class ContentCategory {
 // Enum pour le type de contenu
 enum ContentType {
   VIDEO,
-  EBOOK
+  EBOOK,
+  FORMATION,
+  TEMPLATE,
+  PACK_ZIP,
+  AUDIO,
+  PRESET,
+  BUNDLE,
 }
 
 // Modèle pour les épisodes (vidéos et ebooks)
@@ -4174,9 +4180,13 @@ class ContentPaie {
   String ownerId;
   String title;
   String description;
-  String? videoUrl; // Pour les vidéos simples
-  String? pdfUrl; // Pour les ebooks
+  String? videoUrl;
+  String? pdfUrl;
   String thumbnailUrl;
+  List<String> coverImages;
+  String? tutorialVideoUrl;
+  String? fileUrl;
+  String? fileSize;
   List<String> categories;
   List<String> hashtags;
   bool isSeries;
@@ -4186,15 +4196,21 @@ class ContentPaie {
   bool isFree;
   int views;
   int likes;
-  int dislikes; // NOUVEAU: compteur de dislikes
+  int dislikes;
   int comments;
-  int shares; // NOUVEAU: compteur de partages
-  List<String> likedBy; // NOUVEAU: liste des utilisateurs qui ont liké
-  List<String> dislikedBy; // NOUVEAU: liste des utilisateurs qui ont disliké
+  int shares;
+  List<String> likedBy;
+  List<String> dislikedBy;
   int duration;
   int pageCount;
   int createdAt;
   int updatedAt;
+  bool isBoosted;
+  int? boostStartDate;
+  int? boostEndDate;
+  int? boostDurationDays;
+  double? boostAmountPaid;
+  bool boostedByAdmin;
 
   ContentPaie({
     this.id,
@@ -4204,6 +4220,10 @@ class ContentPaie {
     this.videoUrl,
     this.pdfUrl,
     required this.thumbnailUrl,
+    this.coverImages = const [],
+    this.tutorialVideoUrl,
+    this.fileUrl,
+    this.fileSize,
     required this.categories,
     required this.hashtags,
     this.isSeries = false,
@@ -4213,15 +4233,21 @@ class ContentPaie {
     required this.isFree,
     this.views = 0,
     this.likes = 0,
-    this.dislikes = 0, // Initialisé à 0
+    this.dislikes = 0,
     this.comments = 0,
-    this.shares = 0, // Initialisé à 0
-    this.likedBy = const [], // Initialisé vide
-    this.dislikedBy = const [], // Initialisé vide
+    this.shares = 0,
+    this.likedBy = const [],
+    this.dislikedBy = const [],
     this.duration = 0,
     this.pageCount = 0,
     this.createdAt = 0,
     this.updatedAt = 0,
+    this.isBoosted = false,
+    this.boostStartDate,
+    this.boostEndDate,
+    this.boostDurationDays,
+    this.boostAmountPaid,
+    this.boostedByAdmin = false,
   });
 
   factory ContentPaie.fromJson(Map<String, dynamic> json) {
@@ -4233,6 +4259,10 @@ class ContentPaie {
       videoUrl: json['videoUrl'],
       pdfUrl: json['pdfUrl'],
       thumbnailUrl: json['thumbnailUrl'],
+      coverImages: List<String>.from(json['coverImages'] ?? []),
+      tutorialVideoUrl: json['tutorialVideoUrl'],
+      fileUrl: json['fileUrl'],
+      fileSize: json['fileSize'],
       categories: List<String>.from(json['categories'] ?? []),
       hashtags: List<String>.from(json['hashtags'] ?? []),
       isSeries: json['isSeries'] ?? false,
@@ -4245,15 +4275,21 @@ class ContentPaie {
       isFree: json['isFree'] ?? false,
       views: json['views'] ?? 0,
       likes: json['likes'] ?? 0,
-      dislikes: json['dislikes'] ?? 0, // NOUVEAU
+      dislikes: json['dislikes'] ?? 0,
       comments: json['comments'] ?? 0,
-      shares: json['shares'] ?? 0, // NOUVEAU
-      likedBy: List<String>.from(json['likedBy'] ?? []), // NOUVEAU
-      dislikedBy: List<String>.from(json['dislikedBy'] ?? []), // NOUVEAU
+      shares: json['shares'] ?? 0,
+      likedBy: List<String>.from(json['likedBy'] ?? []),
+      dislikedBy: List<String>.from(json['dislikedBy'] ?? []),
       duration: json['duration'] ?? 0,
       pageCount: json['pageCount'] ?? 0,
       createdAt: json['createdAt'] ?? 0,
       updatedAt: json['updatedAt'] ?? 0,
+      isBoosted: json['isBoosted'] ?? false,
+      boostStartDate: json['boostStartDate'],
+      boostEndDate: json['boostEndDate'],
+      boostDurationDays: json['boostDurationDays'],
+      boostAmountPaid: json['boostAmountPaid']?.toDouble(),
+      boostedByAdmin: json['boostedByAdmin'] ?? false,
     );
   }
 
@@ -4266,6 +4302,10 @@ class ContentPaie {
       'videoUrl': videoUrl,
       'pdfUrl': pdfUrl,
       'thumbnailUrl': thumbnailUrl,
+      'coverImages': coverImages,
+      'tutorialVideoUrl': tutorialVideoUrl,
+      'fileUrl': fileUrl,
+      'fileSize': fileSize,
       'categories': categories,
       'hashtags': hashtags,
       'isSeries': isSeries,
@@ -4275,23 +4315,40 @@ class ContentPaie {
       'isFree': isFree,
       'views': views,
       'likes': likes,
-      'dislikes': dislikes, // NOUVEAU
+      'dislikes': dislikes,
       'comments': comments,
-      'shares': shares, // NOUVEAU
-      'likedBy': likedBy, // NOUVEAU
-      'dislikedBy': dislikedBy, // NOUVEAU
+      'shares': shares,
+      'likedBy': likedBy,
+      'dislikedBy': dislikedBy,
       'duration': duration,
       'pageCount': pageCount,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
+      'isBoosted': isBoosted,
+      'boostStartDate': boostStartDate,
+      'boostEndDate': boostEndDate,
+      'boostDurationDays': boostDurationDays,
+      'boostAmountPaid': boostAmountPaid,
+      'boostedByAdmin': boostedByAdmin,
     };
   }
 
-  // Méthodes utilitaires
   bool get isVideo => contentType == ContentType.VIDEO;
   bool get isEbook => contentType == ContentType.EBOOK;
+  bool get isFormation => contentType == ContentType.FORMATION;
+  bool get isTemplate => contentType == ContentType.TEMPLATE;
+  bool get isPackZip => contentType == ContentType.PACK_ZIP;
+  bool get isAudio => contentType == ContentType.AUDIO;
+  bool get isPreset => contentType == ContentType.PRESET;
+  bool get isBundle => contentType == ContentType.BUNDLE;
   bool get isVideoSeries => isSeries && isVideo;
   bool get isEbookSeries => isSeries && isEbook;
+  bool get hasFile => fileUrl != null && fileUrl!.isNotEmpty;
+  bool get isBoostActive {
+    if (!isBoosted) return false;
+    if (boostEndDate == null) return false;
+    return boostEndDate! > DateTime.now().millisecondsSinceEpoch;
+  }
 
   // Méthodes pour gérer les likes/dislikes
   bool isLikedByUser(String userId) => likedBy.contains(userId);
