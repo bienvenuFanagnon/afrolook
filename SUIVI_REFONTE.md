@@ -1,5 +1,5 @@
 # SUIVI REFONTE UI — AFROLOOK V2
-_Dernière mise à jour : 28 juin 2026 (session 90)_
+_Dernière mise à jour : 30 juin 2026 (session 91)_
 
 ---
 
@@ -148,6 +148,9 @@ Tout est fait en **français**.
 | **Chroniques — état vide + disparition (session 90)** | ✅ FAIT — `HomeConstPost.dart` : bouton "Nouvelle chronique" si section vide, rechargement au retour de `AddChroniquePage`. Fix timeout : `TimeoutException` catchée séparément → le cache n'est plus écrasé par `[]` en cas de lenteur réseau |
 | **`CreatorUnseenPostsPage` — tracking vues (session 90)** | ✅ FAIT — `creator_unseen_posts_page.dart` : suppression du `resetCreatorCounter()` immédiat à l'ouverture. Décrément post par post au scroll (`_localUnseenCount`, `_decrementedInSession`). `setState` sur `_sessionViewedIds` → badge "Non vu" disparaît en temps réel. Reset complet uniquement quand tous les posts non vus sont vus |
 | **Index Firestore manquant (session 90)** | ✅ FAIT — `firestore.indexes.json` : ajout index `Posts [canal_id ASC, createdAt DESC]` (camelCase, différent de `created_at` snake_case déjà existant). Utilisé par `feed_preload_service._fetchUnseenCanalPosts()`. **À déployer** : `firebase deploy --only firestore:indexes` |
+| **Inscription — bug spinner infini (session 91)** | ✅ FAIT — `signup_form.dart` : (1) `confirmMotDePasseController` déclaré comme variable de classe (était `TextEditingController()` inline → vide au rebuild). (2) Bloc async entouré d'un `try/catch/finally` : `finally { if (mounted) setState(() => onTap = false) }` → spinner se débloque toujours même en cas d'exception. (3) Fix null-crash dans `verifierPseudo()` : `e.name!` → `(e.name ?? '')` pour docs Firestore sans champ `name`. |
+| **Image manquante `user-removebg-preview.png` (session 91)** | ✅ FAIT — Asset inexistant référencé dans 12 fichiers. Remplacé partout par `Icon(Icons.person)` : `errorWidget` de `CachedNetworkImage` dans 8 fichiers, `CircleAvatar(backgroundImage: AssetImage(...))` dans `postView.dart` (3 occurrences), `onBackgroundImageError` (callbacks no-op) dans `homeScreen.dart`, `mesInvitationTable.dart`, `user_list_view.dart`. Page inscription étape 2 : valeur par défaut remplacée par `Icon(Icons.person, size: 60)` dans un conteneur gris. |
+| **Vérification session Firebase — Live & Abonnement (session 91)** | ✅ FAIT — `SessionCheckerService` (existait mais non utilisé) branché sur : `livePage.dart` (postFrameCallback dans `initState`, avant connexion Agora/Firestore), `Subscription.dart` (postFrameCallback dans `didChangeDependencies` avec garde `_sessionChecked`). Si `FirebaseAuth.currentUser == null` → modale "Session expirée" + bouton "Se reconnecter" (`SessionExpiredModal`). |
 
 ---
 

@@ -23,6 +23,7 @@ import 'package:video_player/video_player.dart';
 
 import '../../models/model_data.dart';
 import '../../services/linkService.dart';
+import '../../services/sessions/session_checker_service.dart';
 import '../paiement/newDepot.dart';
 import 'live_widgets.dart';
 import 'livesAgora.dart';
@@ -175,6 +176,15 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     printVm("🎬 Initialisation LivePage - Live ${widget.postLive.isPaidLive ? 'PAYANT' : 'GRATUIT'}");
 
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+
+    // Vérification de la session Firebase avant toute connexion Agora/Firestore
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      SessionCheckerService.checkSessionAndShowModalIfNeeded(
+        context: context,
+        authProvider: authProvider,
+      );
+    });
 
     _likeAnimationController = AnimationController(
       vsync: this,

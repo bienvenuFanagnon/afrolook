@@ -1,5 +1,6 @@
 ﻿import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
+import 'package:afrotok/services/sessions/session_checker_service.dart';
 
 import 'package:cinetpay/cinetpay.dart';
 import 'package:flutter/material.dart';
@@ -43,11 +44,22 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
   int selectedDays = 30;
   double minProductCount = 15.0; // 15 posts pour 30 jours
   double maxProductCount = 100.0; // 100 posts pour 365 jours
+  bool _sessionChecked = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    if (!_sessionChecked) {
+      _sessionChecked = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        SessionCheckerService.checkSessionAndShowModalIfNeeded(
+          context: context,
+          authProvider: authProvider,
+        );
+      });
+    }
   }
 
   @override
