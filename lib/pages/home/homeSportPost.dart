@@ -2478,7 +2478,6 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       if (postIndex == 2) {
         contentWidgets.add(_buildAdAdvertisement(key: 'ad_after_first'));
         contentWidgets.add(const BoostedContentStripWidget());
-        contentWidgets.add(const RecentVIPContentWidget());
       }
 
       if (postIndex % 3 == 0) {
@@ -2490,6 +2489,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
           if (canauxSection is! SizedBox) {
             contentWidgets.add(canauxSection);
           }
+          contentWidgets.add(const RecentVIPContentWidget());
           contentWidgets.add(_buildAdAdvertisement(key: 'ad_vert$postIndex'));
         }
       }
@@ -2657,7 +2657,6 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       if (postIndex == 2) {
         contentWidgets.add(_buildAdAdvertisement(key: 'ad_after_first'));
         contentWidgets.add(const BoostedContentStripWidget());
-        contentWidgets.add(const RecentVIPContentWidget());
         contentWidgets.add(_buildAdBanner(key: 'ad_list_post$postIndex'));
         contentWidgets.add(_buildAdNative(key: 'ad_native_post$postIndex'));
       }
@@ -2683,9 +2682,10 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
           final canauxSection = _buildCanauxSection();
           if (canauxSection is! SizedBox) {
             contentWidgets.add(canauxSection);
-            contentWidgets.add(_buildAdBanner(key: 'ad_list_post$postIndex'));
-            contentWidgets.add(_buildAdNative(key: 'ad_native_post$postIndex'));
           }
+          contentWidgets.add(const RecentVIPContentWidget());
+          contentWidgets.add(_buildAdBanner(key: 'ad_list_post$postIndex'));
+          contentWidgets.add(_buildAdNative(key: 'ad_native_post$postIndex'));
         }
       }
     }
