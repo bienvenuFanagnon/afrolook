@@ -45,6 +45,7 @@ import '../../widgets/feed/sections/feed_articles_section.dart';
 import '../../widgets/feed/sections/feed_canaux_section.dart';
 import '../../widgets/feed/sections/active_creators_section_widget.dart';
 import '../contenuPayant/recent_vip_content_widget.dart';
+import '../contenuPayant/widgets/boosted_content_strip.dart';
 import '../../widgets/feed/sections/feed_profiles_section.dart';
 import '../../widgets/feed/sections/feed_state_widgets.dart';
 import '../../widgets/feed/sections/feed_filter_bar.dart';
@@ -2476,6 +2477,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
 
       if (postIndex == 2) {
         contentWidgets.add(_buildAdAdvertisement(key: 'ad_after_first'));
+        contentWidgets.add(const BoostedContentStripWidget());
         contentWidgets.add(const RecentVIPContentWidget());
       }
 
@@ -2654,6 +2656,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       // Après le PREMIER post (postIndex == 1)
       if (postIndex == 2) {
         contentWidgets.add(_buildAdAdvertisement(key: 'ad_after_first'));
+        contentWidgets.add(const BoostedContentStripWidget());
         contentWidgets.add(const RecentVIPContentWidget());
         contentWidgets.add(_buildAdBanner(key: 'ad_list_post$postIndex'));
         contentWidgets.add(_buildAdNative(key: 'ad_native_post$postIndex'));
