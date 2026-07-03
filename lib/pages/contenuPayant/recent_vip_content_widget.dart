@@ -175,6 +175,22 @@ class _RecentVIPContentWidgetState extends State<RecentVIPContentWidget> {
     );
   }
 
+  // Retourne (icône, couleur, label) selon le vrai contentType
+  (IconData, Color, String) _contentTypeBadge(ContentPaie content) {
+    if (content.isSeries) return (Icons.playlist_play, Colors.blue, 'Série');
+    switch (content.contentType) {
+      case ContentType.EBOOK:      return (Icons.menu_book_rounded,     Colors.purple,          'Ebook');
+      case ContentType.FORMATION:  return (Icons.school_rounded,         Colors.orange,          'Formation');
+      case ContentType.TEMPLATE:   return (Icons.dashboard_customize,    Colors.teal,            'Template');
+      case ContentType.PACK_ZIP:   return (Icons.folder_zip_outlined,    Colors.grey,            'Pack');
+      case ContentType.AUDIO:      return (Icons.headphones_rounded,     Colors.blue,            'Audio');
+      case ContentType.PRESET:     return (Icons.tune_rounded,           Colors.green,           'Preset');
+      case ContentType.BUNDLE:     return (Icons.layers_rounded,         Colors.amber,           'Bundle');
+      case ContentType.VIDEO:
+      default:                     return (Icons.play_circle_outline,    Colors.red,             'Vidéo');
+    }
+  }
+
   Widget _buildPlaceholder(ContentPaie content, AppColors colors) {
     return Container(
       color: colors.surfaceVariant,
@@ -334,38 +350,28 @@ class _RecentVIPContentWidgetState extends State<RecentVIPContentWidget> {
                                     ),
                                   ),
                                 ),
-                              // Badge type (série, ebook)
+                              // Badge vrai type de contenu
                               Positioned(
                                 bottom: 6,
                                 left: 6,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withOpacity(0.7),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        content.isSeries
-                                            ? Icons.playlist_play
-                                            : (content.isEbook ? Icons.book : Icons.play_circle_outline),
-                                        color: content.isSeries
-                                            ? Colors.blue
-                                            : (content.isEbook ? Colors.purple : Colors.red),
-                                        size: 12,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        content.isSeries
-                                            ? l10n.vipSeries
-                                            : (content.isEbook ? l10n.vipEbook : l10n.vipVideo),
-                                        style: const TextStyle(color: Colors.white, fontSize: 10),
-                                      ), // Badge sur image (overlay sombre) : reste blanc dans les 2 thèmes
-                                    ],
-                                  ),
-                                ),
+                                child: Builder(builder: (_) {
+                                  final (icon, color, label) = _contentTypeBadge(content);
+                                  return Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.7),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(icon, color: color, size: 12),
+                                        const SizedBox(width: 4),
+                                        Text(label, style: const TextStyle(color: Colors.white, fontSize: 10)),
+                                      ],
+                                    ),
+                                  );
+                                }),
                               ),
                             ],
                           ),
