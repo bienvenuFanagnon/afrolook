@@ -9,3 +9,5 @@ export * from "./posts/lifecycle";
 export * from "./notifications/bulk";
 export * from "./emails/email_functions";
 export * from "./chat/groupNotifications";
+export * from "./contenu/contentPaie";
+export * from "./contenu/payments";

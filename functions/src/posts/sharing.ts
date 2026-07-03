@@ -22,16 +22,19 @@ export const sharePostLink = onRequest(
 
       const type = segments[1];
       const id = segments[2];
+      const ref = (req.query["ref"] as string | undefined) ?? null;
 
       console.log(`TYPE DÉTECTÉ: ${type}`);
       console.log(`ID DÉTECTÉ: ${id}`);
+      if (ref) console.log(`REF AFFILIÉ: ${ref}`);
 
       let title = "Afrolook";
       let description = "Regardez ce contenu sur Afrolook";
       let previewImage = "https://play-lh.googleusercontent.com/g5_LdDrb8s5Kvw0-dFc8o8RgFLHUxLlsG0yd-DXXzceX9qPrYwZvfHQ2M2jTFqxnEBUo=w240-h480-rw";
       let collectionName = "";
       let isVideo = false;
-      const deepLink = `afrolook://${type}/${id}`;
+      const refSuffix = ref ? `?ref=${ref}` : "";
+      const deepLink = `afrolook://${type}/${id}${refSuffix}`;
 
       // Cas spécial : groupe — recherche par join_code
       if (type === "group") {
@@ -154,7 +157,9 @@ export const sharePostLink = onRequest(
 
       switch (type) {
         case "article": collectionName = "Articles"; break;
+        case "contenu":
         case "contentpaie": collectionName = "ContentPaies"; break;
+        case "creator":
         case "profil": collectionName = "Users"; break;
         case "post": collectionName = "Posts"; break;
         default: collectionName = "Posts";
@@ -175,11 +180,12 @@ export const sharePostLink = onRequest(
           const prix = data.prix || 0;
           description = prix > 0 ? `Prix : ${prix} XOF` : "Prix : Gratuit";
           previewImage = (data.images && data.images.length > 0) ? data.images[0] : previewImage;
-        } else if (type === "contentpaie") {
+        } else if (type === "contenu" || type === "contentpaie") {
           title = data.title || "Contenu";
           const isFree = data.isFree ?? false;
           const price = data.price || 0;
           description = isFree ? "Gratuit" : `Prix : ${price} XOF`;
+          if (ref) description = `🔗 Lien d'affiliation · ${description}`;
           previewImage = data.thumbnailUrl || previewImage;
         } else if (type === "post") {
           title = data.description ? (data.description.substring(0, 100) + "...") : "Nouveau post";
@@ -195,10 +201,10 @@ export const sharePostLink = onRequest(
             }
             previewImage = (data.images && data.images[0]) || previewImage;
           }
-        } else if (type === "profil") {
+        } else if (type === "creator" || type === "profil") {
           const pseudo = data.pseudo || "Utilisateur";
-          title = `@${pseudo}`;
-          description = `Rejoignez-moi sur AfroLook 🌍 ! Abonnez-vous à mon profil pour découvrir mes contenus exclusifs. ✨`;
+          title = `@${pseudo} — Business`;
+          description = `🌍 Découvrez le profil Business de ${pseudo} sur Afrolook ! Contenus exclusifs, formations et plus.`;
           previewImage = data.imageUrl || previewImage;
         }
       }

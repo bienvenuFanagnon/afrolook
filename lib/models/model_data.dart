@@ -916,6 +916,12 @@ class UserData {
   bool? datingSubscription = false;     // Abonnement dating actif
   bool? isDatingProfileEnabled = false; // Profil dating activé
   bool? isCreatorProfileEnabled = false; // Profil créateur activé
+
+  // Gains contenu payant (traces statistiques — ne pas afficher la part app)
+  double solde_ventes = 0.0;        // revenus des ventes de contenus (part créateur)
+  double solde_affiliation = 0.0;   // commissions affiliation reçues
+  double solde_promo = 0.0;         // ventes réalisées via codes promo (suivi)
+
   int? acceptedTermsAt;                 // Date d'acceptation des conditions
   int? acceptedCommunityRulesAt;        // Date d'acceptation des règles
 
@@ -1052,6 +1058,9 @@ class UserData {
     this.datingSubscription = false,
     this.isDatingProfileEnabled = false,
     this.isCreatorProfileEnabled = false,
+    this.solde_ventes = 0.0,
+    this.solde_affiliation = 0.0,
+    this.solde_promo = 0.0,
     this.acceptedTermsAt,
     this.acceptedCommunityRulesAt,
     this.userGlobalTags,
@@ -1227,6 +1236,9 @@ class UserData {
     datingSubscription = json['datingSubscription'] ?? false;
     isDatingProfileEnabled = json['isDatingProfileEnabled'] ?? false;
     isCreatorProfileEnabled = json['isCreatorProfileEnabled'] ?? false;
+    solde_ventes = (json['solde_ventes'] as num?)?.toDouble() ?? 0.0;
+    solde_affiliation = (json['solde_affiliation'] as num?)?.toDouble() ?? 0.0;
+    solde_promo = (json['solde_promo'] as num?)?.toDouble() ?? 0.0;
     acceptedTermsAt = json['acceptedTermsAt'];
     acceptedCommunityRulesAt = json['acceptedCommunityRulesAt'];
 
@@ -1295,6 +1307,9 @@ class UserData {
     data['datingSubscription'] = datingSubscription;
     data['isDatingProfileEnabled'] = isDatingProfileEnabled;
     data['isCreatorProfileEnabled'] = isCreatorProfileEnabled;
+    data['solde_ventes'] = solde_ventes;
+    data['solde_affiliation'] = solde_affiliation;
+    data['solde_promo'] = solde_promo;
     data['acceptedTermsAt'] = acceptedTermsAt;
     data['acceptedCommunityRulesAt'] = acceptedCommunityRulesAt;
 
@@ -4199,6 +4214,7 @@ class ContentPaie {
   int dislikes;
   int comments;
   int shares;
+  int sales;
   List<String> likedBy;
   List<String> dislikedBy;
   int duration;
@@ -4211,6 +4227,10 @@ class ContentPaie {
   int? boostDurationDays;
   double? boostAmountPaid;
   bool boostedByAdmin;
+  bool affiliationEnabled;
+  double affiliationRate;
+  int? flashSaleEndDate;
+  double? flashSalePrice;
 
   ContentPaie({
     this.id,
@@ -4236,6 +4256,7 @@ class ContentPaie {
     this.dislikes = 0,
     this.comments = 0,
     this.shares = 0,
+    this.sales = 0,
     this.likedBy = const [],
     this.dislikedBy = const [],
     this.duration = 0,
@@ -4248,6 +4269,10 @@ class ContentPaie {
     this.boostDurationDays,
     this.boostAmountPaid,
     this.boostedByAdmin = false,
+    this.affiliationEnabled = false,
+    this.affiliationRate = 0.0,
+    this.flashSaleEndDate,
+    this.flashSalePrice,
   });
 
   factory ContentPaie.fromJson(Map<String, dynamic> json) {
@@ -4278,6 +4303,7 @@ class ContentPaie {
       dislikes: json['dislikes'] ?? 0,
       comments: json['comments'] ?? 0,
       shares: json['shares'] ?? 0,
+      sales: json['sales'] ?? 0,
       likedBy: List<String>.from(json['likedBy'] ?? []),
       dislikedBy: List<String>.from(json['dislikedBy'] ?? []),
       duration: json['duration'] ?? 0,
@@ -4290,6 +4316,10 @@ class ContentPaie {
       boostDurationDays: json['boostDurationDays'],
       boostAmountPaid: json['boostAmountPaid']?.toDouble(),
       boostedByAdmin: json['boostedByAdmin'] ?? false,
+      affiliationEnabled: json['affiliationEnabled'] ?? false,
+      affiliationRate: json['affiliationRate']?.toDouble() ?? 0.0,
+      flashSaleEndDate: json['flashSaleEndDate'],
+      flashSalePrice: json['flashSalePrice']?.toDouble(),
     );
   }
 
@@ -4318,6 +4348,7 @@ class ContentPaie {
       'dislikes': dislikes,
       'comments': comments,
       'shares': shares,
+      'sales': sales,
       'likedBy': likedBy,
       'dislikedBy': dislikedBy,
       'duration': duration,
@@ -4330,6 +4361,10 @@ class ContentPaie {
       'boostDurationDays': boostDurationDays,
       'boostAmountPaid': boostAmountPaid,
       'boostedByAdmin': boostedByAdmin,
+      'affiliationEnabled': affiliationEnabled,
+      'affiliationRate': affiliationRate,
+      'flashSaleEndDate': flashSaleEndDate,
+      'flashSalePrice': flashSalePrice,
     };
   }
 
@@ -4349,6 +4384,17 @@ class ContentPaie {
     if (boostEndDate == null) return false;
     return boostEndDate! > DateTime.now().millisecondsSinceEpoch;
   }
+  int get boostRemainingDays {
+    if (!isBoostActive || boostEndDate == null) return 0;
+    final diff = boostEndDate! - DateTime.now().millisecondsSinceEpoch;
+    final days = (diff / (1000 * 60 * 60 * 24)).ceil();
+    return days > 0 ? days : 0;
+  }
+  bool get isFlashSaleActive {
+    if (flashSalePrice == null || flashSaleEndDate == null) return false;
+    return flashSaleEndDate! > DateTime.now().millisecondsSinceEpoch;
+  }
+  double get effectivePrice => isFlashSaleActive ? flashSalePrice! : price;
 
   // Méthodes pour gérer les likes/dislikes
   bool isLikedByUser(String userId) => likedBy.contains(userId);
@@ -4436,6 +4482,131 @@ class ContentPurchase {
       'purchaseDate': purchaseDate,
     };
   }
+}
+
+class PromoCode {
+  String? id;
+  String creatorId;
+  String? contentId;
+  String code;
+  String type;
+  double value;
+  int? maxUses;
+  int usedCount;
+  int? expiresAt;
+  bool isActive;
+  int createdAt;
+
+  PromoCode({
+    this.id,
+    required this.creatorId,
+    this.contentId,
+    required this.code,
+    required this.type,
+    required this.value,
+    this.maxUses,
+    this.usedCount = 0,
+    this.expiresAt,
+    this.isActive = true,
+    this.createdAt = 0,
+  });
+
+  factory PromoCode.fromJson(Map<String, dynamic> json) {
+    return PromoCode(
+      id: json['id'],
+      creatorId: json['creatorId'],
+      contentId: json['contentId'],
+      code: json['code'],
+      type: json['type'] ?? 'percent',
+      value: json['value']?.toDouble() ?? 0.0,
+      maxUses: json['maxUses'],
+      usedCount: json['usedCount'] ?? 0,
+      expiresAt: json['expiresAt'],
+      isActive: json['isActive'] ?? true,
+      createdAt: json['createdAt'] ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'creatorId': creatorId,
+    'contentId': contentId,
+    'code': code,
+    'type': type,
+    'value': value,
+    'maxUses': maxUses,
+    'usedCount': usedCount,
+    'expiresAt': expiresAt,
+    'isActive': isActive,
+    'createdAt': createdAt,
+  };
+
+  bool get isExpired => expiresAt != null && expiresAt! < DateTime.now().millisecondsSinceEpoch;
+  bool get isMaxedOut => maxUses != null && usedCount >= maxUses!;
+  bool get isValid => isActive && !isExpired && !isMaxedOut;
+
+  double discountedPrice(double originalPrice) {
+    if (type == 'percent') return originalPrice * (1 - value / 100);
+    return (originalPrice - value).clamp(0, originalPrice);
+  }
+}
+
+class AffiliateLink {
+  String? id;
+  String affiliateId;
+  String contentId;
+  String creatorId;
+  String? contentTitle;
+  double commissionRate;
+  int clicks;
+  int sales;
+  double totalEarned;
+  int createdAt;
+
+  AffiliateLink({
+    this.id,
+    required this.affiliateId,
+    required this.contentId,
+    required this.creatorId,
+    this.contentTitle,
+    required this.commissionRate,
+    this.clicks = 0,
+    this.sales = 0,
+    this.totalEarned = 0.0,
+    this.createdAt = 0,
+  });
+
+  factory AffiliateLink.fromJson(Map<String, dynamic> json) {
+    return AffiliateLink(
+      id: json['id'],
+      affiliateId: json['affiliateId'],
+      contentId: json['contentId'],
+      creatorId: json['creatorId'],
+      contentTitle: json['contentTitle'],
+      commissionRate: json['commissionRate']?.toDouble() ?? 0.0,
+      clicks: json['clicks'] ?? 0,
+      sales: () {
+        final s = (json['sales'] as num?)?.toInt() ?? 0;
+        final ts = (json['totalSales'] as num?)?.toInt() ?? 0;
+        return s > ts ? s : ts;
+      }(),
+      totalEarned: json['totalEarned']?.toDouble() ?? 0.0,
+      createdAt: json['createdAt'] ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'affiliateId': affiliateId,
+    'contentId': contentId,
+    'creatorId': creatorId,
+    if (contentTitle != null) 'contentTitle': contentTitle,
+    'commissionRate': commissionRate,
+    'clicks': clicks,
+    'sales': sales,
+    'totalEarned': totalEarned,
+    'createdAt': createdAt,
+  };
 }
 
 // // Modèle pour les épisodes (pour les séries)

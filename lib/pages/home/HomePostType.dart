@@ -24,6 +24,7 @@ import '../afroshop/marketPlace/acceuil/home_afroshop.dart';
 import '../afroshop/marketPlace/component.dart';
 
 import '../chronique/chroniqueform.dart';
+import '../contenuPayant/widgets/boosted_content_strip.dart';
 import '../component/showUserDetails.dart';
 import '../../providers/afroshop/authAfroshopProvider.dart';
 import '../../providers/afroshop/categorie_produits_provider.dart';
@@ -2187,6 +2188,8 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
       contentWidgets.add(profilesSection);
       contentWidgets.add(SizedBox(height: 16));
     }
+
+    contentWidgets.add(const BoostedContentStripWidget());
 
     int postIndex = 0;
     for (int i = 0; i < _posts.length; i++) {

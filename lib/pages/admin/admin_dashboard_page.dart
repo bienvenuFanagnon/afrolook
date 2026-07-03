@@ -13,6 +13,7 @@ import 'influencer_requests_page.dart';
 import 'official_accounts_page.dart';
 import 'remuneration_admin_page.dart';
 import '../challenge/challengeDashbord.dart';
+import '../contenuPayant/admin_content_page.dart';
 import '../pronostics/admin_pronostics_page.dart';
 
 class AdminDashboardPage extends StatefulWidget {
@@ -661,6 +662,14 @@ class _ModulesGrid extends StatelessWidget {
         iconBg: const Color(0xFFFCEBEB),
         iconColor: const Color(0xFFA32D2D),
         page: AdminPronosticsPage(),
+      ),
+      _ModuleItem(
+        icon: Icons.storefront_rounded,
+        label: 'Contenus payants',
+        desc: 'Boosts, modération, stats',
+        iconBg: const Color(0xFFFFF8E1),
+        iconColor: const Color(0xFFFFD400),
+        page: const AdminContentPage(),
       ),
     ];
 

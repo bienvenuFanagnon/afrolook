@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/pages/contenuPayant/content_detail_page.dart';
 import 'package:afrotok/pages/LiveAgora/create_live_page.dart';
 import 'package:afrotok/pages/LiveAgora/live_list_page.dart';
 import 'package:afrotok/pages/LiveAgora/livesAgora.dart';
@@ -86,6 +87,7 @@ import 'package:afrotok/services/nav_cache_service.dart';
 
 import 'package:afrotok/services/workManagerService.dart';
 import 'package:app_links/app_links.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:camera/camera.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -258,36 +260,87 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void _initDeepLinks() {
-    AppLinks().uriLinkStream.listen((Uri? uri) async {
-      printVm("🔗 [DEEPLINK] url Reçu: $uri");
+  // Anti-doublon : évite de traiter deux fois le même lien (getInitialLink + uriLinkStream)
+  String? _lastHandledLinkKey;
 
-      if (uri != null) {
-        final segments = uri.pathSegments;
-        if (segments.length >= 3 && segments[0] == 'share') {
-          String rawId = segments[2];
-          final cleanId = rawId.split('?')[0].split('#')[0];
-          final typeStr = segments[1];
+  Future<void> _processDeepLink(Uri uri) async {
+    String? type;
+    String? id;
+    String? affiliateId;
 
-          printVm("🔗 [DEEPLINK] Reçu: type=$typeStr, id=$cleanId");
+    if (uri.scheme == 'afrolook') {
+      // Custom scheme : afrolook://{type}/{id}?ref=...
+      // Sur Android/iOS, uri.host = type, uri.pathSegments[0] = id
+      type = uri.host.toLowerCase();
+      id = uri.pathSegments.isNotEmpty ? uri.pathSegments[0].split('?')[0].split('#')[0] : null;
+      affiliateId = uri.queryParameters['ref'];
+    } else if (uri.host == 'afrolookmedia.com' &&
+        uri.pathSegments.length >= 3 &&
+        uri.pathSegments[0] == 'share') {
+      // HTTPS App Link : https://afrolookmedia.com/share/{type}/{id}?ref=...
+      type = uri.pathSegments[1].toLowerCase();
+      id = uri.pathSegments[2].split('?')[0].split('#')[0];
+      affiliateId = uri.queryParameters['ref'];
+    }
 
-          if (typeStr.toLowerCase() == 'chronique') {
-            await NavigationCacheService().storeChroniqueNavigation(cleanId);
-          } else if (typeStr.toLowerCase() == 'group') {
-            await NavigationCacheService().storeGroupNavigation(cleanId);
-          } else {
-            String postType = typeStr.toLowerCase() == 'video' ? 'VIDEO' : 'IMAGE';
-            await NavigationCacheService().storePostNavigation(cleanId, postType);
-          }
+    if (type == null || id == null || id.isEmpty) return;
 
-          printVm("💾 [DEEPLINK] Données stockées dans le cache");
+    // Anti-doublon
+    final dedupeKey = '$type/$id';
+    if (_lastHandledLinkKey == dedupeKey) return;
+    _lastHandledLinkKey = dedupeKey;
 
-          // Redémarrer l'application
-          _navigateToSplashAndClearStack();
+    printVm("🔗 [DEEPLINK] type=$type, id=$id, ref=$affiliateId");
 
-
+    switch (type) {
+      case 'contenu':
+      case 'contentpaie':
+        // Sauvegarder le ref affilié dans SharedPreferences pour que ContentDetailPage le lise
+        if (affiliateId != null && affiliateId.isNotEmpty) {
+          final prefs = await SharedPreferences.getInstance();
+          final key = 'affiliate_ref_$id';
+          await prefs.setString(key, affiliateId);
+          await prefs.setInt('${key}_ts', DateTime.now().millisecondsSinceEpoch);
         }
-      }
+        await NavigationCacheService().storeContenuNavigation(id, affiliateId: affiliateId);
+        break;
+      case 'creator':
+        await NavigationCacheService().storeCreatorNavigation(id);
+        break;
+      case 'chronique':
+        await NavigationCacheService().storeChroniqueNavigation(id);
+        break;
+      case 'group':
+        await NavigationCacheService().storeGroupNavigation(id);
+        break;
+      case 'article':
+        await NavigationCacheService().storeArticleNavigation();
+        break;
+      case 'video':
+        await NavigationCacheService().storePostNavigation(id, 'VIDEO');
+        break;
+      case 'post':
+      default:
+        await NavigationCacheService().storePostNavigation(id, 'IMAGE');
+        break;
+    }
+
+    _navigateToSplashAndClearStack();
+  }
+
+  void _initDeepLinks() {
+    // Cold start : lien qui a ouvert l'app
+    AppLinks().getInitialLink().then((uri) async {
+      if (uri == null) return;
+      printVm("🔗 [DEEPLINK] Initial: $uri");
+      await _processDeepLink(uri);
+    });
+
+    // App déjà ouverte (foreground / background)
+    AppLinks().uriLinkStream.listen((Uri? uri) async {
+      if (uri == null) return;
+      printVm("🔗 [DEEPLINK] Stream: $uri");
+      await _processDeepLink(uri);
     });
   }
   final NavigationCacheService _cacheService = NavigationCacheService();

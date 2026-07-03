@@ -57,7 +57,10 @@ class DestinationData {
   final String? chatId;
   final String? sendUserId;
   final String? joinCode;
-  DestinationData({required this.type, this.post, this.chat, this.chroniqueId, this.chatId, this.sendUserId, this.joinCode});
+  final ContentPaie? content;
+  final String? affiliateId;
+  final String? creatorId;
+  DestinationData({required this.type, this.post, this.chat, this.chroniqueId, this.chatId, this.sendUserId, this.joinCode, this.content, this.affiliateId, this.creatorId});
 }
 
 class SplashChargement extends StatefulWidget {
@@ -103,6 +106,12 @@ class _SplashChargementState extends State<SplashChargement> {
   Post? _loadedPost;
   Chat? _loadedChat;
   bool _isLoadingTarget = false;
+
+  String? _pendingContentId;
+  String? _pendingAffiliateId;
+  ContentPaie? _loadedContent;
+
+  String? _pendingCreatorId;
 
   @override
   void initState() {
@@ -239,6 +248,19 @@ class _SplashChargementState extends State<SplashChargement> {
       _loadedChat = chat;
     } catch (e) { printVm("❌ Erreur chargement chat : $e"); }
     finally { if (mounted) setState(() => _isLoadingTarget = false); }
+  }
+
+  Future<void> _loadContentData() async {
+    if (_pendingContentId == null) return;
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('ContentPaies')
+          .doc(_pendingContentId)
+          .get();
+      if (doc.exists) {
+        _loadedContent = ContentPaie.fromJson({...doc.data()!, 'id': doc.id});
+      }
+    } catch (e) { printVm("❌ Erreur chargement contenu : $e"); }
   }
 
   Future<void> _navigateToHomeWithDestination() async {
@@ -561,6 +583,13 @@ class _SplashChargementState extends State<SplashChargement> {
         case 'chronique':
           _pendingChroniqueId = _cachedNavigation!['chroniqueId'];
           break;
+        case 'contenu':
+          _pendingContentId = _cachedNavigation!['contentId'];
+          _pendingAffiliateId = _cachedNavigation!['affiliateId'] as String?;
+          break;
+        case 'creator':
+          _pendingCreatorId = _cachedNavigation!['userId'] as String?;
+          break;
         case 'group':
           _pendingJoinCode = _cachedNavigation!['joinCode'] as String?;
           break;
@@ -603,6 +632,15 @@ class _SplashChargementState extends State<SplashChargement> {
         break;
       case 'article':
         _destinationToSend = DestinationData(type: 'article');
+        break;
+      case 'contenu':
+        await _loadContentData();
+        _destinationToSend = (_loadedContent != null)
+            ? DestinationData(type: 'contenu', content: _loadedContent, affiliateId: _pendingAffiliateId)
+            : DestinationData(type: 'home');
+        break;
+      case 'creator':
+        _destinationToSend = DestinationData(type: 'creator', creatorId: _pendingCreatorId);
         break;
       case 'group':
         _destinationToSend = DestinationData(type: 'group', joinCode: _pendingJoinCode);

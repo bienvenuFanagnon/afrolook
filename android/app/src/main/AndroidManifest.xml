@@ -93,15 +93,14 @@
 
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
-
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-
                 <data
                     android:scheme="https"
                     android:host="afrolookmedia.com"
                     android:pathPrefix="/share" />
             </intent-filter>
+
             <!-- App Links -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />

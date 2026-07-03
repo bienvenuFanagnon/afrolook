@@ -201,7 +201,7 @@ export const sendInactiveUserReminder = onCall(
  * Fonction de test rapide pour vérifier la configuration email
  */
 export const testAfrolookEmail = onCall(
-  { timeoutSeconds: 30 },
+  { timeoutSeconds: 30, memory: "256MiB", cpu: 1 },
   async (request) => {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Authentification requise");

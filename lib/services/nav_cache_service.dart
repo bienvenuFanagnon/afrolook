@@ -101,4 +101,19 @@ class NavigationCacheService {
       'joinCode': joinCode,
     });
   }
+
+  Future<void> storeContenuNavigation(String contentId, {String? affiliateId}) async {
+    await storePendingNavigation({
+      'type': 'contenu',
+      'contentId': contentId,
+      if (affiliateId != null) 'affiliateId': affiliateId,
+    });
+  }
+
+  Future<void> storeCreatorNavigation(String userId) async {
+    await storePendingNavigation({
+      'type': 'creator',
+      'userId': userId,
+    });
+  }
 }

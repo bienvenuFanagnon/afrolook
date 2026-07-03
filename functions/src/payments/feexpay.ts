@@ -103,7 +103,7 @@ export const initiateAfrolookFeexpayPayment = onCall(
  * 2. Exécute le paiement FeexPay pour Afrolook
  */
 export const executeAfrolookFeexpayPayment = onCall(
-  { timeoutSeconds: 60, cors: true },
+  { timeoutSeconds: 60, cors: true, memory: "256MiB", cpu: 1 },
   async (request) => {
     try {
       if (!request.auth) {

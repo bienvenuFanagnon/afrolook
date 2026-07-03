@@ -85,10 +85,17 @@ service cloud.firestore {
 
     // ─────────────────────────────────────────────────────────────
     // USERS — lecture authentifiée, écriture seulement son propre profil
+    // Les champs financiers sont mis à jour uniquement par Cloud Functions
     // ─────────────────────────────────────────────────────────────
     match /Users/{userId} {
       allow read: if isAuth();
-      allow write: if isAuth() && uid() == userId;
+      allow create: if isAuth() && uid() == userId;
+      allow update: if isAuth() && uid() == userId
+          && !request.resource.data.diff(resource.data)
+              .affectedKeys()
+              .hasAny(['votre_solde_principal', 'solde_ventes',
+                       'solde_affiliation', 'solde_promo']);
+      allow delete: if false;
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -147,8 +154,60 @@ service cloud.firestore {
     }
 
     // ─────────────────────────────────────────────────────────────
+    // CONTENUS PAYANTS — lecture par tous, écriture par le propriétaire
+    // ─────────────────────────────────────────────────────────────
+    match /ContentPaies/{contentId} {
+      allow read: if isAuth();
+      allow create: if isAuth()
+          && request.resource.data.ownerId == uid();
+      allow update: if isAuth()
+          && resource.data.ownerId == uid();
+      allow delete: if isAuth()
+          && resource.data.ownerId == uid();
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // ACHATS — lecture acheteur/créateur, écritures réservées aux Cloud Functions
+    // ─────────────────────────────────────────────────────────────
+    match /ContentPaie_purchases/{purchaseId} {
+      allow read: if isAuth()
+          && (resource.data.userId == uid()
+              || resource.data.ownerId == uid());
+      allow write: if false;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // CODES PROMO — lecture par tous, écriture par le créateur
+    // ─────────────────────────────────────────────────────────────
+    match /PromoCodes/{codeId} {
+      allow read: if isAuth();
+      allow create: if isAuth()
+          && request.resource.data.creatorId == uid();
+      allow update, delete: if isAuth()
+          && resource.data.creatorId == uid();
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // LIENS D'AFFILIATION — lecture affilié/créateur, création libre
+    // Les compteurs (totalSales, totalEarned) sont mis à jour par Cloud Functions
+    // ─────────────────────────────────────────────────────────────
+    match /AffiliateLinks/{linkId} {
+      allow read: if isAuth()
+          && (resource.data.affiliateId == uid()
+              || resource.data.creatorId == uid());
+      allow create: if isAuth()
+          && request.resource.data.affiliateId == uid();
+      // Seul le champ clicks peut être mis à jour par n'importe quel utilisateur authentifié
+      allow update: if isAuth()
+          && request.resource.data.diff(resource.data)
+              .affectedKeys().hasOnly(['clicks']);
+      allow delete: if isAuth()
+          && (resource.data.affiliateId == uid()
+              || resource.data.creatorId == uid());
+    }
+
+    // ─────────────────────────────────────────────────────────────
     // TOUTES LES AUTRES COLLECTIONS — requièrent auth minimale
-    // (à affiner selon les besoins de chaque collection)
     // ─────────────────────────────────────────────────────────────
     match /{document=**} {
       allow read, write: if isAuth();

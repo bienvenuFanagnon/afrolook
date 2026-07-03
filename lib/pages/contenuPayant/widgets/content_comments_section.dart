@@ -33,8 +33,8 @@ class _ContentCommentsSectionState extends State<ContentCommentsSection> {
     if (text.isEmpty || text.length > _maxChars) return;
     final authProvider =
         Provider.of<UserAuthProvider>(context, listen: false);
-    final user = authProvider.userData;
-    if (user == null) return;
+    final user = authProvider.loginUserData;
+    if (user.id == null) return;
 
     setState(() => _sending = true);
     try {

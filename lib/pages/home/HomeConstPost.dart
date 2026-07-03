@@ -28,6 +28,7 @@ import '../../providers/afroshop/categorie_produits_provider.dart';
 import '../../providers/authProvider.dart';
 import 'package:shimmer/shimmer.dart';
 import '../contenuPayant/recent_vip_content_widget.dart';
+import '../contenuPayant/widgets/boosted_content_strip.dart';
 import '../dating/widgets/top_dating_profiles_widget.dart';
 import '../postDetailsVideo.dart';
 import '../pronostics/pronostics_carousel_widget.dart';
@@ -2908,6 +2909,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       if (postIndex == 2) {
         contentWidgets.add(_buildAdAdvertisement(key: 'ad_after_first'));
         contentWidgets.add(const TopDatingProfilesWidget());
+        contentWidgets.add(const BoostedContentStripWidget());
         // contentWidgets.add(const RecentVIPContentWidget());
       }
 

@@ -1,7 +1,7 @@
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/theme/app_colors.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -58,50 +58,37 @@ class _BoostModalState extends State<BoostModal> {
   }
 
   Future<void> _confirm() async {
+    if (widget.content.id == null) return;
+    // Capturer le messenger AVANT l'await — le contexte de la BottomSheet
+    // peut devenir invalide après la fermeture, et le SnackBar resterait invisible.
+    final messenger = ScaffoldMessenger.of(context);
     setState(() => _loading = true);
-    final authProvider =
-        Provider.of<UserAuthProvider>(context, listen: false);
-    final uid = authProvider.userData?.id;
-    if (uid == null || widget.content.id == null) {
-      setState(() => _loading = false);
-      return;
-    }
-
-    final price = widget.isAdmin ? 0 : (_prices[_selectedDays] ?? 0);
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final endDate = now + (_selectedDays * 24 * 60 * 60 * 1000);
 
     try {
-      await FirebaseFirestore.instance
-          .collection('ContentPaies')
-          .doc(widget.content.id)
-          .update({
-        'isBoosted': true,
-        'boostStartDate': now,
-        'boostEndDate': endDate,
-        'boostDurationDays': _selectedDays,
-        'boostAmountPaid': price.toDouble(),
-        'boostedByAdmin': widget.isAdmin,
+      final callable = FirebaseFunctions.instance.httpsCallable('secureBoost');
+      await callable.call({
+        'contentId': widget.content.id,
+        'durationDays': _selectedDays,
       });
-
-      if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(widget.isAdmin
-                ? 'Contenu boosté gratuitement !'
-                : 'Contenu boosté pendant ${_labels[_selectedDays]} !'),
-            backgroundColor: const Color(0xFF25D366),
-          ),
-        );
-      }
+      if (mounted) Navigator.pop(context);
+      messenger.showSnackBar(SnackBar(
+        content: Text(widget.isAdmin
+            ? 'Contenu boosté gratuitement !'
+            : 'Contenu boosté pendant ${_labels[_selectedDays]} !'),
+        backgroundColor: const Color(0xFF25D366),
+      ));
+    } on FirebaseFunctionsException catch (e) {
+      if (mounted) Navigator.pop(context);
+      messenger.showSnackBar(SnackBar(
+        content: Text(e.message ?? 'Erreur lors du boost.'),
+        backgroundColor: Colors.red,
+      ));
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur : $e'),
-              backgroundColor: Colors.red),
-        );
-      }
+      if (mounted) Navigator.pop(context);
+      messenger.showSnackBar(const SnackBar(
+        content: Text('Erreur lors du boost. Veuillez réessayer.'),
+        backgroundColor: Colors.red,
+      ));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
