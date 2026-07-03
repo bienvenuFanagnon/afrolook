@@ -1,5 +1,5 @@
 # SUIVI REFONTE UI — AFROLOOK V2
-_Dernière mise à jour : 2 juillet 2026 (session 92)_
+_Dernière mise à jour : 3 juillet 2026 (session 93)_
 
 ---
 
@@ -151,6 +151,47 @@ Tout est fait en **français**.
 | **Inscription — bug spinner infini (session 91)** | ✅ FAIT — `signup_form.dart` : (1) `confirmMotDePasseController` déclaré comme variable de classe (était `TextEditingController()` inline → vide au rebuild). (2) Bloc async entouré d'un `try/catch/finally` : `finally { if (mounted) setState(() => onTap = false) }` → spinner se débloque toujours même en cas d'exception. (3) Fix null-crash dans `verifierPseudo()` : `e.name!` → `(e.name ?? '')` pour docs Firestore sans champ `name`. |
 | **Image manquante `user-removebg-preview.png` (session 91)** | ✅ FAIT — Asset inexistant référencé dans 12 fichiers. Remplacé partout par `Icon(Icons.person)` : `errorWidget` de `CachedNetworkImage` dans 8 fichiers, `CircleAvatar(backgroundImage: AssetImage(...))` dans `postView.dart` (3 occurrences), `onBackgroundImageError` (callbacks no-op) dans `homeScreen.dart`, `mesInvitationTable.dart`, `user_list_view.dart`. Page inscription étape 2 : valeur par défaut remplacée par `Icon(Icons.person, size: 60)` dans un conteneur gris. |
 | **Vérification session Firebase — Live & Abonnement (session 91)** | ✅ FAIT — `SessionCheckerService` (existait mais non utilisé) branché sur : `livePage.dart` (postFrameCallback dans `initState`, avant connexion Agora/Firestore), `Subscription.dart` (postFrameCallback dans `didChangeDependencies` avec garde `_sessionChecked`). Si `FirebaseAuth.currentUser == null` → modale "Session expirée" + bouton "Se reconnecter" (`SessionExpiredModal`). |
+| **Session 93 — Navigation Business + refonte UI feeds** | ✅ FAIT — Voir détail ci-dessous |
+
+---
+
+## SESSION 93 — Navigation Business + refonte UI feeds
+
+### Navigation & accès Business
+
+| Modification | Fichier | Détail |
+|---|---|---|
+| Bouton "Business" barre nav homeScreen | `homeScreen.dart` | Ajouté à gauche du bouton Créer → 7 items total → Créer centré. Icône `business_center_outlined` jaune `#FFD400`. Navigation vers `DashboardContentScreen` |
+| Drawer homeScreen — Contenu Business | `homeScreen.dart` | ListTile existante corrigée : `TableauDeBord` → `DashboardContentScreen` |
+| Profil créateur — Mes achats + Gains affiliation | `profileScreenContent.dart` | Deux `OutlinedButton` côte à côte dans le header créateur (section `isCurrentUser`), sous le lien de partage. Navigation vers `MyPurchasesPage` et `AffiliationMarketplacePage` |
+| Profil user — suppression boutons mal placés | `profile.dart` | Boutons "Mes achats" et "Gains affiliation" retirés (ils étaient dans la mauvaise page). Imports nettoyés |
+
+### Renommage Boutique → Business
+
+| Modification | Fichier | Détail |
+|---|---|---|
+| "Zone VIP" → "Business" | `app_localizations.dart` | Clé `feedVip` : "Zone VIP" → "Business" |
+| "Boutiques" → "Business" | `app_localizations.dart` | Clé `sectionBoutiques` → "Business" toutes langues |
+| "CONTENUS VIP" → "BUSINESS BOOSTÉS" | `widgets/boosted_content_strip.dart` | Label de la bande de contenu boosté dans le feed |
+
+### Section Business (recent_vip_content_widget)
+
+| Modification | Détail |
+|---|---|
+| Charge 8 contenus, mélange et affiche les 8 | `getRecentContentPaies(limit: 8)` + `shuffle()` — ordre aléatoire à chaque ouverture |
+
+### Feed Sport — remplacement "Profils à découvrir"
+
+| Modification | Fichier | Détail |
+|---|---|
+| Suppression chargement profils suggérés | `homeSportPost.dart` | `_loadSuggestedUsersInBackground()` supprimé, variables `_suggestedUsers` / `_isLoadingSuggestedUsers` retirées, cache nettoyé |
+| Section créateurs actifs | `homeSportPost.dart` → `active_creators_section_widget.dart` | Remplacé par `ActiveCreatorsSectionWidget` — même section que HomeConstPost ("Vos Créateurs actifs") encapsulée en widget standalone réutilisable. Utilise `ActiveCreatorsService.resolve()`, `FeedProfilesSection`, unseen counts, navigation `CreatorUnseenPostsPage` / `ActiveCreatorsListPage` |
+
+### Refonte design section Canaux
+
+| Modification | Fichier | Détail |
+|---|---|
+| Cartes canaux fixes (non étirées) | `feed_canaux_section.dart` | Réécriture complète : cartes `SizedBox(width: 90)`, avatar cerclé `56px` bordure verte, hauteur section fixe `120px`. Suppression des `size.width * 0.28` et `size.height * 0.22` qui causaient l'étirement. Import corrigé : `detailsCanal.dart` (et non `canalDetails.dart`) |
 
 ---
 
@@ -4024,9 +4065,348 @@ bool get _userCanShare => _isAppAdmin || (!_isBlocked && GroupPermissionUtils.ca
 - Collection `ContentComments` : userId, pseudo, avatarUrl, text, createdAt
 - Incrémente `ContentPaie.comments` à l'envoi
 
+---
+
+## Session 93 — Système contenu payant : codes promo, affiliation, catégories, partage
+_Dernière mise à jour : 2 juillet 2026_
+
+### Nouveaux fichiers créés
+
+| Fichier | Rôle |
+|---|---|
+| `lib/pages/contenuPayant/widgets/promo_code_modal.dart` | Bottom sheet pour saisir/valider un code promo |
+| `lib/pages/contenuPayant/affiliation_marketplace_page.dart` | Page marketplace affiliation (2 onglets : marché + mes gains) |
+
+### Fichiers modifiés
+
+| Fichier | Changement |
+|---|---|
+| `lib/models/model_data.dart` | Ajout classes `PromoCode`, `AffiliateLink` + getters sur ContentPaie |
+| `lib/pages/contenuPayant/content_detail_page.dart` | Code promo intégré dans bottom bar + bouton share natif |
+| `lib/pages/contenuPayant/TableauDeBord.dart` | Catégories chips + recherche créateur `@pseudo` |
+
+### Fonctionnalités implémentées
+
+**PromoCodeModal :**
+- Saisie du code (auto-uppercase)
+- Validation Firestore : isValid, creatorId match, contentId optionnel
+- Affichage prix barré → prix réduit + badge "Vous économisez X F"
+- Bouton "Payer X F avec ce code"
+
+**ContentDetailPage (extensions) :**
+- Ligne "Avez-vous un code promo ?" cliquable → ouvre PromoCodeModal
+- Prix barré affiché quand code actif, prix réduit en jaune
+- `_finalPrice` utilisé pour l'achat ; incrémente `usedCount` du code en batch
+- Bouton share : `Share.share()` avec deep link `?ref=userId` pour suivi affiliation
+- `_checkPurchase()` : admin (`role == 'ADM'`) → accès immédiat sans vérifier les achats
+
+**AffiliationMarketplacePage :**
+- Onglet "Marketplace" : liste contenus avec `affiliationEnabled == true`, triés par commissionRate desc
+- KPIs affilié en haut : gains totaux, nb ventes, nb clics
+- Bouton "Affilier" : crée un document `AffiliateLinks`, puis ouvre share natif avec deep link
+- Si déjà affilié : partage directement (pas de doublon Firestore)
+- Onglet "Mes gains" : liste tous ses liens avec ventes/clics/gains + bouton "Copier lien"
+- Total gagné mis en avant avec wallet icon
+
+**TableauDeBord (extensions) :**
+- Barre de recherche étendue : `@pseudo` → query Firestore Users (pseudo/email) → filtre contenu
+- Indicateur "X créateur(s) trouvé(s)" quand filtre actif
+- Row de chips catégories horizontale (Tout + 8 catégories) sous les tabs
+- Carte flash sale : prix barré + prix rouge + badge 🔥 FLASH
+- Filtre catégorie in-memory (champ `categories` sur ContentPaie)
+
+**Modèles (extensions) :**
+- `PromoCode` : code, type (percent/fixed), value, maxUses, usedCount, expiresAt, isValid, discountedPrice()
+- `AffiliateLink` : affiliateId, contentId, creatorId, commissionRate, clicks, sales, totalEarned
+- `ContentPaie` : getters `isFlashSaleActive`, `effectivePrice`, `isBoostActive`
+
+**Règle commission (invariante) :**
+- Sans affiliation : owner 75% · app 25% (jamais affiché)
+- Avec affiliation : affilié = prix × commissionRate · owner = prix × (0.75 − commissionRate) · app = 25% (jamais affiché)
+- Code promo : réduit uniquement le montant payé par l'acheteur ; les ratios s'appliquent sur le montant réel payé
+
+---
+
+## Session 93 suite — Page admin gestion contenus
+_2 juillet 2026_
+
+### Nouveaux fichiers
+
+| Fichier | Rôle |
+|---|---|
+| `lib/pages/contenuPayant/admin_content_page.dart` | Page admin 3 onglets : contenus, commentaires, statistiques |
+
+### Fonctionnalités
+
+**Onglet Contenus :**
+- Liste tous les ContentPaies (orderBy createdAt desc, limit 80)
+- Recherche par titre ou ownerId
+- Filtre dropdown : Tous / Boostés / Gratuits
+- Tile admin : vignette CDN, titre, ID créateur, vues, type pill, boost badge
+- Bouton Booster → ouvre BoostModal (admin: gratuit) ; si déjà boosté → désactive immédiatement
+- Bouton Supprimer → dialog de confirmation → delete Firestore
+- Guard `role == 'ADM'` : affiche message d'erreur sinon
+
+**Onglet Commentaires :**
+- Stream temps réel `ContentComments` orderBy createdAt desc, limit 100
+- Affiche pseudo, texte, date
+- Bouton supprimer → delete commentaire + décrémente `ContentPaie.comments`
+
+**Onglet Statistiques :**
+- KPI grid (6 cartes) : nb contenus, vues totales, boostés actifs, gratuits, en affiliation, flash sales
+- Barre de répartition par type (LinearProgressIndicator)
+- Top 5 plus vus (médailles or/argent/bronze)
+
+---
+
+## Session 93 suite 2 — Navigation admin + anti-duplicate vues + BoostedStrip feeds
+_2 juillet 2026_
+
+### Fichiers modifiés
+
+| Fichier | Changement |
+|---|---|
+| `lib/pages/admin/admin_dashboard_page.dart` | Module "Contenus payants" ajouté dans la grille admin |
+| `lib/pages/contenuPayant/content_detail_page.dart` | Anti-duplicate vues via SharedPreferences |
+| `lib/pages/home/HomeConstPost.dart` | `BoostedContentStripWidget` inséré après TopDating (postIndex==2) |
+| `lib/pages/home/HomePostType.dart` | `BoostedContentStripWidget` inséré en tête de feed |
+
+### Fonctionnalités
+
+**Navigation admin :**
+- `AdminContentPage` accessible depuis `AdminDashboardPage` → Modules → "Contenus payants"
+- Icône `storefront_rounded`, fond jaune pâle
+
+**Anti-duplicate vues :**
+- `_incrementView()` vérifie SharedPreferences key `viewed_content_<id>` avant d'incrémenter
+- Si déjà vu : aucun incrément Firestore — évite les inflations artificielles
+
+**BoostedContentStripWidget :**
+- `HomeConstPost` : après 2 posts (slot postIndex==2, avec TopDating)
+- `HomePostType` : en tête du feed avant la boucle de posts
+- Se masque si aucun contenu boosté actif
+
 ### TODO (prochaine session)
-- Intégrer `BoostedContentStripWidget` dans `HomeConstPost.dart` et `HomeSportPost.dart`
-- Créer admin management page (gestion contenus + boost gratuit + tarifs)
-- Étendre `ContentForm` aux 6 nouveaux types + upload fichier 200Mo + tuto vidéo 20Mo
-- Cloud Function pour expire boost quotidiennement
-- Cloud Function `getSecureDownloadUrl` pour URLs signées
+- Étendre `ContentForm` aux 8 types + upload fichier 200Mo + tuto vidéo 20Mo + affiliation toggle + flash sale + codes promo
+- Vue créateur : onglet "Codes promo" dans ContentDetail pour créer/gérer ses codes
+- Cloud Function expire boost quotidiennement (`isBoosted = false` quand `boostEndDate < now`)
+- Cloud Function `getSecureDownloadUrl` pour URLs signées (expiry 1h)
+
+---
+
+## Session 94 — ContentForm 8 types, Affiliation, Flash Sale, AdminContent, Cloud Functions, Corrections
+_2 juillet 2026_
+
+### Fichiers créés
+| Fichier | Rôle |
+|---|---|
+| `lib/pages/contenuPayant/admin_content_page.dart` | Page admin gestion contenus (3 onglets) |
+| `lib/pages/contenuPayant/affiliation_marketplace_page.dart` | Marketplace affiliation + Mes gains |
+| `lib/pages/contenuPayant/creator_promo_codes_page.dart` | Créer/lister/désactiver/supprimer codes promo |
+| `lib/pages/contenuPayant/widgets/promo_code_modal.dart` | Modal saisie code promo côté acheteur |
+| `functions/src/contenu/contentPaie.ts` | Cloud Functions : expireBoosts (cron) + getSecureDownloadUrl |
+
+### Fichiers modifiés
+| Fichier | Changement |
+|---|---|
+| `lib/pages/contenuPayant/contentForm.dart` | 8 types, upload 200Mo, tuto vidéo 20Mo, affiliation toggle+slider, flash sale |
+| `lib/pages/contenuPayant/content_detail_page.dart` | Promo code, partage ?ref=, _buy() split, download URL signée, menu owner "Codes promo" |
+| `lib/pages/contenuPayant/TableauDeBord.dart` | Recherche debounce, filtre créateur @pseudo, catégories, badge flash sale, bouton profil créateur |
+| `lib/pages/contenuPayant/profileScreenContent.dart` | Bouton profil créateur dans AppBar si isCreator |
+| `lib/pages/admin/admin_dashboard_page.dart` | Module "Contenus payants" ajouté |
+| `lib/pages/user/profile/profile.dart` | Bouton "Ma boutique" (visible si isCreatorProfileEnabled) |
+| `lib/pages/contenuPayant/widgets/boost_modal.dart` | userData → loginUserData |
+| `lib/pages/contenuPayant/widgets/content_comments_section.dart` | userData → loginUserData |
+| `functions/src/index.ts` | Export contenu/contentPaie |
+| `functions/tsconfig.json` | skipLibCheck: true (fix deploy) |
+| `firestore.indexes.json` | +14 index : isBoosted, affiliationEnabled, contentType, ContentComments, AffiliateLinks, PromoCodes, Episodes |
+
+### Corrections critiques
+- **Bug collection** : `ContentPurchases` → `ContentPaie_purchases` dans content_detail_page.dart et Cloud Function
+- **userData → loginUserData** : corrigé dans 7 fichiers (admin_content_page, affiliation_marketplace_page, content_detail_page, creator_promo_codes_page, TableauDeBord, boost_modal, content_comments_section)
+- **Index Firestore** : export online → fusion → +14 index manquants ajoutés sans casser les 216 existants
+
+### Fonctionnalités implémentées
+
+**ContentForm étendu :**
+- 8 types avec émojis : VIDEO, EBOOK, FORMATION, TEMPLATE, PACK_ZIP, AUDIO, PRESET, BUNDLE
+- `_needsGenericFile` : upload fichier 200Mo pour les 6 types non-vidéo/ebook
+- Section tuto vidéo optionnelle 20Mo pour les types hors VIDEO
+- `_buildAffiliationSection()` : Switch + Slider 5-40%, affiche part créateur sans mentionner les 25% app
+- `_buildFlashSaleSection()` : Switch + champ prix + DatePicker expiration
+- `_flashPriceCtrl.dispose()` dans dispose()
+
+**Flux achat complet :**
+- `_buy()` écrit dans `ContentPaie_purchases` (nom correct)
+- Promo code : `_appliedPromoCode` déduit le prix, incrémente `usedCount` en batch
+- Lien partage avec `?ref=uid` pour tracking affiliation
+
+**Cloud Functions :**
+- `expireBoosts` : cron `0 2 * * *` UTC, batch 400 docs max
+- `getSecureDownloadUrl` : callable, vérifie achat dans `ContentPaie_purchases`, URL signée GCS 1h
+- `_downloadFile()` dans content_detail_page appelle désormais la Cloud Function
+
+### TODO Session 95 (priorité ordre décroissant)
+1. **Commission 12%** (pas 25%) + 10% sur tips — changer partout où 0.75/0.25 est hardcodé
+2. **Flux affiliation côté achat** : détecter `ref=` à l'ouverture ContentDetailPage, créditer AffiliateLink dans batch
+3. **Prix minimum 2 500 FCFA** dans ContentForm._saveContent()
+4. **Gold → upload vidéo 200Mo** (gate par loginUserData.estGold)
+5. **Refonte UI complète** : TableauDeBord home (sections : boost, récents, vues, catégories+voir plus, séries), ContentDetailPage (lecteur vidéo, profil créateur, capsules preview), ContentForm (UX par type, validation stricte extension fichier)
+6. **Page profil créateur** : CTA si pas encore activé, tableau de bord gains (ventes+affiliation+codes promo), actions promotion
+7. **Tips/pourboires** : bouton "Soutenir" sur gratuit → 500/1000/2000 FCFA, 0% app
+8. **Vente flash** : notif push abonnés à l'activation
+9. **Notif push transversal** : achat→créateur, vente affiliation→affilié, boost expiré→créateur
+10. **Location temporaire** : 7j/30j/90j, champ rentalOptions sur ContentPaie
+11. **Pré-commande** : prix réduit avant sortie
+12. **Abonnement créateur** mensuel (500/1000/2500 F)
+13. **Achat groupé** : 5-10 personnes, -30%
+14. **Programme fidélité** : pièces Afrolook à chaque achat
+15. **Challenge avec dotation** : 3 gagnants cash
+16. **Stockage gains** : mettre à jour profil utilisateur (solde_ventes, solde_affiliation, solde_promo) à chaque transaction
+
+---
+
+## Session 95 — Observations et décisions architecturales
+_2 juillet 2026_
+
+### Constats visuels signalés par le propriétaire
+
+**TableauDeBord (home contenu payant) :**
+- ❌ Seuls les contenus VIDEO s'affichent — les autres types (EBOOK, FORMATION, PACK_ZIP, AUDIO, PRESET, TEMPLATE, BUNDLE) sont invisibles → bug de filtre ou requête Firestore trop restrictive
+- ❌ Aucune section organisée : tout est en liste plate sans hiérarchie
+- Structure attendue (à implémenter) :
+  1. Strip horizontal "En vedette / Boostés" (`isBoosted == true`)
+  2. Section "Récents" (orderBy createdAt desc, 6 items max)
+  3. Section "Les plus vus" (orderBy views desc, 6 items max)
+  4. Section "Séries" (contentType == SERIES) sous forme de cartes distinctes avec badge épisodes
+  5. Sections par catégorie (un bloc par ContentType présent) avec bouton "Voir plus" → page filtrée par catégorie
+
+**ContentDetailPage :**
+- ❌ Le lecteur vidéo n'est pas implémenté — seule la miniature s'affiche, pas de lecture possible
+- ❌ Pas de profil créateur visible en haut de la page (avatar + nom + "X contenus" + bouton "Voir boutique")
+- ❌ Pas de stats visibles (vues, ventes, note)
+- ❌ Les 3 capsules d'aperçu vidéo (frames à 0% / 50% / 90% de 5 secondes) ne sont plus visibles
+- Implémenter : `video_player` + `chewie`, capsules via `VideoThumbnail.thumbnailFile()` ou extraction client
+
+**ContentForm (création de contenu) — analyse technique :**
+- ❌ Bug confirmé ligne 246 : `_pickGenericFile()` appelle `FilePicker.platform.pickFiles(allowMultiple: false)` SANS `allowedExtensions` → n'importe quel fichier accepté (une vidéo peut être uploadée sur un PACK_ZIP)
+- ❌ Limite vidéo encore à 50 Mo (ligne 142 : `if (fileSizeMB > 50)`) — doit être 200Mo pour Gold, 100Mo pour les autres
+- ❌ UX plate : tous les champs s'affichent en une seule liste déroulante sans étape logique
+- Règles de validation `allowedExtensions` à appliquer dans `_pickGenericFile()` :
+  - `PACK_ZIP`, `FORMATION`, `TEMPLATE`, `BUNDLE` → `['zip']`
+  - `AUDIO` → `['mp3', 'wav', 'aac']`
+  - `PRESET` → `['zip', 'xmp', 'cube', 'lut']`
+  - `VIDEO` → via `_picker.pickVideo()` déjà OK, mais ajouter gate Gold (200Mo) vs base (100Mo)
+  - `EBOOK` → `['pdf']` déjà OK
+- Champs à afficher par ContentType (logique dynamique) :
+  - VIDEO : titre, description, thumbnail, fichier vidéo (mp4/mov), tuto optionnel
+  - EBOOK : titre, description, thumbnail, PDF, nb pages
+  - FORMATION : titre, description, thumbnail, ZIP principal, tuto vidéo optionnel
+  - TEMPLATE : titre, description, thumbnail, ZIP principal, aperçu image optionnel
+  - PACK_ZIP : titre, description, thumbnail, ZIP principal
+  - AUDIO : titre, description, thumbnail, fichier audio (mp3/wav/aac)
+  - PRESET : titre, description, thumbnail, fichier preset (.zip/.xmp/.cube)
+  - BUNDLE : titre, description, thumbnail, ZIP principal, liste de ce que contient le bundle
+- UX Stepper 3 étapes :
+  - Étape 1 : Sélection type (8 boutons visuels avec icônes) + Titre + Description + Thumbnail
+  - Étape 2 : Upload du ou des fichiers selon ContentType (champs dynamiques)
+  - Étape 3 : Prix (min 2500F) + Flash sale + Affiliation + Pré-commande + Récapitulatif + Publier
+
+**ProfileScreenContenu (profil créateur) — analyse technique :**
+- ❌ Aucun check `isCreatorProfileEnabled` → la page s'affiche même pour un non-créateur
+  - À corriger : en début de `build()`, si `!user.isCreatorProfileEnabled` → afficher page CTA pleine (pas de profil mais invitation à activer)
+- ❌ Onglet 1 intitulé "Vidéos/Ebooks" mais filtre `.where((c) => !c.isSeries)` — regroupe tous les types (FORMATION, AUDIO, PRESET, etc.) sous ce label trompeur
+  - À corriger : renommer l'onglet "Tous les contenus" ou ajouter des sous-filtres par ContentType (chips horizontaux)
+- ❌ Aucun tableau de bord gains : seul `votre_solde_principal` est affiché (ligne ~297)
+  - À ajouter : 3 cards métriques (solde_ventes / solde_affiliation / solde_promo) — champs à créer sur UserData
+- ❌ Aucune section "Promotion" : pas de lien d'affiliation copiable, pas de stats de partage
+
+**Pages manquantes / options non accessibles :**
+- ❌ CreatorPromoCodesPage : le menu "Codes promo" dans ContentDetailPage (ajouté en session 94) — vérifier que la navigation fonctionne
+- ❌ PromoCodeModal (côté acheteur) : vérifier que le champ de saisie code promo est visible dans ContentDetailPage avant paiement
+- ❌ Modification d'un contenu existant : les champs affiliation/flash sale/promo code se rechargent bien dans ContentForm (code en place aux lignes 112-120) mais à tester visuellement
+
+---
+
+### Décisions architecturales — Système d'affiliation (revu)
+
+#### Deux systèmes distincts à ne pas confondre
+
+**1. Affiliation (earn commission en partageant)**
+- Mécanisme : lien dynamique avec code intégré
+  - L'affilié copie une URL : `https://afrolook.app/content/CONTENT_ID?ref=AFFILIATE_USER_ID`
+  - Quand quelqu'un clique → `ref` stocké dans SharedPreferences (TTL 30j)
+  - À l'achat → `ref` détecté dans `_buy()`, split 3 voies en batch atomique :
+    - `affilieurAmount = price × affiliationRate` → `solde_affiliation` de l'affilié
+    - `creatorAmount = price × (0.88 - affiliationRate)` → `solde_ventes` du créateur
+    - `appAmount = price × 0.12` → non affiché, non stocké côté client
+  - Incrémenter `AffiliateLink : totalSales += 1, totalEarned += affilieurAmount`
+  - Doc `ContentPaie_purchases` : `type: 'affiliate', affiliateId, affilieurAmount`
+- **NE PAS** afficher la part app (12%) dans l'UI — afficher uniquement la part créateur
+
+**2. Code promo (réduction pour l'acheteur)**
+- Mécanisme : code alphanumérique créé par le créateur
+  - Créateur crée un code via `CreatorPromoCodesPage` (ex: "PROMO20")
+  - Acheteur saisit le code dans `ContentDetailPage` → déduction sur le prix
+  - Le créateur absorbe la réduction (son revenu est réduit d'autant)
+  - `usedCount` incrémenté en batch à l'achat
+  - ⚠️ Les codes promo sont une réduction, pas une commission — ils ne génèrent PAS de `solde_promo` pour l'acheteur
+
+→ **`solde_promo`** = revenus qu'un créateur tire de ses propres codes promo (suivi statistique uniquement, pas un gain réel distinct)
+
+---
+
+### Règles comptables (référence pour tous les `_buy()`)
+
+| Cas | Créateur (solde_ventes) | Affilié (solde_affiliation) | App |
+|---|---|---|---|
+| Achat simple | `price × 0.88` | — | `price × 0.12` |
+| Achat via affiliation | `price × (0.88 - affiliRate)` | `price × affiliRate` | `price × 0.12` |
+| Achat avec code promo | `(price - discount) × 0.88` | — | `(price - discount) × 0.12` |
+| Tips/pourboire | `amount × 0.90` | — | `amount × 0.10` |
+| Location | `rentalPrice × 0.88` | — | `rentalPrice × 0.12` |
+
+**Règle absolue** : NE JAMAIS afficher la part app dans l'UI. Jamais.
+
+---
+
+### Stockage des gains sur le profil utilisateur
+
+Champs à ajouter sur `UserData` (lib/models/model_data.dart) :
+- `solde_ventes` (double, défaut 0.0) — total des ventes de contenus
+- `solde_affiliation` (double, défaut 0.0) — total des commissions affiliations reçues
+- `solde_promo` (double, défaut 0.0) — suivi statistique des ventes via codes promo
+
+À chaque transaction dans `_buy()`, `FieldValue.increment` sur le doc `Users` du créateur (et de l'affilié si applicable). Ces soldes s'ajoutent au solde principal de l'application (pas de silos séparés pour le retrait, juste pour l'affichage des statistiques).
+
+---
+
+### TODO Session 95 — Liste complète mise à jour
+
+**🔴 Critique (code)**
+1. Commission 12% partout (0.75 → 0.88, 0.25 → 0.12 dans _buy(), slider affiliation, Cloud Function)
+2. Tips : 10% app, 90% créateur (pas 0% app comme écrit précédemment — corrigé)
+3. UserData model : ajouter solde_ventes, solde_affiliation, solde_promo
+4. Flux affiliation _buy() : détecter ref=, split 3 voies, FieldValue.increment AffiliateLink
+5. Prix minimum 2 500 FCFA (ContentForm._saveContent)
+6. Validation stricte types fichiers par ContentType (FilePicker allowedExtensions)
+7. Gold → 200Mo vidéo (loginUserData.estGold gate)
+
+**🟠 UI / refonte visuelle**
+8. TableauDeBord : fix affichage multi-type + 5 sections (boosts, récents, vus, séries, catégories+voir plus)
+9. ContentDetailPage : lecteur vidéo (video_player+chewie), 3 capsules preview, profil créateur header
+10. ContentForm : Stepper 3 étapes + affichage dynamique par ContentType
+11. ProfileScreenContenu : CTA activation si non créateur, dashboard gains, actions promotion
+
+**🟡 Nouvelles fonctionnalités**
+12. Tips/pourboires : bouton "Soutenir" sur contenu gratuit, 500/1000/2000 FCFA
+13. Flash sale → notif push abonnés (Cloud Function onUpdate)
+14. Notifications push transversales (achat, affiliation, boost expiré)
+15. Location temporaire : 7j/30j/90j, rentalOptions, vérification expiration à l'ouverture
+16. Pré-commande : badge, prix réduit, isPreorder, releaseDate
+
+**🔵 Lourd (planifier en session dédiée)**
+17. Abonnement créateur mensuel (500/1000/2500 F)
+18. Achat groupé (5-10 personnes, -30%)
+19. Programme fidélité (pièces Afrolook)
+20. Challenge avec dotation (3 gagnants cash)

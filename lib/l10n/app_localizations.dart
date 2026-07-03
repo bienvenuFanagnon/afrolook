@@ -47,7 +47,7 @@ class AppLocalizations {
   String get feedTrending => _t({'fr': 'Tendances', 'en': 'Trending', 'es': 'Tendencias', 'de': 'Trends', 'ar': 'الرائج', 'pt': 'Tendências', 'zh': '趋势', 'sw': 'Mwelekeo'});
   String get feedFollowing => _t({'fr': 'Abonnements', 'en': 'Following', 'es': 'Siguiendo', 'de': 'Folge ich', 'ar': 'المتابَعون', 'pt': 'Seguindo', 'zh': '关注', 'sw': 'Ninayofuata'});
   String get feedPronostics => _t({'fr': 'Pronostics', 'en': 'Pronostics', 'es': 'Pronósticos', 'de': 'Prognosen', 'ar': 'التوقعات', 'pt': 'Palpites', 'zh': '预测', 'sw': 'Utabiri'});
-  String get feedVip => 'Zone VIP';
+  String get feedVip => 'Business';
   String get feedCanal => _t({'fr': 'Canaux', 'en': 'Channels', 'es': 'Canales', 'de': 'Kanäle', 'ar': 'القنوات', 'pt': 'Canais', 'zh': '频道', 'sw': 'Mikondo'});
   String get feedSport => _t({'fr': 'Sport', 'en': 'Sport', 'es': 'Deportes', 'de': 'Sport', 'ar': 'رياضة', 'pt': 'Esportes', 'zh': '体育', 'sw': 'Michezo'});
   String get feedLooks => 'Looks';
@@ -344,7 +344,7 @@ class AppLocalizations {
   String get sectionBoostedProducts => _t({'fr': '🔥 Produits Boostés', 'en': '🔥 Boosted Products', 'es': '🔥 Productos Destacados', 'de': '🔥 Beworbene Produkte', 'ar': '🔥 منتجات مميزة', 'pt': '🔥 Produtos Impulsionados', 'zh': '🔥 推广产品', 'sw': '🔥 Bidhaa Zilizoboreshwa'});
   String get sectionDiscoverProfiles => _t({'fr': '👑 Profils à découvrir', 'en': '👑 Profiles to discover', 'es': '👑 Perfiles para descubrir', 'de': '👑 Profile zum Entdecken', 'ar': '👑 ملفات للاستكشاف', 'pt': '👑 Perfis para descobrir', 'zh': '👑 待发现的资料', 'sw': '👑 Wasifu wa kugundua'});
   String get sectionAfrolookCanal => _t({'fr': '📺 Afrolook Canal', 'en': '📺 Afrolook Channel', 'es': '📺 Canal Afrolook', 'de': '📺 Afrolook-Kanal', 'ar': '📺 قناة أفرولوك', 'pt': '📺 Canal Afrolook', 'zh': '📺 Afrolook频道', 'sw': '📺 Mkondo wa Afrolook'});
-  String get sectionBoutiques => _t({'fr': 'Boutiques', 'en': 'Shops', 'es': 'Tiendas', 'de': 'Shops', 'ar': 'المتاجر', 'pt': 'Lojas', 'zh': '商店', 'sw': 'Maduka'});
+  String get sectionBoutiques => _t({'fr': 'Business', 'en': 'Business', 'es': 'Business', 'de': 'Business', 'ar': 'Business', 'pt': 'Business', 'zh': 'Business', 'sw': 'Business'});
   String get menuMyChroniques => _t({'fr': 'Mes chroniques', 'en': 'My chronicles', 'es': 'Mis crónicas', 'de': 'Meine Chroniken', 'ar': 'سجلاتي', 'pt': 'Minhas crônicas', 'zh': '我的纪事', 'sw': 'Mambo yangu Mapya'});
   String get menuCanaux => feedCanal;
 

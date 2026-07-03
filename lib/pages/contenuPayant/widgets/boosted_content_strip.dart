@@ -40,7 +40,7 @@ class BoostedContentStripWidget extends StatelessWidget {
                   Icon(Icons.bolt, color: const Color(0xFFFFD400), size: 16),
                   const SizedBox(width: 4),
                   Text(
-                    'CONTENUS VIP',
+                    'BUSINESS BOOSTÉS',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w900,

@@ -43,6 +43,7 @@ import '../../l10n/app_localizations.dart';
 import '../../services/postService/post_view_service.dart';
 import '../../widgets/feed/sections/feed_articles_section.dart';
 import '../../widgets/feed/sections/feed_canaux_section.dart';
+import '../../widgets/feed/sections/active_creators_section_widget.dart';
 import '../../widgets/feed/sections/feed_profiles_section.dart';
 import '../../widgets/feed/sections/feed_state_widgets.dart';
 import '../../widgets/feed/sections/feed_filter_bar.dart';
@@ -127,8 +128,6 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   List<Canal> _canaux = [];
   bool _isLoadingCanaux = false;
 
-  List<UserData> _suggestedUsers = [];
-  bool _isLoadingSuggestedUsers = false;
 
   // Chroniques
   List<Chronique> _chroniques = [];
@@ -670,19 +669,6 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         });
       }
 
-      // --- Profils suggérés ---
-      final cachedSuggestedJson = data['suggestedUsers'] as List<dynamic>?;
-      List<UserData> cachedSuggestedUsers = [];
-      if (cachedSuggestedJson != null) {
-        for (final u in cachedSuggestedJson) {
-          try {
-            cachedSuggestedUsers.add(UserData.fromJson(Map<String, dynamic>.from(u as Map)));
-          } catch (e) {
-            printVm('⚠️ Cache: erreur parsing profil suggéré: $e');
-          }
-        }
-      }
-
       // --- Canaux ---
       final cachedCanauxJson = data['canaux'] as List<dynamic>?;
       List<Canal> cachedCanaux = [];
@@ -721,9 +707,6 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         }
         if (cachedChroniques.isNotEmpty) {
           _chroniques = cachedChroniques;
-        }
-        if (cachedSuggestedUsers.isNotEmpty) {
-          _suggestedUsers = cachedSuggestedUsers;
         }
         if (cachedCanaux.isNotEmpty) {
           _canaux = cachedCanaux;
@@ -780,13 +763,6 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         }
       }
 
-      if (_suggestedUsers.isNotEmpty) {
-        data['suggestedUsers'] = _suggestedUsers.map((u) {
-          final json = u.toJson();
-          json['isVerify'] = u.isVerify ?? false;
-          return json;
-        }).toList();
-      }
 
       if (_canaux.isNotEmpty) {
         data['canaux'] = _canaux.map((c) => c.toJson()).toList();
@@ -1967,38 +1943,11 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   // ===========================================================================
 
   Future<void> _loadAllAdditionalDataInParallel() async {
-    _loadSuggestedUsersInBackground();
     _loadArticlesInBackground();
     _loadCanauxInBackground();
     _loadChroniquesInBackground();
   }
 
-  Future<void> _loadSuggestedUsersInBackground() async {
-    if (_isLoadingSuggestedUsers) return;
-
-    setState(() {
-      _isLoadingSuggestedUsers = true;
-    });
-
-    try {
-      final users = await userProvider.getProfileUsers(
-        authProvider.loginUserData.id!,
-        context,
-        8,
-      );
-
-      setState(() {
-        _suggestedUsers = users..shuffle();
-      });
-      _saveFeedToCache();
-    } catch (e) {
-      printVm('Error loading suggested users: $e');
-    } finally {
-      setState(() {
-        _isLoadingSuggestedUsers = false;
-      });
-    }
-  }
 
   Future<void> _loadArticlesInBackground() async {
     if (_isLoadingArticles) return;
@@ -2240,22 +2189,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     return grouped;
   }
 
-  Widget _buildProfilesSection() {
-    final currentUser = authProvider.loginUserData;
-    
-    final pendingIds = Set<String>.from(
-      currentUser.mesInvitationsEnvoyerId ?? [],
-    );
-    return FeedProfilesSection(
-      users: _suggestedUsers,
-      isLoading: _isLoadingSuggestedUsers,
-      title: '👑 Profils à découvrir',
-      seeAllLabel: 'Voir tout',
-      onShowProfile: _showUserDetails,
-      currentUserId: currentUser.id ?? '',
-      pendingInvitationUserIds: pendingIds,
-    );
-  }
+  Widget _buildCreatorsSection() => const ActiveCreatorsSectionWidget();
 
   void _showUserDetails(UserData user) {
     final w = MediaQuery.of(context).size.width;
@@ -2516,7 +2450,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     final chroniquesSection = _buildChroniquesSection();
     if (chroniquesSection is! SizedBox) contentWidgets.add(chroniquesSection);
 
-    final profilesSection = _buildProfilesSection();
+    final profilesSection = _buildCreatorsSection();
     if (profilesSection is! SizedBox) {
       contentWidgets.add(profilesSection);
       // contentWidgets.add(_buildAdMrec(key: 'ad_native_user'));
@@ -2693,7 +2627,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     }
 
     // 3. Profils utilisateurs (si chargés)
-    final profilesSection = _buildProfilesSection();
+    final profilesSection = _buildCreatorsSection();
     if (profilesSection is! SizedBox) {
       contentWidgets.add(profilesSection);
       contentWidgets.add(SizedBox(height: 16));

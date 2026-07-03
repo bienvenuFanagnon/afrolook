@@ -79,6 +79,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../contenuPayant/content_detail_page.dart';
+import '../contenuPayant/profileScreenContent.dart';
 import '../cryptoMarket/cryptoMarketpage.dart';
 import '../dating/dating_entry_page.dart';
 import '../dating/dating_notifications_page.dart';
@@ -633,6 +635,22 @@ class _MyHomePageState extends State<MyHomePage>
                     ),
                     onTap: () {
                       Navigator.push(context, MaterialPageRoute(builder: (context) => RemunerationHomePage(user: authProvider.loginUserData!,)));
+                    },
+                  ),
+                  ListTile(
+                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
+                    leading: Icon(Icons.play_lesson_outlined, color: const Color(0xFFFFD400), size: 30),
+                    title: TextCustomerMenu(
+                      titre: 'Contenu Business',
+                      fontSize: SizeText.homeProfileTextSize,
+                      couleur: colors.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(
+                        builder: (_) => DashboardContentScreen(),
+                      ));
                     },
                   ),
 
@@ -1485,6 +1503,23 @@ class _MyHomePageState extends State<MyHomePage>
           AppLinkService().navigateToGroup(context, dest.joinCode!);
         }
         break;
+      case 'contenu':
+        if (dest.content != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => ContentDetailPage(content: dest.content!)),
+          );
+        }
+        break;
+      case 'creator':
+        if (dest.creatorId != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (_) => ProfileScreenContenu(userId: dest.creatorId)),
+          );
+        }
+        break;
     // 'home' : ne rien faire
     }
   }
@@ -1798,6 +1833,18 @@ class _MyHomePageState extends State<MyHomePage>
                               activeColor: colors.info,
                             );
                           },
+                        ),
+                      ),
+                      // Business (contenu payant)
+                      GestureDetector(
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DashboardContentScreen())),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.business_center_outlined, color: const Color(0xFFFFD400), size: navIconSize),
+                            const SizedBox(height: 2),
+                            Text('Business', style: TextStyle(fontSize: 9, color: colors.textSecondary, fontWeight: FontWeight.w500)),
+                          ],
                         ),
                       ),
                       // Créer post — bouton central

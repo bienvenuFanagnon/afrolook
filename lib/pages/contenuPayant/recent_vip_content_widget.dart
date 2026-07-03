@@ -1,4 +1,5 @@
 ﻿import 'dart:io';
+import 'dart:math';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'dart:typed_data';
@@ -58,9 +59,10 @@ class _RecentVIPContentWidgetState extends State<RecentVIPContentWidget> {
 
   Future<void> _loadRecentContents() async {
     final provider = Provider.of<ContentProvider>(context, listen: false);
-    final contents = await provider.getRecentContentPaies(limit: 5);
+    final contents = await provider.getRecentContentPaies(limit: 8);
+    final shuffled = List<ContentPaie>.from(contents)..shuffle(Random());
     setState(() {
-      _recentContents = contents;
+      _recentContents = shuffled;
       _isLoading = false;
     });
     // Pré-générer les miniatures pour les vidéos qui n'ont pas de thumbnailUrl

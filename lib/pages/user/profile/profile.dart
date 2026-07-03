@@ -15,6 +15,7 @@ import '../../../models/official_account/official_account_enums.dart';
 import '../../../models/official_account/official_account_request.dart';
 import '../../../services/official_account/official_account_service.dart';
 import '../../canaux/listCanauxByUser.dart';
+import '../../contenuPayant/profileScreenContent.dart';
 import '../../userPosts/favorites_posts.dart';
 import '../otherUser/otherUser.dart';
 import '../remuneration_home_page.dart';
@@ -485,7 +486,22 @@ class _UserProfilState extends State<UserProfil> {
                             Navigator.push(context, MaterialPageRoute(builder: (context) => UserMyAdvertisementsPage()));
                           },
                         ),
-
+                        if (authProvider.loginUserData.isCreatorProfileEnabled == true)
+                          _buildMenuButton(
+                            icon: Icons.storefront_rounded,
+                            label: 'Mon Business',
+                            color: const Color(0xFFFFD400),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ProfileScreenContenu(
+                                    userId: authProvider.loginUserData.id,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
                       ],
                     ),
 
