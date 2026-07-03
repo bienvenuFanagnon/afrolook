@@ -44,6 +44,7 @@ import '../../services/postService/post_view_service.dart';
 import '../../widgets/feed/sections/feed_articles_section.dart';
 import '../../widgets/feed/sections/feed_canaux_section.dart';
 import '../../widgets/feed/sections/active_creators_section_widget.dart';
+import '../contenuPayant/recent_vip_content_widget.dart';
 import '../../widgets/feed/sections/feed_profiles_section.dart';
 import '../../widgets/feed/sections/feed_state_widgets.dart';
 import '../../widgets/feed/sections/feed_filter_bar.dart';
@@ -2475,8 +2476,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
 
       if (postIndex == 2) {
         contentWidgets.add(_buildAdAdvertisement(key: 'ad_after_first'));
-        // contentWidgets.add(const TopDatingProfilesWidget());
-        // contentWidgets.add(const RecentVIPContentWidget());
+        contentWidgets.add(const RecentVIPContentWidget());
       }
 
       if (postIndex % 3 == 0) {
@@ -2487,9 +2487,8 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
           final canauxSection = _buildCanauxSection();
           if (canauxSection is! SizedBox) {
             contentWidgets.add(canauxSection);
-            // contentWidgets.add(const RecentVIPContentWidget());
-            contentWidgets.add(_buildAdAdvertisement(key: 'ad_vert$postIndex'));
           }
+          contentWidgets.add(_buildAdAdvertisement(key: 'ad_vert$postIndex'));
         }
       }
     }
@@ -2654,8 +2653,8 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       // 🔴 AJOUT DES BANNIÈRES ADMOB
       // Après le PREMIER post (postIndex == 1)
       if (postIndex == 2) {
-        // contentWidgets.add( const PronosticsCarouselWidget(),);
         contentWidgets.add(_buildAdAdvertisement(key: 'ad_after_first'));
+        contentWidgets.add(const RecentVIPContentWidget());
         contentWidgets.add(_buildAdBanner(key: 'ad_list_post$postIndex'));
         contentWidgets.add(_buildAdNative(key: 'ad_native_post$postIndex'));
       }
