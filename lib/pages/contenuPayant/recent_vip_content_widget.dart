@@ -7,12 +7,7 @@ import 'dart:typed_data';
 
 import 'package:afrotok/models/model_data.dart';
 
-import 'package:afrotok/pages/contenuPayant/contentDetails.dart';
-
-import 'package:afrotok/pages/contenuPayant/contentDetailsEbook.dart';
-
-import 'package:afrotok/pages/contenuPayant/contentSerie.dart';
-
+import 'package:afrotok/pages/contenuPayant/content_detail_page.dart';
 import 'package:afrotok/providers/contenuPayantProvider.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -130,22 +125,10 @@ class _RecentVIPContentWidgetState extends State<RecentVIPContentWidget> {
   }
 
   void _navigateToContent(ContentPaie content) {
-    if (content.isSeries) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => SeriesEpisodesScreen(series: content)),
-      );
-    } else if (content.isEbook) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => EbookDetailScreen(content: content)),
-      );
-    } else {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => ContentDetailScreen(content: content)),
-      );
-    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => ContentDetailPage(content: content)),
+    );
   }
 
   Widget _buildContentThumbnail(ContentPaie content, AppColors colors) {
