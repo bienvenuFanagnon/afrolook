@@ -1,6 +1,7 @@
 ﻿import 'dart:io';
 import 'dart:math';
 import 'package:afrotok/pages/component/consoleWidget.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'dart:typed_data';
 
@@ -58,11 +59,39 @@ class _RecentVIPContentWidgetState extends State<RecentVIPContentWidget> {
   }
 
   Future<void> _loadRecentContents() async {
-    final provider = Provider.of<ContentProvider>(context, listen: false);
-    final contents = await provider.getRecentContentPaies(limit: 8);
-    final shuffled = List<ContentPaie>.from(contents)..shuffle(Random());
+    final rng = Random();
+    // Toutes les catégories disponibles
+    final allTypes = ContentType.values
+        .where((t) => t != ContentType.BUNDLE)
+        .toList()
+      ..shuffle(rng);
+    // Choisir 5 catégories aléatoires
+    final pickedTypes = allTypes.take(5).toList();
+
+    // Récupérer 2 contenus par catégorie en parallèle
+    final futures = pickedTypes.map((type) async {
+      try {
+        final snap = await FirebaseFirestore.instance
+            .collection('ContentPaies')
+            .where('contentType', isEqualTo: type.toString().split('.').last)
+            .where('isSeries', isEqualTo: false)
+            .limit(6)
+            .get();
+        final docs = snap.docs..shuffle(rng);
+        return docs
+            .take(2)
+            .map((d) => ContentPaie.fromJson({...d.data(), 'id': d.id}))
+            .toList();
+      } catch (_) {
+        return <ContentPaie>[];
+      }
+    });
+
+    final results = await Future.wait(futures);
+    final mixed = results.expand((list) => list).toList()..shuffle(rng);
+
     setState(() {
-      _recentContents = shuffled;
+      _recentContents = mixed;
       _isLoading = false;
     });
     // Pré-générer les miniatures pour les vidéos qui n'ont pas de thumbnailUrl
