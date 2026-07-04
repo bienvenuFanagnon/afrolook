@@ -20,6 +20,7 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../services/sessions/session_checker_service.dart';
 import 'package:video_player/video_player.dart';
 
 class ContentDetailPage extends StatefulWidget {
@@ -76,6 +77,14 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
   void initState() {
     super.initState();
     _content = widget.content;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+      SessionCheckerService.checkSessionAndShowModalIfNeeded(
+        context: context,
+        authProvider: authProvider,
+      );
+    });
     _checkPurchase();
     _incrementView();
     _loadAffiliateRef();
