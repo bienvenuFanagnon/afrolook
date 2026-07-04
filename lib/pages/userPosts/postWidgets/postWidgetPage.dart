@@ -2592,120 +2592,89 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
   // 🔥 MÉTHODE LIKE AVEC CALLBACK
   Future<void> _handleLike2() async {
-    try {
-      if (!isIn(widget.post.users_love_id!, authProvider.loginUserData.id!)) {
-        setState(() {
-          widget.post.loves = widget.post.loves! + 1;
-          widget.post.users_love_id!.add(authProvider.loginUserData.id!);
-        });
+    final userId = authProvider.loginUserData.id;
+    if (userId == null) return;
+    if (isIn(widget.post.users_love_id!, userId)) return;
 
-        await firestore.collection('Posts').doc(widget.post.id).update({
-          'loves': FieldValue.increment(1),
-          'users_love_id': FieldValue.arrayUnion([authProvider.loginUserData.id]),
-          'popularity': FieldValue.increment(1),
-        });
-        addPointsForAction(UserAction.like);
-        addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre);
-        if (currentUser != null && currentUser!.oneIgnalUserid != null) {
-          await authProvider.sendNotification(
-            userIds: [currentUser!.oneIgnalUserid!],
-            smallImage: authProvider.loginUserData.imageUrl!,
-            send_user_id: authProvider.loginUserData.id!,
-            recever_user_id: widget.post.user_id!,
-            message: "📢 @${authProvider.loginUserData.pseudo!} a aimé votre look",
-            type_notif: NotificationType.POST.name,
-            post_id: widget.post.id!,
-            post_type: PostDataType.IMAGE.name,
-            chat_id: '',
-          );
-        }
+    // Mise à jour UI instantanée
+    setState(() {
+      widget.post.loves = (widget.post.loves ?? 0) + 1;
+      widget.post.users_love_id ??= [];
+      widget.post.users_love_id!.add(userId);
+    });
 
-
-
-        // 🔥 APPEL DU CALLBACK LOVE
-        widget.onLoved?.call();
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '+ de points ajoutés à votre compte',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.of(context).primary),
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      printVm("Erreur like: $e");
+    // Firestore + notifications en arrière plan
+    firestore.collection('Posts').doc(widget.post.id).update({
+      'loves': FieldValue.increment(1),
+      'users_love_id': FieldValue.arrayUnion([userId]),
+      'popularity': FieldValue.increment(1),
+    });
+    addPointsForAction(UserAction.like);
+    addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre);
+    if (currentUser?.oneIgnalUserid != null) {
+      authProvider.sendNotification(
+        userIds: [currentUser!.oneIgnalUserid!],
+        smallImage: authProvider.loginUserData.imageUrl ?? '',
+        send_user_id: userId,
+        recever_user_id: widget.post.user_id!,
+        message: "📢 @${authProvider.loginUserData.pseudo ?? ''} a aimé votre look",
+        type_notif: NotificationType.POST.name,
+        post_id: widget.post.id!,
+        post_type: PostDataType.IMAGE.name,
+        chat_id: '',
+      );
     }
+    widget.onLoved?.call();
   }
   Future<void> _handleLike() async {
-    try {
-      final coinProvider = Provider.of<CoinGiftUserProvider>(context, listen: false);
-      final userId = authProvider.loginUserData.id;
-      if (userId == null) return;
+    final userId = authProvider.loginUserData.id;
+    if (userId == null) return;
 
-      // Recharger le solde réel depuis Firestore avant de vérifier
-      // (le provider peut avoir un solde obsolète si le user n'était pas encore chargé)
-      await coinProvider.refreshBalance(userId);
+    final alreadyLiked = widget.post.users_love_id?.contains(userId) ?? false;
 
-      final hasEnoughCoins = coinProvider.giftCoinsBalance >= 2;
+    // Mise à jour UI instantanée — le like est toujours compté
+    setState(() {
+      widget.post.loves = (widget.post.loves ?? 0) + 1;
+      widget.post.users_love_id ??= [];
+      if (!alreadyLiked) widget.post.users_love_id!.add(userId);
+    });
 
-      if (!hasEnoughCoins) {
-        _showInsufficientCoinsForLikeDialog();
-        return;
-      }
+    // Pièces + notifications en arrière plan
+    _processLikeBackground(userId, alreadyLiked);
+  }
 
-      // 🔥 Envoyer le like avec les pièces
-      final success = await coinProvider.sendLikeWithCoins(
-        senderId: authProvider.loginUserData.id!,
-        receiverId: widget.post.user_id!,
-        post: widget.post,
-        context: context,
-      );
-
+  void _processLikeBackground(String userId, bool alreadyLiked) {
+    final coinProvider = Provider.of<CoinGiftUserProvider>(context, listen: false);
+    coinProvider.sendLikeWithCoins(
+      senderId: userId,
+      receiverId: widget.post.user_id!,
+      post: widget.post,
+      context: context,
+    ).then((success) async {
+      if (!mounted) return;
       if (!success) {
+        // Pas de pièces : compter quand même le like dans Firestore
+        firestore.collection('Posts').doc(widget.post.id).update({
+          'loves': FieldValue.increment(1),
+          'users_love_id': FieldValue.arrayUnion([userId]),
+          'popularity': FieldValue.increment(1),
+        });
         _showInsufficientCoinsForLikeDialog();
         return;
       }
-
-      // Mettre à jour l'UI
-      setState(() {
-        widget.post.loves = (widget.post.loves ?? 0) + 1;
-        widget.post.users_love_id ??= [];
-        widget.post.users_love_id!.add(authProvider.loginUserData.id!);
-      });
-
-      if (!isIn(widget.post.users_love_id!, authProvider.loginUserData.id!)) {
-        // Ajouter des points pour l'action (système existant)
-        addPointsForAction(UserAction.like);
-        addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre);
-
-        // Envoyer les notifications (comme avant)
-        await _sendLikeNotifications();
-
-        // 🔥 APPEL DU CALLBACK LOVE
-        widget.onLoved?.call();
+      if (!alreadyLiked) {
+        try {
+          addPointsForAction(UserAction.like);
+          addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre);
+          await _sendLikeNotifications();
+          widget.onLoved?.call();
+        } catch (e) {
+          printVm("Erreur post-like: $e");
+        }
       }
-
-
-      //
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   const SnackBar(
-      //     content: Text('❤️ Like envoyé ! Le créateur a reçu 1 pièce.'),
-      //     backgroundColor: Colors.green,
-      //     duration: Duration(seconds: 2),
-      //   ),
-      // );
-    } catch (e) {
-      printVm("Erreur like: $e");
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   SnackBar(
-      //     content: Text('Erreur: $e'),
-      //     backgroundColor: Colors.red,
-      //   ),
-      // );
-    }
+    }).catchError((e) {
+      printVm("Erreur like background: $e");
+    });
   }
 
 // Nouveau dialog pour solde de pièces insuffisant pour le like
@@ -2846,143 +2815,84 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     );
   }
   Future<void> _handleLike3() async {
-    try {
-      if (!isIn(widget.post.users_love_id!, authProvider.loginUserData.id!)) {
-        setState(() {
-          widget.post.loves = widget.post.loves! + 1;
-          widget.post.users_love_id!.add(authProvider.loginUserData.id!);
-        });
+    final userId = authProvider.loginUserData.id;
+    if (userId == null) return;
+    if (isIn(widget.post.users_love_id!, userId)) return;
 
-        await firestore.collection('Posts').doc(widget.post.id).update({
-          'loves': FieldValue.increment(1),
-          'users_love_id': FieldValue.arrayUnion([authProvider.loginUserData.id]),
-          'popularity': FieldValue.increment(1),
-        });
+    // Mise à jour UI instantanée
+    setState(() {
+      widget.post.loves = (widget.post.loves ?? 0) + 1;
+      widget.post.users_love_id ??= [];
+      widget.post.users_love_id!.add(userId);
+    });
 
-        addPointsForAction(UserAction.like);
-        addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre);
+    // Firestore + notifications en arrière plan
+    _processLike3Background(userId);
+  }
 
-        // ✅ TIMESTAMP ACTUEL EN MICROSECONDES
-        final currentTimeMicroseconds = DateTime.now().microsecondsSinceEpoch;
+  void _processLike3Background(String userId) {
+    // Firestore likes — fire & forget
+    firestore.collection('Posts').doc(widget.post.id).update({
+      'loves': FieldValue.increment(1),
+      'users_love_id': FieldValue.arrayUnion([userId]),
+      'popularity': FieldValue.increment(1),
+    });
+    addPointsForAction(UserAction.like);
+    addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre);
+    authProvider.incrementPostTotalInteractions(postId: widget.post.id!);
+    authProvider.notifySubscribersOfInteraction(
+      actionUserId: userId,
+      postOwnerId: widget.post.user_id!,
+      postId: widget.post.id!,
+      actionType: 'like',
+      postDescription: widget.post.description,
+      postImageUrl: widget.post.images?.first,
+      postDataType: widget.post.dataType,
+    );
 
-        // ✅ RÉCUPÉRER L'UTILISATEUR CIBLE
-        final userDoc = await firestore.collection('Users').doc(widget.post.user_id!).get();
-
-        if (userDoc.exists) {
-          final userData = userDoc.data();
-
-          // ✅ Récupérer le dernier timestamp de notification (push + firebase)
-          // On utilise un seul champ pour contrôler les deux
-          final lastNotificationTime = userData?['lastNotificationTime'] ?? 0;
-
-          // 20 minutes en microsecondes = 20 * 60 * 1000 * 1000
-          const twentyMinutesMicroseconds = 20 * 60 * 1000 * 1000;
-          final timeSinceLastNotification = currentTimeMicroseconds - lastNotificationTime;
-
-          // ✅ VÉRIFICATION SI 20 MINUTES SE SONT ÉCOULÉES
-          if (timeSinceLastNotification >= twentyMinutesMicroseconds || lastNotificationTime == 0) {
-
-            // =====================================================
-            // ✅ 1. ENREGISTRER LA NOTIFICATION DANS FIREBASE
-            // =====================================================
-            final notificationId = firestore.collection('Notifications').doc().id;
-
-            final notification = NotificationData(
-              id: notificationId,
-              titre: "Like ❤️",
-              media_url: authProvider.loginUserData.imageUrl,
-              type: NotificationType.POST.name,
-              description: "@${authProvider.loginUserData.pseudo!} a aimé votre post",
-              users_id_view: [],
-              user_id: authProvider.loginUserData.id!,
-              receiver_id: widget.post.user_id!,
-              post_id: widget.post.id!,
-              post_data_type: widget.post.dataType ?? PostDataType.IMAGE.name,
-              updatedAt: currentTimeMicroseconds,
-              createdAt: currentTimeMicroseconds,
-              status: PostStatus.VALIDE.name,
-            );
-
-            // Sauvegarder la notification
-            await firestore.collection('Notifications').doc(notificationId).set(notification.toJson());
-            printVm("✅ Notification Firebase enregistrée (contrôle 20 minutes respecté)");
-
-            // =====================================================
-            // ✅ 2. ENVOYER LA PUSH NOTIFICATION
-            // =====================================================
-            if (currentUser != null && currentUser!.oneIgnalUserid != null) {
-              await authProvider.sendNotification(
-                userIds: [currentUser!.oneIgnalUserid!],
-                smallImage: authProvider.loginUserData.imageUrl!,
-                send_user_id: authProvider.loginUserData.id!,
-                recever_user_id: widget.post.user_id!,
-                message: "📢 @${authProvider.loginUserData.pseudo!} a aimé votre look",
-                type_notif: NotificationType.POST.name,
-                post_id: widget.post.id!,
-                post_type: PostDataType.IMAGE.name,
-                chat_id: '',
-              );
-              printVm("✅ Push notification envoyée");
-            }
-
-            // =====================================================
-            // ✅ 3. METTRE À JOUR LE TIMESTAMP
-            // =====================================================
-            await firestore.collection('Users').doc(widget.post.user_id!).update({
-              'lastNotificationTime': currentTimeMicroseconds // Un seul champ pour tout
-            });
-
-          }
-          else {
-            // ⏱️ LIMITE ATTEINTE - NI NOTIFICATION NI PUSH
-            final minutesPassed = (timeSinceLastNotification / (60 * 1000 * 1000)).toStringAsFixed(1);
-            final minutesRemaining = ((twentyMinutesMicroseconds - timeSinceLastNotification) / (60 * 1000 * 1000)).toStringAsFixed(1);
-
-            printVm("⏱️ Notification limitée - Dernière notification il y a $minutesPassed minutes");
-            printVm("⏱️ Prochaine notification possible dans $minutesRemaining minutes");
-
-            // Optionnel: Afficher un message à l'utilisateur
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  '👍 Like ajouté (notification dans ${minutesRemaining} min)',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: AppColors.of(context).warning),
-                ),
-                backgroundColor: AppColors.of(context).warning,
-                duration: Duration(seconds: 2),
-              ),
-            );
-          }
-          authProvider. incrementPostTotalInteractions(postId: widget.post.id!);
-
-          authProvider. notifySubscribersOfInteraction(
-            actionUserId: authProvider.loginUserData.id!,
-            postOwnerId: widget.post.user_id!,
-            postId: widget.post.id!,
-            actionType: 'like',
-            postDescription: widget.post.description,
-            postImageUrl: widget.post.images?.first,
-            postDataType: widget.post.dataType,
+    // Notification avec contrôle 20 minutes — en arrière plan
+    firestore.collection('Users').doc(widget.post.user_id!).get().then((userDoc) async {
+      if (!mounted || !userDoc.exists) return;
+      final nowMicro = DateTime.now().microsecondsSinceEpoch;
+      final lastNotif = (userDoc.data()?['lastNotificationTime'] ?? 0) as int;
+      const twentyMin = 20 * 60 * 1000 * 1000;
+      if (nowMicro - lastNotif >= twentyMin || lastNotif == 0) {
+        final notifId = firestore.collection('Notifications').doc().id;
+        final notif = NotificationData(
+          id: notifId,
+          titre: "Like ❤️",
+          media_url: authProvider.loginUserData.imageUrl,
+          type: NotificationType.POST.name,
+          description: "@${authProvider.loginUserData.pseudo ?? ''} a aimé votre post",
+          users_id_view: [],
+          user_id: userId,
+          receiver_id: widget.post.user_id!,
+          post_id: widget.post.id!,
+          post_data_type: widget.post.dataType ?? PostDataType.IMAGE.name,
+          updatedAt: nowMicro,
+          createdAt: nowMicro,
+          status: PostStatus.VALIDE.name,
+        );
+        await firestore.collection('Notifications').doc(notifId).set(notif.toJson());
+        if (currentUser?.oneIgnalUserid != null) {
+          await authProvider.sendNotification(
+            userIds: [currentUser!.oneIgnalUserid!],
+            smallImage: authProvider.loginUserData.imageUrl ?? '',
+            send_user_id: userId,
+            recever_user_id: widget.post.user_id!,
+            message: "📢 @${authProvider.loginUserData.pseudo ?? ''} a aimé votre look",
+            type_notif: NotificationType.POST.name,
+            post_id: widget.post.id!,
+            post_type: PostDataType.IMAGE.name,
+            chat_id: '',
           );
         }
-
-        // 🔥 APPEL DU CALLBACK LOVE
-        widget.onLoved?.call();
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '+ de points ajoutés à votre compte',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.of(context).primary),
-            ),
-          ),
-        );
+        await firestore.collection('Users').doc(widget.post.user_id!).update({
+          'lastNotificationTime': nowMicro,
+        });
       }
-    } catch (e) {
-      printVm("Erreur like: $e");
-    }
+      widget.onLoved?.call();
+    }).catchError((_) {});
   }
 
   void _handleRepost() {

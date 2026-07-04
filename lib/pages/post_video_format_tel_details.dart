@@ -1398,70 +1398,52 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   // Je vais les écrire succinctement mais complètes :
   Future<void> _handleLike(Post post) async {
     final userId = authProvider.loginUserData.id;
-    final screenSize = MediaQuery.of(context).size;
-    _showFlyingHearts(screenSize.width / 2, screenSize.height / 2);
-    // _handleLike(post);
     if (userId == null) return;
 
-    // final isLiked = post.users_love_id?.contains(userId) ?? false;
-    // if (isLiked) return;
+    // Coeurs animés immédiatement
+    final screenSize = MediaQuery.of(context).size;
+    _showFlyingHearts(screenSize.width / 2, screenSize.height / 2);
 
-    // 🔥 VÉRIFICATION DU SOLDE DE PIÈCES (2 pièces minimum)
+    final alreadyLiked = post.users_love_id?.contains(userId) ?? false;
+
+    // Mise à jour UI instantanée — le like est toujours compté
+    setState(() {
+      post.loves = (post.loves ?? 0) + 1;
+      post.users_love_id = [...?post.users_love_id, if (!alreadyLiked) userId];
+    });
+
+    // Pièces + Firestore + notifications en arrière plan
+    _processLikeBackground(post, userId, alreadyLiked);
+  }
+
+  void _processLikeBackground(Post post, String userId, bool alreadyLiked) {
     final coinProvider = Provider.of<CoinGiftUserProvider>(context, listen: false);
-    final hasEnoughCoins = coinProvider.giftCoinsBalance >= 2;
-
-    if (!hasEnoughCoins) {
-      _showInsufficientCoinsForLikeDialog();
-      return;
-    }
-
-    try {
-      // 🔥 ENVOI DU LIKE AVEC PIÈCES
-      final success = await coinProvider.sendLikeWithCoins(
-        senderId: userId,
-        receiverId: post.user_id!,
-        post: post,
-        context: context,
-      );
-
+    coinProvider.sendLikeWithCoins(
+      senderId: userId,
+      receiverId: post.user_id!,
+      post: post,
+      context: context,
+    ).then((success) {
+      if (!mounted) return;
       if (!success) {
+        // Pas de pièces : compter quand même le like dans Firestore
+        _firestore.collection('Posts').doc(post.id).update({
+          'loves': FieldValue.increment(1),
+          'users_love_id': FieldValue.arrayUnion([userId]),
+          'popularity': FieldValue.increment(1),
+        });
         _showInsufficientCoinsForLikeDialog();
         return;
       }
-
-      // Mise à jour locale uniquement (Firestore déjà mis à jour par sendLikeWithCoins)
-      setState(() {
-        post.loves = (post.loves ?? 0) + 1;
-        post.users_love_id = [...?post.users_love_id, userId];
-      });
-
-      final isLiked = post.users_love_id?.contains(userId) ?? false;
-      if (!isLiked) {
-        // Interactions supplémentaires (si nécessaire)
+      // Succès pièces : interactions + notification
+      if (!alreadyLiked) {
         postProvider.interactWithPostAndIncrementSolde(post.id!, userId, "like", post.user_id!);
         authProvider.incrementPostTotalInteractions(postId: post.id!);
-
-        // Envoi de la notification
         _sendLikeNotification(post);
       }
-
-      // Feedback utilisateur
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   const SnackBar(
-      //     content: Text('❤️ Like envoyé ! 1 pièce offerte au créateur.'),
-      //     backgroundColor: Colors.green,
-      //     duration: Duration(seconds: 2),
-      //   ),
-      // );
-    } catch (e) {
-      // printVm('Erreur like: $e');
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   SnackBar(
-      //     content: Text('Erreur: $e'),
-      //     backgroundColor: Colors.red,
-      //   ),
-      // );
-    }
+    }).catchError((e) {
+      // erreur silencieuse, le like UI est déjà compté
+    });
   }
 
 // Dialog pour solde insuffisant (à ajouter dans la classe)

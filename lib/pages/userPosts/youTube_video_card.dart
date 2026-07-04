@@ -815,34 +815,48 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   // ==================== ACTIONS DU POST ====================
 
   Future<void> _handleLike() async {
-    final hasEnoughCoins = _coinProvider.giftCoinsBalance >= 2;
+    final userId = _authProvider.loginUserData.id;
+    if (userId == null) return;
 
-    if (!hasEnoughCoins) {
-      _showInsufficientCoinsDialog();
-      return;
-    }
+    final alreadyLiked = widget.post.users_love_id?.contains(userId) ?? false;
 
-    final success = await _coinProvider.sendLikeWithCoins(
-      senderId: _authProvider.loginUserData.id!,
-      receiverId: widget.post.user_id!,
-      post: widget.post,
-      context: context,
-    );
-
-    if (!success) {
-      _showInsufficientCoinsDialog();
-      return;
-    }
-
+    // Mise à jour UI instantanée — le like est toujours compté
     setState(() {
       widget.post.loves = (widget.post.loves ?? 0) + 1;
       widget.post.users_love_id ??= [];
-      widget.post.users_love_id!.add(_authProvider.loginUserData.id!);
+      if (!alreadyLiked) widget.post.users_love_id!.add(userId);
     });
 
-    addPointsForAction(UserAction.like);
-    addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre);
-    await _sendLikeNotifications();
+    // Pièces + notifications en arrière plan
+    _processLikeBackground(userId, alreadyLiked);
+  }
+
+  void _processLikeBackground(String userId, bool alreadyLiked) {
+    _coinProvider.sendLikeWithCoins(
+      senderId: userId,
+      receiverId: widget.post.user_id!,
+      post: widget.post,
+      context: context,
+    ).then((success) async {
+      if (!mounted) return;
+      if (!success) {
+        // Pas de pièces : compter quand même le like dans Firestore
+        _firestore.collection('Posts').doc(widget.post.id).update({
+          'loves': FieldValue.increment(1),
+          'users_love_id': FieldValue.arrayUnion([userId]),
+          'popularity': FieldValue.increment(1),
+        });
+        _showInsufficientCoinsDialog();
+        return;
+      }
+      if (!alreadyLiked) {
+        try {
+          addPointsForAction(UserAction.like);
+          addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre);
+          await _sendLikeNotifications();
+        } catch (_) {}
+      }
+    }).catchError((_) {});
   }
 
   void _showInsufficientCoinsDialog() {
