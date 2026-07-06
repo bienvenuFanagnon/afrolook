@@ -3222,7 +3222,9 @@ void showRemunerationAnnounceModal(BuildContext context, String userId) {
           backgroundColor: Colors.transparent,
           elevation: 0,
           insetPadding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Container(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Container(
             decoration: BoxDecoration(
               color: colors.surface,
               borderRadius: BorderRadius.circular(20),
@@ -3328,6 +3330,7 @@ void showRemunerationAnnounceModal(BuildContext context, String userId) {
               ],
             ),
           ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.05, end: 0, duration: 300.ms, curve: Curves.easeOut),
+          ),
         ),
       );
     },

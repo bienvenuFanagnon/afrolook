@@ -19,7 +19,9 @@ void showTopDatingAnnounceModal(BuildContext context) {
           backgroundColor: Colors.transparent,
           elevation: 0,
           insetPadding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Container(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Container(
             decoration: BoxDecoration(
               color: Colors.black,
               borderRadius: BorderRadius.circular(20),
@@ -161,6 +163,7 @@ void showTopDatingAnnounceModal(BuildContext context) {
                 ),
               ],
             ),
+          ),
           ),
         ),
       );
