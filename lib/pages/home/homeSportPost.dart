@@ -51,6 +51,7 @@ import '../../widgets/feed/sections/feed_state_widgets.dart';
 import '../../widgets/feed/sections/feed_filter_bar.dart';
 import '../../widgets/feed/sections/feed_ad_widgets.dart';
 import '../../services/feed/feed_repository.dart';
+import '../../widgets/feed/weekly_top_creators_widget.dart';
 
 
 // Constantes de couleur
@@ -546,6 +547,9 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   }
 
   void _initializeData() async {
+    // Précharger les top créateurs en parallèle
+    WeeklyTopCreatorsWidget.preload();
+
     // 1. Détecter le pays de l'utilisateur
     _selectedCountryCode = authProvider.loginUserData.countryData?['countryCode']?.toUpperCase();
     printVm('Pays utilisateur détecté: ${_selectedCountryCode}');
@@ -2475,6 +2479,11 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       );
       postIndex++;
 
+      if (postIndex == 1) {
+        // Top créateurs : 2e position (après le 1er post)
+        contentWidgets.add(const WeeklyTopCreatorsWidget());
+      }
+
       if (postIndex == 2) {
         contentWidgets.add(_buildAdAdvertisement(key: 'ad_after_first'));
         contentWidgets.add(const BoostedContentStripWidget());
@@ -3416,7 +3425,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
 
 
                     // Titre animé (expand)
-                    Container(
+                    Expanded(
                       child: _selectedPostType == 'SPORT'
                           ? _buildCompactSportTitle()
                           : Text(

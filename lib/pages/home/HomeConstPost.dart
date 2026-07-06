@@ -60,6 +60,7 @@ import '../user/active_creators_list_page.dart';
 import '../user/creator_unseen_posts_page.dart';
 import '../user/following_unseen_feed_page.dart';
 import 'home_boot_cache.dart';
+import '../../widgets/feed/weekly_top_creators_widget.dart';
 
 
 // Constantes de couleur
@@ -683,6 +684,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     );
   }
   void _initializeData() async {
+    // Précharger les top créateurs en parallèle
+
+    WeeklyTopCreatorsWidget.preload();
+
     // 1. Détecter le pays de l'utilisateur
     _selectedCountryCode = authProvider.loginUserData.countryData?['countryCode']?.toUpperCase();
     printVm('Pays utilisateur détecté: ${_selectedCountryCode}');
@@ -2905,6 +2910,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         ),
       );
       postIndex++;
+
+      if (postIndex == 1) {
+        // Top créateurs : 2e position (après le 1er post)
+        contentWidgets.add(const WeeklyTopCreatorsWidget());
+      }
 
       if (postIndex == 2) {
         contentWidgets.add(_buildAdAdvertisement(key: 'ad_after_first'));

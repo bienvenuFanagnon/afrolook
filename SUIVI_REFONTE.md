@@ -1,5 +1,5 @@
 # SUIVI REFONTE UI — AFROLOOK V2
-_Dernière mise à jour : 3 juillet 2026 (session 93)_
+_Dernière mise à jour : 7 juillet 2026 (session 94)_
 
 ---
 
@@ -152,6 +152,7 @@ Tout est fait en **français**.
 | **Image manquante `user-removebg-preview.png` (session 91)** | ✅ FAIT — Asset inexistant référencé dans 12 fichiers. Remplacé partout par `Icon(Icons.person)` : `errorWidget` de `CachedNetworkImage` dans 8 fichiers, `CircleAvatar(backgroundImage: AssetImage(...))` dans `postView.dart` (3 occurrences), `onBackgroundImageError` (callbacks no-op) dans `homeScreen.dart`, `mesInvitationTable.dart`, `user_list_view.dart`. Page inscription étape 2 : valeur par défaut remplacée par `Icon(Icons.person, size: 60)` dans un conteneur gris. |
 | **Vérification session Firebase — Live & Abonnement (session 91)** | ✅ FAIT — `SessionCheckerService` (existait mais non utilisé) branché sur : `livePage.dart` (postFrameCallback dans `initState`, avant connexion Agora/Firestore), `Subscription.dart` (postFrameCallback dans `didChangeDependencies` avec garde `_sessionChecked`). Si `FirebaseAuth.currentUser == null` → modale "Session expirée" + bouton "Se reconnecter" (`SessionExpiredModal`). |
 | **Session 93 — Navigation Business + refonte UI feeds** | ✅ FAIT — Voir détail ci-dessous |
+| **Session 94 — Like button instantané + WeeklyTopCreatorsWidget** | ✅ FAIT — Voir détail ci-dessous |
 
 ---
 
@@ -192,6 +193,80 @@ Tout est fait en **français**.
 | Modification | Fichier | Détail |
 |---|---|
 | Cartes canaux fixes (non étirées) | `feed_canaux_section.dart` | Réécriture complète : cartes `SizedBox(width: 90)`, avatar cerclé `56px` bordure verte, hauteur section fixe `120px`. Suppression des `size.width * 0.28` et `size.height * 0.22` qui causaient l'étirement. Import corrigé : `detailsCanal.dart` (et non `canalDetails.dart`) |
+
+---
+
+---
+
+## SESSION 94 — Like button instantané + WeeklyTopCreatorsWidget
+
+### Like button — action instantanée (pattern optimiste)
+
+Problème : le bouton like affichait un modal "pièces insuffisantes" même quand l'utilisateur avait des pièces (solde stale dans le provider).
+
+Correction appliquée sur **5 fichiers** — même pattern partout :
+- `setState()` immédiat (UI optimiste) avant tout traitement
+- Traitement pièces en arrière-plan via `.then()` sans `await`
+- Si échec pièces → Firestore mis à jour quand même (`loves +1`, `users_love_id arrayUnion`) + modal affiché après coup
+- Like toujours compté, modal affiché uniquement si pas de pièces
+
+| Fichier | Méthode |
+|---|---|
+| `lib/pages/postDetails.dart` | `_handleLike()` + `_processLikeBackground()` |
+| `lib/pages/postDetailsVideo.dart` | `_handleLike()` + `_processLikeBackground()` |
+| `lib/pages/post_video_format_tel_details.dart` | `_handleLike(post)` + `_processLikeBackground()` |
+| `lib/pages/userPosts/youTube_video_card.dart` | `_handleLike()` + `_processLikeBackground()` |
+| `lib/pages/userPosts/postWidgets/postWidgetPage.dart` | `_handleLike()`, `_handleLike2()`, `_handleLike3()` — même pattern adapté à chaque variante |
+
+### Fix overflow Row — homeSportPost.dart
+
+Correction ligne 3422 : `Container` du titre sans `Expanded` dans un `Row` → remplacé par `Expanded` direct.
+
+### WeeklyTopCreatorsWidget — nouveau widget
+
+**Fichier créé :** `lib/widgets/feed/weekly_top_creators_widget.dart`
+
+Widget affiché **uniquement le lundi et mardi**, en 2e position dans le feed (après le 1er post).
+
+**Logique de données :**
+- Requête Firestore : posts de la semaine passée (plage `created_at` en microseconds)
+- Groupement par `canal_id` (priorité) ou `user_id`
+- Score = `posts×5 + uniqueLovers×3 + loves×0.3 + uniqueCommenters×4 + comments×0.3 + uniqueViewers×1 + vues×0.05 + giftCount×2 + partage×1.5 + totalInteractions×0.2`
+- Interactions **uniques** (listes `users_love_id`, etc.) ont plus de poids que les totaux bruts (anti-spam)
+- Top 5 triés par score, détails chargés depuis `Users` ou `Canaux` en parallèle
+
+**Chargement en parallèle :**
+- `WeeklyTopCreatorsWidget.preload()` statique appelé dès `_initializeData()` dans les deux feeds
+- Future Firestore partagé via `_sharedFuture` statique — pas de double requête
+
+**Suivi du temps de vue (8 secondes cumulées) :**
+- `Stopwatch` démarre quand le widget est monté
+- À chaque `dispose()` : temps écoulé ajouté au total dans `SharedPreferences` (`weekly_view_ms`)
+- Si total ≥ 8 000 ms → widget invisible pour le reste de la journée
+- Compteur remis à zéro automatiquement chaque jour (`weekly_view_date`)
+
+**Affichage :**
+- `PageView` horizontal, viewport 85% (peek du suivant visible)
+- Photo de profil 230px en haut (CachedNetworkImage + fallback initiales)
+- Nom avec préfixe `@pseudo` (user) ou `#titre` (canal)
+- Badge rang (🥇🥈🥉), badge type (Canal/Créateur), compteur abonnés depuis la liste d'IDs réelle
+- Stats compactes `Wrap` (mini-badges icône + valeur)
+- Message d'encouragement par rang
+
+**Tap sur carte :**
+- Utilisateur → `showUserDetailsModalDialog()` (modal bottom sheet existant)
+- Canal → `Navigator.push(CanalDetails)` (page canal existante)
+
+**Bouton S'abonner sécurisé :**
+- Pas d'abonnement à soi-même (`currentUserId == targetId` bloqué)
+- Déjà abonné → bouton "Abonné(e)" (pas de re-follow)
+- Utilisateur → `authProvider.abonner(userData, context)`
+- Canal gratuit → Firestore `arrayUnion + increment` avec rollback optimiste si erreur
+- Canal payant/privé → redirection vers `CanalDetails`
+
+**Intégration dans les feeds :**
+- `HomeConstPost.dart` : position `postIndex == 1` + `WeeklyTopCreatorsWidget.preload()` dans `_initializeData()`
+- `homeSportPost.dart` : position `postIndex == 1` + `WeeklyTopCreatorsWidget.preload()` dans `_initializeData()`
 
 ---
 
