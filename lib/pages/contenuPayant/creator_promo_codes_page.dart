@@ -1,3 +1,4 @@
+import 'package:afrotok/utils/responsive_sheet.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/providers/authProvider.dart' show UserAuthProvider;
 import 'package:afrotok/theme/app_colors.dart';
@@ -113,7 +114,7 @@ class _CreatorPromoCodesPageState extends State<CreatorPromoCodesPage> {
   }
 
   void _showCreateSheet(BuildContext context, String uid) {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: _colors.surface,

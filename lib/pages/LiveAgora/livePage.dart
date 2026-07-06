@@ -1,4 +1,5 @@
-﻿// models/live_models.dart
+import 'package:afrotok/utils/responsive_sheet.dart';
+// models/live_models.dart
 import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
@@ -1651,7 +1652,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   }
 
   void _shareLive() {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
@@ -1722,7 +1723,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   }
 
   void _shareLiveToChat() {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

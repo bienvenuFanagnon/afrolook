@@ -1,3 +1,6 @@
+import 'package:afrotok/layout/centered_content.dart';
+import 'package:afrotok/layout/responsive_layout.dart';
+import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -1396,7 +1399,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
       if (!mounted) return;
       setState(() => _seenByPage = 10);
 
-      showModalBottomSheet(
+      showResponsiveBottomSheet(
         context: context,
         backgroundColor: Colors.transparent,
         isScrollControlled: true,
@@ -1565,7 +1568,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
 
     HapticFeedback.mediumImpact();
 
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
@@ -1927,7 +1930,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
     final searchCtrl = TextEditingController();
     final countries = kCountries.where((c) => c['code'] != 'ALL').toList();
 
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -2219,7 +2222,9 @@ class _GroupChatPageState extends State<GroupChatPage> {
       child: Scaffold(
       backgroundColor: _colors.background,
       appBar: _buildAppBar(),
-      body: Column(
+      body: CenteredContent(
+        maxWidth: AppLayout.isDesktop(context) ? 800 : AppLayout.maxFeedWidth,
+        child: Column(
         children: [
           if (_permissionsLoaded) ...[
             if (_isBlocked) _buildBlockedBanner(),
@@ -2250,6 +2255,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
             if (!_userCanWrite) _buildBlockedInputPlaceholder(),
           ],
         ],
+        ),
       ),
       ),  // Scaffold
     );    // PopScope
@@ -3043,7 +3049,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
       if (e.value.contains(myId)) { myCurrentEmoji = e.key; break; }
     }
 
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,

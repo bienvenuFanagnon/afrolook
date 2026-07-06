@@ -1,4 +1,5 @@
-﻿// Dart imports:
+import 'package:afrotok/utils/responsive_sheet.dart';
+// Dart imports:
 import 'dart:io';
 import 'dart:math';
 import 'dart:ui' as ui;
@@ -399,7 +400,7 @@ class _PostPhotoEditorState extends State<PostPhotoEditor>
         ),
       );
     } else {
-      await showModalBottomSheet(
+      await showResponsiveBottomSheet(
         context: context,
         showDragHandle: true,
         constraints: BoxConstraints(

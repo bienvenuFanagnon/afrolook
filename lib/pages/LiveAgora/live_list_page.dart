@@ -1,3 +1,4 @@
+import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -96,7 +97,7 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
   }
 
   void _shareLive(PostLive live) {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

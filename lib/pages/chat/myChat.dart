@@ -1,4 +1,7 @@
-﻿import 'dart:convert';
+import 'package:afrotok/layout/centered_content.dart';
+import 'package:afrotok/layout/responsive_layout.dart';
+import 'package:afrotok/utils/responsive_sheet.dart';
+import 'dart:convert';
 import 'dart:io';
 import 'package:afrotok/models/chatmodels/message.dart';
 import 'package:afrotok/models/chatmodels/models.dart';
@@ -355,7 +358,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       {'label': '24 heures', 'value': 86400},
     ];
 
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
@@ -661,7 +664,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   }
 
   void _showPremiumGate(String message) {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (_) => Container(
@@ -1537,7 +1540,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     final isMe = message.sendBy == _authProvider.loginUserData.id!;
     final isText = message.messageType == MessageType.text.name;
 
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
@@ -1746,7 +1749,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       ('other', 'Autre', Icons.help_outline_rounded),
     ];
 
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
@@ -1928,7 +1931,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   void _showChatMenu() {
     final pseudo = widget.chat.receiver?.pseudo ?? _otherId;
 
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
@@ -2337,7 +2340,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   }
 
   void _showAttachMenu() {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (_) {
@@ -2890,7 +2893,9 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     return Scaffold(
       backgroundColor: _colors.background,
       appBar: _buildAppBar(),
-      body: Container(
+      body: CenteredContent(
+        maxWidth: AppLayout.isDesktop(context) ? 800 : AppLayout.maxFeedWidth,
+        child: Container(
         decoration: BoxDecoration(
           gradient: RadialGradient(
             center: const Alignment(-0.8, -0.6),
@@ -2956,6 +2961,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
               ? _buildBlockedInputBar()
               : _buildMessageInput(),
         ],
+        ),
         ),
       ),
     );

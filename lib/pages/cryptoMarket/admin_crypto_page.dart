@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import 'package:afrotok/utils/responsive_sheet.dart';
+import 'package:flutter/material.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:provider/provider.dart';
@@ -528,7 +529,7 @@ class _AdminCryptoPageState extends State<AdminCryptoPage> with SingleTickerProv
     );
   }
   void _showCryptoEditModal(BuildContext context, CryptoCurrency crypto) {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,

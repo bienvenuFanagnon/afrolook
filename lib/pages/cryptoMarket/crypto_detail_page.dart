@@ -1,3 +1,4 @@
+import 'package:afrotok/utils/responsive_sheet.dart';
 // views/crypto/crypto_detail_page.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -905,7 +906,7 @@ class _CryptoDetailPageState extends State<CryptoDetailPage> with SingleTickerPr
   }
 
   void _showFullScreenChart(CryptoCurrency crypto) {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

@@ -1,4 +1,5 @@
-﻿import 'dart:async';
+import 'package:afrotok/utils/responsive_sheet.dart';
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -1564,13 +1565,13 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     // Définir la hauteur en fonction du nombre d'images
     double contentHeight;
     if (imageCount == 1) {
-      contentHeight = h * 0.4; // Hauteur normale pour 1 image
+      contentHeight = h * 0.55;
     } else if (imageCount == 2) {
-      contentHeight = h * 0.4; // Même hauteur pour 2 images
+      contentHeight = h * 0.55;
     } else if (imageCount == 3) {
-      contentHeight = h * 0.4; // Même hauteur pour 3 images
+      contentHeight = h * 0.55;
     } else {
-      contentHeight = h * 0.4; // Même hauteur pour 4+ images
+      contentHeight = h * 0.55;
     }
 
     return Container(
@@ -1581,10 +1582,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           Container(
             width: double.infinity,
             height: contentHeight,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              color: colors.shimmerBase,
-            ),
+            color: colors.shimmerBase,
             child: Opacity(
               opacity: isLocked ? 0.15 : 1.0,
               child: _buildImageGrid(contentHeight, imageCount),
@@ -1597,7 +1595,6 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.6),
-                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Center(
                   child: Column(
@@ -1691,20 +1688,17 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           ),
         );
       },
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: CachedNetworkImage(
-          imageUrl: imageUrl,
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: height,
-          placeholder: (context, url) => Container(
-            color: colors.shimmerBase,
-          ),
-          errorWidget: (context, url, error) => Container(
-            color: colors.shimmerBase,
-            child: Icon(Icons.broken_image, color: colors.textSecondary),
-          ),
+      child: CachedNetworkImage(
+        imageUrl: imageUrl,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: height,
+        placeholder: (context, url) => Container(
+          color: colors.shimmerBase,
+        ),
+        errorWidget: (context, url, error) => Container(
+          color: colors.shimmerBase,
+          child: Icon(Icons.broken_image, color: colors.textSecondary),
         ),
       ),
     );
@@ -1727,23 +1721,16 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           Expanded(
             child: Padding(
               padding: EdgeInsets.only(right: 2),
-              child: ClipRRect(
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  bottomLeft: Radius.circular(16),
+              child: CachedNetworkImage(
+                imageUrl: _optimizeUrl(images[0]),
+                fit: BoxFit.cover,
+                height: height,
+                placeholder: (context, url) => Container(
+                  color: colors.shimmerBase,
                 ),
-                child: CachedNetworkImage(
-                  imageUrl:_optimizeUrl( images[0])
-               ,
-                  fit: BoxFit.cover,
-                  height: height,
-                  placeholder: (context, url) => Container(
-                    color: colors.shimmerBase,
-                  ),
-                  errorWidget: (context, url, error) => Container(
-                    color: colors.shimmerBase,
-                    child: Icon(Icons.broken_image, color: colors.textSecondary),
-                  ),
+                errorWidget: (context, url, error) => Container(
+                  color: colors.shimmerBase,
+                  child: Icon(Icons.broken_image, color: colors.textSecondary),
                 ),
               ),
             ),
@@ -1753,22 +1740,16 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           Expanded(
             child: Padding(
               padding: EdgeInsets.only(left: 2),
-              child: ClipRRect(
-                borderRadius: BorderRadius.only(
-                  topRight: Radius.circular(16),
-                  bottomRight: Radius.circular(16),
+              child: CachedNetworkImage(
+                imageUrl: _optimizeUrl(images[1]),
+                fit: BoxFit.cover,
+                height: height,
+                placeholder: (context, url) => Container(
+                  color: colors.shimmerBase,
                 ),
-                child: CachedNetworkImage(
-                  imageUrl: _optimizeUrl( images[1]),
-                  fit: BoxFit.cover,
-                  height: height,
-                  placeholder: (context, url) => Container(
-                    color: colors.shimmerBase,
-                  ),
-                  errorWidget: (context, url, error) => Container(
-                    color: colors.shimmerBase,
-                    child: Icon(Icons.broken_image, color: colors.textSecondary),
-                  ),
+                errorWidget: (context, url, error) => Container(
+                  color: colors.shimmerBase,
+                  child: Icon(Icons.broken_image, color: colors.textSecondary),
                 ),
               ),
             ),
@@ -1797,22 +1778,16 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
             flex: 2,
             child: Padding(
               padding: EdgeInsets.only(right: 2),
-              child: ClipRRect(
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  bottomLeft: Radius.circular(16),
+              child: CachedNetworkImage(
+                imageUrl: _optimizeUrl(images[0]),
+                fit: BoxFit.cover,
+                height: height,
+                placeholder: (context, url) => Container(
+                  color: colors.shimmerBase,
                 ),
-                child: CachedNetworkImage(
-                  imageUrl: _optimizeUrl( images[0]),
-                  fit: BoxFit.cover,
-                  height: height,
-                  placeholder: (context, url) => Container(
-                    color: colors.shimmerBase,
-                  ),
-                  errorWidget: (context, url, error) => Container(
-                    color: colors.shimmerBase,
-                    child: Icon(Icons.broken_image, color: colors.textSecondary),
-                  ),
+                errorWidget: (context, url, error) => Container(
+                  color: colors.shimmerBase,
+                  child: Icon(Icons.broken_image, color: colors.textSecondary),
                 ),
               ),
             ),
@@ -1830,21 +1805,16 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   Expanded(
                     child: Padding(
                       padding: EdgeInsets.only(bottom: 2),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.only(
-                          topRight: Radius.circular(16),
+                      child: CachedNetworkImage(
+                        imageUrl: _optimizeUrl(images[1]),
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        placeholder: (context, url) => Container(
+                          color: colors.shimmerBase,
                         ),
-                        child: CachedNetworkImage(
-                          imageUrl: _optimizeUrl( images[1]),
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          placeholder: (context, url) => Container(
-                            color: colors.shimmerBase,
-                          ),
-                          errorWidget: (context, url, error) => Container(
-                            color: colors.shimmerBase,
-                            child: Icon(Icons.broken_image, color: colors.textSecondary),
-                          ),
+                        errorWidget: (context, url, error) => Container(
+                          color: colors.shimmerBase,
+                          child: Icon(Icons.broken_image, color: colors.textSecondary),
                         ),
                       ),
                     ),
@@ -1854,21 +1824,16 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   Expanded(
                     child: Padding(
                       padding: EdgeInsets.only(top: 2),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.only(
-                          bottomRight: Radius.circular(16),
+                      child: CachedNetworkImage(
+                        imageUrl: _optimizeUrl(images[2]),
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        placeholder: (context, url) => Container(
+                          color: colors.shimmerBase,
                         ),
-                        child: CachedNetworkImage(
-                          imageUrl: _optimizeUrl( images[2]),
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          placeholder: (context, url) => Container(
-                            color: colors.shimmerBase,
-                          ),
-                          errorWidget: (context, url, error) => Container(
-                            color: colors.shimmerBase,
-                            child: Icon(Icons.broken_image, color: colors.textSecondary),
-                          ),
+                        errorWidget: (context, url, error) => Container(
+                          color: colors.shimmerBase,
+                          child: Icon(Icons.broken_image, color: colors.textSecondary),
                         ),
                       ),
                     ),
@@ -1910,27 +1875,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           itemBuilder: (context, index) {
             final optimizedUrl = _optimizeUrl(displayedImages[index]);
 
-            BorderRadius borderRadius;
-            if (displayedImages.length == 4) {
-              switch (index) {
-                case 0:
-                  borderRadius = BorderRadius.only(topLeft: Radius.circular(16));
-                  break;
-                case 1:
-                  borderRadius = BorderRadius.only(topRight: Radius.circular(16));
-                  break;
-                case 2:
-                  borderRadius = BorderRadius.only(bottomLeft: Radius.circular(16));
-                  break;
-                case 3:
-                  borderRadius = BorderRadius.only(bottomRight: Radius.circular(16));
-                  break;
-                default:
-                  borderRadius = BorderRadius.circular(0);
-              }
-            } else {
-              borderRadius = BorderRadius.circular(0);
-            }
+            const BorderRadius borderRadius = BorderRadius.zero;
 
             bool hasOverlay = index == 3 && images.length > 4;
 
@@ -2012,7 +1957,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                 File(_videoThumbnailPath!),
                 fit: BoxFit.cover,
                 width: double.infinity,
-                height: h * 0.4,
+                height: h * 0.55,
               ),
             ),
           )
@@ -2453,7 +2398,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   // Méthodes de gestion des actions
   void _showCommentsModal(Post post) {
     final colors = AppColors.of(context);
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -2499,7 +2444,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     final postProvider = Provider.of<PostProvider>(context, listen: false);
 
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: colors.surface,
       shape: RoundedRectangleBorder(
@@ -2630,50 +2575,73 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     final userId = authProvider.loginUserData.id;
     if (userId == null) return;
 
+    // alreadyLiked = premier like de cet utilisateur → détermine si notif à envoyer
     final alreadyLiked = widget.post.users_love_id?.contains(userId) ?? false;
 
-    // Mise à jour UI instantanée — le like est toujours compté
     setState(() {
       widget.post.loves = (widget.post.loves ?? 0) + 1;
       widget.post.users_love_id ??= [];
       if (!alreadyLiked) widget.post.users_love_id!.add(userId);
     });
 
-    // Pièces + notifications en arrière plan
     _processLikeBackground(userId, alreadyLiked);
   }
 
   void _processLikeBackground(String userId, bool alreadyLiked) {
+    final postId = widget.post.id;
+    final receiverId = widget.post.user_id;
+    if (postId == null || receiverId == null) return;
+
     final coinProvider = Provider.of<CoinGiftUserProvider>(context, listen: false);
     coinProvider.sendLikeWithCoins(
       senderId: userId,
-      receiverId: widget.post.user_id!,
+      receiverId: receiverId,
       post: widget.post,
       context: context,
     ).then((success) async {
       if (!mounted) return;
       if (!success) {
-        // Pas de pièces : compter quand même le like dans Firestore
-        firestore.collection('Posts').doc(widget.post.id).update({
+        // Pas de pièces : compter quand même dans Firestore
+        await firestore.collection('Posts').doc(postId).update({
+          'loves': FieldValue.increment(1),
+          'users_love_id': FieldValue.arrayUnion([userId]),
+          'popularity': FieldValue.increment(1),
+        }).catchError((_) {});
+        _showInsufficientCoinsForLikeDialog();
+        return;
+      }
+      try {
+        addPointsForAction(UserAction.like);
+        addPointsForOtherUserAction(receiverId, UserAction.autre);
+        // Notif seulement au créateur, seulement sur le premier like de cet utilisateur
+        if (!alreadyLiked) await _sendLikeNotifications();
+        widget.onLoved?.call();
+      } catch (e) {
+        printVm("Erreur post-like: $e");
+      }
+    }).catchError((e) async {
+      // Transaction Firestore échouée → fallback écriture directe
+      printVm("Like transaction failed: $e");
+      if (!mounted) return;
+      try {
+        await firestore.collection('Posts').doc(postId).update({
           'loves': FieldValue.increment(1),
           'users_love_id': FieldValue.arrayUnion([userId]),
           'popularity': FieldValue.increment(1),
         });
-        _showInsufficientCoinsForLikeDialog();
-        return;
-      }
-      if (!alreadyLiked) {
-        try {
-          addPointsForAction(UserAction.like);
-          addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre);
-          await _sendLikeNotifications();
-          widget.onLoved?.call();
-        } catch (e) {
-          printVm("Erreur post-like: $e");
+        if (!alreadyLiked) {
+          try {
+            await _sendLikeNotifications();
+            widget.onLoved?.call();
+          } catch (_) {}
         }
+      } catch (_) {
+        // Rollback UI si le fallback échoue aussi
+        if (mounted) setState(() {
+          widget.post.loves = ((widget.post.loves ?? 1) - 1).clamp(0, double.maxFinite.toInt());
+          if (!alreadyLiked) widget.post.users_love_id?.remove(userId);
+        });
       }
-    }).catchError((e) {
-      printVm("Erreur like background: $e");
     });
   }
 
@@ -2782,14 +2750,16 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         );
         await firestore.collection('Notifications').doc(notificationId).set(notification.toJson());
 
-        // Push notification
-        if (currentUser != null && currentUser!.oneIgnalUserid != null) {
+        // Push notification — oneSignalId depuis le doc fetchée (fallback currentUser)
+        final oneSignalId = (userData?['oneIgnalUserid'] as String?)
+            ?? currentUser?.oneIgnalUserid;
+        if (oneSignalId != null) {
           await authProvider.sendNotification(
-            userIds: [currentUser!.oneIgnalUserid!],
-            smallImage: authProvider.loginUserData.imageUrl!,
+            userIds: [oneSignalId],
+            smallImage: authProvider.loginUserData.imageUrl ?? '',
             send_user_id: authProvider.loginUserData.id!,
             recever_user_id: widget.post.user_id!,
-            message: "📢 @${authProvider.loginUserData.pseudo!} a aimé votre look et vous a offert 1 pièce !",
+            message: "📢 @${authProvider.loginUserData.pseudo ?? ''} a aimé votre look et vous a offert 1 pièce !",
             type_notif: NotificationType.POST.name,
             post_id: widget.post.id!,
             post_type: PostDataType.IMAGE.name,

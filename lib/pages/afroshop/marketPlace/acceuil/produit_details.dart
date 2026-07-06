@@ -1,4 +1,5 @@
-﻿import 'dart:io';
+import 'package:afrotok/utils/responsive_sheet.dart';
+import 'dart:io';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'dart:math';
@@ -687,7 +688,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
 
   Future<void> _shareProduct() async {
     if (article == null) return;
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
@@ -743,7 +744,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
   void _shareProductToChat() {
     if (article == null) return;
     final thumb = (article!.images?.isNotEmpty == true) ? article!.images!.first : '';
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

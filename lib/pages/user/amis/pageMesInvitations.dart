@@ -1,4 +1,6 @@
 ﻿import 'dart:async';
+import 'package:afrotok/layout/centered_content.dart';
+import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'dart:math';
@@ -925,7 +927,9 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
           ),
         ],
       ),
-      body: RefreshIndicator(
+      body: CenteredContent(
+        maxWidth: AppLayout.isDesktop(context) ? 800 : AppLayout.maxFeedWidth,
+        child: RefreshIndicator(
         onRefresh: _refreshInvitations,
         color: _colors.accent,
         backgroundColor: _colors.surfaceVariant,
@@ -1086,6 +1090,7 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
             ),
           ],
         ),
+      ),
       ),
     );
   }

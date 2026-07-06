@@ -1,3 +1,4 @@
+import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:convert';
 
 import 'package:afrotok/providers/authProvider.dart';
@@ -39,7 +40,7 @@ class _DepositScreenState extends State<DepositScreen> {
     final colors = AppColors.of(context);
     final t = AppLocalizations.of(context);
 
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,

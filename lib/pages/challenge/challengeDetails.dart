@@ -1,4 +1,5 @@
-﻿// challenge_detail_page.dart (version complète refaite)
+import 'package:afrotok/utils/responsive_sheet.dart';
+// challenge_detail_page.dart (version complète refaite)
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/component/showUserDetails.dart';
 import 'package:afrotok/pages/paiement/newDepot.dart';
@@ -2717,7 +2718,7 @@ class _ChallengeDetailPageState extends State<ChallengeDetailPage> {
   }
 
   void _showAllParticipantsModal() {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -2808,7 +2809,7 @@ class _ChallengeDetailPageState extends State<ChallengeDetailPage> {
   }
 
   void _showAllPostsModal() {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -5886,7 +5887,7 @@ class _ChallengeDetailPageState extends State<ChallengeDetailPage> {
 //
 // // Méthode pour afficher le modal de tous les participants
 //   void _showAllParticipantsModal() {
-//     showModalBottomSheet(
+//     showResponsiveBottomSheet(
 //       context: context,
 //       isScrollControlled: true,
 //       backgroundColor: Colors.transparent,
@@ -5942,7 +5943,7 @@ class _ChallengeDetailPageState extends State<ChallengeDetailPage> {
 //
 // // Méthode pour afficher le modal de tous les posts
 //   void _showAllPostsModal() {
-//     showModalBottomSheet(
+//     showResponsiveBottomSheet(
 //       context: context,
 //       isScrollControlled: true,
 //       backgroundColor: Colors.transparent,

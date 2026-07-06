@@ -1,4 +1,5 @@
-﻿// lib/pages/dating/dating_chat_page.dart
+import 'package:afrotok/utils/responsive_sheet.dart';
+// lib/pages/dating/dating_chat_page.dart
 
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'dart:async';
@@ -606,7 +607,7 @@ class _DatingChatPageState extends State<DatingChatPage>
 
   void _showProfileOptions() {
     final t = AppLocalizations.of(context);
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -755,7 +756,7 @@ class _DatingChatPageState extends State<DatingChatPage>
     return GestureDetector(
       onLongPress: () {
         if (message.senderUserId == _currentUserId) {
-          showModalBottomSheet(
+          showResponsiveBottomSheet(
             context: context,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -786,7 +787,7 @@ class _DatingChatPageState extends State<DatingChatPage>
             ),
           );
         } else {
-          showModalBottomSheet(
+          showResponsiveBottomSheet(
             context: context,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -2113,7 +2114,7 @@ class _AudioMessageWidgetState extends State<_AudioMessageWidget> {
 //     return GestureDetector(
 //       onLongPress: () {
 //         if (message.senderUserId == _currentUserId) {
-//           showModalBottomSheet(
+//           showResponsiveBottomSheet(
 //             context: context,
 //             shape: RoundedRectangleBorder(
 //               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -2144,7 +2145,7 @@ class _AudioMessageWidgetState extends State<_AudioMessageWidget> {
 //             ),
 //           );
 //         } else {
-//           showModalBottomSheet(
+//           showResponsiveBottomSheet(
 //             context: context,
 //             shape: RoundedRectangleBorder(
 //               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -2725,7 +2726,7 @@ class _AudioMessageWidgetState extends State<_AudioMessageWidget> {
 //   }
 //
 //   void _showProfileOptions() {
-//     showModalBottomSheet(
+//     showResponsiveBottomSheet(
 //       context: context,
 //       shape: RoundedRectangleBorder(
 //         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),

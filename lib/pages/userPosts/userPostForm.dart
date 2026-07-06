@@ -1,3 +1,5 @@
+import 'package:afrotok/layout/centered_content.dart';
+import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/pages/userPosts/postPhotoEditor.dart';
 import 'package:afrotok/pages/userPosts/postTabs/UserPubVibeTab.dart';
 import 'package:afrotok/pages/userPosts/postTabs/userPostAudioTab.dart';
@@ -69,7 +71,9 @@ class _UserProfilState extends State<UserPostForm> {
         ],
         iconTheme: IconThemeData(color: _colors.textPrimary),
       ),
-      body: Padding(
+      body: CenteredContent(
+        maxWidth: AppLayout.isDesktop(context) ? 700 : AppLayout.maxFeedWidth,
+        child: Padding(
         padding: const EdgeInsets.all(8.0),
         child: SingleChildScrollView(
           child: Column(
@@ -287,6 +291,7 @@ class _UserProfilState extends State<UserPostForm> {
               ),
             ],
           ),
+        ),
         ),
       ),
     );

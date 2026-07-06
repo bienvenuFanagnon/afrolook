@@ -1,4 +1,5 @@
-﻿import 'dart:ui';
+import 'package:afrotok/utils/responsive_sheet.dart';
+import 'dart:ui';
 
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -18,7 +19,6 @@ import '../../providers/postProvider.dart';
 import '../../providers/sound_provider.dart';
 import '../../providers/userProvider.dart';
 import '../canaux/detailsCanal.dart';
-import '../coins/post_gifts_list.dart';
 import '../component/consoleWidget.dart';
 import '../home/user_presence_widget.dart';
 import '../pub/native_ad_widget.dart';
@@ -788,12 +788,9 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
           // Re-appliquer pour être sûr
           _chewieController!.setVolume(targetVolume);
 
-          if (!isMuted) {
-            _playVideo();
-            printVm('🔊 Son activé : lecture vidéo ${widget.post.id} (volume: $targetVolume)');
-          } else {
-            printVm('🔇 Son coupé globalement : vidéo ${widget.post.id} en pause');
-          }
+          // Toujours lancer (volume déjà appliqué : 0.0 si muet, 1.0 si son actif)
+          _playVideo();
+          printVm('▶️ Auto-play vidéo ${widget.post.id} (muted=$isMuted, volume: $targetVolume)');
         }
       });
 
@@ -818,45 +815,67 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     final userId = _authProvider.loginUserData.id;
     if (userId == null) return;
 
+    // alreadyLiked = premier like de cet utilisateur → détermine si notif à envoyer
     final alreadyLiked = widget.post.users_love_id?.contains(userId) ?? false;
 
-    // Mise à jour UI instantanée — le like est toujours compté
     setState(() {
       widget.post.loves = (widget.post.loves ?? 0) + 1;
       widget.post.users_love_id ??= [];
       if (!alreadyLiked) widget.post.users_love_id!.add(userId);
     });
 
-    // Pièces + notifications en arrière plan
     _processLikeBackground(userId, alreadyLiked);
   }
 
   void _processLikeBackground(String userId, bool alreadyLiked) {
+    final postId = widget.post.id;
+    final receiverId = widget.post.user_id;
+    if (postId == null || receiverId == null) return;
+
     _coinProvider.sendLikeWithCoins(
       senderId: userId,
-      receiverId: widget.post.user_id!,
+      receiverId: receiverId,
       post: widget.post,
       context: context,
     ).then((success) async {
       if (!mounted) return;
       if (!success) {
-        // Pas de pièces : compter quand même le like dans Firestore
-        _firestore.collection('Posts').doc(widget.post.id).update({
+        // Pas de pièces : compter quand même dans Firestore
+        await _firestore.collection('Posts').doc(postId).update({
+          'loves': FieldValue.increment(1),
+          'users_love_id': FieldValue.arrayUnion([userId]),
+          'popularity': FieldValue.increment(1),
+        }).catchError((_) {});
+        _showInsufficientCoinsDialog();
+        return;
+      }
+      try {
+        addPointsForAction(UserAction.like);
+        addPointsForOtherUserAction(receiverId, UserAction.autre);
+        // Notif seulement au créateur, seulement sur le premier like de cet utilisateur
+        if (!alreadyLiked) await _sendLikeNotifications();
+      } catch (_) {}
+    }).catchError((e) async {
+      // Transaction Firestore échouée → fallback écriture directe
+      debugPrint('Like transaction failed: $e');
+      if (!mounted) return;
+      try {
+        await _firestore.collection('Posts').doc(postId).update({
           'loves': FieldValue.increment(1),
           'users_love_id': FieldValue.arrayUnion([userId]),
           'popularity': FieldValue.increment(1),
         });
-        _showInsufficientCoinsDialog();
-        return;
+        if (!alreadyLiked) {
+          try { await _sendLikeNotifications(); } catch (_) {}
+        }
+      } catch (_) {
+        // Rollback UI si le fallback échoue aussi
+        if (mounted) setState(() {
+          widget.post.loves = ((widget.post.loves ?? 1) - 1).clamp(0, double.maxFinite.toInt());
+          if (!alreadyLiked) widget.post.users_love_id?.remove(userId);
+        });
       }
-      if (!alreadyLiked) {
-        try {
-          addPointsForAction(UserAction.like);
-          addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre);
-          await _sendLikeNotifications();
-        } catch (_) {}
-      }
-    }).catchError((_) {});
+    });
   }
 
   void _showInsufficientCoinsDialog() {
@@ -957,13 +976,15 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
         );
         await _firestore.collection('Notifications').doc(notificationId).set(notification.toJson());
 
-        if (_creatorUser?.oneIgnalUserid != null) {
+        final oneSignalId = (userDoc.data()?['oneIgnalUserid'] as String?)
+            ?? _creatorUser?.oneIgnalUserid;
+        if (oneSignalId != null) {
           await _authProvider.sendNotification(
-            userIds: [_creatorUser!.oneIgnalUserid!],
-            smallImage: _authProvider.loginUserData.imageUrl!,
+            userIds: [oneSignalId],
+            smallImage: _authProvider.loginUserData.imageUrl ?? '',
             send_user_id: _authProvider.loginUserData.id!,
             recever_user_id: widget.post.user_id!,
-            message: "📢 @${_authProvider.loginUserData.pseudo!} a aimé votre vidéo et vous a offert 1 pièce !",
+            message: "📢 @${_authProvider.loginUserData.pseudo ?? ''} a aimé votre vidéo et vous a offert 1 pièce !",
             type_notif: NotificationType.POST.name,
             post_id: widget.post.id!,
             post_type: PostDataType.VIDEO.name,
@@ -1083,7 +1104,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
 
   void _showCommentsModal() {
     final colors = AppColors.of(context);
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -1220,6 +1241,77 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     );
   }
 
+  void _showCountriesModal() {
+    final colors = AppColors.of(context);
+    final isAllCountries = widget.post.isAvailableInAllCountries == true;
+    final countryCodes = widget.post.availableCountries ?? [];
+
+    showResponsiveBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final c = AppColors.of(ctx);
+        return Container(
+          decoration: BoxDecoration(
+            color: c.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(color: c.border, borderRadius: BorderRadius.circular(2)),
+              ),
+              const SizedBox(height: 16),
+              Text('Pays disponibles', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: c.textPrimary)),
+              const SizedBox(height: 12),
+              if (isAllCountries)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('🌍', style: TextStyle(fontSize: 28)),
+                      const SizedBox(width: 10),
+                      Text('Disponible dans tous les pays', style: TextStyle(fontSize: 14, color: c.textSecondary)),
+                    ],
+                  ),
+                )
+              else if (countryCodes.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Text('Aucun pays spécifié', style: TextStyle(color: c.textSecondary)),
+                )
+              else
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 320),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: countryCodes.length,
+                    itemBuilder: (ctx2, i) {
+                      final code = countryCodes[i].toUpperCase();
+                      final country = AfricanCountry.allCountries.firstWhere(
+                        (c) => c.code == code,
+                        orElse: () => AfricanCountry(code: code, name: code, flag: '🏳️'),
+                      );
+                      return ListTile(
+                        dense: true,
+                        leading: Text(country.flag, style: const TextStyle(fontSize: 22)),
+                        title: Text(country.name, style: TextStyle(color: c.textPrimary, fontSize: 14)),
+                        trailing: Text(code, style: TextStyle(color: c.textSecondary, fontSize: 12)),
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildPostHeader() {
     final colors = AppColors.of(context);
     final isCanalPost = _creatorCanal != null;
@@ -1283,7 +1375,10 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                   ),
                   if (!isCurrentUser && !isAbonne) _buildFollowButton(isCanalPost, postOwner),
                   const SizedBox(width: 5),
-                  _buildCountryBadge(),
+                  GestureDetector(
+                    onTap: _showCountriesModal,
+                    child: _buildCountryBadge(),
+                  ),
                 ],
               ),
               const SizedBox(height: 2),
@@ -1456,17 +1551,17 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                   : _isVideoInitialized && _chewieController != null && !isLocked
                   ? AspectRatio(aspectRatio: 16 / 9, child: Chewie(controller: _chewieController!))
                   : _isGeneratingThumbnail
-                  ? Container(height: h * 0.25, width: double.infinity, color: colors.shimmerBase,
+                  ? Container(height: h * 0.38, width: double.infinity, color: colors.shimmerBase,
                   child: const Center(child: CircularProgressIndicator()))
                   : _thumbnailUrl != null
-                  ? Image.network(_thumbnailUrl!, fit: BoxFit.cover, height: h * 0.25, width: double.infinity,
-                  errorBuilder: (context, error, stackTrace) => Container(height: h * 0.25, width: double.infinity, color: colors.shimmerBase,
+                  ? Image.network(_thumbnailUrl!, fit: BoxFit.cover, height: h * 0.38, width: double.infinity,
+                  errorBuilder: (context, error, stackTrace) => Container(height: h * 0.38, width: double.infinity, color: colors.shimmerBase,
                       child: Icon(Icons.videocam, size: 50, color: colors.textSecondary)))
-                  : Container(height: h * 0.25, width: double.infinity, color: colors.shimmerBase,
+                  : Container(height: h * 0.38, width: double.infinity, color: colors.shimmerBase,
                   child: Icon(Icons.videocam, size: 50, color: colors.textSecondary)),
             ),
             if (_isVideoLoading && !isLocked)
-              Container(height: h * 0.25, width: double.infinity, color: Colors.black.withOpacity(0.7),
+              Container(height: h * 0.38, width: double.infinity, color: Colors.black.withOpacity(0.7),
                   child: Center(child: CircularProgressIndicator(color: colors.primary))),
             // 🔥 Supprimer l'icône play superflue – on garde juste la vidéo sans contrôle
             // Overlay de verrouillage
@@ -1521,7 +1616,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     final screenWidth = MediaQuery.of(context).size.width;
 
 // 📺 Mini player pour vidéos portrait
-    final double videoHeight =  (screenWidth * 1.15).clamp(320.0, 500.0);
+    final double videoHeight = (screenWidth * 1.3).clamp(380.0, 620.0);
 
     return VisibilityDetector(
       key: Key('video_${widget.post.id}'),
@@ -1532,7 +1627,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
           children: [
             // --- Conteneur vidéo agrandi ---
             ClipRRect(
-              borderRadius: const BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
+              borderRadius: BorderRadius.zero,
               child: kIsWeb && !isLocked && widget.post.url_media != null
                   ? SizedBox(
                 width: double.infinity,
@@ -1752,29 +1847,16 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     }
   }
 
-  // 🔥 Nouvelle méthode : Mettre à jour le volume quand la préférence change
   void _updateVolume() {
-    if (_chewieController != null) {
-      final isMuted = _soundProvider.isMuted;
-      final volume = isMuted ? 0.0 : 1.0;
-
-      printVm('🔊 _updateVolume appelé: muted=$isMuted, volume=$volume');
-
-      // Appliquer sur les deux contrôleurs
-      _chewieController!.setVolume(volume);
-      _videoController?.setVolume(volume);
-
-      // 🔥 Si le son est activé ET la vidéo est visible ET en pause -> jouer
-      if (!isMuted && _isVisible && _chewieController != null && !_chewieController!.isPlaying) {
-        printVm('🔊 Son activé pendant la visibilité : reprise de la vidéo');
-        _playVideo();
-      }
-      // Si le son est coupé et que la vidéo joue, on la met en pause
-      else if (isMuted && _chewieController!.isPlaying) {
-        printVm('🔇 Son coupé pendant la visibilité : pause vidéo');
-        _pauseVideo();
-      }
+    if (_chewieController == null) return;
+    final volume = _soundProvider.isMuted ? 0.0 : 1.0;
+    _chewieController!.setVolume(volume);
+    _videoController?.setVolume(volume);
+    // Si la vidéo est visible et en pause, la reprendre (changement de volume = intention de jouer)
+    if (!_soundProvider.isMuted && _isVisible && !_chewieController!.isPlaying) {
+      _playVideo();
     }
+    // Ne jamais mettre en pause à cause du son — seulement changer le volume
   }
 
   @override
@@ -1797,6 +1879,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: colors.surface,
         borderRadius: BorderRadius.circular(16),
@@ -1805,22 +1888,19 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+            child: _buildPostHeader(),
+          ),
           _buildVideoContent(),
           Padding(
             padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildPostHeader(),
-                const SizedBox(height: 8),
                 _buildPostContent(),
                 const SizedBox(height: 12),
                 _buildPostActions(),
-                PostGiftsList(
-                  postId: widget.post.id!,
-                  compactLevel: CompactLevel.light,
-                  maxDisplayItems: 10,
-                ),
                 if (_shouldShowAd) ...[
                   const SizedBox(height: 12),
                   MrecAdWidget(

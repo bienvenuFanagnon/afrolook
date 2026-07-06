@@ -1,3 +1,4 @@
+import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:async';
 
 import 'package:afrotok/models/model_data.dart';
@@ -1520,7 +1521,7 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
   }
 
   void _showOwnerMenu() {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: _colors.surface,
       shape: const RoundedRectangleBorder(

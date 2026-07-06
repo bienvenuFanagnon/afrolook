@@ -1,4 +1,5 @@
-﻿// lib/pages/dating/dating_swipe_page.dart
+import 'package:afrotok/utils/responsive_sheet.dart';
+// lib/pages/dating/dating_swipe_page.dart
 
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -2788,7 +2789,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
 
   void _showDiscoverChoiceDialog() {
     final t = AppLocalizations.of(context);
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: AppColors.of(context).surface,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),

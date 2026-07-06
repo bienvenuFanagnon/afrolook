@@ -1,3 +1,4 @@
+import 'package:afrotok/utils/responsive_sheet.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/paiement/newDepot.dart';
 import 'package:afrotok/providers/authProvider.dart';
@@ -1082,7 +1083,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
   void _showRenewalSheet(UserData user, List<Map<String, dynamic>> offres,
       Color accentColor, String planType) {
     final colors = AppColors.of(context);
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: colors.surface,
       isScrollControlled: true,

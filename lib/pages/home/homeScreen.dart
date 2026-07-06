@@ -1,4 +1,5 @@
-﻿import 'dart:async';
+import 'package:afrotok/utils/responsive_sheet.dart';
+import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
 import 'package:afrotok/services/linkService.dart';
@@ -113,6 +114,9 @@ import '../../providers/gold_groups_provider.dart';
 import 'HomeConstPost.dart';
 import '../../l10n/app_localizations.dart';
 import '../../services/migrations/unread_reset_migration.dart';
+import '../../layout/responsive_layout.dart';
+import '../LiveAgora/live_list_page.dart';
+import '../user/conversation/listUserConv.dart';
 
 class MyHomePage extends StatefulWidget {
 
@@ -170,6 +174,8 @@ class _MyHomePageState extends State<MyHomePage>
   int _unreadNotificationsCount = 0;
   String _appVersion = '';
   int? _shorebirdPatch;
+  Widget? _desktopSection;
+  String? _desktopSectionTitle;
 
   // Liste des onglets avec texte et icônes
   DocumentSnapshot? lastDocument;
@@ -186,6 +192,20 @@ class _MyHomePageState extends State<MyHomePage>
     final random = Random();
     _color = colors[random.nextInt(colors.length)];
   }
+  void _setDesktopSection(Widget widget, String title) {
+    setState(() {
+      _desktopSection = widget;
+      _desktopSectionTitle = title;
+    });
+  }
+
+  void _clearDesktopSection() {
+    setState(() {
+      _desktopSection = null;
+      _desktopSectionTitle = null;
+    });
+  }
+
   Future<void> _launchUrl(Uri url) async {
     if (!await launchUrl(url)) {
       throw Exception('Could not launch $url');
@@ -1674,6 +1694,12 @@ class _MyHomePageState extends State<MyHomePage>
     const double navIconSize = 24;
     const double actionIconSize = 18;
 
+    // ── Layout Wide (Tablette / Desktop ≥ 576 px) ────────────────────────
+    if (AppLayout.isWide(context)) {
+      return _buildWideScaffold(context, colors, l10n, width, navIconSize, actionIconSize);
+    }
+    // ── Layout Mobile (< 576 px) ─────────────────────────────────────────
+
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: colors.background,
@@ -1970,39 +1996,8 @@ class _MyHomePageState extends State<MyHomePage>
       ),
       drawer: menu(context, width, MediaQuery.of(context).size.height),
       body: TabBarView(
-
         controller: _tabController,
-        children: [
-          LooksPage(type: TabBarType.LOOKS.name,sortType: 'recent', feedKey: _looksRecentKey,),
-          SizedBox.shrink(), // tabSport — navigation via initState → HomeSportPostPage
-          SizedBox.shrink(), // tabVibe — navigation via initState → PostDetailsVideoFormatTel
-
-          // LooksPage(type: TabBarType.SPORT.name,sortType: 'popular',),
-          // SportPage(type: TabBarType.SPORT.name),
-          // HomeConstPostTypePage(type: TabBarType.SPORT.name),
-          // HomeSportPostPage(type: TabBarType.SPORT.name),
-          HomeConstPostTypePage(key: _discoverKey, type: TabBarType.EVENEMENT.name,sortType: 'recent',),
-          SizedBox.shrink(), // tabVip — navigation via initState → DashboardContentScreen
-          ChallengesListPage(),
-          ChroniqueHomePage(),
-          LooksPage(type: TabBarType.LOOKS.name,sortType: 'popular', feedKey: _looksPopularKey,),
-
-          // _buildDiscoverTab(),
-
-
-
-
-          // LooksPage(type: TabBarType.LOOKS.name),
-
-
-          // LooksPage(type: TabBarType.LOOKS.name,sortType: 'popular',),
-
-
-          // VideoFeedTiktokPage(fullPage: false),
-          // ActualitePage(type: TabBarType.ACTUALITES.name),
-          // SportPage(type: TabBarType.SPORT.name),
-          // OffrePage(type: TabBarType.OFFRES.name),
-        ],
+        children: _tabViewChildren,
       ),
 
       // bottomNavigationBar supprimé — navigation déplacée en haut (style Facebook)
@@ -2197,7 +2192,7 @@ class _MyHomePageState extends State<MyHomePage>
   void _showLanguagePicker(BuildContext context, LocaleProvider localeProvider) {
     final colors = AppColors.of(context);
     final l10n = AppLocalizations.of(context);
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: colors.surface,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
@@ -2277,6 +2272,757 @@ class _MyHomePageState extends State<MyHomePage>
           overflow: TextOverflow.ellipsis,
         ),
       ],
+    );
+  }
+
+  // ===========================================================================
+  // RESPONSIVE — WIDE LAYOUT (Tablet ≥ 576px / Desktop > 992px)
+  // ===========================================================================
+
+  /// Enfants du TabBarView — partagés par le layout mobile et wide.
+  List<Widget> get _tabViewChildren => [
+    LooksPage(type: TabBarType.LOOKS.name, sortType: 'recent', feedKey: _looksRecentKey),
+    const SizedBox.shrink(),
+    const SizedBox.shrink(),
+    HomeConstPostTypePage(key: _discoverKey, type: TabBarType.EVENEMENT.name, sortType: 'recent'),
+    const SizedBox.shrink(),
+    ChallengesListPage(),
+    ChroniqueHomePage(),
+    LooksPage(type: TabBarType.LOOKS.name, sortType: 'popular', feedKey: _looksPopularKey),
+  ];
+
+  /// Scaffold principal pour tablette et desktop.
+  Widget _buildWideScaffold(
+    BuildContext context,
+    AppColors colors,
+    AppLocalizations l10n,
+    double width,
+    double navIconSize,
+    double actionIconSize,
+  ) {
+    final isDesktop = AppLayout.isDesktop(context);
+    final sidebarW = isDesktop ? AppLayout.sidebarWidth : AppLayout.sidebarNarrowWidth;
+
+    return Scaffold(
+      key: _scaffoldKey,
+      backgroundColor: colors.background,
+      body: SafeArea(
+        child: Row(
+          children: [
+            // ── Sidebar gauche ──────────────────────────────────────────
+            SizedBox(
+              width: sidebarW,
+              child: _buildDesktopSidebar(context, colors, l10n, isDesktop),
+            ),
+            // ── Zone principale (TopBar + Tabs + Feed) ──────────────────
+            Expanded(
+              child: Column(
+                children: [
+                  _buildDesktopTopBar(context, colors, l10n, actionIconSize),
+                  if (_desktopSection == null) _buildDesktopTabBar(colors, l10n),
+                  Expanded(
+                    child: _desktopSection != null
+                        ? _buildDesktopSectionView(colors)
+                        : TabBarView(
+                            controller: _tabController,
+                            children: _tabViewChildren,
+                          ),
+                  ),
+                ],
+              ),
+            ),
+            // ── Panneau droit (desktop uniquement) ──────────────────────
+            if (isDesktop) _buildDesktopRightPanel(context, colors),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Affiche une section inline (back + titre + contenu) dans la colonne centrale.
+  Widget _buildDesktopSectionView(AppColors colors) {
+    return Column(
+      children: [
+        Container(
+          height: 48,
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: colors.border, width: 0.5)),
+          ),
+          child: Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: _clearDesktopSection,
+                color: colors.textPrimary,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                _desktopSectionTitle ?? '',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: colors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(child: _desktopSection!),
+      ],
+    );
+  }
+
+  /// Sidebar gauche : logo, profil, navigation, bouton créer.
+  Widget _buildDesktopSidebar(
+    BuildContext context,
+    AppColors colors,
+    AppLocalizations l10n,
+    bool wide,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border(right: BorderSide(color: colors.border, width: 0.5)),
+      ),
+      child: Column(
+        children: [
+          // Logo
+          Container(
+            height: AppLayout.topBarHeight,
+            alignment: wide ? Alignment.centerLeft : Alignment.center,
+            padding: EdgeInsets.symmetric(horizontal: wide ? 14 : 0),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: colors.border, width: 0.5)),
+            ),
+            child: Text(
+              wide ? 'Afrolook' : 'A',
+              style: TextStyle(
+                fontSize: wide ? 18 : 16,
+                fontWeight: FontWeight.w900,
+                color: colors.primary,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+          // Profil (desktop large uniquement)
+          if (wide)
+            InkWell(
+              onTap: () => Navigator.pushNamed(context, '/home_profile_user'),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundImage: NetworkImage(authProvider.loginUserData.imageUrl ?? ''),
+                      onBackgroundImageError: (_, __) {},
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '@${authProvider.loginUserData.pseudo ?? ''}',
+                            style: TextStyle(fontSize: 12, color: colors.textPrimary, fontWeight: FontWeight.w600),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            'Voir mon profil',
+                            style: TextStyle(fontSize: 10, color: colors.primary),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          if (wide) Divider(color: colors.border, height: 1),
+          // Navigation
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  const SizedBox(height: 8),
+                  _sidebarItem(
+                    context: context,
+                    icon: Icons.home_outlined,
+                    label: l10n.tabHome,
+                    onTap: () {},
+                    wide: wide,
+                    colors: colors,
+                    isActive: true,
+                  ),
+                  // Invitations
+                  StreamBuilder<int>(
+                    stream: getNbrInvitation(),
+                    builder: (context, snap) => _sidebarItem(
+                      context: context,
+                      icon: Icons.group_outlined,
+                      label: l10n.navInvitations,
+                      onTap: () => _setDesktopSection(MesInvitationsPage(context: context), l10n.navInvitations),
+                      wide: wide,
+                      colors: colors,
+                      badge: snap.data ?? 0,
+                    ),
+                  ),
+                  // Messages
+                  StreamBuilder<int>(
+                    stream: getNbrMessageNonLu(),
+                    builder: (context, snap) => _sidebarItem(
+                      context: context,
+                      icon: Icons.chat_bubble_outline,
+                      label: l10n.navMessages,
+                      onTap: () => _setDesktopSection(const ListUserChatsOptimized(), l10n.navMessages),
+                      wide: wide,
+                      colors: colors,
+                      badge: snap.data ?? 0,
+                      iconColor: colors.info,
+                    ),
+                  ),
+                  // Business
+                  _sidebarItem(
+                    context: context,
+                    icon: Icons.business_center_outlined,
+                    label: 'Business',
+                    onTap: () => _setDesktopSection(DashboardContentScreen(), 'Business'),
+                    wide: wide,
+                    colors: colors,
+                    iconColor: const Color(0xFFFFD400),
+                  ),
+                  // Vidéos
+                  _sidebarItem(
+                    context: context,
+                    icon: Icons.video_library_outlined,
+                    label: l10n.navVideos,
+                    onTap: () => Navigator.pushNamed(context, '/videos'),
+                    wide: wide,
+                    colors: colors,
+                  ),
+                  // Afrolove
+                  _sidebarItem(
+                    context: context,
+                    icon: Fontisto.tinder,
+                    label: 'Afrolove',
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DatingSwipePage())),
+                    wide: wide,
+                    colors: colors,
+                    iconColor: Colors.red,
+                    badge: _unreadNotificationsCount,
+                  ),
+                  // Lives
+                  StreamBuilder<int>(
+                    stream: Provider.of<LiveProvider>(context, listen: false).getActiveLivesCountStream(),
+                    builder: (context, snap) => _sidebarItem(
+                      context: context,
+                      icon: Icons.live_tv_outlined,
+                      label: l10n.navLives,
+                      onTap: () => _setDesktopSection(LiveListPage(), l10n.navLives),
+                      wide: wide,
+                      colors: colors,
+                      badge: snap.data ?? 0,
+                      iconColor: colors.danger,
+                    ),
+                  ),
+                  if (wide) ...[
+                    Divider(color: colors.border, height: 16),
+                    _sidebarItem(
+                      context: context,
+                      icon: Icons.settings_outlined,
+                      label: 'Paramètres',
+                      onTap: () => _scaffoldKey.currentState?.openDrawer(),
+                      wide: wide,
+                      colors: colors,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          // Bouton Créer
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: wide ? 14 : 8,
+              vertical: 12,
+            ),
+            child: GestureDetector(
+              onTap: () => authProvider.checkAppVersionAndProceed(context, () async {
+                Navigator.pushNamed(context, '/user_posts_form');
+              }),
+              child: Container(
+                height: 40,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [colors.primary, colors.accent],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(color: colors.primary.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 3)),
+                  ],
+                ),
+                child: Center(
+                  child: wide
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add, color: colors.onPrimary, size: 18),
+                            const SizedBox(width: 6),
+                            Text(l10n.navCreate, style: TextStyle(color: colors.onPrimary, fontWeight: FontWeight.bold, fontSize: 13)),
+                          ],
+                        )
+                      : Icon(Icons.add, color: colors.onPrimary, size: 22),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Item de navigation pour la sidebar wide/narrow.
+  Widget _sidebarItem({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    required bool wide,
+    required AppColors colors,
+    Color? iconColor,
+    int badge = 0,
+    bool isActive = false,
+  }) {
+    final color = isActive ? colors.primary : (iconColor ?? colors.textPrimary);
+    final Widget iconWidget = badges.Badge(
+      showBadge: badge > 0,
+      badgeStyle: badges.BadgeStyle(badgeColor: colors.accent, padding: const EdgeInsets.all(3)),
+      badgeContent: Text(badge > 9 ? '9+' : '$badge', style: TextStyle(fontSize: 7, color: colors.onAccent)),
+      child: Icon(icon, color: color, size: 22),
+    );
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: wide ? 8 : 4, vertical: 2),
+        padding: wide
+            ? const EdgeInsets.symmetric(horizontal: 10, vertical: 10)
+            : const EdgeInsets.symmetric(vertical: 10),
+        decoration: isActive
+            ? BoxDecoration(
+                color: colors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              )
+            : null,
+        child: wide
+            ? Row(children: [
+                iconWidget,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isActive ? colors.primary : colors.textPrimary,
+                      fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ])
+            : Center(child: iconWidget),
+      ),
+    );
+  }
+
+  /// TopBar horizontale pour desktop/tablette (remplace les lignes 1+2 de l'AppBar mobile).
+  Widget _buildDesktopTopBar(
+    BuildContext context,
+    AppColors colors,
+    AppLocalizations l10n,
+    double actionIconSize,
+  ) {
+    return Container(
+      height: AppLayout.topBarHeight,
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border(bottom: BorderSide(color: colors.border, width: 0.5)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          // Barre de recherche
+          Expanded(
+            child: Container(
+              height: 36,
+              constraints: const BoxConstraints(maxWidth: 400),
+              decoration: BoxDecoration(
+                color: colors.background,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: colors.border),
+              ),
+              child: Row(
+                children: [
+                  const SizedBox(width: 12),
+                  Icon(Icons.search, color: colors.textSecondary, size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Rechercher sur Afrolook…',
+                    style: TextStyle(color: colors.textSecondary, fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Actions
+          StreamBuilder<List<NotificationData>>(
+            stream: authProvider.getListNotificationAuth(authProvider.loginUserData.id!),
+            builder: (context, snap) {
+              int n = snap.hasData ? snap.data!.length : 0;
+              return GestureDetector(
+                onTap: () => Navigator.pushNamed(context, '/mes_notifications'),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: badges.Badge(
+                    showBadge: n > 0,
+                    badgeStyle: badges.BadgeStyle(badgeColor: colors.accent),
+                    badgeContent: Text(n > 9 ? '9+' : '$n', style: TextStyle(fontSize: 8, color: colors.onAccent)),
+                    child: Icon(Icons.notifications_none_rounded, color: colors.textPrimary, size: actionIconSize + 2),
+                  ),
+                ),
+              );
+            },
+          ),
+          GestureDetector(
+            onTap: _onTopBarFilterTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Icon(Icons.filter_alt_outlined, color: colors.primary, size: actionIconSize + 2),
+            ),
+          ),
+          Consumer<SoundProvider>(
+            builder: (_, sp, __) => GestureDetector(
+              onTap: sp.toggleSound,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: Icon(sp.isMuted ? Icons.volume_off : Icons.volume_up, color: colors.primary, size: actionIconSize + 2),
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: _onTopBarRefreshTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Icon(Icons.refresh, color: colors.primary, size: actionIconSize + 2),
+            ),
+          ),
+          Consumer<LocaleProvider>(
+            builder: (_, lp, __) => GestureDetector(
+              onTap: () => _showLanguagePicker(context, lp),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: Text(
+                  (kSupportedLocales[lp.locale.languageCode] ?? '🇫🇷').substring(0, 2),
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: () => Provider.of<ThemeProvider>(context, listen: false).toggleTheme(),
+            child: Padding(
+              padding: const EdgeInsets.only(left: 6, right: 4),
+              child: Icon(
+                colors.isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                color: colors.primary,
+                size: actionIconSize + 2,
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          GestureDetector(
+            onTap: () => Navigator.pushNamed(context, '/home_profile_user'),
+            child: CircleAvatar(
+              radius: 16,
+              backgroundImage: NetworkImage(authProvider.loginUserData.imageUrl ?? ''),
+              onBackgroundImageError: (_, __) {},
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Barre d'onglets (ligne 3 du mobile, identique sur wide).
+  Widget _buildDesktopTabBar(AppColors colors, AppLocalizations l10n) {
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border(bottom: BorderSide(color: colors.border, width: 0.5)),
+      ),
+      child: TabBar(
+        controller: _tabController,
+        isScrollable: true,
+        indicatorColor: colors.primary,
+        indicatorWeight: 2.5,
+        labelColor: colors.accent,
+        unselectedLabelColor: colors.textSecondary,
+        labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        unselectedLabelStyle: const TextStyle(fontSize: 12),
+        tabAlignment: TabAlignment.start,
+        tabs: [
+          Tab(text: l10n.tabHome),
+          Tab(text: l10n.tabSport),
+          Tab(text: l10n.tabVibe),
+          Tab(text: l10n.tabEvents),
+          Tab(text: l10n.tabVip),
+          Tab(text: l10n.tabChallenges),
+          Tab(text: l10n.tabChroniques),
+          Tab(text: l10n.tabPopular),
+        ],
+      ),
+    );
+  }
+
+  /// Panneau droit persistant (desktop > 992px) — suggestions, tendances.
+  /// Panneau droit — miroir du menu() drawer, adapté en liste scrollable.
+  Widget _buildDesktopRightPanel(BuildContext context, AppColors colors) {
+    final l10n = AppLocalizations.of(context);
+    return Container(
+      width: AppLayout.rightPanelWidth,
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border(left: BorderSide(color: colors.border, width: 0.5)),
+      ),
+      child: Column(
+        children: [
+          // ── En-tête profil ──────────────────────────────────────────
+          GestureDetector(
+            onTap: () => Navigator.pushNamed(context, '/home_profile_user'),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+              decoration: BoxDecoration(
+                color: colors.background,
+                border: Border(bottom: BorderSide(color: colors.border, width: 0.5)),
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 22,
+                    backgroundImage: NetworkImage(authProvider.loginUserData.imageUrl ?? ''),
+                    onBackgroundImageError: (_, __) {},
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                '@${authProvider.loginUserData.pseudo ?? ''}',
+                                style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 13),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            UserBadgeWidget(user: authProvider.loginUserData, size: 13),
+                          ],
+                        ),
+                        Text(
+                          authProvider.loginUserData.userPays?.name ?? '',
+                          style: TextStyle(color: colors.textSecondary, fontSize: 11),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.chevron_right, color: colors.textSecondary, size: 16),
+                ],
+              ),
+            ),
+          ),
+
+          // ── Liste menu scrollable ───────────────────────────────────
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              children: [
+
+                // ── Réseaux sociaux ──────────────────────────────────
+                _rpSection(colors, 'Réseaux'),
+                _rpItem(context, colors, icon: Fontisto.tinder, iconColor: Colors.red,     label: 'Afro Love',            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DatingSwipePage()))),
+                _rpItem(context, colors, icon: Icons.group,                                label: l10n.menuFriends,        onTap: () => _setDesktopSection(Amis(), l10n.menuFriends)),
+                _rpItem(context, colors, icon: Icons.search,                               label: l10n.menuSearchUsers,    onTap: () => _setDesktopSection(AddListAmis(), l10n.menuSearchUsers)),
+                _rpItem(context, colors, icon: Icons.notifications_none_rounded,           label: 'Notifications',         onTap: () => _setDesktopSection(MesNotification(), 'Notifications')),
+                _rpItem(context, colors, icon: Icons.chat_bubble_outline,                  label: l10n.navMessages,        onTap: () => _setDesktopSection(const ListUserChatsOptimized(), l10n.navMessages)),
+
+                // ── Mon contenu ──────────────────────────────────────
+                _rpSection(colors, 'Mon contenu'),
+                _rpItem(context, colors, icon: Icons.supervised_user_circle,               label: l10n.menuProfile,        onTap: () => Navigator.pushNamed(context, '/home_profile_user')),
+                _rpItem(context, colors, icon: Icons.bookmark_outlined,                    label: l10n.menuFavorites,       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => FavoritePostsPage()))),
+                _rpItem(context, colors, icon: Icons.history_toggle_off_sharp,             label: l10n.menuMyChroniques,    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MyChroniquesPage()))),
+                _rpItem(context, colors, icon: Icons.emoji_events,                         label: l10n.menuMyChallenges,    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserChallengesPage()))),
+                _rpItem(context, colors, icon: FontAwesome.tv,                             label: l10n.menuMyLives,         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserLivesPage()))),
+
+                // ── Business & Monétisation ──────────────────────────
+                _rpSection(colors, 'Business'),
+                _rpItem(context, colors, icon: Icons.play_lesson_outlined, iconColor: const Color(0xFFFFD400), label: 'Contenu Business', onTap: () => _setDesktopSection(DashboardContentScreen(), 'Business')),
+                _rpItem(context, colors, icon: Icons.monetization_on,                      label: l10n.profileMenuRemunerationSpace, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => RemunerationHomePage(user: authProvider.loginUserData)))),
+                _rpItem(context, colors, icon: Icons.connect_without_contact,              label: l10n.menuMarketing,       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MarketingAffiliationPage()))),
+                _rpItem(context, colors, icon: AntDesign.linechart,                        label: l10n.menuAfroCoinMarket,  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CryptoMarketPage()))),
+
+                // ── Découverte ───────────────────────────────────────
+                _rpSection(colors, 'Découverte'),
+                _rpItem(context, colors, icon: Entypo.trophy,                              label: l10n.menuTopStars,        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const UserClassement()))),
+                _rpItem(context, colors, icon: Icons.emoji_events,                         label: l10n.menuTopPostsMonth,   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChallengeMonthPage()))),
+                _rpItem(context, colors, icon: MaterialIcons.sports_soccer,                label: l10n.menuPronosticsBetting, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PronosticsFeedPage()))),
+                _rpItem(context, colors, icon: FontAwesome.forumbee,                       label: l10n.menuCanaux,          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CanalListPage(isUserCanals: false)))),
+                _rpItem(context, colors, icon: Icons.store_mall_directory,                 label: l10n.menuAfroshopMarket,  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HomeAfroshopPage(title: '')))),
+                _rpItem(context, colors, icon: Icons.settings_outlined,                    label: l10n.menuServicesJobs,    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserServiceListPage()))),
+
+                // ── Paramètres & Divers ──────────────────────────────
+                _rpSection(colors, 'Paramètres'),
+                // Thème
+                Consumer<ThemeProvider>(
+                  builder: (_, tp, __) => _rpItemWidget(
+                    context: context,
+                    colors: colors,
+                    icon: colors.isDark ? Icons.dark_mode : Icons.light_mode,
+                    label: colors.isDark ? l10n.menuDarkMode : l10n.menuLightMode,
+                    onTap: tp.toggleTheme,
+                    trailing: Switch(
+                      value: tp.themeMode == ThemeMode.dark,
+                      activeColor: colors.primary,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      onChanged: (_) => tp.toggleTheme(),
+                    ),
+                  ),
+                ),
+                // Langue
+                Consumer<LocaleProvider>(
+                  builder: (_, lp, __) => _rpItemWidget(
+                    context: context,
+                    colors: colors,
+                    icon: Icons.language,
+                    label: l10n.menuLanguage,
+                    onTap: () => _showLanguagePicker(context, lp),
+                    trailing: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: colors.surfaceVariant,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: colors.primary),
+                      ),
+                      child: Text(
+                        kSupportedLocales[lp.locale.languageCode] ?? '🇫🇷',
+                        style: TextStyle(fontSize: 11, color: colors.primary, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ),
+                _rpItem(context, colors, icon: Icons.info_outline,                         label: l10n.menuNewsInfo,        onTap: () => Navigator.pushNamed(context, '/app_info')),
+                _rpItem(context, colors, icon: Icons.contact_mail,                         label: l10n.menuContacts,        onTap: () => Navigator.pushNamed(context, '/contact')),
+                _rpItem(context, colors, icon: Icons.smartphone,                           label: l10n.menuShareApp,        onTap: () async {
+                  await authProvider.getAppData();
+                  Share.shareUri(Uri.parse('${authProvider.appDefaultData.app_link}'));
+                }),
+
+                const SizedBox(height: 8),
+                Divider(color: colors.border),
+
+                // ── Déconnexion ──────────────────────────────────────
+                _rpItem(context, colors,
+                  icon: Icons.exit_to_app,
+                  iconColor: colors.danger,
+                  label: l10n.menuLogout,
+                  labelColor: colors.danger,
+                  onTap: () => authProvider.logout(context),
+                ),
+
+                // ── Version ─────────────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 6, 14, 16),
+                  child: Text(
+                    'v$_appVersion${_shorebirdPatch != null ? ' · patch $_shorebirdPatch' : ''}',
+                    style: TextStyle(color: colors.textSecondary, fontSize: 10),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Section header dans le panneau droit.
+  Widget _rpSection(AppColors colors, String title) => Padding(
+    padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
+    child: Text(title, style: TextStyle(color: colors.textSecondary, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
+  );
+
+  /// Item simple (icône + label + flèche) dans le panneau droit.
+  Widget _rpItem(
+    BuildContext context,
+    AppColors colors, {
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    Color? iconColor,
+    Color? labelColor,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: iconColor ?? colors.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(fontSize: 13, color: labelColor ?? colors.textPrimary, fontWeight: FontWeight.w500),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Icon(Icons.chevron_right, size: 14, color: colors.textSecondary),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Item avec widget trailing personnalisé (switch, badge...).
+  Widget _rpItemWidget({
+    required BuildContext context,
+    required AppColors colors,
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    required Widget trailing,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: colors.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(label, style: TextStyle(fontSize: 13, color: colors.textPrimary, fontWeight: FontWeight.w500)),
+            ),
+            trailing,
+          ],
+        ),
+      ),
     );
   }
 }

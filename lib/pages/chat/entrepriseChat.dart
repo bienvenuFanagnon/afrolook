@@ -1,3 +1,5 @@
+import 'package:afrotok/layout/centered_content.dart';
+import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/models/chatmodels/message.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:afrotok/models/chatmodels/models.dart';
@@ -330,7 +332,9 @@ class _EntrepriseMyChatState extends State<EntrepriseMyChat> {
           );
         }, icon: Icon(Icons.arrow_downward_rounded,color: Colors.green))],
       ),
-      body: Column(
+      body: CenteredContent(
+        maxWidth: AppLayout.isDesktop(context) ? 800 : AppLayout.maxFeedWidth,
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           GestureDetector(
@@ -850,6 +854,7 @@ class _EntrepriseMyChatState extends State<EntrepriseMyChat> {
 
 
         ],
+        ),
       ),
       // This trailing comma makes auto-formatting nicer for build methods.
     );

@@ -1,4 +1,5 @@
-﻿import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/utils/responsive_sheet.dart';
+import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/pages/cryptoMarket/portefolioPage.dart';
@@ -1448,7 +1449,7 @@ String timetrade = '24H';
   void _showCryptoSelection() {
     final marketProvider = Provider.of<CryptoMarketProvider>(context, listen: false);
 
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: Color(0xFF1A202C),
       shape: RoundedRectangleBorder(

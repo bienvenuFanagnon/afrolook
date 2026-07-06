@@ -1,3 +1,6 @@
+import 'package:afrotok/layout/centered_content.dart';
+import 'package:afrotok/layout/responsive_layout.dart';
+import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -242,7 +245,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
     String? errorMsg;
     bool saving = false;
 
-    await showModalBottomSheet(
+    await showResponsiveBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -507,7 +510,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
     List<dynamic> results = [];
     bool searching = false;
 
-    await showModalBottomSheet(
+    await showResponsiveBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -661,7 +664,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
   }
 
   void _showPremiumGate() {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (_) => Container(
@@ -769,8 +772,10 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              children: [
+          : CenteredContent(
+              maxWidth: AppLayout.isDesktop(context) ? 700 : AppLayout.maxFeedWidth,
+              child: ListView(
+                children: [
                 // En-tête groupe
                 _buildGroupHeader(imageUrl, isFrozen),
                 const SizedBox(height: 16),
@@ -942,7 +947,8 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                     ),
                   ),
                 const SizedBox(height: 24),
-              ],
+                ],
+              ),
             ),
     );
   }
@@ -1651,7 +1657,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
           ? (_groupData['subscription_price'] as num).toStringAsFixed(0)
           : '',
     );
-    await showModalBottomSheet(
+    await showResponsiveBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -1818,7 +1824,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
   }
 
   void _showMemberOptions(String userId, String pseudo, String role) {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
@@ -1892,7 +1898,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
 
     if (!mounted) return;
 
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,

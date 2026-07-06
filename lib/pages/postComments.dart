@@ -1,3 +1,5 @@
+import 'package:afrotok/layout/centered_content.dart';
+import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/showUserDetails.dart';
 import 'package:afrotok/pages/postDetails.dart';
@@ -1360,7 +1362,9 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
           child: Divider(height: 1, color: _colors.divider.withOpacity(0.4)),
         ),
       ),
-      body: Column(
+      body: CenteredContent(
+        maxWidth: AppLayout.isDesktop(context) ? 800 : AppLayout.maxFeedWidth,
+        child: Column(
         children: [
           _buildPostHeader(),
           Expanded(
@@ -1396,6 +1400,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
           ),
           _buildCommentInput(),
         ],
+      ),
       ),
     );
   }

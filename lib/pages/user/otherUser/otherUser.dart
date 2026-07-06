@@ -1,5 +1,7 @@
 ﻿import 'dart:math';
 
+import 'package:afrotok/layout/centered_content.dart';
+import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/models/tiktokModel.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/postDetails.dart';
@@ -851,7 +853,9 @@ class _OtherUserPageState extends State<OtherUserPage> {
 
     return Scaffold(
       backgroundColor: colors.background,
-      body: RefreshIndicator(
+      body: CenteredContent(
+        maxWidth: AppLayout.isDesktop(context) ? 800 : AppLayout.maxFeedWidth,
+        child: RefreshIndicator(
         onRefresh: _loadInitialPosts,
         backgroundColor: colors.primary,
         color: colors.onPrimary,
@@ -1138,6 +1142,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
             ],
           ],
         ),
+      ),
       ),
     );
   }

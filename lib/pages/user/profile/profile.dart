@@ -1,3 +1,5 @@
+import 'package:afrotok/layout/centered_content.dart';
+import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -116,7 +118,9 @@ class _UserProfilState extends State<UserProfil> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
+      body: CenteredContent(
+        maxWidth: AppLayout.isDesktop(context) ? 800 : AppLayout.maxFeedWidth,
+        child: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -567,6 +571,7 @@ class _UserProfilState extends State<UserProfil> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

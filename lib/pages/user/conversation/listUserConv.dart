@@ -1,4 +1,7 @@
-﻿import 'dart:async';
+import 'package:afrotok/layout/centered_content.dart';
+import 'package:afrotok/layout/responsive_layout.dart';
+import 'package:afrotok/utils/responsive_sheet.dart';
+import 'dart:async';
 import 'dart:convert';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
@@ -120,6 +123,9 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
 
   // Filtre d'affichage : 'all' | 'users' | 'groups'
   String _chatFilter = 'all';
+
+  // Desktop 2-colonnes : conversation active dans le panneau droit
+  Widget? _activeChatWidget;
 
   // Archives (persistées en local)
   Set<String> _archivedChatIds = {};
@@ -373,13 +379,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     if (memberIds.contains(myId)) {
       // Déjà membre — ouvrir directement
       if (mounted) {
-        Navigator.push(context, MaterialPageRoute(
-          builder: (_) => GroupChatPage(
-            groupId: groupId,
-            groupName: groupData['name'] as String? ?? '',
-            groupImageUrl: groupData['image_url'] as String?,
-          ),
-        )).then((_) => _loadGroups());
+        _openGroupChat(groupId, groupData['name'] as String? ?? '', groupData['image_url'] as String?, onReturn: _loadGroups);
       }
       return;
     }
@@ -419,13 +419,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
         // Ouvrir le groupe sans ajouter comme membre — le paiement sera demandé à l'entrée
         if (mounted) {
           setState(() { _codeSearchResult = null; _codeSearchController.clear(); });
-          Navigator.push(context, MaterialPageRoute(
-            builder: (_) => GroupChatPage(
-              groupId: groupId,
-              groupName: groupData['name'] as String? ?? '',
-              groupImageUrl: groupData['image_url'] as String?,
-            ),
-          )).then((_) => _loadGroups());
+          _openGroupChat(groupId, groupData['name'] as String? ?? '', groupData['image_url'] as String?, onReturn: _loadGroups);
         }
         return;
       }
@@ -456,13 +450,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       if (mounted) {
         setState(() { _codeSearchResult = null; _codeSearchController.clear(); });
         _loadGroups();
-        Navigator.push(context, MaterialPageRoute(
-          builder: (_) => GroupChatPage(
-            groupId: groupId,
-            groupName: groupData['name'] as String? ?? '',
-            groupImageUrl: groupData['image_url'] as String?,
-          ),
-        )).then((_) => _loadGroups());
+        _openGroupChat(groupId, groupData['name'] as String? ?? '', groupData['image_url'] as String?, onReturn: _loadGroups);
       }
     } catch (e) {
       if (mounted) {
@@ -476,7 +464,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   void _openCreateGroup() {
     final isPremium = authProvider.loginUserData.abonnement?.estPremium == true;
     if (!isPremium) {
-      showModalBottomSheet(
+      showResponsiveBottomSheet(
         context: context,
         backgroundColor: Colors.transparent,
         builder: (_) => Container(
@@ -789,6 +777,23 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     }
   }
 
+  /// Ouvre ou affiche un groupe — inline sur desktop, navigation sur mobile.
+  void _openGroupChat(String groupId, String groupName, String? imageUrl, {VoidCallback? onReturn}) {
+    if (AppLayout.isWide(context)) {
+      setState(() => _activeChatWidget = GroupChatPage(
+        key: ValueKey('group_$groupId'),
+        groupId: groupId,
+        groupName: groupName,
+        groupImageUrl: imageUrl,
+      ));
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => GroupChatPage(groupId: groupId, groupName: groupName, groupImageUrl: imageUrl)),
+    ).then((_) => onReturn?.call());
+  }
+
   Future<void> _openChat(Chat chat) async {
     try {
       final resultChat = await chatService.createOrGetChat(
@@ -797,6 +802,15 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       );
 
       if (!mounted) return;
+
+      if (AppLayout.isWide(context)) {
+        setState(() => _activeChatWidget = MyChat(
+          key: ValueKey('chat_${resultChat.id ?? resultChat.receiverId ?? resultChat.senderId}'),
+          title: 'mon chat',
+          chat: resultChat,
+        ));
+        return;
+      }
 
       Navigator.push(
         context,
@@ -839,6 +853,15 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
 
       if (!mounted) return;
 
+      if (AppLayout.isWide(context)) {
+        setState(() => _activeChatWidget = MyChat(
+          key: ValueKey('chat_${resultChat.id ?? resultChat.receiverId ?? resultChat.senderId}'),
+          title: 'mon chat',
+          chat: resultChat,
+        ));
+        return;
+      }
+
       Navigator.push(
         context,
         PageTransition(
@@ -868,6 +891,8 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   Widget build(BuildContext context) {
     _colors = AppColors.of(context);
     _l10n = AppLocalizations.of(context);
+
+    if (AppLayout.isWide(context)) return _buildWideLayout();
 
     if (_isLocked) {
       return Scaffold(
@@ -909,83 +934,133 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     return Scaffold(
       backgroundColor: _colors.background,
       appBar: _buildAppBar(),
-      body: Column(
+      body: _buildChatListContent(),
+    );
+  }
+
+  /// Layout 2-colonnes style WhatsApp pour desktop.
+  Widget _buildWideLayout() {
+    if (_isLocked) {
+      return Scaffold(
+        backgroundColor: _colors.background,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.lock_rounded, size: 64, color: _colors.primary),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: _authenticate,
+                icon: const Icon(Icons.fingerprint_rounded),
+                label: const Text('Déverrouiller'),
+                style: ElevatedButton.styleFrom(backgroundColor: _colors.primary, foregroundColor: Colors.white),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    return Scaffold(
+      backgroundColor: _colors.background,
+      appBar: _buildAppBar(),
+      body: Row(
         children: [
-          // Section créateurs actifs
-          if (!_isSearching)
-            _buildCreatorsSection(),
-          if (!_isSearching && (_loadingCreators || _creators.isNotEmpty))
-            Divider(height: 1, color: _colors.textSecondary),
-          // Bannière discrète de sync Firebase
-          if (!_isSearching && _isRefreshing)
-            LinearProgressIndicator(
-              minHeight: 2,
-              backgroundColor: Colors.transparent,
-              color: _colors.primary.withOpacity(0.5),
+          // ── Liste gauche (360px) ──────────────────────────────────
+          SizedBox(
+            width: 360,
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border(right: BorderSide(color: _colors.border, width: 0.5)),
+              ),
+              child: _buildChatListContent(),
             ),
-          // Pills de filtre
-          if (!_isSearching) _buildFilterPills(),
-          if (!_isSearching) _buildHeader(),
+          ),
+          // ── Conversation active (reste) ───────────────────────────
           Expanded(
-            child: _isSearching
-                ? _buildSearchResults()
-                : StreamBuilder<List<ChatWithLastMessage>>(
-              stream: _chatsStream,
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.error_outline, color: _colors.danger, size: 48),
-                        SizedBox(height: 16),
-                        Text(
-                          _l10n.convErrorLoading,
-                          style: TextStyle(color: _colors.textPrimary),
-                        ),
-                        SizedBox(height: 8),
-                        TextButton(
-                          onPressed: () {
-                            _initChatsStream();
-                          },
-                          child: Text(
-                            _l10n.convRetry,
-                            style: TextStyle(color: _colors.primary),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                // Filtre "groupes" — affiche uniquement la liste verticale des groupes
-                if (_chatFilter == 'groups') {
-                  if (_loadingGroups) return _buildLoadingSkeleton();
-                  if (_groups.isEmpty) return _buildEmptyState();
-                  return _buildGroupsVerticalList();
-                }
-
-                // Filtre "users" — uniquement les chats 1-1
-                if (_chatFilter == 'users') {
-                  if (_chats.isNotEmpty) return _buildChatList(_chats);
-                  if (_isLoading || snapshot.connectionState == ConnectionState.waiting) {
-                    return _buildLoadingSkeleton();
-                  }
-                  return _buildEmptyState();
-                }
-
-                // Filtre "all" (défaut) — chats 1-1 + groupes mélangés, triés par date
-                final bool stillLoading =
-                    (_isLoading || snapshot.connectionState == ConnectionState.waiting) &&
-                    _chats.isEmpty;
-                if (stillLoading) return _buildLoadingSkeleton();
-                if (_chats.isEmpty && _groups.isEmpty) return _buildEmptyState();
-                return _buildMergedList(_chats);
-              },
-            ),
+            child: _activeChatWidget ?? _buildChatPlaceholder(),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildChatPlaceholder() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.chat_bubble_outline_rounded, size: 72, color: _colors.textSecondary.withOpacity(0.3)),
+          const SizedBox(height: 16),
+          Text(
+            'Sélectionnez une conversation',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: _colors.textSecondary),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Cliquez sur un chat dans la liste pour l\'ouvrir ici',
+            style: TextStyle(fontSize: 13, color: _colors.textSecondary.withOpacity(0.7)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Contenu de la liste des conversations (mobile + panneau gauche desktop).
+  Widget _buildChatListContent() {
+    return Column(
+      children: [
+        if (!_isSearching) _buildCreatorsSection(),
+        if (!_isSearching && (_loadingCreators || _creators.isNotEmpty))
+          Divider(height: 1, color: _colors.textSecondary),
+        if (!_isSearching && _isRefreshing)
+          LinearProgressIndicator(
+            minHeight: 2,
+            backgroundColor: Colors.transparent,
+            color: _colors.primary.withOpacity(0.5),
+          ),
+        if (!_isSearching) _buildFilterPills(),
+        if (!_isSearching) _buildHeader(),
+        Expanded(
+          child: _isSearching
+              ? _buildSearchResults()
+              : StreamBuilder<List<ChatWithLastMessage>>(
+            stream: _chatsStream,
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.error_outline, color: _colors.danger, size: 48),
+                      const SizedBox(height: 16),
+                      Text(_l10n.convErrorLoading, style: TextStyle(color: _colors.textPrimary)),
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: _initChatsStream,
+                        child: Text(_l10n.convRetry, style: TextStyle(color: _colors.primary)),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              if (_chatFilter == 'groups') {
+                if (_loadingGroups) return _buildLoadingSkeleton();
+                if (_groups.isEmpty) return _buildEmptyState();
+                return _buildGroupsVerticalList();
+              }
+              if (_chatFilter == 'users') {
+                if (_chats.isNotEmpty) return _buildChatList(_chats);
+                if (_isLoading || snapshot.connectionState == ConnectionState.waiting) return _buildLoadingSkeleton();
+                return _buildEmptyState();
+              }
+              final bool stillLoading = (_isLoading || snapshot.connectionState == ConnectionState.waiting) && _chats.isEmpty;
+              if (stillLoading) return _buildLoadingSkeleton();
+              if (_chats.isEmpty && _groups.isEmpty) return _buildEmptyState();
+              return _buildMergedList(_chats);
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -1439,18 +1514,10 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     final unreadCount = (unreadCounts[myId] as int?) ?? 0;
 
     return GestureDetector(
-      onTap: () {
-        Navigator.push(context, MaterialPageRoute(
-          builder: (_) => GroupChatPage(
-            groupId: groupId,
-            groupName: name,
-            groupImageUrl: imageUrl.isNotEmpty ? imageUrl : null,
-          ),
-        )).then((_) {
-          context.read<GoldGroupsProvider>().load(force: true);
-          _loadGroups();
-        });
-      },
+      onTap: () => _openGroupChat(groupId, name, imageUrl.isNotEmpty ? imageUrl : null, onReturn: () {
+        context.read<GoldGroupsProvider>().load(force: true);
+        _loadGroups();
+      }),
       child: Container(
         width: 80,
         margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -1649,16 +1716,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
           ],
         ],
       ),
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => GroupChatPage(
-            groupId: group['id'] as String,
-            groupName: name,
-            groupImageUrl: imageUrl.isNotEmpty ? imageUrl : null,
-          ),
-        ),
-      ).then((_) => _loadGroups()),
+      onTap: () => _openGroupChat(group['id'] as String, name, imageUrl.isNotEmpty ? imageUrl : null, onReturn: _loadGroups),
     );
   }
 
@@ -1787,7 +1845,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   void _showArchivedChats() {
     final archived = _chats.where((c) => _archivedChatIds.contains(c.chat.docId)).toList();
 
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
@@ -2017,16 +2075,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
               final isFrozen = group['is_frozen'] == true;
 
               return GestureDetector(
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => GroupChatPage(
-                      groupId: group['id'] as String,
-                      groupName: name,
-                      groupImageUrl: imageUrl.isNotEmpty ? imageUrl : null,
-                    ),
-                  ),
-                ).then((_) => _loadGroups()),
+                onTap: () => _openGroupChat(group['id'] as String, name, imageUrl.isNotEmpty ? imageUrl : null, onReturn: _loadGroups),
                 child: Container(
                   width: 68,
                   margin: const EdgeInsets.symmetric(horizontal: 4),

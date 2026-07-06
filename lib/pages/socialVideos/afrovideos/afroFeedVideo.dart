@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:flutter/services.dart';
+import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/pages/socialVideos/afrovideos/videoWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:like_button/like_button.dart';
@@ -16,6 +18,7 @@ class VideoFeedPage extends StatefulWidget {
 
 class _VideoFeedPageState extends State<VideoFeedPage> {
   final PageController _pageController = PageController();
+  final FocusNode _focusNode = FocusNode();
 
   StreamController<List<Post>> _streamController = StreamController<List<Post>>();
   late UserAuthProvider authProvider =
@@ -146,6 +149,39 @@ class _VideoFeedPageState extends State<VideoFeedPage> {
   }
 
   @override
+  void dispose() {
+    _pageController.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  Widget _wrapWithControls(Widget child) {
+    return KeyboardListener(
+      autofocus: true,
+      focusNode: _focusNode,
+      onKeyEvent: (event) {
+        if (event is! KeyDownEvent) return;
+        if (event.logicalKey == LogicalKeyboardKey.arrowDown || event.logicalKey == LogicalKeyboardKey.arrowRight) {
+          _pageController.nextPage(duration: const Duration(milliseconds: 350), curve: Curves.easeInOut);
+        } else if (event.logicalKey == LogicalKeyboardKey.arrowUp || event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+          _pageController.previousPage(duration: const Duration(milliseconds: 350), curve: Curves.easeInOut);
+        }
+      },
+      child: Listener(
+        onPointerSignal: (event) {
+          if (event is! PointerScrollEvent) return;
+          if (event.scrollDelta.dy > 0) {
+            _pageController.nextPage(duration: const Duration(milliseconds: 350), curve: Curves.easeInOut);
+          } else if (event.scrollDelta.dy < 0) {
+            _pageController.previousPage(duration: const Duration(milliseconds: 350), curve: Curves.easeInOut);
+          }
+        },
+        child: child,
+      ),
+    );
+  }
+
+  @override
   void initState() {
     // TODO: implement initState
     super.initState();
@@ -156,24 +192,32 @@ class _VideoFeedPageState extends State<VideoFeedPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(),
-      body: StreamBuilder<List<Post>>(
-        stream: _streamController.stream,
-        builder: (context, snapshot) {
-          if (snapshot.hasError) return Center(child: Icon(Icons.error));
-          if (!snapshot.hasData) return Center(child: CircularProgressIndicator());
+    final isWide = AppLayout.isWide(context);
 
-          return PageView.builder(
-            controller: _pageController,
-            scrollDirection: Axis.vertical,
-            itemCount: snapshot.data!.length,
-            itemBuilder: (context, index) {
-              return _buildVideoItem(snapshot.data![index]);
-            },
-          );
-        },
-      ),
+    Widget feed = StreamBuilder<List<Post>>(
+      stream: _streamController.stream,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) return Center(child: Icon(Icons.error));
+        if (!snapshot.hasData) return Center(child: CircularProgressIndicator());
+
+        return PageView.builder(
+          controller: _pageController,
+          scrollDirection: Axis.vertical,
+          itemCount: snapshot.data!.length,
+          itemBuilder: (context, index) {
+            return _buildVideoItem(snapshot.data![index]);
+          },
+        );
+      },
     );
+
+    Widget scaffold = Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(backgroundColor: Colors.black, foregroundColor: Colors.white),
+      body: isWide
+          ? Center(child: SizedBox(width: 480, child: feed))
+          : feed,
+    );
+    return isWide ? _wrapWithControls(scaffold) : scaffold;
   }
 }

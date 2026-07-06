@@ -1,4 +1,6 @@
 ﻿import 'dart:async';
+import 'package:afrotok/layout/responsive_layout.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:flutter/material.dart';
@@ -43,6 +45,7 @@ import '../services/nav_cache_service.dart';
 import '../services/sessions/session_service.dart';
 
 import 'auth/authTest/Screens/Login/loginPageUser.dart';
+import 'intro/introduction.dart';
 
 import 'auth/authTest/Screens/updateUserData.dart';
 
@@ -160,6 +163,21 @@ class _SplashChargementState extends State<SplashChargement> {
 
   // Nouvelle méthode: Lancer la vérification de session
   Future<void> _startSessionCheck() async {
+    // ── Premier lancement (mobile uniquement) ──────────────────────────
+    if (!kIsWeb) {
+      final prefs = await SharedPreferences.getInstance();
+      if (!(prefs.getBool('afrolook_intro_seen') ?? false)) {
+        await prefs.setBool('afrolook_intro_seen', true);
+        if (!mounted) return;
+        _hasNavigated = true;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => IntroductionPage()),
+        );
+        return;
+      }
+    }
+
     if (_authHandled || _isAuthCompleted || _hasNavigated || _isCheckingSession) return;
 
     _isCheckingSession = true;
@@ -361,9 +379,31 @@ class _SplashChargementState extends State<SplashChargement> {
     return _buildVideoScreen();
   }
 
-  // Splash screen sans StreamBuilder
-  // Session 13 : logo conservé en haut, texte de chargement déplacé en bas de l'écran.
+  // Splash screen — logo centré sur desktop, image de fond sur mobile.
   Widget _buildSplashScreen(double height, double width) {
+    // Desktop/Tablette : juste le logo centré sur fond uni
+    if (AppLayout.isWide(context)) {
+      return Scaffold(
+        backgroundColor: _colors.background,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(height: 120, width: 120, child: Image.asset('assets/logo/afrolook_logo.png')),
+              const SizedBox(height: 32),
+              Text('Afrolook', style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: _colors.primary, letterSpacing: 1.5)),
+              const SizedBox(height: 8),
+              Text('Le réseau social africain', style: TextStyle(fontSize: 14, color: _colors.textSecondary)),
+              const SizedBox(height: 48),
+              SizedBox(width: 200, child: LinearProgressIndicator(color: _colors.primary, backgroundColor: _colors.surfaceVariant)),
+              const SizedBox(height: 16),
+              Text(_loadingText, style: TextStyle(color: _colors.textSecondary, fontSize: 13)),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       body: Container(
         height: height, width: width,
@@ -654,7 +694,6 @@ class _SplashChargementState extends State<SplashChargement> {
 
   void _redirectToLogin() {
     if (!mounted) return;
-    // SessionUserFirebaseService.clearSession();
     Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => LoginPageUser()));
   }
 

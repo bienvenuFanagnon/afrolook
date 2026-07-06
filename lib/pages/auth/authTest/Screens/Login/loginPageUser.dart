@@ -1,6 +1,9 @@
 ﻿
 import 'dart:math';
 
+import 'package:afrotok/layout/branding_carousel_panel.dart';
+import 'package:afrotok/layout/responsive_layout.dart';
+import 'package:afrotok/theme/theme_provider.dart';
 import 'package:afrotok/pages/contact.dart';
 import 'package:afrotok/pages/splashChargement.dart';
 import 'package:afrotok/services/sessions/session_service.dart';
@@ -275,6 +278,9 @@ class _LoginPageUserState extends State<LoginPageUser> {
   Widget build(BuildContext context) {
     _colors = AppColors.of(context);
     l10n = AppLocalizations.of(context);
+    if (AppLayout.isWide(context)) {
+      return _buildWideLayout(context);
+    }
     return Scaffold(
       backgroundColor: _colors.background,
       body: SafeArea(
@@ -298,22 +304,13 @@ class _LoginPageUserState extends State<LoginPageUser> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header avec bouton d'inscription en haut à droite
                   _buildHeaderWithSignUpButton(),
                   SizedBox(height: 20),
-
-                  // Logo et titre
                   _buildHeader(),
                   SizedBox(height: 40),
-
-                  // Formulaire de connexion
                   _buildLoginForm(),
                   SizedBox(height: 20),
-
-                  // Options supplémentaires avec bouton "Créer un compte"
                   _buildAdditionalOptions(),
-
-                  // Bouton "Nous contacter" en bas
                   Container(
                     width: double.infinity,
                     margin: EdgeInsets.only(top: 30, bottom: 30),
@@ -328,10 +325,99 @@ class _LoginPageUserState extends State<LoginPageUser> {
     );
   }
 
+  /// Layout 2 colonnes pour Tablette (≥576px) et Desktop (>992px).
+  Widget _buildWideLayout(BuildContext context) {
+    return Scaffold(
+      backgroundColor: _colors.background,
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Row(
+          children: [
+            // ── Colonne gauche — carousel branding ────────────────────
+            const Expanded(
+              child: BrandingCarouselPanel(),
+            ),
+            // ── Colonne droite — formulaire ────────────────────────────
+            Container(
+              width: 420,
+              constraints: const BoxConstraints(maxWidth: 480),
+              decoration: BoxDecoration(
+                color: _colors.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 24,
+                    offset: const Offset(-4, 0),
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 32),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildHeaderWithSignUpButton(),
+                      const SizedBox(height: 20),
+                      _buildHeader(),
+                      const SizedBox(height: 40),
+                      _buildLoginForm(),
+                      const SizedBox(height: 20),
+                      _buildAdditionalOptions(),
+                      Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(top: 30, bottom: 30),
+                        child: _buildContactButton(),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _brandingChip(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 12)),
+    );
+  }
+
   Widget _buildHeaderWithSignUpButton() {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
+        // Toggle mode clair/sombre
+        Consumer<ThemeProvider>(
+          builder: (ctx, tp, _) {
+            final isDark = tp.themeMode == ThemeMode.dark;
+            return GestureDetector(
+              onTap: () => tp.toggleTheme(),
+              child: Container(
+                padding: const EdgeInsets.all(9),
+                decoration: BoxDecoration(
+                  color: _colors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Icon(
+                  isDark ? Icons.wb_sunny_outlined : Icons.nightlight_round,
+                  color: _colors.textSecondary,
+                  size: 20,
+                ),
+              ),
+            );
+          },
+        ),
+        // Bouton créer un compte
         Container(
           decoration: BoxDecoration(
             color: _colors.primary.withOpacity(0.1),

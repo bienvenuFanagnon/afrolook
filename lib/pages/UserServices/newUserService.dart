@@ -1,4 +1,5 @@
-﻿import 'dart:io';
+import 'package:afrotok/utils/responsive_sheet.dart';
+import 'dart:io';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/pages/userPosts/hashtag/textHashTag/views/widgets/loading_indicator.dart';
@@ -97,7 +98,7 @@ class _UserServiceFormState extends State<UserServiceForm> {
     final TextEditingController searchController = TextEditingController();
     List<String> filteredItems = List.from(items);
 
-    await showModalBottomSheet(
+    await showResponsiveBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.black,

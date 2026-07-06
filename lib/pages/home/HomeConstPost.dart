@@ -1,4 +1,5 @@
-﻿import 'dart:async';
+import 'package:afrotok/utils/responsive_sheet.dart';
+import 'dart:async';
 import 'dart:math';
 import 'package:afrotok/pages/challenge/postChallengeWidget.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -57,6 +58,8 @@ import '../../services/feed/feed_preload_service.dart';
 import '../../services/feed/discovery_boost_service.dart';
 import '../../services/active_creators_service.dart';
 import '../user/active_creators_list_page.dart';
+import '../../layout/responsive_layout.dart';
+import '../../layout/centered_content.dart';
 import '../user/creator_unseen_posts_page.dart';
 import '../user/following_unseen_feed_page.dart';
 import 'home_boot_cache.dart';
@@ -117,12 +120,18 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   int _totalPostsLoaded = 0;
   int _backgroundPostsLoaded = 0; // Compteur des posts chargés en background
   final int _initialLimit = 4; // Premier chargement: 4 posts
-  final int _backgroundLoadLimit = 5; // Chargement background: 5 posts
-  final int _manualLoadLimit = 5; // Chargement manuel: 5 posts
-  final int _maxBackgroundPosts = 20; // MAX posts en background
-  final int _maxTotalPosts = 1000; // Limite totale
+  final int _backgroundLoadLimit = 8;
+  final int _manualLoadLimit = 8;
+  final int _maxBackgroundPosts = 20;
+  final int _maxTotalPosts = 1000;
   Timer? _backgroundLoadTimer;
-  bool _useBackgroundLoading = true; // Active/désactive le chargement background
+  bool _useBackgroundLoading = true;
+
+  // === Pool de widgets rotatifs (1 apparition max par widget dans le fil) ===
+  static const List<String> _kPoolOrder = [
+    'WeeklyTopCreators', 'BoostedContent', 'Articles', 'Canaux',
+    'TopDating', 'VIPContent', 'Profiles',
+  ];
 
   // Filtrage par pays
   String? _selectedCountryCode;
@@ -1122,7 +1131,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   // ===========================================================================
 
   void _showCountryFilterModal() {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -1986,12 +1995,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
   void _scrollListener() {
     if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 300 &&
+        _scrollController.position.maxScrollExtent - 1500 &&
         !_isLoadingMorePosts &&
         !_isLoadingBackground &&
         _hasMorePosts &&
-        _totalPostsLoaded < _maxTotalPosts &&
-        !_useBackgroundLoading) { // Seulement en mode manuel
+        _totalPostsLoaded < _maxTotalPosts) {
       _loadMorePostsManually();
     }
   }
@@ -2017,6 +2025,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           _posts.addAll(newPosts);
           _loadedPostIds.addAll(newPosts.map((p) => p.id!));
           _totalPostsLoaded += newPosts.length;
+          // Fenêtre mémoire : max 40 posts, supprimer les 8 plus anciens
+          if (_posts.length > 40) {
+            _posts.removeRange(0, 8);
+          }
         });
 
         printVm('📱 ${newPosts.length} posts chargés manuellement (total: $_totalPostsLoaded)');
@@ -2472,6 +2484,34 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     }
   }
 
+  Widget _buildShimmerPost() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[850]!,
+      highlightColor: Colors.grey[700]!,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        height: 280,
+        decoration: BoxDecoration(
+          color: Colors.grey[850],
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPoolWidget(String name) {
+    switch (name) {
+      case 'WeeklyTopCreators': return const WeeklyTopCreatorsWidget();
+      case 'BoostedContent':   return const BoostedContentStripWidget();
+      case 'Articles':         return _buildArticlesSection();
+      case 'Canaux':           return _buildCanauxSection();
+      case 'TopDating':        return const TopDatingProfilesWidget();
+      case 'VIPContent':       return const RecentVIPContentWidget();
+      case 'Profiles':         return _buildProfilesSection();
+      default:                 return const SizedBox.shrink();
+    }
+  }
+
   Widget _buildPostWidget(Post post, double width, double height, int index) {
     final isDiscovery = post.id != null &&
         DiscoveryBoostService.instance.discoveryPostIds.contains(post.id);
@@ -2895,82 +2935,41 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     contentWidgets.add(_buildAdMrec(key: 'ad_native_user'));
     // contentWidgets.add(const SizedBox(height: 8));
 
-    int postIndex = 0;
+    // Carousel pronostics avant le premier post
+    if (finalPosts.isNotEmpty) {
+      contentWidgets.add(const PronosticsCarouselWidget());
+    }
+
     for (int i = 0; i < finalPosts.length; i++) {
       final post = finalPosts[i];
 
-      if (postIndex == 0) {
-        contentWidgets.add(const PronosticsCarouselWidget());
-      }
-
       contentWidgets.add(
-        GestureDetector(
-          onTap: () => _navigateToPostDetails(post),
-          child: _buildPostWidget(post, width, height, i),
+        RepaintBoundary(
+          child: GestureDetector(
+            onTap: () => _navigateToPostDetails(post),
+            child: _buildPostWidget(post, width, height, i),
+          ),
         ),
       );
-      postIndex++;
 
-      if (postIndex == 1) {
-        // Top créateurs : 2e position (après le 1er post)
-        contentWidgets.add(const WeeklyTopCreatorsWidget());
-      }
-
-      if (postIndex == 2) {
-        contentWidgets.add(_buildAdAdvertisement(key: 'ad_after_first'));
-        contentWidgets.add(const TopDatingProfilesWidget());
-        contentWidgets.add(const BoostedContentStripWidget());
-        // contentWidgets.add(const RecentVIPContentWidget());
-      }
-
-      if (postIndex % 3 == 0) {
-        if (postIndex % 6 == 3) {
-          contentWidgets.add(_buildArticlesSection());
-        } else if (postIndex % 6 == 0) {
-          contentWidgets.add(const RecentVIPContentWidget());
-          contentWidgets.add(_buildCanauxSection());
-        }
+      // Slot rotatif : pub + 2 widgets du pool, tous les 5 posts
+      final postNumber = i + 1; // 1-based
+      if (postNumber % 5 == 0) {
+        final slotN = postNumber ~/ 5 - 1; // slot 0 au post 5, slot 1 au post 10…
+        contentWidgets.add(_buildAdAdvertisement(key: 'ad_slot_$slotN'));
+        final i1 = (slotN * 2) % _kPoolOrder.length;
+        final i2 = (slotN * 2 + 1) % _kPoolOrder.length;
+        contentWidgets.add(_buildPoolWidget(_kPoolOrder[i1]));
+        contentWidgets.add(_buildPoolWidget(_kPoolOrder[i2]));
       }
     }
 
-    // Indicateurs de fin / chargement
+    // Indicateurs de chargement / fin de feed
     if (_isLoadingMorePosts) {
-      contentWidgets.add(
-        Container(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          child: const Center(
-            child: Column(
-              children: [
-                CircularProgressIndicator(color: primaryGreen),
-                SizedBox(height: 10),
-                Text('Chargement de plus de posts...', style: TextStyle(color: Colors.grey, fontSize: 12)),
-              ],
-            ),
-          ),
-        ),
-      );
-    } else if (_isLoadingBackground && _useBackgroundLoading) {
-      contentWidgets.add(
-        Container(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: Center(
-            child: Column(
-              children: [
-                SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey[500]),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Préparation de plus de contenu... ($_backgroundPostsLoaded/$_maxBackgroundPosts)',
-                  style: TextStyle(color: Colors.grey[500], fontSize: 11),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
+      // Shimmer posts pendant le chargement
+      contentWidgets.add(_buildShimmerPost());
+      contentWidgets.add(_buildShimmerPost());
+      contentWidgets.add(_buildShimmerPost());
     } else if (!_hasMorePosts && _oldPostsCache.isEmpty) {
       final colors2 = AppColors.of(context);
       contentWidgets.add(
@@ -2990,33 +2989,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                 Text(
                   'Revenez plus tard pour de nouveaux contenus',
                   style: TextStyle(color: colors2.textSecondary, fontSize: 11),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    } else if (!_useBackgroundLoading) {
-      contentWidgets.add(
-        Container(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          child: Center(
-            child: Column(
-              children: [
-                const Text(
-                  'Chargement automatique terminé',
-                  style: TextStyle(color: Colors.grey, fontSize: 12),
-                ),
-                const SizedBox(height: 10),
-                ElevatedButton(
-                  onPressed: _loadMorePostsManually,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryGreen,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-                  ),
-                  child: const Text('Charger 5 posts de plus', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
                 ),
               ],
             ),
@@ -3707,7 +3679,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
             color: colors.background,
             child: Stack(
               children: [
-                _buildContent(),
+                AppLayout.isWide(context)
+                    ? CenteredContent(child: _buildContent())
+                    : _buildContent(),
                 InterstitialAdWidget(
                   key: _interstitialAdKey,
                   onAdDismissed: () {

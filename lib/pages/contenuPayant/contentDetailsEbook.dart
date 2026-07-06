@@ -1,4 +1,5 @@
-﻿import 'dart:async';
+import 'package:afrotok/utils/responsive_sheet.dart';
+import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 import 'dart:typed_data';
@@ -560,7 +561,7 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
   }
 
   void _showReadingOptions() {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: _colors.background,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
@@ -2095,7 +2096,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //   }
 //
 //   void _showReadingOptions() {
-//     showModalBottomSheet(
+//     showResponsiveBottomSheet(
 //       context: context,
 //       backgroundColor: _colors.background,
 //       shape: RoundedRectangleBorder(

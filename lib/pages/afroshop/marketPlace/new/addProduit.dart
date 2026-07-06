@@ -1,4 +1,5 @@
-﻿import 'dart:io';
+import 'package:afrotok/utils/responsive_sheet.dart';
+import 'dart:io';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/pages/entreprise/abonnement/Subscription.dart';
@@ -247,7 +248,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
   }
 
   void _showSubscriptionExpiredModal(bool isPremium) {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) {
@@ -318,7 +319,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
   }
 
   void _showNoProductsLeftModal(bool isPremium) {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) {

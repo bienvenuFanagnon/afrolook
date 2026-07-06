@@ -2,16 +2,58 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:afrotok/pages/auth/authTest/Screens/Login/loginPageUser.dart';
+import 'package:afrotok/pages/splashChargement.dart';
 
 import '../widgetGlobal.dart';
 
-// Couleurs de luxe Afrolook
-const Color primaryGreen = Color(0xFF25D366);
-const Color luxuryGold = Color(0xFFFFD700);
-const Color premiumRed = Color(0xFFFF4757);
-const Color elitePurple = Color(0xFF8A2BE2);
-const Color darkBackground = Color(0xFF000000);
+const Color _kGold = Color(0xFFFFD700);
+
+class _Slide {
+  final String image;
+  final String line1;
+  final String lineGold;
+  final String line3;
+  final String sub;
+  const _Slide(this.image, this.line1, this.lineGold, this.line3, this.sub);
+}
+
+const List<_Slide> _kSlides = [
+  _Slide(
+    'assets/images/intro5.jpg',
+    'Monétise',
+    'ton talent',
+    'africain.',
+    "Transforme ta passion en revenus réels dès aujourd'hui.",
+  ),
+  _Slide(
+    'assets/images/intro2.jpg',
+    'Rejoins',
+    '+500',
+    'créateurs',
+    "qui monétisent déjà leur talent sur Afrolook.",
+  ),
+  _Slide(
+    'assets/images/intro3.jpg',
+    'Partage.',
+    'Inspire.',
+    'Gagne.',
+    "Tes looks, ta culture, ton art — ton business.",
+  ),
+  _Slide(
+    'assets/images/intro6.jpg',
+    "L'élite",
+    'africaine',
+    "t'attend.",
+    "Positionne-toi parmi les créateurs premium.",
+  ),
+  _Slide(
+    'assets/images/intro7.jpg',
+    'Live.',
+    'Vends.',
+    'Prospère.',
+    "Connecte-toi à une audience premium en direct.",
+  ),
+];
 
 class IntroductionPage extends StatefulWidget {
   const IntroductionPage({Key? key}) : super(key: key);
@@ -25,118 +67,332 @@ class _IntroductionPageState extends State<IntroductionPage> {
   int _currentPage = 0;
   Timer? _autoScrollTimer;
 
-  final List<String> _luxuryImages = [
-    "assets/images/intro5.jpg",
-    "assets/images/intro2.jpg",
-    "assets/images/intro3.jpg",
-    "assets/images/intro6.jpg",
-    "assets/images/intro7.jpg",
-  ];
-
-  // Contrôleurs pour précharger les images
-  final List<Image> _preloadedImages = [];
-
   @override
   void initState() {
     super.initState();
-
-    // Préchargement des images
-    // Lancer après le premier build
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _preloadImages();
-      if (kIsWeb) {
-          showInstallModal(context);
+      for (final s in _kSlides) {
+        precacheImage(AssetImage(s.image), context);
       }
+      if (kIsWeb) showInstallModal(context);
     });
-    // Auto-scroll toutes les 5 secondes
-    _autoScrollTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      if (_currentPage < 4 && mounted) {
-        _pageController.nextPage(
-          duration: const Duration(milliseconds: 1500),
-          curve: Curves.easeInOut,
-        );
-      }
+    _startTimer();
+  }
+
+  void _startTimer() {
+    _autoScrollTimer?.cancel();
+    _autoScrollTimer = Timer.periodic(const Duration(milliseconds: 4500), (_) {
+      if (!mounted) return;
+      final next = (_currentPage + 1) % _kSlides.length;
+      _pageController.animateToPage(
+        next,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
     });
   }
 
-  void _preloadImages() {
-    for (String path in _luxuryImages) {
-      final imageProvider = AssetImage(path);
-
-      precacheImage(imageProvider, context).then((_) {
-        debugPrint("✅ Image préchargée : $path");
-      }).catchError((e) {
-        debugPrint("❌ Erreur de préchargement : $e");
-      });
-
-      _preloadedImages.add(Image(
-        image: imageProvider,
-        fit: BoxFit.cover,
-      ));
-    }
-  }
   @override
   void dispose() {
-    _pageController.dispose();
     _autoScrollTimer?.cancel();
+    _pageController.dispose();
     super.dispose();
   }
 
-  void _onIntroEnd(BuildContext context) {
+  void _onIntroEnd() {
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => LoginPageUser()),
+      MaterialPageRoute(builder: (_) => const SplashChargement()),
     );
   }
 
-  void _nextPage() {
-    if (_currentPage < 4) {
+  void _next() {
+    if (_currentPage < _kSlides.length - 1) {
       _pageController.nextPage(
-        duration: const Duration(milliseconds: 400),
+        duration: const Duration(milliseconds: 450),
         curve: Curves.easeInOut,
       );
     } else {
-      _onIntroEnd(context);
+      _onIntroEnd();
     }
   }
 
-  Widget _buildLuxuryFeature(String emoji, String text, Color color) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            color.withOpacity(0.15),
-            color.withOpacity(0.05),
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle.light,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // ── Photos plein écran swipables ──────────────────────────
+            PageView.builder(
+              controller: _pageController,
+              onPageChanged: (i) {
+                setState(() => _currentPage = i);
+                _startTimer();
+              },
+              itemCount: _kSlides.length,
+              itemBuilder: (_, i) => Image.asset(
+                _kSlides[i].image,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFF1A0800), Color(0xFF3D1500)],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            // ── Overlay gradient bas sombre ───────────────────────────
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: [0.0, 0.28, 1.0],
+                  colors: [
+                    Color(0x20000000),
+                    Color(0x50000000),
+                    Color(0xEE000000),
+                  ],
+                ),
+              ),
+            ),
+
+            // ── Contenu ───────────────────────────────────────────────
+            SafeArea(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Wordmark
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'AFROLOOK',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: _kGold,
+                            letterSpacing: 7,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Container(width: 24, height: 2, color: _kGold),
+                      ],
+                    ),
+                  ),
+
+                  // Hero texte animé
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 500),
+                          transitionBuilder: (child, anim) => FadeTransition(
+                            opacity: anim,
+                            child: SlideTransition(
+                              position: Tween<Offset>(
+                                begin: const Offset(0, 0.08),
+                                end: Offset.zero,
+                              ).animate(CurvedAnimation(
+                                parent: anim,
+                                curve: Curves.easeOut,
+                              )),
+                              child: child,
+                            ),
+                          ),
+                          child: _buildHeroText(
+                            _kSlides[_currentPage],
+                            ValueKey(_currentPage),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Stats
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+                    child: _buildStats(),
+                  ),
+
+                  // Bannière social proof
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                    child: _buildProof(),
+                  ),
+
+                  // Dots
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
+                    child: _buildDots(),
+                  ),
+
+                  // Bouton Suivant / Commencer
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: ElevatedButton(
+                        onPressed: _next,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _kGold,
+                          foregroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(26),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          _currentPage < _kSlides.length - 1
+                              ? 'SUIVANT →'
+                              : 'COMMENCER 💎',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Lien ignorer
+                  Center(
+                    child: TextButton(
+                      onPressed: _onIntroEnd,
+                      child: const Text(
+                        'Ignorer',
+                        style: TextStyle(
+                          color: Color(0x70FFFFFF),
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: color.withOpacity(0.3), width: 1.5),
       ),
-      child: Row(
+    );
+  }
+
+  Widget _buildHeroText(_Slide slide, Key key) {
+    const base = TextStyle(
+      fontSize: 44,
+      fontWeight: FontWeight.w800,
+      height: 1.06,
+      letterSpacing: -1.2,
+    );
+    return Column(
+      key: key,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(slide.line1, style: base.copyWith(color: Colors.white)),
+        Text(slide.lineGold, style: base.copyWith(color: _kGold)),
+        Text(slide.line3, style: base.copyWith(color: Colors.white)),
+        const SizedBox(height: 12),
+        Text(
+          slide.sub,
+          style: const TextStyle(
+            fontSize: 14,
+            color: Color(0xA0FFFFFF),
+            height: 1.6,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStats() {
+    return Row(
+      children: [
+        _statPill('+500', 'CRÉATEURS'),
+        const SizedBox(width: 8),
+        _statPill('+2M', 'VUES/MOIS'),
+        const SizedBox(width: 8),
+        _statPill('~300K', 'FCFA/MOIS'),
+      ],
+    );
+  }
+
+  Widget _statPill(String num, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0x12FFFFFF),
+        border: Border.all(color: const Color(0x1FFFFFFF)),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.2),
-              shape: BoxShape.circle,
-            ),
-            child: Text(
-              emoji,
-              style: const TextStyle(fontSize: 18),
+          Text(
+            num,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: _kGold,
             ),
           ),
-          const SizedBox(width: 15),
+          const SizedBox(height: 1),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 9,
+              color: Color(0x80FFFFFF),
+              letterSpacing: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProof() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: _kGold.withOpacity(0.09),
+        border: Border.all(color: _kGold.withOpacity(0.25)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: const Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('⭐', style: TextStyle(fontSize: 15, height: 1.4)),
+          SizedBox(width: 9),
           Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                height: 1.4,
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: 'Rejoignez +500 créateurs ',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: _kGold,
+                    ),
+                  ),
+                  TextSpan(
+                    text: 'qui monétisent déjà leur talent sur Afrolook.',
+                    style: TextStyle(fontSize: 12, color: Color(0xDDFFFFFF)),
+                  ),
+                ],
               ),
             ),
           ),
@@ -145,297 +401,21 @@ class _IntroductionPageState extends State<IntroductionPage> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: darkBackground,
-      body: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: SystemUiOverlayStyle.light,
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Header luxueux
-              Container(
-                padding: const EdgeInsets.all(20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Image.asset(
-                    //   "assets/logo/afrolook_logo.png",
-                    //   height: 45,
-                    // ),
-                    // const SizedBox(width: 12),
-                    Text(
-                      "Afrolook",
-                      style: TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.w900,
-                        color: luxuryGold,
-                        letterSpacing: 2.0,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              Expanded(
-                child: PageView(
-                  controller: _pageController,
-                  onPageChanged: (int page) {
-                    setState(() {
-                      _currentPage = page;
-                    });
-                  },
-                  children: [
-                    _buildLuxuryPage(
-                      imageIndex: 0,
-                      title: "🌟 L'Excellence Africaine",
-                      subtitle: "Le réseau social de luxe où la beauté rencontre la monétisation",
-                      color: luxuryGold,
-                      features: [
-                        "💎 Postez des looks premium dignes des magazines de mode",
-                        "📸 Contenu exclusif réservé à l'élite africaine",
-                        "💰 Monétisation immédiate dès vos premières publications",
-                        "🔥 Nous rejoindre maintenant est un investissement",
-                      ],
-                    ),
-
-                    _buildLuxuryPage(
-                      imageIndex: 1,
-                      title: "💰 Monétisation Prestige",
-                      subtitle: "Transformez votre élégance en revenus mensuels substantiels",
-                      color: primaryGreen,
-                      features: [
-                        "🏆 Jusqu'à 500 000 FCFA/mois pour les créateurs d'exception",
-                        "🤝 Collaborations exclusives avec marques de luxe",
-                        "🎓 Formations premium pour perfectionner votre art",
-                        "⭐ Votre talent mérite une rémunération à sa hauteur",
-                      ],
-                    ),
-
-                    _buildLuxuryPage(
-                      imageIndex: 2,
-                      title: "👑 Communauté d'Élite",
-                      subtitle: "Rejoignez le cercle très fermé des influenceurs premium",
-                      color: elitePurple,
-                      features: [
-                        "🔒 Accès réservé aux créateurs au contenu exceptionnel",
-                        "📈 Parrainage qui vous propulse auprès de l'élite",
-                        "💫 Networking avec les personnalités les plus influentes",
-                        "🚀 Votre carrière mérite cette plateforme d'exception",
-                      ],
-                    ),
-
-                    _buildLuxuryPage(
-                      imageIndex: 3,
-                      title: "⚡ Opportunité Unique",
-                      subtitle: "Ne soyez pas spectateur, soyez acteur de votre réussite",
-                      color: premiumRed,
-                      features: [
-                        "⏳ Rejoignez-nous avant la saturation du marché premium",
-                        "💎 Positionnez-vous comme référence du luxe africain",
-                        "🚨 Cette opportunité ne se représentera pas",
-                        "🎯 Votre avenir luxueux commence ici et maintenant",
-                      ],
-                    ),
-                    _buildLuxuryPage(
-                      imageIndex: 4,
-                      title: "🎥 Live de Prestige",
-                      subtitle: "Faites rayonner vos produits et collaborations en direct",
-                      color: luxuryGold,
-                      features: [
-                        "🌍 Organisez des lives exclusifs pour présenter vos produits",
-                        "🤝 Collaborez avec des célébrités et marques de luxe",
-                        "💬 Interagissez directement avec une audience premium",
-                        "📈 Boostez instantanément votre visibilité et vos revenus",
-                      ],
-                    ),
-
-                  ],
-                ),
-              ),
-
-              // Indicateurs de page
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(4, (index) {
-                    return AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      width: _currentPage == index ? 24 : 8,
-                      height: 8,
-                      margin: const EdgeInsets.symmetric(horizontal: 6),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        color: _currentPage == index ? luxuryGold : Colors.grey[700],
-                      ),
-                    );
-                  }),
-                ),
-              ),
-
-              // Bouton d'action premium
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 40,
-                  child: ElevatedButton(
-                    onPressed: _nextPage,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: luxuryGold,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      elevation: 5,
-                    ),
-                    child: Text(
-                      _currentPage < 4 ? "SUIVANT →" : "ACCÉDER AU LUXE 💎",
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.black,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              // Lien skip
-              Padding(
-                padding: const EdgeInsets.only(bottom: 25),
-                child: TextButton(
-                  onPressed: () => _onIntroEnd(context),
-                  child: RichText(
-                    text: const TextSpan(
-                      children: [
-                        TextSpan(
-                          text: "Ignorer ? ",
-                          style: TextStyle(color: Colors.grey, fontSize: 14),
-                        ),
-                        TextSpan(
-                          text: "Votre rival vous attend...",
-                          style: TextStyle(
-                            color: Colors.red,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLuxuryPage({
-    required int imageIndex,
-    required String title,
-    required String subtitle,
-    required Color color,
-    required List<String> features,
-  }) {
-    return Stack(
-      children: [
-        // Image de fond optimisée
-        Image.asset(
-          _luxuryImages[imageIndex],
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: double.infinity,
-        ),
-
-        // Overlay sombre pour la lisibilité
-        Container(
-          width: double.infinity,
-          height: double.infinity,
+  Widget _buildDots() {
+    return Row(
+      children: List.generate(_kSlides.length, (i) {
+        final active = i == _currentPage;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          margin: const EdgeInsets.only(right: 5),
+          width: active ? 20.0 : 4.0,
+          height: 4.0,
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.black.withOpacity(0.3),
-                Colors.black.withOpacity(0.6),
-                Colors.black.withOpacity(0.8),
-              ],
-            ),
+            color: active ? _kGold : const Color(0x40FFFFFF),
+            borderRadius: BorderRadius.circular(2),
           ),
-        ),
-
-        // Contenu
-        SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 40),
-          child: Column(
-            children: [
-              // Titre principal
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w900,
-                  color: color,
-                  height: 1.2,
-                  shadows: const [
-                    Shadow(
-                      blurRadius: 10,
-                      color: Colors.black,
-                      offset: Offset(2, 2),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 15),
-
-              // Sous-titre
-              Text(
-                subtitle,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: Colors.white,
-                  fontWeight: FontWeight.w500,
-                  height: 1.4,
-                  shadows: [
-                    Shadow(
-                      blurRadius: 5,
-                      color: Colors.black,
-                      offset: Offset(1, 1),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 30),
-
-              // Features
-              Column(
-                children: features.map((feature) {
-                  final emoji = feature.split(' ')[0];
-                  final text = feature.substring(emoji.length + 1);
-                  Color featureColor = color;
-
-                  // Alternance des couleurs
-                  if (features.indexOf(feature) % 4 == 1) featureColor = primaryGreen;
-                  if (features.indexOf(feature) % 4 == 2) featureColor = elitePurple;
-                  if (features.indexOf(feature) % 4 == 3) featureColor = premiumRed;
-
-                  return _buildLuxuryFeature(emoji, text, featureColor);
-                }).toList(),
-              ),
-            ],
-          ),
-        ),
-      ],
+        );
+      }),
     );
   }
 }

@@ -1,3 +1,4 @@
+import 'package:afrotok/utils/responsive_sheet.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -5,7 +6,7 @@ import '../../models/model_data.dart';
 import '../user/detailsOtherUser.dart';
 
 void showUserDetailsModalDialog(UserData user, double w, double h, BuildContext context) {
-  showModalBottomSheet(
+  showResponsiveBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,

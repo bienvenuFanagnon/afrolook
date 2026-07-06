@@ -1,4 +1,6 @@
-﻿import 'package:afrotok/models/model_data.dart';
+﻿import 'package:afrotok/layout/centered_content.dart';
+import 'package:afrotok/layout/responsive_layout.dart';
+import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/afroshop/marketPlace/acceuil/home_afroshop.dart';
 import 'package:afrotok/pages/auth/authTest/constants.dart';
 import 'package:afrotok/pages/canaux/detailsCanal.dart';
@@ -1112,7 +1114,9 @@ class _MesNotificationState extends State<MesNotification> {
             ),
         ],
       ),
-      body: Column(
+      body: CenteredContent(
+        maxWidth: AppLayout.isDesktop(context) ? 800 : AppLayout.maxFeedWidth,
+        child: Column(
         children: [
           if (_showFilterMenu && _availableTypes.isNotEmpty)
             Container(
@@ -1274,6 +1278,7 @@ class _MesNotificationState extends State<MesNotification> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

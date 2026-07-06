@@ -1,4 +1,8 @@
-﻿import 'dart:async';
+﻿import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
+import 'package:afrotok/layout/responsive_layout.dart';
+import 'package:afrotok/utils/responsive_sheet.dart';
+import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'dart:math';
@@ -94,6 +98,7 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
   bool get wantKeepAlive => true;
 
   late PageController _pageController;
+  final FocusNode _focusNode = FocusNode();
   late UserAuthProvider authProvider;
   late PostProvider postProvider;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -264,7 +269,35 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
     _pageController.dispose();
     _disposeCurrentVideo();
     _postSubscriptions.forEach((key, subscription) => subscription.cancel());
+    _focusNode.dispose();
     super.dispose();
+  }
+
+  Widget _wrapWithControls(Widget child) {
+    return KeyboardListener(
+      autofocus: true,
+      focusNode: _focusNode,
+      onKeyEvent: (event) {
+        if (event is! KeyDownEvent) return;
+        if (event.logicalKey == LogicalKeyboardKey.arrowDown || event.logicalKey == LogicalKeyboardKey.arrowRight) {
+          _pageController.nextPage(duration: const Duration(milliseconds: 350), curve: Curves.easeInOut);
+        } else if (event.logicalKey == LogicalKeyboardKey.arrowUp || event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+          _pageController.previousPage(duration: const Duration(milliseconds: 350), curve: Curves.easeInOut);
+        }
+      },
+      child: Listener(
+        onPointerSignal: (event) {
+
+          if (event is! PointerScrollEvent) return;
+          if (event.scrollDelta.dy > 0) {
+            _pageController.nextPage(duration: const Duration(milliseconds: 350), curve: Curves.easeInOut);
+          } else if (event.scrollDelta.dy < 0) {
+            _pageController.previousPage(duration: const Duration(milliseconds: 350), curve: Curves.easeInOut);
+          }
+        },
+        child: child,
+      ),
+    );
   }
 
   void _disposeCurrentVideo() {
@@ -950,7 +983,7 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
 
   void _showCommentsModal(Post post) {
     authProvider.incrementPostTotalInteractions(postId: post.id!);
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -1006,7 +1039,7 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
   }
 
   void _showPostMenu(Post post) {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: _vibeDarkGrey,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
@@ -1254,7 +1287,8 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return Stack(
+    final bool _isWide = AppLayout.isWide(context);
+    final Widget _videoStack = Stack(
       children: [
         Scaffold(
           backgroundColor: _vibeBlack,
@@ -1314,6 +1348,16 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
           ),
       ],
     );
+    if (_isWide) {
+      final Widget scaffold = Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: SizedBox(width: 480, child: _videoStack),
+        ),
+      );
+      return _wrapWithControls(scaffold);
+    }
+    return _videoStack;
   }
 }
 

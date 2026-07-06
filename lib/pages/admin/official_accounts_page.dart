@@ -1,3 +1,4 @@
+import 'package:afrotok/utils/responsive_sheet.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -82,7 +83,7 @@ class _OfficialAccountsPageState extends State<OfficialAccountsPage>
 
   void _showFilterSheet() {
     final colors = AppColors.of(context);
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: colors.surface,
       shape: const RoundedRectangleBorder(

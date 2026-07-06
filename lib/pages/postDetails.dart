@@ -1,6 +1,10 @@
-﻿import 'dart:async';
+import 'package:afrotok/utils/responsive_sheet.dart';
+import 'dart:async';
 import 'dart:io';
 import 'dart:math';
+
+import 'package:afrotok/layout/centered_content.dart';
+import 'package:afrotok/layout/responsive_layout.dart';
 
 import 'package:afrotok/services/ad_config_service.dart';
 import 'package:afrotok/pages/user/userPubs/user_create_advertisement_page.dart';
@@ -4287,7 +4291,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
     final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     final postProvider = Provider.of<PostProvider>(context, listen: false);
 
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: _colors.surfaceVariant,
       shape: RoundedRectangleBorder(
@@ -5858,7 +5862,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
   }
 
   void _showShareOptions() {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
@@ -5890,7 +5894,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                   style: TextStyle(color: _colors.textPrimary)),
               onTap: () {
                 Navigator.pop(ctx);
-                showModalBottomSheet(
+                showResponsiveBottomSheet(
                   context: context,
                   isScrollControlled: true,
                   backgroundColor: Colors.transparent,
@@ -6089,7 +6093,9 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         ],
         centerTitle: true,
       ),
-      body: StreamBuilder<DocumentSnapshot>(
+      body: CenteredContent(
+        maxWidth: AppLayout.isDesktop(context) ? 800 : AppLayout.maxFeedWidth,
+        child: StreamBuilder<DocumentSnapshot>(
         stream: _postStream,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
@@ -6237,6 +6243,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                   ),
                 );
         },
+      ),
       ),
     );
   }

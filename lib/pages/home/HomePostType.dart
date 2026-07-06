@@ -1,4 +1,5 @@
-﻿import 'dart:async';
+import 'package:afrotok/utils/responsive_sheet.dart';
+import 'dart:async';
 import 'dart:math';
 import 'package:afrotok/pages/canaux/listCanal.dart';
 import 'package:afrotok/pages/challenge/postChallengeWidget.dart';
@@ -361,7 +362,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
   // ===========================================================================
 
   void _showCountryFilterModal() {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -819,7 +820,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
     printVm('✅ Filtre appliqué: $_currentFilter - Pays: $_selectedCountryCode - Type: $_selectedPostType');
   }
   void _showTypeFilterModal() {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

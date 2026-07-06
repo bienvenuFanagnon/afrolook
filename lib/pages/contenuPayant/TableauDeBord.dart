@@ -1,3 +1,5 @@
+import 'package:afrotok/layout/centered_content.dart';
+import 'package:afrotok/layout/responsive_layout.dart';
 import 'dart:async';
 
 import 'package:afrotok/models/model_data.dart';
@@ -290,7 +292,9 @@ class _DashboardContentScreenState extends State<DashboardContentScreen>
 
     return Scaffold(
       backgroundColor: colors.background,
-      body: NestedScrollView(
+      body: CenteredContent(
+        maxWidth: AppLayout.isDesktop(context) ? 900 : AppLayout.maxFeedWidth,
+        child: NestedScrollView(
         headerSliverBuilder: (context, _) => [
           SliverAppBar(
             backgroundColor: colors.background,
@@ -473,6 +477,7 @@ class _DashboardContentScreenState extends State<DashboardContentScreen>
             }
             return _buildFlatGrid(items, colors);
           },
+        ),
         ),
       ),
       floatingActionButton: isCreator

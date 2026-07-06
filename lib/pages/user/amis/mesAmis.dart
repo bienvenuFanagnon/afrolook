@@ -1,6 +1,8 @@
 
 
 import 'dart:async';
+import 'package:afrotok/layout/centered_content.dart';
+import 'package:afrotok/layout/responsive_layout.dart';
 
 
 import 'package:afrotok/services/api.dart';
@@ -428,7 +430,9 @@ if (await friendsStream.isEmpty) {
   Widget build(BuildContext context) {
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
-    return   SingleChildScrollView(
+    return CenteredContent(
+      maxWidth: AppLayout.isDesktop(context) ? 700 : AppLayout.maxFeedWidth,
+      child: SingleChildScrollView(
       child: Column(
         children: [
           Padding(
@@ -690,6 +694,7 @@ if (await friendsStream.isEmpty) {
           ),
         ],
       ),
+      ),  // CenteredContent
     );
   }
 }

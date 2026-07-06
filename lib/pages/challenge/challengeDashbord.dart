@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import 'package:afrotok/utils/responsive_sheet.dart';
+import 'package:flutter/material.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -657,7 +658,7 @@ class _ChallengeDashboardPageState extends State<ChallengeDashboardPage> with Si
   }
 
   void _showAdminOptions(Challenge challenge) {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: _afroCardBg,
       shape: RoundedRectangleBorder(

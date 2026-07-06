@@ -1,4 +1,7 @@
-﻿import 'dart:async';
+import 'package:flutter/services.dart';
+import 'package:afrotok/layout/responsive_layout.dart';
+import 'package:afrotok/utils/responsive_sheet.dart';
+import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'dart:math';
@@ -117,6 +120,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
   final Map<String, String> _translatedDescriptions = {};
   late PageController _pageController;
+  final FocusNode _focusNode = FocusNode();
   late UserAuthProvider authProvider;
   late PostProvider postProvider;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -458,8 +462,36 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     _pageController.dispose();
     _disposeCurrentVideo();
     _postSubscriptions.forEach((key, subscription) => subscription.cancel());
+    _focusNode.dispose();
     super.dispose();
   }
+
+  Widget _wrapWithControls(Widget child) {
+    return KeyboardListener(
+      autofocus: true,
+      focusNode: _focusNode,
+      onKeyEvent: (event) {
+        if (event is! KeyDownEvent) return;
+        if (event.logicalKey == LogicalKeyboardKey.arrowDown || event.logicalKey == LogicalKeyboardKey.arrowRight) {
+          _pageController.nextPage(duration: const Duration(milliseconds: 350), curve: Curves.easeInOut);
+        } else if (event.logicalKey == LogicalKeyboardKey.arrowUp || event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+          _pageController.previousPage(duration: const Duration(milliseconds: 350), curve: Curves.easeInOut);
+        }
+      },
+      child: Listener(
+        onPointerSignal: (event) {
+          if (event is! PointerScrollEvent) return;
+          if (event.scrollDelta.dy > 0) {
+            _pageController.nextPage(duration: const Duration(milliseconds: 350), curve: Curves.easeInOut);
+          } else if (event.scrollDelta.dy < 0) {
+            _pageController.previousPage(duration: const Duration(milliseconds: 350), curve: Curves.easeInOut);
+          }
+        },
+        child: child,
+      ),
+    );
+  }
+
   void _disposeCurrentVideo() {
     _chewieController?.dispose();
     _currentVideoController?.dispose();
@@ -1557,7 +1589,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   void _showCommentsModal(Post post) {
     authProvider.incrementPostTotalInteractions(postId: post.id!);
     final colors = AppColors.of(context);
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -1742,7 +1774,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
   void _showPostMenu(Post post) {
     final colors = AppColors.of(context);
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: colors.surface,
       shape: const RoundedRectangleBorder(
@@ -1769,7 +1801,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
               title: Text('Envoyer dans un chat', style: TextStyle(color: colors.textPrimary)),
               onTap: () {
                 Navigator.pop(context);
-                showModalBottomSheet(
+                showResponsiveBottomSheet(
                   context: context,
                   isScrollControlled: true,
                   backgroundColor: Colors.transparent,
@@ -2719,7 +2751,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   Widget build(BuildContext context) {
     super.build(context);
     final colors = AppColors.of(context);
-    return Stack(
+    final bool _isWide = AppLayout.isWide(context);
+    final Widget _videoStack = Stack(
       children: [
         Scaffold(
           backgroundColor: _afroBlack,
@@ -2812,6 +2845,16 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
           ),
       ],
     );
+    if (_isWide) {
+      final Widget scaffold = Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: SizedBox(width: 480, child: _videoStack),
+        ),
+      );
+      return _wrapWithControls(scaffold);
+    }
+    return _videoStack;
   }
 }
 

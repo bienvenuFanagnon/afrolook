@@ -235,11 +235,11 @@ class _AudioPostCardState extends State<AudioPostCard> {
           () => _stop(),
         );
 
-        // 🔥 Re-synchroniser systématiquement avec l'état actuel du son
+        // Synchroniser le volume (0 si muet, 1 si son actif) puis toujours lancer
         final isMuted = _soundProvider.isMuted;
         _player!.setVolume(isMuted ? 0.0 : 1.0);
 
-        if (!isMuted && !_isPlaying) {
+        if (!_isPlaying) {
           _playPause();
         }
       });

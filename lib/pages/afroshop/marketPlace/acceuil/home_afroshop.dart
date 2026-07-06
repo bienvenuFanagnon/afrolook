@@ -1,4 +1,5 @@
-﻿import 'package:afrotok/pages/afroshop/marketPlace/acceuil/produit_details.dart';
+import 'package:afrotok/utils/responsive_sheet.dart';
+import 'package:afrotok/pages/afroshop/marketPlace/acceuil/produit_details.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/providers/postProvider.dart';
@@ -439,7 +440,7 @@ class _HomePageState extends State<HomeAfroshopPage> {
   }
 
   void _showFilterDialog() {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -897,7 +898,7 @@ class _HomePageState extends State<HomeAfroshopPage> {
   }
 
   void _showBottomSheetCompterNonValide() {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) {

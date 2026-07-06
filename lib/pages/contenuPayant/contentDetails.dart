@@ -1,4 +1,5 @@
-﻿import 'dart:async';
+import 'package:afrotok/utils/responsive_sheet.dart';
+import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/pages/contenuPayant/userAbonnerInfos.dart';
@@ -653,7 +654,7 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
 
   void _handleShare() async {
     if (_isSharing) return;
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
@@ -722,7 +723,7 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
   void _shareContentToChat() {
     final thumb = widget.content.thumbnailUrl ?? '';
     final typeLabel = widget.content.isSeries ? 'Série VIP' : 'Contenu VIP';
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

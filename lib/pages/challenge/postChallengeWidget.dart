@@ -1,4 +1,5 @@
-﻿import 'dart:io';
+import 'package:afrotok/utils/responsive_sheet.dart';
+import 'dart:io';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:flutter/material.dart';
@@ -1168,7 +1169,7 @@ class _LookChallengePostWidgetState extends State<LookChallengePostWidget>
 
   // Méthodes de gestion des actions
   void _showCommentsModal(Post post) {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -1213,7 +1214,7 @@ class _LookChallengePostWidgetState extends State<LookChallengePostWidget>
     final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     final postProvider = Provider.of<PostProvider>(context, listen: false);
 
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: _afroCardBg,
       shape: RoundedRectangleBorder(

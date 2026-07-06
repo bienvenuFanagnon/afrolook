@@ -1,3 +1,4 @@
+import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:afrotok/models/model_data.dart';
@@ -22,7 +23,9 @@ Future<void> showInviteFriendsModal(BuildContext context, UserData currentUser) 
           backgroundColor: Colors.transparent,
           elevation: 0,
           insetPadding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Container(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Container(
             decoration: BoxDecoration(
               color: Colors.black,
               borderRadius: BorderRadius.circular(20),
@@ -163,6 +166,7 @@ Future<void> showInviteFriendsModal(BuildContext context, UserData currentUser) 
                 ),
               ],
             ),
+          ),
           ),
         ),
       );

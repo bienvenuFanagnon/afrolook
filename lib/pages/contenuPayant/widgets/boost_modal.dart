@@ -1,3 +1,4 @@
+import 'package:afrotok/utils/responsive_sheet.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/theme/app_colors.dart';
@@ -18,7 +19,7 @@ class BoostModal extends StatefulWidget {
   static Future<void> show(
       BuildContext context, ContentPaie content,
       {bool isAdmin = false}) {
-    return showModalBottomSheet(
+    return showResponsiveBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

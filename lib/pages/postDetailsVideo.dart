@@ -1,4 +1,7 @@
-﻿import 'dart:async';
+import 'package:afrotok/utils/responsive_sheet.dart';
+import 'package:afrotok/layout/centered_content.dart';
+import 'package:afrotok/layout/responsive_layout.dart';
+import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'dart:math';
@@ -1037,7 +1040,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     );
   }
   void _showCommentsModal() {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -1134,7 +1137,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
 
   void _showShareOptions(Post post) {
     final colors = AppColors.of(context);
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
@@ -1163,7 +1166,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
                   style: TextStyle(color: colors.textPrimary)),
               onTap: () {
                 Navigator.pop(ctx);
-                showModalBottomSheet(
+                showResponsiveBottomSheet(
                   context: context,
                   isScrollControlled: true,
                   backgroundColor: Colors.transparent,
@@ -1299,7 +1302,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
   }
 
   void _showPostMenu() {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: _afroDarkGrey,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
@@ -1965,7 +1968,9 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       appBar: AppBar(backgroundColor: _afroBlack, elevation: 0, leading: IconButton(icon: Icon(Icons.arrow_back, color: _afroYellow), onPressed: () => Navigator.pop(context)), title: Text('Afrolook Vidéo', style: TextStyle(color: _afroGreen, fontWeight: FontWeight.bold))),
       body: Stack(
         children: [
-          SingleChildScrollView(
+          CenteredContent(
+            maxWidth: AppLayout.isDesktop(context) ? 800 : AppLayout.maxFeedWidth,
+            child: SingleChildScrollView(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               // Lecteur vidéo
               isLocked ? Container(height: MediaQuery.of(context).size.width * 9 / 16, child: _buildLockedOverlay()) : _buildVideoPlayer(),
@@ -2001,6 +2006,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
               ])),
             ]),
           ),
+          ),  // CenteredContent
           if (_showRewardedAd) RewardedAdWidget(key: _rewardedAdKey, onUserEarnedReward: (amount, name)  => _onSupportAdRewarded(), onAdDismissed: () => setState(() { _showRewardedAd = false; _isSupporting = false; }), child: SizedBox.shrink()),
         ],
       ),

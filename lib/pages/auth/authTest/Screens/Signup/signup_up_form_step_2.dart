@@ -1,4 +1,5 @@
-﻿
+import 'package:afrotok/utils/responsive_sheet.dart';
+
 import 'dart:typed_data';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -180,7 +181,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
 
   // Modal de création et vérification d'email
   void _showVerificationModal() {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -1156,7 +1157,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
 //
 // // Modal de création et vérification d'email
 //   void _showVerificationModal() {
-//     showModalBottomSheet(
+//     showResponsiveBottomSheet(
 //       context: context,
 //       isScrollControlled: true,
 //       backgroundColor: Colors.transparent,
