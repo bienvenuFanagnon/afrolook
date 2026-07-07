@@ -1,6 +1,6 @@
 ﻿// admin_email_screen.dart
 
-
+import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -454,7 +454,7 @@ class _AdminEmailScreenState extends State<AdminEmailScreen> {
                 ],
               ),
             )
-                : ListView.builder(
+                : CenteredContent(child: ListView.builder(
               controller: _scrollController,
               padding: EdgeInsets.all(12),
               itemCount: _users.length + (_hasMore && _searchQuery.isEmpty ? 1 : 0),
@@ -547,7 +547,7 @@ class _AdminEmailScreenState extends State<AdminEmailScreen> {
                   ),
                 );
               },
-            ),
+            )),
           ),
         ],
       ),

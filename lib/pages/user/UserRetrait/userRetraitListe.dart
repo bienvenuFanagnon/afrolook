@@ -1,4 +1,5 @@
 // pages/retrait/user_retrait_list_page.dart
+import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/contact.dart';
 import 'package:afrotok/pages/user/UserRetrait/userRetraitForm.dart';
@@ -104,13 +105,13 @@ class _UserRetraitListPageState extends State<UserRetraitListPage> {
 
               // Liste des retraits
               Expanded(
-                child: ListView.builder(
+                child: CenteredContent(child: ListView.builder(
                   padding: EdgeInsets.all(16),
                   itemCount: retraits.length,
                   itemBuilder: (context, index) {
                     return _buildRetraitCard(retraits[index], context);
                   },
-                ),
+                )),
               ),
             ],
           );

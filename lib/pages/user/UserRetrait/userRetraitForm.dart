@@ -1,4 +1,5 @@
 // pages/retrait/user_retrait_page.dart
+import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/pages/user/UserRetrait/userRetraitListe.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -113,7 +114,7 @@ class _UserDemandeRetraitPageState extends State<UserDemandeRetraitPage> {
             _buildSoldeCard(userData!),
             SizedBox(height: 20),
             Expanded(
-              child: SingleChildScrollView(
+              child: CenteredContent(child: SingleChildScrollView(
                 child: Form(
                   key: _formKey,
                   child: Column(
@@ -136,7 +137,7 @@ class _UserDemandeRetraitPageState extends State<UserDemandeRetraitPage> {
                     ],
                   ),
                 ),
-              ),
+              )),
             ),
           ],
         ),

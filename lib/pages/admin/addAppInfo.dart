@@ -1,4 +1,5 @@
-﻿import 'package:afrotok/models/model_data.dart';
+﻿import 'package:afrotok/layout/centered_content.dart';
+import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -341,7 +342,7 @@ class _NewAppInfoState extends State<NewAppInfo> {
   }
 
   Widget _buildForm(double height, double width) {
-    return SingleChildScrollView(
+    return CenteredContent(child: SingleChildScrollView(
       padding: EdgeInsets.all(16),
       child: Form(
         key: _formKey,
@@ -363,7 +364,7 @@ class _NewAppInfoState extends State<NewAppInfo> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   Widget _buildFeaturedToggle() {

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/pages/socialVideos/afrovideos/videoWidget.dart';

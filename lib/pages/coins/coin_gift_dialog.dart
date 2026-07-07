@@ -63,7 +63,7 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: Container(
         height: MediaQuery.of(context).size.height * 0.8,
-        width: double.infinity,
+        constraints: const BoxConstraints(maxWidth: 480),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             begin: Alignment.topLeft,

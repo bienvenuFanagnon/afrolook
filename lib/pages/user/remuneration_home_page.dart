@@ -1,5 +1,6 @@
 // pages/remuneration_home_page.dart
 
+import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/user/monetisation.dart';
 import 'package:flutter/material.dart';
@@ -73,7 +74,7 @@ class _RemunerationHomePageState extends State<RemunerationHomePage> {
         ],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: CenteredContent(child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -164,7 +165,7 @@ class _RemunerationHomePageState extends State<RemunerationHomePage> {
             ],
           ),
         ),
-      ),
+      )),
     );
   }
 

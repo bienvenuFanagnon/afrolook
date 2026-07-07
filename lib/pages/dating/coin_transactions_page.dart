@@ -1,5 +1,6 @@
 //CoinTransactionsPage - Historique des transactions
 // lib/pages/coins/coin_transactions_page.dart
+import 'package:afrotok/layout/centered_content.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/dating_data.dart';
@@ -74,14 +75,14 @@ class _CoinTransactionsPageState extends State<CoinTransactionsPage> {
             );
           }
 
-          return ListView.builder(
+          return CenteredContent(child: ListView.builder(
             padding: EdgeInsets.all(16),
             itemCount: provider.transactions.length,
             itemBuilder: (context, index) {
               final transaction = provider.transactions[index];
               return _buildTransactionCard(context, transaction);
             },
-          );
+          ));
         },
       ),
     );

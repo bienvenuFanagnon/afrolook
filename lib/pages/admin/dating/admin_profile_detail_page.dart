@@ -1,5 +1,6 @@
 ﻿// lib/pages/admin/dating/admin_profile_detail_page.dart
 
+import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -219,7 +220,7 @@ class _AdminProfileDetailPageState extends State<AdminProfileDetailPage> {
         ),
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : ListView(
+            : CenteredContent(child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
                   _buildPhotosCarousel(colors, photos),
@@ -239,7 +240,7 @@ class _AdminProfileDetailPageState extends State<AdminProfileDetailPage> {
                   _buildAdminActionsCard(colors),
                   const SizedBox(height: 24),
                 ],
-              ),
+              )),
       ),
     );
   }

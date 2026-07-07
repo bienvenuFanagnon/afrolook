@@ -1,6 +1,6 @@
 ﻿// pages/admin/remuneration_admin_page.dart
 
-
+import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -351,7 +351,7 @@ class _RemunerationAdminPageState extends State<RemunerationAdminPage> with Sing
       onRefresh: _chargerDonnees,
       color: Color(0xFFFFD700),
       backgroundColor: Colors.black,
-      child: SingleChildScrollView(
+      child: CenteredContent(child: SingleChildScrollView(
         padding: EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -363,7 +363,7 @@ class _RemunerationAdminPageState extends State<RemunerationAdminPage> with Sing
             _buildDernieresTransactions(),
           ],
         ),
-      ),
+      )),
     );
   }
 
@@ -666,7 +666,7 @@ class _RemunerationAdminPageState extends State<RemunerationAdminPage> with Sing
       onRefresh: _chargerDernieresTransactions,
       color: Color(0xFFFFD700),
       backgroundColor: Colors.black,
-      child: ListView.builder(
+      child: CenteredContent(child: ListView.builder(
         padding: EdgeInsets.all(16),
         itemCount: _dernieresTransactions.length,
         itemBuilder: (context, index) {
@@ -727,7 +727,7 @@ class _RemunerationAdminPageState extends State<RemunerationAdminPage> with Sing
             ),
           );
         },
-      ),
+      )),
     );
   }
 
@@ -765,7 +765,7 @@ class _RemunerationAdminPageState extends State<RemunerationAdminPage> with Sing
       onRefresh: _chargerTopUtilisateurs,
       color: Color(0xFFFFD700),
       backgroundColor: Colors.black,
-      child: ListView.builder(
+      child: CenteredContent(child: ListView.builder(
         padding: EdgeInsets.all(16),
         itemCount: _topUtilisateurs.length,
         itemBuilder: (context, index) {
@@ -845,7 +845,7 @@ class _RemunerationAdminPageState extends State<RemunerationAdminPage> with Sing
             ),
           );
         },
-      ),
+      )),
     );
   }
 
@@ -857,7 +857,7 @@ class _RemunerationAdminPageState extends State<RemunerationAdminPage> with Sing
       onRefresh: _chargerEncaissementsParJour,
       color: Color(0xFFFFD700),
       backgroundColor: Colors.black,
-      child: SingleChildScrollView(
+      child: CenteredContent(child: SingleChildScrollView(
         padding: EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -884,7 +884,7 @@ class _RemunerationAdminPageState extends State<RemunerationAdminPage> with Sing
             ],
           ],
         ),
-      ),
+      )),
     );
   }
 

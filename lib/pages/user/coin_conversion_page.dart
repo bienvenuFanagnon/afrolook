@@ -1,3 +1,4 @@
+import 'package:afrotok/layout/centered_content.dart';
 import 'package:flutter/material.dart';
 
 // pages/coins/coin_conversion_page.dart
@@ -158,7 +159,7 @@ class _CoinConversionPageState extends State<CoinConversionPage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
+      body: CenteredContent(child: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -391,7 +392,7 @@ class _CoinConversionPageState extends State<CoinConversionPage> {
             ),
           ],
         ),
-      ),
+      )),
     );
   }
 

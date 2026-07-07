@@ -1,4 +1,5 @@
 // afrolookAdminPubPage.dart — refonte UI session 49
+import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/services/ad_config_service.dart';
 import 'package:afrotok/theme/app_colors.dart';
@@ -721,7 +722,7 @@ class _AdvertisementManagementPageState extends State<AdvertisementManagementPag
     return RefreshIndicator(
       onRefresh: _loadGlobalStats,
       color: _colors.primary,
-      child: SingleChildScrollView(
+      child: CenteredContent(child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -816,7 +817,7 @@ class _AdvertisementManagementPageState extends State<AdvertisementManagementPag
 
           const SizedBox(height: 20),
         ]),
-      ),
+      )),
     );
   }
 
@@ -1289,11 +1290,11 @@ class _AdvertisementManagementPageState extends State<AdvertisementManagementPag
         return RefreshIndicator(
           onRefresh: _loadGlobalStats,
           color: _colors.primary,
-          child: ListView.builder(
+          child: CenteredContent(child: ListView.builder(
             padding: const EdgeInsets.only(bottom: 32),
             itemCount: docs.length,
             itemBuilder: (_, i) => _buildAdCardWithPost(docs[i]),
-          ),
+          )),
         );
       },
     );

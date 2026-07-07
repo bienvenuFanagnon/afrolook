@@ -1,4 +1,5 @@
-﻿import 'package:afrotok/services/ad_service.dart';
+﻿import 'package:afrotok/layout/centered_content.dart';
+import 'package:afrotok/services/ad_service.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:flutter/material.dart';
@@ -65,7 +66,7 @@ class _AdAdminPageState extends State<AdAdminPage> {
         backgroundColor: const Color(0xFFFFD600), // Ton Jaune Afrolook
         iconTheme: const IconThemeData(color: Colors.black),
       ),
-      body: SingleChildScrollView(
+      body: CenteredContent(child: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -168,7 +169,7 @@ class _AdAdminPageState extends State<AdAdminPage> {
               ),
           ],
         ),
-      ),
+      )),
     );
   }
 

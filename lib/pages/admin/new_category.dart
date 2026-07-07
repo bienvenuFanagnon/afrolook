@@ -1,5 +1,6 @@
 ﻿
 
+import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:path/path.dart' as Path;
 import 'dart:io';
@@ -57,7 +58,7 @@ class _NewAppInfoState extends State<AddCategorie> {
         appBar: AppBar(
           title: Text('New Categorie'),
         ),
-        body: SingleChildScrollView(
+        body: CenteredContent(child: SingleChildScrollView(
           child: Center(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -238,7 +239,7 @@ class _NewAppInfoState extends State<AddCategorie> {
               ),
             ),
           ),
-        )
+        ))
     );
   }
 }

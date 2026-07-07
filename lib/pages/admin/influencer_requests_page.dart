@@ -1,3 +1,4 @@
+import 'package:afrotok/layout/centered_content.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -239,11 +240,11 @@ class _InfluencerRequestsPageState extends State<InfluencerRequestsPage>
             ),
           );
         }
-        return ListView.builder(
+        return CenteredContent(child: ListView.builder(
           padding: const EdgeInsets.all(16),
           itemCount: docs.length,
           itemBuilder: (_, i) => _buildRequestCard(docs[i]),
-        );
+        ));
       },
     );
   }

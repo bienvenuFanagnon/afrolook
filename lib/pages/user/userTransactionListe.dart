@@ -1,4 +1,5 @@
-﻿import 'package:afrotok/pages/user/profile/retraitAdmin/retraitAdminList.dart';
+﻿import 'package:afrotok/layout/centered_content.dart';
+import 'package:afrotok/pages/user/profile/retraitAdmin/retraitAdminList.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/pages/user/profile/retraitAdmin/searchUserAdmin.dart';
@@ -716,7 +717,7 @@ class _UserTransactionsPageState extends State<UserTransactionsPage> {
                 ),
 
                 Expanded(
-                  child: ListView.builder(
+                  child: CenteredContent(child: ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.all(12),
                     itemCount: _displayedTransactions.length + (_isLoadingMore ? 1 : 0),
@@ -727,7 +728,7 @@ class _UserTransactionsPageState extends State<UserTransactionsPage> {
                       final t = _displayedTransactions[index];
                       return _buildTransactionCard(t);
                     },
-                  ),
+                  )),
                 ),
               ],
             ),

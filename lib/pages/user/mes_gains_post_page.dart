@@ -1,3 +1,4 @@
+import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -216,7 +217,7 @@ class _MesGainsPageState extends State<MesGainsPage> {
       ),
       body: isLoading
           ? _migrationLoader(colors, t)
-          : SingleChildScrollView(
+          : CenteredContent(child: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -233,7 +234,7 @@ class _MesGainsPageState extends State<MesGainsPage> {
                   const SizedBox(height: 32),
                 ],
               ),
-            ),
+            )),
     );
   }
 

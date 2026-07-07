@@ -1,6 +1,7 @@
 
 import 'dart:convert';
 
+import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/pages/afroshop/marketPlace/acceuil/produit_details.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/user/profile/postMonetiserWidget.dart';
@@ -95,7 +96,7 @@ class _HomePageState extends State<PostsMonetiserPage> {
           centerTitle: true,
         ),        // Définir le contenu du Drawer
 
-        body: SingleChildScrollView(
+        body: CenteredContent(child: SingleChildScrollView(
           child: Column(
             //crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
@@ -194,7 +195,7 @@ class _HomePageState extends State<PostsMonetiserPage> {
               // ),
             ],
           ),
-        ),
+        )),
         // This trailing comma makes auto-formatting nicer for build methods.
       ),
     );

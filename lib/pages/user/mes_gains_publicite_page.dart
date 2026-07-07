@@ -1,5 +1,6 @@
 // lib/pages/remuneration/mes_gains_publicite_page.dart
 
+import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -61,7 +62,7 @@ class _MesGainsPublicitePageState extends State<MesGainsPublicitePage> {
             return Center(child: Text('Erreur : ${snapshot.error}'));
           }
           final user = snapshot.data!;
-          return SingleChildScrollView(
+          return CenteredContent(child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -73,7 +74,7 @@ class _MesGainsPublicitePageState extends State<MesGainsPublicitePage> {
                 _buildComingSoonCard(),
               ],
             ),
-          );
+          ));
         },
       ),
     );

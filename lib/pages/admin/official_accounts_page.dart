@@ -1,3 +1,4 @@
+import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -154,12 +155,12 @@ class _RequestList extends StatelessWidget {
             ),
           );
         }
-        return ListView.separated(
+        return CenteredContent(child: ListView.separated(
           padding: const EdgeInsets.all(16),
           itemCount: requests.length,
           separatorBuilder: (_, __) => const SizedBox(height: 10),
           itemBuilder: (_, i) => _RequestCard(request: requests[i]),
-        );
+        ));
       },
     );
   }

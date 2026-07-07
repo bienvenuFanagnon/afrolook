@@ -1,3 +1,4 @@
+import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/pages/user/UserRetrait/userRetraitForm.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -84,7 +85,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
           final double soldePrincipal = user.votre_solde_principal ?? 0;
           final int giftCoinsBalance = user.giftCoinsBalance ?? 0;
 
-          return SingleChildScrollView(
+          return CenteredContent(child: SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -100,7 +101,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
                 _buildTransactionList(user.id!, colors, t),
               ],
             ),
-          );
+          ));
         },
       ),
     );

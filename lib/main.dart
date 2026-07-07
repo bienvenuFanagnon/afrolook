@@ -123,11 +123,15 @@ Future<void> main() async {
   //   await AdService.init();
   // }
 
-  // Initialisation caméras
-  try {
-    _cameras = await availableCameras();
-  } catch (e) {
-    printVm("Erreur initialisation caméra : $e");
+  // Initialisation caméras (mobile uniquement — sur web, permission demandée à l'usage)
+  if (!kIsWeb) {
+    try {
+      _cameras = await availableCameras();
+    } catch (e) {
+      printVm("Erreur initialisation caméra : $e");
+      _cameras = [];
+    }
+  } else {
     _cameras = [];
   }
 
@@ -145,7 +149,7 @@ Future<void> main() async {
     OneSignal.Notifications.requestPermission(true);
   }
 
-  initLocalNotifications();
+  if (!kIsWeb) initLocalNotifications();
 
   // Workmanager
   if (!kIsWeb) {

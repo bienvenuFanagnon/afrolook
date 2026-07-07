@@ -1,3 +1,4 @@
+import 'package:afrotok/layout/centered_content.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -125,7 +126,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         color: colors.primary,
         child: _loading
             ? const Center(child: CircularProgressIndicator())
-            : ListView(
+            : CenteredContent(child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
                 children: [
                   // ── Identité admin ─────────────────────────────────────────
@@ -195,7 +196,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     _RecentActivity(events: _recentEvents, colors: colors),
                   ],
                 ],
-              ),
+              )),
       ),
     );
   }

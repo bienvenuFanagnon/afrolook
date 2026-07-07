@@ -1546,6 +1546,28 @@ class _MyHomePageState extends State<MyHomePage>
 
 // Implémentations des méthodes de navigation (vous les avez probablement déjà)
   void _navigateToPostWidget(Post post) {
+    if (AppLayout.isDesktop(context)) {
+      if (post.dataType == PostDataType.VIDEO.name) {
+        _setDesktopSection(
+          Navigator(
+            onGenerateRoute: (_) => MaterialPageRoute(
+              builder: (_) => PostDetailsVideoFormatTel(initialPost: post, isIn: false),
+            ),
+          ),
+          'Vidéo',
+        );
+      } else {
+        _setDesktopSection(
+          Navigator(
+            onGenerateRoute: (_) => MaterialPageRoute(
+              builder: (_) => DetailsPost(post: post),
+            ),
+          ),
+          post.description ?? 'Post',
+        );
+      }
+      return;
+    }
     if (post.dataType == PostDataType.VIDEO.name) {
       Navigator.push(
         context,

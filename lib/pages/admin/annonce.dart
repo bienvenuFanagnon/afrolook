@@ -1,4 +1,5 @@
-﻿import 'package:afrotok/models/model_data.dart';
+﻿import 'package:afrotok/layout/centered_content.dart';
+import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -85,7 +86,7 @@ class _NewAppInfoState extends State<NewAppAnnonce> {
         appBar: AppBar(
           title: Text('New Annonce'),
         ),
-        body: SingleChildScrollView(
+        body: CenteredContent(child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Form(
@@ -303,7 +304,7 @@ class _NewAppInfoState extends State<NewAppAnnonce> {
               ),
             ),
           ),
-        )
+        ))
     );
   }
 }

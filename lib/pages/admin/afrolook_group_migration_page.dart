@@ -1,3 +1,4 @@
+import 'package:afrotok/layout/centered_content.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -602,7 +603,7 @@ class _AfrolookGroupMigrationPageState
           await _loadOfficialGroups();
         },
         color: _colors.primary,
-        child: ListView(
+        child: CenteredContent(child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
             // ── Status groupe principal ─────────────────────────────────────
@@ -822,7 +823,7 @@ class _AfrolookGroupMigrationPageState
             ),
             const SizedBox(height: 16),
           ],
-        ),
+        )),
       ),
     );
   }

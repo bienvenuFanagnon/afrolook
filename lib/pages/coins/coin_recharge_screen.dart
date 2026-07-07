@@ -1,4 +1,5 @@
 // widgets/coin_recharge_screen.dart
+import 'package:afrotok/layout/centered_content.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/coin_pack.dart';
@@ -105,7 +106,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
+      body: CenteredContent(child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -185,7 +186,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
             const SizedBox(height: 20),
           ],
         ),
-      ),
+      )),
     );
   }
 

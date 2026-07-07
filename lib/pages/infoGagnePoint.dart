@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/pages/admin/addGratuitInfo.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -66,7 +67,7 @@ class _AppInfosState extends State<GagnerPointInfo> {
           });
 
         },
-        child: SingleChildScrollView(
+        child: CenteredContent(child: SingleChildScrollView(
 
           physics: BouncingScrollPhysics(),
           child: Padding(
@@ -159,7 +160,7 @@ class _AppInfosState extends State<GagnerPointInfo> {
               ],
             ),
           ),
-        ),
+        )),
       ),
 
     );

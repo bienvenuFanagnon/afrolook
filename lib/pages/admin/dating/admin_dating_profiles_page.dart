@@ -1,5 +1,6 @@
 ﻿// lib/pages/admin/dating/admin_dating_profiles_page.dart
 
+import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -476,7 +477,7 @@ class _AdminDatingProfilesPageState extends State<AdminDatingProfilesPage>
 
     return RefreshIndicator(
       onRefresh: _loadStats,
-      child: ListView(
+      child: CenteredContent(child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Text('Vue d\'ensemble', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colors.textPrimary)),
@@ -514,7 +515,7 @@ class _AdminDatingProfilesPageState extends State<AdminDatingProfilesPage>
           ], planTotal),
           const SizedBox(height: 8),
         ],
-      ),
+      )),
     );
   }
 
@@ -627,7 +628,7 @@ class _AdminDatingProfilesPageState extends State<AdminDatingProfilesPage>
 
     return RefreshIndicator(
       onRefresh: _loadPendingVerifications,
-      child: ListView.builder(
+      child: CenteredContent(child: ListView.builder(
         padding: const EdgeInsets.all(12),
         itemCount: _pendingVerifications.length,
         itemBuilder: (context, index) {
@@ -703,7 +704,7 @@ class _AdminDatingProfilesPageState extends State<AdminDatingProfilesPage>
             ),
           );
         },
-      ),
+      )),
     );
   }
 
