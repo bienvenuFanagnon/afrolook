@@ -1577,33 +1577,17 @@ class _UserPubTextState extends State<UserPubText> {
       final isMember = widget.canal!.usersSuiviId?.contains(currentUserId) == true;
 
       // Vérifier si l'utilisateur a la permission de poster
-      if (!isAdmin) {
-        if (!canPost) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '❌ Vous n\'êtes pas autorisé à poster dans ce canal',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: _c.danger),
-              ),
+      if (!isOwner && !isAdmin && !canPost && !(allowAllMembers && isMember)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '❌ Vous n\'êtes pas autorisé à poster dans ce canal',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: _c.danger),
             ),
-          );
-          return;
-        }
-
-        // Vérifier s'il est membre du canal
-        if (!isMember) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '❌ Vous devez être abonné au canal pour poster',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: _c.danger),
-              ),
-            ),
-          );
-          return;
-        }
+          ),
+        );
+        return;
       }
     }
     // Vérifier cooldown local

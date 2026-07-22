@@ -952,7 +952,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     final colors = AppColors.of(context);
     final currentUserId = authProvider.loginUserData.id;
     final isCanalPost = currentCanal != null;
-    final postOwner = isCanalPost ? currentCanal! : currentUser!;
+    final dynamic postOwner = isCanalPost ? currentCanal : currentUser;
     final isCurrentUser = currentUserId == currentUser?.id;
 
     // Vérifier si déjà abonné
@@ -1032,8 +1032,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   ),
 
                   // Bouton S'abonner ou menu
-                  if (!isCurrentUser && !isAbonne)
-                    _buildFollowButton(isCanalPost, postOwner, isAbonne),
+                  if (!isCurrentUser && !isAbonne && postOwner != null)
+                    _buildFollowButton(isCanalPost, postOwner!, isAbonne),
                   SizedBox(width: 5),
                   _buildCountryBadge(widget.post)
                 ],
@@ -1056,7 +1056,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     final colors = AppColors.of(context);
     final currentUserId = authProvider.loginUserData.id;
     final isCanalPost = currentCanal != null;
-    final postOwner = isCanalPost ? currentCanal! : currentUser!;
+    final dynamic postOwner = isCanalPost ? currentCanal : currentUser;
     final isCurrentUser = currentUserId == currentUser?.id;
 
     // Vérifier si déjà abonné
@@ -1136,8 +1136,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   ),
 
                   // Bouton S'abonner ou menu
-                  if (!isCurrentUser && !isAbonne)
-                    _buildFollowButton(isCanalPost, postOwner, isAbonne),
+                  if (!isCurrentUser && !isAbonne && postOwner != null)
+                    _buildFollowButton(isCanalPost, postOwner!, isAbonne),
                   SizedBox(width: 5),
                   _buildCountryBadge(widget.post)
                   // GestureDetector(
@@ -2364,16 +2364,17 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     String name;
 
     if (currentCanal != null) {
-      name = '#${currentCanal!.titre}';
+      final titre = currentCanal!.titre;
+      name = '#${(titre == null || titre.trim().isEmpty) ? 'Canal' : titre}';
     } else if (currentUser != null) {
-      name = '@${currentUser!.pseudo}';
+      name = '@${currentUser!.pseudo ?? 'Utilisateur'}';
     } else {
       name = 'Utilisateur';
     }
 
     const maxLength = 20;
-    if (name.length > maxLength) {
-      name = name.substring(0, maxLength) + '...';
+    if (name.runes.length > maxLength) {
+      name = String.fromCharCodes(name.runes.take(maxLength)) + '...';
     }
 
     return name;
@@ -2599,44 +2600,44 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       post: widget.post,
       context: context,
     ).then((success) async {
-      if (!mounted) return;
       if (!success) {
-        // Pas de pièces : compter quand même dans Firestore
+        // Pas de pièces : écriture Firestore indépendante du montage widget
         await firestore.collection('Posts').doc(postId).update({
           'loves': FieldValue.increment(1),
           'users_love_id': FieldValue.arrayUnion([userId]),
           'popularity': FieldValue.increment(1),
         }).catchError((_) {});
-        _showInsufficientCoinsForLikeDialog();
+        if (mounted) _showInsufficientCoinsForLikeDialog();
         return;
       }
-      try {
-        addPointsForAction(UserAction.like);
-        addPointsForOtherUserAction(receiverId, UserAction.autre);
-        // Notif seulement au créateur, seulement sur le premier like de cet utilisateur
-        if (!alreadyLiked) await _sendLikeNotifications();
-        widget.onLoved?.call();
-      } catch (e) {
-        printVm("Erreur post-like: $e");
+      // Succès transaction : actions UI seulement si toujours monté
+      if (mounted) {
+        try {
+          addPointsForAction(UserAction.like);
+          addPointsForOtherUserAction(receiverId, UserAction.autre);
+          if (!alreadyLiked) await _sendLikeNotifications();
+          widget.onLoved?.call();
+        } catch (e) {
+          printVm("Erreur post-like: $e");
+        }
       }
     }).catchError((e) async {
-      // Transaction Firestore échouée → fallback écriture directe
+      // Transaction Firestore échouée → fallback écriture directe (hors vérif mounted)
       printVm("Like transaction failed: $e");
-      if (!mounted) return;
       try {
         await firestore.collection('Posts').doc(postId).update({
           'loves': FieldValue.increment(1),
           'users_love_id': FieldValue.arrayUnion([userId]),
           'popularity': FieldValue.increment(1),
         });
-        if (!alreadyLiked) {
+        if (mounted && !alreadyLiked) {
           try {
             await _sendLikeNotifications();
             widget.onLoved?.call();
           } catch (_) {}
         }
       } catch (_) {
-        // Rollback UI si le fallback échoue aussi
+        // Rollback UI seulement si le fallback échoue aussi ET widget encore monté
         if (mounted) setState(() {
           widget.post.loves = ((widget.post.loves ?? 1) - 1).clamp(0, double.maxFinite.toInt());
           if (!alreadyLiked) widget.post.users_love_id?.remove(userId);

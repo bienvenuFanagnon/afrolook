@@ -1270,15 +1270,16 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
       final isOwner = currentUserId == widget.canal!.userId;
       final isAdmin = widget.canal!.adminIds?.contains(currentUserId) == true;
       final canPost = widget.canal!.allowedPostersIds?.contains(currentUserId) == true;
+      final allowAllMembers = widget.canal!.allowAllMembersToPost == true;
       final isMember = widget.canal!.usersSuiviId?.contains(currentUserId) == true;
 
-      if (!isAdmin && !canPost) {
+      if (!isOwner && !isAdmin && !canPost && !(allowAllMembers && isMember)) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('❌ Vous n\'êtes pas autorisé à poster dans ce canal', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))),
         );
         return;
       }
-      if (!isMember) {
+      if (!isMember && !isOwner && !isAdmin) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('❌ Vous devez être abonné au canal pour poster', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))),
         );

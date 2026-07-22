@@ -1158,7 +1158,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
       final canPost = widget.canal!.allowedPostersIds?.contains(currentUserId) == true;
       final allowAllMembers = widget.canal!.allowAllMembersToPost == true;
       final isMember = widget.canal!.usersSuiviId?.contains(currentUserId) == true;
-      if (!isAdmin && !canPost && !isOwner) {
+      if (!isOwner && !isAdmin && !canPost && !(allowAllMembers && isMember)) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Vous n\'êtes pas autorisé à poster dans ce canal')));
         return;
       }

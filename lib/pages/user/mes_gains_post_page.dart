@@ -335,7 +335,9 @@ class _MesGainsPageState extends State<MesGainsPage> {
 
   // ── Carte encaissement ────────────────────────────────────
   Widget _encaissCard(UserData user, AppColors colors, AppLocalizations t) {
-    final available = user.postViewsAvailable ?? 0;
+    final totalViews = user.totalPostUniqueViews ?? 0;
+    final cashed     = user.postViewsTotalCashed  ?? 0;
+    final available  = ((totalViews * _fcfaPerView) - cashed).clamp(0.0, double.infinity);
     final canEncash = available >= _minEncaissement;
 
     return Container(
