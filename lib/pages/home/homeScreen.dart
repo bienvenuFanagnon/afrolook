@@ -218,6 +218,7 @@ class _MyHomePageState extends State<MyHomePage>
 
   late MixedFeedService _mixedFeedService;
   bool _isGlobalContentLoading = false;
+  late AnimationController _headerCtrl;
 
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   bool _buttonEnabled = true;
@@ -1364,6 +1365,12 @@ class _MyHomePageState extends State<MyHomePage>
   void initState() {
     // _changeColor();
     super.initState();
+    _headerCtrl = AnimationController(
+      vsync: this,
+      value: 1.0,
+      duration: const Duration(milliseconds: 180),
+      reverseDuration: const Duration(milliseconds: 130),
+    );
     // Attendre que le widget soit construit
 
     // Future.microtask(() {
@@ -1659,6 +1666,7 @@ class _MyHomePageState extends State<MyHomePage>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _headerCtrl.dispose();
     // 🔥 Très important : Arrêter le timer à la destruction de la page
     _presenceService.stopHeartbeat();
     commentController.dispose();
@@ -1726,300 +1734,322 @@ class _MyHomePageState extends State<MyHomePage>
       key: _scaffoldKey,
       backgroundColor: colors.background,
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(150),
+        preferredSize: const Size.fromHeight(44),
         child: Container(
           color: colors.surface,
           child: SafeArea(
             bottom: false,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // ── Ligne 1 : "Afrolook" + Actions droite ──
-                SizedBox(
-                  height: 44,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // Menu drawer
-                      GestureDetector(
-                        onTap: () => _scaffoldKey.currentState!.openDrawer(),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          child: Icon(Icons.menu, color: colors.textPrimary, size: 22),
-                        ),
-                      ),
-                      // Nom de l'application (réduit pour laisser plus de place aux icônes)
-                      Text(
-                        'Afrolook',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w900,
+            child: SizedBox(
+              height: 44,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Menu drawer
+                  GestureDetector(
+                    onTap: () => _scaffoldKey.currentState!.openDrawer(),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Icon(Icons.menu, color: colors.textPrimary, size: 22),
+                    ),
+                  ),
+                  Text(
+                    'Afrolook',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      color: colors.primary,
+                      letterSpacing: 1.0,
+                    ),
+                  ).animate().fadeIn(duration: 400.ms).slideX(begin: -0.1, end: 0, duration: 400.ms, curve: Curves.easeOut),
+                  const Spacer(),
+                  // Notifications
+                  GestureDetector(
+                    onTap: () => Navigator.pushNamed(context, "/mes_notifications"),
+                    child: StreamBuilder<List<NotificationData>>(
+                      stream: authProvider.getListNotificationAuth(authProvider.loginUserData.id!),
+                      builder: (context, snap) {
+                        int n = snap.hasData ? snap.data!.length : 0;
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          child: badges.Badge(
+                            showBadge: n > 0,
+                            badgeStyle: badges.BadgeStyle(badgeColor: colors.accent),
+                            badgeContent: Text(n > 9 ? '9+' : '$n', style: TextStyle(fontSize: 8, color: colors.onAccent)),
+                            child: Icon(Icons.notifications_none_rounded, color: colors.textPrimary, size: actionIconSize),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: _onTopBarFilterTap,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: Icon(Icons.filter_alt_outlined, color: colors.primary, size: actionIconSize),
+                    ),
+                  ),
+                  Consumer<SoundProvider>(
+                    builder: (context, soundProvider, _) => GestureDetector(
+                      onTap: () => soundProvider.toggleSound(),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: Icon(
+                          soundProvider.isMuted ? Icons.volume_off : Icons.volume_up,
                           color: colors.primary,
-                          letterSpacing: 1.0,
-                        ),
-                      ).animate().fadeIn(duration: 400.ms).slideX(begin: -0.1, end: 0, duration: 400.ms, curve: Curves.easeOut),
-                      const Spacer(),
-                      // Notifications
-                      GestureDetector(
-                        onTap: () => Navigator.pushNamed(context, "/mes_notifications"),
-                        child: StreamBuilder<List<NotificationData>>(
-                          stream: authProvider.getListNotificationAuth(authProvider.loginUserData.id!),
-                          builder: (context, snap) {
-                            int n = snap.hasData ? snap.data!.length : 0;
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 6),
-                              child: badges.Badge(
-                                showBadge: n > 0,
-                                badgeStyle: badges.BadgeStyle(badgeColor: colors.accent),
-                                badgeContent: Text(n > 9 ? '9+' : '$n', style: TextStyle(fontSize: 8, color: colors.onAccent)),
-                                child: Icon(Icons.notifications_none_rounded, color: colors.textPrimary, size: actionIconSize),
-                              ),
-                            );
-                          },
+                          size: actionIconSize,
                         ),
                       ),
-                      // Filtre (issu de la section "Découvrir")
-                      GestureDetector(
-                        onTap: _onTopBarFilterTap,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 6),
-                          child: Icon(Icons.filter_alt_outlined, color: colors.primary, size: actionIconSize),
-                        ),
-                      ),
-                      // Son (issu de la section "Découvrir")
-                      Consumer<SoundProvider>(
-                        builder: (context, soundProvider, _) => GestureDetector(
-                          onTap: () => soundProvider.toggleSound(),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 6),
-                            child: Icon(
-                              soundProvider.isMuted ? Icons.volume_off : Icons.volume_up,
-                              color: colors.primary,
-                              size: actionIconSize,
-                            ),
-                          ),
-                        ),
-                      ),
-                      // Actualiser (issu de la section "Découvrir")
-                      GestureDetector(
-                        onTap: _onTopBarRefreshTap,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 6),
-                          child: Icon(Icons.refresh, color: colors.primary, size: actionIconSize),
-                        ),
-                      ),
-                      // Toggle langue
-                      Consumer<LocaleProvider>(
-                        builder: (context, localeProvider, _) => GestureDetector(
-                          onTap: () => _showLanguagePicker(context, localeProvider),
-                          onLongPress: () => localeProvider.cycleLocale(),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 6),
-                            child: Text(
-                              (kSupportedLocales[localeProvider.locale.languageCode] ?? '🇫🇷').substring(0, 2),
-                              style: const TextStyle(fontSize: 15),
-                            ),
-                          ),
-                        ),
-                      ),
-                      // Toggle thème
-                      GestureDetector(
-                        onTap: () => Provider.of<ThemeProvider>(context, listen: false).toggleTheme(),
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 6, right: 10),
-                          child: Icon(
-                            colors.isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
-                            color: colors.primary,
-                            size: actionIconSize,
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-                // ── Ligne 2 : Navigation principale — toute la largeur ──
-                Container(
-                  height: 52,
-                  decoration: BoxDecoration(
-                    border: Border(top: BorderSide(color: colors.border, width: 0.5)),
+                  GestureDetector(
+                    onTap: _onTopBarRefreshTap,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: Icon(Icons.refresh, color: colors.primary, size: actionIconSize),
+                    ),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      // Invitations
-                      GestureDetector(
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MesInvitationsPage(context: context))),
-                        child: StreamBuilder<int>(
-                          stream: getNbrInvitation(),
-                          builder: (context, snap) {
-                            int n = snap.hasData ? snap.data! : 0;
-                            return _navItemWithLabel(
-                              icon: Icons.group_outlined,
-                              activeIcon: Icons.group,
-                              label: l10n.navInvitations,
-                              badge: n,
-                              colors: colors,
-                              size: navIconSize,
-                            );
-                          },
+                  Consumer<LocaleProvider>(
+                    builder: (context, localeProvider, _) => GestureDetector(
+                      onTap: () => _showLanguagePicker(context, localeProvider),
+                      onLongPress: () => localeProvider.cycleLocale(),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: Text(
+                          (kSupportedLocales[localeProvider.locale.languageCode] ?? '🇫🇷').substring(0, 2),
+                          style: const TextStyle(fontSize: 15),
                         ),
                       ),
-                      // Messages
-                      GestureDetector(
-                        onTap: () => Navigator.pushNamed(context, '/list_users_chat'),
-                        child: StreamBuilder<int>(
-                          stream: getNbrMessageNonLu(),
-                          builder: (context, snap) {
-                            int n = snap.hasData ? snap.data! : 0;
-                            return _navItemWithLabel(
-                              icon: Icons.chat_bubble_outline,
-                              activeIcon: Icons.chat_bubble,
-                              label: l10n.navMessages,
-                              badge: n,
-                              colors: colors,
-                              size: navIconSize,
-                              activeColor: colors.info,
-                            );
-                          },
-                        ),
-                      ),
-                      // Business (contenu payant)
-                      GestureDetector(
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DashboardContentScreen())),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.business_center_outlined, color: const Color(0xFFFFD400), size: navIconSize),
-                            const SizedBox(height: 2),
-                            Text('Business', style: TextStyle(fontSize: 9, color: colors.textSecondary, fontWeight: FontWeight.w500)),
-                          ],
-                        ),
-                      ),
-                      // Créer post — bouton central
-                      GestureDetector(
-                        onTap: () => authProvider.checkAppVersionAndProceed(context, () async {
-                          Navigator.pushNamed(context, '/user_posts_form');
-                        }),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              width: 30,
-                              height: 30,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [colors.primary, colors.accent],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(color: colors.primary.withOpacity(0.35), blurRadius: 8, spreadRadius: 1),
-                                ],
-                              ),
-                              child: Icon(Icons.add, color: colors.onPrimary, size: navIconSize - 6),
-                            ).animate(onPlay: (c) => c.repeat(reverse: true))
-                                .scaleXY(begin: 1.0, end: 1.07, duration: 1200.ms, curve: Curves.easeInOut),
-                            const SizedBox(height: 2),
-                            Text(l10n.navCreate, style: TextStyle(fontSize: 9, color: colors.textSecondary, fontWeight: FontWeight.w500)),
-                          ],
-                        ),
-                      ),
-                      // Vidéos
-                      GestureDetector(
-                        onTap: () => Navigator.pushNamed(context, '/videos'),
-                        child: _navItemWithLabel(
-                          icon: Icons.video_library_outlined,
-                          activeIcon: Icons.video_library,
-                          label: l10n.navVideos,
-                          badge: 0,
-                          colors: colors,
-                          size: navIconSize,
-                        ),
-                      ),
-                      // Afrolove (dating)
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => const DatingSwipePage()));
-                        },
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            badges.Badge(
-                              showBadge: _unreadNotificationsCount > 0,
-                              badgeStyle: badges.BadgeStyle(
-                                badgeColor: colors.accent,
-                                padding: const EdgeInsets.all(3),
-                              ),
-                              badgeContent: Text(
-                                _unreadNotificationsCount > 9 ? '9+' : '$_unreadNotificationsCount',
-                                style: TextStyle(fontSize: 8, color: colors.onAccent),
-                              ),
-                              child: Icon(Fontisto.tinder, color: Colors.red, size: navIconSize),
-                            ),
-                            const SizedBox(height: 2),
-                            Text('Afrolove', style: TextStyle(fontSize: 9, color: colors.textSecondary, fontWeight: FontWeight.w500)),
-                          ],
-                        ),
-                      ),
-                      // Lives
-                      GestureDetector(
-                        onTap: () => Navigator.pushNamed(context, '/list_live'),
-                        child: StreamBuilder<int>(
-                          stream: Provider.of<LiveProvider>(context, listen: false).getActiveLivesCountStream(),
-                          builder: (context, snap) {
-                            int n = snap.hasData ? snap.data! : 0;
-                            return _navItemWithLabel(
-                              icon: Icons.live_tv_outlined,
-                              activeIcon: Icons.live_tv,
-                              label: l10n.navLives,
-                              badge: n,
-                              colors: colors,
-                              size: navIconSize,
-                              activeColor: colors.danger,
-                            );
-                          },
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-                // ── Ligne 3 : Onglets de filtres ──
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border(top: BorderSide(color: colors.border, width: 0.5)),
+                  GestureDetector(
+                    onTap: () => Provider.of<ThemeProvider>(context, listen: false).toggleTheme(),
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 6, right: 10),
+                      child: Icon(
+                        colors.isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                        color: colors.primary,
+                        size: actionIconSize,
+                      ),
+                    ),
                   ),
-                  child: TabBar(
-                    controller: _tabController,
-                    isScrollable: true,
-                    indicatorColor: colors.primary,
-                    indicatorWeight: 2.5,
-                    labelColor: colors.accent,
-                    unselectedLabelColor: colors.textSecondary,
-                    labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-                    unselectedLabelStyle: const TextStyle(fontSize: 11),
-                    tabAlignment: TabAlignment.start,
-                    tabs: [
-                      Tab(text: l10n.tabHome),
-                      Tab(text: l10n.tabSport),
-                      Tab(text: l10n.tabVibe),
-                      Tab(text: l10n.tabEvents),
-                      Tab(text: l10n.tabVip),
-                      Tab(text: l10n.tabChallenges),
-                      Tab(text: l10n.tabChroniques),
-                      Tab(text: l10n.tabPopular),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
       ),
       drawer: menu(context, width, MediaQuery.of(context).size.height),
-      body: TabBarView(
-        controller: _tabController,
-        children: _tabViewChildren,
+      body: Column(
+        children: [
+          // ── Lignes 2 & 3 : glissement fluide au scroll ──
+          AnimatedBuilder(
+            animation: _headerCtrl,
+            builder: (context, child) => ClipRect(
+              child: Align(
+                alignment: Alignment.topCenter,
+                heightFactor: _headerCtrl.value,
+                child: child,
+              ),
+            ),
+            child: Container(
+              color: colors.surface,
+              child: Column(
+                children: [
+                  // ── Ligne 2 : Navigation principale ──
+                  Container(
+                    height: 52,
+                    decoration: BoxDecoration(
+                      border: Border(top: BorderSide(color: colors.border, width: 0.5)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        GestureDetector(
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MesInvitationsPage(context: context))),
+                          child: StreamBuilder<int>(
+                            stream: getNbrInvitation(),
+                            builder: (context, snap) {
+                              int n = snap.hasData ? snap.data! : 0;
+                              return _navItemWithLabel(
+                                icon: Icons.group_outlined,
+                                activeIcon: Icons.group,
+                                label: l10n.navInvitations,
+                                badge: n,
+                                colors: colors,
+                                size: navIconSize,
+                              );
+                            },
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => Navigator.pushNamed(context, '/list_users_chat'),
+                          child: StreamBuilder<int>(
+                            stream: getNbrMessageNonLu(),
+                            builder: (context, snap) {
+                              int n = snap.hasData ? snap.data! : 0;
+                              return _navItemWithLabel(
+                                icon: Icons.chat_bubble_outline,
+                                activeIcon: Icons.chat_bubble,
+                                label: l10n.navMessages,
+                                badge: n,
+                                colors: colors,
+                                size: navIconSize,
+                                activeColor: colors.info,
+                              );
+                            },
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DashboardContentScreen())),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.business_center_outlined, color: const Color(0xFFFFD400), size: navIconSize),
+                              const SizedBox(height: 2),
+                              Text('Business', style: TextStyle(fontSize: 9, color: colors.textSecondary, fontWeight: FontWeight.w500)),
+                            ],
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => authProvider.checkAppVersionAndProceed(context, () async {
+                            Navigator.pushNamed(context, '/user_posts_form');
+                          }),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: 30,
+                                height: 30,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [colors.primary, colors.accent],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(color: colors.primary.withOpacity(0.35), blurRadius: 8, spreadRadius: 1),
+                                  ],
+                                ),
+                                child: Icon(Icons.add, color: colors.onPrimary, size: navIconSize - 6),
+                              ).animate(onPlay: (c) => c.repeat(reverse: true))
+                                  .scaleXY(begin: 1.0, end: 1.07, duration: 1200.ms, curve: Curves.easeInOut),
+                              const SizedBox(height: 2),
+                              Text(l10n.navCreate, style: TextStyle(fontSize: 9, color: colors.textSecondary, fontWeight: FontWeight.w500)),
+                            ],
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => Navigator.pushNamed(context, '/videos'),
+                          child: _navItemWithLabel(
+                            icon: Icons.video_library_outlined,
+                            activeIcon: Icons.video_library,
+                            label: l10n.navVideos,
+                            badge: 0,
+                            colors: colors,
+                            size: navIconSize,
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => const DatingSwipePage()));
+                          },
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              badges.Badge(
+                                showBadge: _unreadNotificationsCount > 0,
+                                badgeStyle: badges.BadgeStyle(
+                                  badgeColor: colors.accent,
+                                  padding: const EdgeInsets.all(3),
+                                ),
+                                badgeContent: Text(
+                                  _unreadNotificationsCount > 9 ? '9+' : '$_unreadNotificationsCount',
+                                  style: TextStyle(fontSize: 8, color: colors.onAccent),
+                                ),
+                                child: Icon(Fontisto.tinder, color: Colors.red, size: navIconSize),
+                              ),
+                              const SizedBox(height: 2),
+                              Text('Afrolove', style: TextStyle(fontSize: 9, color: colors.textSecondary, fontWeight: FontWeight.w500)),
+                            ],
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => Navigator.pushNamed(context, '/list_live'),
+                          child: StreamBuilder<int>(
+                            stream: Provider.of<LiveProvider>(context, listen: false).getActiveLivesCountStream(),
+                            builder: (context, snap) {
+                              int n = snap.hasData ? snap.data! : 0;
+                              return _navItemWithLabel(
+                                icon: Icons.live_tv_outlined,
+                                activeIcon: Icons.live_tv,
+                                label: l10n.navLives,
+                                badge: n,
+                                colors: colors,
+                                size: navIconSize,
+                                activeColor: colors.danger,
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // ── Ligne 3 : Onglets de filtres ──
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border(top: BorderSide(color: colors.border, width: 0.5)),
+                    ),
+                    child: TabBar(
+                      controller: _tabController,
+                      isScrollable: true,
+                      indicatorColor: colors.primary,
+                      indicatorWeight: 2.5,
+                      labelColor: colors.accent,
+                      unselectedLabelColor: colors.textSecondary,
+                      labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                      unselectedLabelStyle: const TextStyle(fontSize: 11),
+                      tabAlignment: TabAlignment.start,
+                      tabs: [
+                        Tab(text: l10n.tabHome),
+                        Tab(text: l10n.tabSport),
+                        Tab(text: l10n.tabVibe),
+                        Tab(text: l10n.tabEvents),
+                        Tab(text: l10n.tabVip),
+                        Tab(text: l10n.tabChallenges),
+                        Tab(text: l10n.tabChroniques),
+                        Tab(text: l10n.tabPopular),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // ── Feed ──
+          Expanded(
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (notification) {
+                if (notification is ScrollUpdateNotification) {
+                  final delta = notification.scrollDelta ?? 0;
+                  final pixels = notification.metrics.pixels;
+                  if (pixels <= 0) {
+                    if (_headerCtrl.value < 1.0) _headerCtrl.forward();
+                  } else if (delta > 2) {
+                    if (_headerCtrl.value > 0.0) _headerCtrl.reverse();
+                  } else if (delta < -2) {
+                    if (_headerCtrl.value < 1.0) _headerCtrl.forward();
+                  }
+                }
+                return false;
+              },
+              child: TabBarView(
+                controller: _tabController,
+                children: _tabViewChildren,
+              ),
+            ),
+          ),
+        ],
       ),
 
       // bottomNavigationBar supprimé — navigation déplacée en haut (style Facebook)

@@ -18,13 +18,26 @@ import '../services/utils/abonnement_utils.dart';
 import '../widgets/user_badge_widget.dart';
 import '../theme/app_colors.dart';
 import '../l10n/app_localizations.dart';
+import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'coins/post_gifts_list.dart';
 
 class PostComments extends StatefulWidget {
   final Post post;
-  const PostComments({super.key, required this.post});
+  final bool isInModal;
+  final bool focusKeyboard;
+  final List<PostComment> initialComments;
+  final String? initialText;
+
+  const PostComments({
+    super.key,
+    required this.post,
+    this.isInModal = false,
+    this.focusKeyboard = false,
+    this.initialComments = const [],
+    this.initialText,
+  });
 
   @override
   State<PostComments> createState() => _PostCommentsState();
@@ -68,6 +81,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
   bool _hasMoreUsers = true;
 
   bool _showEmojiPicker = false;
+  List<String> _shuffledSuggestions = [];
 
   @override
   void initState() {
@@ -76,9 +90,29 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     userProvider = Provider.of<UserProvider>(context, listen: false);
     postProvider = Provider.of<PostProvider>(context, listen: false);
 
+    _shuffledSuggestions = List.from(_suggestions)..shuffle(Random());
+
+    if (widget.initialComments.isNotEmpty) {
+      comments = List.from(widget.initialComments);
+      _loadUserDataForInitialComments();
+    }
     _loadUsers();
     _loadInitialComments();
     _textController.addListener(_onTextChanged);
+
+    if (widget.initialText != null && widget.initialText!.isNotEmpty) {
+      _textController.text = widget.initialText!;
+      _textController.selection =
+          TextSelection.fromPosition(TextPosition(offset: widget.initialText!.length));
+    }
+
+    if (widget.focusKeyboard) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future.delayed(const Duration(milliseconds: 350), () {
+          if (mounted) _focusNode.requestFocus();
+        });
+      });
+    }
   }
 
   @override
@@ -200,30 +234,41 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
         .map((doc) => PostComment.fromJson(doc.data() as Map<String, dynamic>))
         .toList();
 
-    for (var comment in newComments) {
-      final userData = await _loadUserData(comment.user_id!);
-      comment.user = userData;
+    // Charger toutes les données utilisateurs en parallèle
+    final userFutures = newComments.map((c) => _loadUserData(c.user_id ?? '')).toList();
+    final usersData = await Future.wait(userFutures);
+    for (int i = 0; i < newComments.length; i++) {
+      newComments[i].user = usersData[i];
     }
 
+    // Dédupliquer avec les commentaires déjà affichés (preloaded)
+    final existingIds = comments.map((c) => c.id).toSet();
+    final deduplicated = newComments.where((c) => !existingIds.contains(c.id)).toList();
+
     setState(() {
-      comments.addAll(newComments);
+      comments.addAll(deduplicated);
       _isLoading = false;
     });
   }
 
   Future<UserData?> _loadUserData(String userId) async {
+    if (userId.isEmpty) return null;
     try {
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection('Users')
-          .where("id", isEqualTo: userId)
-          .limit(1)
-          .get();
-
-      if (querySnapshot.docs.isNotEmpty) {
-        return UserData.fromJson(querySnapshot.docs.first.data() as Map<String, dynamic>);
-      }
+      final doc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
+      if (doc.exists) return UserData.fromJson(doc.data()!);
     } catch (_) {}
     return null;
+  }
+
+  Future<void> _loadUserDataForInitialComments() async {
+    final futures = comments.map((c) => _loadUserData(c.user_id ?? '')).toList();
+    final loaded = await Future.wait(futures);
+    if (!mounted) return;
+    setState(() {
+      for (int i = 0; i < comments.length; i++) {
+        if (comments[i].user == null) comments[i].user = loaded[i];
+      }
+    });
   }
 
   String formatNumber(int number) {
@@ -474,31 +519,32 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                         ],
                       ),
                     ),
-                    TextButton(
-                      onPressed: () {
-                        final post = widget.post;
-                        final isVideo = post.dataType == 'VIDEO';
-                        final isPortrait = post.isPortrait ?? true;
-                        Navigator.push(context, MaterialPageRoute(
-                          builder: (_) => isVideo
-                              ? (isPortrait
-                                  ? PostDetailsVideoFormatTel(initialPost: post)
-                                  : VideoYoutubePageDetails(initialPost: post))
-                              : DetailsPost(post: post),
-                        ));
-                      },
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                          side: BorderSide(color: _colors.primary.withOpacity(0.4)),
+                    if (!widget.isInModal)
+                      TextButton(
+                        onPressed: () {
+                          final post = widget.post;
+                          final isVideo = post.dataType == 'VIDEO';
+                          final isPortrait = post.isPortrait ?? true;
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (_) => isVideo
+                                ? (isPortrait
+                                    ? PostDetailsVideoFormatTel(initialPost: post)
+                                    : VideoYoutubePageDetails(initialPost: post))
+                                : DetailsPost(post: post),
+                          ));
+                        },
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            side: BorderSide(color: _colors.primary.withOpacity(0.4)),
+                          ),
+                        ),
+                        child: Text(
+                          AppLocalizations.of(context).postCommentViewPost,
+                          style: TextStyle(color: _colors.primary, fontSize: 12, fontWeight: FontWeight.w600),
                         ),
                       ),
-                      child: Text(
-                        AppLocalizations.of(context).postCommentViewPost,
-                        style: TextStyle(color: _colors.primary, fontSize: 12, fontWeight: FontWeight.w600),
-                      ),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -929,6 +975,55 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     );
   }
 
+  // ─── SUGGESTIONS ────────────────────────────────────────────────────────────
+
+  static const _suggestions = [
+    '🤔 Intéressant',
+    '😂 MDR',
+    '😢 Triste',
+    '😤 Pas cool',
+    '🔥 Super',
+    "❤️ J'aime",
+    '💯 Tellement vrai',
+    '😮 Incroyable',
+    '🙌 Bravo',
+    '👏 Félicitations',
+  ];
+
+  Widget _buildCommentSuggestions() {
+    return SizedBox(
+      height: 34,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        itemCount: _shuffledSuggestions.length,
+        itemBuilder: (_, i) {
+          final text = _shuffledSuggestions[i];
+          return GestureDetector(
+            onTap: () {
+              if (_showEmojiPicker) setState(() => _showEmojiPicker = false);
+              _textController.text = text;
+              _sendComment();
+            },
+            child: Container(
+              margin: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+              decoration: BoxDecoration(
+                color: _colors.surfaceVariant,
+                borderRadius: BorderRadius.circular(17),
+                border: Border.all(color: _colors.border.withOpacity(0.5)),
+              ),
+              child: Text(
+                text,
+                style: TextStyle(fontSize: 12, color: _colors.textPrimary),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   // ─── INPUT BAR ───────────────────────────────────────────────────────────────
 
   Widget _buildCommentInput() {
@@ -965,6 +1060,13 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: _buildUserSuggestions(),
+            ),
+
+          // Suggestions de commentaires rapides
+          if (!showUserSuggestions)
+            Padding(
+              padding: const EdgeInsets.only(top: 6, bottom: 2),
+              child: _buildCommentSuggestions(),
             ),
 
           // Barre de saisie
@@ -1329,10 +1431,13 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
         backgroundColor: _colors.background,
         elevation: 0,
         scrolledUnderElevation: 0.5,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: _colors.textPrimary, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
+        automaticallyImplyLeading: !widget.isInModal,
+        leading: widget.isInModal
+            ? const SizedBox.shrink()
+            : IconButton(
+                icon: Icon(Icons.arrow_back_ios_new_rounded, color: _colors.textPrimary, size: 20),
+                onPressed: () => Navigator.pop(context),
+              ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

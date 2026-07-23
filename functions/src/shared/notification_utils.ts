@@ -4,6 +4,9 @@ import { db } from "./firebase";
 /**
  * Envoie une notification push via OneSignal
  */
+// Regex UUID v4 (format OneSignal : xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function sendToOneSignal(
   userIds: string[],
   message: string,
@@ -13,10 +16,20 @@ export async function sendToOneSignal(
   apiKey: string,
   data: any
 ): Promise<any> {
+  // Filtrer les IDs invalides — OneSignal rejette tout le batch si un seul est vide/mal formé
+  const validIds = userIds.filter(id => id && UUID_REGEX.test(id));
+  if (validIds.length === 0) {
+    console.log("sendToOneSignal: aucun ID OneSignal valide, envoi annulé");
+    return { skipped: true };
+  }
+  if (validIds.length < userIds.length) {
+    console.warn(`sendToOneSignal: ${userIds.length - validIds.length} ID(s) invalide(s) ignoré(s)`);
+  }
+
   const body = {
     app_id: appId,
     contents: { en: message },
-    include_player_ids: userIds,
+    include_player_ids: validIds,
     headings: { en: appName },
     small_icon: smallImage,
     large_icon: smallImage,

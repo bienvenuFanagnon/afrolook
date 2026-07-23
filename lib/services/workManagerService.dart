@@ -45,6 +45,14 @@ const int _notifIdGroups       = 1002;
 const int _notifIdInvitations  = 1003;
 const int _notifIdDating       = 1004;
 const int _notifIdApp          = 1005;
+const int _notifIdCreatorsPromo = 1006;
+const int _notifIdCanalsPromo   = 1007;
+
+/// Clé pour le timestamp de la dernière promo envoyée
+const String _lastPromoKey = 'wm_last_promo_ts';
+
+/// Cooldown minimum entre deux notifications promo (6h)
+const Duration _promoCooldown = Duration(hours: 6);
 
 /// Types de notifications dating (collection Notifications)
 const List<String> _datingTypes = [
@@ -313,6 +321,8 @@ Future<void> _runNotificationCheck(
     },
   );
 
+  await _runPromoNotification(firestore, userId, prefs, now);
+
   _saveLastCounts(prefs, {
     'messages':    countMessages,
     'groups':      countGroups,
@@ -460,7 +470,146 @@ Future<void> _runDebugNotificationPreview(
     debugPrint('❌ WM debug invits: $e');
   }
 
+  // Promo créateur / canal — toujours en debug (bypass créneau + cooldown)
+  try {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await _runPromoNotification(firestore, userId, await SharedPreferences.getInstance(), now, debugMode: true);
+  } catch (e) {
+    debugPrint('❌ WM debug promo: $e');
+  }
+
   debugPrint('✅ WorkManager DEBUG : aperçu affiché pour $userId');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PROMO — créateurs actifs & canaux à rejoindre
+// ═══════════════════════════════════════════════════════════════
+
+/// Vérifie si on est dans un créneau optimal (8h-10h ou 19h-21h)
+/// et si le cooldown de 6h est écoulé.
+bool _shouldSendPromo(int nowMs, int lastPromoTs) {
+  final hour = DateTime.now().hour;
+  final inWindow = (hour >= 8 && hour < 10) || (hour >= 19 && hour < 21);
+  if (!inWindow) return false;
+  return (nowMs - lastPromoTs) >= _promoCooldown.inMilliseconds;
+}
+
+/// Cherche un créateur actif récemment (tous les créateurs, suivis ou non).
+Future<({String? pseudo, String? imageUrl})?> _fetchRandomActiveCreator(
+  FirebaseFirestore db,
+  String userId,
+) async {
+  try {
+    final postsSnap = await db
+        .collection('Posts')
+        .where('status', isEqualTo: 'VALIDE')
+        .limit(60)
+        .get();
+
+    final creatorIds = postsSnap.docs
+        .map((d) => (d.data()['user_id'] as String?) ?? '')
+        .where((id) => id.isNotEmpty && id != userId)
+        .toSet()
+        .toList();
+
+    if (creatorIds.isEmpty) return null;
+
+    creatorIds.shuffle();
+    final pickedId = creatorIds.first;
+
+    final creatorDoc = await db.collection('Users').doc(pickedId).get();
+    final data = creatorDoc.data();
+    if (data == null) return null;
+
+    return (
+      pseudo: (data['pseudo'] as String?) ?? (data['name'] as String?),
+      imageUrl: data['imageUrl'] as String?,
+    );
+  } catch (e) {
+    debugPrint('❌ WM fetchActiveCreator: $e');
+    return null;
+  }
+}
+
+/// Cherche un canal actif (tous les canaux, rejoints ou non).
+Future<({String? name, String? imageUrl})?> _fetchRandomActiveCanal(
+  FirebaseFirestore db,
+  String userId,
+) async {
+  try {
+    final canalsSnap = await db.collection('Canaux').limit(80).get();
+
+    final all = canalsSnap.docs.where((doc) => doc.data().isNotEmpty).toList();
+    if (all.isEmpty) return null;
+
+    all.shuffle();
+    final picked = all.first.data();
+
+    return (
+      name: (picked['name'] as String?) ??
+            (picked['titre'] as String?) ??
+            (picked['nomCanal'] as String?),
+      imageUrl: (picked['imageUrl'] as String?) ??
+                (picked['image'] as String?) ??
+                (picked['coverImage'] as String?),
+    );
+  } catch (e) {
+    debugPrint('❌ WM fetchActiveCanal: $e');
+    return null;
+  }
+}
+
+/// Lance une notification promo si on est dans le bon créneau horaire.
+/// Alterne aléatoirement entre un créateur et un canal.
+/// En [debugMode], ignore le créneau horaire et le cooldown.
+Future<void> _runPromoNotification(
+  FirebaseFirestore db,
+  String userId,
+  SharedPreferences prefs,
+  int nowMs, {
+  bool debugMode = false,
+}) async {
+  if (!debugMode) {
+    final lastPromoTs = prefs.getInt(_lastPromoKey) ?? 0;
+    if (!_shouldSendPromo(nowMs, lastPromoTs)) return;
+  }
+
+  // Alternance aléatoire créateur / canal
+  final showCreator = nowMs % 2 == 0;
+
+  if (showCreator) {
+    debugPrint('🔧 WM promo DEBUG — recherche créateur actif...');
+    final creator = await _fetchRandomActiveCreator(db, userId);
+    if (creator != null && creator.pseudo != null) {
+      await _showCategoryNotification(
+        id: _notifIdCreatorsPromo,
+        title: debugMode ? '🌟 ${creator.pseudo} [DEBUG]' : 'Découvre ${creator.pseudo}',
+        body: 'Ce créateur est actif sur Afrolook — suis-le pour ne rien manquer !',
+        icon: '🌟',
+        imageUrl: creator.imageUrl,
+      );
+      if (!debugMode) await prefs.setInt(_lastPromoKey, nowMs);
+      debugPrint('✅ WM promo créateur: ${creator.pseudo}');
+    } else {
+      debugPrint('⚠️ WM promo: aucun créateur trouvé');
+    }
+  } else {
+    debugPrint('🔧 WM promo DEBUG — recherche canal actif...');
+    final canal = await _fetchRandomActiveCanal(db, userId);
+    if (canal != null && canal.name != null) {
+      await _showCategoryNotification(
+        id: _notifIdCanalsPromo,
+        title: debugMode ? '📡 ${canal.name} [DEBUG]' : 'Canal : ${canal.name}',
+        body: 'Rejoins ce canal et reste connecté à ta communauté Afrolook !',
+        icon: '📡',
+        imageUrl: canal.imageUrl,
+      );
+      if (!debugMode) await prefs.setInt(_lastPromoKey, nowMs);
+      debugPrint('✅ WM promo canal: ${canal.name}');
+    } else {
+      debugPrint('⚠️ WM promo: aucun canal trouvé');
+    }
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════

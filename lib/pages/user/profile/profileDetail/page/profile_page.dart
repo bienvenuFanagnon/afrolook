@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
@@ -50,6 +51,14 @@ class _ProfilePageState extends State<ProfilePage> {
   TextEditingController _emailController = TextEditingController();
   TextEditingController _phoneController = TextEditingController();
   TextEditingController _aproposController = TextEditingController();
+  TextEditingController _pseudoController = TextEditingController();
+  // 'same' | 'checking' | 'available' | 'taken' | 'invalid' | 'locked'
+  String _pseudoStatus = 'same';
+  Timer? _pseudoDebounce;
+  // Pseudo tel que chargé depuis Firestore — sert de référence stable
+  String _originalPseudo = '';
+  // Timestamp (ms) du dernier changement de pseudo — pour le cooldown 7 jours
+  int? _pseudoLastChangedAt;
 
   late AppColors _colors;
   static const Color primaryRed = Color(0xFFE53935);
@@ -132,6 +141,75 @@ class _ProfilePageState extends State<ProfilePage> {
     _emailController.text = authProvider.loginUserData.email ?? '';
     _phoneController.text = authProvider.loginUserData.numeroDeTelephone ?? '';
     _aproposController.text = authProvider.loginUserData.apropos ?? '';
+    // On lit le pseudo directement depuis Firestore pour avoir la vérité serveur
+    _loadPseudoFromServer();
+    _pseudoController.addListener(_onPseudoChanged);
+  }
+
+  Future<void> _loadPseudoFromServer() async {
+    try {
+      final doc = await firestore
+          .collection('Users')
+          .doc(authProvider.loginUserData.id)
+          .get();
+      final data = doc.data();
+      final serverPseudo = (data?['pseudo'] as String?) ?? (authProvider.loginUserData.pseudo ?? '');
+      final lastChanged = data?['pseudo_last_changed_at'] as int?;
+      if (!mounted) return;
+      setState(() {
+        _originalPseudo = serverPseudo;
+        _pseudoLastChangedAt = lastChanged;
+        _pseudoController.text = serverPseudo;
+      });
+    } catch (_) {
+      _originalPseudo = authProvider.loginUserData.pseudo ?? '';
+      _pseudoController.text = _originalPseudo;
+    }
+  }
+
+  bool _pseudoIsLocked() {
+    if (_pseudoLastChangedAt == null) return false;
+    final elapsed = DateTime.now().millisecondsSinceEpoch - _pseudoLastChangedAt!;
+    return elapsed < const Duration(days: 7).inMilliseconds;
+  }
+
+  DateTime? _pseudoNextChangeDate() {
+    if (_pseudoLastChangedAt == null) return null;
+    return DateTime.fromMillisecondsSinceEpoch(_pseudoLastChangedAt!)
+        .add(const Duration(days: 7));
+  }
+
+  void _onPseudoChanged() {
+    _pseudoDebounce?.cancel();
+    final formatted = _pseudoController.text.trim().replaceAll(' ', '_');
+
+    if (formatted.toLowerCase() == _originalPseudo.toLowerCase()) {
+      setState(() => _pseudoStatus = 'same');
+      return;
+    }
+    if (formatted.length < 3) {
+      setState(() => _pseudoStatus = 'invalid');
+      return;
+    }
+    // Vérifier le cooldown 7 jours
+    if (_pseudoIsLocked()) {
+      setState(() => _pseudoStatus = 'locked');
+      return;
+    }
+
+    setState(() => _pseudoStatus = 'checking');
+    _pseudoDebounce = Timer(const Duration(milliseconds: 600), () async {
+      try {
+        final snap = await firestore.collection('Pseudo').get();
+        final taken = snap.docs.any((doc) {
+          final name = (doc.data()['name'] as String? ?? '').toLowerCase();
+          return name == formatted.toLowerCase();
+        });
+        if (mounted) setState(() => _pseudoStatus = taken ? 'taken' : 'available');
+      } catch (_) {
+        if (mounted) setState(() => _pseudoStatus = 'same');
+      }
+    });
   }
 
   Future<void> _pickImage() async {
@@ -249,13 +327,55 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
   Future<void> _updateUserInfo() async {
-    try {
-      setState(() {
-        change_profil_loading = true;
-      });
+    final formattedPseudo = _pseudoController.text.trim().replaceAll(' ', '_');
+    // Référence serveur stable — pas le local state qui peut dériver
+    final pseudoChanged = formattedPseudo.toLowerCase() != _originalPseudo.toLowerCase();
 
-      // Créer un map avec seulement les champs modifiés
-      Map<String, dynamic> updates = {};
+    // Guards si le pseudo a été modifié
+    if (pseudoChanged) {
+      if (_pseudoStatus == 'checking') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Vérification du pseudo en cours, réessayez dans un instant'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+      if (_pseudoStatus == 'taken') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Ce pseudo est déjà utilisé'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      if (_pseudoStatus == 'invalid') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Le pseudo doit faire au moins 3 caractères'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+      if (_pseudoStatus == 'locked') {
+        final next = _pseudoNextChangeDate();
+        final label = next != null
+            ? 'Prochain changement possible le ${next.day.toString().padLeft(2, '0')}/${next.month.toString().padLeft(2, '0')}/${next.year}'
+            : 'Vous ne pouvez changer votre pseudo qu\'une fois tous les 7 jours';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(label), backgroundColor: Colors.orange),
+        );
+        return;
+      }
+    }
+
+    try {
+      setState(() { change_profil_loading = true; });
+
+      final Map<String, dynamic> updates = {};
 
       if (_nomController.text != authProvider.loginUserData.nom) {
         updates['nom'] = _nomController.text;
@@ -272,45 +392,83 @@ class _ProfilePageState extends State<ProfilePage> {
       if (_aproposController.text != authProvider.loginUserData.apropos) {
         updates['apropos'] = _aproposController.text;
       }
-
-      // Ajouter le timestamp de mise à jour
-      updates['updatedAt'] = DateTime.now().millisecondsSinceEpoch;
-
-      if (updates.isNotEmpty) {
-        await firestore.collection('Users').doc(authProvider.loginUserData.id).update(updates);
-
-        // Mettre à jour le provider local
-        authProvider.loginUserData.nom = _nomController.text;
-        authProvider.loginUserData.prenom = _prenomController.text;
-        authProvider.loginUserData.email = _emailController.text;
-        authProvider.loginUserData.numeroDeTelephone = _phoneController.text;
-        authProvider.loginUserData.apropos = _aproposController.text;
-        authProvider.notifyListeners();
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Informations mises à jour avec succès',
-              style: TextStyle(color: Colors.white),
-            ),
-            backgroundColor: Colors.green,
-          ),
-        );
+      final nowMs = DateTime.now().millisecondsSinceEpoch;
+      if (pseudoChanged && _pseudoStatus == 'available') {
+        updates['pseudo'] = formattedPseudo;
+        updates['pseudo_last_changed_at'] = nowMs;
       }
+      updates['updatedAt'] = nowMs;
+
+      printVm('WM pseudo update → id:${authProvider.loginUserData.id} pseudo_in_updates:${updates.containsKey('pseudo')} new_pseudo:${updates['pseudo']}');
+      await firestore.collection('Users').doc(authProvider.loginUserData.id).update(updates);
+      printVm('WM pseudo update → Firestore OK');
+
+      if (pseudoChanged && _pseudoStatus == 'available') {
+        // Supprimer l'ancien document Pseudo
+        final oldSnap = await firestore
+            .collection('Pseudo')
+            .where('name', isEqualTo: _originalPseudo)
+            .limit(1)
+            .get();
+        for (final doc in oldSnap.docs) {
+          await doc.reference.delete();
+        }
+        // Créer le nouveau document Pseudo
+        final newPseudoRef = firestore.collection('Pseudo').doc();
+        await newPseudoRef.set(UserPseudo(id: newPseudoRef.id, name: formattedPseudo).toJson());
+
+        // Notifier les abonnés du changement de pseudo
+        final oldPseudoForNotif = _originalPseudo;
+        authProvider.loginUserData.pseudo = formattedPseudo;
+        authProvider.sendPushNotificationToUsers(
+          sender: authProvider.loginUserData,
+          message: '📝 @$oldPseudoForNotif est maintenant @$formattedPseudo',
+          typeNotif: NotificationType.POST.name,
+          smallImage: authProvider.loginUserData.imageUrl,
+        );
+
+        // Ancrer la nouvelle référence serveur et le cooldown
+        _originalPseudo = formattedPseudo;
+        _pseudoLastChangedAt = nowMs;
+      }
+
+      // Mettre à jour le provider local
+      authProvider.loginUserData.nom = _nomController.text;
+      authProvider.loginUserData.prenom = _prenomController.text;
+      authProvider.loginUserData.email = _emailController.text;
+      authProvider.loginUserData.numeroDeTelephone = _phoneController.text;
+      authProvider.loginUserData.apropos = _aproposController.text;
+      authProvider.notifyListeners();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            pseudoChanged && _pseudoStatus == 'available'
+                ? 'Pseudo changé en @$formattedPseudo'
+                : 'Informations mises à jour avec succès',
+            style: const TextStyle(color: Colors.white),
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
 
     } catch (error) {
       printVm("Erreur update: $error");
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Erreur lors de la mise à jour"),
+          content: Text("Erreur lors de la mise à jour : $error"),
           backgroundColor: primaryRed,
         ),
       );
     } finally {
-      setState(() {
-        change_profil_loading = false;
-        isEditMode = false;
-      });
+      if (mounted) {
+        setState(() {
+          change_profil_loading = false;
+          isEditMode = false;
+        });
+      }
     }
   }
 
@@ -435,6 +593,119 @@ class _ProfilePageState extends State<ProfilePage> {
       Icons.person,
       size: 60,
       color: _colors.textSecondary,
+    );
+  }
+
+  Widget _buildPseudoStatusIcon() {
+    switch (_pseudoStatus) {
+      case 'checking':
+        return SizedBox(
+          width: 14, height: 14,
+          child: CircularProgressIndicator(strokeWidth: 1.5, color: _colors.primary),
+        );
+      case 'available':
+        return Icon(Icons.check_circle, color: Colors.green, size: 18);
+      case 'taken':
+        return Icon(Icons.cancel, color: Colors.red, size: 18);
+      case 'locked':
+        return Icon(Icons.lock, color: Colors.orange, size: 18);
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  Widget _buildPseudoCard() {
+    final current = authProvider.loginUserData.pseudo ?? '';
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _colors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[800]!, width: 1),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: _colors.background,
+              shape: BoxShape.circle,
+              border: Border.all(color: _colors.accent.withOpacity(0.3)),
+            ),
+            child: Icon(Icons.alternate_email, color: _colors.accent, size: 20),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Pseudo',
+                  style: TextStyle(
+                    color: _colors.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                if (isEditMode) ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _pseudoController,
+                          style: TextStyle(
+                            color: _colors.textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.deny(RegExp(r'\s')),
+                          ],
+                          decoration: InputDecoration(
+                            isDense: true,
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.zero,
+                            hintText: 'votre_pseudo',
+                            hintStyle: TextStyle(color: _colors.textSecondary),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      _buildPseudoStatusIcon(),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  if (_pseudoStatus == 'available')
+                    Text('Disponible', style: const TextStyle(color: Colors.green, fontSize: 11)),
+                  if (_pseudoStatus == 'taken')
+                    Text('Déjà utilisé', style: const TextStyle(color: Colors.red, fontSize: 11)),
+                  if (_pseudoStatus == 'invalid')
+                    Text('Minimum 3 caractères', style: TextStyle(color: Colors.orange[700], fontSize: 11)),
+                  if (_pseudoStatus == 'locked') ...[
+                    Builder(builder: (_) {
+                      final next = _pseudoNextChangeDate();
+                      final label = next != null
+                          ? 'Prochain changement : ${next.day.toString().padLeft(2, '0')}/${next.month.toString().padLeft(2, '0')}/${next.year}'
+                          : 'Changement possible dans 7 jours';
+                      return Text(label, style: TextStyle(color: Colors.orange[700], fontSize: 11));
+                    }),
+                  ],
+                ] else
+                  Text(
+                    '@$current',
+                    style: TextStyle(
+                      color: _colors.textPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -900,6 +1171,8 @@ class _ProfilePageState extends State<ProfilePage> {
                       ],
                     ),
                     SizedBox(height: 20),
+
+                    _buildPseudoCard(),
 
                     _buildInfoCard(
                       'Nom',

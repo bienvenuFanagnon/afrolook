@@ -23,6 +23,7 @@ import '../component/consoleWidget.dart';
 import '../home/user_presence_widget.dart';
 import '../pub/native_ad_widget.dart';
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 
@@ -42,6 +43,7 @@ import '../postComments.dart';
 import '../postDetailsVideo.dart';
 
 import '../../services/utils/abonnement_utils.dart';
+import '../../services/postService/feed_interaction_service.dart';
 import '../../widgets/user_badge_widget.dart';
 import '../../theme/app_colors.dart';
 import '../../providers/locale_provider.dart';
@@ -290,6 +292,18 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   bool _isExpanded = false;
   String? _translatedDescription;
   bool _isLoading = false;
+  bool _isLiking = false;
+  List<PostComment> _preloadedComments = [];
+  bool _isLoadingComment = false;
+  List<String> _previewSuggestions = [];
+  final TextEditingController _quickCommentController = TextEditingController();
+  bool _isSendingQuickComment = false;
+
+  static const _allSuggestions = [
+    '🤔 Intéressant', '😂 MDR', '😢 Triste', '😤 Pas cool',
+    '🔥 Super', "❤️ J'aime", '💯 Tellement vrai', '😮 Incroyable',
+    '🙌 Bravo', '👏 Félicitations',
+  ];
 
   // Interaction vidéo (une seule fois par jour)
   bool _hasRecordedInteraction = false;
@@ -335,6 +349,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     _loadCreatorData();
     _checkIfFavorite();
     _checkInteractionRecordedToday();
+    _loadLastComment();
+    _previewSuggestions = (List.of(_allSuggestions)..shuffle(Random())).take(6).toList();
 
     if (widget.post.thumbnail == null || widget.post.thumbnail!.isEmpty) {
       _generateAndUploadThumbnail();
@@ -812,25 +828,58 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   // ==================== ACTIONS DU POST ====================
 
   Future<void> _handleLike() async {
+    if (_isLiking) return;
     final userId = _authProvider.loginUserData.id;
     if (userId == null) return;
 
-    // alreadyLiked = premier like de cet utilisateur → détermine si notif à envoyer
     final alreadyLiked = widget.post.users_love_id?.contains(userId) ?? false;
 
     setState(() {
-      widget.post.loves = (widget.post.loves ?? 0) + 1;
+      _isLiking = true;
+      widget.post.loves = ((widget.post.loves ?? 0) + (alreadyLiked ? -1 : 1))
+          .clamp(0, double.maxFinite.toInt());
       widget.post.users_love_id ??= [];
-      if (!alreadyLiked) widget.post.users_love_id!.add(userId);
+      if (alreadyLiked) {
+        widget.post.users_love_id!.remove(userId);
+      } else {
+        widget.post.users_love_id!.add(userId);
+      }
     });
 
-    _processLikeBackground(userId, alreadyLiked);
+    if (alreadyLiked) {
+      _processUnlikeBackground(userId);
+    } else {
+      _processLikeBackground(userId);
+    }
   }
 
-  void _processLikeBackground(String userId, bool alreadyLiked) {
+  void _processUnlikeBackground(String userId) {
+    final postId = widget.post.id;
+    if (postId == null) {
+      if (mounted) setState(() => _isLiking = false);
+      return;
+    }
+    _firestore.collection('Posts').doc(postId).update({
+      'loves': FieldValue.increment(-1),
+      'users_love_id': FieldValue.arrayRemove([userId]),
+      'popularity': FieldValue.increment(-1),
+    }).catchError((_) {
+      if (mounted) setState(() {
+        widget.post.loves = ((widget.post.loves ?? 0) + 1);
+        widget.post.users_love_id?.add(userId);
+      });
+    }).whenComplete(() {
+      if (mounted) setState(() => _isLiking = false);
+    });
+  }
+
+  void _processLikeBackground(String userId) {
     final postId = widget.post.id;
     final receiverId = widget.post.user_id;
-    if (postId == null || receiverId == null) return;
+    if (postId == null || receiverId == null) {
+      if (mounted) setState(() => _isLiking = false);
+      return;
+    }
 
     _coinProvider.sendLikeWithCoins(
       senderId: userId,
@@ -838,43 +887,41 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       post: widget.post,
       context: context,
     ).then((success) async {
-      if (!mounted) return;
       if (!success) {
-        // Pas de pièces : compter quand même dans Firestore
         await _firestore.collection('Posts').doc(postId).update({
           'loves': FieldValue.increment(1),
           'users_love_id': FieldValue.arrayUnion([userId]),
           'popularity': FieldValue.increment(1),
         }).catchError((_) {});
-        _showInsufficientCoinsDialog();
+        if (mounted) _showInsufficientCoinsDialog();
         return;
       }
-      try {
-        addPointsForAction(UserAction.like);
-        addPointsForOtherUserAction(receiverId, UserAction.autre);
-        // Notif seulement au créateur, seulement sur le premier like de cet utilisateur
-        if (!alreadyLiked) await _sendLikeNotifications();
-      } catch (_) {}
+      if (mounted) {
+        try {
+          addPointsForAction(UserAction.like);
+          addPointsForOtherUserAction(receiverId, UserAction.autre);
+          await _sendLikeNotifications();
+        } catch (_) {}
+      }
     }).catchError((e) async {
-      // Transaction Firestore échouée → fallback écriture directe
       debugPrint('Like transaction failed: $e');
-      if (!mounted) return;
       try {
         await _firestore.collection('Posts').doc(postId).update({
           'loves': FieldValue.increment(1),
           'users_love_id': FieldValue.arrayUnion([userId]),
           'popularity': FieldValue.increment(1),
         });
-        if (!alreadyLiked) {
+        if (mounted) {
           try { await _sendLikeNotifications(); } catch (_) {}
         }
       } catch (_) {
-        // Rollback UI si le fallback échoue aussi
         if (mounted) setState(() {
           widget.post.loves = ((widget.post.loves ?? 1) - 1).clamp(0, double.maxFinite.toInt());
-          if (!alreadyLiked) widget.post.users_love_id?.remove(userId);
+          widget.post.users_love_id?.remove(userId);
         });
       }
+    }).whenComplete(() {
+      if (mounted) setState(() => _isLiking = false);
     });
   }
 
@@ -1102,7 +1149,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     );
   }
 
-  void _showCommentsModal() {
+  void _showCommentsModal({String? initialText}) {
     final colors = AppColors.of(context);
     showResponsiveBottomSheet(
       context: context,
@@ -1126,7 +1173,15 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                 ],
               ),
             ),
-            Expanded(child: PostComments(post: widget.post)),
+            Expanded(
+              child: PostComments(
+                post: widget.post,
+                isInModal: true,
+                focusKeyboard: true,
+                initialComments: _preloadedComments,
+                initialText: initialText,
+              ),
+            ),
           ],
         ),
       ),
@@ -1489,8 +1544,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
 
     final fullText = _translatedDescription ?? text;
     final words = fullText.split(' ');
-    final isLong = words.length > 50;
-    final displayedText = _isExpanded || !isLong ? fullText : '${words.take(50).join(' ')}...';
+    final isLong = words.length > 25;
+    final displayedText = _isExpanded || !isLong ? fullText : '${words.take(25).join(' ')}...';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1753,9 +1808,15 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _buildActionButton(icon: FontAwesome.comment_o, count: widget.post.comments ?? 0, color: colors.textSecondary, onPressed: hasAccess ? _showCommentsModal : null),
+          _buildActionButton(icon: FontAwesome.comment_o, count: widget.post.comments ?? 0, color: colors.textSecondary, onPressed: hasAccess ? () => _showCommentsModal() : null),
           _buildActionButton(icon: Icons.bar_chart, count: widget.post.totalInteractions ?? 0, color: colors.textSecondary, onPressed: hasAccess ? _navigateToDetails : null),
-          _buildActionButton(icon: FontAwesome.heart_o, count: widget.post.loves ?? 0, color: isLiked ? colors.danger : colors.textSecondary, onPressed: hasAccess ? _handleLike : null),
+          _buildActionButton(
+            icon: isLiked ? FontAwesome.heart : FontAwesome.heart_o,
+            count: widget.post.loves ?? 0,
+            color: isLiked ? colors.danger : colors.textSecondary,
+            isLoading: _isLiking,
+            onPressed: (hasAccess && !_isLiking) ? _handleLike : null,
+          ),
           _buildFavoriteButton(hasAccess),
           if (hasAccess && _authProvider.loginUserData.id != widget.post.user_id)
             QuickGiftBar(
@@ -1784,8 +1845,261 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     );
   }
 
-  Widget _buildActionButton({required IconData icon, required int count, Color? color, VoidCallback? onPressed}) {
+  Future<void> _loadLastComment() async {
+    final postId = widget.post.id;
+    if (postId == null || _isLoadingComment) return;
+    setState(() => _isLoadingComment = true);
+    try {
+      final snap = await _firestore
+          .collection('PostComments')
+          .where('post_id', isEqualTo: postId)
+          .orderBy('created_at', descending: true)
+          .limit(5)
+          .get();
+      if (snap.docs.isNotEmpty && mounted) {
+        setState(() {
+          _preloadedComments = snap.docs.map((doc) {
+            final data = Map<String, dynamic>.from(doc.data());
+            data['id'] = doc.id;
+            return PostComment.fromJson(data);
+          }).toList();
+        });
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _isLoadingComment = false);
+  }
+
+  Future<void> _sendQuickComment(String text) async {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty || _isSendingQuickComment) return;
+    final userId = _authProvider.loginUserData.id;
+    if (userId == null) return;
+
+    setState(() {
+      _isSendingQuickComment = true;
+      _quickCommentController.clear();
+    });
+
+    try {
+      final comment = PostComment(
+        id: FirebaseFirestore.instance.collection('PostComments').doc().id,
+        user_id: userId,
+        user: _authProvider.loginUserData,
+        post_id: widget.post.id,
+        users_like_id: [],
+        responseComments: [],
+        message: trimmed,
+        loves: 0,
+        likes: 0,
+        comments: 0,
+        createdAt: DateTime.now().microsecondsSinceEpoch,
+        updatedAt: DateTime.now().microsecondsSinceEpoch,
+      );
+
+      final success = await _postProvider.newComment(comment);
+
+      if (success) {
+        if (mounted) {
+          setState(() => _preloadedComments.insert(0, comment));
+        }
+
+        _authProvider.incrementPostTotalInteractions(postId: widget.post.id!);
+        _authProvider.notifySubscribersOfInteraction(
+          actionUserId: userId,
+          postOwnerId: widget.post.user_id!,
+          postId: widget.post.id!,
+          actionType: 'comment',
+          commentaireMessage: trimmed,
+          postDescription: widget.post.description,
+          postImageUrl: widget.post.type != PostDataType.IMAGE.name
+              ? (widget.post.thumbnail != null && widget.post.thumbnail!.isNotEmpty
+                  ? widget.post.thumbnail!
+                  : (widget.post.user?.imageUrl ?? ''))
+              : (widget.post.images != null && widget.post.images!.isNotEmpty
+                  ? widget.post.images!.first
+                  : ''),
+          postDataType: widget.post.dataType,
+        );
+        FeedInteractionService.onPostCommented(widget.post, userId);
+        _authProvider.checkAndRefreshPostDates(widget.post.id!);
+
+        // Notification au propriétaire du post
+        if (widget.post.user != null && widget.post.user!.id != userId) {
+          try {
+            final msg = "@${_authProvider.loginUserData.pseudo!} a commenté votre publication";
+            final notif = NotificationData(
+              id: FirebaseFirestore.instance.collection('Notifications').doc().id,
+              titre: "Nouvelle interaction",
+              media_url: _authProvider.loginUserData.imageUrl,
+              type: NotificationType.POST.name,
+              description: msg,
+              user_id: userId,
+              receiver_id: widget.post.user!.id!,
+              post_id: widget.post.id!,
+              post_data_type: PostDataType.COMMENT.name,
+              createdAt: DateTime.now().microsecondsSinceEpoch,
+              updatedAt: DateTime.now().microsecondsSinceEpoch,
+              status: PostStatus.VALIDE.name,
+            );
+            await FirebaseFirestore.instance
+                .collection('Notifications')
+                .doc(notif.id)
+                .set(notif.toJson());
+            final receiverUser = await _authProvider.getUserById(widget.post.user!.id!);
+            if (receiverUser.isNotEmpty && receiverUser.first.oneIgnalUserid != null) {
+              await _authProvider.sendNotification(
+                userIds: [receiverUser.first.oneIgnalUserid!],
+                smallImage: _authProvider.loginUserData.imageUrl!,
+                send_user_id: userId,
+                recever_user_id: widget.post.user!.id!,
+                message: msg,
+                type_notif: NotificationType.POST.name,
+                post_id: widget.post.id!,
+                post_type: PostDataType.COMMENT.name,
+                chat_id: '',
+              );
+            }
+          } catch (_) {}
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _isSendingQuickComment = false);
+    }
+  }
+
+  String _capitalizeComment(String text) {
+    if (text.isEmpty) return text;
+    final first = String.fromCharCode(text.runes.first);
+    if (first.toUpperCase() != first.toLowerCase()) {
+      return first.toUpperCase() + text.substring(first.length);
+    }
+    return text;
+  }
+
+  Widget _buildCommentPreview() {
+    if (_isLockedContent) return const SizedBox.shrink();
     final colors = AppColors.of(context);
+    final rawMsg = _preloadedComments.isNotEmpty ? _preloadedComments.first.message : null;
+    final msg = rawMsg != null && rawMsg.trim().isNotEmpty
+        ? _capitalizeComment(rawMsg.trim())
+        : null;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 4, 0, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (msg != null)
+            GestureDetector(
+              onTap: () => _showCommentsModal(),
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 5),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Icon(Icons.record_voice_over_outlined, size: 14, color: colors.textSecondary),
+                    const SizedBox(width: 5),
+                    Expanded(
+                      child: Text(
+                        msg,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: colors.textSecondary, fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          // Suggestions — envoi direct au tap
+          SizedBox(
+            height: 26,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _previewSuggestions.length,
+              itemBuilder: (_, i) {
+                final text = _previewSuggestions[i];
+                return GestureDetector(
+                  onTap: () => _sendQuickComment(text),
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: colors.surfaceVariant,
+                      borderRadius: BorderRadius.circular(13),
+                      border: Border.all(color: colors.border.withOpacity(0.6)),
+                    ),
+                    child: Center(
+                      child: Text(text,
+                          style: TextStyle(fontSize: 11, color: colors.textSecondary)),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 5),
+
+          // Vrai champ de saisie
+          Container(
+            height: 34,
+            decoration: BoxDecoration(
+              color: colors.surfaceVariant,
+              borderRadius: BorderRadius.circular(17),
+              border: Border.all(color: colors.border),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _quickCommentController,
+                    enabled: !_isSendingQuickComment,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (v) => _sendQuickComment(v),
+                    style: TextStyle(fontSize: 12, color: colors.textPrimary),
+                    decoration: InputDecoration(
+                      hintText: 'Ajouter un commentaire…',
+                      hintStyle: TextStyle(
+                          color: colors.textSecondary.withOpacity(0.55), fontSize: 12),
+                      border: InputBorder.none,
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      isDense: true,
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => _sendQuickComment(_quickCommentController.text),
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 10),
+                    child: _isSendingQuickComment
+                        ? SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 1.5, color: colors.primary),
+                          )
+                        : Icon(Icons.send_outlined,
+                            size: 14, color: colors.textSecondary.withOpacity(0.6)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required int count,
+    Color? color,
+    VoidCallback? onPressed,
+    bool isLoading = false,
+  }) {
+    final colors = AppColors.of(context);
+    final effectiveColor = onPressed != null ? (color ?? colors.textSecondary) : colors.textSecondary.withOpacity(0.3);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -1795,9 +2109,13 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Column(
             children: [
-              Icon(icon, size: 18, color: onPressed != null ? (color ?? colors.textSecondary) : colors.textSecondary.withOpacity(0.3)),
+              if (isLoading)
+                SizedBox(width: 18, height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: effectiveColor))
+              else
+                Icon(icon, size: 18, color: effectiveColor),
               const SizedBox(width: 6),
-              Text(_formatCount(count), style: TextStyle(color: onPressed != null ? (color ?? colors.textSecondary) : colors.textSecondary.withOpacity(0.3), fontSize: 13)),
+              Text(_formatCount(count), style: TextStyle(color: effectiveColor, fontSize: 13)),
             ],
           ),
         ),
@@ -1861,6 +2179,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
 
   @override
   void dispose() {
+    _quickCommentController.dispose();
     _visibilityTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     MediaPlaybackManager.unregisterMedia(widget.post.id ?? '');
@@ -1901,6 +2220,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                 _buildPostContent(),
                 const SizedBox(height: 12),
                 _buildPostActions(),
+                _buildCommentPreview(),
                 if (_shouldShowAd) ...[
                   const SizedBox(height: 12),
                   MrecAdWidget(

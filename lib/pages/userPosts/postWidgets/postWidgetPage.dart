@@ -60,6 +60,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../youTube_video_card.dart';
 import 'audioPostWidget.dart';
 import '../../../services/postService/post_view_service.dart';
+import '../../../services/postService/feed_interaction_service.dart';
 
 
 
@@ -132,6 +133,18 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   Canal? _currentCanal;
   bool _isLoadingUser = false;
   bool _isLoadingCanal = false;
+  bool _isLiking = false;
+  List<PostComment> _preloadedComments = [];
+  bool _isLoadingComment = false;
+  List<String> _previewSuggestions = [];
+  final TextEditingController _quickCommentController = TextEditingController();
+  bool _isSendingQuickComment = false;
+
+  static const _allSuggestions = [
+    '🤔 Intéressant', '😂 MDR', '😢 Triste', '😤 Pas cool',
+    '🔥 Super', "❤️ J'aime", '💯 Tellement vrai', '😮 Incroyable',
+    '🙌 Bravo', '👏 Félicitations',
+  ];
 
   // Variables pour la thumbnail vidéo
   String? _videoThumbnailPath;
@@ -277,6 +290,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
     _checkIfFavorite();
     _loadSupportModalSeen();
+    _loadLastComment();
+    _previewSuggestions = (List.of(_allSuggestions)..shuffle(Random())).take(6).toList();
   }
 
 
@@ -494,6 +509,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
   @override
   void dispose() {
+    _quickCommentController.dispose();
     MediaPlaybackManager.unregisterMedia(widget.post.id ?? '');
     super.dispose();
   }
@@ -830,6 +846,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                 // Actions du post
                 SizedBox(height: 12),
                 _buildPostActions(hasAccess),
+                _buildCommentPreview(hasAccess),
                 PostGiftsList(
                   postId: widget.post.id!,
                   compactLevel: CompactLevel.light,
@@ -1451,10 +1468,10 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     // Contenu déverrouillé - afficher normalement
     final fullText = _translatedDescription ?? text;
     final words = fullText.split(' ');
-    final isLong = words.length > 50;
+    final isLong = words.length > 25;
     final displayedText = _isExpanded || !isLong
         ? fullText
-        : words.take(50).join(' ') + '...';
+        : words.take(25).join(' ') + '...';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2170,14 +2187,13 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
           // Like
           _buildActionButton(
-            // icon: isLiked ? FontAwesome.heart : FontAwesome.heart_o,
-            icon:  FontAwesome.heart_o,
+            icon: isLiked ? FontAwesome.heart : FontAwesome.heart_o,
             count: widget.post.loves ?? 0,
             color: isLiked ? colors.danger : colors.textSecondary,
-            onPressed: hasAccess ? () {
+            isLoading: _isLiking,
+            onPressed: (hasAccess && !_isLiking) ? () {
               _handleLike();
               recordUniquePostView();
-              // 🔥 APPEL DU CALLBACK
               widget.onLiked?.call();
             } : null,
           ),
@@ -2280,6 +2296,257 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     );
   }
 
+
+  Future<void> _loadLastComment() async {
+    final postId = widget.post.id;
+    if (postId == null || _isLoadingComment) return;
+    setState(() => _isLoadingComment = true);
+    try {
+      final snap = await firestore
+          .collection('PostComments')
+          .where('post_id', isEqualTo: postId)
+          .orderBy('created_at', descending: true)
+          .limit(5)
+          .get();
+      if (snap.docs.isNotEmpty && mounted) {
+        setState(() {
+          _preloadedComments = snap.docs.map((doc) {
+            final data = Map<String, dynamic>.from(doc.data());
+            data['id'] = doc.id;
+            return PostComment.fromJson(data);
+          }).toList();
+        });
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _isLoadingComment = false);
+  }
+
+  Future<void> _sendQuickComment(String text) async {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty || _isSendingQuickComment) return;
+    final userId = authProvider.loginUserData.id;
+    if (userId == null) return;
+
+    setState(() {
+      _isSendingQuickComment = true;
+      _quickCommentController.clear();
+    });
+
+    try {
+      final comment = PostComment(
+        id: FirebaseFirestore.instance.collection('PostComments').doc().id,
+        user_id: userId,
+        user: authProvider.loginUserData,
+        post_id: widget.post.id,
+        users_like_id: [],
+        responseComments: [],
+        message: trimmed,
+        loves: 0,
+        likes: 0,
+        comments: 0,
+        createdAt: DateTime.now().microsecondsSinceEpoch,
+        updatedAt: DateTime.now().microsecondsSinceEpoch,
+      );
+
+      final success = await postProvider.newComment(comment);
+
+      if (success) {
+        if (mounted) {
+          setState(() => _preloadedComments.insert(0, comment));
+        }
+
+        authProvider.incrementPostTotalInteractions(postId: widget.post.id!);
+        authProvider.notifySubscribersOfInteraction(
+          actionUserId: userId,
+          postOwnerId: widget.post.user_id!,
+          postId: widget.post.id!,
+          actionType: 'comment',
+          commentaireMessage: trimmed,
+          postDescription: widget.post.description,
+          postImageUrl: widget.post.type != PostDataType.IMAGE.name
+              ? (widget.post.thumbnail != null && widget.post.thumbnail!.isNotEmpty
+                  ? widget.post.thumbnail!
+                  : (widget.post.user?.imageUrl ?? ''))
+              : (widget.post.images != null && widget.post.images!.isNotEmpty
+                  ? widget.post.images!.first
+                  : ''),
+          postDataType: widget.post.dataType,
+        );
+        FeedInteractionService.onPostCommented(widget.post, userId);
+        authProvider.checkAndRefreshPostDates(widget.post.id!);
+
+        // Notification au propriétaire du post
+        if (widget.post.user != null && widget.post.user!.id != userId) {
+          try {
+            final msg = "@${authProvider.loginUserData.pseudo!} a commenté votre publication";
+            final notif = NotificationData(
+              id: FirebaseFirestore.instance.collection('Notifications').doc().id,
+              titre: "Nouvelle interaction",
+              media_url: authProvider.loginUserData.imageUrl,
+              type: NotificationType.POST.name,
+              description: msg,
+              user_id: userId,
+              receiver_id: widget.post.user!.id!,
+              post_id: widget.post.id!,
+              post_data_type: PostDataType.COMMENT.name,
+              createdAt: DateTime.now().microsecondsSinceEpoch,
+              updatedAt: DateTime.now().microsecondsSinceEpoch,
+              status: PostStatus.VALIDE.name,
+            );
+            await FirebaseFirestore.instance
+                .collection('Notifications')
+                .doc(notif.id)
+                .set(notif.toJson());
+            final receiverUser = await authProvider.getUserById(widget.post.user!.id!);
+            if (receiverUser.isNotEmpty && receiverUser.first.oneIgnalUserid != null) {
+              await authProvider.sendNotification(
+                userIds: [receiverUser.first.oneIgnalUserid!],
+                smallImage: authProvider.loginUserData.imageUrl!,
+                send_user_id: userId,
+                recever_user_id: widget.post.user!.id!,
+                message: msg,
+                type_notif: NotificationType.POST.name,
+                post_id: widget.post.id!,
+                post_type: PostDataType.COMMENT.name,
+                chat_id: '',
+              );
+            }
+          } catch (_) {}
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _isSendingQuickComment = false);
+    }
+  }
+
+  String _capitalizeComment(String text) {
+    if (text.isEmpty) return text;
+    final first = String.fromCharCode(text.runes.first);
+    // Si le caractère a une forme majuscule distincte → c'est une lettre
+    if (first.toUpperCase() != first.toLowerCase()) {
+      return first.toUpperCase() + text.substring(first.length);
+    }
+    // Emoji, chiffre ou symbole → on ne touche pas
+    return text;
+  }
+
+  Widget _buildCommentPreview(bool hasAccess) {
+    if (!hasAccess) return const SizedBox.shrink();
+    final colors = AppColors.of(context);
+    final rawMsg = _preloadedComments.isNotEmpty ? _preloadedComments.first.message : null;
+    final msg = rawMsg != null && rawMsg.trim().isNotEmpty
+        ? _capitalizeComment(rawMsg.trim())
+        : null;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 4, 0, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Dernier commentaire avec icône "personne qui parle"
+          if (msg != null)
+            GestureDetector(
+              onTap: () => _showCommentsModal(widget.post),
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 5),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Icon(Icons.record_voice_over_outlined,
+                        size: 14, color: colors.textSecondary),
+                    const SizedBox(width: 5),
+                    Expanded(
+                      child: Text(
+                        msg,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: colors.textSecondary, fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          // Suggestions — envoi direct au tap
+          SizedBox(
+            height: 26,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _previewSuggestions.length,
+              itemBuilder: (_, i) {
+                final text = _previewSuggestions[i];
+                return GestureDetector(
+                  onTap: () => _sendQuickComment(text),
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: colors.surfaceVariant,
+                      borderRadius: BorderRadius.circular(13),
+                      border: Border.all(color: colors.border.withOpacity(0.6)),
+                    ),
+                    child: Center(
+                      child: Text(text,
+                          style: TextStyle(fontSize: 11, color: colors.textSecondary)),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 5),
+
+          // Vrai champ de saisie
+          Container(
+            height: 34,
+            decoration: BoxDecoration(
+              color: colors.surfaceVariant,
+              borderRadius: BorderRadius.circular(17),
+              border: Border.all(color: colors.border),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _quickCommentController,
+                    enabled: !_isSendingQuickComment,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (v) => _sendQuickComment(v),
+                    style: TextStyle(fontSize: 12, color: colors.textPrimary),
+                    decoration: InputDecoration(
+                      hintText: 'Ajouter un commentaire…',
+                      hintStyle: TextStyle(
+                          color: colors.textSecondary.withOpacity(0.55), fontSize: 12),
+                      border: InputBorder.none,
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      isDense: true,
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => _sendQuickComment(_quickCommentController.text),
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 10),
+                    child: _isSendingQuickComment
+                        ? SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 1.5, color: colors.primary),
+                          )
+                        : Icon(Icons.send_outlined,
+                            size: 14, color: colors.textSecondary.withOpacity(0.6)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildActionButton({
     required IconData icon,
@@ -2397,7 +2664,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
 
   // Méthodes de gestion des actions
-  void _showCommentsModal(Post post) {
+  void _showCommentsModal(Post post, {String? initialText}) {
     final colors = AppColors.of(context);
     showResponsiveBottomSheet(
       context: context,
@@ -2432,7 +2699,13 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
               ),
             ),
             Expanded(
-              child: PostComments(post: post),
+              child: PostComments(
+                post: post,
+                isInModal: true,
+                focusKeyboard: true,
+                initialComments: _preloadedComments,
+                initialText: initialText,
+              ),
             ),
           ],
         ),
@@ -2573,25 +2846,58 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     widget.onLoved?.call();
   }
   Future<void> _handleLike() async {
+    if (_isLiking) return;
     final userId = authProvider.loginUserData.id;
     if (userId == null) return;
 
-    // alreadyLiked = premier like de cet utilisateur → détermine si notif à envoyer
     final alreadyLiked = widget.post.users_love_id?.contains(userId) ?? false;
 
     setState(() {
-      widget.post.loves = (widget.post.loves ?? 0) + 1;
+      _isLiking = true;
+      widget.post.loves = ((widget.post.loves ?? 0) + (alreadyLiked ? -1 : 1))
+          .clamp(0, double.maxFinite.toInt());
       widget.post.users_love_id ??= [];
-      if (!alreadyLiked) widget.post.users_love_id!.add(userId);
+      if (alreadyLiked) {
+        widget.post.users_love_id!.remove(userId);
+      } else {
+        widget.post.users_love_id!.add(userId);
+      }
     });
 
-    _processLikeBackground(userId, alreadyLiked);
+    if (alreadyLiked) {
+      _processUnlikeBackground(userId);
+    } else {
+      _processLikeBackground(userId);
+    }
   }
 
-  void _processLikeBackground(String userId, bool alreadyLiked) {
+  void _processUnlikeBackground(String userId) {
+    final postId = widget.post.id;
+    if (postId == null) {
+      if (mounted) setState(() => _isLiking = false);
+      return;
+    }
+    firestore.collection('Posts').doc(postId).update({
+      'loves': FieldValue.increment(-1),
+      'users_love_id': FieldValue.arrayRemove([userId]),
+      'popularity': FieldValue.increment(-1),
+    }).catchError((_) {
+      if (mounted) setState(() {
+        widget.post.loves = ((widget.post.loves ?? 0) + 1);
+        widget.post.users_love_id?.add(userId);
+      });
+    }).whenComplete(() {
+      if (mounted) setState(() => _isLiking = false);
+    });
+  }
+
+  void _processLikeBackground(String userId) {
     final postId = widget.post.id;
     final receiverId = widget.post.user_id;
-    if (postId == null || receiverId == null) return;
+    if (postId == null || receiverId == null) {
+      if (mounted) setState(() => _isLiking = false);
+      return;
+    }
 
     final coinProvider = Provider.of<CoinGiftUserProvider>(context, listen: false);
     coinProvider.sendLikeWithCoins(
@@ -2601,7 +2907,6 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       context: context,
     ).then((success) async {
       if (!success) {
-        // Pas de pièces : écriture Firestore indépendante du montage widget
         await firestore.collection('Posts').doc(postId).update({
           'loves': FieldValue.increment(1),
           'users_love_id': FieldValue.arrayUnion([userId]),
@@ -2610,19 +2915,17 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         if (mounted) _showInsufficientCoinsForLikeDialog();
         return;
       }
-      // Succès transaction : actions UI seulement si toujours monté
       if (mounted) {
         try {
           addPointsForAction(UserAction.like);
           addPointsForOtherUserAction(receiverId, UserAction.autre);
-          if (!alreadyLiked) await _sendLikeNotifications();
+          await _sendLikeNotifications();
           widget.onLoved?.call();
         } catch (e) {
           printVm("Erreur post-like: $e");
         }
       }
     }).catchError((e) async {
-      // Transaction Firestore échouée → fallback écriture directe (hors vérif mounted)
       printVm("Like transaction failed: $e");
       try {
         await firestore.collection('Posts').doc(postId).update({
@@ -2630,19 +2933,20 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           'users_love_id': FieldValue.arrayUnion([userId]),
           'popularity': FieldValue.increment(1),
         });
-        if (mounted && !alreadyLiked) {
+        if (mounted) {
           try {
             await _sendLikeNotifications();
             widget.onLoved?.call();
           } catch (_) {}
         }
       } catch (_) {
-        // Rollback UI seulement si le fallback échoue aussi ET widget encore monté
         if (mounted) setState(() {
           widget.post.loves = ((widget.post.loves ?? 1) - 1).clamp(0, double.maxFinite.toInt());
-          if (!alreadyLiked) widget.post.users_love_id?.remove(userId);
+          widget.post.users_love_id?.remove(userId);
         });
       }
+    }).whenComplete(() {
+      if (mounted) setState(() => _isLiking = false);
     });
   }
 

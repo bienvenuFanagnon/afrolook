@@ -138,11 +138,10 @@ class QuickGiftService {
     }
 
     if (result.isEmpty) {
-      // Default suggestions when no history
       final defaults = [
+        CoinPack.giftPacks.firstWhere((p) => p.icon == '❤️'),
+        CoinPack.giftPacks.firstWhere((p) => p.icon == '😂'),
         CoinPack.giftPacks.firstWhere((p) => p.icon == '🔥'),
-        CoinPack.giftPacks.firstWhere((p) => p.icon == '💎'),
-        CoinPack.giftPacks.firstWhere((p) => p.icon == '👑'),
       ];
       for (final d in defaults) {
         result.add((pack: d, pinned: false));

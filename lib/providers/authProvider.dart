@@ -2787,13 +2787,20 @@ if(actionType == 'comment'){
             'state current user data  ================================================');
 
         printVm(OneSignal.User.pushSubscription.id);
+        // Filtrer les IDs invalides avant d'envoyer à OneSignal
+        final validIds = userIds.where((id) => id.isNotEmpty && id.length > 10).toList();
+        if (validIds.isEmpty) {
+          printVm('⚠️ sendNotification: aucun ID OneSignal valide, abandon');
+          return;
+        }
+
         final body = {
           'contents': {'en': message},
           'app_id': oneSignalAppId,
 
           "include_player_ids":
           // "include_subscription_ids":
-          userIds, //tokenIdList Is the List of All the Token Id to to Whom notification must be sent.
+          validIds,
 
           // android_accent_color reprsent the color of the heading text in the notifiction
           "android_accent_color": "FF9976D2",
