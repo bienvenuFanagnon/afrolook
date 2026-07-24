@@ -79,6 +79,7 @@ import 'package:path_provider/path_provider.dart';
 import '../providers/authProvider.dart';
 
 import '../providers/coin_gift_provider.dart';
+import '../services/postService/feed_interaction_service.dart';
 
 import 'canaux/detailsCanal.dart';
 
@@ -91,6 +92,8 @@ import 'coins/post_gifts_list.dart';
 import 'home/homeWidget.dart';
 
 import '../services/postService/post_view_service.dart';
+import '../services/comment_suggestion_service.dart';
+import '../widgets/marquee_comment_chips.dart';
 
 // Couleurs Afrolook
 const _afroBlack = Color(0xFF000000);
@@ -182,6 +185,15 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
   Timer? _suggestionModalTimer;
   bool _hasSeenSuggestionsModal = false;
 
+  // Nouveau système de like + commentaire rapide
+  bool _isLiking = false;
+  List<PostComment> _preloadedComments = [];
+  List<String> _previewSuggestions = [];
+  bool _isSuggestionsLoading = false;
+  Timer? _shuffleTimer;
+  final TextEditingController _quickCommentController = TextEditingController();
+  bool _isSendingQuickComment = false;
+
   @override
   void initState() {
     super.initState();
@@ -223,6 +235,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     if (_isAd && _currentPost.advertisementId != null) {
       _loadAdvertisement();
     }
+    _loadLastComment();
+    _loadCommentSuggestions();
   }
 
   void _startSuggestionModalTimer() {
@@ -655,8 +669,10 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
   @override
   void dispose() {
     _postSubscription?.cancel();
+    _shuffleTimer?.cancel();
     _videoController?.dispose();
     _chewieController?.dispose();
+    _quickCommentController.dispose();
     super.dispose();
   }
 
@@ -900,20 +916,39 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     }
   }
   Future<void> _handleLike() async {
+    if (_isLiking) return;
     final userId = authProvider.loginUserData.id;
     if (userId == null) return;
 
     final alreadyLiked = _currentPost.users_love_id?.contains(userId) ?? false;
 
-    // Mise à jour UI instantanée — le like est toujours compté
     setState(() {
-      _currentPost.loves = (_currentPost.loves ?? 0) + 1;
+      _isLiking = true;
+      _currentPost.loves = ((_currentPost.loves ?? 0) + (alreadyLiked ? -1 : 1)).clamp(0, double.maxFinite.toInt());
       _currentPost.users_love_id ??= [];
-      if (!alreadyLiked) _currentPost.users_love_id!.add(userId);
+      if (alreadyLiked) {
+        _currentPost.users_love_id!.remove(userId);
+      } else {
+        _currentPost.users_love_id!.add(userId);
+      }
     });
 
-    // Pièces + Firestore + notifications en arrière plan
-    _processLikeBackground(userId, alreadyLiked);
+    if (alreadyLiked) {
+      _firestore.collection('Posts').doc(_currentPost.id).update({
+        'loves': FieldValue.increment(-1),
+        'users_love_id': FieldValue.arrayRemove([userId]),
+        'popularity': FieldValue.increment(-1),
+      }).catchError((_) {
+        if (mounted) setState(() {
+          _currentPost.loves = ((_currentPost.loves ?? 0) + 1);
+          _currentPost.users_love_id?.add(userId);
+        });
+      }).whenComplete(() {
+        if (mounted) setState(() => _isLiking = false);
+      });
+    } else {
+      _processLikeBackground(userId, alreadyLiked);
+    }
   }
 
   void _processLikeBackground(String userId, bool alreadyLiked) {
@@ -968,6 +1003,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       }
     }).catchError((e) {
       printVm("❌ Erreur like background: $e");
+    }).whenComplete(() {
+      if (mounted) setState(() => _isLiking = false);
     });
   }
   void _showInsufficientCoinsForLikeDialog() {
@@ -1608,13 +1645,263 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     return count.toString();
   }
 
+  Future<void> _loadCommentSuggestions() async {
+    if (!mounted) return;
+    final postId = _currentPost.id;
+    final description = _currentPost.description ?? '';
+    if (postId == null || description.isEmpty) return;
+    setState(() => _isSuggestionsLoading = true);
+    try {
+      final suggestions = await CommentSuggestionService.getSuggestions(postId, description);
+      if (!mounted) return;
+      setState(() { _previewSuggestions = suggestions; _isSuggestionsLoading = false; });
+      _shuffleTimer?.cancel();
+      _shuffleTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+        if (!mounted) return;
+        setState(() { _previewSuggestions = List.of(_previewSuggestions)..shuffle(); });
+      });
+    } catch (_) {
+      if (mounted) setState(() => _isSuggestionsLoading = false);
+    }
+  }
+
+  Future<void> _loadLastComment() async {
+    final postId = _currentPost.id;
+    if (postId == null) return;
+    try {
+      final snap = await _firestore
+          .collection('PostComments')
+          .where('post_id', isEqualTo: postId)
+          .orderBy('created_at', descending: true)
+          .limit(10)
+          .get();
+      if (snap.docs.isNotEmpty && mounted) {
+        setState(() {
+          _preloadedComments = snap.docs.map((doc) {
+            final data = Map<String, dynamic>.from(doc.data());
+            data['id'] = doc.id;
+            return PostComment.fromJson(data);
+          }).toList();
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _sendQuickComment(String text) async {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty || _isSendingQuickComment) return;
+    final userId = authProvider.loginUserData.id;
+    if (userId == null) return;
+
+    setState(() {
+      _isSendingQuickComment = true;
+      _quickCommentController.clear();
+    });
+
+    try {
+      final comment = PostComment(
+        id: FirebaseFirestore.instance.collection('PostComments').doc().id,
+        user_id: userId,
+        user: authProvider.loginUserData,
+        post_id: _currentPost.id,
+        users_like_id: [],
+        responseComments: [],
+        message: trimmed,
+        loves: 0,
+        likes: 0,
+        comments: 0,
+        createdAt: DateTime.now().microsecondsSinceEpoch,
+        updatedAt: DateTime.now().microsecondsSinceEpoch,
+      );
+
+      final success = await postProvider.newComment(comment);
+
+      if (success && mounted) {
+        setState(() {
+          _preloadedComments.insert(0, comment);
+          _currentPost.comments = (_currentPost.comments ?? 0) + 1;
+        });
+        authProvider.incrementPostTotalInteractions(postId: _currentPost.id!);
+        authProvider.notifySubscribersOfInteraction(
+          actionUserId: userId,
+          postOwnerId: _currentPost.user_id!,
+          postId: _currentPost.id!,
+          actionType: 'comment',
+          commentaireMessage: trimmed,
+          postDescription: _currentPost.description,
+          postImageUrl: _currentPost.thumbnail ?? _currentPost.user?.imageUrl ?? '',
+          postDataType: _currentPost.dataType,
+        );
+        FeedInteractionService.onPostCommented(_currentPost, userId);
+
+        if (_currentPost.user != null && _currentPost.user!.id != userId) {
+          try {
+            final msg = "@${authProvider.loginUserData.pseudo!} a commenté votre vidéo";
+            final notif = NotificationData(
+              id: FirebaseFirestore.instance.collection('Notifications').doc().id,
+              titre: "Nouvelle interaction",
+              media_url: authProvider.loginUserData.imageUrl,
+              type: NotificationType.POST.name,
+              description: msg,
+              user_id: userId,
+              receiver_id: _currentPost.user!.id!,
+              post_id: _currentPost.id!,
+              post_data_type: PostDataType.COMMENT.name,
+              createdAt: DateTime.now().microsecondsSinceEpoch,
+              updatedAt: DateTime.now().microsecondsSinceEpoch,
+              status: PostStatus.VALIDE.name,
+            );
+            await FirebaseFirestore.instance.collection('Notifications').doc(notif.id).set(notif.toJson());
+            final receiverUser = await authProvider.getUserById(_currentPost.user!.id!);
+            if (receiverUser.isNotEmpty && receiverUser.first.oneIgnalUserid != null) {
+              await authProvider.sendNotification(
+                userIds: [receiverUser.first.oneIgnalUserid!],
+                smallImage: authProvider.loginUserData.imageUrl!,
+                send_user_id: userId,
+                recever_user_id: _currentPost.user!.id!,
+                message: msg,
+                type_notif: NotificationType.POST.name,
+                post_id: _currentPost.id!,
+                post_type: PostDataType.COMMENT.name,
+                chat_id: '',
+              );
+            }
+          } catch (_) {}
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _isSendingQuickComment = false);
+    }
+  }
+
+  Widget _buildCommentPreview(bool hasAccess) {
+    if (!hasAccess) return const SizedBox.shrink();
+    final colors = AppColors.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 4, 0, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Vrais commentaires utilisateurs — défilement horizontal automatique
+          if (_preloadedComments.isNotEmpty)
+            SizedBox(
+              height: 30,
+              child: AutoScrollRow(
+                itemCount: _preloadedComments.length,
+                itemBuilder: (_, i) {
+                  final text = _preloadedComments[i].message?.trim() ?? '';
+                  if (text.isEmpty) return const SizedBox.shrink();
+                  return GestureDetector(
+                    onTap: _showCommentsModal,
+                    child: Container(
+                      margin: const EdgeInsets.only(right: 6, bottom: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: colors.surfaceVariant,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: colors.border.withOpacity(0.4)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.record_voice_over_outlined, size: 11, color: colors.textSecondary),
+                          const SizedBox(width: 4),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 150),
+                            child: Text(
+                              text,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(color: colors.textSecondary, fontSize: 11),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          const SizedBox(height: 4),
+          // Suggestions — statiques, se mélangent toutes les 10 s, cliquables
+          SizedBox(
+            height: 26,
+            child: _isSuggestionsLoading
+                ? Row(children: List.generate(3, (_) => Container(
+                    margin: const EdgeInsets.only(right: 6), width: 70,
+                    decoration: BoxDecoration(color: colors.shimmerBase, borderRadius: BorderRadius.circular(13)))))
+                : ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _previewSuggestions.length,
+                    itemBuilder: (_, i) {
+                      final text = _previewSuggestions[i];
+                      return GestureDetector(
+                        onTap: () => _sendQuickComment(text),
+                        child: Container(
+                          margin: const EdgeInsets.only(right: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          decoration: BoxDecoration(
+                            color: colors.surfaceVariant,
+                            borderRadius: BorderRadius.circular(13),
+                            border: Border.all(color: colors.border.withOpacity(0.6)),
+                          ),
+                          child: Center(child: Text(text, style: TextStyle(fontSize: 11, color: colors.textSecondary))),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          const SizedBox(height: 5),
+          Container(
+            height: 34,
+            decoration: BoxDecoration(
+              color: colors.surfaceVariant,
+              borderRadius: BorderRadius.circular(17),
+              border: Border.all(color: colors.border),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _quickCommentController,
+                    enabled: !_isSendingQuickComment,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: _sendQuickComment,
+                    style: TextStyle(fontSize: 12, color: colors.textPrimary),
+                    decoration: InputDecoration(
+                      hintText: 'Ajouter un commentaire…',
+                      hintStyle: TextStyle(color: colors.textSecondary.withOpacity(0.55), fontSize: 12),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      isDense: true,
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => _sendQuickComment(_quickCommentController.text),
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 10),
+                    child: _isSendingQuickComment
+                        ? SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 1.5, color: colors.primary))
+                        : Icon(Icons.send_outlined, size: 14, color: colors.textSecondary.withOpacity(0.6)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildActionButtons() {
     final isLiked = _currentPost.users_love_id?.contains(authProvider.loginUserData.id) ?? false;
     final hasAccess = !_isLockedContent();
     final isOwner = authProvider.loginUserData.id == _currentPost.user_id;
     return Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
       GestureDetector(
-        onTap: hasAccess ? _handleLike : null,
+        onTap: (hasAccess && !_isLiking) ? _handleLike : null,
         child: _buildStatItem(
           isLiked ? Icons.favorite : Icons.favorite_border,
           _currentPost.loves ?? 0,
@@ -1990,6 +2277,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
                     _translatedDescriptions[_currentPost.id] ?? _currentPost.description!,
                   ),
                 SizedBox(height: 12),
+                _buildCommentPreview(!_isLockedContent()),
+                SizedBox(height: 4),
                 _buildActionButtons(),
                 SizedBox(height: 8),
                 PostGiftsList(

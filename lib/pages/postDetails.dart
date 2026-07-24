@@ -62,6 +62,8 @@ import '../providers/coin_gift_provider.dart';
 import '../services/linkService.dart';
 import '../services/postService/feed_interaction_service.dart';
 import '../services/postService/post_view_service.dart';
+import '../services/comment_suggestion_service.dart';
+import '../widgets/marquee_comment_chips.dart';
 import '../services/utils/abonnement_utils.dart';
 import '../widgets/user_badge_widget.dart';
 import 'UserServices/deviceService.dart';
@@ -114,6 +116,15 @@ class _DetailsPostState extends State<DetailsPost>
   // Stream pour les mises à jour en temps réel
   late Stream<DocumentSnapshot> _postStream;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  // Nouveau système de like + commentaire rapide
+  bool _isLiking = false;
+  List<PostComment> _preloadedComments = [];
+  List<String> _previewSuggestions = [];
+  bool _isSuggestionsLoading = false;
+  Timer? _shuffleTimer;
+  final TextEditingController _quickCommentController = TextEditingController();
+  bool _isSendingQuickComment = false;
   Challenge? _challenge;
   bool _loadingChallenge = false;
 
@@ -2042,6 +2053,8 @@ class _DetailsPostState extends State<DetailsPost>
     // Incrémenter les vues
     _incrementViews();
 
+    _loadLastComment();
+    _loadSuggestions();
   }
 
   // 🔥 DÉMARRER LE CAROUSEL AUTO
@@ -2087,6 +2100,7 @@ class _DetailsPostState extends State<DetailsPost>
   @override
   void dispose() {
     _suggestionModalTimer?.cancel();
+    _shuffleTimer?.cancel();
 
     _animationController.dispose();
     for (var player in _activePlayers.values) {
@@ -2097,6 +2111,7 @@ class _DetailsPostState extends State<DetailsPost>
     // 🔥 NETTOYER LE CAROUSEL
     _stopCarouselAutoPlay();
     _carouselController.dispose();
+    _quickCommentController.dispose();
     super.dispose();
   }
 
@@ -3374,6 +3389,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
   }
 
   Future<void> _handleLike() async {
+    if (_isLiking) return;
     final userId = authProvider.loginUserData.id;
     if (userId == null) return;
     final postId = widget.post.id;
@@ -3381,16 +3397,38 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
 
     final alreadyLiked = widget.post.users_love_id?.contains(userId) ?? false;
 
-    // Mise à jour UI instantanée — le like est toujours compté
     setState(() {
-      widget.post.loves = (widget.post.loves ?? 0) + 1;
+      _isLiking = true;
+      widget.post.loves = ((widget.post.loves ?? 0) + (alreadyLiked ? -1 : 1)).clamp(0, double.maxFinite.toInt());
       widget.post.users_love_id ??= [];
-      if (!alreadyLiked) widget.post.users_love_id!.add(userId);
+      if (alreadyLiked) {
+        widget.post.users_love_id!.remove(userId);
+      } else {
+        widget.post.users_love_id!.add(userId);
+        _animationController.forward().then((_) => _animationController.reverse());
+      }
     });
-    _animationController.forward().then((_) => _animationController.reverse());
 
-    // Pièces + Firestore + notifications en arrière plan
-    _processLikeBackground(userId, postId, alreadyLiked);
+    if (alreadyLiked) {
+      _processUnlikeBackground(userId, postId);
+    } else {
+      _processLikeBackground(userId, postId, alreadyLiked);
+    }
+  }
+
+  void _processUnlikeBackground(String userId, String postId) {
+    firestore.collection('Posts').doc(postId).update({
+      'loves': FieldValue.increment(-1),
+      'users_love_id': FieldValue.arrayRemove([userId]),
+      'popularity': FieldValue.increment(-1),
+    }).catchError((_) {
+      if (mounted) setState(() {
+        widget.post.loves = ((widget.post.loves ?? 0) + 1);
+        widget.post.users_love_id?.add(userId);
+      });
+    }).whenComplete(() {
+      if (mounted) setState(() => _isLiking = false);
+    });
   }
 
   void _processLikeBackground(String userId, String postId, bool alreadyLiked) {
@@ -3479,6 +3517,8 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       }
     }).catchError((e) {
       printVm("❌ Erreur like background: $e");
+    }).whenComplete(() {
+      if (mounted) setState(() => _isLiking = false);
     });
   }
   void _showInsufficientCoinsForLikeDialog() {
@@ -4167,7 +4207,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                   Row(
                     children: [
                       Text(
-                        '#${(canal.titre != null && canal.titre!.length > 12) ? '${canal.titre!.substring(0, 12)}...' : canal.titre ?? ''}',
+                        '#${(canal.titre != null && canal.titre!.length > 17) ? '${canal.titre!.substring(0, 17)}...' : canal.titre ?? ''}',
                         style: TextStyle(
                           color: _colors.textPrimary,
                           fontWeight: FontWeight.bold,
@@ -5915,6 +5955,255 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
     );
   }
 
+  Future<void> _loadSuggestions() async {
+    if (!mounted) return;
+    final postId = widget.post.id;
+    final description = widget.post.description ?? '';
+    if (postId == null || description.isEmpty) return;
+    setState(() => _isSuggestionsLoading = true);
+    try {
+      final suggestions = await CommentSuggestionService.getSuggestions(postId, description);
+      if (!mounted) return;
+      setState(() { _previewSuggestions = suggestions; _isSuggestionsLoading = false; });
+      _shuffleTimer?.cancel();
+      _shuffleTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+        if (!mounted) return;
+        setState(() { _previewSuggestions = List.of(_previewSuggestions)..shuffle(); });
+      });
+    } catch (_) {
+      if (mounted) setState(() => _isSuggestionsLoading = false);
+    }
+  }
+
+  Future<void> _loadLastComment() async {
+    final postId = widget.post.id;
+    if (postId == null) return;
+    try {
+      final snap = await firestore
+          .collection('PostComments')
+          .where('post_id', isEqualTo: postId)
+          .orderBy('created_at', descending: true)
+          .limit(10)
+          .get();
+      if (snap.docs.isNotEmpty && mounted) {
+        setState(() {
+          _preloadedComments = snap.docs.map((doc) {
+            final data = Map<String, dynamic>.from(doc.data());
+            data['id'] = doc.id;
+            return PostComment.fromJson(data);
+          }).toList();
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _sendQuickComment(String text) async {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty || _isSendingQuickComment) return;
+    final userId = authProvider.loginUserData.id;
+    if (userId == null) return;
+
+    setState(() {
+      _isSendingQuickComment = true;
+      _quickCommentController.clear();
+    });
+
+    try {
+      final comment = PostComment(
+        id: FirebaseFirestore.instance.collection('PostComments').doc().id,
+        user_id: userId,
+        user: authProvider.loginUserData,
+        post_id: widget.post.id,
+        users_like_id: [],
+        responseComments: [],
+        message: trimmed,
+        loves: 0,
+        likes: 0,
+        comments: 0,
+        createdAt: DateTime.now().microsecondsSinceEpoch,
+        updatedAt: DateTime.now().microsecondsSinceEpoch,
+      );
+
+      final success = await postProvider.newComment(comment);
+
+      if (success && mounted) {
+        setState(() {
+          _preloadedComments.insert(0, comment);
+          widget.post.comments = (widget.post.comments ?? 0) + 1;
+        });
+        authProvider.incrementPostTotalInteractions(postId: widget.post.id!);
+        authProvider.notifySubscribersOfInteraction(
+          actionUserId: userId,
+          postOwnerId: widget.post.user_id!,
+          postId: widget.post.id!,
+          actionType: 'comment',
+          commentaireMessage: trimmed,
+          postDescription: widget.post.description,
+          postImageUrl: widget.post.images?.isNotEmpty == true ? widget.post.images!.first : '',
+          postDataType: widget.post.dataType,
+        );
+        FeedInteractionService.onPostCommented(widget.post, userId);
+
+        if (widget.post.user != null && widget.post.user!.id != userId) {
+          try {
+            final msg = "@${authProvider.loginUserData.pseudo!} a commenté votre publication";
+            final notif = NotificationData(
+              id: FirebaseFirestore.instance.collection('Notifications').doc().id,
+              titre: "Nouvelle interaction",
+              media_url: authProvider.loginUserData.imageUrl,
+              type: NotificationType.POST.name,
+              description: msg,
+              user_id: userId,
+              receiver_id: widget.post.user!.id!,
+              post_id: widget.post.id!,
+              post_data_type: PostDataType.COMMENT.name,
+              createdAt: DateTime.now().microsecondsSinceEpoch,
+              updatedAt: DateTime.now().microsecondsSinceEpoch,
+              status: PostStatus.VALIDE.name,
+            );
+            await FirebaseFirestore.instance.collection('Notifications').doc(notif.id).set(notif.toJson());
+            final receiverUser = await authProvider.getUserById(widget.post.user!.id!);
+            if (receiverUser.isNotEmpty && receiverUser.first.oneIgnalUserid != null) {
+              await authProvider.sendNotification(
+                userIds: [receiverUser.first.oneIgnalUserid!],
+                smallImage: authProvider.loginUserData.imageUrl!,
+                send_user_id: userId,
+                recever_user_id: widget.post.user!.id!,
+                message: msg,
+                type_notif: NotificationType.POST.name,
+                post_id: widget.post.id!,
+                post_type: PostDataType.COMMENT.name,
+                chat_id: '',
+              );
+            }
+          } catch (_) {}
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _isSendingQuickComment = false);
+    }
+  }
+
+  Widget _buildCommentPreview(bool hasAccess) {
+    if (!hasAccess) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Vrais commentaires utilisateurs — défilement horizontal automatique
+          if (_preloadedComments.isNotEmpty)
+            SizedBox(
+              height: 30,
+              child: AutoScrollRow(
+                itemCount: _preloadedComments.length,
+                itemBuilder: (_, i) {
+                  final text = _preloadedComments[i].message?.trim() ?? '';
+                  if (text.isEmpty) return const SizedBox.shrink();
+                  return GestureDetector(
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PostComments(post: widget.post))),
+                    child: Container(
+                      margin: const EdgeInsets.only(right: 6, bottom: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: _colors.surfaceVariant,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: _colors.border.withOpacity(0.4)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.record_voice_over_outlined, size: 11, color: _colors.textSecondary),
+                          const SizedBox(width: 4),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 150),
+                            child: Text(
+                              text,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(color: _colors.textSecondary, fontSize: 11),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          const SizedBox(height: 4),
+          // Suggestions — statiques, se mélangent toutes les 10 s, cliquables
+          SizedBox(
+            height: 26,
+            child: _isSuggestionsLoading
+                ? Row(children: List.generate(3, (_) => Container(
+                    margin: const EdgeInsets.only(right: 6), width: 70,
+                    decoration: BoxDecoration(color: _colors.shimmerBase, borderRadius: BorderRadius.circular(13)))))
+                : ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _previewSuggestions.length,
+                    itemBuilder: (_, i) {
+                      final text = _previewSuggestions[i];
+                      return GestureDetector(
+                        onTap: () => _sendQuickComment(text),
+                        child: Container(
+                          margin: const EdgeInsets.only(right: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          decoration: BoxDecoration(
+                            color: _colors.surfaceVariant,
+                            borderRadius: BorderRadius.circular(13),
+                            border: Border.all(color: _colors.border.withOpacity(0.6)),
+                          ),
+                          child: Center(child: Text(text, style: TextStyle(fontSize: 11, color: _colors.textSecondary))),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          const SizedBox(height: 5),
+          Container(
+            height: 34,
+            decoration: BoxDecoration(
+              color: _colors.surfaceVariant,
+              borderRadius: BorderRadius.circular(17),
+              border: Border.all(color: _colors.border),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _quickCommentController,
+                    enabled: !_isSendingQuickComment,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: _sendQuickComment,
+                    style: TextStyle(fontSize: 12, color: _colors.textPrimary),
+                    decoration: InputDecoration(
+                      hintText: 'Ajouter un commentaire…',
+                      hintStyle: TextStyle(color: _colors.textSecondary.withOpacity(0.55), fontSize: 12),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      isDense: true,
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => _sendQuickComment(_quickCommentController.text),
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 10),
+                    child: _isSendingQuickComment
+                        ? SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 1.5, color: _colors.primary))
+                        : Icon(Icons.send_outlined, size: 14, color: _colors.textSecondary.withOpacity(0.6)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildStatsRow(Post post) {
     final hasAccess = _hasAccessToContent();
 
@@ -5929,9 +6218,11 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           label: 'Interactions',
         ),
         GestureDetector(
-          onTap: _handleLike,
+          onTap: _isLiking ? null : _handleLike,
           child: _buildStatItem(
-            icon: Icons.favorite_border,
+            icon: isIn(post.users_love_id!, authProvider.loginUserData.id!)
+                ? Icons.favorite
+                : Icons.favorite_border,
             count: post.loves ?? 0,
             label: 'Likes',
             isLiked: isIn(post.users_love_id!, authProvider.loginUserData.id!),
@@ -6149,6 +6440,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
 
                       SizedBox(height: 20),
                       Divider(color: _colors.divider),
+                      _buildCommentPreview(_hasAccessToContent()),
                       _buildStatsRow(updatedPost),
                       // _buildAdMrec(key: 'ad_details_post'),
 

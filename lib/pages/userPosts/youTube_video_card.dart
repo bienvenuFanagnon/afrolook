@@ -44,6 +44,8 @@ import '../postDetailsVideo.dart';
 
 import '../../services/utils/abonnement_utils.dart';
 import '../../services/postService/feed_interaction_service.dart';
+import '../../services/comment_suggestion_service.dart';
+import '../../widgets/marquee_comment_chips.dart';
 import '../../widgets/user_badge_widget.dart';
 import '../../theme/app_colors.dart';
 import '../../providers/locale_provider.dart';
@@ -299,11 +301,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   final TextEditingController _quickCommentController = TextEditingController();
   bool _isSendingQuickComment = false;
 
-  static const _allSuggestions = [
-    '🤔 Intéressant', '😂 MDR', '😢 Triste', '😤 Pas cool',
-    '🔥 Super', "❤️ J'aime", '💯 Tellement vrai', '😮 Incroyable',
-    '🙌 Bravo', '👏 Félicitations',
-  ];
+  bool _isSuggestionsLoading = false;
+  Timer? _shuffleTimer;
 
   // Interaction vidéo (une seule fois par jour)
   bool _hasRecordedInteraction = false;
@@ -350,7 +349,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     _checkIfFavorite();
     _checkInteractionRecordedToday();
     _loadLastComment();
-    _previewSuggestions = (List.of(_allSuggestions)..shuffle(Random())).take(6).toList();
+    _loadSuggestions();
 
     if (widget.post.thumbnail == null || widget.post.thumbnail!.isEmpty) {
       _generateAndUploadThumbnail();
@@ -1845,6 +1844,26 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     );
   }
 
+  Future<void> _loadSuggestions() async {
+    if (!mounted) return;
+    final postId = widget.post.id;
+    final description = widget.post.description ?? '';
+    if (postId == null || description.isEmpty) return;
+    setState(() => _isSuggestionsLoading = true);
+    try {
+      final suggestions = await CommentSuggestionService.getSuggestions(postId, description);
+      if (!mounted) return;
+      setState(() { _previewSuggestions = suggestions; _isSuggestionsLoading = false; });
+      _shuffleTimer?.cancel();
+      _shuffleTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+        if (!mounted) return;
+        setState(() { _previewSuggestions = List.of(_previewSuggestions)..shuffle(); });
+      });
+    } catch (_) {
+      if (mounted) setState(() => _isSuggestionsLoading = false);
+    }
+  }
+
   Future<void> _loadLastComment() async {
     final postId = widget.post.id;
     if (postId == null || _isLoadingComment) return;
@@ -1989,54 +2008,73 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (msg != null)
-            GestureDetector(
-              onTap: () => _showCommentsModal(),
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 5),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Icon(Icons.record_voice_over_outlined, size: 14, color: colors.textSecondary),
-                    const SizedBox(width: 5),
-                    Expanded(
-                      child: Text(
-                        msg,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: colors.textSecondary, fontSize: 12),
+          // Vrais commentaires utilisateurs — défilement horizontal automatique
+          if (_preloadedComments.isNotEmpty)
+            SizedBox(
+              height: 30,
+              child: AutoScrollRow(
+                itemCount: _preloadedComments.length,
+                itemBuilder: (_, i) {
+                  final text = _preloadedComments[i].message?.trim() ?? '';
+                  if (text.isEmpty) return const SizedBox.shrink();
+                  return GestureDetector(
+                    onTap: () => _showCommentsModal(),
+                    child: Container(
+                      margin: const EdgeInsets.only(right: 6, bottom: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: colors.surfaceVariant,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: colors.border.withOpacity(0.4)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.record_voice_over_outlined, size: 11, color: colors.textSecondary),
+                          const SizedBox(width: 4),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 150),
+                            child: Text(
+                              text,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(color: colors.textSecondary, fontSize: 11),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  );
+                },
               ),
             ),
-          // Suggestions — envoi direct au tap
+          // Suggestions — statiques, se mélangent toutes les 10 s, cliquables
           SizedBox(
             height: 26,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _previewSuggestions.length,
-              itemBuilder: (_, i) {
-                final text = _previewSuggestions[i];
-                return GestureDetector(
-                  onTap: () => _sendQuickComment(text),
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 6),
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    decoration: BoxDecoration(
-                      color: colors.surfaceVariant,
-                      borderRadius: BorderRadius.circular(13),
-                      border: Border.all(color: colors.border.withOpacity(0.6)),
-                    ),
-                    child: Center(
-                      child: Text(text,
-                          style: TextStyle(fontSize: 11, color: colors.textSecondary)),
-                    ),
+            child: _isSuggestionsLoading
+                ? Row(children: List.generate(3, (_) => Container(
+                    margin: const EdgeInsets.only(right: 6), width: 70,
+                    decoration: BoxDecoration(color: colors.shimmerBase, borderRadius: BorderRadius.circular(13)))))
+                : ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _previewSuggestions.length,
+                    itemBuilder: (_, i) {
+                      final text = _previewSuggestions[i];
+                      return GestureDetector(
+                        onTap: () => _sendQuickComment(text),
+                        child: Container(
+                          margin: const EdgeInsets.only(right: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          decoration: BoxDecoration(
+                            color: colors.surfaceVariant,
+                            borderRadius: BorderRadius.circular(13),
+                            border: Border.all(color: colors.border.withOpacity(0.6)),
+                          ),
+                          child: Center(child: Text(text, style: TextStyle(fontSize: 11, color: colors.textSecondary))),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
           const SizedBox(height: 5),
 
@@ -2180,6 +2218,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   @override
   void dispose() {
     _quickCommentController.dispose();
+    _shuffleTimer?.cancel();
     _visibilityTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     MediaPlaybackManager.unregisterMedia(widget.post.id ?? '');

@@ -83,6 +83,9 @@ import 'coins/post_gifts_list.dart';
 import '../theme/app_colors.dart';
 
 import '../services/feed/feed_repository.dart';
+import '../services/postService/feed_interaction_service.dart';
+import '../services/comment_suggestion_service.dart';
+import '../widgets/marquee_comment_chips.dart';
 
 import 'userPosts/postWidgets/translatable_description.dart';
 
@@ -104,6 +107,7 @@ const _twitterTextSecondary = Color(0xFF71767B);
 const _twitterGreen = Color(0xFF1D9BF0);
 const _twitterRed = Color(0xFFF91880);
 
+
 class PostDetailsVideoFormatTel extends StatefulWidget {
   final Post? initialPost;
   final bool isIn;
@@ -114,7 +118,8 @@ class PostDetailsVideoFormatTel extends StatefulWidget {
   _PostDetailsVideoFormatTelState createState() => _PostDetailsVideoFormatTelState();
 }
 
-class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> with AutomaticKeepAliveClientMixin {
+class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
+    with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
   @override
   bool get wantKeepAlive => true;
 
@@ -197,6 +202,23 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   int _favoritesCount = 0;
   bool _isFavoriteProcessing = false;
 
+  // Nouveau système de like + commentaire rapide
+  bool _isLiking = false;
+  List<PostComment> _preloadedComments = [];
+  List<String> _previewSuggestions = [];
+  final TextEditingController _quickCommentController = TextEditingController();
+  bool _isSendingQuickComment = false;
+
+  // Overlay toggle + live comments (style TikTok Live)
+  bool _showOverlay = true;
+  Timer? _liveCommentTimer;
+  Timer? _shuffleTimer;
+  final GlobalKey<AnimatedListState> _liveListKey = GlobalKey<AnimatedListState>();
+  final List<PostComment> _visibleComments = [];
+  int _commentCycleIdx = 0;
+
+  bool _isSuggestionsLoading = false;
+
 // Cache et gestion des anciennes vidéos
   List<Post> _oldVideosCache = [];
   bool _isLoadingOldVideos = false;
@@ -206,6 +228,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _pageController = PageController(
       initialPage: 0,
       viewportFraction: 1.0,
@@ -240,6 +263,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       _lazyLoadPostRelations(widget.initialPost!);
     }
 
+    _loadSuggestions(widget.initialPost);
     _initializeFeed();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _showFirstScrollModalIfNeeded();
@@ -449,7 +473,11 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _likeAnimationTimer?.cancel();
+    _liveCommentTimer?.cancel();
+    _shuffleTimer?.cancel();
+    _quickCommentController.dispose();
 
     // Nettoyer tous les
     // contrôleurs préchargés
@@ -464,6 +492,22 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     _postSubscriptions.forEach((key, subscription) => subscription.cancel());
     _focusNode.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Pause automatique quand l'app passe en arrière-plan ou est inactive
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.hidden) {
+      _currentVideoController?.pause();
+    } else if (state == AppLifecycleState.resumed) {
+      // Reprend seulement si la vidéo était en lecture avant
+      if (_currentVideoController != null &&
+          _currentVideoController!.value.isInitialized) {
+        _currentVideoController!.play();
+      }
+    }
   }
 
   Widget _wrapWithControls(Widget child) {
@@ -1427,25 +1471,43 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
     return widgets;
   }
-  // Je vais les écrire succinctement mais complètes :
   Future<void> _handleLike(Post post) async {
+    if (_isLiking) return;
     final userId = authProvider.loginUserData.id;
     if (userId == null) return;
 
-    // Coeurs animés immédiatement
-    final screenSize = MediaQuery.of(context).size;
-    _showFlyingHearts(screenSize.width / 2, screenSize.height / 2);
-
     final alreadyLiked = post.users_love_id?.contains(userId) ?? false;
 
-    // Mise à jour UI instantanée — le like est toujours compté
     setState(() {
-      post.loves = (post.loves ?? 0) + 1;
-      post.users_love_id = [...?post.users_love_id, if (!alreadyLiked) userId];
+      _isLiking = true;
+      post.loves = ((post.loves ?? 0) + (alreadyLiked ? -1 : 1)).clamp(0, double.maxFinite.toInt());
+      post.users_love_id ??= [];
+      if (alreadyLiked) {
+        post.users_love_id!.remove(userId);
+      } else {
+        post.users_love_id!.add(userId);
+        // Coeurs animés uniquement au like
+        final screenSize = MediaQuery.of(context).size;
+        _showFlyingHearts(screenSize.width / 2, screenSize.height / 2);
+      }
     });
 
-    // Pièces + Firestore + notifications en arrière plan
-    _processLikeBackground(post, userId, alreadyLiked);
+    if (alreadyLiked) {
+      _firestore.collection('Posts').doc(post.id).update({
+        'loves': FieldValue.increment(-1),
+        'users_love_id': FieldValue.arrayRemove([userId]),
+        'popularity': FieldValue.increment(-1),
+      }).catchError((_) {
+        if (mounted) setState(() {
+          post.loves = ((post.loves ?? 0) + 1);
+          post.users_love_id?.add(userId);
+        });
+      }).whenComplete(() {
+        if (mounted) setState(() => _isLiking = false);
+      });
+    } else {
+      _processLikeBackground(post, userId, alreadyLiked);
+    }
   }
 
   void _processLikeBackground(Post post, String userId, bool alreadyLiked) {
@@ -1458,7 +1520,6 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     ).then((success) {
       if (!mounted) return;
       if (!success) {
-        // Pas de pièces : compter quand même le like dans Firestore
         _firestore.collection('Posts').doc(post.id).update({
           'loves': FieldValue.increment(1),
           'users_love_id': FieldValue.arrayUnion([userId]),
@@ -1467,7 +1528,6 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         _showInsufficientCoinsForLikeDialog();
         return;
       }
-      // Succès pièces : interactions + notification
       if (!alreadyLiked) {
         postProvider.interactWithPostAndIncrementSolde(post.id!, userId, "like", post.user_id!);
         authProvider.incrementPostTotalInteractions(postId: post.id!);
@@ -1475,6 +1535,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       }
     }).catchError((e) {
       // erreur silencieuse, le like UI est déjà compté
+    }).whenComplete(() {
+      if (mounted) setState(() => _isLiking = false);
     });
   }
 
@@ -2063,74 +2125,14 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       _lazyLoadPostRelations(post);
     }
 
-    final user = post.user;
-    final canal = post.canal;
-
-    final String displayName = canal != null
-        ? '#${canal.titre ?? ''}'
-        : '@${user?.pseudo ?? ''}';
-    final String shortName = displayName.length > 10
-        ? '${displayName.substring(0, 10)}...'
-        : displayName;
     final isOwner = authProvider.loginUserData.id == post.user_id;
 
-    // Affichage temporaire si toujours null
-    if (canal == null && user == null && (post.user_id != null || post.canal_id != null)) {
-      return Positioned(
-        bottom: 120,
-        left: 16,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Chargement...', style: TextStyle(color: Colors.white70)),
-            const SizedBox(height: 4),
-            if (post.description != null)
-              Container(
-                constraints: const BoxConstraints(maxWidth: 250),
-                child: Text(post.description!, style: const TextStyle(color: Colors.white), maxLines: 2),
-              ),
-          ],
-        ),
-      );
-    }
-
-    // Affichage normal (identique à l’original)
     return Positioned(
-      bottom: 120,
+      bottom: 165,
       left: 16,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (canal != null)
-            GestureDetector(
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CanalDetails(canal: canal))),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(shortName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                  if (user != null) ...[
-                    const SizedBox(width: 4),
-                    UserBadgeWidget(user: user, size: 14),
-                  ],
-                ],
-              ),
-            )
-          else if (user != null)
-            GestureDetector(
-              onTap: () => showUserDetailsModalDialog(user, MediaQuery.of(context).size.width, MediaQuery.of(context).size.height, context),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(shortName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                  const SizedBox(width: 4),
-                  UserBadgeWidget(user: user, size: 14),
-                ],
-              ),
-            ),
-          if (canal != null)
-            Text('${canal.usersSuiviId?.length ?? 0} abonnés', style: const TextStyle(color: Colors.white70))
-          else if (user != null)
-            Text('${user.userAbonnesIds?.length ?? 0} abonnés', style: const TextStyle(color: Colors.white70)),
           const SizedBox(height: 4),
           if (post.description != null)
             Container(
@@ -2343,14 +2345,250 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   //   );
   // }
 
+  Future<void> _loadLastCommentForPost(Post post) async {
+    final postId = post.id;
+    if (postId == null) return;
+    try {
+      final snap = await _firestore
+          .collection('PostComments')
+          .where('post_id', isEqualTo: postId)
+          .orderBy('created_at', descending: true)
+          .limit(5)
+          .get();
+      if (snap.docs.isNotEmpty && mounted) {
+        setState(() {
+          _preloadedComments = snap.docs.map((doc) {
+            final data = Map<String, dynamic>.from(doc.data());
+            data['id'] = doc.id;
+            return PostComment.fromJson(data);
+          }).toList();
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _loadSuggestions(Post? post) async {
+    if (!mounted || post == null) return;
+    final postId = post.id;
+    final description = post.description ?? '';
+    if (postId == null || description.isEmpty) return;
+    setState(() => _isSuggestionsLoading = true);
+    try {
+      final suggestions = await CommentSuggestionService.getSuggestions(postId, description);
+      if (!mounted) return;
+      setState(() { _previewSuggestions = suggestions; _isSuggestionsLoading = false; });
+      _shuffleTimer?.cancel();
+      _shuffleTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+        if (!mounted) return;
+        setState(() { _previewSuggestions = List.of(_previewSuggestions)..shuffle(); });
+      });
+    } catch (_) {
+      if (mounted) setState(() => _isSuggestionsLoading = false);
+    }
+  }
+
+  Future<void> _sendQuickComment(String text, Post post) async {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty || _isSendingQuickComment) return;
+    final userId = authProvider.loginUserData.id;
+    if (userId == null) return;
+
+    setState(() {
+      _isSendingQuickComment = true;
+      _quickCommentController.clear();
+    });
+
+    try {
+      final comment = PostComment(
+        id: FirebaseFirestore.instance.collection('PostComments').doc().id,
+        user_id: userId,
+        user: authProvider.loginUserData,
+        post_id: post.id,
+        users_like_id: [],
+        responseComments: [],
+        message: trimmed,
+        loves: 0,
+        likes: 0,
+        comments: 0,
+        createdAt: DateTime.now().microsecondsSinceEpoch,
+        updatedAt: DateTime.now().microsecondsSinceEpoch,
+      );
+
+      final success = await postProvider.newComment(comment);
+
+      if (success && mounted) {
+        setState(() {
+          _preloadedComments.insert(0, comment);
+          post.comments = (post.comments ?? 0) + 1;
+        });
+        _addLiveComment();
+        authProvider.incrementPostTotalInteractions(postId: post.id!);
+        authProvider.notifySubscribersOfInteraction(
+          actionUserId: userId,
+          postOwnerId: post.user_id!,
+          postId: post.id!,
+          actionType: 'comment',
+          commentaireMessage: trimmed,
+          postDescription: post.description,
+          postImageUrl: post.thumbnail ?? post.user?.imageUrl ?? '',
+          postDataType: post.dataType,
+        );
+        FeedInteractionService.onPostCommented(post, userId);
+
+        if (post.user != null && post.user!.id != userId) {
+          try {
+            final msg = "@${authProvider.loginUserData.pseudo!} a commenté votre vidéo";
+            final notif = NotificationData(
+              id: FirebaseFirestore.instance.collection('Notifications').doc().id,
+              titre: "Nouvelle interaction",
+              media_url: authProvider.loginUserData.imageUrl,
+              type: NotificationType.POST.name,
+              description: msg,
+              user_id: userId,
+              receiver_id: post.user!.id!,
+              post_id: post.id!,
+              post_data_type: PostDataType.COMMENT.name,
+              createdAt: DateTime.now().microsecondsSinceEpoch,
+              updatedAt: DateTime.now().microsecondsSinceEpoch,
+              status: PostStatus.VALIDE.name,
+            );
+            await FirebaseFirestore.instance.collection('Notifications').doc(notif.id).set(notif.toJson());
+            final receiverUser = await authProvider.getUserById(post.user!.id!);
+            if (receiverUser.isNotEmpty && receiverUser.first.oneIgnalUserid != null) {
+              await authProvider.sendNotification(
+                userIds: [receiverUser.first.oneIgnalUserid!],
+                smallImage: authProvider.loginUserData.imageUrl!,
+                send_user_id: userId,
+                recever_user_id: post.user!.id!,
+                message: msg,
+                type_notif: NotificationType.POST.name,
+                post_id: post.id!,
+                post_type: PostDataType.COMMENT.name,
+                chat_id: '',
+              );
+            }
+          } catch (_) {}
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _isSendingQuickComment = false);
+    }
+  }
+
+  Widget _buildQuickCommentOverlay(Post post) {
+    final colors = AppColors.of(context);
+    final rawMsg = _preloadedComments.isNotEmpty ? _preloadedComments.first.message : null;
+    final msg = rawMsg != null && rawMsg.trim().isNotEmpty ? rawMsg.trim() : null;
+
+    return Positioned(
+      left: 12,
+      right: 72,
+      bottom: 90,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (msg != null)
+            GestureDetector(
+              onTap: () => _showCommentsModal(post),
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 5),
+                child: Row(
+                  children: [
+                    Icon(Icons.record_voice_over_outlined, size: 13, color: Colors.white70),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(msg, maxLines: 1, overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          // Suggestions — statiques, se mélangent toutes les 10 s, cliquables
+          SizedBox(
+            height: 26,
+            child: _isSuggestionsLoading
+                ? Row(children: List.generate(3, (_) => Container(
+                    margin: const EdgeInsets.only(right: 6), width: 70,
+                    decoration: BoxDecoration(color: Colors.white12, borderRadius: BorderRadius.circular(13)))))
+                : ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _previewSuggestions.length,
+                    itemBuilder: (_, i) {
+                      final text = _previewSuggestions[i];
+                      return GestureDetector(
+                        onTap: () => _sendQuickComment(text, post),
+                        child: Container(
+                          margin: const EdgeInsets.only(right: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.black54,
+                            borderRadius: BorderRadius.circular(13),
+                            border: Border.all(color: Colors.white24),
+                          ),
+                          child: Center(child: Text(text, style: const TextStyle(fontSize: 11, color: Colors.white70))),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          const SizedBox(height: 5),
+          Container(
+            height: 34,
+            decoration: BoxDecoration(
+              color: Colors.black54,
+              borderRadius: BorderRadius.circular(17),
+              border: Border.all(color: Colors.white24),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _quickCommentController,
+                    enabled: !_isSendingQuickComment,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (v) => _sendQuickComment(v, post),
+                    style: const TextStyle(fontSize: 12, color: Colors.white),
+                    decoration: const InputDecoration(
+                      hintText: 'Ajouter un commentaire…',
+                      hintStyle: TextStyle(color: Colors.white38, fontSize: 12),
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      isDense: true,
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => _sendQuickComment(_quickCommentController.text, post),
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 10),
+                    child: _isSendingQuickComment
+                        ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 1.5, color: Colors.white))
+                        : const Icon(Icons.send_outlined, size: 14, color: Colors.white54),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildActionButtons(Post post) {
-    // Lance le chargement si nécessaire
     if ((post.user == null && post.user_id != null) ||
         (post.canal == null && post.canal_id != null)) {
       _lazyLoadPostRelations(post);
     }
 
-    final isLiked = post.users_love_id?.contains(authProvider.loginUserData.id) ?? false;
+    final user = post.user;
+    final canal = post.canal;
+    final String displayName = canal != null
+        ? '#${canal.titre ?? ''}'
+        : '@${user?.pseudo ?? ''}';
+    final int subscriberCount = canal != null
+        ? (canal.usersSuiviId?.length ?? 0)
+        : (user?.userAbonnesIds?.length ?? 0);
 
     return Positioned(
       right: 16,
@@ -2360,8 +2598,6 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
           GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () {
-              final user = post.user;
-              final canal = post.canal;
               if (canal != null) {
                 Navigator.push(context, MaterialPageRoute(builder: (context) => CanalDetails(canal: canal)));
               } else if (user != null) {
@@ -2375,17 +2611,47 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
                   decoration: BoxDecoration(border: Border.all(color: _afroGreen, width: 2), shape: BoxShape.circle),
                   child: CircleAvatar(
                     radius: 25,
-                    backgroundImage: (post.canal?.urlImage != null || post.user?.imageUrl != null)
-                        ? NetworkImage(post.canal?.urlImage ?? post.user?.imageUrl ?? '')
+                    backgroundImage: (canal?.urlImage != null || user?.imageUrl != null)
+                        ? NetworkImage(canal?.urlImage ?? user?.imageUrl ?? '')
                         : null,
-                    child: (post.canal == null && post.user == null) ? const CircularProgressIndicator(strokeWidth: 2) : null,
+                    child: (canal == null && user == null) ? const CircularProgressIndicator(strokeWidth: 2) : null,
                   ),
                 ),
                 _buildSubscribeIcon(post),
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 4),
+          SizedBox(
+            width: 62,
+            child: Column(
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        displayName,
+                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (user != null) ...[
+                      const SizedBox(width: 2),
+                      UserBadgeWidget(user: user, size: 9),
+                    ],
+                  ],
+                ),
+                Text(
+                  _formatNumber(subscriberCount),
+                  style: const TextStyle(color: Colors.white70, fontSize: 9),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
           if (_isLookChallenge)
             Column(
               children: [
@@ -2398,8 +2664,31 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
             ),
           Column(
             children: [
-              GestureDetector(onTap: () => _handleLike(post), child: const Icon(Icons.favorite_border, color: _afroRed, size: 30)),
-              Text('${post.loves ?? 0}', style: const TextStyle(color: Colors.white)),
+              GestureDetector(
+                onTap: _isLiking ? null : () => _handleLike(post),
+                child: Icon(
+                  (post.users_love_id?.contains(authProvider.loginUserData.id) ?? false)
+                      ? Icons.favorite
+                      : Icons.favorite_border,
+                  color: _afroRed,
+                  size: 30,
+                ),
+              ),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 350),
+                transitionBuilder: (child, animation) => SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 0.6),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: FadeTransition(opacity: animation, child: child),
+                ),
+                child: Text(
+                  '${post.loves ?? 0}',
+                  key: ValueKey(post.loves ?? 0),
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ),
             ],
           ),
           Column(
@@ -2703,6 +2992,169 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     );
   }
 
+  // ─── Live comments (style TikTok Live) ───────────────────────────────────
+
+  void _addCommentToLiveFeed(PostComment comment) {
+    if (!mounted) return;
+    _visibleComments.insert(0, comment);
+    _liveListKey.currentState?.insertItem(0, duration: const Duration(milliseconds: 1200));
+    // Limite à 5 commentaires visibles max — retire le plus ancien silencieusement
+    if (_visibleComments.length > 5) {
+      final lastIdx = _visibleComments.length - 1;
+      final removed = _visibleComments.removeAt(lastIdx);
+      _liveListKey.currentState?.removeItem(
+        lastIdx,
+        (ctx, anim) => _buildCommentBubble(removed, anim),
+        duration: const Duration(milliseconds: 200),
+      );
+    }
+  }
+
+  // Appelé quand l'utilisateur envoie un commentaire (déjà inséré dans _preloadedComments[0])
+  void _addLiveComment() {
+    if (!mounted || _preloadedComments.isEmpty) return;
+    _addCommentToLiveFeed(_preloadedComments.first);
+  }
+
+  Future<void> _initLiveComments(Post post) async {
+    _liveCommentTimer?.cancel();
+    _visibleComments.clear();
+    _commentCycleIdx = 0;
+    if (mounted) setState(() { _preloadedComments = []; });
+
+    _loadSuggestions(post);
+
+    await _loadLastCommentForPost(post);
+    if (!mounted || _preloadedComments.isEmpty) return;
+
+    if (mounted) setState(() {});
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _preloadedComments.isEmpty) return;
+      // Premier commentaire immédiatement
+      _addCommentToLiveFeed(
+        _preloadedComments[_commentCycleIdx % _preloadedComments.length],
+      );
+      _commentCycleIdx++;
+
+      // Puis un nouveau toutes les 8 secondes (cycle infini — montée lente)
+      _liveCommentTimer = Timer.periodic(const Duration(milliseconds: 8000), (_) {
+        if (!mounted || _preloadedComments.isEmpty) return;
+        _addCommentToLiveFeed(
+          _preloadedComments[_commentCycleIdx % _preloadedComments.length],
+        );
+        _commentCycleIdx++;
+      });
+    });
+  }
+
+  Widget _buildCommentBubble(PostComment c, Animation<double> animation) {
+    // La bulle s'adapte à la longueur du texte (jusqu'à 70% de l'écran),
+    // toujours sur une seule ligne avec ellipsis si trop long.
+    final maxBubbleWidth = MediaQuery.of(context).size.width * 0.70;
+    return SlideTransition(
+      position: animation.drive(
+        Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
+            .chain(CurveTween(curve: Curves.easeOut)),
+      ),
+      child: FadeTransition(
+        opacity: animation,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          // Align libère la contrainte de largeur → la bulle wrap son contenu
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxBubbleWidth),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: RichText(
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  text: TextSpan(
+                    children: [
+                      TextSpan(
+                        text: '@${c.user?.pseudo ?? 'Anonyme'} ',
+                        style: const TextStyle(
+                          color: _afroGreen,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                      TextSpan(
+                        text: c.message ?? '',
+                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLiveCommentsOverlay() {
+    final halfScreen = MediaQuery.of(context).size.height / 2;
+    return Positioned(
+      left: 12,
+      right: 80,
+      bottom: 215,
+      child: SizedBox(
+        height: halfScreen,
+        child: ShaderMask(
+          shaderCallback: (rect) => const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            // Fondu doux : transparent en haut, opaque dès 40% vers le bas
+            colors: [Colors.transparent, Colors.transparent, Colors.white],
+            stops: [0.0, 0.38, 1.0],
+          ).createShader(rect),
+          blendMode: BlendMode.dstIn,
+          child: AnimatedList(
+            key: _liveListKey,
+            reverse: true,      // index 0 = bas (nouveau commentaire)
+            shrinkWrap: true,   // se réduit à sa hauteur réelle
+            physics: const NeverScrollableScrollPhysics(),
+            initialItemCount: _visibleComments.length,
+            itemBuilder: (ctx, i, animation) {
+              if (i >= _visibleComments.length) return const SizedBox.shrink();
+              return _buildCommentBubble(_visibleComments[i], animation);
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOverlayToggle() {
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 10,
+      right: 12,
+      child: GestureDetector(
+        onTap: () => setState(() => _showOverlay = !_showOverlay),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: const BoxDecoration(
+            color: Colors.black45,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            _showOverlay ? Icons.visibility : Icons.visibility_off,
+            color: Colors.white70,
+            size: 20,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildVideoPage(Post post) {
     return Stack(
       children: [
@@ -2716,17 +3168,34 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
           ),
         ),
 
-        // Overlay pub si le post est une publicité, sinon boutons normaux
+        // Overlay pub (toujours visible) ou overlays normaux (masquables)
         if (post.isAdvertisement == true)
           _buildVideoAdOverlay(post)
         else
-          _buildActionButtons(post),
+          Positioned.fill(
+            child: AnimatedOpacity(
+              opacity: _showOverlay ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 250),
+              child: IgnorePointer(
+                ignoring: !_showOverlay,
+                child: Stack(
+                  children: [
+                    _buildActionButtons(post),
+                    _buildQuickCommentOverlay(post),
+                    _buildLiveCommentsOverlay(),
+                    _buildUserInfo(post),
+                    _buildScrollHint(),
+                  ],
+                ),
+              ),
+            ),
+          ),
 
-        _buildUserInfo(post),
-        _buildScrollHint(),
-
-        // Animation des cœurs
+        // Animation des cœurs (toujours visible même sans overlay)
         ..._buildFlyingHearts(),
+
+        // Bouton toggle overlay (toujours visible)
+        if (post.isAdvertisement != true) _buildOverlayToggle(),
 
         if (widget.isIn)
           Positioned(
@@ -2791,7 +3260,10 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
             ),
             onPageChanged: (index) async {
               if (!mounted) return;
-              setState(() => _currentPage = index);
+              setState(() {
+                _currentPage = index;
+                _showOverlay = true; // rétablir les overlays à chaque changement de vidéo
+              });
               _itemsSinceLastLoad++;
               if (_itemsSinceLastLoad >= 3 && !_maxVideosReached && !_isLoadingMore) {
                 _itemsSinceLastLoad = 0;
@@ -2807,6 +3279,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
               if (index < _feedItems.length && _feedItems[index] is Post) {
                 final post = _feedItems[index] as Post;
                 _initializeVideo(post, index: index);
+                _initLiveComments(post);
               }
             },
             itemBuilder: (context, index) {

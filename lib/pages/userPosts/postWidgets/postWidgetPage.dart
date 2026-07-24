@@ -1,4 +1,5 @@
 import 'package:afrotok/utils/responsive_sheet.dart';
+import '../../../widgets/marquee_comment_chips.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -61,6 +62,7 @@ import '../youTube_video_card.dart';
 import 'audioPostWidget.dart';
 import '../../../services/postService/post_view_service.dart';
 import '../../../services/postService/feed_interaction_service.dart';
+import '../../../services/comment_suggestion_service.dart';
 
 
 
@@ -137,14 +139,10 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   List<PostComment> _preloadedComments = [];
   bool _isLoadingComment = false;
   List<String> _previewSuggestions = [];
+  bool _isSuggestionsLoading = false;
+  Timer? _shuffleTimer;
   final TextEditingController _quickCommentController = TextEditingController();
   bool _isSendingQuickComment = false;
-
-  static const _allSuggestions = [
-    '🤔 Intéressant', '😂 MDR', '😢 Triste', '😤 Pas cool',
-    '🔥 Super', "❤️ J'aime", '💯 Tellement vrai', '😮 Incroyable',
-    '🙌 Bravo', '👏 Félicitations',
-  ];
 
   // Variables pour la thumbnail vidéo
   String? _videoThumbnailPath;
@@ -291,7 +289,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     _checkIfFavorite();
     _loadSupportModalSeen();
     _loadLastComment();
-    _previewSuggestions = (List.of(_allSuggestions)..shuffle(Random())).take(6).toList();
+    _loadSuggestions();
   }
 
 
@@ -313,6 +311,35 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     setState(() {
       _hasSeenSupportModal = prefs.getBool(key) ?? false;
     });
+  }
+
+  Future<void> _loadSuggestions() async {
+    if (!mounted) return;
+    final postId = widget.post.id;
+    final description = widget.post.description ?? '';
+    if (postId == null || description.isEmpty) return;
+
+    setState(() => _isSuggestionsLoading = true);
+    try {
+      final suggestions = await CommentSuggestionService.getSuggestions(
+        postId,
+        description,
+      );
+      if (!mounted) return;
+      setState(() {
+        _previewSuggestions = suggestions;
+        _isSuggestionsLoading = false;
+      });
+      // Mélange les suggestions toutes les 10 s pour varier
+      _shuffleTimer?.cancel();
+      _shuffleTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+        if (!mounted) return;
+        setState(() { _previewSuggestions = List.of(_previewSuggestions)..shuffle(); });
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isSuggestionsLoading = false);
+    }
   }
 
   Future<void> _markSupportModalSeen() async {
@@ -509,6 +536,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
   @override
   void dispose() {
+    _shuffleTimer?.cancel();
     _quickCommentController.dispose();
     MediaPlaybackManager.unregisterMedia(widget.post.id ?? '');
     super.dispose();
@@ -2306,7 +2334,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           .collection('PostComments')
           .where('post_id', isEqualTo: postId)
           .orderBy('created_at', descending: true)
-          .limit(5)
+          .limit(10)
           .get();
       if (snap.docs.isNotEmpty && mounted) {
         setState(() {
@@ -2433,67 +2461,90 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   Widget _buildCommentPreview(bool hasAccess) {
     if (!hasAccess) return const SizedBox.shrink();
     final colors = AppColors.of(context);
-    final rawMsg = _preloadedComments.isNotEmpty ? _preloadedComments.first.message : null;
-    final msg = rawMsg != null && rawMsg.trim().isNotEmpty
-        ? _capitalizeComment(rawMsg.trim())
-        : null;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(0, 4, 0, 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Dernier commentaire avec icône "personne qui parle"
-          if (msg != null)
-            GestureDetector(
-              onTap: () => _showCommentsModal(widget.post),
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 5),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Icon(Icons.record_voice_over_outlined,
-                        size: 14, color: colors.textSecondary),
-                    const SizedBox(width: 5),
-                    Expanded(
-                      child: Text(
-                        msg,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: colors.textSecondary, fontSize: 12),
+          // Vrais commentaires utilisateurs — défilement horizontal automatique
+          if (_preloadedComments.isNotEmpty)
+            SizedBox(
+              height: 30,
+              child: AutoScrollRow(
+                itemCount: _preloadedComments.length,
+                itemBuilder: (_, i) {
+                  final text = _preloadedComments[i].message?.trim() ?? '';
+                  if (text.isEmpty) return const SizedBox.shrink();
+                  return GestureDetector(
+                    onTap: () => _showCommentsModal(widget.post),
+                    child: Container(
+                      margin: const EdgeInsets.only(right: 6, bottom: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: colors.surfaceVariant,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: colors.border.withOpacity(0.4)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.record_voice_over_outlined, size: 11, color: colors.textSecondary),
+                          const SizedBox(width: 4),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 150),
+                            child: Text(
+                              text,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(color: colors.textSecondary, fontSize: 11),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  );
+                },
               ),
             ),
+          const SizedBox(height: 4),
 
-          // Suggestions — envoi direct au tap
+          // Suggestions — statiques, se mélangent toutes les 10 s, cliquables
           SizedBox(
             height: 26,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _previewSuggestions.length,
-              itemBuilder: (_, i) {
-                final text = _previewSuggestions[i];
-                return GestureDetector(
-                  onTap: () => _sendQuickComment(text),
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 6),
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    decoration: BoxDecoration(
-                      color: colors.surfaceVariant,
-                      borderRadius: BorderRadius.circular(13),
-                      border: Border.all(color: colors.border.withOpacity(0.6)),
-                    ),
-                    child: Center(
-                      child: Text(text,
-                          style: TextStyle(fontSize: 11, color: colors.textSecondary)),
-                    ),
+            child: _isSuggestionsLoading
+                ? Row(
+                    children: List.generate(3, (_) => Container(
+                      margin: const EdgeInsets.only(right: 6),
+                      width: 70,
+                      decoration: BoxDecoration(
+                        color: colors.shimmerBase,
+                        borderRadius: BorderRadius.circular(13),
+                      ),
+                    )),
+                  )
+                : ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _previewSuggestions.length,
+                    itemBuilder: (_, i) {
+                      final text = _previewSuggestions[i];
+                      return GestureDetector(
+                        onTap: () => _sendQuickComment(text),
+                        child: Container(
+                          margin: const EdgeInsets.only(right: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          decoration: BoxDecoration(
+                            color: colors.surfaceVariant,
+                            borderRadius: BorderRadius.circular(13),
+                            border: Border.all(color: colors.border.withOpacity(0.6)),
+                          ),
+                          child: Center(
+                            child: Text(text, style: TextStyle(fontSize: 11, color: colors.textSecondary)),
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
           const SizedBox(height: 5),
 
