@@ -152,7 +152,10 @@ class CoinGiftService {
     final senderRef = firestore.collection('Users').doc(senderId);
     final receiverRef = firestore.collection('Users').doc(receiverId);
     final postRef = firestore.collection('Posts').doc(post.id);
-    final appDataRef = firestore.collection('AppData').doc(authProvider.appDefaultData.id);
+    final appDataId = authProvider.appDefaultData.id;
+    final appDataRef = appDataId != null
+        ? firestore.collection('AppData').doc(appDataId)
+        : null;
 
     // Vérifier le solde de l'utilisateur
     final senderDoc = await senderRef.get();
@@ -167,7 +170,6 @@ class CoinGiftService {
       return false;
     }
 
-    // 🔥 CORRECTION : Ajouter 'return' devant firestore.runTransaction
     return await firestore.runTransaction((tx) async {
       // 1. Débiter l'utilisateur (2 pièces)
       tx.update(senderRef, {
@@ -183,10 +185,12 @@ class CoinGiftService {
         'updatedAt': DateTime.now().millisecondsSinceEpoch,
       });
 
-      // 3. Créditer l'application (1 pièce)
-      tx.update(appDataRef, {
-        'solde_gain_pieces': FieldValue.increment(appCoins),
-      });
+      // 3. Créditer l'application (1 pièce) — ignoré si appDefaultData pas encore chargé
+      if (appDataRef != null) {
+        tx.update(appDataRef, {
+          'solde_gain_pieces': FieldValue.increment(appCoins),
+        });
+      }
 
       // 4. Mettre à jour le post (incrémenter les likes)
       tx.update(postRef, {
@@ -194,7 +198,6 @@ class CoinGiftService {
         'users_love_id': FieldValue.arrayUnion([senderId]),
         'popularity': FieldValue.increment(1),
         'totalGiftCoinsSentOnThisPost': FieldValue.increment(creatorCoins),
-
         'totalCoinsFromLikes': FieldValue.increment(creatorCoins),
       });
 
@@ -219,7 +222,10 @@ class CoinGiftService {
     final senderRef = firestore.collection('Users').doc(senderId);
     final receiverRef = firestore.collection('Users').doc(receiverId);
     final postRef = firestore.collection('Posts').doc(post.id);
-    final appDataRef = firestore.collection('AppData').doc(authProvider.appDefaultData.id);
+    final appDataId = authProvider.appDefaultData.id;
+    final appDataRef = appDataId != null
+        ? firestore.collection('AppData').doc(appDataId)
+        : null;
 
     final senderDoc = await senderRef.get();
     if (!senderDoc.exists) {
@@ -245,9 +251,12 @@ class CoinGiftService {
         'updatedAt': DateTime.now().millisecondsSinceEpoch,
       });
 
-      tx.update(appDataRef, {
-        'solde_gain_pieces': FieldValue.increment(appCoins),
-      });
+      // Créditer l'application — ignoré si appDefaultData pas encore chargé
+      if (appDataRef != null) {
+        tx.update(appDataRef, {
+          'solde_gain_pieces': FieldValue.increment(appCoins),
+        });
+      }
 
       tx.update(postRef, {
         'loves': FieldValue.increment(1),
@@ -257,7 +266,7 @@ class CoinGiftService {
         'totalCoinsFromLikes': FieldValue.increment(creatorCoins),
       });
 
-      // 🔥 APRÈS LE LIKE : Vérifier si le propriétaire est inactif (en arrière-plan)
+      // Vérifier si le propriétaire est inactif (en arrière-plan)
       _checkAndSendReminderIfInactive(receiverId);
 
       return true;

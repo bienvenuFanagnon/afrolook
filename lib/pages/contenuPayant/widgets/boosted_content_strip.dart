@@ -79,7 +79,7 @@ class BoostedContentStripWidget extends StatelessWidget {
               ),
             ),
             SizedBox(
-              height: 148,
+              height: 160,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 12),

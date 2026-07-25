@@ -136,6 +136,11 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   bool _isLoadingUser = false;
   bool _isLoadingCanal = false;
   bool _isLiking = false;
+  // État local du like — résistant aux rebuilds du parent qui remplace widget.post
+  // depuis le cache stale (FeedCacheService). L'état local persiste tant que
+  // le même State est réutilisé par Flutter (garanti par ValueKey dans le parent).
+  bool _isLikedLocally = false;
+  int _localLovesCount = 0;
   List<PostComment> _preloadedComments = [];
   bool _isLoadingComment = false;
   List<String> _previewSuggestions = [];
@@ -282,6 +287,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     postProvider = Provider.of<PostProvider>(context, listen: false);
     userProvider = Provider.of<UserProvider>(context, listen: false);
     appDefaultData = authProvider.appDefaultData;
+    _initLikeState();
     _loadUserData();
     _loadCanalData();
     _generateVideoThumbnail();
@@ -292,6 +298,31 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     _loadSuggestions();
   }
 
+
+  void _initLikeState() {
+    final userId = authProvider.loginUserData.id;
+    _isLikedLocally = widget.post.users_love_id?.contains(userId) ?? false;
+    _localLovesCount = widget.post.loves ?? 0;
+  }
+
+  @override
+  void didUpdateWidget(HomePostUsersWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.post.id != oldWidget.post.id) {
+      _initLikeState();
+    } else if (!_isLiking) {
+      // Même post, données rafraîchies depuis Firestore → synchroniser avec les valeurs en ligne
+      final userId = authProvider.loginUserData.id;
+      final onlineLiked = widget.post.users_love_id?.contains(userId) ?? false;
+      final onlineCount = widget.post.loves ?? 0;
+      if (onlineLiked != _isLikedLocally || onlineCount != _localLovesCount) {
+        setState(() {
+          _isLikedLocally = onlineLiked;
+          _localLovesCount = onlineCount;
+        });
+      }
+    }
+  }
 
   // Méthode utilitaire pour optimiser les URLs d'images
   String _optimizeUrl(String? url) {
@@ -2179,7 +2210,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
   Widget _buildPostActions(bool hasAccess) {
     final colors = AppColors.of(context);
-    final isLiked = isIn(widget.post.users_love_id ?? [], authProvider.loginUserData.id!);
+    final isLiked = _isLikedLocally;
 
     return Container(
       margin: EdgeInsets.only(top: 8),
@@ -2216,7 +2247,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           // Like
           _buildActionButton(
             icon: isLiked ? FontAwesome.heart : FontAwesome.heart_o,
-            count: widget.post.loves ?? 0,
+            count: _localLovesCount,
             color: isLiked ? colors.danger : colors.textSecondary,
             isLoading: _isLiking,
             onPressed: (hasAccess && !_isLiking) ? () {
@@ -2901,12 +2932,17 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     final userId = authProvider.loginUserData.id;
     if (userId == null) return;
 
-    final alreadyLiked = widget.post.users_love_id?.contains(userId) ?? false;
+    // Source de vérité : l'état local (résistant aux remplacement de widget.post)
+    final alreadyLiked = _isLikedLocally;
 
     setState(() {
       _isLiking = true;
-      widget.post.loves = ((widget.post.loves ?? 0) + (alreadyLiked ? -1 : 1))
-          .clamp(0, double.maxFinite.toInt());
+      _isLikedLocally = !alreadyLiked;
+      _localLovesCount = alreadyLiked
+          ? (_localLovesCount - 1).clamp(0, 999999)
+          : _localLovesCount + 1;
+      // Sync widget.post pour la compatibilité avec le reste du code
+      widget.post.loves = _localLovesCount;
       widget.post.users_love_id ??= [];
       if (alreadyLiked) {
         widget.post.users_love_id!.remove(userId);
@@ -2934,7 +2970,9 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       'popularity': FieldValue.increment(-1),
     }).catchError((_) {
       if (mounted) setState(() {
-        widget.post.loves = ((widget.post.loves ?? 0) + 1);
+        _isLikedLocally = true;
+        _localLovesCount = _localLovesCount + 1;
+        widget.post.loves = _localLovesCount;
         widget.post.users_love_id?.add(userId);
       });
     }).whenComplete(() {
@@ -2992,7 +3030,9 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         }
       } catch (_) {
         if (mounted) setState(() {
-          widget.post.loves = ((widget.post.loves ?? 1) - 1).clamp(0, double.maxFinite.toInt());
+          _isLikedLocally = false;
+          _localLovesCount = (_localLovesCount - 1).clamp(0, 999999);
+          widget.post.loves = _localLovesCount;
           widget.post.users_love_id?.remove(userId);
         });
       }

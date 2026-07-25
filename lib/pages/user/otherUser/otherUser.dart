@@ -60,6 +60,16 @@ class _OtherUserPageState extends State<OtherUserPage> {
 
   int _profileLikes = 0;
   bool _isSendingReminder = false;
+
+  // ── Sélection multiple ─────────────────────────────────────
+  bool _isSelectionMode = false;
+  Set<String> _selectedPostIds = {};
+  bool _isDeletingPosts = false;
+
+  bool get _canManagePosts =>
+      authProvider.loginUserData.id == widget.otherUser.id ||
+      authProvider.loginUserData.role == 'ADM';
+
   @override
   void initState() {
     super.initState();
@@ -817,6 +827,159 @@ class _OtherUserPageState extends State<OtherUserPage> {
     }
   }
 
+  void _exitSelectionMode() {
+    setState(() {
+      _isSelectionMode = false;
+      _selectedPostIds.clear();
+    });
+  }
+
+  void _togglePostSelection(String postId) {
+    setState(() {
+      if (_selectedPostIds.contains(postId)) {
+        _selectedPostIds.remove(postId);
+        if (_selectedPostIds.isEmpty) _isSelectionMode = false;
+      } else {
+        _selectedPostIds.add(postId);
+      }
+    });
+  }
+
+  Future<void> _deleteSelectedPosts() async {
+    if (_isDeletingPosts || _selectedPostIds.isEmpty) return;
+    final count = _selectedPostIds.length;
+    final colors = AppColors.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: colors.surface,
+        title: Text(
+          'Supprimer $count post${count > 1 ? 's' : ''} ?',
+          style: TextStyle(color: colors.textPrimary),
+        ),
+        content: Text(
+          'Cette action est irréversible.',
+          style: TextStyle(color: colors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Annuler', style: TextStyle(color: colors.textSecondary)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Supprimer', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _isDeletingPosts = true);
+    final idsToDelete = Set<String>.from(_selectedPostIds);
+    try {
+      for (final id in idsToDelete) {
+        await _firestore.collection('Posts').doc(id).delete();
+      }
+      if (mounted) {
+        setState(() {
+          _posts.removeWhere((p) => p.id != null && idsToDelete.contains(p.id));
+        });
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('$count post${count > 1 ? 's supprimés' : ' supprimé'}'),
+          backgroundColor: Colors.green,
+        ));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Erreur lors de la suppression'),
+          backgroundColor: Colors.red,
+        ));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isDeletingPosts = false;
+          _isSelectionMode = false;
+          _selectedPostIds.clear();
+        });
+      }
+    }
+  }
+
+  Widget _buildSelectionBar(dynamic colors) {
+    final count = _selectedPostIds.length;
+    final allSelected = _filteredPosts.isNotEmpty &&
+        _filteredPosts.every((p) => p.id != null && _selectedPostIds.contains(p.id));
+    return Container(
+      color: colors.surface,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            TextButton(
+              onPressed: _exitSelectionMode,
+              child: Text('Annuler', style: TextStyle(color: colors.textSecondary)),
+            ),
+            Expanded(
+              child: Text(
+                '$count sélectionné${count > 1 ? 's' : ''}',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: colors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  if (allSelected) {
+                    _selectedPostIds.clear();
+                  } else {
+                    _selectedPostIds.addAll(
+                      _filteredPosts
+                          .where((p) => p.id != null)
+                          .map((p) => p.id!),
+                    );
+                  }
+                });
+              },
+              child: Text(
+                allSelected ? 'Désélect. tout' : 'Tout sélect.',
+                style: TextStyle(color: colors.primary, fontSize: 12),
+              ),
+            ),
+            const SizedBox(width: 4),
+            _isDeletingPosts
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      color: Colors.red,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      minimumSize: Size.zero,
+                    ),
+                    onPressed: count > 0 ? _deleteSelectedPosts : null,
+                    icon: const Icon(Icons.delete, size: 16),
+                    label: const Text('Supprimer', style: TextStyle(fontSize: 13)),
+                  ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildVerificationBadge() {
     if (widget.otherUser.isVerify != true) return const SizedBox();
     final colors = AppColors.of(context);
@@ -853,6 +1016,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
 
     return Scaffold(
       backgroundColor: colors.background,
+      bottomNavigationBar: _isSelectionMode ? _buildSelectionBar(colors) : null,
       body: CenteredContent(
         maxWidth: AppLayout.isDesktop(context) ? 800 : AppLayout.maxFeedWidth,
         child: RefreshIndicator(
@@ -1391,14 +1555,30 @@ class _OtherUserPageState extends State<OtherUserPage> {
 
   Widget _buildPostCard(Post post, double width) {
     final colors = AppColors.of(context);
+    final isSelected = post.id != null && _selectedPostIds.contains(post.id);
     return GestureDetector(
-      onTap: () => _navigateToPostDetails(post),
+      onLongPress: _canManagePosts && !_isSelectionMode
+          ? () {
+              setState(() {
+                _isSelectionMode = true;
+                if (post.id != null) _selectedPostIds.add(post.id!);
+              });
+            }
+          : null,
+      onTap: _isSelectionMode
+          ? () {
+              if (post.id != null) _togglePostSelection(post.id!);
+            }
+          : () => _navigateToPostDetails(post),
       child: Container(
         margin: const EdgeInsets.all(4),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           color: colors.surface,
-          border: Border.all(color: colors.primary.withOpacity(0.3)),
+          border: Border.all(
+            color: isSelected ? colors.primary : colors.primary.withOpacity(0.3),
+            width: isSelected ? 2.5 : 1,
+          ),
           boxShadow: [
             BoxShadow(
               color: colors.black.withOpacity(0.3),
@@ -1410,6 +1590,37 @@ class _OtherUserPageState extends State<OtherUserPage> {
         child: Stack(
           children: [
             _buildPostContent(post),
+            if (isSelected)
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: colors.primary.withOpacity(0.2),
+                  ),
+                ),
+              ),
+            if (_isSelectionMode)
+              Positioned(
+                top: 8,
+                left: 8,
+                child: Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isSelected
+                        ? colors.primary
+                        : Colors.white.withOpacity(0.8),
+                    border: Border.all(
+                      color: isSelected ? colors.primary : Colors.grey,
+                      width: 2,
+                    ),
+                  ),
+                  child: isSelected
+                      ? Icon(Icons.check, size: 14, color: colors.onPrimary)
+                      : null,
+                ),
+              ),
             Positioned(
               bottom: 0,
               left: 0,

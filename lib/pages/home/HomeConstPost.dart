@@ -1740,7 +1740,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       if (_posts.isEmpty) {
         // Aucun cache : afficher directement les posts réseau
         setState(() {
-          _posts = newPosts;
+          _posts = _spreadCreators(newPosts);
           _loadedPostIds.addAll(loadedIds);
           _totalPostsLoaded = newPosts.length;
           _isFirstLoad = false;
@@ -1752,7 +1752,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         final trulyNew = newPosts.where((p) => p.id != null && !alreadyShown.contains(p.id)).toList();
         setState(() {
           if (trulyNew.isNotEmpty) {
-            _posts = [...trulyNew, ..._posts];
+            _posts = _spreadCreators([...trulyNew, ..._posts]);
           }
           _loadedPostIds.addAll(loadedIds);
           _totalPostsLoaded = _posts.length;
@@ -1826,7 +1826,30 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   Future<void> _loadMixedPostsSmart(Set<String> loadedIds, List<Post> newPosts, String userCountryCode, int limit) async {
     printVm('🔄 Chargement mode "Mix intelligent" - limite: $limit');
 
-    // 1. Posts du pays utilisateur (40%)
+    // 0. Garantir ≥10 posts récents des abonnements (7 derniers jours)
+    //    Fallback indépendant du FeedPreloadService (qui peut ne pas être prêt)
+    if (_followingIds.isNotEmpty) {
+      final followingPosts = await FeedRepository().fetchFollowingRecentPosts(
+        _followingIds,
+        {...loadedIds, ..._loadedPostIds},
+        limit: 10,
+        withinDays: 7,
+      );
+      _addFetchedToList(followingPosts, loadedIds, newPosts, 10);
+      printVm('📌 ${followingPosts.length} posts abonnements récents chargés');
+    }
+
+    // 0b. Injecter jusqu'à 5 nouveaux posts (< 48h, peu vus) pour les encourager
+    final boostPosts = await FeedRepository().fetchNewPostsToBoost(
+      {...loadedIds, ..._loadedPostIds},
+      limit: 5,
+    );
+    if (boostPosts.isNotEmpty) {
+      _addFetchedToList(boostPosts, loadedIds, newPosts, 5);
+      printVm('🚀 ${boostPosts.length} nouveaux posts boostés injectés');
+    }
+
+    // 1. Posts du pays utilisateur (40% du limit restant)
     int countryPostsNeeded = (limit * 0.4).ceil();
     await _loadCountrySpecificPosts(
       loadedIds,
@@ -1836,16 +1859,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       limit: countryPostsNeeded,
     );
 
-    // 2. Posts ALL (40%)
-    // int allPostsNeeded = (limit * 0.4).ceil();
-    // await _loadAllCountriesPosts(
-    //   loadedIds,
-    //   newPosts,
-    //   isInitialLoad: true,
-    //   limit: allPostsNeeded,
-    // );
-
-    // 3. Posts autres pays (60%)
+    // 2. Posts autres pays (complète jusqu'à limit)
     int otherPostsNeeded = limit - newPosts.length;
     if (otherPostsNeeded > 0) {
       await _loadOtherCountriesPosts(
@@ -1931,6 +1945,27 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   }
 
   /// Ajoute les posts récupérés à [newPosts] avec dédup et mélange final.
+  List<Post> _spreadCreators(List<Post> posts) {
+    if (posts.length <= 2) return posts;
+    final list = List<Post>.from(posts);
+    for (int i = 2; i < list.length; i++) {
+      final creator = list[i].user_id ?? '';
+      if (creator.isNotEmpty &&
+          (list[i - 1].user_id ?? '') == creator &&
+          (list[i - 2].user_id ?? '') == creator) {
+        for (int j = i + 1; j < list.length; j++) {
+          if ((list[j].user_id ?? '') != creator) {
+            final tmp = list[i];
+            list[i] = list[j];
+            list[j] = tmp;
+            break;
+          }
+        }
+      }
+    }
+    return list;
+  }
+
   void _addFetchedToList(
       List<Post> fetched, Set<String> loadedIds, List<Post> newPosts, int limit) {
     int added = 0;
@@ -2553,6 +2588,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                   },
                 )
                     : HomePostUsersWidget(
+                  key: ValueKey('hwp-${post.id}'),
                   index: index,
                   post: post,
                   color: _getRandomColor(),

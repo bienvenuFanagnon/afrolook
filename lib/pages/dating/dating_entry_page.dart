@@ -791,6 +791,9 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
         } else {
           await _loadExcludedUserIds();
           await _loadProfiles();
+          if (_profiles.isEmpty && mounted) {
+            await _restartDiscoveryCycle();
+          }
         }
         _checkNewActivity();
         _maybeShowProfileCompletionPrompt();
@@ -2856,7 +2859,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
     final hasSubscription = _subscriptionPlan != null && (_subscriptionPlan == 'plus' || _subscriptionPlan == 'gold');
-    final showEmptyState = _profiles.isEmpty && !_isLoading;
+    final showEmptyState = _profiles.isEmpty && !_isLoading && !_deckExhausted;
 
     return Scaffold(
       backgroundColor: AppColors.of(context).background,

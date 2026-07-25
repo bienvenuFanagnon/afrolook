@@ -204,6 +204,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
 
   // Nouveau système de like + commentaire rapide
   bool _isLiking = false;
+  // État local du like par post — résistant aux rebuilds et replacements de _videoPosts par les snapshots
+  final Map<String, bool> _likedPosts = {};
+  final Map<String, int> _lovesCount = {};
   List<PostComment> _preloadedComments = [];
   List<String> _previewSuggestions = [];
   final TextEditingController _quickCommentController = TextEditingController();
@@ -1141,17 +1144,40 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
     return results;
   }
 
+  void _initPostLikeState(Post post) {
+    if (post.id == null) return;
+    if (_likedPosts.containsKey(post.id)) return;
+    final userId = authProvider.loginUserData.id;
+    _likedPosts[post.id!] = post.users_love_id?.contains(userId) ?? false;
+    _lovesCount[post.id!] = post.loves ?? 0;
+  }
+
   void _subscribeToPostUpdates(Post post) {
     if (post.id == null || _postSubscriptions.containsKey(post.id)) return;
+    _initPostLikeState(post);
     final subscription = _firestore.collection('Posts').doc(post.id).snapshots().listen((snapshot) {
       if (snapshot.exists && mounted) {
-        final updatedPost = Post.fromJson(snapshot.data() as Map<String, dynamic>);
+        // Inclure snapshot.id pour que updatedPost.id ne soit jamais null
+        final updatedPost = Post.fromJson({'id': snapshot.id, ...snapshot.data() as Map<String, dynamic>});
         setState(() {
           final index = _videoPosts.indexWhere((p) => p.id == post.id);
           if (index != -1) {
             updatedPost.user = _videoPosts[index].user;
             updatedPost.canal = _videoPosts[index].canal;
             _videoPosts[index] = updatedPost;
+          }
+
+          // Mettre à jour les Maps seulement si snapshot confirme l'état local
+          // (évite d'écraser un like optimiste avec un snapshot prématuré)
+          final userId = authProvider.loginUserData.id;
+          if (userId != null && post.id != null) {
+            final likedLocally = _likedPosts[post.id];
+            final likedInSnapshot = updatedPost.users_love_id?.contains(userId) ?? false;
+            if (likedLocally == null || likedLocally == likedInSnapshot) {
+              _likedPosts[post.id!] = likedInSnapshot;
+              _lovesCount[post.id!] = updatedPost.loves ?? 0;
+            }
+            // Discordance → like optimiste en cours → on garde les Maps telles quelles
           }
         });
       }
@@ -1473,20 +1499,21 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
   }
   Future<void> _handleLike(Post post) async {
     if (_isLiking) return;
+    if (post.id == null) return;
     final userId = authProvider.loginUserData.id;
     if (userId == null) return;
 
-    final alreadyLiked = post.users_love_id?.contains(userId) ?? false;
+    // Source de vérité : Maps locales (résistantes aux replacements de _videoPosts)
+    final alreadyLiked = _likedPosts[post.id] ?? (post.users_love_id?.contains(userId) ?? false);
+    final previousCount = _lovesCount[post.id] ?? post.loves ?? 0;
 
     setState(() {
       _isLiking = true;
-      post.loves = ((post.loves ?? 0) + (alreadyLiked ? -1 : 1)).clamp(0, double.maxFinite.toInt());
-      post.users_love_id ??= [];
-      if (alreadyLiked) {
-        post.users_love_id!.remove(userId);
-      } else {
-        post.users_love_id!.add(userId);
-        // Coeurs animés uniquement au like
+      _likedPosts[post.id!] = !alreadyLiked;
+      _lovesCount[post.id!] = alreadyLiked
+          ? (previousCount - 1).clamp(0, 999999)
+          : previousCount + 1;
+      if (!alreadyLiked) {
         final screenSize = MediaQuery.of(context).size;
         _showFlyingHearts(screenSize.width / 2, screenSize.height / 2);
       }
@@ -1499,18 +1526,18 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
         'popularity': FieldValue.increment(-1),
       }).catchError((_) {
         if (mounted) setState(() {
-          post.loves = ((post.loves ?? 0) + 1);
-          post.users_love_id?.add(userId);
+          _likedPosts[post.id!] = true;
+          _lovesCount[post.id!] = previousCount;
         });
       }).whenComplete(() {
         if (mounted) setState(() => _isLiking = false);
       });
     } else {
-      _processLikeBackground(post, userId, alreadyLiked);
+      _processLikeBackground(post, userId, alreadyLiked, previousCount);
     }
   }
 
-  void _processLikeBackground(Post post, String userId, bool alreadyLiked) {
+  void _processLikeBackground(Post post, String userId, bool alreadyLiked, int previousCount) {
     final coinProvider = Provider.of<CoinGiftUserProvider>(context, listen: false);
     coinProvider.sendLikeWithCoins(
       senderId: userId,
@@ -1520,6 +1547,11 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
     ).then((success) {
       if (!mounted) return;
       if (!success) {
+        // Rollback : solde insuffisant → annuler l'état optimiste
+        setState(() {
+          _likedPosts[post.id!] = alreadyLiked;
+          _lovesCount[post.id!] = previousCount;
+        });
         _firestore.collection('Posts').doc(post.id).update({
           'loves': FieldValue.increment(1),
           'users_love_id': FieldValue.arrayUnion([userId]),
@@ -1534,7 +1566,11 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
         _sendLikeNotification(post);
       }
     }).catchError((e) {
-      // erreur silencieuse, le like UI est déjà compté
+      // Rollback : erreur réseau ou autre → annuler l'état optimiste
+      if (mounted) setState(() {
+        _likedPosts[post.id!] = alreadyLiked;
+        _lovesCount[post.id!] = previousCount;
+      });
     }).whenComplete(() {
       if (mounted) setState(() => _isLiking = false);
     });
@@ -2667,7 +2703,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
               GestureDetector(
                 onTap: _isLiking ? null : () => _handleLike(post),
                 child: Icon(
-                  (post.users_love_id?.contains(authProvider.loginUserData.id) ?? false)
+                  (_likedPosts[post.id] ?? (post.users_love_id?.contains(authProvider.loginUserData.id) ?? false))
                       ? Icons.favorite
                       : Icons.favorite_border,
                   color: _afroRed,
@@ -2684,8 +2720,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
                   child: FadeTransition(opacity: animation, child: child),
                 ),
                 child: Text(
-                  '${post.loves ?? 0}',
-                  key: ValueKey(post.loves ?? 0),
+                  '${_lovesCount[post.id] ?? post.loves ?? 0}',
+                  key: ValueKey(_lovesCount[post.id] ?? post.loves ?? 0),
                   style: const TextStyle(color: Colors.white),
                 ),
               ),

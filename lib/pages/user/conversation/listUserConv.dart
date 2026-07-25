@@ -2010,7 +2010,9 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
         onTap: () => _openChat(chat),
         child: ConversationList(
           name: "@${chat.chatFriend?.pseudo ?? _l10n.convDefaultUser}",
-          messageText: _getMessagePreview(lastMessage),
+          messageText: lastMessage != null
+              ? _getMessagePreview(lastMessage)
+              : (chat.lastMessage?.isNotEmpty == true ? chat.lastMessage! : _l10n.convNoMessage),
           imageUrl: chat.chatFriend?.imageUrl ?? '',
           time: _formatTime(chat.updatedAt),
           isMessageRead: unreadCount == 0,
@@ -2222,7 +2224,9 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
             onTap: () => _openChat(chat),
             child: ConversationList(
               name: "@${chat.chatFriend?.pseudo ?? _l10n.convDefaultUser}",
-              messageText: _getMessagePreview(lastMessage),
+              messageText: lastMessage != null
+                  ? _getMessagePreview(lastMessage)
+                  : (chat.lastMessage?.isNotEmpty == true ? chat.lastMessage! : _l10n.convNoMessage),
               imageUrl: chat.chatFriend?.imageUrl ?? '',
               time: _formatTime(chat.updatedAt),
               isMessageRead: unreadCount == 0,

@@ -1618,6 +1618,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
             post.type == PostType.CHALLENGEPARTICIPATION.name
                 ? LookChallengePostWidget(post: post, height: height, width: width)
                 : HomePostUsersWidget(
+              key: ValueKey('hwp-${post.id}'),
               post: post,
               color: _getRandomColor(),
               height: height * 0.6,

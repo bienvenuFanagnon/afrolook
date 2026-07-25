@@ -583,9 +583,9 @@ Future<void> _runPromoNotification(
     if (creator != null && creator.pseudo != null) {
       await _showCategoryNotification(
         id: _notifIdCreatorsPromo,
-        title: debugMode ? '🌟 ${creator.pseudo} [DEBUG]' : 'Découvre ${creator.pseudo}',
+        title: debugMode ? '@${creator.pseudo} [DEBUG]' : '@${creator.pseudo}',
         body: 'Ce créateur est actif sur Afrolook — suis-le pour ne rien manquer !',
-        icon: '🌟',
+        icon: '',
         imageUrl: creator.imageUrl,
       );
       if (!debugMode) await prefs.setInt(_lastPromoKey, nowMs);
@@ -599,9 +599,9 @@ Future<void> _runPromoNotification(
     if (canal != null && canal.name != null) {
       await _showCategoryNotification(
         id: _notifIdCanalsPromo,
-        title: debugMode ? '📡 ${canal.name} [DEBUG]' : 'Canal : ${canal.name}',
+        title: debugMode ? '#${canal.name} [DEBUG]' : '#${canal.name}',
         body: 'Rejoins ce canal et reste connecté à ta communauté Afrolook !',
-        icon: '📡',
+        icon: '',
         imageUrl: canal.imageUrl,
       );
       if (!debugMode) await prefs.setInt(_lastPromoKey, nowMs);
@@ -752,7 +752,7 @@ Future<void> _showCategoryNotification({
   required String icon,
   String? imageUrl,
 }) async {
-  final fullTitle = '$icon $title';
+  final fullTitle = icon.isEmpty ? title : '$icon $title';
   final largeBitmap = await _downloadImageBitmap(imageUrl);
 
   final androidDetails = AndroidNotificationDetails(

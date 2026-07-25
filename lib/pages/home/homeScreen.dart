@@ -219,6 +219,7 @@ class _MyHomePageState extends State<MyHomePage>
   late MixedFeedService _mixedFeedService;
   bool _isGlobalContentLoading = false;
   late AnimationController _headerCtrl;
+  double _scrollAccum = 0;
 
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   bool _buttonEnabled = true;
@@ -1368,8 +1369,8 @@ class _MyHomePageState extends State<MyHomePage>
     _headerCtrl = AnimationController(
       vsync: this,
       value: 1.0,
-      duration: const Duration(milliseconds: 180),
-      reverseDuration: const Duration(milliseconds: 130),
+      duration: const Duration(milliseconds: 300),
+      reverseDuration: const Duration(milliseconds: 200),
     );
     // Attendre que le widget soit construit
 
@@ -2031,13 +2032,34 @@ class _MyHomePageState extends State<MyHomePage>
             child: NotificationListener<ScrollNotification>(
               onNotification: (notification) {
                 if (notification is ScrollUpdateNotification) {
+                  // Ignorer les scrolls programmatiques (chargement de posts,
+                  // prépend de contenu, layout) — dragDetails est null dans ce cas
+                  if (notification.dragDetails == null) return false;
+
                   final delta = notification.scrollDelta ?? 0;
                   final pixels = notification.metrics.pixels;
+
+                  // Toujours montrer en haut de la liste
                   if (pixels <= 0) {
+                    _scrollAccum = 0;
                     if (_headerCtrl.value < 1.0) _headerCtrl.forward();
-                  } else if (delta > 2) {
+                    return false;
+                  }
+
+                  // Accumuler dans la direction courante, réinitialiser si changement
+                  if (delta > 0) {
+                    _scrollAccum = _scrollAccum > 0 ? _scrollAccum + delta : delta;
+                  } else if (delta < 0) {
+                    _scrollAccum = _scrollAccum < 0 ? _scrollAccum + delta : delta;
+                  }
+
+                  // Cacher après 25px de scroll bas continu
+                  if (_scrollAccum > 25) {
+                    _scrollAccum = 0;
                     if (_headerCtrl.value > 0.0) _headerCtrl.reverse();
-                  } else if (delta < -2) {
+                  // Montrer après 60px de scroll haut continu
+                  } else if (_scrollAccum < -60) {
+                    _scrollAccum = 0;
                     if (_headerCtrl.value < 1.0) _headerCtrl.forward();
                   }
                 }

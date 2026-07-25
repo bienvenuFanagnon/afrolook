@@ -420,9 +420,78 @@ class FeedRepository {
     return result;
   }
 
-  /// Score composite : engagement×0.35 + fraîcheur×0.25 + pays×0.20 + nouveau_créateur×0.15 + viralité×0.05
+  // ── ABONNEMENTS & BOOST NOUVEAUX POSTS ─────────────────────────────────────
+
+  /// Posts récents (≤ [withinDays] jours) des créateurs suivis, triés du plus récent.
+  /// Utilisé pour garantir ≥10 posts abonnements dans le feed même si FeedPreloadService
+  /// n'est pas encore chargé.
+  Future<List<Post>> fetchFollowingRecentPosts(
+    List<String> followingIds,
+    Set<String> excluded, {
+    int limit = 10,
+    int withinDays = 7,
+  }) async {
+    if (followingIds.isEmpty) return [];
+    final since = DateTime.now().subtract(Duration(days: withinDays)).millisecondsSinceEpoch;
+    final posts = <Post>[];
+    final seen = <String>{...excluded};
+
+    // whereIn supporte max 30 ids — on chunk par 10 pour large compatibilité
+    for (int i = 0; i < followingIds.length && posts.length < limit; i += 10) {
+      final chunk = followingIds.sublist(i, min(i + 10, followingIds.length));
+      try {
+        final snap = await _db
+            .collection('Posts')
+            .where('user_id', whereIn: chunk)
+            .orderBy('created_at', descending: true)
+            .limit(limit * 2)
+            .get();
+        for (final doc in snap.docs) {
+          if (posts.length >= limit) break;
+          if (seen.contains(doc.id)) continue;
+          try {
+            final post = Post.fromJson({'id': doc.id, ...doc.data()});
+            if (post.status == 'SUPPRIMER') continue;
+            if ((post.createdAt ?? 0) < since) break; // ordonné desc — inutile de continuer
+            seen.add(doc.id);
+            posts.add(post);
+          } catch (_) {}
+        }
+      } catch (e) {
+        printVm('⚠️ [FeedRepository] fetchFollowingRecentPosts chunk[$i]: $e');
+      }
+    }
+    posts.shuffle();
+    return posts.take(limit).toList();
+  }
+
+  /// Posts très récents (≤ 48h) avec peu de vues — à booster pour donner de l'exposition
+  /// aux nouveaux créateurs et aux posts qui se perdent dans l'algo.
+  Future<List<Post>> fetchNewPostsToBoost(Set<String> excluded, {int limit = 5}) async {
+    final since = DateTime.now()
+        .subtract(const Duration(hours: 48))
+        .millisecondsSinceEpoch;
+    try {
+      final snap = await _db
+          .collection('Posts')
+          .where('created_at', isGreaterThanOrEqualTo: since)
+          .orderBy('created_at', descending: true)
+          .limit(limit * 4)
+          .get();
+      final candidates = _parsePosts(snap.docs, excluded, limit * 4);
+      // Priorité aux posts les moins vus → ceux qui ont besoin d'exposition
+      candidates.sort((a, b) => (a.vues ?? 0).compareTo(b.vues ?? 0));
+      return candidates.take(limit).toList();
+    } catch (e) {
+      printVm('⚠️ [FeedRepository] fetchNewPostsToBoost: $e');
+      return [];
+    }
+  }
+
+  // ── SCORING ──────────────────────────────────────────────────────────────────
+
+  /// Score composite : engagement×0.30 + fraîcheur×0.20 + pays×0.20 + nouveau_créateur×0.15 + ultra_frais×0.10 + viralité×0.05
   double _computeScore(Post post, int nowMs, String countryCode) {
-    // Engagement pur (sans fraîcheur ni viralité, déjà calculées ci-dessous)
     final engagement = FeedScoringService.calculateEngagementScore(post).clamp(0.0, 1.0);
 
     // Fraîcheur : demi-vie 7 jours
@@ -436,15 +505,20 @@ class FeedRepository {
     final isNewCreator = (post.user?.abonnes ?? 999) < 200 && ageHours < 720;
     final newBoost = isNewCreator ? 1.0 : 0.0;
 
+    // Boost ultra-frais : post < 48h → exposition maximale pour ne pas se perdre
+    final ultraFreshBoost = ageHours < 48 ? (1.0 - ageHours / 48.0) : 0.0;
+
     // Viralité (interactions / vues)
     final vues = (post.vues ?? 0).toDouble();
     final interactions = ((post.likes ?? 0) + (post.comments ?? 0) + (post.partage ?? 0)).toDouble();
     final virality = vues > 10 ? (interactions / vues).clamp(0.0, 1.0) : 0.0;
 
-    return (engagement * 0.35 +
-        freshness * 0.25 +
+    // Poids total = 1.00
+    return (engagement * 0.30 +
+        freshness * 0.20 +
         paysMatch * 0.20 +
         newBoost * 0.15 +
+        ultraFreshBoost * 0.10 +
         virality * 0.05);
   }
 

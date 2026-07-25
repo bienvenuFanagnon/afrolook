@@ -2136,6 +2136,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
               },
             )
                 : HomePostUsersWidget(
+              key: ValueKey('hwp-${post.id}'),
               index: index,
               post: post,
               color: _getRandomColor(),
