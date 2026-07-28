@@ -116,4 +116,11 @@ class NavigationCacheService {
       'userId': userId,
     });
   }
+
+  Future<void> storeCanalNavigation(String canalId) async {
+    await storePendingNavigation({
+      'type': 'canal',
+      'canalId': canalId,
+    });
+  }
 }

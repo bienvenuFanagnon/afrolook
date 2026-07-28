@@ -4,6 +4,7 @@ import 'dart:math';
 import 'dart:ui';
 import 'package:afrotok/services/linkService.dart';
 import 'package:afrotok/pages/canaux/listCanal.dart';
+import 'package:afrotok/pages/canaux/detailsCanal.dart';
 import 'package:afrotok/pages/challengeMonth/challenge_month_page.dart';
 import 'package:afrotok/pages/chat/chatXilo.dart';
 import 'package:afrotok/pages/chronique/mychroniquepage.dart';
@@ -1545,6 +1546,14 @@ class _MyHomePageState extends State<MyHomePage>
             context,
             MaterialPageRoute(
                 builder: (_) => ProfileScreenContenu(userId: dest.creatorId)),
+          );
+        }
+        break;
+      case 'canal':
+        if (dest.canal != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => CanalDetails(canal: dest.canal!)),
           );
         }
         break;

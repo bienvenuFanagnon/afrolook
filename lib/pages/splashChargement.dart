@@ -63,7 +63,8 @@ class DestinationData {
   final ContentPaie? content;
   final String? affiliateId;
   final String? creatorId;
-  DestinationData({required this.type, this.post, this.chat, this.chroniqueId, this.chatId, this.sendUserId, this.joinCode, this.content, this.affiliateId, this.creatorId});
+  final Canal? canal;
+  DestinationData({required this.type, this.post, this.chat, this.chroniqueId, this.chatId, this.sendUserId, this.joinCode, this.content, this.affiliateId, this.creatorId, this.canal});
 }
 
 class SplashChargement extends StatefulWidget {
@@ -115,6 +116,9 @@ class _SplashChargementState extends State<SplashChargement> {
   ContentPaie? _loadedContent;
 
   String? _pendingCreatorId;
+
+  String? _pendingCanalId;
+  Canal? _loadedCanal;
 
   @override
   void initState() {
@@ -279,6 +283,19 @@ class _SplashChargementState extends State<SplashChargement> {
         _loadedContent = ContentPaie.fromJson({...doc.data()!, 'id': doc.id});
       }
     } catch (e) { printVm("❌ Erreur chargement contenu : $e"); }
+  }
+
+  Future<void> _loadCanalData() async {
+    if (_pendingCanalId == null) return;
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('Canaux')
+          .doc(_pendingCanalId)
+          .get();
+      if (doc.exists && doc.data() != null) {
+        _loadedCanal = Canal.fromJson({...doc.data()!, 'id': doc.id});
+      }
+    } catch (e) { printVm("❌ Erreur chargement canal : $e"); }
   }
 
   Future<void> _navigateToHomeWithDestination() async {
@@ -630,6 +647,9 @@ class _SplashChargementState extends State<SplashChargement> {
         case 'creator':
           _pendingCreatorId = _cachedNavigation!['userId'] as String?;
           break;
+        case 'canal':
+          _pendingCanalId = _cachedNavigation!['canalId'] as String?;
+          break;
         case 'group':
           _pendingJoinCode = _cachedNavigation!['joinCode'] as String?;
           break;
@@ -681,6 +701,12 @@ class _SplashChargementState extends State<SplashChargement> {
         break;
       case 'creator':
         _destinationToSend = DestinationData(type: 'creator', creatorId: _pendingCreatorId);
+        break;
+      case 'canal':
+        await _loadCanalData();
+        _destinationToSend = (_loadedCanal != null)
+            ? DestinationData(type: 'canal', canal: _loadedCanal)
+            : DestinationData(type: 'home');
         break;
       case 'group':
         _destinationToSend = DestinationData(type: 'group', joinCode: _pendingJoinCode);

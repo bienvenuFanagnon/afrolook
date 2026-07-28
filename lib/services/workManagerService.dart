@@ -13,6 +13,7 @@ import 'package:workmanager/workmanager.dart';
 
 import '../firebase_options.dart';
 import '../pages/component/consoleWidget.dart';
+import 'nav_cache_service.dart';
 
 // ═══════════════════════════════════════════════════════════════
 // GLOBAL
@@ -495,7 +496,7 @@ bool _shouldSendPromo(int nowMs, int lastPromoTs) {
 }
 
 /// Cherche un créateur actif récemment (tous les créateurs, suivis ou non).
-Future<({String? pseudo, String? imageUrl})?> _fetchRandomActiveCreator(
+Future<({String? pseudo, String? imageUrl, String? userId})?> _fetchRandomActiveCreator(
   FirebaseFirestore db,
   String userId,
 ) async {
@@ -524,6 +525,7 @@ Future<({String? pseudo, String? imageUrl})?> _fetchRandomActiveCreator(
     return (
       pseudo: (data['pseudo'] as String?) ?? (data['name'] as String?),
       imageUrl: data['imageUrl'] as String?,
+      userId: pickedId,
     );
   } catch (e) {
     debugPrint('❌ WM fetchActiveCreator: $e');
@@ -532,7 +534,7 @@ Future<({String? pseudo, String? imageUrl})?> _fetchRandomActiveCreator(
 }
 
 /// Cherche un canal actif (tous les canaux, rejoints ou non).
-Future<({String? name, String? imageUrl})?> _fetchRandomActiveCanal(
+Future<({String? name, String? imageUrl, String? canalId})?> _fetchRandomActiveCanal(
   FirebaseFirestore db,
   String userId,
 ) async {
@@ -543,7 +545,8 @@ Future<({String? name, String? imageUrl})?> _fetchRandomActiveCanal(
     if (all.isEmpty) return null;
 
     all.shuffle();
-    final picked = all.first.data();
+    final pickedDoc = all.first;
+    final picked = pickedDoc.data();
 
     return (
       name: (picked['name'] as String?) ??
@@ -552,6 +555,7 @@ Future<({String? name, String? imageUrl})?> _fetchRandomActiveCanal(
       imageUrl: (picked['imageUrl'] as String?) ??
                 (picked['image'] as String?) ??
                 (picked['coverImage'] as String?),
+      canalId: pickedDoc.id,
     );
   } catch (e) {
     debugPrint('❌ WM fetchActiveCanal: $e');
@@ -587,6 +591,9 @@ Future<void> _runPromoNotification(
         body: 'Ce créateur est actif sur Afrolook — suis-le pour ne rien manquer !',
         icon: '',
         imageUrl: creator.imageUrl,
+        payload: creator.userId != null
+            ? jsonEncode({'type': 'creator', 'userId': creator.userId})
+            : null,
       );
       if (!debugMode) await prefs.setInt(_lastPromoKey, nowMs);
       debugPrint('✅ WM promo créateur: ${creator.pseudo}');
@@ -603,6 +610,9 @@ Future<void> _runPromoNotification(
         body: 'Rejoins ce canal et reste connecté à ta communauté Afrolook !',
         icon: '',
         imageUrl: canal.imageUrl,
+        payload: canal.canalId != null
+            ? jsonEncode({'type': 'canal', 'canalId': canal.canalId})
+            : null,
       );
       if (!debugMode) await prefs.setInt(_lastPromoKey, nowMs);
       debugPrint('✅ WM promo canal: ${canal.name}');
@@ -717,12 +727,43 @@ Future<Map<String, int>> _countUnreadNotifications(
 // AFFICHAGE NOTIFICATION — style BigText (Facebook/Snapchat)
 // ═══════════════════════════════════════════════════════════════
 
+/// Handler de tap de notification quand l'app est en arrière-plan ou terminée.
+/// Doit être une fonction top-level avec @pragma.
+@pragma('vm:entry-point')
+void onNotificationTapBackground(NotificationResponse details) {
+  _handleLocalNotifPayload(details.payload);
+}
+
 Future<void> initLocalNotifications() async {
   const AndroidInitializationSettings android =
       AndroidInitializationSettings('@drawable/notification_icon');
   await flutterLocalNotificationsPlugin.initialize(
     InitializationSettings(android: android),
+    onDidReceiveNotificationResponse: (details) => _handleLocalNotifPayload(details.payload),
+    onDidReceiveBackgroundNotificationResponse: onNotificationTapBackground,
   );
+}
+
+/// Stocke la destination dans NavigationCacheService selon le payload JSON.
+void _handleLocalNotifPayload(String? payload) {
+  if (payload == null || payload.isEmpty) return;
+  try {
+    final data = jsonDecode(payload) as Map<String, dynamic>;
+    final type = data['type'] as String?;
+    if (type == 'creator') {
+      final uid = data['userId'] as String?;
+      if (uid != null && uid.isNotEmpty) {
+        NavigationCacheService().storeCreatorNavigation(uid);
+      }
+    } else if (type == 'canal') {
+      final cid = data['canalId'] as String?;
+      if (cid != null && cid.isNotEmpty) {
+        NavigationCacheService().storeCanalNavigation(cid);
+      }
+    }
+  } catch (e) {
+    debugPrint('⚠️ WM notif payload parse error: $e');
+  }
 }
 
 /// Télécharge une image depuis une URL et la retourne comme bitmap Android.
@@ -751,6 +792,7 @@ Future<void> _showCategoryNotification({
   required String body,
   required String icon,
   String? imageUrl,
+  String? payload,
 }) async {
   final fullTitle = icon.isEmpty ? title : '$icon $title';
   final largeBitmap = await _downloadImageBitmap(imageUrl);
@@ -788,6 +830,7 @@ Future<void> _showCategoryNotification({
     fullTitle,
     body,
     NotificationDetails(android: androidDetails),
+    payload: payload,
   );
 }
 
