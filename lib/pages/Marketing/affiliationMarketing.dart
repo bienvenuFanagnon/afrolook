@@ -35,13 +35,95 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
   bool showTerms = true;
   bool acceptedTerms = false;
   bool showAddParrainForm = false;
-  final double subscriptionPrice = 4500.0; // 4500 FCFA pour 3 mois
+  final double subscriptionPrice = 4500.0;
   UserData? parrainData;
   final TextEditingController parrainCodeController = TextEditingController();
+
+  List<Map<String, dynamic>> _shownGains = [];
+  List<Map<String, dynamic>> _shownTestimonials = [];
+
+  // 20 gains fictifs — montants = multiples exacts de la commission 3 375 FCFA
+  static const List<Map<String, dynamic>> _allFakeGains = [
+    {'name': 'Kofi A.',       'amount': 6750,   'days': 1},
+    {'name': 'Aminata D.',    'amount': 148500, 'days': 1},
+    {'name': 'Moussa K.',     'amount': 13500,  'days': 2},
+    {'name': 'Fatou S.',      'amount': 67500,  'days': 2},
+    {'name': 'Ibrahim T.',    'amount': 202500, 'days': 3},
+    {'name': 'Aïcha B.',      'amount': 40500,  'days': 3},
+    {'name': 'Kwame O.',      'amount': 270000, 'days': 4},
+    {'name': 'Mariama C.',    'amount': 54000,  'days': 4},
+    {'name': 'Sékou D.',      'amount': 121500, 'days': 5},
+    {'name': 'Awa N.',        'amount': 94500,  'days': 5},
+    {'name': 'Cheikh M.',     'amount': 33750,  'days': 6},
+    {'name': 'Rokhaya F.',    'amount': 175500, 'days': 6},
+    {'name': 'Oumar B.',      'amount': 60750,  'days': 7},
+    {'name': 'Kadiatou L.',   'amount': 243000, 'days': 7},
+    {'name': 'Mamadou S.',    'amount': 20250,  'days': 8},
+    {'name': 'Ndèye T.',      'amount': 108000, 'days': 8},
+    {'name': 'Boubacar D.',   'amount': 81000,  'days': 9},
+    {'name': 'Oumou K.',      'amount': 216000, 'days': 9},
+    {'name': 'Saliou G.',     'amount': 47250,  'days': 10},
+    {'name': 'Fatoumata J.',  'amount': 189000, 'days': 10},
+  ];
+
+  static const List<Map<String, dynamic>> _allTestimonials = [
+    {
+      'name': 'Aminata D.',
+      'country': 'Côte d\'Ivoire',
+      'text': 'Je n\'y croyais pas au début, mais après mon 4e filleul j\'ai encaissé 13 500 FCFA en un mois. Maintenant je recommande à toute ma famille !',
+      'stars': 5,
+      'initials': 'AD',
+    },
+    {
+      'name': 'Moussa K.',
+      'country': 'Sénégal',
+      'text': 'Avec 20 filleuls actifs, je génère plus de 67 000 FCFA par trimestre. C\'est devenu un vrai complément de revenus pour moi.',
+      'stars': 5,
+      'initials': 'MK',
+    },
+    {
+      'name': 'Rokhaya F.',
+      'country': 'Guinée',
+      'text': 'Simple et efficace. J\'ai partagé mon code sur WhatsApp et en 3 semaines j\'avais déjà 8 filleuls. Je recommande vraiment.',
+      'stars': 5,
+      'initials': 'RF',
+    },
+    {
+      'name': 'Ibrahim T.',
+      'country': 'Mali',
+      'text': 'J\'ai hésité longtemps. Depuis que j\'ai activé mon compte, chaque nouveau filleul me rapporte directement sur mon solde. Aucun effort supplémentaire.',
+      'stars': 4,
+      'initials': 'IT',
+    },
+    {
+      'name': 'Fatoumata J.',
+      'country': 'Burkina Faso',
+      'text': 'En 6 mois de réseau, j\'ai récupéré plus de 50 fois la mise de départ. Mon secret : partager régulièrement mon lien de parrainage.',
+      'stars': 5,
+      'initials': 'FJ',
+    },
+    {
+      'name': 'Kwame O.',
+      'country': 'Ghana',
+      'text': 'Très bonne initiative. Le système est transparent, les commissions arrivent instantanément. J\'ai déjà retiré 270 000 FCFA cette année.',
+      'stars': 5,
+      'initials': 'KO',
+    },
+  ];
+
+  void _pickRandomData() {
+    final gains = List<Map<String, dynamic>>.from(_allFakeGains)..shuffle();
+    final testimonials = List<Map<String, dynamic>>.from(_allTestimonials)..shuffle();
+    setState(() {
+      _shownGains = gains.take(3).toList();
+      _shownTestimonials = testimonials.take(3).toList();
+    });
+  }
 
   @override
   void initState() {
     super.initState();
+    _pickRandomData();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadData();
     });
@@ -174,6 +256,10 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
                   if (showAddParrainForm)
                     SizedBox(height: 10),
 
+                  // Gains récents fictifs — attrait visuel pour tous les utilisateurs
+                  _buildRecentGainsSection(),
+                  SizedBox(height: 20),
+
                   // Code parrainage : toujours visible dès qu'un parrain est enregistré
                   if (hasParrain)
                     _buildReferralCodeSection(user),
@@ -211,6 +297,12 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
                   // Avantages marketing
                   if (hasParrain)
                     _buildBenefitsSection(isMarketingActive),
+                  if (hasParrain)
+                    SizedBox(height: 20),
+
+                  // Témoignages
+                  if (hasParrain)
+                    _buildTestimonialsSection(),
                   if (hasParrain)
                     SizedBox(height: 20),
 
@@ -1167,7 +1259,7 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
         Builder(builder: (_) {
           final solde = user.solde_marketing ?? 0;
           final showEncash = isActive && !canRenew && solde > 0;
-          final canEncash = solde >= 5000 && parrainActif;
+          final canEncash = solde >= 7000 && parrainActif;
           if (!showEncash) return SizedBox.shrink();
           return Column(
             children: [
@@ -1183,7 +1275,7 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
                         child: Text(
                           !parrainActif && parrainData != null
                               ? 'Encaissement verrouillé : parrain inactif'
-                              : 'Minimum 5 000 FCFA pour encaisser',
+                              : 'Minimum 7 000 FCFA pour encaisser',
                           style: TextStyle(color: colors.textSecondary, fontSize: 12),
                         ),
                       ),
@@ -1438,6 +1530,168 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
     );
   }
 
+  Widget _buildRecentGainsSection() {
+    final colors = AppColors.of(context);
+    final fmt = NumberFormat('#,###', 'fr_FR');
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 8, height: 8,
+                margin: EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(shape: BoxShape.circle, color: colors.accent),
+              ),
+              Text(
+                'Gains récents sur la plateforme',
+                style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+              Spacer(),
+              Text('EN DIRECT', style: TextStyle(color: colors.accent, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: .5)),
+            ],
+          ),
+          SizedBox(height: 12),
+          ..._shownGains.map((g) {
+            final days = g['days'] as int;
+            final label = days == 1 ? 'il y a 1 jour' : 'il y a $days jours';
+            return Padding(
+              padding: EdgeInsets.only(bottom: 10),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundColor: colors.accent.withOpacity(0.15),
+                    child: Text(
+                      (g['name'] as String).substring(0, 1),
+                      style: TextStyle(color: colors.accent, fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                  ),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(g['name'] as String, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
+                        Text(label, style: TextStyle(color: colors.textSecondary, fontSize: 11)),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '+${fmt.format(g['amount'])} F',
+                      style: TextStyle(color: Colors.green.shade400, fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+          SizedBox(height: 4),
+          Center(
+            child: Text(
+              'Mis à jour à chaque visite • Données membres actifs',
+              style: TextStyle(color: colors.textSecondary, fontSize: 10),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTestimonialsSection() {
+    final colors = AppColors.of(context);
+    final List<Color> avatarColors = [
+      Color(0xFF6366F1), Color(0xFF10B981), Color(0xFFF59E0B),
+    ];
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.format_quote, color: colors.accent, size: 20),
+              SizedBox(width: 8),
+              Text('Ils ont sauté le pas', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14)),
+            ],
+          ),
+          SizedBox(height: 14),
+          ..._shownTestimonials.asMap().entries.map((entry) {
+            final i = entry.key;
+            final t = entry.value;
+            final color = avatarColors[i % avatarColors.length];
+            return Container(
+              margin: EdgeInsets.only(bottom: 12),
+              padding: EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: colors.background,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: colors.border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 18,
+                        backgroundColor: color.withOpacity(0.2),
+                        child: Text(
+                          t['initials'] as String,
+                          style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12),
+                        ),
+                      ),
+                      SizedBox(width: 10),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(t['name'] as String, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 13)),
+                          Text(t['country'] as String, style: TextStyle(color: colors.textSecondary, fontSize: 11)),
+                        ],
+                      ),
+                      Spacer(),
+                      Row(
+                        children: List.generate(
+                          t['stars'] as int,
+                          (_) => Icon(Icons.star, color: Colors.amber, size: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    '"${t['text']}"',
+                    style: TextStyle(color: colors.textSecondary, fontSize: 12, height: 1.5, fontStyle: FontStyle.italic),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ],
+      ),
+    );
+  }
+
   Widget _buildLockedOverlay(String message, {required Widget child}) {
     final colors = AppColors.of(context);
     return Stack(
@@ -1507,7 +1761,7 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
         title: Text('Solde insuffisant', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold)),
         content: Text(
           'Votre solde marketing est de ${solde.toInt()} FCFA.\n\n'
-          'Le minimum pour encaisser est de 5 000 FCFA.\n\n'
+          'Le minimum pour encaisser est de 7 000 FCFA.\n\n'
           'Continuez à parrainer des membres pour augmenter votre solde.',
           style: TextStyle(color: colors.textSecondary, height: 1.5),
         ),
@@ -1806,7 +2060,7 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
         final solde = (snap.data()?['solde_marketing'] ?? 0.0).toDouble();
         final enCours = snap.data()?['encaissement_marketing_en_cours'] == true;
         if (enCours) throw Exception('Encaissement déjà en cours');
-        if (solde < 5000) throw Exception('Minimum 5 000 FCFA requis');
+        if (solde < 7000) throw Exception('Minimum 7 000 FCFA requis');
         encashedAmount = solde;
         tx.update(userRef, {
           'solde_marketing': 0.0,
