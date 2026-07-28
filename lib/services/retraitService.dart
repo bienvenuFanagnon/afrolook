@@ -20,6 +20,16 @@ class RetraitService {
     required UserData userData,
   }) async {
     try {
+      // Vérifier les horaires d'ouverture
+      final now = DateTime.now();
+      final weekday = now.weekday; // 1=lun … 7=dim
+      final hour = now.hour;
+      final isOpen = (weekday <= 5 && hour >= 8 && hour < 17) ||
+                     (weekday == 6 && hour >= 8 && hour < 14);
+      if (!isOpen) {
+        throw Exception('Service de retrait fermé. Disponible lun-ven 8h-17h et sam 8h-14h.');
+      }
+
       // Vérifier le solde
       if (userData.votre_solde_principal! < montant) {
         throw Exception('Solde insuffisant');

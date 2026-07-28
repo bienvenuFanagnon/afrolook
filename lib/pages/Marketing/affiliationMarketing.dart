@@ -2,6 +2,7 @@
 
 import 'package:afrotok/pages/Marketing/pageExplicationMarketing.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import 'package:provider/provider.dart';
@@ -117,6 +118,7 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
 
     printVm("Code parrain : ${user.codeParrain}");
     final hasParrain = parrainData != null || (user.codeParrain != null && user.codeParrain!.isNotEmpty);
+    final parrainActif = parrainData?.marketingActivated == true;
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -172,28 +174,38 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
                   if (showAddParrainForm)
                     SizedBox(height: 10),
 
-                  // Section Parrain (si parrain existe)
-                  if (hasParrain && parrainData != null)
-                    _buildParrainSection(parrainData!),
-                  if (hasParrain && parrainData != null)
-                    SizedBox(height: 20),
-
-                  // Statistiques (seulement si parrain existe)
-                  if (hasParrain)
-                    _buildStatsSection(user, isMarketingActive),
-                  if (hasParrain)
-                    SizedBox(height: 20),
-
-                  // Code parrainage (seulement si parrain existe)
+                  // Code parrainage : toujours visible dès qu'un parrain est enregistré
                   if (hasParrain)
                     _buildReferralCodeSection(user),
                   if (hasParrain)
                     SizedBox(height: 20),
 
-                  // Liste des parrainés actifs
-                  if (hasParrain && isMarketingActive)
-                    _buildSponsoredUsersSection(user),
-                  if (hasParrain && isMarketingActive)
+                  // Section Parrain (verrouillée si compte inactif)
+                  if (hasParrain && parrainData != null)
+                    isMarketingActive
+                        ? _buildParrainSection(parrainData!)
+                        : _buildLockedOverlay(t.affiliLockActivate, child: _buildParrainSection(parrainData!)),
+                  if (hasParrain && parrainData != null)
+                    SizedBox(height: 20),
+
+                  // Statistiques (verrouillées si compte inactif OU parrain inactif)
+                  if (hasParrain)
+                    (!isMarketingActive)
+                        ? _buildLockedOverlay(t.affiliLockActivate, child: _buildStatsSection(user, false))
+                        : (!parrainActif && parrainData != null)
+                            ? _buildLockedOverlay(t.affiliLockParrainInactive, child: _buildStatsSection(user, true))
+                            : _buildStatsSection(user, isMarketingActive),
+                  if (hasParrain)
+                    SizedBox(height: 20),
+
+                  // Liste des filleuls actifs (verrouillée si compte inactif OU parrain inactif)
+                  if (hasParrain)
+                    (!isMarketingActive)
+                        ? _buildLockedOverlay(t.affiliLockActivate, child: _buildSponsoredUsersSection(user))
+                        : (!parrainActif && parrainData != null)
+                            ? _buildLockedOverlay(t.affiliLockParrainInactive, child: _buildSponsoredUsersSection(user))
+                            : _buildSponsoredUsersSection(user),
+                  if (hasParrain)
                     SizedBox(height: 20),
 
                   // Avantages marketing
@@ -210,7 +222,7 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
 
                   // Bouton d'activation/renouvellement
                   if (hasParrain)
-                    _buildActionButton(user, isMarketingActive, daysLeft, isAdmin),
+                    _buildActionButton(user, isMarketingActive, daysLeft, isAdmin, parrainActif),
                   if (hasParrain)
                     SizedBox(height: 20),
                 ],
@@ -581,7 +593,13 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
               parrain.pseudo ?? 'Parrain',
               style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold),
             ),
-            subtitle: Text(parrain.email ?? '', style: TextStyle(color: colors.textSecondary)),
+            subtitle: Text(
+              parrainData?.marketingActivated == true ? '✓ Compte actif' : 'Compte inactif',
+              style: TextStyle(
+                color: parrainData?.marketingActivated == true ? colors.accent : colors.textSecondary,
+                fontSize: 12,
+              ),
+            ),
           ),
           SizedBox(height: 8),
           ElevatedButton(
@@ -924,7 +942,10 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
             ),
           ],
         ),
-        subtitle: Text(user.email ?? '', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
+        subtitle: Text(
+          user.userPays?.name ?? user.userPays?.id ?? 'Afrique',
+          style: TextStyle(color: colors.textSecondary, fontSize: 12),
+        ),
         trailing: ElevatedButton(
           style: ElevatedButton.styleFrom(
             backgroundColor: colors.danger,
@@ -1049,7 +1070,7 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
     );
   }
 
-  Widget _buildActionButton(UserData user, bool isActive, int daysLeft, bool isAdmin) {
+  Widget _buildActionButton(UserData user, bool isActive, int daysLeft, bool isAdmin, bool parrainActif) {
     final colors = AppColors.of(context);
     final t = AppLocalizations.of(context);
     final hasEnoughBalance = isAdmin || (user.votre_solde_principal ?? 0) >= subscriptionPrice;
@@ -1085,7 +1106,7 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
                   ),
                 ),
                 TextButton(
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DepositScreen())),
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DepositScreen(defaultAmount: subscriptionPrice))),
                   child: Text(t.affiliRecharge, style: TextStyle(color: colors.accent, fontSize: 12, fontWeight: FontWeight.bold)),
                 ),
               ],
@@ -1145,8 +1166,8 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
 
         Builder(builder: (_) {
           final solde = user.solde_marketing ?? 0;
-          final showEncash = isActive && !canRenew && solde >= 4000;
-          final canEncash = solde >= 7000;
+          final showEncash = isActive && !canRenew && solde > 0;
+          final canEncash = solde >= 5000 && parrainActif;
           if (!showEncash) return SizedBox.shrink();
           return Column(
             children: [
@@ -1158,9 +1179,13 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
                     children: [
                       Icon(Icons.lock_outline, color: colors.textSecondary, size: 14),
                       SizedBox(width: 6),
-                      Text(
-                        'Minimum 7 000 FCFA pour encaisser',
-                        style: TextStyle(color: colors.textSecondary, fontSize: 12),
+                      Expanded(
+                        child: Text(
+                          !parrainActif && parrainData != null
+                              ? 'Encaissement verrouillé : parrain inactif'
+                              : 'Minimum 5 000 FCFA pour encaisser',
+                          style: TextStyle(color: colors.textSecondary, fontSize: 12),
+                        ),
                       ),
                     ],
                   ),
@@ -1183,7 +1208,17 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
                     t.affiliEncash(solde.toInt()),
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                   ),
-                  onPressed: canEncash ? () => _encashMarketingBalance() : null,
+                  onPressed: () {
+                    if (!parrainActif && parrainData != null) {
+                      _showEncashLockedDialog();
+                      return;
+                    }
+                    if (!canEncash) {
+                      _showEncashMinimumDialog(solde);
+                      return;
+                    }
+                    _encashMarketingBalance();
+                  },
                 ),
               ),
             ],
@@ -1219,8 +1254,9 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
   int _calculateDaysLeft(int endTimestamp) {
     final endDate = DateTime.fromMillisecondsSinceEpoch(endTimestamp);
     final now = DateTime.now();
+    if (endDate.isBefore(now)) return 0;
     final difference = endDate.difference(now);
-    return difference.inDays.clamp(0, 90);
+    return (difference.inHours / 24).ceil().clamp(1, 90);
   }
 
   Future<List<UserData>> _getSponsoredUsers(List<String> userIds) async {
@@ -1265,6 +1301,14 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
       }
 
       final currentUser = authProvider.loginUserData;
+
+      // Bloquer si parrain déjà enregistré
+      if (currentUser.codeParrain != null && currentUser.codeParrain!.isNotEmpty) {
+        _showErrorSnackbar('Vous avez déjà un parrain enregistré.');
+        setState(() => isLoading = false);
+        return;
+      }
+
       if (currentUser.codeParrainage == code) {
         _showErrorSnackbar(t.affiliSelfParrain);
         setState(() => isLoading = false);
@@ -1394,6 +1438,110 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
     );
   }
 
+  Widget _buildLockedOverlay(String message, {required Widget child}) {
+    final colors = AppColors.of(context);
+    return Stack(
+      children: [
+        AbsorbPointer(child: Opacity(opacity: 0.30, child: child)),
+        Positioned.fill(
+          child: Container(
+            decoration: BoxDecoration(
+              color: colors.background.withOpacity(0.55),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: colors.border),
+            ),
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.lock_outline, color: colors.textSecondary, size: 30),
+                    SizedBox(height: 10),
+                    Text(
+                      message,
+                      style: TextStyle(color: colors.textSecondary, fontSize: 13, fontWeight: FontWeight.w500),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showSessionExpiredDialog() {
+    final colors = AppColors.of(context);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: colors.surface,
+        title: Text('Session expirée', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold)),
+        content: Text(
+          'Votre session a expiré. Veuillez vous reconnecter pour continuer.',
+          style: TextStyle(color: colors.textSecondary, height: 1.5),
+        ),
+        actions: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: colors.danger, foregroundColor: colors.textPrimary),
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            },
+            child: Text('Se reconnecter'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEncashMinimumDialog(double solde) {
+    final colors = AppColors.of(context);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: colors.surface,
+        title: Text('Solde insuffisant', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold)),
+        content: Text(
+          'Votre solde marketing est de ${solde.toInt()} FCFA.\n\n'
+          'Le minimum pour encaisser est de 5 000 FCFA.\n\n'
+          'Continuez à parrainer des membres pour augmenter votre solde.',
+          style: TextStyle(color: colors.textSecondary, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Fermer', style: TextStyle(color: colors.textSecondary)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEncashLockedDialog() {
+    final colors = AppColors.of(context);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: colors.surface,
+        title: Text('Encaissement verrouillé', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold)),
+        content: Text(
+          'Votre parrain @${parrainData?.pseudo ?? ''} doit re-activer son compte marketing pour débloquer vos statistiques et l\'encaissement.',
+          style: TextStyle(color: colors.textSecondary, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Fermer', style: TextStyle(color: colors.textSecondary)),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showInsufficientBalanceDialog() {
     final colors = AppColors.of(context);
     final t = AppLocalizations.of(context);
@@ -1418,7 +1566,9 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
             style: ElevatedButton.styleFrom(backgroundColor: colors.danger, foregroundColor: colors.textPrimary),
             onPressed: () {
               Navigator.pop(ctx);
-              Navigator.push(context, MaterialPageRoute(builder: (_) => DepositScreen()));
+              Navigator.push(context, MaterialPageRoute(
+                builder: (_) => DepositScreen(defaultAmount: subscriptionPrice),
+              ));
             },
             child: Text(t.affiliRechargeNow),
           ),
@@ -1448,50 +1598,63 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
   }
 
   Future<void> _activateOrRenewMarketing(bool isAdmin) async {
+    // Vérification session Firebase
+    final firebaseUser = FirebaseAuth.instance.currentUser;
+    if (firebaseUser == null) {
+      _showSessionExpiredDialog();
+      return;
+    }
+
     setState(() => isLoading = true);
 
     try {
       final user = authProvider.loginUserData;
       final now = DateTime.now();
-      final endDate = now.add(Duration(days: 90)); // 3 mois
+      final endDate = now.add(Duration(days: 90));
+      final userRef = firestore.collection('Users').doc(user.id!);
 
       if (!isAdmin) {
-        // Débiter l'utilisateur (sauf admin)
-        await firestore.collection('Users').doc(user.id!).update({
-          'votre_solde_principal': FieldValue.increment(-subscriptionPrice),
+        // Débit + activation en un seul bloc atomique
+        await firestore.runTransaction((tx) async {
+          final snap = await tx.get(userRef);
+          final solde = (snap.data()?['votre_solde_principal'] ?? 0).toDouble();
+          if (solde < subscriptionPrice) throw Exception('Solde insuffisant');
+          tx.update(userRef, {
+            'votre_solde_principal': FieldValue.increment(-subscriptionPrice),
+            'marketingActivated': true,
+            'lastMarketingActivationDate': now.millisecondsSinceEpoch,
+            'marketingSubscriptionEndDate': endDate.millisecondsSinceEpoch,
+            'updatedAt': now.millisecondsSinceEpoch,
+          });
         });
-
-        // Créer la transaction de dépense
+        // Transaction comptable après le bloc atomique
         await _createTransaction(
           TypeTransaction.DEPENSE.name,
           subscriptionPrice,
           'Activation compte marketing - 3 mois',
           user.id!,
         );
-      }
-
-      // Activer le marketing
-      await firestore.collection('Users').doc(user.id!).update({
-        'marketingActivated': true,
-        'lastMarketingActivationDate': now.millisecondsSinceEpoch,
-        'marketingSubscriptionEndDate': endDate.millisecondsSinceEpoch,
-        'updatedAt': now.millisecondsSinceEpoch,
-      });
-
-      // Distribuer les commissions (sauf admin)
-      if (!isAdmin) {
         await _distributeCommissions(user);
+      } else {
+        await userRef.update({
+          'marketingActivated': true,
+          'lastMarketingActivationDate': now.millisecondsSinceEpoch,
+          'marketingSubscriptionEndDate': endDate.millisecondsSinceEpoch,
+          'updatedAt': now.millisecondsSinceEpoch,
+        });
       }
 
-      // Actualiser les données
       await _refreshPage();
-
       final t = AppLocalizations.of(context);
       _showSuccessSnackbar(isAdmin ? t.affiliActivatedAdmin : t.affiliActivatedMsg);
 
     } catch (e) {
       printVm('Erreur activation marketing: $e');
-      _showErrorSnackbar('Erreur lors de l\'activation: ${e.toString()}');
+      if (e.toString().contains('Solde insuffisant')) {
+        _showInsufficientBalanceDialog();
+      } else {
+        _showErrorSnackbar('Erreur lors de l\'activation: ${e.toString()}');
+      }
     } finally {
       setState(() {
         isLoading = false;
@@ -1505,8 +1668,18 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
     try {
       final commissionParrain = subscriptionPrice * 0.75;
       final commissionApp = subscriptionPrice * 0.25;
+      final userRef = firestore.collection('Users').doc(user.id!);
 
-      // Si l'utilisateur a un parrain
+      // Vérification idempotence : ne pas doubler la commission si déjà versée pour cette activation
+      final userSnap = await userRef.get();
+      final lastActivation = userSnap.data()?['lastMarketingActivationDate'];
+      final lastCommission = userSnap.data()?['lastCommissionPaidAt'];
+      if (lastCommission != null && lastCommission == lastActivation) {
+        printVm('Commission déjà versée pour cette activation, skip.');
+        return;
+      }
+
+      // Distribuer au parrain (toujours, même si parrain inactif)
       if (user.codeParrain != null && user.codeParrain!.isNotEmpty) {
         final parrainQuery = await firestore
             .collection('Users')
@@ -1515,42 +1688,38 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
 
         if (parrainQuery.docs.isNotEmpty) {
           final parrainDoc = parrainQuery.docs.first;
-          final parrainData = parrainDoc.data();
+          await firestore.collection('Users').doc(parrainDoc.id).update({
+            'solde_marketing': FieldValue.increment(commissionParrain),
+            'total_gains_marketing': FieldValue.increment(commissionParrain),
+            'commissionTotalParrainage': FieldValue.increment(commissionParrain),
+            'usersParrainerActifs': FieldValue.arrayUnion([user.id]),
+            'nbrParrainagesActifs': FieldValue.increment(1),
+            'updatedAt': DateTime.now().millisecondsSinceEpoch,
+          });
 
-          final parrainMarketingActivated = parrainData['marketingActivated'] == true;
-
-          if (parrainMarketingActivated) {
-            await firestore.collection('Users').doc(parrainDoc.id).update({
-              'solde_marketing': FieldValue.increment(commissionParrain),
-              'total_gains_marketing': FieldValue.increment(commissionParrain),
-              'commissionTotalParrainage': FieldValue.increment(commissionParrain),
-              'updatedAt': DateTime.now().millisecondsSinceEpoch,
-            });
-
-            await firestore.collection('Users').doc(parrainDoc.id).update({
-              'usersParrainerActifs': FieldValue.arrayUnion([user.id]),
-              'nbrParrainagesActifs': FieldValue.increment(1),
-            });
-
-            await _sendCommissionNotification(
-              parrainDoc.id,
-              user.pseudo ?? 'Un utilisateur',
-              commissionParrain,
-            );
-          }
+          await _sendCommissionNotification(
+            parrainDoc.id,
+            user.pseudo ?? 'Un utilisateur',
+            commissionParrain,
+          );
         }
       }
 
       // Créditer l'application
       await authProvider.getAppData();
-      final AppDefaultData appData = authProvider.appDefaultData;
-      final appDataId = appData.id!;
+      final appDataId = authProvider.appDefaultData.id;
+      if (appDataId == null) {
+        printVm('⚠️ appData.id null, commission app ignorée');
+      } else {
+        await firestore.collection('AppData').doc(appDataId).update({
+          'solde_affiliation': FieldValue.increment(commissionApp),
+          'total_gains_affiliation': FieldValue.increment(commissionApp),
+          'nbr_affiliations_actives': FieldValue.increment(1),
+        });
+      }
 
-      await firestore.collection('AppData').doc(appDataId).update({
-        'solde_affiliation': FieldValue.increment(commissionApp),
-        'total_gains_affiliation': FieldValue.increment(commissionApp),
-        'nbr_affiliations_actives': FieldValue.increment(1),
-      });
+      // Marquer la commission comme versée
+      await userRef.update({'lastCommissionPaidAt': lastActivation});
 
     } catch (e) {
       printVm('Erreur distribution commissions: $e');
@@ -1618,35 +1787,52 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
   }
 
   Future<void> _encashMarketingBalance() async {
-    final user = authProvider.loginUserData;
-    final marketingBalance = user.solde_marketing ?? 0;
-
-    if (marketingBalance <= 0) {
-      _showErrorSnackbar('Votre solde marketing est vide');
+    // Vérification session Firebase
+    final firebaseUser = FirebaseAuth.instance.currentUser;
+    if (firebaseUser == null) {
+      _showSessionExpiredDialog();
       return;
     }
 
+    final user = authProvider.loginUserData;
     setState(() => isLoading = true);
 
+    double encashedAmount = 0;
     try {
-      await firestore.collection('Users').doc(user.id!).update({
-        'solde_marketing': 0.0,
-        'votre_solde_principal': FieldValue.increment(marketingBalance),
-        'updatedAt': DateTime.now().millisecondsSinceEpoch,
+      final userRef = firestore.collection('Users').doc(user.id!);
+
+      await firestore.runTransaction((tx) async {
+        final snap = await tx.get(userRef);
+        final solde = (snap.data()?['solde_marketing'] ?? 0.0).toDouble();
+        final enCours = snap.data()?['encaissement_marketing_en_cours'] == true;
+        if (enCours) throw Exception('Encaissement déjà en cours');
+        if (solde < 5000) throw Exception('Minimum 5 000 FCFA requis');
+        encashedAmount = solde;
+        tx.update(userRef, {
+          'solde_marketing': 0.0,
+          'votre_solde_principal': FieldValue.increment(solde),
+          'encaissement_marketing_en_cours': true,
+          'updatedAt': DateTime.now().millisecondsSinceEpoch,
+        });
       });
 
+      // Libérer le verrou + tracer la transaction
+      await userRef.update({'encaissement_marketing_en_cours': false});
       await _createTransaction(
         TypeTransaction.GAIN.name,
-        marketingBalance,
+        encashedAmount,
         'Encaissement solde marketing',
         user.id!,
       );
 
       await _refreshPage();
-
       final t = AppLocalizations.of(context);
-      _showSuccessSnackbar(t.affiliEncashSuccess(marketingBalance.toInt()));
+      _showSuccessSnackbar(t.affiliEncashSuccess(encashedAmount.toInt()));
     } catch (e) {
+      // S'assurer que le verrou est libéré en cas d'erreur
+      try {
+        await firestore.collection('Users').doc(user.id!).update({'encaissement_marketing_en_cours': false});
+      } catch (_) {}
       printVm('Erreur encaissement: $e');
       _showErrorSnackbar('Erreur lors de l\'encaissement');
     } finally {
