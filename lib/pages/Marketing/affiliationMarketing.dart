@@ -193,7 +193,11 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
     final t = AppLocalizations.of(context);
     final user = authProvider.loginUserData;
     final isAdmin = user.role == UserRole.ADM.name;
-    final isMarketingActive = user.marketingActivated == true || isAdmin;
+    final isMarketingActive = isAdmin ||
+        (user.marketingActivated == true &&
+            user.marketingSubscriptionEndDate != null &&
+            DateTime.fromMillisecondsSinceEpoch(user.marketingSubscriptionEndDate!)
+                .isAfter(DateTime.now()));
     final daysLeft = isMarketingActive && user.marketingSubscriptionEndDate != null
         ? _calculateDaysLeft(user.marketingSubscriptionEndDate!)
         : 0;
