@@ -82,6 +82,8 @@ import 'package:afrotok/providers/sound_provider.dart';
 import 'package:afrotok/providers/userProvider.dart';
 import 'package:afrotok/services/ad_service.dart';
 import 'package:afrotok/services/challengeMonh/challenge_month_service.dart';
+import 'package:afrotok/services/remote_config_service.dart';
+import 'package:afrotok/pages/component/maintenance_page.dart';
 import 'package:afrotok/services/linkService.dart';
 import 'package:afrotok/services/nav_cache_service.dart';
 
@@ -139,6 +141,9 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Remote Config
+  await RemoteConfigService.instance.initialize();
 
   await DeviceInfoService.initializeDeviceId();
 
@@ -444,7 +449,13 @@ class _MyAppState extends State<MyApp> {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        home: const SplashChargement(),
+        home: RemoteConfigService.instance.isPageActive('app_active')
+            ? const SplashChargement()
+            : const MaintenancePage(
+                pageName: 'Afrolook',
+                showBack: false,
+                isAppLevel: true,
+              ),
         onGenerateRoute: (settings) {
           switch (settings.name) {
             case '/home':

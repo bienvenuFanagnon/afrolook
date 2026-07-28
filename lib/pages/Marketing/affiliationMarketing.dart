@@ -2,6 +2,8 @@
 
 import 'package:afrotok/pages/Marketing/pageExplicationMarketing.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
+import 'package:afrotok/pages/component/maintenance_page.dart';
+import 'package:afrotok/services/remote_config_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -189,6 +191,10 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (!RemoteConfigService.instance.isPageActive('page_marketing_active')) {
+      return const MaintenancePage(pageName: 'Marketing & Affiliation');
+    }
+
     final colors = AppColors.of(context);
     final t = AppLocalizations.of(context);
     final user = authProvider.loginUserData;

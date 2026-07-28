@@ -1,28 +1,8 @@
 ﻿// lib/pages/challenge/challenge_page.dart
 
 import 'package:afrotok/pages/component/consoleWidget.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
-import '../../models/model_data.dart';
-import '../../providers/authProvider.dart';
-import '../../services/challengeMonh/challenge_month_service.dart';
-import '../pub/native_ad_widget.dart';
-import 'challenge_month_post_card.dart';
-
-// lib/pages/challenge/challenge_page.dart
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
-import '../../models/model_data.dart';
-import '../../providers/authProvider.dart';
-import '../../services/challengeMonh/challenge_month_service.dart';
-import '../pub/native_ad_widget.dart';
-import 'challenge_month_post_card.dart';
-
-// lib/pages/challenge/challenge_page.dart
+import 'package:afrotok/pages/component/maintenance_page.dart';
+import 'package:afrotok/services/remote_config_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -328,6 +308,9 @@ class _ChallengeMonthPageState extends State<ChallengeMonthPage> with SingleTick
 
   @override
   Widget build(BuildContext context) {
+    if (!RemoteConfigService.instance.isPageActive('page_challenge_mois_active')) {
+      return const MaintenancePage(pageName: 'Challenge du mois');
+    }
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
