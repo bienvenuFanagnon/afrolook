@@ -1,5 +1,6 @@
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
+import 'package:flutter/foundation.dart';
 
 class RemoteConfigService {
   static final RemoteConfigService instance = RemoteConfigService._();
@@ -18,7 +19,7 @@ class RemoteConfigService {
     try {
       await _rc.setConfigSettings(RemoteConfigSettings(
         fetchTimeout: const Duration(seconds: 10),
-        minimumFetchInterval: const Duration(hours: 1),
+        minimumFetchInterval: kDebugMode ? Duration.zero : const Duration(hours: 1),
       ));
       await _rc.setDefaults(_defaults);
       await _rc.fetchAndActivate();
