@@ -93,7 +93,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
   // ADM de l'app : tous les droits sans restriction (même groupe bloqué/gelé)
   bool get _userCanWrite =>
       _isAppAdmin ||
-      (!_isBlocked &&
+      (!_isBlocked && !_isFrozen &&
           GroupPermissionUtils.canWrite(
             groupData: _groupData,
             userId: _auth.loginUserData.id ?? '',
