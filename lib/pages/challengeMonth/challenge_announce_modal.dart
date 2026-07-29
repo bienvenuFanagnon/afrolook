@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/model_data.dart';
 
 import '../../services/challengeMonh/challenge_month_service.dart';
+import '../../services/remote_config_service.dart';
 
 import '../postDetails.dart';
 
@@ -13,10 +14,16 @@ import '../postDetailsVideo.dart';
 import 'challenge_month_page.dart';
 
 void showChallengeMonthAnnounceModal(BuildContext context) {
+  if (!RemoteConfigService.instance.isPageActive('page_challenge_mois_active')) return;
+
   showDialog(
     context: context,
     barrierDismissible: false,
     builder: (BuildContext context) {
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      final bgColor = isDark ? const Color(0xFF1A1A1A) : Colors.white;
+      final subtitleColor = isDark ? Colors.white70 : Colors.black54;
+
       return WillPopScope(
         onWillPop: () async => false,
         child: Dialog(
@@ -25,7 +32,7 @@ void showChallengeMonthAnnounceModal(BuildContext context) {
           insetPadding: const EdgeInsets.symmetric(horizontal: 20),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.black,
+              color: bgColor,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: const Color(0xFFFFD600).withOpacity(0.5), width: 1.5),
               boxShadow: [
@@ -54,21 +61,21 @@ void showChallengeMonthAnnounceModal(BuildContext context) {
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Text(
+                Text(
                   '🏆 CHALLENGE DU MOIS !',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Color(0xFFFFD600),
+                    color: const Color(0xFFFFD600),
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: Text(
                     'Chaque mois, le post avec le meilleur score remporte un prix (ex: +5 000 FCFA à +73 000 FCFA) ! Découvrez les meilleurs posts du moment :',
-                    style: TextStyle(color: Colors.white70, fontSize: 13),
+                    style: TextStyle(color: subtitleColor, fontSize: 13),
                     textAlign: TextAlign.center,
                   ),
                 ),
