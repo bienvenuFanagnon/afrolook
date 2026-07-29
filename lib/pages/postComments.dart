@@ -1243,7 +1243,10 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
         success = await postProvider.newComment(comment);
         if (widget.post.user != null) receiverId = widget.post.user!.id!;
         action = "commente votre publication";
-        if (success) _addCommentLocally(comment);
+        if (success) {
+          _addCommentLocally(comment);
+          widget.post.comments = (widget.post.comments ?? 0) + 1;
+        }
       }
 
       if (success) {

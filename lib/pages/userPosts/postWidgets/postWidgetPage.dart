@@ -141,6 +141,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   // le même State est réutilisé par Flutter (garanti par ValueKey dans le parent).
   bool _isLikedLocally = false;
   int _localLovesCount = 0;
+  int _localCommentsCount = 0;
   List<PostComment> _preloadedComments = [];
   bool _isLoadingComment = false;
   List<String> _previewSuggestions = [];
@@ -303,6 +304,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     final userId = authProvider.loginUserData.id;
     _isLikedLocally = widget.post.users_love_id?.contains(userId) ?? false;
     _localLovesCount = widget.post.loves ?? 0;
+    _localCommentsCount = widget.post.comments ?? 0;
   }
 
   @override
@@ -315,10 +317,14 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       final userId = authProvider.loginUserData.id;
       final onlineLiked = widget.post.users_love_id?.contains(userId) ?? false;
       final onlineCount = widget.post.loves ?? 0;
-      if (onlineLiked != _isLikedLocally || onlineCount != _localLovesCount) {
+      final onlineComments = widget.post.comments ?? 0;
+      if (onlineLiked != _isLikedLocally ||
+          onlineCount != _localLovesCount ||
+          onlineComments > _localCommentsCount) {
         setState(() {
           _isLikedLocally = onlineLiked;
           _localLovesCount = onlineCount;
+          if (onlineComments > _localCommentsCount) _localCommentsCount = onlineComments;
         });
       }
     }
@@ -2220,7 +2226,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           // Commentaire
           _buildActionButton(
             icon: FontAwesome.comment_o,
-            count: widget.post.comments ?? 0,
+            count: _localCommentsCount,
             color: colors.textSecondary,
             onPressed: hasAccess ? () {
               _showCommentsModal(widget.post);
@@ -2411,7 +2417,10 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
       if (success) {
         if (mounted) {
-          setState(() => _preloadedComments.insert(0, comment));
+          setState(() {
+            _preloadedComments.insert(0, comment);
+            _localCommentsCount++;
+          });
         }
 
         authProvider.incrementPostTotalInteractions(postId: widget.post.id!);

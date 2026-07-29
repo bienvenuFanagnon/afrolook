@@ -295,6 +295,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   String? _translatedDescription;
   bool _isLoading = false;
   bool _isLiking = false;
+  int _localCommentsCount = 0;
+  int _localInteractionsCount = 0;
   List<PostComment> _preloadedComments = [];
   bool _isLoadingComment = false;
   List<String> _previewSuggestions = [];
@@ -336,6 +338,9 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
 
     _authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     _postProvider = Provider.of<PostProvider>(context, listen: false);
+
+    _localCommentsCount = widget.post.comments ?? 0;
+    _localInteractionsCount = widget.post.totalInteractions ?? 0;
     _coinProvider = Provider.of<CoinGiftUserProvider>(context, listen: false);
     _soundProvider = Provider.of<SoundProvider>(context, listen: false);
 
@@ -369,6 +374,28 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
         _preInitializeVideo();
       }
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant YouTubeVideoCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.post.id != oldWidget.post.id) {
+      // Post différent : réinitialiser les compteurs
+      setState(() {
+        _localCommentsCount = widget.post.comments ?? 0;
+        _localInteractionsCount = widget.post.totalInteractions ?? 0;
+      });
+    } else {
+      // Même post, données rafraîchies : synchroniser si les valeurs en ligne sont supérieures
+      final onlineComments = widget.post.comments ?? 0;
+      final onlineInteractions = widget.post.totalInteractions ?? 0;
+      if (onlineComments > _localCommentsCount || onlineInteractions > _localInteractionsCount) {
+        setState(() {
+          if (onlineComments > _localCommentsCount) _localCommentsCount = onlineComments;
+          if (onlineInteractions > _localInteractionsCount) _localInteractionsCount = onlineInteractions;
+        });
+      }
+    }
   }
 
   /// 🔥 Nouvelle méthode : Pré-initialisation sans lecture auto
@@ -1807,8 +1834,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _buildActionButton(icon: FontAwesome.comment_o, count: widget.post.comments ?? 0, color: colors.textSecondary, onPressed: hasAccess ? () => _showCommentsModal() : null),
-          _buildActionButton(icon: Icons.bar_chart, count: widget.post.totalInteractions ?? 0, color: colors.textSecondary, onPressed: hasAccess ? _navigateToDetails : null),
+          _buildActionButton(icon: FontAwesome.comment_o, count: _localCommentsCount, color: colors.textSecondary, onPressed: hasAccess ? () => _showCommentsModal() : null),
+          _buildActionButton(icon: Icons.bar_chart, count: _localInteractionsCount, color: colors.textSecondary, onPressed: hasAccess ? _navigateToDetails : null),
           _buildActionButton(
             icon: isLiked ? FontAwesome.heart : FontAwesome.heart_o,
             count: widget.post.loves ?? 0,
@@ -1919,7 +1946,11 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
 
       if (success) {
         if (mounted) {
-          setState(() => _preloadedComments.insert(0, comment));
+          setState(() {
+            _preloadedComments.insert(0, comment);
+            _localCommentsCount++;
+            _localInteractionsCount++;
+          });
         }
 
         _authProvider.incrementPostTotalInteractions(postId: widget.post.id!);
