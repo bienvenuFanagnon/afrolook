@@ -43,6 +43,7 @@ import '../../../services/postService/post_cooldown_service.dart';
 import '../../../services/utils/abonnement_utils.dart';
 
 import '../../pub/rewarded_ad_widget.dart';
+import '../../../widgets/hashtag_suggestion_bar.dart';
 
 import '../../user/userAbonnementPage.dart';
 
@@ -2166,7 +2167,12 @@ class _UserPubVideoState extends State<UserPubVideo> {
                             ],
                           ),
                         ),
-                        SizedBox(height: 20),
+                        HashtagSuggestionBar(
+                          selectedPostType: _selectedPostType,
+                          descriptionController: _descriptionController,
+                          onHashtagAdded: () => setState(() {}),
+                        ),
+                        SizedBox(height: 12),
                         Container(
                           width: double.infinity,
                           height: 55,

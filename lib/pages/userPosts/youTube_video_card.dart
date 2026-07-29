@@ -1874,11 +1874,15 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   Future<void> _loadSuggestions() async {
     if (!mounted) return;
     final postId = widget.post.id;
+    if (postId == null) return;
     final description = widget.post.description ?? '';
-    if (postId == null || description.isEmpty) return;
     setState(() => _isSuggestionsLoading = true);
     try {
-      final suggestions = await CommentSuggestionService.getSuggestions(postId, description);
+      final suggestions = CommentSuggestionService.getSuggestions(
+        postId,
+        description,
+        postType: widget.post.typeTabbar,
+      );
       if (!mounted) return;
       setState(() { _previewSuggestions = suggestions; _isSuggestionsLoading = false; });
       _shuffleTimer?.cancel();

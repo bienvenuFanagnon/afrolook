@@ -2406,11 +2406,15 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
   Future<void> _loadSuggestions(Post? post) async {
     if (!mounted || post == null) return;
     final postId = post.id;
+    if (postId == null) return;
     final description = post.description ?? '';
-    if (postId == null || description.isEmpty) return;
     setState(() => _isSuggestionsLoading = true);
     try {
-      final suggestions = await CommentSuggestionService.getSuggestions(postId, description);
+      final suggestions = CommentSuggestionService.getSuggestions(
+        postId,
+        description,
+        postType: post.typeTabbar,
+      );
       if (!mounted) return;
       setState(() { _previewSuggestions = suggestions; _isSuggestionsLoading = false; });
       _shuffleTimer?.cancel();

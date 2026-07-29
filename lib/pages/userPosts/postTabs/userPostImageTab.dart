@@ -43,6 +43,7 @@ import '../../../services/postService/post_cooldown_service.dart';
 import '../../../services/utils/abonnement_utils.dart';
 
 import '../../pub/rewarded_ad_widget.dart';
+import '../../../widgets/hashtag_suggestion_bar.dart';
 
 import '../../user/userAbonnementPage.dart';
 
@@ -1765,7 +1766,12 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                             ],
                           ),
                         ),
-                        SizedBox(height: 20),
+                        HashtagSuggestionBar(
+                          selectedPostType: _selectedPostType,
+                          descriptionController: _descriptionController,
+                          onHashtagAdded: () => setState(() {}),
+                        ),
+                        SizedBox(height: 12),
                         Container(
                           padding: EdgeInsets.all(12),
                           decoration: BoxDecoration(color: _c.background, borderRadius: BorderRadius.circular(12)),

@@ -1648,11 +1648,15 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
   Future<void> _loadCommentSuggestions() async {
     if (!mounted) return;
     final postId = _currentPost.id;
+    if (postId == null) return;
     final description = _currentPost.description ?? '';
-    if (postId == null || description.isEmpty) return;
     setState(() => _isSuggestionsLoading = true);
     try {
-      final suggestions = await CommentSuggestionService.getSuggestions(postId, description);
+      final suggestions = CommentSuggestionService.getSuggestions(
+        postId,
+        description,
+        postType: _currentPost.typeTabbar,
+      );
       if (!mounted) return;
       setState(() { _previewSuggestions = suggestions; _isSuggestionsLoading = false; });
       _shuffleTimer?.cancel();
