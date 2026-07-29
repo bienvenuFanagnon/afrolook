@@ -13,6 +13,7 @@ class RemoteConfigService {
     'app_active': true,
     'page_marketing_active': true,
     'page_challenge_mois_active': true,
+    'cdn_active': true,
   };
 
   Future<void> initialize() async {

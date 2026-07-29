@@ -2,6 +2,7 @@
 import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:afrotok/services/remote_config_service.dart';
 import 'package:afrotok/models/chatmodels/message.dart';
 import 'package:afrotok/providers/userProvider.dart';
 import 'package:deeplynks/deeplynks_service.dart';
@@ -3299,10 +3300,9 @@ if(actionType == 'comment'){
 
 
   String convertToCdnUrl(String firebaseStorageUrl, AppDefaultData appConfig) {
-    // SÉCURITÉ : On retourne l'URL d'origine si le CDN est désactivé
-    // if (appConfig.useCDN == false) {
-    //   return firebaseStorageUrl;
-    // }
+    if (!RemoteConfigService.instance.isPageActive('cdn_active')) {
+      return firebaseStorageUrl;
+    }
 
     if (firebaseStorageUrl.isEmpty) return firebaseStorageUrl;
 
