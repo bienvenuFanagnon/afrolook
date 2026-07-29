@@ -3,6 +3,8 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
 import 'package:afrotok/services/linkService.dart';
+import 'package:afrotok/services/nav_cache_service.dart';
+import '../user/otherUser/otherUser.dart';
 import 'package:afrotok/pages/canaux/listCanal.dart';
 import 'package:afrotok/pages/canaux/detailsCanal.dart';
 import 'package:afrotok/pages/challengeMonth/challenge_month_page.dart';
@@ -177,6 +179,7 @@ class _MyHomePageState extends State<MyHomePage>
   int? _shorebirdPatch;
   Widget? _desktopSection;
   String? _desktopSectionTitle;
+  StreamSubscription<Map<String, dynamic>>? _liveNavSub;
 
   // Liste des onglets avec texte et icônes
   DocumentSnapshot? lastDocument;
@@ -1399,6 +1402,10 @@ class _MyHomePageState extends State<MyHomePage>
       context.read<GoldGroupsProvider>().load();
     });
     _initializeFeedService();
+
+    // Écouter les navigations en direct (app déjà ouverte, tap notif WorkManager)
+    _liveNavSub = NavigationCacheService().liveNavigationStream.listen(_handleLiveNavigation);
+
     // Initialisation du listener de cycle de vie
  userProvider.updateTopUsersPopularity(authProvider.appDefaultData);
     // userProvider.getTopAfrolookeur().then((value) {
@@ -1492,6 +1499,34 @@ class _MyHomePageState extends State<MyHomePage>
 
 
 
+  // Réagit aux navigations émises en direct par WorkManager (app déjà ouverte)
+  void _handleLiveNavigation(Map<String, dynamic> data) {
+    if (!mounted) return;
+    final type = data['type'] as String?;
+    switch (type) {
+      case 'creator':
+        final userId = data['userId'] as String?;
+        if (userId != null && userId.isNotEmpty) {
+          FirebaseFirestore.instance.collection('Users').doc(userId).get().then((doc) {
+            if (!mounted || !doc.exists) return;
+            final user = UserData.fromJson(doc.data()!);
+            Navigator.push(context, MaterialPageRoute(builder: (_) => OtherUserPage(otherUser: user)));
+          });
+        }
+        break;
+      case 'canal':
+        final canalId = data['canalId'] as String?;
+        if (canalId != null && canalId.isNotEmpty) {
+          FirebaseFirestore.instance.collection('Canaux').doc(canalId).get().then((doc) {
+            if (!mounted || !doc.exists) return;
+            final canal = Canal.fromJson({...doc.data()!, 'id': doc.id});
+            Navigator.push(context, MaterialPageRoute(builder: (_) => CanalDetails(canal: canal)));
+          });
+        }
+        break;
+    }
+  }
+
   void _handleInitialDestination() {
     final dest = widget.initialDestination;
     if (dest == null) return;
@@ -1542,11 +1577,11 @@ class _MyHomePageState extends State<MyHomePage>
         break;
       case 'creator':
         if (dest.creatorId != null) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (_) => ProfileScreenContenu(userId: dest.creatorId)),
-          );
+          FirebaseFirestore.instance.collection('Users').doc(dest.creatorId).get().then((doc) {
+            if (!mounted || !doc.exists) return;
+            final user = UserData.fromJson(doc.data()!);
+            Navigator.push(context, MaterialPageRoute(builder: (_) => OtherUserPage(otherUser: user)));
+          });
         }
         break;
       case 'canal':
@@ -1675,6 +1710,7 @@ class _MyHomePageState extends State<MyHomePage>
 
   @override
   void dispose() {
+    _liveNavSub?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _headerCtrl.dispose();
     // 🔥 Très important : Arrêter le timer à la destruction de la page

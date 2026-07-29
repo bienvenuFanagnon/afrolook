@@ -1,4 +1,5 @@
-﻿import 'dart:convert';
+﻿import 'dart:async';
+import 'dart:convert';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:flutter/material.dart';
@@ -14,11 +15,18 @@ class NavigationCacheService {
   factory NavigationCacheService() => _instance;
   NavigationCacheService._internal();
 
-  // Stocker une navigation en cache
+  // Stream utilisé pour notifier HomeScreen quand l'app est déjà ouverte
+  final StreamController<Map<String, dynamic>> _liveNavController =
+      StreamController<Map<String, dynamic>>.broadcast();
+
+  Stream<Map<String, dynamic>> get liveNavigationStream => _liveNavController.stream;
+
+  // Stocker une navigation en cache ET émettre sur le stream si l'app est ouverte
   Future<void> storePendingNavigation(Map<String, dynamic> data) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyPendingNavigation, jsonEncode(data));
     printVm("💾 [CACHE] Navigation stockée: $data");
+    _liveNavController.add(data);
   }
 
   // Récupérer et VIDER le cache
