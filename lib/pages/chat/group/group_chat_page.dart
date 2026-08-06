@@ -70,6 +70,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
   bool _isMuted = false;
   bool _isReadOnly = false;
   bool _sendHidden = false;
+  bool _showScrollBtn = false;
   bool _ownerIsGold = false;
   int _seenByPage = 10;
   String _myRole = 'member';
@@ -119,6 +120,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
   void initState() {
     super.initState();
     _auth = Provider.of<UserAuthProvider>(context, listen: false);
+    _scrollController.addListener(_onScrollBtn);
     _loadGroup();
     _subscribeMessages();
   }
@@ -796,6 +798,15 @@ class _GroupChatPageState extends State<GroupChatPage> {
         );
       }
     });
+  }
+
+  void _onScrollBtn() {
+    if (!_scrollController.hasClients) return;
+    final pos = _scrollController.position;
+    final atBottom = pos.pixels >= pos.maxScrollExtent - 200;
+    if (atBottom == _showScrollBtn) {
+      setState(() => _showScrollBtn = !atBottom);
+    }
   }
 
   // Bouton AppBar : force le scroll en bas
@@ -2235,20 +2246,42 @@ class _GroupChatPageState extends State<GroupChatPage> {
             if (_isAppAdmin) _buildAdminBanner(),
           ],
           Expanded(
-            child: _isLoadingMessages
-                ? Center(child: CircularProgressIndicator(color: _colors.primary, strokeWidth: 2))
-                : _messages.isEmpty
-                    ? _buildEmptyState()
-                    : ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        itemCount: _messages.length,
-                        itemBuilder: (_, index) {
-                          final msg = _messages[index];
-                          final isMe = msg['send_by'] == myId;
-                          return _buildMessageBubble(msg, isMe);
-                        },
+            child: Stack(
+              children: [
+                _isLoadingMessages
+                    ? Center(child: CircularProgressIndicator(color: _colors.primary, strokeWidth: 2))
+                    : _messages.isEmpty
+                        ? _buildEmptyState()
+                        : ListView.builder(
+                            controller: _scrollController,
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            itemCount: _messages.length,
+                            itemBuilder: (_, index) {
+                              final msg = _messages[index];
+                              final isMe = msg['send_by'] == myId;
+                              return _buildMessageBubble(msg, isMe);
+                            },
+                          ),
+                if (_showScrollBtn)
+                  Positioned(
+                    bottom: 8,
+                    right: 12,
+                    child: GestureDetector(
+                      onTap: _scrollToBottom,
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                          boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2))],
+                        ),
+                        child: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white, size: 22),
                       ),
+                    ),
+                  ),
+              ],
+            ),
           ),
           if (_permissionsLoaded) ...[
             if (_userCanWrite) _buildInputBar(),
@@ -2392,11 +2425,6 @@ class _GroupChatPageState extends State<GroupChatPage> {
             ),
             onPressed: _toggleMute,
           ),
-        IconButton(
-          tooltip: 'Aller au dernier message',
-          icon: Icon(Icons.keyboard_double_arrow_down_rounded, color: _colors.primary, size: 22),
-          onPressed: _scrollToBottom,
-        ),
         IconButton(
           icon: Icon(Icons.info_outline_rounded, color: _colors.primary, size: 22),
           onPressed: () => Navigator.push(

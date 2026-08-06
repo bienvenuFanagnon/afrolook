@@ -154,6 +154,8 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   // Confidentialité — paramètre personnel
   bool _hideReadReceipts = false;
 
+  bool _showScrollBtn = false;
+
   // Pour éviter les reconstructions inutiles
   final _messageKey = GlobalKey();
 
@@ -206,8 +208,13 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   /// haut de la conversation.
   void _onScroll() {
     if (!_scrollController.hasClients) return;
-    if (_scrollController.position.pixels <= 200) {
+    final pos = _scrollController.position;
+    if (pos.pixels <= 200) {
       _loadMoreMessages();
+    }
+    final atBottom = pos.pixels >= pos.maxScrollExtent - 200;
+    if (atBottom == _showScrollBtn) {
+      setState(() => _showScrollBtn = !atBottom);
     }
   }
 
@@ -2675,10 +2682,6 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
           onPressed: () {},
         ),
         IconButton(
-          icon: Icon(Icons.keyboard_arrow_down_rounded, color: _colors.primary, size: 26),
-          onPressed: _scrollToBottom,
-        ),
-        IconButton(
           icon: Icon(Icons.more_vert_rounded, color: _colors.textSecondary, size: 22),
           onPressed: _showChatMenu,
         ),
@@ -2909,51 +2912,70 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         child: Column(
         children: [
           Expanded(
-            child: _isLoading
-                ? Center(child: CircularProgressIndicator(color: _colors.primary))
-                : StreamBuilder<List<Message>>(
-              stream: _messagesStream,
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Text(
-                      l10n.convErrorLoading,
-                      style: TextStyle(color: _colors.textPrimary),
-                    ),
-                  );
-                } else if (snapshot.hasData) {
-                  _streamMessages = snapshot.data!;
-                  final messages = _mergeMessages();
+            child: Stack(
+              children: [
+                _isLoading
+                    ? Center(child: CircularProgressIndicator(color: _colors.primary))
+                    : StreamBuilder<List<Message>>(
+                  stream: _messagesStream,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Text(
+                          l10n.convErrorLoading,
+                          style: TextStyle(color: _colors.textPrimary),
+                        ),
+                      );
+                    } else if (snapshot.hasData) {
+                      _streamMessages = snapshot.data!;
+                      final messages = _mergeMessages();
 
-                  if (messages.isEmpty) {
-                    return Center(
-                      child: Text(
-                        l10n.convNoMessage,
-                        style: TextStyle(color: _colors.textSecondary),
+                      if (messages.isEmpty) {
+                        return Center(
+                          child: Text(
+                            l10n.convNoMessage,
+                            style: TextStyle(color: _colors.textSecondary),
+                          ),
+                        );
+                      }
+
+                      if (messages.length > _messages.length) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          _scrollToBottom();
+                        });
+                      }
+
+                      _messages = messages;
+
+                      ChatCacheService.saveMessages(widget.chat.docId!, messages);
+                      _scheduleReadReceipts(messages);
+
+                      return _buildMessageList(messages);
+                    } else if (_messages.isNotEmpty) {
+                      return _buildMessageList(_messages);
+                    }
+                    return Center(child: CircularProgressIndicator(color: _colors.primary));
+                  },
+                ),
+                if (_showScrollBtn)
+                  Positioned(
+                    bottom: 8,
+                    right: 12,
+                    child: GestureDetector(
+                      onTap: _scrollToBottom,
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                          boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2))],
+                        ),
+                        child: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white, size: 22),
                       ),
-                    );
-                  }
-
-                  // Scroll vers le bas si nouveau(x) message(s)
-                  if (messages.length > _messages.length) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      _scrollToBottom();
-                    });
-                  }
-
-                  _messages = messages;
-
-                  // Cache local + marquage "lu" en arrière-plan (hors build).
-                  ChatCacheService.saveMessages(widget.chat.docId!, messages);
-                  _scheduleReadReceipts(messages);
-
-                  return _buildMessageList(messages);
-                } else if (_messages.isNotEmpty) {
-                  // Affichage des messages en cache pendant la connexion au flux.
-                  return _buildMessageList(_messages);
-                }
-                return Center(child: CircularProgressIndicator(color: _colors.primary));
-              },
+                    ),
+                  ),
+              ],
             ),
           ),
           _buildBlockBanner(),

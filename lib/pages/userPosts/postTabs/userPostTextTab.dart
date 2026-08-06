@@ -1311,6 +1311,16 @@ class _UserPubTextState extends State<UserPubText> {
                 _selectedPostType = newValue;
                 _selectedPostTypeLibeller = _postTypes[_selectedPostType]?['label'];
               });
+              if (newValue != null) {
+                final tag = HashtagSuggestionBar.randomHashtagForType(newValue);
+                if (tag != null && !_descriptionController.text.contains('#')) {
+                  final current = _descriptionController.text.trim();
+                  _descriptionController.text = current.isEmpty ? '$tag ' : '$current $tag ';
+                  _descriptionController.selection = TextSelection.fromPosition(
+                    TextPosition(offset: _descriptionController.text.length),
+                  );
+                }
+              }
             },
             items: _postTypes.entries.map<DropdownMenuItem<String>>((entry) {
               return DropdownMenuItem<String>(
@@ -2144,6 +2154,9 @@ class _UserPubTextState extends State<UserPubText> {
                                     if (value.length > _maxCharacters) {
                                       return 'Limite de $_maxCharacters caractères dépassée';
                                     }
+                                    if (!value.contains('#')) {
+                                      return 'Ajoutez au moins un hashtag (#) à votre texte';
+                                    }
                                     return null;
                                   },
                                 ),
@@ -2159,6 +2172,28 @@ class _UserPubTextState extends State<UserPubText> {
                           selectedPostType: _selectedPostType,
                           descriptionController: _descriptionController,
                           onHashtagAdded: () => setState(() {}),
+                        ),
+                        Container(
+                          margin: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                          decoration: BoxDecoration(
+                            color: _c.primary.withOpacity(0.07),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: _c.primary.withOpacity(0.18)),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(Icons.tips_and_updates_outlined, color: _c.primary, size: 15),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Les #hashtags améliorent la visibilité de ton post, aident à mieux distribuer ton contenu aux bons utilisateurs et permettent des suggestions de commentaires plus pertinentes. Choisis des hashtags adaptés à ton sujet !',
+                                  style: TextStyle(fontSize: 11.5, color: _c.textSecondary, height: 1.4),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                         SizedBox(height: 16),
 

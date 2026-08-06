@@ -962,6 +962,14 @@ class UserData {
   bool? canReceiveGiftCommission = false;
   bool? canDoParrainage = false;
 
+  // ── Gamification Flamme Streak ────────────────────────────────────────────────
+  int commentStreak = 0;                    // série actuelle en jours
+  int bestCommentStreak = 0;               // record personnel
+  int streakShields = 0;                   // boucliers disponibles (max 3)
+  int todayCommentCount = 0;               // commentaires comptés aujourd'hui
+  String? todayCommentDate;                // date "YYYY-MM-DD" du dernier jour comptabilisé
+  List<String> todayCommentedPostIds = []; // posts commentés aujourd'hui (dédup local)
+
   bool get isOfficialAccount =>
       officialBadge == true && officialAccountStatus == 'approved';
 
@@ -1090,6 +1098,12 @@ class UserData {
     this.canMonetize = false,
     this.canReceiveGiftCommission = false,
     this.canDoParrainage = false,
+    this.commentStreak = 0,
+    this.bestCommentStreak = 0,
+    this.streakShields = 0,
+    this.todayCommentCount = 0,
+    this.todayCommentDate,
+    this.todayCommentedPostIds = const [],
   }) {
     abonnement ??= AfrolookAbonnement.gratuit();
     liveStats ??= LiveStats.defaultForUser(id ?? '');
@@ -1277,6 +1291,14 @@ class UserData {
     canMonetize = json['canMonetize'] as bool? ?? false;
     canReceiveGiftCommission = json['canReceiveGiftCommission'] as bool? ?? false;
     canDoParrainage = json['canDoParrainage'] as bool? ?? false;
+
+    // Flamme Streak
+    commentStreak = json['commentStreak'] ?? 0;
+    bestCommentStreak = json['bestCommentStreak'] ?? 0;
+    streakShields = json['streakShields'] ?? 0;
+    todayCommentCount = json['todayCommentCount'] ?? 0;
+    todayCommentDate = json['todayCommentDate'] as String?;
+    todayCommentedPostIds = List<String>.from(json['todayCommentedPostIds'] ?? []);
   }
 
   Map<String, dynamic> toJson() {
@@ -1325,6 +1347,15 @@ class UserData {
     data['createdAt'] = createdAt;
     data['updatedAt'] = updatedAt;
     data['role'] = role;
+
+    // Flamme Streak (synchronisé avec Firestore)
+    data['commentStreak'] = commentStreak;
+    data['bestCommentStreak'] = bestCommentStreak;
+    data['streakShields'] = streakShields;
+    data['todayCommentCount'] = todayCommentCount;
+    data['todayCommentDate'] = todayCommentDate;
+    // todayCommentedPostIds reste local (SharedPreferences), ne pas envoyer en Firestore
+
     return data;
   }
   int? parseTimestamp(dynamic value) {
@@ -1428,6 +1459,8 @@ class Post {
   int? totalCoinsFromLikes;
 
   int? eventDate;
+
+  List<String>? commentSuggestions; // Suggestions générées par l'IA (Cloud Functions + Gemini)
 
   Post({
     this.id,
@@ -1602,6 +1635,9 @@ class Post {
     // Dans fromJson
     isPortrait = json['isPortrait']??true;
     challengeMonth = json['challengeMonth']??null;
+    commentSuggestions = json['commentSuggestions'] != null
+        ? List<String>.from(json['commentSuggestions'])
+        : null;
 
   }
 
@@ -2856,6 +2892,10 @@ class Canal {
   // Nouveaux champs pour canal privé
   bool isPrivate;
   double subscriptionPrice;
+  // 'gratuit' | 'unique' | 'mensuel'
+  String subscriptionType;
+  // userId -> expiresAtMs (utilisé uniquement pour le type 'mensuel')
+  Map<String, dynamic>? monthlySubscriptions;
   List<String>? subscribersId;
 
   List<String>? adminIds; // IDs des administrateurs du canal
@@ -2880,12 +2920,19 @@ class Canal {
     this.isVerify = false,
     this.allowAllMembersToPost = false,
     this.subscriptionPrice = 0.0,
+    this.subscriptionType = 'unique',
+    this.monthlySubscriptions,
     this.subscribersId,
     this.adminIds,
     this.allowedPostersIds,
     this.urlCouverture = "",
   });
   factory Canal.fromJson(Map<String, dynamic> json) {
+    final isPrivate = json['isPrivate'] ?? false;
+    final price = (json['subscriptionPrice'] ?? 0).toDouble();
+    // Rétrocompat : canaux existants sans subscriptionType → 'unique' si privé+payant
+    final String subType = json['subscriptionType'] ??
+        (isPrivate && price > 0 ? 'unique' : 'gratuit');
     return Canal(
       usersSuiviId: List<String>.from(json['usersSuiviId'] ?? []),
       titre: json['titre'],
@@ -2901,8 +2948,12 @@ class Canal {
       userId: json['userId'],
       createdAt: json['createdAt'],
       updatedAt: json['updatedAt'],
-      isPrivate: json['isPrivate'] ?? false,
-      subscriptionPrice: (json['subscriptionPrice'] ?? 0).toDouble(),
+      isPrivate: isPrivate,
+      subscriptionPrice: price,
+      subscriptionType: subType,
+      monthlySubscriptions: json['monthlySubscriptions'] != null
+          ? Map<String, dynamic>.from(json['monthlySubscriptions'])
+          : {},
       subscribersId: List<String>.from(json['subscribersId'] ?? []),
       adminIds: json['adminIds'] != null ? List<String>.from(json['adminIds']) : [],
       allowedPostersIds: json['allowedPostersIds'] != null ? List<String>.from(json['allowedPostersIds']) : [],
@@ -2928,6 +2979,8 @@ class Canal {
       'updatedAt': updatedAt,
       'isPrivate': isPrivate,
       'subscriptionPrice': subscriptionPrice,
+      'subscriptionType': subscriptionType,
+      'monthlySubscriptions': monthlySubscriptions,
       'subscribersId': subscribersId,
       'adminIds': adminIds,
       'allowedPostersIds': allowedPostersIds,

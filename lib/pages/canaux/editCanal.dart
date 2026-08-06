@@ -50,6 +50,8 @@ class _EditCanalState extends State<EditCanal> {
   XFile? imageProfile;
   XFile? imageCouverture;
   bool _isPrivate = false;
+  // 'gratuit' | 'unique' | 'mensuel'
+  String _subscriptionType = 'unique';
 
   final ImagePicker picker = ImagePicker();
 
@@ -59,6 +61,7 @@ class _EditCanalState extends State<EditCanal> {
     _titreController.text = widget.canal.titre!;
     _descriptionController.text = widget.canal.description!;
     _isPrivate = widget.canal.isPrivate ?? false;
+    _subscriptionType = widget.canal.subscriptionType;
     if (_isPrivate) {
       _priceController.text = widget.canal.subscriptionPrice?.toString() ?? '0';
     }
@@ -317,6 +320,19 @@ class _EditCanalState extends State<EditCanal> {
                 return null;
               } : null,
             ),
+            SizedBox(height: 16),
+            Text(
+              'Type d\'abonnement',
+              style: TextStyle(color: _colors.textSecondary, fontSize: 13, fontWeight: FontWeight.w500),
+            ),
+            SizedBox(height: 8),
+            Row(
+              children: [
+                _buildSubTypeOption('unique', Icons.all_inclusive_rounded, 'Unique', 'Accès à vie'),
+                SizedBox(width: 10),
+                _buildSubTypeOption('mensuel', Icons.autorenew_rounded, 'Mensuel', 'Renouvellement/mois'),
+              ],
+            ),
           ],
           SizedBox(height: 10),
           _buildSubscribersInfo(),
@@ -374,6 +390,32 @@ class _EditCanalState extends State<EditCanal> {
               textAlign: TextAlign.center,
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSubTypeOption(String type, IconData icon, String title, String subtitle) {
+    final isSelected = _subscriptionType == type;
+    final color = _colors.primary;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _subscriptionType = type),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: isSelected ? color.withOpacity(0.15) : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: isSelected ? color : _colors.border, width: 2),
+          ),
+          child: Column(
+            children: [
+              Icon(icon, color: isSelected ? color : _colors.textSecondary, size: 24),
+              const SizedBox(height: 4),
+              Text(title, style: TextStyle(color: isSelected ? color : _colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 13)),
+              Text(subtitle, style: TextStyle(color: _colors.textSecondary, fontSize: 11), textAlign: TextAlign.center),
+            ],
+          ),
         ),
       ),
     );
@@ -655,6 +697,7 @@ class _EditCanalState extends State<EditCanal> {
         widget.canal.description = _descriptionController.text;
         widget.canal.isPrivate = _isPrivate;
         widget.canal.subscriptionPrice = _isPrivate ? double.parse(_priceController.text) : 0.0;
+        widget.canal.subscriptionType = _isPrivate ? _subscriptionType : 'gratuit';
         widget.canal.updatedAt = DateTime.now().microsecondsSinceEpoch;
 
         // Si le canal devient public, on garde les abonnés existants mais sans frais

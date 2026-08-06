@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
@@ -57,6 +58,12 @@ class HashtagSuggestionBar extends StatelessWidget {
     }
     list.addAll(_universalHashtags);
     return list;
+  }
+
+  static String? randomHashtagForType(String type) {
+    final list = _hashtagsByType[type];
+    if (list == null || list.isEmpty) return null;
+    return list[Random().nextInt(list.length)];
   }
 
   bool _isAlreadyUsed(String tag) {

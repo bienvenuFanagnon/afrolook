@@ -113,7 +113,7 @@ export const onPostInteraction = onDocumentCreated(
       if (!postDoc.exists) return;
 
       const postData = postDoc.data();
-      const postOwnerId = postData?.userId;
+      const postOwnerId = postData?.user_id;
 
       // Pas de notif si l'utilisateur interagit avec son propre post
       if (postOwnerId === userId) return;

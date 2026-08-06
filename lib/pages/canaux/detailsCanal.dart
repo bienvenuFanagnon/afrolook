@@ -67,6 +67,7 @@ class _CanalDetailsState extends State<CanalDetails> {
   bool isFollowing = false;
   bool _isProcessingSubscription = false;
   bool _isProcessingUnfollow = false;
+  bool _monthlySubscriptionExpired = false;
 
   @override
   void initState() {
@@ -76,6 +77,7 @@ class _CanalDetailsState extends State<CanalDetails> {
     postProvider = Provider.of<PostProvider>(context, listen: false);
 
     checkIfFollowing();
+    _checkMonthlyExpiry();
     _loadInitialPosts();
     _scrollController.addListener(_scrollListener);
   }
@@ -151,14 +153,31 @@ class _CanalDetailsState extends State<CanalDetails> {
     }
   }
 
+  void _checkMonthlyExpiry() {
+    if (widget.canal.subscriptionType != 'mensuel') return;
+    final userId = authProvider.loginUserData.id;
+    if (userId == null) return;
+    final subs = widget.canal.monthlySubscriptions ?? {};
+    final dynamic expiresAt = subs[userId];
+    if (expiresAt == null) return;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    if ((expiresAt as int) < now) {
+      setState(() => _monthlySubscriptionExpired = true);
+    }
+  }
+
   Future<void> _handleFollowAction() async {
     final isPrivate = widget.canal.isPrivate == true;
 
+    // Abonnement mensuel expiré → forcer le renouvellement
+    if (_monthlySubscriptionExpired) {
+      await _handlePrivateCanalSubscription();
+      return;
+    }
+
     if (isFollowing) {
-      // Si déjà abonné, proposer de se désabonner
       await _handleUnfollowCanal();
     } else {
-      // Si pas abonné, proposer de s'abonner
       if (isPrivate) {
         await _handlePrivateCanalSubscription();
       } else {
@@ -276,11 +295,12 @@ class _CanalDetailsState extends State<CanalDetails> {
 
   Future<void> _handlePrivateCanalSubscription() async {
     final subscriptionPrice = widget.canal.subscriptionPrice ?? 0;
+    final subType = widget.canal.subscriptionType;
+    final isMensuel = subType == 'mensuel';
     final isAlreadySubscribed = widget.canal.usersSuiviId!.contains(authProvider.loginUserData.id);
 
-    // Vérifier si l'utilisateur est déjà abonné (cas où le canal est devenu privé après)
-    if (isAlreadySubscribed && !_requirePaymentForExistingSubscribers) {
-      // L'utilisateur garde l'accès gratuit
+    // Abonné unique déjà inscrit → accès maintenu
+    if (isAlreadySubscribed && !isMensuel && !_requirePaymentForExistingSubscribers) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -295,41 +315,38 @@ class _CanalDetailsState extends State<CanalDetails> {
 
     // Vérifier le solde de l'utilisateur
     final userDoc = await firestore.collection('Users').doc(authProvider.loginUserData.id).get();
-    final currentBalance = userDoc.data()?['votre_solde_principal'] ?? 0;
+    final currentBalance = (userDoc.data()?['votre_solde_principal'] ?? 0).toDouble();
 
     if (currentBalance < subscriptionPrice) {
       _showInsufficientBalanceDialog(userBalance: currentBalance, subscriptionPrice: subscriptionPrice);
       return;
     }
 
-    // Message de confirmation différent selon la configuration
-    String confirmationMessage = '';
-    if (isAlreadySubscribed && _requirePaymentForExistingSubscribers) {
-      confirmationMessage = 'Ce canal est devenu privé. Pour continuer à y accéder, '
-          'vous devez payer l\'abonnement de ${subscriptionPrice}FCFA.\n\n'
-          'Confirmez-vous le paiement?';
+    // Libellés adaptés au type d'abonnement
+    final String dialogTitle;
+    final String confirmationMessage;
+    if (_monthlySubscriptionExpired) {
+      dialogTitle = 'Renouveler l\'abonnement';
+      confirmationMessage = 'Votre abonnement mensuel a expiré.\n\n'
+          'Renouvelez pour ${subscriptionPrice.toStringAsFixed(0)} FCFA/mois et continuez à accéder à ce canal.';
+    } else if (isMensuel) {
+      dialogTitle = 'Abonnement Mensuel';
+      confirmationMessage = 'Ce canal est privé — abonnement mensuel à ${subscriptionPrice.toStringAsFixed(0)} FCFA/mois.\n\n'
+          'L\'accès est valable 30 jours, puis renouvelable.';
     } else {
-      confirmationMessage = 'Ce canal est privé. L\'abonnement coûte ${subscriptionPrice}FCFA.\n\n'
-          'Confirmez-vous l\'abonnement?';
+      dialogTitle = 'Abonnement Unique';
+      confirmationMessage = 'Ce canal est privé. L\'accès à vie coûte ${subscriptionPrice.toStringAsFixed(0)} FCFA.\n\n'
+          'Confirmez-vous l\'abonnement ?';
     }
 
-    // Demander confirmation pour l'abonnement payant
     final bool? confirm = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
         final colors = AppColors.of(context);
         return AlertDialog(
           backgroundColor: colors.surface,
-          title: Text(
-            isAlreadySubscribed && _requirePaymentForExistingSubscribers
-                ? 'Mise à jour d\'abonnement'
-                : 'Abonnement Privé',
-            style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold),
-          ),
-          content: Text(
-            confirmationMessage,
-            style: TextStyle(color: colors.textSecondary),
-          ),
+          title: Text(dialogTitle, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold)),
+          content: Text(confirmationMessage, style: TextStyle(color: colors.textSecondary, height: 1.5)),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -338,7 +355,10 @@ class _CanalDetailsState extends State<CanalDetails> {
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(true),
               style: ElevatedButton.styleFrom(backgroundColor: colors.primary),
-              child: Text('Confirmer', style: TextStyle(color: colors.onPrimary)),
+              child: Text(
+                isMensuel ? 'S\'abonner — ${subscriptionPrice.toStringAsFixed(0)} FCFA/mois' : 'Confirmer',
+                style: TextStyle(color: colors.onPrimary),
+              ),
             ),
           ],
         );
@@ -388,14 +408,29 @@ class _CanalDetailsState extends State<CanalDetails> {
       // Enregistrer les transactions
       await _recordTransactions(price, creatorShare, appShare, isAlreadySubscribed);
 
+      // Pour abonnement mensuel : enregistrer la date d'expiration (+30 jours)
+      if (widget.canal.subscriptionType == 'mensuel') {
+        final expiresAt = DateTime.now().add(const Duration(days: 30)).millisecondsSinceEpoch;
+        final userId = authProvider.loginUserData.id!;
+        await firestore.collection('Canaux').doc(widget.canal.id).update({
+          'monthlySubscriptions.$userId': expiresAt,
+        });
+        widget.canal.monthlySubscriptions ??= {};
+        widget.canal.monthlySubscriptions![userId] = expiresAt;
+        setState(() => _monthlySubscriptionExpired = false);
+      }
+
       // Suivre le canal (ou maintenir l'abonnement)
       if (!isAlreadySubscribed) {
         await _followCanal();
       }
 
-      String successMessage = isAlreadySubscribed && _requirePaymentForExistingSubscribers
-          ? '✅ Paiement accepté! Vous conservez l\'accès au canal privé.'
-          : '✅ Abonnement réussi! Canal privé ajouté.';
+      final isMensuel = widget.canal.subscriptionType == 'mensuel';
+      String successMessage = isMensuel
+          ? '✅ Abonnement mensuel activé ! Accès valable 30 jours.'
+          : isAlreadySubscribed && _requirePaymentForExistingSubscribers
+              ? '✅ Paiement accepté! Vous conservez l\'accès au canal privé.'
+              : '✅ Abonnement réussi! Canal privé ajouté.';
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -623,7 +658,7 @@ class _CanalDetailsState extends State<CanalDetails> {
                     ElevatedButton(
                       onPressed: () {
                         Navigator.of(context).pop();
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => DepositScreen()));
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => DepositScreen(defaultAmount: missingAmount)));
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: colors.primary,

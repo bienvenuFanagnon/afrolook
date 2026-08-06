@@ -1,13 +1,16 @@
 import 'dart:math';
 
-/// Génère 6 suggestions de commentaires variées pour un post.
+/// Génère 6 suggestions de commentaires intelligentes pour un post.
 ///
-/// Priorité de sélection :
-///   1. typeTabbar du post  (SPORT, LOOKS, ACTUALITES, EVENEMENT, OFFRES, GAMER)
-///   2. Hashtags extraits de la description
-///   3. Mots-clés dans la description
-///   4. Emojis détectés dans la description → émotion dominante
-///   5. Fallback général shufflé
+/// Système multi-signaux pondérés :
+///   Hashtags (avec stemming + fuzzy)  → poids 3
+///   Expressions multi-mots            → poids variable (2-5)
+///   Mots-clés description (cumulatif) → poids 2 par match, max 4
+///   Emojis (comptés)                  → poids 2 par emoji, max 4
+///   postType                          → poids 1 (tiebreaker uniquement)
+///
+/// Le thème gagnant détermine le pool. Si 2 thèmes sont proches (≥70%),
+/// leurs pools sont fusionnés pour plus de variété.
 class CommentSuggestionService {
   static final Random _rng = Random();
 
@@ -70,38 +73,19 @@ class CommentSuggestionService {
     ],
   };
 
-  // ─── POOLS PAR HASHTAG → THÈME ──────────────────────────────────────────────
-
-  static const Map<String, String> _hashtagToType = {
-    'mode': 'LOOKS', 'fashion': 'LOOKS', 'look': 'LOOKS', 'outfit': 'LOOKS',
-    'wax': 'LOOKS', 'pagne': 'LOOKS', 'style': 'LOOKS', 'ootd': 'LOOKS',
-    'afrofashion': 'LOOKS', 'tenue': 'LOOKS', 'ankara': 'LOOKS',
-
-    'sport': 'SPORT', 'football': 'SPORT', 'basket': 'SPORT', 'soccer': 'SPORT',
-    'can2025': 'SPORT', 'match': 'SPORT', 'victoire': 'SPORT', 'goal': 'SPORT',
-    'fitness': 'SPORT', 'athletisme': 'SPORT', 'afrosport': 'SPORT',
-    'ligue1': 'SPORT', 'training': 'SPORT', 'champion': 'SPORT',
-
-    'actu': 'ACTUALITES', 'news': 'ACTUALITES', 'info': 'ACTUALITES',
-    'politique': 'ACTUALITES', 'breaking': 'ACTUALITES', 'debat': 'ACTUALITES',
-    'actualite': 'ACTUALITES', 'societe': 'ACTUALITES', 'international': 'ACTUALITES',
-
-    'evenement': 'EVENEMENT', 'concert': 'EVENEMENT', 'festival': 'EVENEMENT',
-    'soiree': 'EVENEMENT', 'lancement': 'EVENEMENT', 'fete': 'EVENEMENT',
-    'show': 'EVENEMENT', 'spectacle': 'EVENEMENT', 'afterwork': 'EVENEMENT',
-
-    'offre': 'OFFRES', 'promo': 'OFFRES', 'vente': 'OFFRES', 'deal': 'OFFRES',
-    'shopping': 'OFFRES', 'reduction': 'OFFRES', 'boutique': 'OFFRES',
-    'business': 'OFFRES', 'opportunite': 'OFFRES', 'startup': 'OFFRES',
-
-    'gaming': 'GAMER', 'game': 'GAMER', 'gamer': 'GAMER', 'ps5': 'GAMER',
-    'esport': 'GAMER', 'streamer': 'GAMER', 'freefire': 'GAMER',
-    'playstation': 'GAMER', 'xbox': 'GAMER', 'pubg': 'GAMER', 'codm': 'GAMER',
-  };
-
-  // ─── POOLS PAR THÈME (mots-clés dans description) ───────────────────────────
+  // ─── POOLS PAR THÈME ────────────────────────────────────────────────────────
 
   static const Map<String, List<String>> _byTheme = {
+    'humour': [
+      '😂😂😂 J\'en peux plus !', 'Trop drôle !', 'Tu es fait pour la scène !',
+      '🤣 Je suis mort(e) !', 'Le meilleur comique ! 😂', 'Encore !',
+      'Déclenche mon fou rire à chaque fois 😂', 'Non c\'est trop 🤣',
+      'Mon ventre fait mal 😂', 'Génie absolu !',
+      'Tu vas me tuer avec tes blagues 💀', 'J\'ai manqué de mourir de rire 💀',
+      'Tu es la définition du LOL 😂', 'J\'attends le prochain 🔥',
+      'Ça c\'est du talent comique ! 🎤', 'Cette blague 😂💀',
+      'Tu m\'as tué ! 🤣', 'Partage ça à quelqu\'un qui en a besoin 😂',
+    ],
     'musique': [
       '🎵 Trop bonne musique !', 'Tu as du talent !', "J'adore ce clip 🔥",
       'La suite ?', '🎤 Incroyable !', '❤️ Ce banger est parfait',
@@ -109,7 +93,8 @@ class CommentSuggestionService {
       'C\'est certifié hit 🏆', 'Le flow est propre !',
       'La prod est immense 🔥', 'Afrobeats toujours au top !',
       'Trop de talent dans cette voix !', 'Le clip est magnifique !',
-      'Paroles qui font réfléchir ✨',
+      'Paroles qui font réfléchir ✨', 'Quelle puissance vocale ! 🎶',
+      'C\'est en boucle depuis hier 🔁', 'Le prochain album ?',
     ],
     'cuisine': [
       '😍 Ça a l\'air délicieux !', 'La recette stp !', 'Trop appétissant 🤤',
@@ -165,18 +150,9 @@ class CommentSuggestionService {
       'Que Dieu vous bénisse pour ça 🙏', 'Le monde a besoin de ça !',
       'Partagé à tous mes proches ❤️',
     ],
-    'humour': [
-      '😂😂😂 J\'en peux plus !', 'Trop drôle !', 'Tu es fait pour la scène !',
-      '🤣 Je suis mort(e) !', 'Le meilleur comique ! 😂', 'Encore !',
-      'Déclenche mon fou rire à chaque fois 😂', 'Non c\'est trop 🤣',
-      'Mon ventre fait mal 😂', 'Génie !',
-      'Partage ça à quelqu\'un qui en a besoin 😂', 'J\'ai manqué de mourir de rire 💀',
-      'Tu es la définition du LOL 😂', 'J\'attends le prochain 🔥',
-      'Ça c\'est du talent comique ! 🎤',
-    ],
   };
 
-  // ─── POOLS PAR ÉMOTION (détectée via emojis) ────────────────────────────────
+  // ─── POOLS PAR ÉMOTION ───────────────────────────────────────────────────────
 
   static const Map<String, List<String>> _byEmotion = {
     'joie': [
@@ -279,38 +255,303 @@ class CommentSuggestionService {
     'Tu te surpasses ! 🌟', 'C\'est du solide !',
   ];
 
-  // ─── MAPPAGE EMOJIS → ÉMOTION ────────────────────────────────────────────────
+  // ─── HASHTAG → THÈME UNIVERSEL ──────────────────────────────────────────────
+  // Couvre tous les thèmes et émotions (formes singulières — le stemming gère les pluriels)
 
-  static const Map<String, String> _emojiEmotion = {
-    '😂': 'rires', '🤣': 'rires', '😹': 'rires',
+  static const Map<String, String> _hashtagToTheme = {
+    // ── Humour / Rires ──
+    'blague': 'humour', 'humour': 'humour', 'drole': 'humour', 'lol': 'humour',
+    'mdr': 'humour', 'marrant': 'humour', 'comedie': 'humour', 'sketch': 'humour',
+    'rigolo': 'humour', 'haha': 'humour', 'funny': 'humour', 'xptdr': 'humour',
+    'gag': 'humour', 'joke': 'humour', 'comique': 'humour', 'ptdr': 'humour',
+    'prank': 'humour', 'troll': 'humour', 'meme': 'humour', 'rire': 'humour',
+    'mort': 'humour', 'lmao': 'humour', 'rofl': 'humour',
+
+    // ── Musique ──
+    'musique': 'musique', 'chanson': 'musique', 'artiste': 'musique',
+    'afrobeat': 'musique', 'rap': 'musique', 'clip': 'musique',
+    'banger': 'musique', 'track': 'musique', 'album': 'musique',
+    'mixtape': 'musique', 'playlist': 'musique', 'studio': 'musique',
+    'freestyle': 'musique', 'beat': 'musique', 'chanteur': 'musique',
+    'chanteuse': 'musique', 'singer': 'musique', 'afropop': 'musique',
+    'coupedecale': 'musique', 'ndombolo': 'musique', 'zouglou': 'musique',
+    'highlife': 'musique', 'lyric': 'musique', 'rnb': 'musique',
+    'hiphop': 'musique', 'dancehall': 'musique', 'amapiano': 'musique',
+    'afrosoul': 'musique', 'son': 'musique', 'melodie': 'musique',
+    'instrumental': 'musique', 'concert': 'musique',
+
+    // ── Fashion / Look ──
+    'look': 'LOOKS', 'mode': 'LOOKS', 'fashion': 'LOOKS', 'outfit': 'LOOKS',
+    'style': 'LOOKS', 'wax': 'LOOKS', 'pagne': 'LOOKS', 'ootd': 'LOOKS',
+    'afrofashion': 'LOOKS', 'tenue': 'LOOKS', 'ankara': 'LOOKS',
+    'collection': 'LOOKS', 'dressing': 'LOOKS', 'swag': 'LOOKS',
+    'tendance': 'LOOKS', 'couture': 'LOOKS', 'kente': 'LOOKS',
+    'dashiki': 'LOOKS', 'boubou': 'LOOKS', 'accessoire': 'LOOKS',
+    'bijou': 'LOOKS', 'vetement': 'LOOKS', 'modele': 'LOOKS',
+
+    // ── Sport ──
+    'sport': 'SPORT', 'football': 'SPORT', 'basket': 'SPORT', 'soccer': 'SPORT',
+    'can2025': 'SPORT', 'match': 'SPORT', 'victoire': 'SPORT', 'goal': 'SPORT',
+    'fitness': 'SPORT', 'athletisme': 'SPORT', 'afrosport': 'SPORT',
+    'ligue1': 'SPORT', 'training': 'SPORT', 'champion': 'SPORT',
+    'handball': 'SPORT', 'rugby': 'SPORT', 'natation': 'SPORT',
+    'tennis': 'SPORT', 'boxe': 'SPORT', 'gym': 'SPORT',
+    'musculation': 'SPORT', 'running': 'SPORT', 'marathon': 'SPORT',
+    'buteur': 'SPORT', 'penalty': 'SPORT', 'ballon': 'SPORT',
+    'equipe': 'SPORT', 'stade': 'SPORT', 'competition': 'SPORT',
+
+    // ── Actualités ──
+    'actu': 'ACTUALITES', 'news': 'ACTUALITES', 'info': 'ACTUALITES',
+    'politique': 'ACTUALITES', 'breaking': 'ACTUALITES', 'debat': 'ACTUALITES',
+    'actualite': 'ACTUALITES', 'societe': 'ACTUALITES', 'international': 'ACTUALITES',
+    'gouvernement': 'ACTUALITES', 'election': 'ACTUALITES', 'economie': 'ACTUALITES',
+    'afrique': 'ACTUALITES', 'monde': 'ACTUALITES', 'journalisme': 'ACTUALITES',
+    'alerte': 'ACTUALITES', 'reportage': 'ACTUALITES', 'exclusif': 'ACTUALITES',
+
+    // ── Événement ──
+    'evenement': 'EVENEMENT', 'festival': 'EVENEMENT', 'soiree': 'EVENEMENT',
+    'lancement': 'EVENEMENT', 'fete': 'EVENEMENT', 'show': 'EVENEMENT',
+    'spectacle': 'EVENEMENT', 'afterwork': 'EVENEMENT', 'gala': 'EVENEMENT',
+    'conference': 'EVENEMENT', 'ceremonie': 'EVENEMENT', 'party': 'EVENEMENT',
+    'carnaval': 'EVENEMENT', 'inauguration': 'EVENEMENT',
+
+    // ── Offres / Business ──
+    'offre': 'OFFRES', 'promo': 'OFFRES', 'vente': 'OFFRES', 'deal': 'OFFRES',
+    'shopping': 'OFFRES', 'reduction': 'OFFRES', 'boutique': 'OFFRES',
+    'business': 'OFFRES', 'opportunite': 'OFFRES', 'startup': 'OFFRES',
+    'entrepreneur': 'OFFRES', 'ecommerce': 'OFFRES', 'livraison': 'OFFRES',
+    'produit': 'OFFRES', 'solde': 'OFFRES', 'nouveaute': 'OFFRES',
+
+    // ── Gaming ──
+    'gaming': 'GAMER', 'game': 'GAMER', 'gamer': 'GAMER', 'ps5': 'GAMER',
+    'esport': 'GAMER', 'streamer': 'GAMER', 'freefire': 'GAMER',
+    'playstation': 'GAMER', 'xbox': 'GAMER', 'pubg': 'GAMER', 'codm': 'GAMER',
+    'twitch': 'GAMER', 'minecraft': 'GAMER', 'fortnite': 'GAMER',
+    'ranked': 'GAMER', 'clutch': 'GAMER', 'mobile': 'GAMER',
+
+    // ── Cuisine / Food ──
+    'cuisine': 'cuisine', 'recette': 'cuisine', 'food': 'cuisine',
+    'foodie': 'cuisine', 'chef': 'cuisine', 'plat': 'cuisine',
+    'repas': 'cuisine', 'gateau': 'cuisine', 'poulet': 'cuisine',
+    'attieke': 'cuisine', 'jollof': 'cuisine', 'fufu': 'cuisine',
+    'yassa': 'cuisine', 'ndole': 'cuisine', 'mafe': 'cuisine',
+    'thieboudienne': 'cuisine', 'alloco': 'cuisine', 'streetfood': 'cuisine',
+    'restaurant': 'cuisine', 'sauce': 'cuisine', 'delicieux': 'cuisine',
+
+    // ── Voyage / Travel ──
+    'voyage': 'voyage', 'travel': 'voyage', 'plage': 'voyage',
+    'safari': 'voyage', 'hotel': 'voyage', 'tourisme': 'voyage',
+    'vacance': 'voyage', 'paysage': 'voyage', 'decouverte': 'voyage',
+    'escapade': 'voyage', 'aventure': 'voyage', 'roadtrip': 'voyage',
+    'destination': 'voyage', 'expatrie': 'voyage', 'backpacker': 'voyage',
+
+    // ── Art / Créativité ──
+    'art': 'art', 'dessin': 'art', 'peinture': 'art',
+    'photographie': 'art', 'photo': 'art', 'illustration': 'art',
+    'oeuvre': 'art', 'tableau': 'art', 'sculpture': 'art',
+    'graffiti': 'art', 'portrait': 'art', 'aquarelle': 'art',
+    'creative': 'art', 'photographe': 'art', 'aesthetic': 'art',
+    'design': 'art', 'graphisme': 'art',
+
+    // ── Mariage ──
+    'mariage': 'mariage', 'fiancaille': 'mariage', 'noce': 'mariage',
+    'bague': 'mariage', 'dot': 'mariage', 'wedding': 'mariage',
+    'propose': 'mariage', 'lune_de_miel': 'mariage',
+
+    // ── Amour / Couple ──
+    'couple': 'amour', 'love': 'amour', 'amour': 'amour',
+    'romance': 'amour', 'valentin': 'amour', 'crush': 'amour',
+    'relationshipgoal': 'amour',
+
+    // ── Bébé / Famille ──
+    'bebe': 'bebe', 'naissance': 'bebe', 'grossesse': 'bebe',
+    'maternite': 'bebe', 'accouchement': 'bebe', 'bapteme': 'bebe',
+    'famille': 'bebe', 'enfant': 'bebe', 'maman': 'bebe', 'papa': 'bebe',
+    'newborn': 'bebe', 'enceinte': 'bebe',
+
+    // ── Motivation / Inspiration ──
+    'motivation': 'motivation', 'inspiration': 'motivation', 'sagesse': 'motivation',
+    'citation': 'motivation', 'reussite': 'motivation', 'succes': 'motivation',
+    'mindset': 'motivation', 'discipline': 'motivation', 'objectif': 'motivation',
+    'perseverance': 'motivation', 'reve': 'motivation', 'quote': 'motivation',
+    'growth': 'motivation', 'positif': 'motivation',
+
+    // ── Tristesse ──
+    'triste': 'tristesse', 'tristesse': 'tristesse', 'depression': 'tristesse',
+    'seul': 'tristesse', 'solitude': 'tristesse', 'douleur': 'tristesse',
+    'peine': 'tristesse', 'cafard': 'tristesse',
+
+    // ── Condoléances ──
+    'rip': 'condoleances', 'dece': 'condoleances', 'condoleance': 'condoleances',
+    'perte': 'condoleances', 'deuil': 'condoleances', 'disparu': 'condoleances',
+    'hommage': 'condoleances', 'reposenpaixe': 'condoleances',
+
+    // ── Prière / Spiritualité ──
+    'priere': 'priere', 'amen': 'priere', 'dieu': 'priere',
+    'allah': 'priere', 'foi': 'priere', 'benediction': 'priere',
+    'eglise': 'priere', 'mosquee': 'priere', 'grace': 'priere',
+    'spirituel': 'priere', 'prophetie': 'priere', 'delivrance': 'priere',
+    'pasteur': 'priere', 'imam': 'priere', 'gospel': 'priere',
+
+    // ── Colère / Indignation ──
+    'injustice': 'colere', 'scandale': 'colere', 'corruption': 'colere',
+    'impunite': 'colere', 'racisme': 'colere', 'discrimination': 'colere',
+    'revolte': 'colere', 'inacceptable': 'colere',
+
+    // ── Surprise ──
+    'wtf': 'surprise', 'incroyable': 'surprise', 'choc': 'surprise',
+    'waou': 'surprise', 'omg': 'surprise', 'incredule': 'surprise',
+    'impossible': 'surprise', 'surreal': 'surprise',
+
+    // ── Admiration ──
+    'talent': 'admiration', 'genius': 'admiration', 'goat': 'admiration',
+    'legend': 'admiration', 'respect': 'admiration', 'fier': 'admiration',
+    'fierte': 'admiration', 'bravo': 'admiration', 'icon': 'admiration',
+
+    // ── Nostalgie ──
+    'nostalgie': 'nostalgie', 'souvenir': 'nostalgie', 'memoire': 'nostalgie',
+    'throwback': 'nostalgie', 'retro': 'nostalgie', 'vintage': 'nostalgie',
+    'tbt': 'nostalgie', 'flashback': 'nostalgie',
+  };
+
+  // ─── EXPRESSIONS MULTI-MOTS ──────────────────────────────────────────────────
+  // (pattern_normalisé, thème, poids) — analysées dans la description complète
+
+  static const List<(String, String, int)> _multiWordPatterns = [
+    // Humour
+    ('je suis mort', 'humour', 5),
+    ('mort de rire', 'humour', 5),
+    ('je pleure de rire', 'humour', 5),
+    ('trop drole', 'humour', 4),
+    ('trop marrant', 'humour', 4),
+    ('je ris', 'humour', 3),
+    ('fait rire', 'humour', 3),
+    ('bonne blague', 'humour', 4),
+    // Condoléances
+    ('repose en paix', 'condoleances', 5),
+    ('rest in peace', 'condoleances', 5),
+    ('sinceres condoleances', 'condoleances', 5),
+    ('nous a quittes', 'condoleances', 4),
+    ('nous a quitte', 'condoleances', 4),
+    // Prière
+    ('que dieu', 'priere', 3),
+    ('que allah', 'priere', 3),
+    ('je prie pour', 'priere', 4),
+    ('au nom de dieu', 'priere', 4),
+    // Cuisine
+    ('recette de', 'cuisine', 4),
+    ('comment preparer', 'cuisine', 4),
+    ('les ingredients', 'cuisine', 4),
+    ('ca sent bon', 'cuisine', 3),
+    // Sport
+    ('on a gagne', 'SPORT', 4),
+    ('victoire de', 'SPORT', 4),
+    ('beau but', 'SPORT', 4),
+    ('prochain match', 'SPORT', 3),
+    // Musique
+    ('nouveau clip', 'musique', 4),
+    ('nouvel album', 'musique', 4),
+    ('nouvelle chanson', 'musique', 4),
+    ('en boucle', 'musique', 3),
+    // Mariage
+    ('elle a dit oui', 'mariage', 5),
+    ('il a dit oui', 'mariage', 5),
+    ('fiancee avec', 'mariage', 4),
+    ('fiance avec', 'mariage', 4),
+    // Bébé
+    ('bonne nouvelle', 'joie', 3),
+    ('je suis enceinte', 'bebe', 5),
+    ('elle est enceinte', 'bebe', 5),
+    ('accouche de', 'bebe', 5),
+    // Mode
+    ('nouvelle tenue', 'LOOKS', 4),
+    ('nouvelle collection', 'LOOKS', 4),
+    // Actualités
+    ('breaking news', 'ACTUALITES', 4),
+    ('en direct de', 'ACTUALITES', 3),
+    // Joie
+    ('trop content', 'joie', 3),
+    ('trop heureuse', 'joie', 3),
+    ('trop heureux', 'joie', 3),
+    // Nostalgie
+    ('bon vieux temps', 'nostalgie', 4),
+    ('ca me rappelle', 'nostalgie', 3),
+    ('les souvenirs', 'nostalgie', 3),
+    // Tristesse
+    ('je souffre', 'tristesse', 3),
+    ('c est dur', 'tristesse', 2),
+    ('ca fait mal', 'tristesse', 3),
+  ];
+
+  // ─── MOTS-CLÉS PAR THÈME ─────────────────────────────────────────────────────
+
+  static const Map<String, List<String>> _themeKeywords = {
+    'humour': [
+      'blague', 'humour', 'drole', 'comedie', 'rire', 'sketch', 'meme', 'gag',
+      'marrant', 'comique', 'lol', 'mdr', 'ptdr', 'xptdr', 'rigolo', 'funny',
+      'prank', 'trop fort', 'je suis mort', 'mort de rire',
+    ],
+    'musique': [
+      'musique', 'chanson', 'album', 'beat', 'artiste', 'chant', 'lyrics',
+      'clip', 'mixtape', 'freestyle', 'studio', 'playlist', 'afrobeat', 'banger',
+      'son', 'track', 'melodie', 'couplet', 'refrain', 'instrumental',
+    ],
+    'cuisine': [
+      'recette', 'cuisine', 'plat', 'nourriture', 'repas', 'gateau', 'poulet',
+      'sauce', 'marmite', 'attieke', 'thieboudienne', 'jollof', 'fufu', 'yassa',
+      'ndole', 'manger', 'chef', 'ingredient', 'delicieux', 'appétissant',
+    ],
+    'voyage': [
+      'voyage', 'destination', 'plage', 'safari', 'hotel', 'tourisme',
+      'vacances', 'paysage', 'decouverte', 'escapade', 'avion', 'valise',
+      'frontiere', 'expatrie', 'aventure',
+    ],
+    'art': [
+      'dessin', 'peinture', 'photographie', 'illustration', 'oeuvre', 'tableau',
+      'sculpture', 'calligraphie', 'grafiti', 'portrait', 'aquarelle', 'artiste',
+      'creatif', 'aesthetic', 'design',
+    ],
+    'mariage': [
+      'mariage', 'fiancailles', 'fiance', 'fiancee', 'noces', 'ceremonie',
+      'bague', 'maries', 'epoux', 'epouse', 'dot', 'demande', 'couple',
+    ],
+    'bebe': [
+      'bebe', 'naissance', 'grossesse', 'nouveau-ne', 'maternite', 'accouchement',
+      'nourrisson', 'biberon', 'bapteme', 'enfant', 'enceinte', 'nouveau',
+    ],
+    'motivation': [
+      'motivation', 'inspiration', 'sagesse', 'citation', 'reussite', 'succes',
+      'mentalite', 'mindset', 'discipline', 'perseverance', 'reve', 'objectif',
+    ],
+  };
+
+  // ─── EMOJIS → ÉMOTION ────────────────────────────────────────────────────────
+
+  static const Map<String, String> _emojiToEmotion = {
+    '😂': 'humour', '🤣': 'humour', '😹': 'humour', '💀': 'humour',
     '😢': 'tristesse', '😥': 'tristesse', '😰': 'tristesse',
     '😭': 'condoleances',
     '🕊️': 'condoleances', '💔': 'condoleances',
     '🙏': 'priere',
     '😡': 'colere', '😤': 'colere', '🤬': 'colere',
     '😮': 'surprise', '😱': 'surprise', '🤯': 'surprise',
-    '❤️': 'amour', '🥰': 'amour', '😍': 'amour', '💕': 'amour',
-    '👏': 'admiration', '🏆': 'admiration', '🌟': 'admiration',
+    '❤️': 'amour', '🥰': 'amour', '😍': 'amour', '💕': 'amour', '❤️‍🔥': 'amour',
+    '👏': 'admiration', '🏆': 'admiration', '🌟': 'admiration', '🙌': 'admiration',
     '😌': 'nostalgie',
-    '🎉': 'joie', '🎊': 'joie', '😊': 'joie',
-  };
-
-  // ─── MAPPAGE MOTS-CLÉS THÈMES ────────────────────────────────────────────────
-
-  static const Map<String, List<String>> _themeKeywords = {
-    'musique': ['musique', 'chanson', 'album', 'beat', 'artiste', 'concert', 'chant', 'lyrics', 'clip', 'mixtape', 'freestyle', 'studio', 'playlist', 'afrobeat', 'banger', 'son', 'track'],
-    'cuisine': ['recette', 'cuisine', 'plat', 'nourriture', 'repas', 'gateau', 'poulet', 'sauce', 'marmite', 'attieke', 'thieboudienne', 'jollof', 'fufu', 'yassa', 'ndole', 'manger', 'chef'],
-    'voyage': ['voyage', 'destination', 'plage', 'safari', 'hotel', 'tourisme', 'vacances', 'paysage', 'decouverte', 'escapade', 'avion', 'valise', 'frontiere'],
-    'art': ['dessin', 'peinture', 'photographie', 'illustration', 'oeuvre', 'tableau', 'sculpture', 'calligraphie', 'grafiti', 'portrait', 'aquarelle', 'artiste', 'creatif'],
-    'mariage': ['mariage', 'fiancailles', 'fiancé', 'fiancee', 'noces', 'ceremonie', 'bague', 'maries', 'epoux', 'epouse', 'dot', 'demande', 'couple'],
-    'bebe': ['bebe', 'naissance', 'grossesse', 'nouveau-ne', 'maternite', 'accouchement', 'nourrisson', 'biberon', 'bapteme', 'enfant', 'nouveau'],
-    'motivation': ['motivation', 'inspiration', 'sagesse', 'citation', 'reussite', 'succes', 'mentalite', 'mindset', 'discipline', 'perseverance', 'reve', 'objectif'],
-    'humour': ['blague', 'humour', 'drole', 'comedie', 'rire', 'sketch', 'meme', 'gag', 'marrant', 'comique', 'lol'],
+    '🎉': 'joie', '🎊': 'joie', '😊': 'joie', '🥳': 'joie',
+    '🎵': 'musique', '🎤': 'musique', '🎶': 'musique',
+    '⚽': 'SPORT', '🏀': 'SPORT', '💪': 'SPORT',
+    '✈️': 'voyage', '🌍': 'voyage', '🏖️': 'voyage',
+    '🍽️': 'cuisine', '😋': 'cuisine', '🤤': 'cuisine',
+    '🎨': 'art', '🖌️': 'art',
+    '💍': 'mariage', '👰': 'mariage',
+    '👶': 'bebe', '🍼': 'bebe',
+    '🎮': 'GAMER', '🕹️': 'GAMER',
   };
 
   // ─── API PUBLIQUE ────────────────────────────────────────────────────────────
 
-  /// Retourne 6 suggestions variées. Shufflées à chaque appel — jamais les mêmes.
+  /// Retourne 6 suggestions intelligentes. Différentes à chaque appel.
   static List<String> getSuggestions(
     String postId,
     String description, {
@@ -321,7 +562,6 @@ class CommentSuggestionService {
     final shuffled = List<String>.from(pool)..shuffle(_rng);
     final result = shuffled.take(6).toList();
 
-    // Compléter avec le général si moins de 6
     if (result.length < 6) {
       final extra = List<String>.from(_general)..shuffle(_rng);
       for (final s in extra) {
@@ -332,75 +572,173 @@ class CommentSuggestionService {
     return result.take(6).toList();
   }
 
-  // ─── SÉLECTION DU POOL ───────────────────────────────────────────────────────
+  // ─── SÉLECTION PAR SCORE MULTI-SIGNAUX ──────────────────────────────────────
 
   static List<String> _selectPool(
     String description, {
     String? postType,
     List<String>? hashtags,
   }) {
-    // 1. Type de post explicite (SPORT, LOOKS, ACTUALITES, EVENEMENT, OFFRES, GAMER)
-    if (postType != null && _byPostType.containsKey(postType)) {
-      return _byPostType[postType]!;
-    }
+    final scores = <String, int>{};
+    final hasHashtags = description.contains('#') || (hashtags?.isNotEmpty ?? false);
+    final descNorm = _normalize(description.toLowerCase());
 
-    // 2. Hashtags dans la description
+    // ── Signal 1 : Hashtags avec stemming + fuzzy (poids 3) ──────────────────
     final extractedTags = _extractHashtags(description);
     final allTags = {...extractedTags, ...(hashtags ?? [])};
     for (final tag in allTags) {
       final clean = _normalize(tag.replaceAll('#', ''));
-      if (_hashtagToType.containsKey(clean)) {
-        final type = _hashtagToType[clean]!;
-        return _byPostType[type]!;
+      final theme = _lookupHashtag(clean);
+      if (theme != null) {
+        scores[theme] = (scores[theme] ?? 0) + 3;
       }
     }
 
-    // 3. Mots-clés thématiques dans la description
-    final lower = _normalize(description);
+    // ── Signal 2 : Expressions multi-mots (poids variable 2-5) ───────────────
+    for (final (pattern, theme, weight) in _multiWordPatterns) {
+      if (descNorm.contains(pattern)) {
+        scores[theme] = (scores[theme] ?? 0) + weight;
+      }
+    }
+
+    // ── Signal 3 : Mots-clés description (poids cumulatif, max 4) ────────────
     for (final entry in _themeKeywords.entries) {
+      int matchCount = 0;
       for (final kw in entry.value) {
-        if (RegExp(r'\b' + RegExp.escape(kw) + r'\b').hasMatch(lower)) {
-          if (_byTheme.containsKey(entry.key)) return _byTheme[entry.key]!;
+        if (descNorm.contains(kw)) matchCount++;
+      }
+      if (matchCount > 0) {
+        // 1 match = +2, 2+ matches = +4 (signal renforcé)
+        scores[entry.key] = (scores[entry.key] ?? 0) + (matchCount > 1 ? 4 : 2);
+      }
+    }
+
+    // ── Signal 4 : Emojis (comptés, poids 2 par type, max +4) ────────────────
+    final emojiCounts = <String, int>{};
+    for (final entry in _emojiToEmotion.entries) {
+      if (description.contains(entry.key)) {
+        emojiCounts[entry.value] = (emojiCounts[entry.value] ?? 0) + 1;
+      }
+    }
+    for (final entry in emojiCounts.entries) {
+      // Plusieurs emojis du même type renforcent le signal
+      scores[entry.key] = (scores[entry.key] ?? 0) + (entry.value > 1 ? 4 : 2);
+    }
+
+    // ── Signal 5 : postType (poids 1 — tiebreaker uniquement) ────────────────
+    if (postType != null && postType.isNotEmpty) {
+      scores[postType] = (scores[postType] ?? 0) + 1;
+    }
+
+    // ── Aucun signal reconnu ──────────────────────────────────────────────────
+    if (scores.isEmpty) {
+      return hasHashtags ? _general : _buildEmotionMixedPool();
+    }
+
+    // ── Classement et fusion si 2 thèmes proches (≥70% du score gagnant) ─────
+    final sorted = scores.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+    final winner = sorted.first.key;
+    final topScore = sorted.first.value;
+
+    if (sorted.length > 1 && sorted[1].value >= (topScore * 0.7).round()) {
+      // Mélange les deux pools pour plus de diversité
+      final pool1 = _getPoolForTheme(winner);
+      final pool2 = _getPoolForTheme(sorted[1].key);
+      return [...pool1, ...pool2];
+    }
+
+    return _getPoolForTheme(winner);
+  }
+
+  // ─── STEMMING FRANÇAIS ───────────────────────────────────────────────────────
+  // Supprime les suffixes courants pour matcher les pluriels et variantes
+
+  static String _stemFr(String word) {
+    const suffixes = [
+      'ments', 'eurs', 'euses', 'istes', 'tions', 'iques', 'eries',
+      'ment', 'euse', 'iste', 'tion', 'ique', 'erie',
+      'aux', 'ers', 'ees', 'ies', 'es', 's', 'x',
+    ];
+    for (final sfx in suffixes) {
+      if (word.length > sfx.length + 3 && word.endsWith(sfx)) {
+        return word.substring(0, word.length - sfx.length);
+      }
+    }
+    return word;
+  }
+
+  // ─── LOOKUP HASHTAG AVANCÉ ───────────────────────────────────────────────────
+  // 1. Exact  2. Stemmé  3. Préfixe fuzzy (min 5 chars)
+
+  static String? _lookupHashtag(String raw) {
+    // 1. Exact
+    var theme = _hashtagToTheme[raw];
+    if (theme != null) return theme;
+
+    // 2. Stemmé (blagues → blague, chansons → chanson)
+    final stemmed = _stemFr(raw);
+    if (stemmed != raw) {
+      theme = _hashtagToTheme[stemmed];
+      if (theme != null) return theme;
+    }
+
+    // 3. Préfixe fuzzy : le hashtag commence par une clé connue (min 5 chars)
+    if (raw.length >= 5) {
+      for (final entry in _hashtagToTheme.entries) {
+        final key = entry.key;
+        if (key.length >= 4 && raw.startsWith(key) && (raw.length - key.length) <= 3) {
+          return entry.value;
+        }
+        if (key.length >= 5 && key.startsWith(raw) && (key.length - raw.length) <= 3) {
+          return entry.value;
         }
       }
     }
+    return null;
+  }
 
-    // 4. Émotion dominante via emojis
-    final emotion = _detectEmotion(description);
-    if (emotion != null && _byEmotion.containsKey(emotion)) {
-      return _byEmotion[emotion]!;
-    }
+  // ─── HELPERS ────────────────────────────────────────────────────────────────
 
-    // 5. Fallback général
+  static List<String> _getPoolForTheme(String theme) {
+    if (_byPostType.containsKey(theme)) return _byPostType[theme]!;
+    if (_byTheme.containsKey(theme)) return _byTheme[theme]!;
+    if (_byEmotion.containsKey(theme)) return _byEmotion[theme]!;
     return _general;
   }
 
-  // ─── HELPERS ─────────────────────────────────────────────────────────────────
+  static List<String> _buildEmotionMixedPool() {
+    final pool = <String>[];
+    for (final emotionList in _byEmotion.values) {
+      final shuffled = List<String>.from(emotionList)..shuffle(_rng);
+      pool.addAll(shuffled.take(2));
+    }
+    return pool;
+  }
 
   static List<String> _extractHashtags(String text) {
     final matches = RegExp(r'#\w+').allMatches(text);
     return matches.map((m) => m.group(0)!.toLowerCase()).toList();
   }
 
-  static String? _detectEmotion(String text) {
+  static String _detectEmotion(String text) {
     final counts = <String, int>{};
-    for (final entry in _emojiEmotion.entries) {
+    for (final entry in _emojiToEmotion.entries) {
       if (text.contains(entry.key)) {
         counts[entry.value] = (counts[entry.value] ?? 0) + 1;
       }
     }
-    if (counts.isEmpty) return null;
+    if (counts.isEmpty) return '';
     return counts.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
   }
 
   static String _normalize(String input) {
-    const with_ = 'àáâãäåçèéêëìíîïñòóôõöùúûüý';
-    const with__ = 'aaaaaaceeeeiiiinooooouuuuy';
+    const with_ = 'àáâãäåçèéêëìíîïñòóôõöùúûüýÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝ';
+    const with__ = 'aaaaaaceeeeiiiinooooouuuuyaaaaaaceeeeiiiinooooouuuuy';
     final buf = StringBuffer();
     for (final rune in input.runes) {
       final c = String.fromCharCode(rune);
       final idx = with_.indexOf(c);
-      buf.write(idx >= 0 ? with__[idx] : c);
+      buf.write(idx >= 0 ? with__[idx] : c.toLowerCase());
     }
     return buf.toString();
   }
