@@ -45,6 +45,8 @@ import '../postDetailsVideo.dart';
 import '../../services/utils/abonnement_utils.dart';
 import '../../services/postService/feed_interaction_service.dart';
 import '../../services/comment_suggestion_service.dart';
+import '../../services/streak_service.dart';
+import '../../providers/streakProvider.dart';
 import '../../widgets/marquee_comment_chips.dart';
 import '../../widgets/user_badge_widget.dart';
 import '../../theme/app_colors.dart';
@@ -300,6 +302,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   List<PostComment> _preloadedComments = [];
   bool _isLoadingComment = false;
   List<String> _previewSuggestions = [];
+  bool _suggestionsFromAi = false;
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _suggestionSub;
   final TextEditingController _quickCommentController = TextEditingController();
   bool _isSendingQuickComment = false;
 
@@ -1878,6 +1882,16 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     final description = widget.post.description ?? '';
     setState(() => _isSuggestionsLoading = true);
     try {
+      final aiSuggestions = widget.post.commentSuggestions;
+      if (aiSuggestions != null && aiSuggestions.isNotEmpty) {
+        if (!mounted) return;
+        setState(() {
+          _previewSuggestions = List<String>.from(aiSuggestions)..shuffle();
+          _isSuggestionsLoading = false;
+          _suggestionsFromAi = true;
+        });
+        return;
+      }
       final suggestions = CommentSuggestionService.getSuggestions(
         postId,
         description,
@@ -1885,6 +1899,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       );
       if (!mounted) return;
       setState(() { _previewSuggestions = suggestions; _isSuggestionsLoading = false; });
+      _listenForAiSuggestions(postId);
       _shuffleTimer?.cancel();
       _shuffleTimer = Timer.periodic(const Duration(seconds: 10), (_) {
         if (!mounted) return;
@@ -1893,6 +1908,26 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     } catch (_) {
       if (mounted) setState(() => _isSuggestionsLoading = false);
     }
+  }
+
+  void _listenForAiSuggestions(String postId) {
+    _suggestionSub?.cancel();
+    _suggestionSub = FirebaseFirestore.instance
+        .collection('Posts')
+        .doc(postId)
+        .snapshots()
+        .listen((snap) {
+      if (!mounted) return;
+      final raw = snap.data()?['commentSuggestions'];
+      if (raw is List && raw.isNotEmpty) {
+        setState(() {
+          _previewSuggestions = List<String>.from(raw)..shuffle();
+          _suggestionsFromAi = true;
+        });
+        _suggestionSub?.cancel();
+        _suggestionSub = null;
+      }
+    });
   }
 
   Future<void> _loadLastComment() async {
@@ -1975,6 +2010,15 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
           postDataType: widget.post.dataType,
         );
         FeedInteractionService.onPostCommented(widget.post, userId);
+        try {
+          final result = await StreakService.onCommentSent(
+            userId: userId,
+            postId: widget.post.id!,
+          );
+          if (mounted) context.read<StreakProvider>().updateFromResult(result);
+        } catch (e) {
+          debugPrint('[Streak] erreur quickComment youtube: $e');
+        }
         _authProvider.checkAndRefreshPostDates(widget.post.id!);
 
         // Notification au propriétaire du post
@@ -2092,9 +2136,25 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                     decoration: BoxDecoration(color: colors.shimmerBase, borderRadius: BorderRadius.circular(13)))))
                 : ListView.builder(
                     scrollDirection: Axis.horizontal,
-                    itemCount: _previewSuggestions.length,
+                    itemCount: _previewSuggestions.length + 1,
                     itemBuilder: (_, i) {
-                      final text = _previewSuggestions[i];
+                      if (i == 0) {
+                        return Container(
+                          margin: const EdgeInsets.only(right: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: _suggestionsFromAi ? const Color(0xFF6C3EDB).withOpacity(0.12) : colors.surfaceVariant,
+                            borderRadius: BorderRadius.circular(13),
+                            border: Border.all(color: _suggestionsFromAi ? const Color(0xFF6C3EDB).withOpacity(0.35) : colors.border.withOpacity(0.4)),
+                          ),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            Text(_suggestionsFromAi ? '✨' : '💡', style: const TextStyle(fontSize: 10)),
+                            const SizedBox(width: 3),
+                            Text(_suggestionsFromAi ? 'IA' : 'local', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: _suggestionsFromAi ? const Color(0xFF6C3EDB) : colors.textSecondary)),
+                          ]),
+                        );
+                      }
+                      final text = _previewSuggestions[i - 1];
                       return GestureDetector(
                         onTap: () => _sendQuickComment(text),
                         child: Container(
@@ -2252,6 +2312,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
 
   @override
   void dispose() {
+    _suggestionSub?.cancel();
     _quickCommentController.dispose();
     _shuffleTimer?.cancel();
     _visibilityTimer?.cancel();

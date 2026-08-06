@@ -63,6 +63,8 @@ import 'audioPostWidget.dart';
 import '../../../services/postService/post_view_service.dart';
 import '../../../services/postService/feed_interaction_service.dart';
 import '../../../services/comment_suggestion_service.dart';
+import '../../../services/streak_service.dart';
+import '../../../providers/streakProvider.dart';
 
 
 
@@ -146,6 +148,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   bool _isLoadingComment = false;
   List<String> _previewSuggestions = [];
   bool _isSuggestionsLoading = false;
+  bool _suggestionsFromAi = false;
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _suggestionSub;
   Timer? _shuffleTimer;
   final TextEditingController _quickCommentController = TextEditingController();
   bool _isSendingQuickComment = false;
@@ -313,20 +317,21 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     if (widget.post.id != oldWidget.post.id) {
       _initLikeState();
     } else if (!_isLiking) {
-      // Même post, données rafraîchies depuis Firestore → synchroniser avec les valeurs en ligne
       final userId = authProvider.loginUserData.id;
       final onlineLiked = widget.post.users_love_id?.contains(userId) ?? false;
       final onlineCount = widget.post.loves ?? 0;
       final onlineComments = widget.post.comments ?? 0;
-      if (onlineLiked != _isLikedLocally ||
-          onlineCount != _localLovesCount ||
-          onlineComments > _localCommentsCount) {
-        setState(() {
+      setState(() {
+        // Ne jamais rétrograder l'état optimiste local depuis un cache stale.
+        // On sync seulement si la donnée en ligne est cohérente ou clairement plus récente.
+        if (onlineLiked == _isLikedLocally) {
+          _localLovesCount = onlineCount;
+        } else if (onlineCount > _localLovesCount) {
           _isLikedLocally = onlineLiked;
           _localLovesCount = onlineCount;
-          if (onlineComments > _localCommentsCount) _localCommentsCount = onlineComments;
-        });
-      }
+        }
+        if (onlineComments > _localCommentsCount) _localCommentsCount = onlineComments;
+      });
     }
   }
 
@@ -358,6 +363,16 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
     setState(() => _isSuggestionsLoading = true);
     try {
+      final aiSuggestions = widget.post.commentSuggestions;
+      if (aiSuggestions != null && aiSuggestions.isNotEmpty) {
+        if (!mounted) return;
+        setState(() {
+          _previewSuggestions = List<String>.from(aiSuggestions)..shuffle();
+          _isSuggestionsLoading = false;
+          _suggestionsFromAi = true;
+        });
+        return;
+      }
       final suggestions = CommentSuggestionService.getSuggestions(
         postId,
         description,
@@ -368,7 +383,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         _previewSuggestions = suggestions;
         _isSuggestionsLoading = false;
       });
-      // Mélange les suggestions toutes les 10 s pour varier
+      _listenForAiSuggestions(postId);
       _shuffleTimer?.cancel();
       _shuffleTimer = Timer.periodic(const Duration(seconds: 10), (_) {
         if (!mounted) return;
@@ -378,6 +393,26 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       if (!mounted) return;
       setState(() => _isSuggestionsLoading = false);
     }
+  }
+
+  void _listenForAiSuggestions(String postId) {
+    _suggestionSub?.cancel();
+    _suggestionSub = FirebaseFirestore.instance
+        .collection('Posts')
+        .doc(postId)
+        .snapshots()
+        .listen((snap) {
+      if (!mounted) return;
+      final raw = snap.data()?['commentSuggestions'];
+      if (raw is List && raw.isNotEmpty) {
+        setState(() {
+          _previewSuggestions = List<String>.from(raw)..shuffle();
+          _suggestionsFromAi = true;
+        });
+        _suggestionSub?.cancel();
+        _suggestionSub = null;
+      }
+    });
   }
 
   Future<void> _markSupportModalSeen() async {
@@ -574,6 +609,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
   @override
   void dispose() {
+    _suggestionSub?.cancel();
     _shuffleTimer?.cancel();
     _quickCommentController.dispose();
     MediaPlaybackManager.unregisterMedia(widget.post.id ?? '');
@@ -678,9 +714,13 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     if (widget.post.user_id != userId) {
       await _createFavoriteNotification(userId);
     }
-    authProvider. incrementPostTotalInteractions(postId: widget.post.id!);
+    authProvider.incrementPostTotalInteractions(
+      postId: widget.post.id!,
+      userId: userId,
+      interactionType: 'favorite',
+    );
 
-    authProvider. notifySubscribersOfInteraction(
+    authProvider.notifySubscribersOfInteraction(
       actionUserId: authProvider.loginUserData.id!,
       postOwnerId: widget.post.user_id!,
       postId: widget.post.id!,
@@ -1109,7 +1149,9 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                           ),
                         ),
                         SizedBox(width: 4),
-                        UserBadgeWidget(user: widget.post.user, size: 14)
+                        UserBadgeWidget(user: widget.post.user, size: 14),
+                        if ((widget.post.user?.commentStreak ?? 0) >= 1)
+                          _buildFlameStreakBadge(widget.post.user!.commentStreak),
                       ],
                     ),
                   ),
@@ -1213,7 +1255,9 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                         ),
                         SizedBox(width: 4),
                         // if (_isVerified())
-                          UserBadgeWidget(user: widget.post.user, size: 14)
+                          UserBadgeWidget(user: widget.post.user, size: 14),
+                        if ((widget.post.user?.commentStreak ?? 0) >= 1)
+                          _buildFlameStreakBadge(widget.post.user!.commentStreak),
                       ],
                     ),
                   ),
@@ -2442,6 +2486,15 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           postDataType: widget.post.dataType,
         );
         FeedInteractionService.onPostCommented(widget.post, userId);
+        try {
+          final result = await StreakService.onCommentSent(
+            userId: userId,
+            postId: widget.post.id!,
+          );
+          if (mounted) context.read<StreakProvider>().updateFromResult(result);
+        } catch (e) {
+          debugPrint('[Streak] erreur quickComment postWidget: $e');
+        }
         authProvider.checkAndRefreshPostDates(widget.post.id!);
 
         // Notification au propriétaire du post
@@ -2566,9 +2619,25 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   )
                 : ListView.builder(
                     scrollDirection: Axis.horizontal,
-                    itemCount: _previewSuggestions.length,
+                    itemCount: _previewSuggestions.length + 1,
                     itemBuilder: (_, i) {
-                      final text = _previewSuggestions[i];
+                      if (i == 0) {
+                        return Container(
+                          margin: const EdgeInsets.only(right: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: _suggestionsFromAi ? const Color(0xFF6C3EDB).withOpacity(0.12) : colors.surfaceVariant,
+                            borderRadius: BorderRadius.circular(13),
+                            border: Border.all(color: _suggestionsFromAi ? const Color(0xFF6C3EDB).withOpacity(0.35) : colors.border.withOpacity(0.4)),
+                          ),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            Text(_suggestionsFromAi ? '✨' : '💡', style: const TextStyle(fontSize: 10)),
+                            const SizedBox(width: 3),
+                            Text(_suggestionsFromAi ? 'IA' : 'local', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: _suggestionsFromAi ? const Color(0xFF6C3EDB) : colors.textSecondary)),
+                          ]),
+                        );
+                      }
+                      final text = _previewSuggestions[i - 1];
                       return GestureDetector(
                         onTap: () => _sendQuickComment(text),
                         child: Container(
@@ -2737,6 +2806,31 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     }
 
     return name;
+  }
+
+  /// Badge 🔥{n} affiché à côté du pseudo si l'auteur a une série active.
+  Widget _buildFlameStreakBadge(int streak) {
+    final Color color = streak >= 30
+        ? const Color(0xFFFFD700)
+        : streak >= 14
+            ? const Color(0xFFFF3A00)
+            : streak >= 7
+                ? const Color(0xFFFF6B35)
+                : const Color(0xFFFF9500);
+    return Container(
+      margin: const EdgeInsets.only(left: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withOpacity(0.3), width: 1),
+      ),
+      child: Text(
+        '🔥$streak',
+        style: TextStyle(
+            fontSize: 10, fontWeight: FontWeight.w800, color: color),
+      ),
+    );
   }
 
   String _formatCount(int count) {

@@ -84,6 +84,8 @@ import '../theme/app_colors.dart';
 
 import '../services/feed/feed_repository.dart';
 import '../services/postService/feed_interaction_service.dart';
+import '../services/streak_service.dart';
+import '../providers/streakProvider.dart';
 import '../services/comment_suggestion_service.dart';
 import '../widgets/marquee_comment_chips.dart';
 
@@ -209,6 +211,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
   final Map<String, int> _lovesCount = {};
   List<PostComment> _preloadedComments = [];
   List<String> _previewSuggestions = [];
+  bool _suggestionsFromAi = false;
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _suggestionSub;
   final TextEditingController _quickCommentController = TextEditingController();
   bool _isSendingQuickComment = false;
 
@@ -243,9 +247,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
 
     // 🔥 Vérifier si initialPost existe avant de l'utiliser
     if (widget.initialPost != null) {
-      authProvider.incrementPostTotalInteractions(postId: widget.initialPost!.id!);
       _checkFavoriteStatus();
-      _incrementViews();
+      _incrementViews(); // gère totalInteractions + vue unique via SharedPrefs
       _loadSupportModalSeen();
       if (_isLookChallenge && widget.initialPost!.challenge_id != null) {
         _loadChallengeData();
@@ -476,6 +479,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
 
   @override
   void dispose() {
+    _suggestionSub?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _likeAnimationTimer?.cancel();
     _liveCommentTimer?.cancel();
@@ -810,15 +814,24 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
           widget.initialPost!.id == null) return;
       final currentUserId = authProvider.loginUserData.id;
       if (currentUserId == null) return;
-      widget.initialPost!.users_vue_id ??= [];
-      if (widget.initialPost!.users_vue_id!.contains(currentUserId)) {
+
+      // Garde permanente par appareil — une seule vue par utilisateur par post
+      final prefKey = 'view_${widget.initialPost!.id}_$currentUserId';
+      if (_prefs.getBool(prefKey) ?? false) {
         printVm('⏭️ Vue déjà enregistrée pour cet utilisateur');
         return;
       }
-      authProvider. incrementPostTotalInteractions(postId: widget.initialPost!.id!);
+      await _prefs.setBool(prefKey, true);
+
+      authProvider.incrementPostTotalInteractions(
+        postId: widget.initialPost!.id!,
+        userId: currentUserId,
+        interactionType: 'view',
+      );
 
       setState(() {
         widget.initialPost!.vues = (widget.initialPost!.vues ?? 0) + 1;
+        widget.initialPost!.users_vue_id ??= [];
         widget.initialPost!.users_vue_id!.add(currentUserId);
       });
       await _firestore.collection('Posts').doc(widget.initialPost!.id).update({
@@ -2410,6 +2423,16 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
     final description = post.description ?? '';
     setState(() => _isSuggestionsLoading = true);
     try {
+      final aiSuggestions = post.commentSuggestions;
+      if (aiSuggestions != null && aiSuggestions.isNotEmpty) {
+        if (!mounted) return;
+        setState(() {
+          _previewSuggestions = List<String>.from(aiSuggestions)..shuffle();
+          _isSuggestionsLoading = false;
+          _suggestionsFromAi = true;
+        });
+        return;
+      }
       final suggestions = CommentSuggestionService.getSuggestions(
         postId,
         description,
@@ -2417,6 +2440,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
       );
       if (!mounted) return;
       setState(() { _previewSuggestions = suggestions; _isSuggestionsLoading = false; });
+      _listenForAiSuggestions(postId);
       _shuffleTimer?.cancel();
       _shuffleTimer = Timer.periodic(const Duration(seconds: 10), (_) {
         if (!mounted) return;
@@ -2425,6 +2449,26 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
     } catch (_) {
       if (mounted) setState(() => _isSuggestionsLoading = false);
     }
+  }
+
+  void _listenForAiSuggestions(String postId) {
+    _suggestionSub?.cancel();
+    _suggestionSub = FirebaseFirestore.instance
+        .collection('Posts')
+        .doc(postId)
+        .snapshots()
+        .listen((snap) {
+      if (!mounted) return;
+      final raw = snap.data()?['commentSuggestions'];
+      if (raw is List && raw.isNotEmpty) {
+        setState(() {
+          _previewSuggestions = List<String>.from(raw)..shuffle();
+          _suggestionsFromAi = true;
+        });
+        _suggestionSub?.cancel();
+        _suggestionSub = null;
+      }
+    });
   }
 
   Future<void> _sendQuickComment(String text, Post post) async {
@@ -2474,6 +2518,15 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
           postDataType: post.dataType,
         );
         FeedInteractionService.onPostCommented(post, userId);
+        try {
+          final result = await StreakService.onCommentSent(
+            userId: userId,
+            postId: post.id!,
+          );
+          if (mounted) context.read<StreakProvider>().updateFromResult(result);
+        } catch (e) {
+          debugPrint('[Streak] erreur quickComment audio: $e');
+        }
 
         if (post.user != null && post.user!.id != userId) {
           try {
@@ -2553,9 +2606,25 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
                     decoration: BoxDecoration(color: Colors.white12, borderRadius: BorderRadius.circular(13)))))
                 : ListView.builder(
                     scrollDirection: Axis.horizontal,
-                    itemCount: _previewSuggestions.length,
+                    itemCount: _previewSuggestions.length + 1,
                     itemBuilder: (_, i) {
-                      final text = _previewSuggestions[i];
+                      if (i == 0) {
+                        return Container(
+                          margin: const EdgeInsets.only(right: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: _suggestionsFromAi ? const Color(0xFF6C3EDB).withOpacity(0.12) : Colors.white12,
+                            borderRadius: BorderRadius.circular(13),
+                            border: Border.all(color: _suggestionsFromAi ? const Color(0xFF6C3EDB).withOpacity(0.5) : Colors.white24),
+                          ),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            Text(_suggestionsFromAi ? '✨' : '💡', style: const TextStyle(fontSize: 10)),
+                            const SizedBox(width: 3),
+                            Text(_suggestionsFromAi ? 'IA' : 'local', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: _suggestionsFromAi ? const Color(0xFFB39DDB) : Colors.white70)),
+                          ]),
+                        );
+                      }
+                      final text = _previewSuggestions[i - 1];
                       return GestureDetector(
                         onTap: () => _sendQuickComment(text, post),
                         child: Container(

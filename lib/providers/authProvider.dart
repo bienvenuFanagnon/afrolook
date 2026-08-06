@@ -30,6 +30,7 @@ import '../models/dating_data.dart';
 import '../pages/auth/authTest/Screens/Login/loginPageUser.dart';
 import '../pages/component/consoleWidget.dart';
 import '../services/auth/authService.dart';
+import '../services/streak_service.dart';
 import '../services/user/userService.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -336,8 +337,21 @@ class UserAuthProvider extends ChangeNotifier {
   Future<void> incrementPostTotalInteractions({
     required String postId,
     int incrementValue = 1,
+    String? userId,
+    String? interactionType,
   }) async {
     try {
+      // Déduplication : une seule fois par utilisateur par type d'interaction
+      if (userId != null && interactionType != null) {
+        final prefs = await SharedPreferences.getInstance();
+        final key = '${interactionType}_once_${postId}_$userId';
+        if (prefs.getBool(key) == true) {
+          printVm("⏭️ $interactionType déjà compté pour $postId");
+          return;
+        }
+        await prefs.setBool(key, true);
+      }
+
       await FirebaseFirestore.instance
           .collection('Posts')
           .doc(postId)
@@ -1112,6 +1126,13 @@ class UserAuthProvider extends ChangeNotifier {
 
       // 5. Rafraîchissement des données locales
       await _refreshUserData(userDoc.reference);
+
+      // 6. Streak — init + vérification quotidienne
+      final uid = loginUserData.id;
+      if (uid != null && uid.isNotEmpty) {
+        await StreakService.initIfNeeded(uid);
+        await StreakService.checkAndResetDaily(uid);
+      }
 
     } catch (e, stack) {
       debugPrint("Erreur de connexion: $e");

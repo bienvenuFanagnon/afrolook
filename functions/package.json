@@ -8,7 +8,8 @@
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "test": "jest --passWithNoTests"
   },
   "engines": {
     "node": "22"
@@ -16,6 +17,7 @@
   "main": "lib/index.js",
   "dependencies": {
     "@google-cloud/translate": "^8.5.0",
+    "@google/generative-ai": "^0.21.0",
     "agora-access-token": "^2.0.4",
     "axios": "^1.10.0",
     "dotenv": "^17.2.2",
@@ -25,6 +27,7 @@
   },
   "devDependencies": {
     "@types/crypto-js": "^4.2.2",
+    "@types/jest": "^29.5.12",
     "@types/nodemailer": "^8.0.0",
     "@typescript-eslint/eslint-plugin": "^6.7.0",
     "@typescript-eslint/parser": "^6.7.0",
@@ -32,6 +35,8 @@
     "eslint-config-google": "^0.14.0",
     "eslint-plugin-import": "^2.28.1",
     "firebase-functions-test": "^3.1.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
     "typescript": "^4.9.5"
   },
   "private": true

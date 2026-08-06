@@ -14,12 +14,15 @@ import 'package:provider/provider.dart';
 import '../providers/authProvider.dart';
 import '../providers/userProvider.dart';
 import '../services/postService/feed_interaction_service.dart';
+import '../services/streak_service.dart';
 import '../services/utils/abonnement_utils.dart';
 import '../widgets/user_badge_widget.dart';
 import '../theme/app_colors.dart';
 import '../l10n/app_localizations.dart';
+import 'dart:async';
 import 'dart:math';
 import 'dart:ui' as ui;
+import '../services/comment_suggestion_service.dart';
 
 import 'coins/post_gifts_list.dart';
 
@@ -82,6 +85,8 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
 
   bool _showEmojiPicker = false;
   List<String> _shuffledSuggestions = [];
+  bool _suggestionsFromAi = false;
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _suggestionSub;
 
   @override
   void initState() {
@@ -90,7 +95,20 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     userProvider = Provider.of<UserProvider>(context, listen: false);
     postProvider = Provider.of<PostProvider>(context, listen: false);
 
-    _shuffledSuggestions = List.from(_suggestions)..shuffle(Random());
+    final aiSuggestions = widget.post.commentSuggestions;
+    if (aiSuggestions != null && aiSuggestions.isNotEmpty) {
+      _shuffledSuggestions = List<String>.from(aiSuggestions)..shuffle();
+      _suggestionsFromAi = true;
+    } else {
+      // Fallback local immédiat pendant que l'IA génère (ou si pas de clé configurée)
+      _shuffledSuggestions = CommentSuggestionService.getSuggestions(
+        widget.post.id ?? '',
+        widget.post.description ?? '',
+        postType: widget.post.typeTabbar,
+      );
+      // Listener Firestore : mise à jour en temps réel quand l'IA génère les suggestions
+      _listenForAiSuggestions();
+    }
 
     if (widget.initialComments.isNotEmpty) {
       comments = List.from(widget.initialComments);
@@ -117,10 +135,35 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
 
   @override
   void dispose() {
+    _suggestionSub?.cancel();
     _textController.removeListener(_onTextChanged);
     _textController.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  void _listenForAiSuggestions() {
+    final postId = widget.post.id;
+    if (postId == null || postId.isEmpty) return;
+    _suggestionSub = FirebaseFirestore.instance
+        .collection('Posts')
+        .doc(postId)
+        .snapshots()
+        .listen((snap) {
+      if (!mounted) return;
+      final data = snap.data();
+      if (data == null) return;
+      final raw = data['commentSuggestions'];
+      if (raw is List && raw.isNotEmpty) {
+        final updated = List<String>.from(raw)..shuffle();
+        setState(() {
+          _shuffledSuggestions = updated;
+          _suggestionsFromAi = true;
+        });
+        _suggestionSub?.cancel();
+        _suggestionSub = null;
+      }
+    });
   }
 
   void _onTextChanged() {
@@ -977,28 +1020,54 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
 
   // ─── SUGGESTIONS ────────────────────────────────────────────────────────────
 
-  static const _suggestions = [
-    '🤔 Intéressant',
-    '😂 MDR',
-    '😢 Triste',
-    '😤 Pas cool',
-    '🔥 Super',
-    "❤️ J'aime",
-    '💯 Tellement vrai',
-    '😮 Incroyable',
-    '🙌 Bravo',
-    '👏 Félicitations',
-  ];
-
   Widget _buildCommentSuggestions() {
     return SizedBox(
       height: 34,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 12),
-        itemCount: _shuffledSuggestions.length,
+        itemCount: _shuffledSuggestions.length + 1,
         itemBuilder: (_, i) {
-          final text = _shuffledSuggestions[i];
+          // Premier item : badge source (IA ou local)
+          if (i == 0) {
+            return Container(
+              margin: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              decoration: BoxDecoration(
+                color: _suggestionsFromAi
+                    ? const Color(0xFF6C3EDB).withOpacity(0.12)
+                    : _colors.surfaceVariant,
+                borderRadius: BorderRadius.circular(17),
+                border: Border.all(
+                  color: _suggestionsFromAi
+                      ? const Color(0xFF6C3EDB).withOpacity(0.35)
+                      : _colors.border.withOpacity(0.4),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _suggestionsFromAi ? '✨' : '💡',
+                    style: const TextStyle(fontSize: 11),
+                  ),
+                  const SizedBox(width: 3),
+                  Text(
+                    _suggestionsFromAi ? 'IA' : 'local',
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w600,
+                      color: _suggestionsFromAi
+                          ? const Color(0xFF6C3EDB)
+                          : _colors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final text = _shuffledSuggestions[i - 1];
           return GestureDetector(
             onTap: () {
               if (_showEmojiPicker) setState(() => _showEmojiPicker = false);
@@ -1250,7 +1319,19 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
       }
 
       if (success) {
-        authProvider.incrementPostTotalInteractions(postId: widget.post.id!);
+        authProvider.incrementPostTotalInteractions(
+          postId: widget.post.id!,
+          userId: authProvider.loginUserData.id!,
+          interactionType: 'comment',
+        );
+        try {
+          await StreakService.onCommentSent(
+            userId: authProvider.loginUserData.id!,
+            postId: widget.post.id!,
+          );
+        } catch (e) {
+          debugPrint('[Streak] erreur onCommentSent: $e');
+        }
         authProvider.notifySubscribersOfInteraction(
           actionUserId: authProvider.loginUserData.id!,
           postOwnerId: widget.post.user_id!,

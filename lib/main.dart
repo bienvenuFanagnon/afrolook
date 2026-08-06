@@ -62,6 +62,7 @@ import 'package:afrotok/pages/userPosts/userPostForm.dart';
 import 'package:afrotok/providers/afroshop/authAfroshopProvider.dart';
 import 'package:afrotok/providers/afroshop/categorie_produits_provider.dart';
 import 'package:afrotok/providers/authProvider.dart';
+import 'package:afrotok/providers/streakProvider.dart';
 import 'package:afrotok/providers/chroniqueProvider.dart';
 import 'package:afrotok/providers/coin_gift_provider.dart';
 import 'package:afrotok/providers/contenuPayantProvider.dart';
@@ -401,6 +402,7 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (_) => GoldGroupsProvider()),
         ChangeNotifierProvider(create: (_) => PronosticProvider()),
         ChangeNotifierProvider(create: (_) => SoundProvider()),
+        ChangeNotifierProvider(create: (_) => StreakProvider()),
         ChangeNotifierProxyProvider<UserAuthProvider, CoinGiftUserProvider>(
           create: (context) => CoinGiftUserProvider(
             authProvider: context.read<UserAuthProvider>(),

@@ -61,6 +61,7 @@ import '../../providers/authProvider.dart';
 import '../providers/coin_gift_provider.dart';
 import '../services/linkService.dart';
 import '../services/postService/feed_interaction_service.dart';
+import '../services/streak_service.dart';
 import '../services/postService/post_view_service.dart';
 import '../services/comment_suggestion_service.dart';
 import '../widgets/marquee_comment_chips.dart';
@@ -122,6 +123,8 @@ class _DetailsPostState extends State<DetailsPost>
   List<PostComment> _preloadedComments = [];
   List<String> _previewSuggestions = [];
   bool _isSuggestionsLoading = false;
+  bool _suggestionsFromAi = false;
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _suggestionSub;
   Timer? _shuffleTimer;
   final TextEditingController _quickCommentController = TextEditingController();
   bool _isSendingQuickComment = false;
@@ -2099,6 +2102,7 @@ class _DetailsPostState extends State<DetailsPost>
   }
   @override
   void dispose() {
+    _suggestionSub?.cancel();
     _suggestionModalTimer?.cancel();
     _shuffleTimer?.cancel();
 
@@ -2145,9 +2149,13 @@ class _DetailsPostState extends State<DetailsPost>
           widget.post.users_favorite_id?.remove(userId);
         }
       });
-      await authProvider. incrementPostTotalInteractions(postId: widget.post.id!);
+      await authProvider.incrementPostTotalInteractions(
+        postId: widget.post.id!,
+        userId: userId,
+        interactionType: 'favorite',
+      );
 
-      authProvider. notifySubscribersOfInteraction(
+      authProvider.notifySubscribersOfInteraction(
         actionUserId: authProvider.loginUserData.id!,
         postOwnerId: widget.post.user_id!,
         postId: widget.post.id!,
@@ -2344,16 +2352,22 @@ class _DetailsPostState extends State<DetailsPost>
       final currentUserId = authProvider.loginUserData.id;
       if (currentUserId == null) return;
 
-      widget.post.users_vue_id ??= [];
-
-      // 🔥 Vérifier si l'utilisateur a déjà vu le post
-      if (widget.post.users_vue_id!.contains(currentUserId)) {
+      // Garde permanente par appareil — une seule vue par utilisateur par post
+      final prefKey = 'view_${widget.post.id}_$currentUserId';
+      if (_prefs.getBool(prefKey) ?? false) {
         printVm('⏭️ Vue déjà enregistrée pour cet utilisateur');
         return;
       }
-      authProvider. incrementPostTotalInteractions(postId: widget.post.id!);
+      await _prefs.setBool(prefKey, true);
+
+      authProvider.incrementPostTotalInteractions(
+        postId: widget.post.id!,
+        userId: currentUserId,
+        interactionType: 'view',
+      );
 
       // ✅ Mise à jour locale
+      widget.post.users_vue_id ??= [];
       setState(() {
         widget.post.vues = (widget.post.vues ?? 0) + 1;
         widget.post.users_vue_id!.add(currentUserId);
@@ -3356,7 +3370,11 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       }
 
       // Incrémenter les interactions totales
-      await authProvider.incrementPostTotalInteractions(postId: postId);
+      await authProvider.incrementPostTotalInteractions(
+        postId: postId,
+        userId: userId,
+        interactionType: 'like',
+      );
 
       // Notifier les abonnés
       await authProvider.notifySubscribersOfInteraction(
@@ -3499,7 +3517,11 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
               });
             }
           }
-          await authProvider.incrementPostTotalInteractions(postId: postId);
+          await authProvider.incrementPostTotalInteractions(
+            postId: postId,
+            userId: userId,
+            interactionType: 'like',
+          );
           await authProvider.notifySubscribersOfInteraction(
             actionUserId: userId,
             postOwnerId: widget.post.user_id!,
@@ -5962,6 +5984,16 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
     final description = widget.post.description ?? '';
     setState(() => _isSuggestionsLoading = true);
     try {
+      final aiSuggestions = widget.post.commentSuggestions;
+      if (aiSuggestions != null && aiSuggestions.isNotEmpty) {
+        if (!mounted) return;
+        setState(() {
+          _previewSuggestions = List<String>.from(aiSuggestions)..shuffle();
+          _isSuggestionsLoading = false;
+          _suggestionsFromAi = true;
+        });
+        return;
+      }
       final suggestions = CommentSuggestionService.getSuggestions(
         postId,
         description,
@@ -5969,6 +6001,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       );
       if (!mounted) return;
       setState(() { _previewSuggestions = suggestions; _isSuggestionsLoading = false; });
+      _listenForAiSuggestions(postId);
       _shuffleTimer?.cancel();
       _shuffleTimer = Timer.periodic(const Duration(seconds: 10), (_) {
         if (!mounted) return;
@@ -5977,6 +6010,26 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
     } catch (_) {
       if (mounted) setState(() => _isSuggestionsLoading = false);
     }
+  }
+
+  void _listenForAiSuggestions(String postId) {
+    _suggestionSub?.cancel();
+    _suggestionSub = FirebaseFirestore.instance
+        .collection('Posts')
+        .doc(postId)
+        .snapshots()
+        .listen((snap) {
+      if (!mounted) return;
+      final raw = snap.data()?['commentSuggestions'];
+      if (raw is List && raw.isNotEmpty) {
+        setState(() {
+          _previewSuggestions = List<String>.from(raw)..shuffle();
+          _suggestionsFromAi = true;
+        });
+        _suggestionSub?.cancel();
+        _suggestionSub = null;
+      }
+    });
   }
 
   Future<void> _loadLastComment() async {
@@ -6035,7 +6088,19 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           _preloadedComments.insert(0, comment);
           widget.post.comments = (widget.post.comments ?? 0) + 1;
         });
-        authProvider.incrementPostTotalInteractions(postId: widget.post.id!);
+        authProvider.incrementPostTotalInteractions(
+          postId: widget.post.id!,
+          userId: userId,
+          interactionType: 'comment',
+        );
+        try {
+          await StreakService.onCommentSent(
+            userId: userId,
+            postId: widget.post.id!,
+          );
+        } catch (e) {
+          debugPrint('[Streak] erreur onCommentSent: $e');
+        }
         authProvider.notifySubscribersOfInteraction(
           actionUserId: userId,
           postOwnerId: widget.post.user_id!,
@@ -6146,9 +6211,25 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                     decoration: BoxDecoration(color: _colors.shimmerBase, borderRadius: BorderRadius.circular(13)))))
                 : ListView.builder(
                     scrollDirection: Axis.horizontal,
-                    itemCount: _previewSuggestions.length,
+                    itemCount: _previewSuggestions.length + 1,
                     itemBuilder: (_, i) {
-                      final text = _previewSuggestions[i];
+                      if (i == 0) {
+                        return Container(
+                          margin: const EdgeInsets.only(right: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: _suggestionsFromAi ? const Color(0xFF6C3EDB).withOpacity(0.12) : _colors.surfaceVariant,
+                            borderRadius: BorderRadius.circular(13),
+                            border: Border.all(color: _suggestionsFromAi ? const Color(0xFF6C3EDB).withOpacity(0.35) : _colors.border.withOpacity(0.4)),
+                          ),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            Text(_suggestionsFromAi ? '✨' : '💡', style: const TextStyle(fontSize: 10)),
+                            const SizedBox(width: 3),
+                            Text(_suggestionsFromAi ? 'IA' : 'local', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: _suggestionsFromAi ? const Color(0xFF6C3EDB) : _colors.textSecondary)),
+                          ]),
+                        );
+                      }
+                      final text = _previewSuggestions[i - 1];
                       return GestureDetector(
                         onTap: () => _sendQuickComment(text),
                         child: Container(

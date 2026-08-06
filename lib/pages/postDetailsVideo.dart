@@ -80,6 +80,7 @@ import '../providers/authProvider.dart';
 
 import '../providers/coin_gift_provider.dart';
 import '../services/postService/feed_interaction_service.dart';
+import '../services/streak_service.dart';
 
 import 'canaux/detailsCanal.dart';
 
@@ -190,6 +191,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
   List<PostComment> _preloadedComments = [];
   List<String> _previewSuggestions = [];
   bool _isSuggestionsLoading = false;
+  bool _suggestionsFromAi = false;
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _suggestionSub;
   Timer? _shuffleTimer;
   final TextEditingController _quickCommentController = TextEditingController();
   bool _isSendingQuickComment = false;
@@ -643,15 +646,24 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
           widget.initialPost.id == null) return;
       final currentUserId = authProvider.loginUserData.id;
       if (currentUserId == null) return;
-      widget.initialPost.users_vue_id ??= [];
-      if (widget.initialPost.users_vue_id!.contains(currentUserId)) {
+
+      // Garde permanente par appareil — une seule vue par utilisateur par post
+      final prefKey = 'view_${widget.initialPost.id}_$currentUserId';
+      if (_prefs.getBool(prefKey) ?? false) {
         printVm('⏭️ Vue déjà enregistrée pour cet utilisateur');
         return;
       }
-      authProvider. incrementPostTotalInteractions(postId: widget.initialPost.id!);
+      await _prefs.setBool(prefKey, true);
+
+      authProvider.incrementPostTotalInteractions(
+        postId: widget.initialPost.id!,
+        userId: currentUserId,
+        interactionType: 'view',
+      );
 
       setState(() {
         widget.initialPost.vues = (widget.initialPost.vues ?? 0) + 1;
+        widget.initialPost.users_vue_id ??= [];
         widget.initialPost.users_vue_id!.add(currentUserId);
       });
       await _firestore.collection('Posts').doc(widget.initialPost.id).update({
@@ -668,6 +680,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
 
   @override
   void dispose() {
+    _suggestionSub?.cancel();
     _postSubscription?.cancel();
     _shuffleTimer?.cancel();
     _videoController?.dispose();
@@ -855,11 +868,12 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
   Future<void> _recordPostView() async {
     final userId = authProvider.loginUserData.id;
     if (userId == null || _currentPost.id == null) return;
-    final today = DateTime.now().toIso8601String().split('T').first;
-    final key = '${_lastViewDatePrefix}${userId}_${_currentPost.id}';
-    final lastView = _prefs.getString(key);
-    if (lastView == today) return;
-    await _prefs.setString(key, today);
+
+    // Garde permanente par appareil — une seule vue par utilisateur par post
+    final prefKey = 'view_${_currentPost.id}_$userId';
+    if (_prefs.getBool(prefKey) ?? false) return;
+    await _prefs.setBool(prefKey, true);
+
     await _firestore.collection('Posts').doc(_currentPost.id).update({
       'vues': FieldValue.increment(1),
       'users_vue_id': FieldValue.arrayUnion([userId]),
@@ -1652,6 +1666,16 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     final description = _currentPost.description ?? '';
     setState(() => _isSuggestionsLoading = true);
     try {
+      final aiSuggestions = _currentPost.commentSuggestions;
+      if (aiSuggestions != null && aiSuggestions.isNotEmpty) {
+        if (!mounted) return;
+        setState(() {
+          _previewSuggestions = List<String>.from(aiSuggestions)..shuffle();
+          _isSuggestionsLoading = false;
+          _suggestionsFromAi = true;
+        });
+        return;
+      }
       final suggestions = CommentSuggestionService.getSuggestions(
         postId,
         description,
@@ -1659,6 +1683,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       );
       if (!mounted) return;
       setState(() { _previewSuggestions = suggestions; _isSuggestionsLoading = false; });
+      _listenForAiSuggestions(postId);
       _shuffleTimer?.cancel();
       _shuffleTimer = Timer.periodic(const Duration(seconds: 10), (_) {
         if (!mounted) return;
@@ -1667,6 +1692,26 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     } catch (_) {
       if (mounted) setState(() => _isSuggestionsLoading = false);
     }
+  }
+
+  void _listenForAiSuggestions(String postId) {
+    _suggestionSub?.cancel();
+    _suggestionSub = _firestore
+        .collection('Posts')
+        .doc(postId)
+        .snapshots()
+        .listen((snap) {
+      if (!mounted) return;
+      final raw = snap.data()?['commentSuggestions'];
+      if (raw is List && raw.isNotEmpty) {
+        setState(() {
+          _previewSuggestions = List<String>.from(raw)..shuffle();
+          _suggestionsFromAi = true;
+        });
+        _suggestionSub?.cancel();
+        _suggestionSub = null;
+      }
+    });
   }
 
   Future<void> _loadLastComment() async {
@@ -1725,7 +1770,19 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
           _preloadedComments.insert(0, comment);
           _currentPost.comments = (_currentPost.comments ?? 0) + 1;
         });
-        authProvider.incrementPostTotalInteractions(postId: _currentPost.id!);
+        authProvider.incrementPostTotalInteractions(
+          postId: _currentPost.id!,
+          userId: userId,
+          interactionType: 'comment',
+        );
+        try {
+          await StreakService.onCommentSent(
+            userId: userId,
+            postId: _currentPost.id!,
+          );
+        } catch (e) {
+          debugPrint('[Streak] erreur onCommentSent: $e');
+        }
         authProvider.notifySubscribersOfInteraction(
           actionUserId: userId,
           postOwnerId: _currentPost.user_id!,
@@ -1837,9 +1894,25 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
                     decoration: BoxDecoration(color: colors.shimmerBase, borderRadius: BorderRadius.circular(13)))))
                 : ListView.builder(
                     scrollDirection: Axis.horizontal,
-                    itemCount: _previewSuggestions.length,
+                    itemCount: _previewSuggestions.length + 1,
                     itemBuilder: (_, i) {
-                      final text = _previewSuggestions[i];
+                      if (i == 0) {
+                        return Container(
+                          margin: const EdgeInsets.only(right: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: _suggestionsFromAi ? const Color(0xFF6C3EDB).withOpacity(0.12) : colors.surfaceVariant,
+                            borderRadius: BorderRadius.circular(13),
+                            border: Border.all(color: _suggestionsFromAi ? const Color(0xFF6C3EDB).withOpacity(0.35) : colors.border.withOpacity(0.4)),
+                          ),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            Text(_suggestionsFromAi ? '✨' : '💡', style: const TextStyle(fontSize: 10)),
+                            const SizedBox(width: 3),
+                            Text(_suggestionsFromAi ? 'IA' : 'local', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: _suggestionsFromAi ? const Color(0xFF6C3EDB) : colors.textSecondary)),
+                          ]),
+                        );
+                      }
+                      final text = _previewSuggestions[i - 1];
                       return GestureDetector(
                         onTap: () => _sendQuickComment(text),
                         child: Container(
