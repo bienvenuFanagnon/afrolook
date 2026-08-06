@@ -55,6 +55,8 @@ import '../../widgets/feed/sections/feed_filter_bar.dart';
 import '../../widgets/feed/sections/feed_ad_widgets.dart';
 import '../../services/feed/feed_repository.dart';
 import '../../widgets/feed/weekly_top_creators_widget.dart';
+import '../../widgets/flame_streak_banner.dart';
+import '../../widgets/flame_leaderboard.dart';
 import '../dating/widgets/top_dating_profiles_widget.dart';
 
 
@@ -2497,6 +2499,8 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
 
     final chroniquesSection = _buildChroniquesSection();
     if (chroniquesSection is! SizedBox) contentWidgets.add(chroniquesSection);
+    contentWidgets.add(const FlameStreakBanner());
+    contentWidgets.add(const FlameLeaderboard());
 
     final profilesSection = _buildCreatorsSection();
     if (profilesSection is! SizedBox) {

@@ -206,7 +206,7 @@ class _RoundList extends StatelessWidget {
       });
 
     return SizedBox(
-      height: 122,
+      height: 108,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -264,8 +264,8 @@ class _RoundCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 82,
-        margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        width: 74,
+        margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -276,8 +276,8 @@ class _RoundCard extends StatelessWidget {
               children: [
                 // Anneau de couleur si posts non vus
                 Container(
-                  width: 70,
-                  height: 70,
+                  width: 62,
+                  height: 62,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: unseenCount > 0
@@ -296,7 +296,7 @@ class _RoundCard extends StatelessWidget {
                   ),
                   padding: const EdgeInsets.all(2.5),
                   child: CircleAvatar(
-                    radius: 32,
+                    radius: 28,
                     backgroundColor: colors.surfaceVariant,
                     backgroundImage: user.imageUrl != null &&
                             user.imageUrl!.isNotEmpty
@@ -344,7 +344,7 @@ class _RoundCard extends StatelessWidget {
               ],
             ),
 
-            const SizedBox(height: 5),
+            const SizedBox(height: 3),
 
             // Pseudo
             Text(
@@ -410,8 +410,8 @@ class _CanalRoundCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 82,
-        margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        width: 74,
+        margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -421,8 +421,8 @@ class _CanalRoundCard extends StatelessWidget {
               alignment: Alignment.center,
               children: [
                 Container(
-                  width: 70,
-                  height: 70,
+                  width: 62,
+                  height: 62,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
@@ -432,7 +432,7 @@ class _CanalRoundCard extends StatelessWidget {
                   ),
                   padding: const EdgeInsets.all(2.5),
                   child: CircleAvatar(
-                    radius: 32,
+                    radius: 28,
                     backgroundColor: colors.surfaceVariant,
                     backgroundImage: canal.urlImage != null &&
                             canal.urlImage!.isNotEmpty
@@ -466,7 +466,7 @@ class _CanalRoundCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 5),
             // Nom du canal
             Text(
               name,

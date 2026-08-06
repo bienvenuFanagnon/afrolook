@@ -64,6 +64,8 @@ import '../user/creator_unseen_posts_page.dart';
 import '../user/following_unseen_feed_page.dart';
 import 'home_boot_cache.dart';
 import '../../widgets/feed/weekly_top_creators_widget.dart';
+import '../../widgets/flame_streak_banner.dart';
+import '../../widgets/flame_leaderboard.dart';
 
 
 // Constantes de couleur
@@ -2967,13 +2969,16 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     // Sections toujours présentes dès le premier build (skeleton si en cours de
     // chargement) → aucun décalage de layout quand les données arrivent.
     contentWidgets.add(_buildChroniquesSection());
-    contentWidgets.add(_buildProfilesSection());
+    contentWidgets.add(const FlameStreakBanner());
+    contentWidgets.add(const FlameLeaderboard());
     contentWidgets.add(_buildAdMrec(key: 'ad_native_user'));
-    // contentWidgets.add(const SizedBox(height: 8));
 
     // Carousel pronostics avant le premier post
     if (finalPosts.isNotEmpty) {
       contentWidgets.add(const PronosticsCarouselWidget());
+    } else {
+      // Pas de posts : afficher la section créateurs en haut quand même
+      contentWidgets.add(_buildProfilesSection());
     }
 
     for (int i = 0; i < finalPosts.length; i++) {
@@ -2987,6 +2992,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           ),
         ),
       );
+
+      // Section créateurs actifs après le premier post
+      if (i == 0) {
+        contentWidgets.add(_buildProfilesSection());
+      }
 
       // Slot rotatif : pub + 2 widgets du pool, tous les 5 posts
       final postNumber = i + 1; // 1-based

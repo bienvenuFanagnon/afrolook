@@ -129,7 +129,7 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
     });
 
     return Container(
-      height: 250,
+      height: 215,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -143,7 +143,7 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
   Widget _buildSectionHeader(BuildContext context) {
     final colors = AppColors.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 7),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -275,15 +275,15 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
         );
       },
       child: Container(
-        width: 140,
+        width: 116,
         margin: const EdgeInsets.only(right: 8),
         child: Column(
           children: [
             Stack(
               children: [
                 Container(
-                  width: 140,
-                  height: 160,
+                  width: 116,
+                  height: 132,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
@@ -562,12 +562,12 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
   Widget _buildChroniquesShimmer() {
     final colors = AppColors.of(context);
     return Container(
-      height: 180,
+      height: 155,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 7),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -605,7 +605,7 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
               itemCount: 5,
               itemBuilder: (context, index) {
                 return Container(
-                  width: 140,
+                  width: 116,
                   margin: const EdgeInsets.only(right: 12),
                   child: Column(
                     children: [
@@ -613,8 +613,8 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
                         baseColor: colors.shimmerBase,
                         highlightColor: colors.shimmerHighlight,
                         child: Container(
-                          width: 140,
-                          height: 160,
+                          width: 116,
+                          height: 132,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
                             color: colors.shimmerBase,
