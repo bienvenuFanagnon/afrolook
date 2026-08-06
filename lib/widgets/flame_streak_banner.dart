@@ -5,6 +5,20 @@ import '../providers/authProvider.dart';
 import '../theme/app_colors.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Données niveaux partagées entre le banner compact et le modal
+// ─────────────────────────────────────────────────────────────────────────────
+const _kLevels = [
+  (emoji: '🧊', label: 'Froid',      range: '0j',     color: Color(0xFF8E8E93)),
+  (emoji: '🌊', label: 'Tiède',      range: '1-2j',   color: Color(0xFF5B9CFA)),
+  (emoji: '☀️', label: 'Chaud',      range: '3-6j',   color: Color(0xFFFF9500)),
+  (emoji: '🔥', label: 'Enflammé',   range: '7-13j',  color: Color(0xFFFF6B35)),
+  (emoji: '💥', label: 'Brûlant',    range: '14-29j', color: Color(0xFFFF3B30)),
+  (emoji: '⚡', label: 'Légendaire', range: '30+j',    color: Color(0xFFAF52DE)),
+];
+
+String _levelEmoji(int level) => _kLevels[level.clamp(0, 5)].emoji;
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Carte Flamme Streak — explique le concept + affiche la progression du jour
 // ─────────────────────────────────────────────────────────────────────────────
 class FlameStreakBanner extends StatefulWidget {
@@ -107,7 +121,7 @@ class _FlameStreakBannerState extends State<FlameStreakBanner>
                                     ? 1.0 + 0.15 * _pulseCtrl.value
                                     : 1.0,
                                 child: Text(
-                                  cold ? '🧊' : '🔥',
+                                  _levelEmoji(streak.level),
                                   style: const TextStyle(fontSize: 22),
                                 ),
                               ),
@@ -264,31 +278,80 @@ class _FlameStreakBannerState extends State<FlameStreakBanner>
 
                         const SizedBox(height: 12),
 
-                        // ── Pied de carte : règles rapides ─────────────────
-                        Row(
-                          children: [
-                            _RuleChip(
-                                icon: '📅',
-                                label: '3 posts / jour',
-                                colors: colors),
-                            const SizedBox(width: 8),
-                            _RuleChip(
-                                icon: '🛡️',
-                                label: 'Bouclier tous les 7j',
-                                colors: colors),
-                            const Spacer(),
-                            Text(
-                              'Voir détails',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: accent,
-                                fontWeight: FontWeight.w700,
+                        // ── Niveaux horizontaux adaptatifs ─────────────────
+                        LayoutBuilder(builder: (_, constraints) {
+                          // Largeur dispo pour les chips = totale - bouton "Détails" (~60px)
+                          final available = constraints.maxWidth - 64.0;
+                          // Chaque chip occupe une part égale
+                          final chipW = available / _kLevels.length;
+                          // En dessous de 42px par chip on masque le label texte
+                          final showLabel = chipW >= 42;
+
+                          return Row(
+                            children: [
+                              ...List.generate(_kLevels.length, (i) {
+                                final lv = _kLevels[i];
+                                final isActive = i == streak.level;
+                                final isPast   = i < streak.level;
+                                final opacity  = (isActive || isPast) ? 1.0 : 0.28;
+                                return Expanded(
+                                  child: Padding(
+                                    padding: EdgeInsets.only(right: i < _kLevels.length - 1 ? 4 : 0),
+                                    child: Container(
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: 4,
+                                          vertical: isActive ? 5 : 3),
+                                      decoration: isActive
+                                          ? BoxDecoration(
+                                              color: lv.color.withOpacity(0.14),
+                                              borderRadius: BorderRadius.circular(20),
+                                              border: Border.all(color: lv.color.withOpacity(0.5)),
+                                            )
+                                          : null,
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(lv.emoji,
+                                                style: TextStyle(
+                                                    fontSize: isActive ? 15 : 13,
+                                                    color: Colors.white.withOpacity(opacity))),
+                                            if (showLabel) ...[
+                                              const SizedBox(width: 3),
+                                              Text(
+                                                lv.label,
+                                                style: TextStyle(
+                                                  fontSize: isActive ? 11 : 10,
+                                                  fontWeight: isActive ? FontWeight.w800 : FontWeight.w500,
+                                                  color: lv.color.withOpacity(opacity),
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }),
+                              const SizedBox(width: 8),
+                              Row(
+                                children: [
+                                  Text(
+                                    'Détails',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: accent,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  Icon(Icons.arrow_forward_ios, size: 10, color: accent),
+                                ],
                               ),
-                            ),
-                            Icon(Icons.arrow_forward_ios,
-                                size: 10, color: accent),
-                          ],
-                        ),
+                            ],
+                          );
+                        }),
                       ],
                     ),
                   ),
@@ -439,7 +502,7 @@ class _FlameStreakModalState extends State<_FlameStreakModal>
                       child: child,
                     ),
                     child: Text(
-                      streak.commentStreak == 0 ? '🧊' : '🔥',
+                      _levelEmoji(streak.level),
                       style: const TextStyle(fontSize: 64),
                     ),
                   ),
@@ -540,7 +603,7 @@ class _FlameStreakModalState extends State<_FlameStreakModal>
                   ),
                   const SizedBox(height: 16),
 
-                  _buildRulesSection(colors),
+                  _buildRulesSection(colors, streak.level),
                   const SizedBox(height: 16),
 
                   if (!done)
@@ -572,7 +635,8 @@ class _FlameStreakModalState extends State<_FlameStreakModal>
     );
   }
 
-  Widget _buildRulesSection(AppColors colors) {
+  Widget _buildRulesSection(AppColors colors, int currentLevel) {
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -624,12 +688,12 @@ class _FlameStreakModalState extends State<_FlameStreakModal>
             ),
           ),
           const SizedBox(height: 8),
-          _buildLevelRow('🧊', 'Froid', '0 jour', colors.textSecondary),
-          _buildLevelRow('🌊', 'Tiède', '1 – 2 jours', const Color(0xFF5B9CFA)),
-          _buildLevelRow('☀️', 'Chaud', '3 – 6 jours', const Color(0xFFFF9500)),
-          _buildLevelRow('🔥', 'Enflammé', '7 – 13 jours', const Color(0xFFFF6B35)),
-          _buildLevelRow('💥', 'Brûlant', '14 – 29 jours', const Color(0xFFFF3B30)),
-          _buildLevelRow('⚡', 'Légendaire', '30+ jours', const Color(0xFFAF52DE)),
+          ..._kLevels.indexed.map(((int, ({String emoji, String label, String range, Color color})) entry) {
+            final idx = entry.$1;
+            final lv = entry.$2;
+            return _buildLevelRow(lv.emoji, lv.label, lv.range, lv.color,
+                isActive: idx == currentLevel, isReached: idx < currentLevel);
+          }),
         ],
       ),
     );
@@ -651,19 +715,34 @@ class _FlameStreakModalState extends State<_FlameStreakModal>
     );
   }
 
-  Widget _buildLevelRow(String emoji, String label, String range, Color color) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
+  Widget _buildLevelRow(String emoji, String label, String range, Color color,
+      {bool isActive = false, bool isReached = false}) {
+    final opacity = isActive || isReached ? 1.0 : 0.28;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      padding: isActive
+          ? const EdgeInsets.symmetric(horizontal: 8, vertical: 5)
+          : const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: isActive
+          ? BoxDecoration(
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: color.withOpacity(0.4)),
+            )
+          : null,
       child: Row(
         children: [
-          Text(emoji, style: const TextStyle(fontSize: 14)),
+          Text(emoji,
+              style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.white.withOpacity(isActive || isReached ? 1.0 : 0.3))),
           const SizedBox(width: 8),
           Text(
             label,
             style: TextStyle(
               fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: color,
+              fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
+              color: color.withOpacity(opacity),
             ),
           ),
           const SizedBox(width: 6),
@@ -671,9 +750,13 @@ class _FlameStreakModalState extends State<_FlameStreakModal>
             '·  $range',
             style: TextStyle(
               fontSize: 11,
-              color: color.withOpacity(0.65),
+              color: color.withOpacity(opacity * 0.7),
             ),
           ),
+          if (isActive) ...[
+            const Spacer(),
+            Text('← toi', style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w700)),
+          ],
         ],
       ),
     );

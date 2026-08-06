@@ -93,8 +93,10 @@ class StreakService {
     await prefs.setInt('streak_today_count_$userId', todayCount);
 
     // ── Quota du jour atteint → valider la série ──────────────────────────────
+    // On utilise == et non >= pour n'incrémenter la série qu'une seule fois,
+    // exactement au moment où le quota est atteint (pas pour chaque commentaire suivant).
     bool quotaReached = false;
-    if (todayCount >= _dailyQuota) {
+    if (todayCount == _dailyQuota) {
       quotaReached = true;
       currentStreak++;
       if (currentStreak > bestStreak) bestStreak = currentStreak;
@@ -163,7 +165,7 @@ class StreakService {
     final todayCount = (data['todayCommentCount'] as num?)?.toInt() ?? 0;
     int shields = (data['streakShields'] as num?)?.toInt() ?? 0;
 
-    // Le quota d'hier n'était pas atteint → danger
+    // Quota d'hier non atteint → la série est en danger
     if (!lastDay.isAtSameMomentAs(yesterday) || todayCount < _dailyQuota) {
       if (shields > 0) {
         // Bouclier absorbe la coupure
@@ -183,8 +185,16 @@ class StreakService {
         });
         await prefs.setInt('streak_current_$userId', 0);
       }
+    } else {
+      // Hier OK (quota atteint), mais on est un nouveau jour : remettre le compteur à 0.
+      // Sans ce else, todayCommentCount reste à 3 en Firestore et le provider croit
+      // que l'utilisateur a déjà commenté aujourd'hui alors qu'il vient juste de se connecter.
+      await userRef.update({
+        'todayCommentDate': today,
+        'todayCommentCount': 0,
+      });
     }
-
+    await prefs.setInt('streak_today_count_$userId', 0);
     await prefs.setString('streak_last_checked_$userId', today);
   }
 

@@ -1684,6 +1684,10 @@ class _MyHomePageState extends State<MyHomePage>
 
 
   Future<void> _showDailyModal() async {
+    // Premier lancement sur HomeScreen → on laisse l'utilisateur découvrir l'app
+    // librement. Les modals rotatifs ne démarrent qu'à partir de la 2e visite.
+    if (await DailyModalService.isFirstHomeVisit()) return;
+
     // Période de priorité : uniquement affiliation + invite_amis jusqu'au 17 juillet 2026
     final priorityEnd = DateTime(2026, 7, 17);
     final inPriorityPeriod = DateTime.now().isBefore(priorityEnd);

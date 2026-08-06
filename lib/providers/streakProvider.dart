@@ -25,12 +25,25 @@ class StreakProvider extends ChangeNotifier {
       final data = doc.data()!;
       commentStreak = (data['commentStreak'] as num?)?.toInt() ?? 0;
       bestStreak = (data['bestCommentStreak'] as num?)?.toInt() ?? 0;
-      todayCount = (data['todayCommentCount'] as num?)?.toInt() ?? 0;
       shields = (data['streakShields'] as num?)?.toInt() ?? 0;
+
+      // Sécurité : si todayCommentDate != aujourd'hui (Firestore pas encore mis à jour
+      // par checkAndResetDaily), afficher 0 pour ne pas montrer le count d'hier.
+      final todayStr = _todayStr();
+      final firestoreDate = data['todayCommentDate'] as String?;
+      todayCount = (firestoreDate == todayStr)
+          ? (data['todayCommentCount'] as num?)?.toInt() ?? 0
+          : 0;
+
       level = StreakService.streakLevel(commentStreak);
       levelLabel = StreakService.streakLevelLabel(level);
       notifyListeners();
     });
+  }
+
+  static String _todayStr() {
+    final now = DateTime.now();
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   }
 
   /// Mise à jour immédiate depuis un [StreakResult] (avant que le stream revienne).

@@ -4,6 +4,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 class DailyModalService {
   static const String _keyPrefix = 'daily_modal_';
   static const String _dateFormat = 'yyyy-MM-dd';
+  static const String _keyHomeVisited = 'home_has_visited_once';
+
+  /// Retourne true si c'est la toute première visite sur HomeScreen.
+  /// Marque automatiquement la visite pour les prochains appels.
+  static Future<bool> isFirstHomeVisit() async {
+    final prefs = await SharedPreferences.getInstance();
+    final visited = prefs.getBool(_keyHomeVisited) ?? false;
+    if (!visited) {
+      await prefs.setBool(_keyHomeVisited, true);
+      return true;
+    }
+    return false;
+  }
 
   /// Vérifie si le modal identifié par [modalKey] a déjà été affiché aujourd'hui.
   static Future<bool> isModalShownToday(String modalKey) async {

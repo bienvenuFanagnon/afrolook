@@ -57,8 +57,13 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
   bool _isTutorialReady = false;
   bool _initializingTutorial = false;
 
-  // Preview 5 secondes (capsules vidéo)
+  // Preview 10 secondes (capsules vidéo)
   Timer? _previewTimer;
+
+  // Lecteur léger pour extraits (non-acheteurs) — URL directe, pas de Cloud Function
+  VideoPlayerController? _previewController;
+  bool _isPreviewReady = false;
+  bool _initializingPreview = false;
 
   // Téléchargement en cours
   String? _downloadingKey;   // fileKey en cours ('pdfUrl', 'fileUrl', etc.)
@@ -101,29 +106,61 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
     }
   }
 
-  /// Lance la vidéo pendant 5 secondes à la position [ratio] (0.0 = début, 0.5 = milieu, 0.9 = fin).
+  /// Lance la vidéo pendant 10 secondes à la position [ratio] (0.0 = début, 0.5 = milieu, 0.9 = fin).
+  /// Utilise le lecteur complet (Cloud Function) si l'utilisateur a accès,
+  /// sinon le lecteur léger (URL directe) pour les extraits gratuits.
   Future<void> _playPreviewAt(double ratio) async {
     _previewTimer?.cancel();
 
-    // Initialiser le lecteur si nécessaire
-    if (!_isVideoReady) {
-      await _initVideoPlayer();
-      if (!_isVideoReady || !mounted) return;
-    }
+    final hasAccess = _hasPurchased || _content.isFree;
 
-    final total = _videoController!.value.duration;
-    if (total == Duration.zero) return;
-
-    final position = total * ratio;
-    await _videoController!.seekTo(position);
-    await _videoController!.play();
-
-    // Pause automatique après 5 secondes
-    _previewTimer = Timer(const Duration(seconds: 5), () async {
-      if (_videoController?.value.isPlaying == true) {
-        await _videoController!.pause();
+    if (hasAccess) {
+      // Lecteur complet via Cloud Function
+      if (!_isVideoReady) {
+        await _initVideoPlayer();
+        if (!_isVideoReady || !mounted) return;
       }
-    });
+      final total = _videoController!.value.duration;
+      if (total == Duration.zero) return;
+      await _videoController!.seekTo(total * ratio);
+      await _videoController!.play();
+      _previewTimer = Timer(const Duration(seconds: 10), () async {
+        if (_videoController?.value.isPlaying == true) await _videoController!.pause();
+      });
+    } else {
+      // Lecteur léger — URL directe, pas de vérification d'achat Cloud Function
+      if (!_isPreviewReady) {
+        await _initPreviewPlayer();
+        if (!_isPreviewReady || !mounted) return;
+      }
+      final total = _previewController!.value.duration;
+      if (total == Duration.zero) return;
+      await _previewController!.seekTo(total * ratio);
+      await _previewController!.play();
+      _previewTimer = Timer(const Duration(seconds: 10), () async {
+        if (_previewController?.value.isPlaying == true) await _previewController!.pause();
+      });
+    }
+  }
+
+  /// Initialise le lecteur léger pour les extraits gratuits (URL directe, sans Cloud Function).
+  Future<void> _initPreviewPlayer() async {
+    if (_initializingPreview || _isPreviewReady) return;
+    final rawUrl = _content.videoUrl;
+    if (rawUrl == null || rawUrl.isEmpty) return;
+    setState(() => _initializingPreview = true);
+    try {
+      _previewController = VideoPlayerController.networkUrl(Uri.parse(rawUrl));
+      await _previewController!.initialize();
+      await _previewController!.setVolume(0); // muet pour l'aperçu
+      if (mounted) setState(() => _isPreviewReady = true);
+    } catch (e) {
+      debugPrint('[PreviewPlayer] erreur: $e');
+      _previewController?.dispose();
+      _previewController = null;
+    } finally {
+      if (mounted) setState(() => _initializingPreview = false);
+    }
   }
 
   String _friendlyError(dynamic e) {
@@ -275,7 +312,7 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
       debugPrint('[VideoPlayer] erreur: $e');
       _showResultDialog(
         success: false,
-        message: 'Erreur vidéo:\n${e.toString()}',
+        message: _friendlyError(e),
       );
     } finally {
       if (mounted) setState(() => _initializingVideo = false);
@@ -472,6 +509,7 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
     _previewTimer?.cancel();
     _chewieController?.dispose();
     _videoController?.dispose();
+    _previewController?.dispose();
     _tutorialChewieController?.dispose();
     _tutorialController?.dispose();
     super.dispose();
@@ -721,7 +759,7 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
         const SizedBox(height: 8),
         _buildDescriptionSection(),
         // ── Capsules aperçu :
-        //    VIDEO → toujours visibles (tap = 5 secondes si accès, sinon juste image)
+        //    VIDEO → toujours visibles (tap = 10 secondes si accès, sinon juste image)
         //    Non-vidéo → visibles uniquement si pas encore acheté
         if (_content.isVideo || !hasAccess)
           _buildPreviewSection(),
@@ -928,6 +966,10 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
               value: _formatCount(_content.likes)),
           const SizedBox(width: 12),
           _StatChip(
+              icon: Icons.comment_outlined,
+              value: _formatCount(_content.comments)),
+          const SizedBox(width: 12),
+          _StatChip(
               icon: Icons.shopping_bag_outlined,
               value: _formatCount(_content.sales),
               label: 'vente${_content.sales != 1 ? 's' : ''}'),
@@ -1030,7 +1072,7 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  isVideo ? '3 × 5 sec' : '3 aperçus',
+                  isVideo ? '3 × 10 sec' : '3 aperçus',
                   style: const TextStyle(
                       fontSize: 9, color: Color(0xFF25D366), fontWeight: FontWeight.w700)),
               ),
@@ -1050,11 +1092,9 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
             children: List.generate(3, (i) {
               final url = _resolveImg(i);
               final label = labels[i];
-              final canPlayVideo = isVideo && hasAccess;
-
               return Expanded(
                 child: GestureDetector(
-                  onTap: canPlayVideo ? () => _playPreviewAt(positions[i]) : null,
+                  onTap: isVideo ? () => _playPreviewAt(positions[i]) : null,
                   child: Container(
                     margin: EdgeInsets.only(right: i < 2 ? 8 : 0),
                     height: 120,
@@ -1084,8 +1124,8 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
                                   style: const TextStyle(fontSize: 28))),
                         // Overlay léger pour lisibilité
                         Container(color: Colors.black.withValues(alpha: 0.25)),
-                        // Icône play pour les vidéos accessibles
-                        if (canPlayVideo)
+                        // Icône play pour les vidéos (extraits disponibles même sans achat)
+                        if (isVideo)
                           Center(
                             child: Container(
                               width: 36,
@@ -1132,7 +1172,7 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
             isVideo
-                ? 'Appuyez sur un extrait pour écouter 5 secondes à cette position.'
+                ? 'Appuyez sur un extrait pour écouter 10 secondes à cette position.'
                 : 'Achetez pour accéder à l\'intégralité du contenu.',
             style: TextStyle(fontSize: 11, color: _colors.textSecondary, height: 1.4),
           ),
