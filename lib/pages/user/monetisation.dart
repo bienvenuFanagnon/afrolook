@@ -111,53 +111,88 @@ class _MonetisationPageState extends State<MonetisationPage> {
   }
 
   Widget _buildSoldeDepotCard(double soldeDepot, AppColors colors) {
+    const green = Color(0xFF34C759);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: colors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF34C759).withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFF34C759).withOpacity(0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.arrow_downward_rounded, color: Color(0xFF34C759), size: 18),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: green.withOpacity(0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'SOLDE DE DÉPÔT',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: colors.textSecondary,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 1.1,
-                  ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: green.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  '${soldeDepot.toStringAsFixed(2)} FCFA',
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF34C759),
-                  ),
+                child: const Icon(Icons.savings_rounded, color: green, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'SOLDE DE DÉPÔT',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: colors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.2,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  'Utilisé pour abonnements, pièces, canaux…',
-                  style: TextStyle(fontSize: 11, color: colors.textSecondary),
-                ),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            '${soldeDepot.toStringAsFixed(2)} FCFA',
+            style: const TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              color: green,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Abonnements · Pièces · Canaux · Groupes',
+            style: TextStyle(fontSize: 12, color: colors.textSecondary),
+          ),
+          const SizedBox(height: 8),
+          Divider(color: colors.divider, height: 1),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const DepositScreen()),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: green,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.add_circle_outline, size: 18, color: Colors.white),
+                  SizedBox(width: 6),
+                  Text('Recharger', style: TextStyle(fontWeight: FontWeight.bold)),
+                ],
+              ),
             ),
           ),
         ],
@@ -218,64 +253,31 @@ class _MonetisationPageState extends State<MonetisationPage> {
           const SizedBox(height: 8),
           Divider(color: colors.divider, height: 1),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: SizedBox(
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const DepositScreen()),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: colors.primary,
-                      foregroundColor: colors.onPrimary,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      elevation: 0,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.arrow_downward, size: 18, color: colors.onPrimary),
-                        const SizedBox(width: 6),
-                        Text(t.monetDeposit, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                  ),
-                ),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => UserRetraitListPage()),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colors.danger,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: SizedBox(
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => UserRetraitListPage()),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: colors.danger,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      elevation: 0,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.arrow_upward, size: 18, color: Colors.white),
-                        const SizedBox(width: 6),
-                        Text(t.monetWithdraw, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                  ),
-                ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.arrow_upward, size: 18, color: Colors.white),
+                  const SizedBox(width: 6),
+                  Text(t.monetWithdraw, style: const TextStyle(fontWeight: FontWeight.bold)),
+                ],
               ),
-            ],
+            ),
           ),
           const SizedBox(height: 10),
           SizedBox(

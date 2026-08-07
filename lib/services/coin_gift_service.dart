@@ -47,6 +47,7 @@ class CoinGiftService {
     required double fcfaCost,
     required FirebaseFirestore firestore,
     required UserAuthProvider authProvider,
+    String balanceKey = 'votre_solde_depot', // solde débité : votre_solde_depot ou votre_solde_principal
   }) async {
     final payerRef = firestore.collection('Users').doc(userPaid);
     final receiverRef = firestore.collection('Users').doc(userReceived);
@@ -57,10 +58,10 @@ class CoinGiftService {
       final payerSnap = await tx.get(payerRef);
       if (!payerSnap.exists) throw Exception('Utilisateur payeur introuvable');
 
-      // 2️⃣ Vérifier le solde de dépôt du payeur
-      final payerBalance = (payerSnap.data()?['votre_solde_depot'] as num? ?? 0).toDouble();
+      // 2️⃣ Vérifier le solde du payeur (dépôt ou gains selon balanceKey)
+      final payerBalance = (payerSnap.data()?[balanceKey] as num? ?? 0).toDouble();
       if (payerBalance < fcfaCost) {
-        throw Exception('Solde de dépôt insuffisant');
+        throw Exception('Solde insuffisant');
       }
 
       // 3️⃣ Vérifier que le destinataire existe (si différent du payeur)
@@ -69,9 +70,9 @@ class CoinGiftService {
         if (!receiverSnap.exists) throw Exception('Destinataire introuvable');
       }
 
-      // 4️⃣ DÉBITER le payeur (son solde de dépôt)
+      // 4️⃣ DÉBITER le payeur sur le solde choisi (dépôt ou gains)
       tx.update(payerRef, {
-        'votre_solde_depot': FieldValue.increment(-fcfaCost),
+        balanceKey: FieldValue.increment(-fcfaCost),
         'updatedAt': DateTime.now().millisecondsSinceEpoch,
       });
 
@@ -92,7 +93,7 @@ class CoinGiftService {
             ? "Achat de ${_formatNumber(coinsAmount)} pièces"
             : "Achat de ${_formatNumber(coinsAmount)} pièces pour @${_getUserName(userReceived, firestore)}"
         ..montant = fcfaCost
-        ..methode_paiement = "solde_depot"
+        ..methode_paiement = balanceKey
         ..createdAt = DateTime.now().millisecondsSinceEpoch
         ..updatedAt = DateTime.now().millisecondsSinceEpoch;
       tx.set(firestore.collection('TransactionSoldes').doc(payerTransaction.id), payerTransaction.toJson());

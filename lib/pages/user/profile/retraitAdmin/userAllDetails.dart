@@ -54,35 +54,40 @@ class _UserManagementPageState extends State<UserManagementPage> {
     }
   }
 
-  Future<void> _updateUserBalance(double amount, String type, String description, String raison) async {
+  Future<void> _updateUserBalance(double amount, String type, String description, String raison, {String balanceField = 'votre_solde_principal'}) async {
     if (_userData == null) return;
 
     setState(() => _isUpdating = true);
 
     try {
-      final newBalance = _userData!.votre_solde_principal! + amount;
+      final currentBalance = balanceField == 'votre_solde_depot'
+          ? (_userData!.votre_solde_depot ?? 0.0)
+          : (_userData!.votre_solde_principal ?? 0.0);
+      final newBalance = currentBalance + amount;
 
-      // Mettre à jour le solde de l'utilisateur
       await _firestore.collection('Users').doc(widget.userId).update({
-        'votre_solde_principal': newBalance,
+        balanceField: newBalance,
         'updated_at': DateTime.now().millisecondsSinceEpoch,
       });
 
-      // Enregistrer la transaction
       await _firestore.collection('TransactionSoldes').add({
         'user_id': _userData!.id,
         'montant': amount.abs(),
         'type': type,
         'description': description,
         'raison': raison,
+        'balance_field': balanceField,
         'createdAt': DateTime.now().millisecondsSinceEpoch,
         'statut': StatutTransaction.VALIDER.name,
         'processed_by': Provider.of<UserAuthProvider>(context, listen: false).userId,
       });
 
-      // Mettre à jour les données locales
       setState(() {
-        _userData!.votre_solde_principal = newBalance;
+        if (balanceField == 'votre_solde_depot') {
+          _userData!.votre_solde_depot = newBalance;
+        } else {
+          _userData!.votre_solde_principal = newBalance;
+        }
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -107,92 +112,157 @@ class _UserManagementPageState extends State<UserManagementPage> {
     final montantController = TextEditingController();
     final descriptionController = TextEditingController();
     final raisonController = TextEditingController();
+    String selectedField = 'votre_solde_depot';
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: Text(
-          'Dépôt Manuel',
-          style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: montantController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: 'Montant (FCFA)',
-                  labelStyle: TextStyle(color: Colors.grey[400]),
-                  border: OutlineInputBorder(),
-                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.green)),
-                  focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.green)),
-                ),
-                style: TextStyle(color: Colors.white),
-              ),
-              SizedBox(height: 12),
-              TextField(
-                controller: raisonController,
-                decoration: InputDecoration(
-                  labelText: 'Raison du dépôt',
-                  labelStyle: TextStyle(color: Colors.grey[400]),
-                  border: OutlineInputBorder(),
-                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.green)),
-                  focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.green)),
-                ),
-                style: TextStyle(color: Colors.white),
-              ),
-              SizedBox(height: 12),
-              TextField(
-                controller: descriptionController,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  labelText: 'Description',
-                  labelStyle: TextStyle(color: Colors.grey[400]),
-                  border: OutlineInputBorder(),
-                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.green)),
-                  focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.green)),
-                ),
-                style: TextStyle(color: Colors.white),
-              ),
-            ],
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: Colors.grey[900],
+          title: const Text(
+            'Dépôt Manuel',
+            style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('ANNULER', style: TextStyle(color: Colors.grey)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Sélecteur de solde cible
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[800],
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setDialogState(() => selectedField = 'votre_solde_depot'),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            decoration: BoxDecoration(
+                              color: selectedField == 'votre_solde_depot' ? const Color(0xFF34C759) : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Solde Dépôt',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: selectedField == 'votre_solde_depot' ? Colors.white : Colors.white54,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setDialogState(() => selectedField = 'votre_solde_principal'),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            decoration: BoxDecoration(
+                              color: selectedField == 'votre_solde_principal' ? Colors.amber[700] : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Solde Gains',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: selectedField == 'votre_solde_principal' ? Colors.white : Colors.white54,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  selectedField == 'votre_solde_depot'
+                      ? 'Actuel : ${(_userData!.votre_solde_depot ?? 0.0).toStringAsFixed(2)} FCFA'
+                      : 'Actuel : ${(_userData!.votre_solde_principal ?? 0.0).toStringAsFixed(2)} FCFA',
+                  style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: montantController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Montant (FCFA)',
+                    labelStyle: TextStyle(color: Colors.grey[400]),
+                    border: const OutlineInputBorder(),
+                    enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.green)),
+                    focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.green)),
+                  ),
+                  style: const TextStyle(color: Colors.white),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: raisonController,
+                  decoration: InputDecoration(
+                    labelText: 'Raison du dépôt',
+                    labelStyle: TextStyle(color: Colors.grey[400]),
+                    border: const OutlineInputBorder(),
+                    enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.green)),
+                    focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.green)),
+                  ),
+                  style: const TextStyle(color: Colors.white),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descriptionController,
+                  maxLines: 2,
+                  decoration: InputDecoration(
+                    labelText: 'Description (optionnel)',
+                    labelStyle: TextStyle(color: Colors.grey[400]),
+                    border: const OutlineInputBorder(),
+                    enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.green)),
+                    focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.green)),
+                  ),
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ],
+            ),
           ),
-          ElevatedButton(
-            onPressed: () {
-              final montant = double.tryParse(montantController.text);
-              if (montant == null || montant <= 0) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Montant invalide'), backgroundColor: Colors.red),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('ANNULER', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final montant = double.tryParse(montantController.text);
+                if (montant == null || montant <= 0) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Montant invalide'), backgroundColor: Colors.red),
+                  );
+                  return;
+                }
+                if (raisonController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Veuillez saisir une raison'), backgroundColor: Colors.red),
+                  );
+                  return;
+                }
+                Navigator.pop(ctx);
+                _updateUserBalance(
+                  montant,
+                  TypeTransaction.DEPOTADMIN.name,
+                  descriptionController.text.isNotEmpty ? descriptionController.text : 'Dépôt administratif',
+                  raisonController.text,
+                  balanceField: selectedField,
                 );
-                return;
-              }
-              if (raisonController.text.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Veuillez saisir une raison'), backgroundColor: Colors.red),
-                );
-                return;
-              }
-
-              Navigator.pop(context);
-              _updateUserBalance(
-                montant,
-                TypeTransaction.DEPOTADMIN.name,
-                descriptionController.text.isNotEmpty ? descriptionController.text : 'Dépôt administratif',
-                raisonController.text,
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            child: Text('DÉPOSER'),
-          ),
-        ],
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+              child: const Text('DÉPOSER'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -201,111 +271,171 @@ class _UserManagementPageState extends State<UserManagementPage> {
     final montantController = TextEditingController();
     final descriptionController = TextEditingController();
     final raisonController = TextEditingController();
+    String selectedField = 'votre_solde_principal';
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: Text(
-          'Retrait Manuel',
-          style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Solde actuel: ${_userData?.votre_solde_principal?.toStringAsFixed(2) ?? '0.00'} FCFA',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 12),
-              TextField(
-                controller: montantController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: 'Montant (FCFA)',
-                  labelStyle: TextStyle(color: Colors.grey[400]),
-                  border: OutlineInputBorder(),
-                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
-                  focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
-                ),
-                style: TextStyle(color: Colors.white),
-              ),
-              SizedBox(height: 12),
-              TextField(
-                controller: raisonController,
-                decoration: InputDecoration(
-                  labelText: 'Raison du retrait',
-                  labelStyle: TextStyle(color: Colors.grey[400]),
-                  border: OutlineInputBorder(),
-                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
-                  focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
-                ),
-                style: TextStyle(color: Colors.white),
-              ),
-              SizedBox(height: 12),
-              TextField(
-                controller: descriptionController,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  labelText: 'Description',
-                  labelStyle: TextStyle(color: Colors.grey[400]),
-                  border: OutlineInputBorder(),
-                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
-                  focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
-                ),
-                style: TextStyle(color: Colors.white),
-              ),
-              SizedBox(height: 8),
-              Container(
-                padding: EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.orange),
-                ),
-                child: Text(
-                  'Note: Le solde peut devenir négatif pour corriger des erreurs.',
-                  style: TextStyle(color: Colors.orange, fontSize: 12),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ],
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: Colors.grey[900],
+          title: const Text(
+            'Retrait Manuel',
+            style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('ANNULER', style: TextStyle(color: Colors.grey)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Sélecteur de solde source
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[800],
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setDialogState(() => selectedField = 'votre_solde_depot'),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            decoration: BoxDecoration(
+                              color: selectedField == 'votre_solde_depot' ? const Color(0xFF34C759) : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Solde Dépôt',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: selectedField == 'votre_solde_depot' ? Colors.white : Colors.white54,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setDialogState(() => selectedField = 'votre_solde_principal'),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            decoration: BoxDecoration(
+                              color: selectedField == 'votre_solde_principal' ? Colors.amber[700] : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Solde Gains',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: selectedField == 'votre_solde_principal' ? Colors.white : Colors.white54,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  selectedField == 'votre_solde_depot'
+                      ? 'Actuel : ${(_userData!.votre_solde_depot ?? 0.0).toStringAsFixed(2)} FCFA'
+                      : 'Actuel : ${(_userData!.votre_solde_principal ?? 0.0).toStringAsFixed(2)} FCFA',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: montantController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Montant (FCFA)',
+                    labelStyle: TextStyle(color: Colors.grey[400]),
+                    border: const OutlineInputBorder(),
+                    enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
+                    focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
+                  ),
+                  style: const TextStyle(color: Colors.white),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: raisonController,
+                  decoration: InputDecoration(
+                    labelText: 'Raison du retrait',
+                    labelStyle: TextStyle(color: Colors.grey[400]),
+                    border: const OutlineInputBorder(),
+                    enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
+                    focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
+                  ),
+                  style: const TextStyle(color: Colors.white),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descriptionController,
+                  maxLines: 2,
+                  decoration: InputDecoration(
+                    labelText: 'Description (optionnel)',
+                    labelStyle: TextStyle(color: Colors.grey[400]),
+                    border: const OutlineInputBorder(),
+                    enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
+                    focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
+                  ),
+                  style: const TextStyle(color: Colors.white),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange),
+                  ),
+                  child: const Text(
+                    'Note : Le solde peut devenir négatif pour corriger des erreurs.',
+                    style: TextStyle(color: Colors.orange, fontSize: 12),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ),
           ),
-          ElevatedButton(
-            onPressed: () {
-              final montant = double.tryParse(montantController.text);
-              if (montant == null || montant <= 0) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Montant invalide'), backgroundColor: Colors.red),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('ANNULER', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final montant = double.tryParse(montantController.text);
+                if (montant == null || montant <= 0) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Montant invalide'), backgroundColor: Colors.red),
+                  );
+                  return;
+                }
+                if (raisonController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Veuillez saisir une raison'), backgroundColor: Colors.red),
+                  );
+                  return;
+                }
+                Navigator.pop(ctx);
+                _updateUserBalance(
+                  -montant,
+                  TypeTransaction.RETRAITADMIN.name,
+                  descriptionController.text.isNotEmpty ? descriptionController.text : 'Retrait administratif',
+                  raisonController.text,
+                  balanceField: selectedField,
                 );
-                return;
-              }
-              if (raisonController.text.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Veuillez saisir une raison'), backgroundColor: Colors.red),
-                );
-                return;
-              }
-
-              Navigator.pop(context);
-              _updateUserBalance(
-                -montant,
-                TypeTransaction.RETRAITADMIN.name,
-                descriptionController.text.isNotEmpty ? descriptionController.text : 'Retrait administratif',
-                raisonController.text,
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-            child: Text('RETIRER'),
-          ),
-        ],
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+              child: const Text('RETIRER'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -474,60 +604,45 @@ class _UserManagementPageState extends State<UserManagementPage> {
   }
 
   Widget _buildBalanceCard() {
-    final balance = _userData!.votre_solde_principal ?? 0.0;
-    final isNegative = balance < 0;
+    final depot = _userData!.votre_solde_depot ?? 0.0;
+    final principal = _userData!.votre_solde_principal ?? 0.0;
 
+    return Row(
+      children: [
+        Expanded(child: _buildSingleBalanceTile('SOLDE DÉPÔT', depot, const Color(0xFF34C759))),
+        const SizedBox(width: 12),
+        Expanded(child: _buildSingleBalanceTile('SOLDE GAINS', principal, Colors.amber.shade700)),
+      ],
+    );
+  }
+
+  Widget _buildSingleBalanceTile(String label, double balance, Color color) {
+    final isNegative = balance < 0;
     return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.grey[900],
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isNegative ? Colors.red : Colors.green,
-          width: 2,
-        ),
+        border: Border.all(color: isNegative ? Colors.red : color.withOpacity(0.5), width: 1.5),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(label, style: TextStyle(color: Colors.grey[500], fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 1)),
+          const SizedBox(height: 8),
           Text(
-            'SOLDE PRINCIPAL',
-            style: TextStyle(
-              color: Colors.grey[500],
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 1.2,
-            ),
+            '${balance.toStringAsFixed(2)}',
+            style: TextStyle(color: isNegative ? Colors.red : color, fontSize: 20, fontWeight: FontWeight.bold),
           ),
-          SizedBox(height: 12),
-          Text(
-            '${balance.toStringAsFixed(2)} FCFA',
-            style: TextStyle(
-              color: isNegative ? Colors.red : Colors.yellow[700],
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          SizedBox(height: 8),
-          if (isNegative)
-            Container(
-              padding: EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.warning, color: Colors.red, size: 16),
-                  SizedBox(width: 4),
-                  Text(
-                    'Solde négatif',
-                    style: TextStyle(color: Colors.red, fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
+          Text('FCFA', style: TextStyle(color: Colors.grey[600], fontSize: 11)),
+          if (isNegative) ...[
+            const SizedBox(height: 4),
+            Row(children: [
+              const Icon(Icons.warning, color: Colors.red, size: 12),
+              const SizedBox(width: 4),
+              const Text('Négatif', style: TextStyle(color: Colors.red, fontSize: 10)),
+            ]),
+          ],
         ],
       ),
     );

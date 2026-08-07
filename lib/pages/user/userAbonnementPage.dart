@@ -27,6 +27,10 @@ class _AbonnementScreenState extends State<AbonnementScreen>
   int _dureePremium = 1;
   int _dureeGold = 1;
 
+  // Solde sélectionné pour le paiement (dépôt par défaut)
+  String _selectedBalancePremium = 'votre_solde_depot';
+  String _selectedBalanceGold = 'votre_solde_depot';
+
   // Offres Premium
   final List<Map<String, dynamic>> _offresPremium = [
     {'mois': 1, 'prixBase': 200.0, 'reduction': 0.0},
@@ -212,7 +216,9 @@ class _AbonnementScreenState extends State<AbonnementScreen>
 
   Widget _buildPremiumTab(AppColors colors, UserData user,
       AfrolookAbonnement? abonnement, bool isPremium, bool isGold) {
-    final solde = user.votre_solde_principal ?? 0.0;
+    final depot = user.votre_solde_depot ?? 0.0;
+    final principal = user.votre_solde_principal ?? 0.0;
+    final solde = _selectedBalancePremium == 'votre_solde_depot' ? depot : principal;
     final prixFinal = _getPrixPremium(_dureePremium);
     final soldeInsuffisant = solde < prixFinal;
 
@@ -282,14 +288,22 @@ class _AbonnementScreenState extends State<AbonnementScreen>
           const SizedBox(height: 16),
           _buildPriceSummary(colors, _offresPremium, _dureePremium, const Color(0xFFFDB813)),
           const SizedBox(height: 16),
+          _buildAbonnementBalanceSelector(
+            colors: colors,
+            user: user,
+            selectedBalance: _selectedBalancePremium,
+            onSelect: (k) => setState(() => _selectedBalancePremium = k),
+          ),
+          const SizedBox(height: 16),
           _buildPaymentSection(
             colors: colors,
             solde: solde,
             prixFinal: prixFinal,
             soldeInsuffisant: soldeInsuffisant,
+            soldeLabel: _selectedBalancePremium == 'votre_solde_depot' ? 'Solde Dépôt' : 'Solde Gains',
             accentColor: const Color(0xFFFF416C),
             btnLabel: '⭐ DEVENIR PREMIUM — ${prixFinal.toInt()} FCFA',
-            onPay: () => _souscrire(user, 'premium', _dureePremium),
+            onPay: () => _souscrire(user, 'premium', _dureePremium, balanceKey: _selectedBalancePremium),
           ),
         ],
         if (isPremium) ...[
@@ -321,7 +335,9 @@ class _AbonnementScreenState extends State<AbonnementScreen>
 
   Widget _buildGoldTab(AppColors colors, UserData user,
       AfrolookAbonnement? abonnement, bool isGold) {
-    final solde = user.votre_solde_principal ?? 0.0;
+    final depot = user.votre_solde_depot ?? 0.0;
+    final principal = user.votre_solde_principal ?? 0.0;
+    final solde = _selectedBalanceGold == 'votre_solde_depot' ? depot : principal;
     final prixFinal = _getPrixGold(_dureeGold);
     final soldeInsuffisant = solde < prixFinal;
 
@@ -382,14 +398,22 @@ class _AbonnementScreenState extends State<AbonnementScreen>
           const SizedBox(height: 16),
           _buildPriceSummary(colors, _offresGold, _dureeGold, const Color(0xFFFFD700)),
           const SizedBox(height: 16),
+          _buildAbonnementBalanceSelector(
+            colors: colors,
+            user: user,
+            selectedBalance: _selectedBalanceGold,
+            onSelect: (k) => setState(() => _selectedBalanceGold = k),
+          ),
+          const SizedBox(height: 16),
           _buildPaymentSection(
             colors: colors,
             solde: solde,
             prixFinal: prixFinal,
             soldeInsuffisant: soldeInsuffisant,
+            soldeLabel: _selectedBalanceGold == 'votre_solde_depot' ? 'Solde Dépôt' : 'Solde Gains',
             accentColor: const Color(0xFFFFD700),
             btnLabel: '👑 DEVENIR GOLD — ${prixFinal.toInt()} FCFA',
-            onPay: () => _souscrire(user, 'gold', _dureeGold),
+            onPay: () => _souscrire(user, 'gold', _dureeGold, balanceKey: _selectedBalanceGold),
             btnTextColor: Colors.black,
           ),
         ],
@@ -759,6 +783,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
     required String btnLabel,
     required VoidCallback onPay,
     Color btnTextColor = Colors.white,
+    String soldeLabel = 'Solde Dépôt',
   }) {
     final manquant = prixFinal - solde;
 
@@ -781,7 +806,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Solde principal',
+                    Text(soldeLabel,
                         style: TextStyle(color: colors.textSecondary, fontSize: 12)),
                     Text('${solde.toInt()} FCFA',
                         style: TextStyle(
@@ -873,6 +898,118 @@ class _AbonnementScreenState extends State<AbonnementScreen>
     );
   }
 
+  // ── Sélecteur de solde pour abonnement ──────────────────────────────────
+
+  Widget _buildAbonnementBalanceSelector({
+    required AppColors colors,
+    required UserData user,
+    required String selectedBalance,
+    required void Function(String) onSelect,
+  }) {
+    const green = Color(0xFF34C759);
+    final depot = user.votre_solde_depot ?? 0.0;
+    final principal = user.votre_solde_principal ?? 0.0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'PAYER AVEC',
+          style: TextStyle(
+            color: colors.textSecondary,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _buildBalanceOption(
+                colors: colors,
+                label: 'Dépôt',
+                amount: depot,
+                color: green,
+                icon: Icons.savings_rounded,
+                isSelected: selectedBalance == 'votre_solde_depot',
+                onTap: () => onSelect('votre_solde_depot'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildBalanceOption(
+                colors: colors,
+                label: 'Gains',
+                amount: principal,
+                color: colors.warning,
+                icon: Icons.account_balance_wallet_rounded,
+                isSelected: selectedBalance == 'votre_solde_principal',
+                onTap: () => onSelect('votre_solde_principal'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBalanceOption({
+    required AppColors colors,
+    required String label,
+    required double amount,
+    required Color color,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withOpacity(0.1) : colors.surfaceVariant,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? color : colors.border,
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: isSelected ? color : colors.textSecondary, size: 18),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: isSelected ? color : colors.textSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    '${amount.toStringAsFixed(0)} F',
+                    style: TextStyle(
+                      color: isSelected ? color : colors.textSecondary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected) Icon(Icons.check_circle, color: color, size: 14),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildRenewalSection({
     required AppColors colors,
     required UserData user,
@@ -928,7 +1065,8 @@ class _AbonnementScreenState extends State<AbonnementScreen>
               style: TextStyle(color: colors.textSecondary, fontSize: 12)),
           const SizedBox(height: 14),
           OutlinedButton(
-            onPressed: () => _showRenewalSheet(user, offres, accentColor, planType),
+            onPressed: () => _showRenewalSheet(user, offres, accentColor, planType,
+                balanceKey: planType == 'premium' ? _selectedBalancePremium : _selectedBalanceGold),
             style: OutlinedButton.styleFrom(
               side: BorderSide(color: accentColor, width: 2),
               foregroundColor: accentColor,
@@ -1053,7 +1191,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
 
   // ── Actions ─────────────────────────────────────────────────────────────
 
-  Future<void> _souscrire(UserData user, String planType, int dureeMois) async {
+  Future<void> _souscrire(UserData user, String planType, int dureeMois, {String balanceKey = 'votre_solde_depot'}) async {
     if (!mounted) return;
     setState(() => _isLoading = true);
     try {
@@ -1062,6 +1200,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
         dureeMois: dureeMois,
         user: user,
         context: context,
+        balanceKey: balanceKey,
       );
       if (!mounted) return;
       setState(() => _isLoading = false);
@@ -1081,7 +1220,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
   }
 
   void _showRenewalSheet(UserData user, List<Map<String, dynamic>> offres,
-      Color accentColor, String planType) {
+      Color accentColor, String planType, {String balanceKey = 'votre_solde_depot'}) {
     final colors = AppColors.of(context);
     showResponsiveBottomSheet(
       context: context,
@@ -1124,7 +1263,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
                         } else {
                           setState(() => _dureeGold = mois);
                         }
-                        _souscrire(user, planType, mois);
+                        _souscrire(user, planType, mois, balanceKey: balanceKey);
                       },
                       leading: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

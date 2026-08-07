@@ -109,6 +109,7 @@ class CoinGiftUserProvider with ChangeNotifier {
     required int coinsAmount,
     required double fcfaCost,
     required BuildContext context,
+    String balanceKey = 'votre_solde_depot',
   }) async {
     try {
       await CoinGiftService.purchaseCoins(
@@ -118,6 +119,7 @@ class CoinGiftUserProvider with ChangeNotifier {
         fcfaCost: fcfaCost,
         firestore: _firestore,
         authProvider: Provider.of<UserAuthProvider>(context, listen: false),
+        balanceKey: balanceKey,
       );
       await refreshBalance(userPaid);
       if (userPaid != userReceived) {

@@ -19,11 +19,12 @@ class AbonnementService {
     required int dureeMois,
     required UserData user,
     required BuildContext context,
+    String balanceKey = 'votre_solde_depot',
   }) async {
     if (planType == 'gold') {
-      return souscrireGold(dureeMois: dureeMois, user: user, context: context);
+      return souscrireGold(dureeMois: dureeMois, user: user, context: context, balanceKey: balanceKey);
     }
-    return souscrirePremium(dureeMois: dureeMois, user: user, context: context);
+    return souscrirePremium(dureeMois: dureeMois, user: user, context: context, balanceKey: balanceKey);
   }
 
   // ── Souscription Premium ──────────────────────────────────────────────────
@@ -32,6 +33,7 @@ class AbonnementService {
     required int dureeMois,
     required UserData user,
     required BuildContext context,
+    String balanceKey = 'votre_solde_depot',
   }) async {
     try {
       if (user.abonnement?.estPremium == true) {
@@ -45,6 +47,7 @@ class AbonnementService {
         context: context,
         sousType: 'ABONNEMENT_PREMIUM',
         descriptionLabel: 'Premium',
+        balanceKey: balanceKey,
       );
     } catch (e) {
       printVm('Erreur souscription Premium: $e');
@@ -58,6 +61,7 @@ class AbonnementService {
     required int dureeMois,
     required UserData user,
     required BuildContext context,
+    String balanceKey = 'votre_solde_depot',
   }) async {
     try {
       if (user.abonnement?.estGold == true) {
@@ -71,6 +75,7 @@ class AbonnementService {
         context: context,
         sousType: 'ABONNEMENT_GOLD',
         descriptionLabel: 'Gold',
+        balanceKey: balanceKey,
       );
     } catch (e) {
       printVm('Erreur souscription Gold: $e');
@@ -86,14 +91,18 @@ class AbonnementService {
     required BuildContext context,
     required String sousType,
     required String descriptionLabel,
+    String balanceKey = 'votre_solde_depot',
   }) async {
     final prixTotal = nouvelAbonnement.prix;
-    final solde = user.votre_solde_depot ?? 0.0;
+    final solde = (balanceKey == 'votre_solde_depot'
+        ? user.votre_solde_depot
+        : user.votre_solde_principal) ?? 0.0;
+    final soldeLabel = balanceKey == 'votre_solde_depot' ? 'dépôt' : 'gains';
 
     if (solde < prixTotal) {
       return {
         'success': false,
-        'message': 'Solde de dépôt insuffisant (${prixTotal.toStringAsFixed(0)} FCFA requis)',
+        'message': 'Solde de $soldeLabel insuffisant (${prixTotal.toStringAsFixed(0)} FCFA requis)',
         'soldeManquant': prixTotal - solde,
       };
     }
@@ -102,7 +111,7 @@ class AbonnementService {
     final nouveauSolde = solde - prixTotal;
 
     await _firestore.collection('Users').doc(user.id).update({
-      'votre_solde_depot': nouveauSolde,
+      balanceKey: nouveauSolde,
       'abonnement': nouvelAbonnement.toJson(),
     });
 
@@ -117,6 +126,7 @@ class AbonnementService {
       dureeMois: nouvelAbonnement.dureeMois,
       sousType: sousType,
       descriptionLabel: descriptionLabel,
+      balanceKey: balanceKey,
     );
 
     return {
@@ -159,6 +169,7 @@ class AbonnementService {
     required int dureeMois,
     required String sousType,
     required String descriptionLabel,
+    String balanceKey = 'votre_solde_depot',
   }) async {
     try {
       final ref = _firestore.collection('TransactionSoldes').doc();
@@ -172,7 +183,7 @@ class AbonnementService {
         'montant': montant,
         'montant_total': montant,
         'numero_depot': null,
-        'methode_paiement': 'SOLDE',
+        'methode_paiement': balanceKey,
         'frais': 0,
         'frais_operateur': 0,
         'frais_gain': 0,
