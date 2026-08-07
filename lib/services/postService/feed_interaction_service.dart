@@ -30,10 +30,12 @@ class FeedInteractionService {
   // 📈 Mettre à jour le score quand un utilisateur commente
   static Future<void> onPostCommented(Post post, String userId) async {
     try {
+      // recentEngagement compte une seule interaction par user par post.
+      final isFirstComment = !(post.users_comments_id?.contains(userId) ?? false);
       await _firestore.collection('Posts').doc(post.id).update({
         'comments': FieldValue.increment(1),
         'users_comments_id': FieldValue.arrayUnion([userId]),
-        'recentEngagement': FieldValue.increment(1),
+        if (isFirstComment) 'recentEngagement': FieldValue.increment(1),
       });
 
       await _updatePostScore(post.id!);

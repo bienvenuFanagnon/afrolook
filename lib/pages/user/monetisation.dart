@@ -83,6 +83,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
 
           final user = snapshot.data!;
           final double soldePrincipal = user.votre_solde_principal ?? 0;
+          final double soldeDepot = user.votre_solde_depot ?? 0;
           final int giftCoinsBalance = user.giftCoinsBalance ?? 0;
 
           return CenteredContent(child: SingleChildScrollView(
@@ -91,6 +92,8 @@ class _MonetisationPageState extends State<MonetisationPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildSoldePrincipalCard(soldePrincipal, colors, t),
+                const SizedBox(height: 16),
+                _buildSoldeDepotCard(soldeDepot, colors),
                 const SizedBox(height: 16),
                 _buildCoinsCard(giftCoinsBalance, colors, t),
                 const SizedBox(height: 16),
@@ -103,6 +106,61 @@ class _MonetisationPageState extends State<MonetisationPage> {
             ),
           ));
         },
+      ),
+    );
+  }
+
+  Widget _buildSoldeDepotCard(double soldeDepot, AppColors colors) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF34C759).withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF34C759).withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.arrow_downward_rounded, color: Color(0xFF34C759), size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'SOLDE DE DÉPÔT',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: colors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1.1,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${soldeDepot.toStringAsFixed(2)} FCFA',
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF34C759),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Utilisé pour abonnements, pièces, canaux…',
+                  style: TextStyle(fontSize: 11, color: colors.textSecondary),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

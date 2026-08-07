@@ -88,12 +88,12 @@ class AbonnementService {
     required String descriptionLabel,
   }) async {
     final prixTotal = nouvelAbonnement.prix;
-    final solde = user.votre_solde_principal ?? 0.0;
+    final solde = user.votre_solde_depot ?? 0.0;
 
     if (solde < prixTotal) {
       return {
         'success': false,
-        'message': 'Solde insuffisant',
+        'message': 'Solde de dépôt insuffisant (${prixTotal.toStringAsFixed(0)} FCFA requis)',
         'soldeManquant': prixTotal - solde,
       };
     }
@@ -102,7 +102,7 @@ class AbonnementService {
     final nouveauSolde = solde - prixTotal;
 
     await _firestore.collection('Users').doc(user.id).update({
-      'votre_solde_principal': nouveauSolde,
+      'votre_solde_depot': nouveauSolde,
       'abonnement': nouvelAbonnement.toJson(),
     });
 
@@ -132,18 +132,22 @@ class AbonnementService {
     try {
       final userDoc = await _firestore.collection('Users').doc(userId).get();
       final userData = userDoc.data();
-      if (userData != null && userData['abonnement'] != null) {
-        final abonnement = AfrolookAbonnement.fromJson(
-            Map<String, dynamic>.from(userData['abonnement']));
-        if (abonnement.estExpire) {
-          await _firestore.collection('Users').doc(userId).update({
-            'abonnement': abonnement.toJson(),
-            'updatedAt': DateTime.now().millisecondsSinceEpoch,
-          });
-        }
+      if (userData == null || userData['abonnement'] == null) return;
+
+      final abonnement = AfrolookAbonnement.fromJson(
+          Map<String, dynamic>.from(userData['abonnement']));
+
+      // Seule cette fonction est autorisée à remettre le plan à 'gratuit' dans Firestore.
+      if (abonnement.estExpire) {
+        final gratuit = AfrolookAbonnement.gratuit();
+        await _firestore.collection('Users').doc(userId).update({
+          'abonnement': gratuit.toJson(),
+          'updatedAt': DateTime.now().millisecondsSinceEpoch,
+        });
+        printVm('✅ Abonnement expiré remis à gratuit pour $userId');
       }
     } catch (e) {
-      printVm('Erreur vérification abonnement: $e');
+      printVm('❌ Erreur vérification abonnement: $e');
     }
   }
 

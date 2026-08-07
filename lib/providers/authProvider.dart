@@ -2,6 +2,7 @@
 import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:afrotok/services/abonnement_service.dart';
 import 'package:afrotok/services/remote_config_service.dart';
 import 'package:afrotok/models/chatmodels/message.dart';
 import 'package:afrotok/providers/userProvider.dart';
@@ -1132,6 +1133,8 @@ class UserAuthProvider extends ChangeNotifier {
       if (uid != null && uid.isNotEmpty) {
         await StreakService.initIfNeeded(uid);
         await StreakService.checkAndResetDaily(uid);
+        // 7. Vérifier et réinitialiser l'abonnement expiré (si besoin)
+        await AbonnementService().verifierEtMettreAJourAbonnement(uid);
       }
 
     } catch (e, stack) {

@@ -283,15 +283,16 @@ export const afrolookDepositCallback = onRequest(
 
         const userData = userDoc.data();
         const currentSolde = userData?.votre_solde || 0;
-        const currentSoldePrincipal = userData?.votre_solde_principal || 0;
+        const currentSoldeDepot = userData?.votre_solde_depot || 0;
 
         const appConfigRef = db.collection("AppData").doc("XgkSxKc10vWsJJ2uBraT");
         const appConfigDoc = await transaction.get(appConfigRef);
         const appData = appConfigDoc.exists ? appConfigDoc.data() : {};
 
+        // Les dépôts créditent uniquement votre_solde_depot
         transaction.update(userRef, {
           votre_solde: currentSolde + amountWithoutFees,
-          votre_solde_principal: currentSoldePrincipal + amountWithoutFees,
+          votre_solde_depot: currentSoldeDepot + amountWithoutFees,
           updatedAt: currentTimestamp,
         });
 

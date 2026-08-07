@@ -151,7 +151,7 @@ class _DepotPageTransactionState extends State<DepotPageTransaction> {
                       authProvider.appDefaultData.solde_gain=(authProvider.appDefaultData.solde_gain??0)+ (frais/25);
                       authProvider.appDefaultData.solde_principal=(authProvider.appDefaultData.solde_principal??0)+ (prixFcfa/25);
                       await authProvider.updateAppData(authProvider.appDefaultData);
-                      authProvider.loginUserData.votre_solde_principal=(authProvider.loginUserData.votre_solde_principal??0)+(prixFcfa/25);
+                      authProvider.loginUserData.votre_solde_depot=(authProvider.loginUserData.votre_solde_depot??0)+(prixFcfa/25);
                       await authProvider.updateUser(authProvider.loginUserData).then(
                             (value) async {
 

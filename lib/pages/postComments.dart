@@ -1258,11 +1258,119 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
 
   // ─── SEND / DELETE ───────────────────────────────────────────────────────────
 
+  static const int _freeCommentLimit = 10;
+  static const int _commentCost = 5; // pièces
+  static const int _creatorShare = 2; // pièces au créateur
+  static const int _appShare = 3;     // pièces à l'app
+
+  /// Retourne true si l'envoi peut continuer (gratuit ou paiement accepté).
+  Future<bool> _checkAndDeductCommentFee() async {
+    final userId = authProvider.loginUserData.id!;
+    final postId = widget.post.id!;
+    final creatorId = widget.post.user_id;
+
+    // Le créateur ne paie pas sur son propre post
+    if (creatorId == userId) return true;
+
+    // Compter les commentaires de cet user sur ce post (côté serveur)
+    final countSnap = await firestore
+        .collection('PostComments')
+        .where('user_id', isEqualTo: userId)
+        .where('post_id', isEqualTo: postId)
+        .count()
+        .get();
+    final commentCount = countSnap.count ?? 0;
+
+    if (commentCount < _freeCommentLimit) return true;
+
+    // Au-delà de la limite gratuite → vérifier les pièces
+    final coins = authProvider.loginUserData.coinsBalance ?? 0;
+    if (coins < _commentCost) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('Pièces insuffisantes'),
+            content: Text(
+              'Vous avez utilisé vos $_freeCommentLimit commentaires gratuits sur cette publication.\n\n'
+              'Chaque commentaire supplémentaire coûte $_commentCost pièces. '
+              'Rechargez vos pièces pour continuer.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+      return false;
+    }
+
+    // Confirmation
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Commentaire payant'),
+        content: Text(
+          'Vous avez déjà commenté $_freeCommentLimit fois cette publication.\n\n'
+          'Ce commentaire coûte $_commentCost pièces (2 au créateur, 3 à la plateforme).',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Envoyer ($_commentCost pièces)'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return false;
+
+    // Transaction Firestore : déduire coins + créditer créateur + app
+    final userRef = firestore.collection('Users').doc(userId);
+    final appId = authProvider.appDefaultData.id;
+
+    await firestore.runTransaction((tx) async {
+      final userSnap = await tx.get(userRef);
+      final currentCoins = (userSnap.data()?['coinsBalance'] as num? ?? 0).toInt();
+      if (currentCoins < _commentCost) throw Exception('Pièces insuffisantes');
+
+      tx.update(userRef, {'coinsBalance': FieldValue.increment(-_commentCost)});
+
+      if (creatorId != null && creatorId.isNotEmpty) {
+        tx.update(firestore.collection('Users').doc(creatorId), {
+          'giftCoinsBalance': FieldValue.increment(_creatorShare),
+        });
+      }
+      if (appId != null && appId.isNotEmpty) {
+        tx.update(firestore.collection('AppData').doc(appId), {
+          'solde_gain_pieces': FieldValue.increment(_appShare),
+        });
+      }
+    });
+
+    authProvider.loginUserData.coinsBalance = (coins - _commentCost);
+    return true;
+  }
+
   Future<void> _sendComment() async {
     if (_textController.text.trim().isEmpty) return;
 
     setState(() => _isLoading = true);
     final textComment = _textController.text.trim();
+
+    // Vérification du quota de commentaires gratuits (max 10 par user par post)
+    final canSend = await _checkAndDeductCommentFee();
+    if (!canSend) {
+      setState(() => _isLoading = false);
+      return;
+    }
+
     _textController.clear();
     _focusNode.unfocus();
     if (_showEmojiPicker) setState(() => _showEmojiPicker = false);

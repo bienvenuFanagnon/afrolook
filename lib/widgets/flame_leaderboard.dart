@@ -227,6 +227,15 @@ class _LeaderRow extends StatelessWidget {
     return const Color(0xFFFF9500);
   }
 
+  String _streakEmoji(int s) {
+    if (s == 0) return '🧊';
+    if (s < 3) return '🌊';
+    if (s < 7) return '☀️';
+    if (s < 14) return '🔥';
+    if (s < 30) return '💥';
+    return '⚡';
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
@@ -297,7 +306,7 @@ class _LeaderRow extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('🔥', style: TextStyle(fontSize: 10)),
+                Text(_streakEmoji(entry.streak), style: const TextStyle(fontSize: 10)),
                 const SizedBox(width: 2),
                 Text(
                   '${entry.streak}j',

@@ -104,7 +104,7 @@ export const processAfrolookPaygatePayment = onRequest(
 
         const userData = userDoc.data();
         const currentSolde = userData?.votre_solde || 0;
-        const currentSoldePrincipal = userData?.votre_solde_principal || 0;
+        const currentSoldeDepot = userData?.votre_solde_depot || 0;
 
         const appConfigRef = db.collection("AppData").doc("XgkSxKc10vWsJJ2uBraT");
         const appConfigDoc = await transaction.get(appConfigRef);
@@ -113,9 +113,10 @@ export const processAfrolookPaygatePayment = onRequest(
         const currentAppSoldePrincipal = appData?.solde_principal || 0;
         const currentAppSoldeGain = appData?.solde_gain || 0;
 
+        // Les dépôts créditent uniquement votre_solde_depot
         transaction.update(userRef, {
           votre_solde: currentSolde + amountWithoutFees,
-          votre_solde_principal: currentSoldePrincipal + amountWithoutFees,
+          votre_solde_depot: currentSoldeDepot + amountWithoutFees,
           updatedAt: currentTimestamp,
         });
 

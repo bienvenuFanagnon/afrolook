@@ -707,38 +707,55 @@ class AfrolookAbonnement {
   }
 
   factory AfrolookAbonnement.fromJson(Map<String, dynamic> json) {
-    final dateFin = DateTime.parse(json['dateFin']);
-    final estExpire = dateFin.isBefore(DateTime.now());
     final typeVal = json['type'] as String? ?? 'gratuit';
-
-    // Si premium ou gold expiré → retour gratuit
-    if (estExpire && (typeVal == 'premium' || typeVal == 'gold')) {
-      return AfrolookAbonnement.gratuit();
+    // Dates : on parse défensivement pour éviter les crashs de parsing
+    DateTime dateFin;
+    DateTime dateDebut;
+    DateTime createdAt;
+    DateTime updatedAt;
+    try {
+      dateFin = DateTime.parse(json['dateFin'] as String);
+    } catch (_) {
+      dateFin = DateTime(2100, 12, 31);
+    }
+    try {
+      dateDebut = DateTime.parse(json['dateDebut'] as String);
+    } catch (_) {
+      dateDebut = DateTime.now();
+    }
+    try {
+      createdAt = DateTime.parse(json['createdAt'] as String);
+    } catch (_) {
+      createdAt = DateTime.now();
+    }
+    try {
+      updatedAt = DateTime.parse(json['updatedAt'] as String);
+    } catch (_) {
+      updatedAt = DateTime.now();
     }
 
+    // On conserve le record complet — estGold/estPremium gèrent l'expiration côté client.
+    // La suppression silencieuse était la cause de réinitialisations prématurées.
     return AfrolookAbonnement(
       id: json['id'],
       type: typeVal,
-      prix: (json['prix'] as num).toDouble(),
-      dateDebut: DateTime.parse(json['dateDebut']),
+      prix: (json['prix'] as num? ?? 0).toDouble(),
+      dateDebut: dateDebut,
       dateFin: dateFin,
-      estActif: (json['estActif'] as bool? ?? true) && !estExpire,
+      estActif: (json['estActif'] as bool? ?? true) && !dateFin.isBefore(DateTime.now()),
       transactionId: json['transactionId'],
       dureeMois: json['dureeMois'] as int? ?? 1,
-      montantPaye: (json['montantPaye'] as num).toDouble(),
+      montantPaye: (json['montantPaye'] as num? ?? 0).toDouble(),
       methodePaiement: json['methodePaiement'] as String? ?? 'solde',
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
+      createdAt: createdAt,
+      updatedAt: updatedAt,
       avantagesActives: List<String>.from(json['avantagesActives'] ?? []),
     );
   }
 
   Map<String, dynamic> toJson() {
-    final maintenant = DateTime.now();
-    // Si plan payant expiré → sauvegarder comme gratuit
-    if ((type == 'premium' || type == 'gold') && dateFin.isBefore(maintenant)) {
-      return AfrolookAbonnement.gratuit().toJson();
-    }
+    // On sérialise fidèlement le record.
+    // La réinitialisation vers 'gratuit' est faite UNIQUEMENT par verifierEtMettreAJourAbonnement.
     return {
       'id': id,
       'type': type,
@@ -836,6 +853,7 @@ class UserData {
   double? votre_solde_contenu = 0.0;
   double? votre_solde_principal = 0.0;
   double? votre_solde_cadeau = 0.0;
+  double? votre_solde_depot = 0.0;
   double? tiktokviewerSolde = 0.0;
   int? pubEntreprise = 0;
   int? mesPubs = 0;
@@ -1010,6 +1028,7 @@ class UserData {
     this.votre_solde_contenu = 0.0,
     this.votre_solde_principal = 0.0,
     this.votre_solde_cadeau = 0.0,
+    this.votre_solde_depot = 0.0,
     this.tiktokviewerSolde = 0.0,
     this.comments = 0,
     this.createdAt = 0,
@@ -1146,6 +1165,7 @@ class UserData {
     votre_solde_contenu = (json['votre_solde_contenu'] as num?)?.toDouble() ?? 0.0;
     votre_solde_principal = (json['votre_solde_principal'] as num?)?.toDouble() ?? 0.0;
     votre_solde_cadeau = (json['votre_solde_cadeau'] as num?)?.toDouble() ?? 0.0;
+    votre_solde_depot = (json['votre_solde_depot'] as num?)?.toDouble() ?? 0.0;
     tiktokviewerSolde = double.tryParse(json['tiktokviewerSolde']?.toString() ?? '0') ?? 0.0;
 
     pubEntreprise = json['pub_entreprise'] ?? 0;
@@ -1319,6 +1339,7 @@ class UserData {
     data['code_parrain'] = codeParrain;
     data['user_pays'] = userPays?.toJson();
     data['abonnement'] = abonnement?.toJson() ?? AfrolookAbonnement.gratuit().toJson();
+    data['votre_solde_depot'] = votre_solde_depot ?? 0.0;
     data['liveStats'] = liveStats?.toJson();
     data['coinsBalance'] = coinsBalance;
     data['totalCoinsPurchased'] = totalCoinsPurchased;

@@ -57,10 +57,10 @@ class CoinGiftService {
       final payerSnap = await tx.get(payerRef);
       if (!payerSnap.exists) throw Exception('Utilisateur payeur introuvable');
 
-      // 2️⃣ Vérifier le solde FCFA du payeur
-      final payerBalance = (payerSnap.data()?['votre_solde_principal'] ?? 0.0) as double;
+      // 2️⃣ Vérifier le solde de dépôt du payeur
+      final payerBalance = (payerSnap.data()?['votre_solde_depot'] as num? ?? 0).toDouble();
       if (payerBalance < fcfaCost) {
-        throw Exception('Solde FCFA insuffisant');
+        throw Exception('Solde de dépôt insuffisant');
       }
 
       // 3️⃣ Vérifier que le destinataire existe (si différent du payeur)
@@ -69,9 +69,9 @@ class CoinGiftService {
         if (!receiverSnap.exists) throw Exception('Destinataire introuvable');
       }
 
-      // 4️⃣ DÉBITER le payeur (son solde FCFA)
+      // 4️⃣ DÉBITER le payeur (son solde de dépôt)
       tx.update(payerRef, {
-        'votre_solde_principal': FieldValue.increment(-fcfaCost),
+        'votre_solde_depot': FieldValue.increment(-fcfaCost),
         'updatedAt': DateTime.now().millisecondsSinceEpoch,
       });
 
@@ -92,7 +92,7 @@ class CoinGiftService {
             ? "Achat de ${_formatNumber(coinsAmount)} pièces"
             : "Achat de ${_formatNumber(coinsAmount)} pièces pour @${_getUserName(userReceived, firestore)}"
         ..montant = fcfaCost
-        ..methode_paiement = "solde_principal"
+        ..methode_paiement = "solde_depot"
         ..createdAt = DateTime.now().millisecondsSinceEpoch
         ..updatedAt = DateTime.now().millisecondsSinceEpoch;
       tx.set(firestore.collection('TransactionSoldes').doc(payerTransaction.id), payerTransaction.toJson());

@@ -343,7 +343,52 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
     try {
       // Vérifier le nombre de chroniques actives
       final activeCount = await chroniqueProvider.getUserActiveChroniquesCount(authProvider.loginUserData.id!);
-      if (activeCount >= 5) {
+      final abonnement = authProvider.loginUserData.abonnement;
+      final isPremium = abonnement?.estPremium == true;
+
+      if (activeCount >= 2 && !isPremium) {
+        // Utilisateur gratuit au-delà de 2 chroniques → proposer 10 pièces
+        final coins = authProvider.loginUserData.coinsBalance ?? 0;
+        if (coins < 10) {
+          _showErrorDialog(
+            'Vous avez atteint la limite de 2 chroniques gratuites.\n\n'
+            'Pour publier davantage, passez en Premium ou rechargez vos pièces (il vous faut 10 pièces).',
+          );
+          setState(() => _isUploading = false);
+          return;
+        }
+        // L'utilisateur a assez de pièces → demander confirmation
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('Chronique supplémentaire'),
+            content: const Text(
+              'Vous avez déjà 2 chroniques actives (limite gratuite).\n\n'
+              'Publier cette chronique coûte 10 pièces.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Annuler'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Payer 10 pièces'),
+              ),
+            ],
+          ),
+        );
+        if (confirmed != true) {
+          setState(() => _isUploading = false);
+          return;
+        }
+        // Déduire 10 pièces de coinsBalance
+        await FirebaseFirestore.instance
+            .collection('Users')
+            .doc(authProvider.loginUserData.id!)
+            .update({'coinsBalance': FieldValue.increment(-10)});
+        authProvider.loginUserData.coinsBalance = (coins - 10);
+      } else if (activeCount >= 5 && isPremium) {
         _showErrorDialog('Vous avez déjà 5 chroniques actives. Attendez que certaines expirent.');
         setState(() => _isUploading = false);
         return;
