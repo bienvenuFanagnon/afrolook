@@ -30,6 +30,7 @@ import 'package:cross_file/cross_file.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:afrotok/widgets/smart_video_player.dart';
+import '../services/media_cache_service.dart';
 
 import 'package:flutter_linkify/flutter_linkify.dart';
 
@@ -839,8 +840,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     _chewieController?.dispose();
     try {
       final String optimizedUrl = authProvider.convertToCdnUrl(_currentPost.url_media!, authProvider.appDefaultData);
-      _videoController = VideoPlayerController.networkUrl(Uri.parse(optimizedUrl));
-      // _videoController = VideoPlayerController.networkUrl(Uri.parse(_currentPost.url_media!));
+      _videoController = await MediaCacheService.videoController(optimizedUrl);
       await _videoController!.initialize();
       _chewieController = ChewieController(
         videoPlayerController: _videoController!,

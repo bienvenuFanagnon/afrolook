@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import 'package:video_player/video_player.dart';
+import '../../../services/media_cache_service.dart';
 
 class VideoCarousel extends StatefulWidget {
   @override
@@ -9,7 +10,7 @@ class VideoCarousel extends StatefulWidget {
 
 class _VideoCarouselState extends State<VideoCarousel> {
   final PageController _pageController = PageController(viewportFraction: 0.85);
-  late List<VideoPlayerController> _videoControllers;
+  List<VideoPlayerController> _videoControllers = [];
   int _currentIndex = 0;
 
   final List<String> videoUrls = [
@@ -27,18 +28,21 @@ class _VideoCarouselState extends State<VideoCarousel> {
   }
 
   void _initializeVideoControllers() {
-    _videoControllers = videoUrls
-        .map((url) => VideoPlayerController.networkUrl(Uri.parse(url))
-      ..setLooping(true)
-      ..initialize().then((_) {
-        if (mounted) setState(() {});
-      }))
-        .toList();
+    Future.wait(videoUrls.map((url) => MediaCacheService.videoController(url))).then((controllers) {
+      _videoControllers = controllers;
+      for (final ctrl in _videoControllers) {
+        ctrl.setLooping(true);
+        ctrl.initialize().then((_) {
+          if (mounted) setState(() {});
+        });
+      }
+    });
   }
 
   void _onPageScroll() {
+    if (_videoControllers.isEmpty) return;
     final newIndex = (_pageController.page ?? 0).round();
-    if (newIndex != _currentIndex) {
+    if (newIndex != _currentIndex && newIndex < _videoControllers.length) {
       setState(() {
         _videoControllers[_currentIndex].pause();
         _currentIndex = newIndex;

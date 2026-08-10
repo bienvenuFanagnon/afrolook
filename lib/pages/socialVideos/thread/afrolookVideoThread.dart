@@ -10,6 +10,7 @@ import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:provider/provider.dart';
+import '../../../services/media_cache_service.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -638,7 +639,7 @@ class _VideoPostItemState extends State<_VideoPostItem> {
   }
 
   void _initializeVideo() async {
-    _videoController = VideoPlayerController.networkUrl(Uri.parse(widget.post.url_media!));
+    _videoController = await MediaCacheService.videoController(widget.post.url_media!);
     await _videoController.initialize();
 
     _chewieController = ChewieController(
@@ -1044,7 +1045,7 @@ class _FullScreenVideoPageState extends State<FullScreenVideoPage> {
   }
 
   void _initializeVideo() async {
-    _videoController = VideoPlayerController.networkUrl(Uri.parse(widget.post.url_media!));
+    _videoController = await MediaCacheService.videoController(widget.post.url_media!);
     await _videoController.initialize();
 
     _chewieController = ChewieController(

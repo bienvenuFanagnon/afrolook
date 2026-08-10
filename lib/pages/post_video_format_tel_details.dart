@@ -34,6 +34,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:afrotok/widgets/smart_video_player.dart';
+import '../services/media_cache_service.dart';
 
 import 'package:video_player/video_player.dart';
 
@@ -567,7 +568,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
 
     try {
       final optimizedUrl = authProvider.convertToCdnUrl(post.url_media!, authProvider.appDefaultData);
-      final controller = VideoPlayerController.networkUrl(Uri.parse(optimizedUrl));
+      final controller = await MediaCacheService.videoController(optimizedUrl);
       await controller.initialize();
       // NE PAS jouer, NE PAS mettre en pause, NE PAS seek
       // L'initialisation seule suffit à remplir le buffer
@@ -671,7 +672,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
 
     try {
       final String optimizedUrl = authProvider.convertToCdnUrl(post.url_media!, authProvider.appDefaultData);
-      _currentVideoController = VideoPlayerController.networkUrl(Uri.parse(optimizedUrl));
+      _currentVideoController = await MediaCacheService.videoController(optimizedUrl);
       await _currentVideoController!.initialize();
       _chewieController = ChewieController(
         videoPlayerController: _currentVideoController!,
@@ -3277,33 +3278,56 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
           ),
         ),
 
-        // Overlay pub (toujours visible) ou overlays normaux (masquables)
-        if (post.isAdvertisement == true)
-          _buildVideoAdOverlay(post)
-        else
-          Positioned.fill(
-            child: AnimatedOpacity(
-              opacity: _showOverlay ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 250),
-              child: IgnorePointer(
-                ignoring: !_showOverlay,
-                child: Stack(
-                  children: [
-                    _buildActionButtons(post),
-                    _buildQuickCommentOverlay(post),
-                    _buildLiveCommentsOverlay(),
-                    _buildUserInfo(post),
-                    _buildScrollHint(),
-                  ],
+        // Overlay pub spécifique (badge + stats + bouton d'action) — toujours visible pour les pubs
+        if (post.isAdvertisement == true) ...[
+          _buildVideoAdOverlay(post),
+          // Bouton 3-points toujours visible (remplace le toggle pour les pubs)
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 10,
+            right: 12,
+            child: GestureDetector(
+              onTap: () => _showPostMenu(post),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  shape: BoxShape.circle,
                 ),
+                child: const Icon(Icons.more_vert, color: Colors.white, size: 24),
               ),
             ),
           ),
+        ],
+
+        // Overlay interactions (like / commentaire / partage / favoris)
+        // Identique pour tous les posts, y compris les pubs.
+        // Pour les pubs : toujours visible (opacity 1.0, non masquable).
+        // Pour les posts normaux : contrôlé par _showOverlay.
+        Positioned.fill(
+          child: AnimatedOpacity(
+            opacity: post.isAdvertisement == true ? 1.0 : (_showOverlay ? 1.0 : 0.0),
+            duration: const Duration(milliseconds: 250),
+            child: IgnorePointer(
+              ignoring: post.isAdvertisement == true ? false : !_showOverlay,
+              child: Stack(
+                children: [
+                  _buildActionButtons(post),
+                  _buildQuickCommentOverlay(post),
+                  _buildLiveCommentsOverlay(),
+                  _buildUserInfo(post),
+                  // Hint de scroll uniquement pour les posts normaux
+                  if (post.isAdvertisement != true) _buildScrollHint(),
+                ],
+              ),
+            ),
+          ),
+        ),
 
         // Animation des cœurs (toujours visible même sans overlay)
         ..._buildFlyingHearts(),
 
-        // Bouton toggle overlay (toujours visible)
+        // Bouton toggle overlay — uniquement pour les posts normaux
+        // (les pubs ont le bouton 3-points toujours visible à la place)
         if (post.isAdvertisement != true) _buildOverlayToggle(),
 
         if (widget.isIn)

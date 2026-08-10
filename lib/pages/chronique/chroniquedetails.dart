@@ -1,6 +1,7 @@
 ﻿// pages/chronique/chronique_detail_page.dart
 
 import 'package:afrotok/pages/component/consoleWidget.dart';
+import 'package:afrotok/services/media_cache_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -89,6 +90,7 @@ import '../../providers/authProvider.dart';
 import '../../providers/chroniqueProvider.dart';
 import '../../providers/sound_provider.dart';
 import '../component/showUserDetails.dart';
+import '../postComments.dart';
 import '../userPosts/video_preload_manager.dart';
 import 'chroniqueform.dart';
 
@@ -154,6 +156,13 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
 
   bool _showMessages = true;
   final int _maxMessageLength = 30;
+
+  // État pour la slide pub courante
+  bool _isShowingAd = false;
+  Advertisement? _currentDisplayAd;
+  bool _adPostLiked = false;
+  int _adPostLikesCount = 0;
+  bool _adPostLiking = false;
 
   @override
   void initState() {
@@ -371,12 +380,11 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
 
     if (currentChronique.type == ChroniqueType.VIDEO && currentChronique.mediaUrl != null) {
       _videoController?.dispose();
-      _videoController = VideoPlayerController.networkUrl(Uri.parse(currentChronique.mediaUrl!))
-        ..initialize().then((_) {
-          setState(() => _isVideoInitialized = true);
-          _videoController!.play();
-          _videoController!.setLooping(true);
-        });
+      _videoController = await MediaCacheService.videoController(currentChronique.mediaUrl!);
+      await _videoController!.initialize();
+      _videoController!.play();
+      _videoController!.setLooping(true);
+      setState(() => _isVideoInitialized = true);
     } else {
       _videoController?.dispose();
       _videoController = null;
@@ -926,7 +934,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
     } catch (_) {}
   }
 
-  void _initializeAdVideo(Advertisement ad) {
+  Future<void> _initializeAdVideo(Advertisement ad) async {
     final post = _adPosts[ad.id ?? ''];
     if (post == null) return;
 
@@ -958,8 +966,9 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
       final url = VideoPreloadManager.urlResolver != null
           ? VideoPreloadManager.urlResolver!(post.url_media!)
           : post.url_media!;
-      final controller = VideoPlayerController.networkUrl(Uri.parse(url));
-      controller.initialize().then((_) {
+      try {
+        final controller = await MediaCacheService.videoController(url);
+        await controller.initialize();
         if (!mounted || _currentAdId != ad.id) {
           controller.dispose();
           return;
@@ -968,7 +977,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
         controller.setLooping(true);
         controller.play();
         setState(() { _adVideoController = controller; _adVideoInitialized = true; });
-      }).catchError((_) {});
+      } catch (_) {}
     }
   }
 
@@ -1238,6 +1247,111 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
     );
   }
 
+  Future<void> _handleAdPostLike() async {
+    if (_adPostLiking) return;
+    final adPost = _currentDisplayAd != null ? _adPosts[_currentDisplayAd!.id ?? ''] : null;
+    if (adPost == null || adPost.id == null) return;
+    final uid = Provider.of<UserAuthProvider>(context, listen: false).loginUserData.id;
+    if (uid == null) return;
+
+    setState(() {
+      _adPostLiking = true;
+      _adPostLiked = !_adPostLiked;
+      _adPostLikesCount += _adPostLiked ? 1 : -1;
+    });
+
+    try {
+      await FirebaseFirestore.instance.collection('Posts').doc(adPost.id).update({
+        'loves': FieldValue.increment(_adPostLiked ? 1 : -1),
+        'users_love_id': _adPostLiked
+            ? FieldValue.arrayUnion([uid])
+            : FieldValue.arrayRemove([uid]),
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _adPostLiked = !_adPostLiked;
+          _adPostLikesCount += _adPostLiked ? 1 : -1;
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _adPostLiking = false);
+    }
+  }
+
+  String _formatStatCount(int count) {
+    if (count < 1000) return count.toString();
+    if (count < 1000000) return '${(count / 1000).toStringAsFixed(1)}K';
+    return '${(count / 1000000).toStringAsFixed(1)}M';
+  }
+
+  Widget _buildAdActionsOverlay(Advertisement ad) {
+    final adPost = _adPosts[ad.id ?? ''];
+    final commentCount = adPost?.comments ?? 0;
+
+    return Positioned(
+      right: 12,
+      bottom: 120,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Like
+          GestureDetector(
+            onTap: _handleAdPostLike,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _adPostLiked ? Icons.favorite : Icons.favorite_border,
+                  color: _adPostLiked ? Colors.red : Colors.white,
+                  size: 30,
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  _formatStatCount(_adPostLikesCount),
+                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          // Commentaire
+          GestureDetector(
+            onTap: adPost != null
+                ? () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => PostComments(post: adPost)))
+                : null,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.chat_bubble_outline, color: Colors.white, size: 28),
+                const SizedBox(height: 3),
+                Text(
+                  _formatStatCount(commentCount),
+                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          // Vues pub
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.remove_red_eye, color: Colors.white70, size: 24),
+              const SizedBox(height: 3),
+              Text(
+                _formatStatCount(ad.views ?? 0),
+                style: const TextStyle(color: Colors.white70, fontSize: 11),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -1294,12 +1408,26 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
                   // Page pub : on ne touche pas à _currentPage (garder le dernier index chronique valide)
                   _videoController?.pause();
                   final item = _displayItems[virtualIndex];
-                  if (item is Advertisement) _initializeAdVideo(item);
+                  if (item is Advertisement) {
+                    _initializeAdVideo(item);
+                    final adPost = _adPosts[item.id ?? ''];
+                    final uid = Provider.of<UserAuthProvider>(context, listen: false).loginUserData.id;
+                    setState(() {
+                      _isShowingAd = true;
+                      _currentDisplayAd = item;
+                      _adPostLiked = adPost?.users_love_id?.contains(uid) ?? false;
+                      _adPostLikesCount = adPost?.loves ?? 0;
+                    });
+                  }
                 } else {
                   final chroniqueIdx = _virtualToChronique(virtualIndex);
                   // Sécurité : ne jamais dépasser les bornes de _allChroniques
                   if (chroniqueIdx < _allChroniques.length) {
-                    setState(() => _currentPage = chroniqueIdx);
+                    setState(() {
+                      _currentPage = chroniqueIdx;
+                      _isShowingAd = false;
+                      _currentDisplayAd = null;
+                    });
                   }
                   _stopAdVideo();
                   _initializeCurrentMedia();
@@ -1331,10 +1459,13 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
             ),
             _buildHeader(currentChronique),
             _buildProgressIndicator(),
-            _buildUserProfile(currentChronique),
-            _buildBottomBar(currentChronique),
-            _buildLikeSection(),
-            _buildHeartAnimation(),
+            if (!_isShowingAd) ...[
+              _buildUserProfile(currentChronique),
+              _buildBottomBar(currentChronique),
+              _buildLikeSection(),
+              _buildHeartAnimation(),
+            ] else if (_currentDisplayAd != null)
+              _buildAdActionsOverlay(_currentDisplayAd!),
             if (_isLoadingMore)
               Positioned(
                 bottom: 100,

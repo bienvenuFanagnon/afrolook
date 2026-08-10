@@ -11,6 +11,7 @@ import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../../providers/authProvider.dart';
 import '../../../theme/app_colors.dart';
+import '../../postComments.dart';
 import '../../userPosts/postWidgets/postWidgetPage.dart';
 
 class AdvertisementPostImageWidget extends StatefulWidget {
@@ -44,6 +45,10 @@ class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWid
   Timer? _visibilityTimer;
   bool _hasRecordedView = false;
 
+  bool _isLiked = false;
+  int _likesCount = 0;
+  bool _isLiking = false;
+
   late AppColors _colors;
   static const Color _primaryColor = Color(0xFFE21221);
 
@@ -51,6 +56,52 @@ class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWid
   void initState() {
     super.initState();
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    final uid = authProvider.loginUserData.id;
+    _isLiked = widget.post.users_love_id?.contains(uid) ?? false;
+    _likesCount = widget.post.loves ?? 0;
+  }
+
+  Future<void> _handleLike() async {
+    if (_isLiking) return;
+    final uid = authProvider.loginUserData.id;
+    if (uid == null || widget.post.id == null) return;
+
+    setState(() {
+      _isLiking = true;
+      _isLiked = !_isLiked;
+      _likesCount += _isLiked ? 1 : -1;
+    });
+
+    try {
+      final postRef = _firestore.collection('Posts').doc(widget.post.id);
+      if (_isLiked) {
+        await postRef.update({
+          'loves': FieldValue.increment(1),
+          'users_love_id': FieldValue.arrayUnion([uid]),
+        });
+      } else {
+        await postRef.update({
+          'loves': FieldValue.increment(-1),
+          'users_love_id': FieldValue.arrayRemove([uid]),
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _isLiked = !_isLiked;
+          _likesCount += _isLiked ? 1 : -1;
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _isLiking = false);
+    }
+  }
+
+  void _openComments() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => PostComments(post: widget.post)),
+    );
   }
 
   @override
@@ -205,8 +256,43 @@ class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWid
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Interactions : like + commentaire
           Row(
             children: [
+              GestureDetector(
+                onTap: _handleLike,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _isLiked ? Icons.favorite : Icons.favorite_border,
+                      color: _isLiked ? Colors.red : _colors.textSecondary,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 3),
+                    Text(
+                      _formatCount(_likesCount),
+                      style: TextStyle(color: _colors.textSecondary, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              GestureDetector(
+                onTap: _openComments,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.chat_bubble_outline, color: _colors.textSecondary, size: 18),
+                    const SizedBox(width: 3),
+                    Text(
+                      _formatCount(widget.post.comments ?? 0),
+                      style: TextStyle(color: _colors.textSecondary, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
               Icon(Icons.remove_red_eye, color: _colors.textSecondary, size: 13),
               const SizedBox(width: 3),
               Text(
@@ -214,11 +300,11 @@ class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWid
                 style: TextStyle(color: _colors.textSecondary, fontSize: 11),
               ),
               if ((widget.ad.views ?? 0) > 0) ...[
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 const Icon(Icons.ads_click, color: _primaryColor, size: 13),
                 const SizedBox(width: 3),
                 Text(
-                  '${widget.ad.ctr.toStringAsFixed(1)}% CTR',
+                  '${widget.ad.ctr.toStringAsFixed(1)}%',
                   style: const TextStyle(color: _primaryColor, fontSize: 11, fontWeight: FontWeight.w500),
                 ),
               ],

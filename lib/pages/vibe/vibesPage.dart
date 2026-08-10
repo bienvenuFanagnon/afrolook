@@ -25,6 +25,7 @@ import 'package:afrotok/pages/widgetGlobal.dart';
 import 'package:flutter/material.dart';
 
 import 'package:video_player/video_player.dart';
+import '../../services/media_cache_service.dart';
 
 import 'package:chewie/chewie.dart';
 
@@ -317,7 +318,7 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
     _preloadingIndices.add(index);
     try {
       final optimizedUrl = authProvider.convertToCdnUrl(post.url_media!, authProvider.appDefaultData);
-      final controller = VideoPlayerController.networkUrl(Uri.parse(optimizedUrl));
+      final controller = await MediaCacheService.videoController(optimizedUrl);
       await controller.initialize();
       _preloadedControllers[index] = controller;
     } catch (e) {
@@ -398,7 +399,7 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
 
     try {
       final String optimizedUrl = authProvider.convertToCdnUrl(post.url_media!, authProvider.appDefaultData);
-      _currentVideoController = VideoPlayerController.networkUrl(Uri.parse(optimizedUrl));
+      _currentVideoController = await MediaCacheService.videoController(optimizedUrl);
       await _currentVideoController!.initialize();
       _chewieController = ChewieController(
         videoPlayerController: _currentVideoController!,

@@ -426,6 +426,9 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
           // Configuration des données
           await _configureUserDataWithParrainage(id, pseudo, parrain);
 
+          // Rejoindre les groupes officiels en arrière-plan
+          unawaited(_autoJoinOfficialGroups(id));
+
           // Envoi de la notification de parrainage
           await _sendParrainageNotification(parrain);
 
@@ -457,6 +460,9 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
 
         // Configuration des données
         await _configureUserDataWithoutParrainage(id, pseudo);
+
+        // Rejoindre les groupes officiels en arrière-plan
+        unawaited(_autoJoinOfficialGroups(id));
 
         // Envoi de l'email de vérification
         await sendVerificationEmail(userCredential.user!);
@@ -560,6 +566,46 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
     });
 
     await batch.commit();
+  }
+
+  // Rejoindre automatiquement tous les groupes officiels à la création du compte
+  Future<void> _autoJoinOfficialGroups(String userId) async {
+    try {
+      final userDoc = await firestore.collection('Users').doc(userId).get();
+      final ud = userDoc.data();
+      final now = DateTime.now().millisecondsSinceEpoch;
+
+      final groupsSnap = await firestore
+          .collection('GroupChats')
+          .where('is_official', isEqualTo: true)
+          .where('is_frozen', isEqualTo: false)
+          .get();
+
+      for (final groupDoc in groupsSnap.docs) {
+        try {
+          final memberIds = (groupDoc.data()['member_ids'] as List<dynamic>? ?? []).cast<String>();
+          if (memberIds.contains(userId)) continue;
+
+          final groupRef = firestore.collection('GroupChats').doc(groupDoc.id);
+          await groupRef.collection('members').doc(userId).set({
+            'user_id': userId,
+            'pseudo': ud?['pseudo'] ?? '',
+            'image_url': ud?['imageUrl'] ?? '',
+            'role': 'member',
+            'joined_at': now,
+          });
+          await groupRef.update({
+            'member_ids': FieldValue.arrayUnion([userId]),
+            'member_count': FieldValue.increment(1),
+          });
+          printVm('✅ [SIGNUP] Auto-join groupe officiel "${groupDoc.data()['name']}" pour $userId');
+        } catch (e) {
+          printVm('⚠️ [SIGNUP] Échec auto-join groupe ${groupDoc.id} : $e');
+        }
+      }
+    } catch (e) {
+      printVm('⚠️ [SIGNUP] Auto-join groupes officiels ignoré : $e');
+    }
   }
 
   // Envoi de notification de parrainage

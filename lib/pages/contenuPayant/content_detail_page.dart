@@ -23,6 +23,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../services/sessions/session_checker_service.dart';
 import 'package:video_player/video_player.dart';
+import '../../services/media_cache_service.dart';
 
 class ContentDetailPage extends StatefulWidget {
   final ContentPaie content;
@@ -150,7 +151,7 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
     if (rawUrl == null || rawUrl.isEmpty) return;
     setState(() => _initializingPreview = true);
     try {
-      _previewController = VideoPlayerController.networkUrl(Uri.parse(rawUrl));
+      _previewController = await MediaCacheService.videoController(rawUrl);
       await _previewController!.initialize();
       await _previewController!.setVolume(0); // muet pour l'aperçu
       if (mounted) setState(() => _isPreviewReady = true);
@@ -292,7 +293,7 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
         return;
       }
 
-      _videoController = VideoPlayerController.networkUrl(Uri.parse(videoUrl));
+      _videoController = await MediaCacheService.videoController(videoUrl);
       await _videoController!.initialize();
       // Contenu gratuit : lecture auto sans son pour découverte
       final autoPlay = _content.isFree;
@@ -331,7 +332,7 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
       final url = result.data['url'] as String?;
       if (url == null || url.isEmpty || !mounted) return;
 
-      _tutorialController = VideoPlayerController.networkUrl(Uri.parse(url));
+      _tutorialController = await MediaCacheService.videoController(url);
       await _tutorialController!.initialize();
       _tutorialChewieController = ChewieController(
         videoPlayerController: _tutorialController!,

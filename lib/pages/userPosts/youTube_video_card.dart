@@ -54,6 +54,7 @@ import '../../providers/locale_provider.dart';
 import 'postWidgets/translatable_description.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'video_preload_manager.dart';
+import '../../services/media_cache_service.dart';
 
 
 class MediaPlaybackManager {
@@ -431,7 +432,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
             widget.post.url_media!,
             _authProvider.appDefaultData
         );
-        _videoController = VideoPlayerController.networkUrl(Uri.parse(optimizedUrl));
+        _videoController = await MediaCacheService.videoController(optimizedUrl);
 
         // Attendre l'initialisation (chargement des métadonnées)
         await _videoController!.initialize();
@@ -630,9 +631,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       if (preloaded != null) {
         _videoController = preloaded;
       } else {
-        // _videoController = VideoPlayerController.networkUrl(Uri.parse(widget.post.url_media!));
-        final String optimizedUrl = _authProvider. convertToCdnUrl(widget.post.url_media!, _authProvider.appDefaultData);
-        _videoController = VideoPlayerController.networkUrl(Uri.parse(optimizedUrl));
+        final String optimizedUrl = _authProvider.convertToCdnUrl(widget.post.url_media!, _authProvider.appDefaultData);
+        _videoController = await MediaCacheService.videoController(optimizedUrl);
         await _videoController!.initialize();
       }
 
@@ -1699,9 +1699,13 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     final colors = AppColors.of(context);
     final isLocked = _isLockedContent;
     final screenWidth = MediaQuery.of(context).size.width;
+    final isAd = widget.post.isAdvertisement == true;
 
-// 📺 Mini player pour vidéos portrait
-    final double videoHeight = (screenWidth * 1.3).clamp(380.0, 620.0);
+    // Pubs vidéo : 16:9 paysage (pas de déformation, pas de boîtes noires)
+    // Vidéos normales : portrait ~1.3x
+    final double videoHeight = isAd
+        ? (screenWidth * (9.0 / 16.0)).clamp(200.0, 320.0)
+        : (screenWidth * 1.3).clamp(380.0, 620.0);
 
     return VisibilityDetector(
       key: Key('video_${widget.post.id}'),
@@ -1710,51 +1714,65 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
         onTap: isLocked ? null : _navigateToDetails,
         child: Stack(
           children: [
-            // --- Conteneur vidéo agrandi ---
+            // --- Conteneur vidéo ---
             ClipRRect(
               borderRadius: BorderRadius.zero,
               child: kIsWeb && !isLocked && widget.post.url_media != null
-                  ? SizedBox(
-                width: double.infinity,
-                height: videoHeight,
-                child: SmartVideoPlayer(
-                  url: _authProvider.convertToCdnUrl(widget.post.url_media!, _authProvider.appDefaultData),
-                  autoPlay: false,
-                  showControls: true,
-                ),
-              )
+                  ? isAd
+                      ? AspectRatio(
+                          aspectRatio: 16 / 9,
+                          child: SmartVideoPlayer(
+                            url: _authProvider.convertToCdnUrl(widget.post.url_media!, _authProvider.appDefaultData),
+                            autoPlay: false,
+                            showControls: true,
+                          ),
+                        )
+                      : SizedBox(
+                          width: double.infinity,
+                          height: videoHeight,
+                          child: SmartVideoPlayer(
+                            url: _authProvider.convertToCdnUrl(widget.post.url_media!, _authProvider.appDefaultData),
+                            autoPlay: false,
+                            showControls: true,
+                          ),
+                        )
                   : _isVideoInitialized && _chewieController != null && !isLocked
-                  ? SizedBox(
-                width: double.infinity,
-                height: videoHeight,
-                child: Chewie(controller: _chewieController!),
-              )
+                  ? isAd
+                      ? AspectRatio(
+                          aspectRatio: 16 / 9,
+                          child: Chewie(controller: _chewieController!),
+                        )
+                      : SizedBox(
+                          width: double.infinity,
+                          height: videoHeight,
+                          child: Chewie(controller: _chewieController!),
+                        )
                   : _isGeneratingThumbnail
                   ? Container(
-                height: videoHeight,
-                width: double.infinity,
-                color: colors.shimmerBase,
-                child: const Center(child: CircularProgressIndicator()),
-              )
+                      height: videoHeight,
+                      width: double.infinity,
+                      color: colors.shimmerBase,
+                      child: const Center(child: CircularProgressIndicator()),
+                    )
                   : _thumbnailUrl != null
                   ? Image.network(
-                _thumbnailUrl!,
-                fit: BoxFit.cover,
-                height: videoHeight,
-                width: double.infinity,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  height: videoHeight,
-                  width: double.infinity,
-                  color: colors.shimmerBase,
-                  child: Icon(Icons.videocam, size: 50, color: colors.textSecondary),
-                ),
-              )
+                      _thumbnailUrl!,
+                      fit: BoxFit.cover,
+                      height: videoHeight,
+                      width: double.infinity,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        height: videoHeight,
+                        width: double.infinity,
+                        color: colors.shimmerBase,
+                        child: Icon(Icons.videocam, size: 50, color: colors.textSecondary),
+                      ),
+                    )
                   : Container(
-                height: videoHeight,
-                width: double.infinity,
-                color: colors.shimmerBase,
-                child: Icon(Icons.videocam, size: 50, color: colors.textSecondary),
-              ),
+                      height: videoHeight,
+                      width: double.infinity,
+                      color: colors.shimmerBase,
+                      child: Icon(Icons.videocam, size: 50, color: colors.textSecondary),
+                    ),
             ),
             // --- Indicateur de chargement ---
             if (_isVideoLoading && !isLocked)
@@ -2331,12 +2349,15 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     final colors = AppColors.of(context);
     final h = MediaQuery.of(context).size.height;
 
+    final isAdCard = widget.post.isAdvertisement == true;
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      margin: isAdCard
+          ? const EdgeInsets.symmetric(vertical: 8)
+          : const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: colors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: isAdCard ? BorderRadius.zero : BorderRadius.circular(16),
         border: Border.all(color: colors.border, width: 0.5),
       ),
       child: Column(

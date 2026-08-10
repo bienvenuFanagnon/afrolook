@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:video_player/video_player.dart';
+import '../../services/media_cache_service.dart';
 import 'package:chewie/chewie.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/dating_data.dart';
@@ -68,9 +69,11 @@ class _CreatorContentDetailPageState extends State<CreatorContentDetailPage> {
     super.dispose();
   }
 
-  void _initVideoPlayer() {
+  Future<void> _initVideoPlayer() async {
     if (widget.content.mediaType == MediaType.video && widget.content.mediaUrl.isNotEmpty) {
-      _videoController = VideoPlayerController.networkUrl(Uri.parse(widget.content.mediaUrl));
+      _videoController = await MediaCacheService.videoController(widget.content.mediaUrl);
+      await _videoController!.initialize();
+      if (!mounted) return;
       _chewieController = ChewieController(
         videoPlayerController: _videoController!,
         autoPlay: false,
@@ -85,9 +88,7 @@ class _CreatorContentDetailPageState extends State<CreatorContentDetailPage> {
           bufferedColor: Colors.grey.shade300,
         ),
       );
-      _videoController!.initialize().then((_) {
-        if (mounted) setState(() => _isVideoInitialized = true);
-      });
+      if (mounted) setState(() => _isVideoInitialized = true);
     }
   }
 

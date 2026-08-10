@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:video_player/video_player.dart';
+import '../../services/media_cache_service.dart';
 import 'package:chewie/chewie.dart';
 import '../../models/dating_data.dart';
 import '../../models/enums.dart';
@@ -93,7 +94,7 @@ class _CreatorContentFormPageState extends State<CreatorContentFormPage>
   }
 
   Future<void> _initVideoPlayer(String url) async {
-    _videoController = VideoPlayerController.networkUrl(Uri.parse(url));
+    _videoController = await MediaCacheService.videoController(url);
     await _videoController!.initialize();
     _chewieController = ChewieController(
       videoPlayerController: _videoController!,

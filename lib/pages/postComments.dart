@@ -1423,6 +1423,8 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
         if (success) {
           _addCommentLocally(comment);
           widget.post.comments = (widget.post.comments ?? 0) + 1;
+          // Like automatique silencieux — commenter = intérêt garanti
+          _autoLikeIfNeeded();
         }
       }
 
@@ -1481,6 +1483,22 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
         );
       }
     }
+  }
+
+  void _autoLikeIfNeeded() {
+    final uid = authProvider.loginUserData.id;
+    final postId = widget.post.id;
+    if (uid == null || postId == null) return;
+    final alreadyLiked = widget.post.users_love_id?.contains(uid) ?? false;
+    if (alreadyLiked) return;
+    // Like silencieux sans notification ni paiement
+    FirebaseFirestore.instance.collection('Posts').doc(postId).update({
+      'loves': FieldValue.increment(1),
+      'users_love_id': FieldValue.arrayUnion([uid]),
+    }).catchError((_) {});
+    widget.post.users_love_id ??= [];
+    widget.post.users_love_id!.add(uid);
+    widget.post.loves = (widget.post.loves ?? 0) + 1;
   }
 
   void _addCommentLocally(PostComment newComment) {

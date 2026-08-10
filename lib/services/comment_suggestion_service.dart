@@ -551,7 +551,7 @@ class CommentSuggestionService {
 
   // ─── API PUBLIQUE ────────────────────────────────────────────────────────────
 
-  /// Retourne 6 suggestions intelligentes. Différentes à chaque appel.
+  /// Retourne 6 suggestions intelligentes avec emojis contextuels selon l'émotion.
   static List<String> getSuggestions(
     String postId,
     String description, {
@@ -562,6 +562,25 @@ class CommentSuggestionService {
     final shuffled = List<String>.from(pool)..shuffle(_rng);
     final result = shuffled.take(6).toList();
 
+    // Injecter 1-2 suggestions avec emoji de l'émotion dominante si le pool courant
+    // ne correspond pas déjà à cette émotion (ex : pool SPORT mais post triste)
+    final emotion = _detectEmotion(description);
+    if (emotion.isNotEmpty && _byEmotion.containsKey(emotion)) {
+      final emotionPool = _byEmotion[emotion]!;
+      // Chercher des entrées émotionnelles non encore présentes
+      final candidates = (List<String>.from(emotionPool)..shuffle(_rng))
+          .where((s) => !result.contains(s))
+          .toList();
+      // Remplacer au max 2 suggestions sans emoji par des suggestions avec emoji émotionnel
+      int injected = 0;
+      for (int i = 0; i < result.length && injected < 2 && candidates.isNotEmpty; i++) {
+        if (!_hasEmoji(result[i])) {
+          result[i] = candidates.removeAt(0);
+          injected++;
+        }
+      }
+    }
+
     if (result.length < 6) {
       final extra = List<String>.from(_general)..shuffle(_rng);
       for (final s in extra) {
@@ -570,6 +589,14 @@ class CommentSuggestionService {
       }
     }
     return result.take(6).toList();
+  }
+
+  /// Vérifie si une suggestion contient déjà un emoji.
+  static bool _hasEmoji(String text) {
+    return RegExp(
+      r'[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FEFF}]',
+      unicode: true,
+    ).hasMatch(text);
   }
 
   // ─── SÉLECTION PAR SCORE MULTI-SIGNAUX ──────────────────────────────────────

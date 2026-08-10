@@ -18,7 +18,10 @@ import '../../../models/model_data.dart';
 import '../../../providers/authProvider.dart';
 import '../../../services/utils/country_list.dart';
 import '../../../services/utils/group_permission_utils.dart';
+import 'package:video_player/video_player.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 import '../../../widgets/smart_video_player.dart';
+import '../../../services/media_cache_service.dart';
 import '../../../widgets/user_badge_widget.dart';
 import '../../../theme/app_colors.dart';
 import '../../component/showUserDetails.dart';
@@ -3362,32 +3365,35 @@ class _GroupChatPageState extends State<GroupChatPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Miniature
-            ClipRRect(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(10)),
-              child: thumbnail.isNotEmpty
-                  ? Image.network(
-                      thumbnail,
-                      height: 130,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
+            // Miniature / Vidéo inline pour les posts VIDEO
+            if (dataType == 'VIDEO' && postId.isNotEmpty)
+              _GroupChatSharedVideoWidget(postId: postId, thumbnail: thumbnail)
+            else
+              ClipRRect(
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(10)),
+                child: thumbnail.isNotEmpty
+                    ? Image.network(
+                        thumbnail,
+                        height: 130,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          height: 80,
+                          color: _colors.surfaceVariant,
+                          child: Center(
+                              child: Icon(typeIcon,
+                                  color: _colors.textSecondary, size: 28)),
+                        ),
+                      )
+                    : Container(
                         height: 80,
                         color: _colors.surfaceVariant,
                         child: Center(
                             child: Icon(typeIcon,
                                 color: _colors.textSecondary, size: 28)),
                       ),
-                    )
-                  : Container(
-                      height: 80,
-                      color: _colors.surfaceVariant,
-                      child: Center(
-                          child: Icon(typeIcon,
-                              color: _colors.textSecondary, size: 28)),
-                    ),
-            ),
+              ),
             Padding(
               padding: const EdgeInsets.all(8),
               child: Column(
@@ -3727,65 +3733,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
   }
 
   Widget _buildVideoCard(String url, bool isMe) {
-    return GestureDetector(
-      onTap: () {
-        showDialog(
-          context: context,
-          builder: (_) => Dialog(
-            backgroundColor: Colors.black,
-            insetPadding: const EdgeInsets.all(12),
-            child: AspectRatio(
-              aspectRatio: 16 / 9,
-              child: SmartVideoPlayer(
-                url: url,
-                autoPlay: true,
-                looping: false,
-              ),
-            ),
-          ),
-        );
-      },
-      child: Container(
-        width: 200,
-        height: 130,
-        decoration: BoxDecoration(
-          color: isMe ? Colors.white.withOpacity(0.12) : _colors.surfaceVariant,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Icon(Icons.videocam_rounded,
-                size: 40,
-                color: isMe ? Colors.white54 : _colors.textSecondary),
-            Positioned(
-              bottom: 6,
-              left: 8,
-              child: Text(
-                'Vidéo — appuyer pour lire',
-                style: TextStyle(
-                  color: isMe ? Colors.white70 : _colors.textSecondary,
-                  fontSize: 10,
-                ),
-              ),
-            ),
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: (isMe ? Colors.white : _colors.primary).withOpacity(0.2),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.play_arrow_rounded,
-                color: isMe ? Colors.white : _colors.primary,
-                size: 28,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    return _GroupChatVideoPreview(url: url, isMe: isMe);
   }
 
   // ─── INPUT BAR ───────────────────────────────────────────────────────────────
@@ -4093,6 +4041,329 @@ class _GroupChatPageState extends State<GroupChatPage> {
             child: Icon(Icons.close_rounded, size: 18, color: _colors.primary),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─── Prévisualisation inline muette des vidéos dans le chat ──────────────────
+
+class _GroupChatVideoPreview extends StatefulWidget {
+  final String url;
+  final bool isMe;
+
+  const _GroupChatVideoPreview({required this.url, required this.isMe});
+
+  @override
+  State<_GroupChatVideoPreview> createState() => _GroupChatVideoPreviewState();
+}
+
+class _GroupChatVideoPreviewState extends State<_GroupChatVideoPreview> {
+  VideoPlayerController? _ctrl;
+  bool _initialized = false;
+  bool _muted = true;
+  bool _visible = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initVideo();
+  }
+
+  Future<void> _initVideo() async {
+    try {
+      final ctrl = await MediaCacheService.videoController(widget.url);
+      _ctrl = ctrl;
+      await ctrl.initialize();
+      await ctrl.setVolume(0);
+      ctrl.setLooping(true);
+      if (mounted) {
+        setState(() => _initialized = true);
+        if (_visible) ctrl.play();
+      }
+    } catch (_) {}
+  }
+
+  @override
+  void dispose() {
+    _ctrl?.dispose();
+    super.dispose();
+  }
+
+  void _handleVisibility(VisibilityInfo info) {
+    final nowVisible = info.visibleFraction > 0.4;
+    if (nowVisible == _visible) return;
+    _visible = nowVisible;
+    if (_initialized && _ctrl != null) {
+      nowVisible ? _ctrl!.play() : _ctrl!.pause();
+    }
+  }
+
+  void _openFullscreen() {
+    _ctrl?.pause();
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => _VideoFullscreenPage(url: widget.url)),
+    ).then((_) {
+      if (_visible && _initialized && _ctrl != null) _ctrl!.play();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return VisibilityDetector(
+      key: Key('group-video-${widget.url.hashCode}'),
+      onVisibilityChanged: _handleVisibility,
+      child: GestureDetector(
+        onTap: _openFullscreen,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            width: 220,
+            color: Colors.black,
+            child: _initialized && _ctrl != null
+                ? Stack(
+                    children: [
+                      AspectRatio(
+                        aspectRatio: _ctrl!.value.aspectRatio > 0
+                            ? _ctrl!.value.aspectRatio
+                            : 16 / 9,
+                        child: VideoPlayer(_ctrl!),
+                      ),
+                      // Icône plein écran au centre
+                      Positioned.fill(
+                        child: Center(
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: const BoxDecoration(
+                              color: Colors.black38,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.fullscreen,
+                                color: Colors.white, size: 22),
+                          ),
+                        ),
+                      ),
+                      // Bouton muet
+                      Positioned(
+                        bottom: 6,
+                        right: 6,
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() => _muted = !_muted);
+                            _ctrl?.setVolume(_muted ? 0 : 1);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Colors.black54,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              _muted ? Icons.volume_off : Icons.volume_up,
+                              color: Colors.white,
+                              size: 14,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                : Container(
+                    height: 130,
+                    color: widget.isMe
+                        ? Colors.white.withOpacity(0.12)
+                        : colors.surfaceVariant,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Icon(Icons.videocam_rounded,
+                            size: 40,
+                            color: widget.isMe
+                                ? Colors.white54
+                                : colors.textSecondary),
+                        const SizedBox.expand(
+                          child: Center(
+                            child: SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white38),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _VideoFullscreenPage extends StatelessWidget {
+  final String url;
+
+  const _VideoFullscreenPage({required this.url});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        title: const Text('Vidéo'),
+        elevation: 0,
+      ),
+      body: Center(
+        child: SmartVideoPlayer(
+          url: url,
+          autoPlay: true,
+          looping: false,
+          showControls: true,
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Lecture inline d'un post vidéo partagé dans le chat ────────────────────
+
+class _GroupChatSharedVideoWidget extends StatefulWidget {
+  final String postId;
+  final String thumbnail;
+
+  const _GroupChatSharedVideoWidget({required this.postId, required this.thumbnail});
+
+  @override
+  State<_GroupChatSharedVideoWidget> createState() => _GroupChatSharedVideoWidgetState();
+}
+
+class _GroupChatSharedVideoWidgetState extends State<_GroupChatSharedVideoWidget> {
+  String? _videoUrl;
+  bool _loading = true;
+  VideoPlayerController? _ctrl;
+  bool _initialized = false;
+  bool _muted = true;
+  bool _visible = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUrl();
+  }
+
+  Future<void> _fetchUrl() async {
+    try {
+      final doc = await FirebaseFirestore.instance.collection('Posts').doc(widget.postId).get();
+      if (!mounted) return;
+      final url = doc.data()?['url_media'] as String?;
+      if (url != null && url.isNotEmpty) {
+        setState(() { _videoUrl = url; _loading = false; });
+        _initVideo(url);
+      } else {
+        setState(() => _loading = false);
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _initVideo(String url) async {
+    try {
+      final ctrl = await MediaCacheService.videoController(url);
+      _ctrl = ctrl;
+      await ctrl.initialize();
+      await ctrl.setVolume(0);
+      ctrl.setLooping(true);
+      if (mounted) {
+        setState(() => _initialized = true);
+        if (_visible) ctrl.play();
+      }
+    } catch (_) {}
+  }
+
+  @override
+  void dispose() {
+    _ctrl?.dispose();
+    super.dispose();
+  }
+
+  void _handleVisibility(VisibilityInfo info) {
+    final nowVisible = info.visibleFraction > 0.4;
+    if (nowVisible == _visible) return;
+    _visible = nowVisible;
+    if (_initialized && _ctrl != null) {
+      nowVisible ? _ctrl!.play() : _ctrl!.pause();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final child = _initialized && _ctrl != null
+        ? AspectRatio(
+            aspectRatio: _ctrl!.value.aspectRatio > 0 ? _ctrl!.value.aspectRatio : 16 / 9,
+            child: VideoPlayer(_ctrl!),
+          )
+        : widget.thumbnail.isNotEmpty
+            ? Image.network(
+                widget.thumbnail,
+                height: 130,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  height: 130,
+                  color: Colors.black12,
+                  child: const Center(child: Icon(Icons.videocam_rounded, color: Colors.white54, size: 28)),
+                ),
+              )
+            : Container(
+                height: 130,
+                color: Colors.black26,
+                child: const Center(child: Icon(Icons.videocam_rounded, color: Colors.white54, size: 28)),
+              );
+
+    return VisibilityDetector(
+      key: Key('shared-video-${widget.postId}'),
+      onVisibilityChanged: _handleVisibility,
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+        child: Stack(
+          children: [
+            child,
+            if (_loading)
+              Positioned(
+                top: 0, left: 0, right: 0, bottom: 0,
+                child: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70)),
+              ),
+            if (!_loading && _videoUrl != null)
+              Positioned(
+                bottom: 6,
+                right: 6,
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() => _muted = !_muted);
+                    _ctrl?.setVolume(_muted ? 0 : 1);
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    padding: const EdgeInsets.all(5),
+                    child: Icon(
+                      _muted ? Icons.volume_off : Icons.volume_up,
+                      color: Colors.white,
+                      size: 14,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

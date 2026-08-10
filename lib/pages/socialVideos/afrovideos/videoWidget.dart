@@ -12,6 +12,7 @@ import '../../../models/model_data.dart';
 import '../../../providers/authProvider.dart';
 import '../../../providers/postProvider.dart';
 import '../../../providers/userProvider.dart';
+import '../../../services/media_cache_service.dart';
 import '../../component/consoleWidget.dart';
 
 
@@ -44,19 +45,27 @@ class _VideoWidgetState extends State<VideoWidget> {
   }
 
   void videoInit() {
-    videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(widget.post.url_media!));
-    _initializeVideoPlayerFuture = videoPlayerController.initialize().then((_) {
-      setState(() {
-        _chewieController = ChewieController(
-          videoPlayerController: videoPlayerController,
-          autoPlay: true,
-          looping: true,
-          aspectRatio: videoPlayerController.value.aspectRatio,
-        );
-      });
-    }).catchError((error) {
+    final url = widget.post.url_media!;
+    _initializeVideoPlayerFuture = _initAsync(url);
+  }
+
+  Future<void> _initAsync(String url) async {
+    try {
+      videoPlayerController = await MediaCacheService.videoController(url);
+      await videoPlayerController.initialize();
+      if (mounted) {
+        setState(() {
+          _chewieController = ChewieController(
+            videoPlayerController: videoPlayerController,
+            autoPlay: true,
+            looping: true,
+            aspectRatio: videoPlayerController.value.aspectRatio,
+          );
+        });
+      }
+    } catch (error) {
       debugPrint('Erreur lors de l\'initialisation du lecteur vidéo : $error');
-    });
+    }
 
     if (widget.post?.id != null) {
       postProvider.getPostsVideosById(widget.post.id!).then((value) {
@@ -125,13 +134,14 @@ class _SamplePlayerState extends State<SamplePlayer> {
     //     VideoPlayerController.networkUrl(Uri.parse(widget.post.url_media!),
     //     ) );
     if (mounted) {
-      flickManager = FlickManager(
+      // FlickManager requiert une initialisation synchrone → réseau direct
+    // Le cache est pré-chargé silencieusement pour accélérer les lectures suivantes
+    MediaCacheService.prefetchVideo(widget.post.url_media ?? '');
+    flickManager = FlickManager(
         autoPlay: true,
         autoInitialize: true,
-
         videoPlayerController: VideoPlayerController.networkUrl(
           Uri.parse(widget.post.url_media!),
-
         )..setLooping(true),
       );
   }

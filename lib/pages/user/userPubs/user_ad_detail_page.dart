@@ -20,6 +20,7 @@ import 'package:flutter_image_slideshow/flutter_image_slideshow.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
+import '../../../services/media_cache_service.dart';
 
 class UserAdDetailPage extends StatefulWidget {
   final String advertisementId;
@@ -43,6 +44,7 @@ class _UserAdDetailPageState extends State<UserAdDetailPage> {
   VideoPlayerController? _videoController;
   ChewieController? _chewieController;
   bool _isVideoInitialized = false;
+  bool _initializingVideo = false;
 
   final Color _primaryColor = const Color(0xFFE21221);
   final Color _secondaryColor = const Color(0xFFFFD600);
@@ -167,6 +169,38 @@ class _UserAdDetailPageState extends State<UserAdDetailPage> {
     );
   }
 
+  Future<void> _initVideoController(String videoUrl) async {
+    if (_initializingVideo || _videoController != null) return;
+    _initializingVideo = true;
+    try {
+      final ctrl = await MediaCacheService.videoController(videoUrl);
+      await ctrl.initialize();
+      if (!mounted) { ctrl.dispose(); return; }
+      setState(() {
+        _videoController = ctrl;
+        _chewieController = ChewieController(
+          videoPlayerController: ctrl,
+          autoPlay: false,
+          looping: false,
+          showControls: true,
+          allowFullScreen: true,
+          materialProgressColors: ChewieProgressColors(
+            playedColor: _primaryColor,
+            handleColor: _primaryColor,
+            backgroundColor: Colors.grey[800]!,
+            bufferedColor: Colors.grey[600]!,
+          ),
+        );
+        _isVideoInitialized = true;
+      });
+    } catch (e) {
+      printVm('Erreur chargement vidéo: $e');
+      if (mounted) setState(() => _isVideoInitialized = false);
+    } finally {
+      _initializingVideo = false;
+    }
+  }
+
   Widget _buildMediaContent(Map<String, dynamic> postData) {
     final dataType = postData['dataType'];
     final imagesRaw = postData['images'];
@@ -176,33 +210,8 @@ class _UserAdDetailPageState extends State<UserAdDetailPage> {
     final videoUrl = postData['url_media'];
 
     if (dataType == 'VIDEO' && videoUrl != null) {
-      // Initialisation du lecteur vidéo avec gestion d'erreur
-      if (_videoController == null) {
-        _videoController = VideoPlayerController.networkUrl(Uri.parse(videoUrl));
-        _videoController!.initialize().then((_) {
-          if (mounted) {
-            setState(() => _isVideoInitialized = true);
-            _chewieController = ChewieController(
-              videoPlayerController: _videoController!,
-              autoPlay: false,
-              looping: false,
-              showControls: true,
-              allowFullScreen: true,
-              materialProgressColors: ChewieProgressColors(
-                playedColor: _primaryColor,
-                handleColor: _primaryColor,
-                backgroundColor: Colors.grey[800]!,
-                bufferedColor: Colors.grey[600]!,
-              ),
-            );
-          }
-        }).catchError((error) {
-          printVm('Erreur chargement vidéo: $error');
-          if (mounted) {
-            setState(() => _isVideoInitialized = false);
-            _showVideoErrorDialog(videoUrl);
-          }
-        });
+      if (_videoController == null && !_initializingVideo) {
+        _initVideoController(videoUrl);
       }
 
       // Affichage du lecteur ou d'un message d'erreur

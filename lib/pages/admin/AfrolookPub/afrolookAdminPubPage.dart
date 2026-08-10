@@ -204,7 +204,9 @@ class _AdvertisementManagementPageState extends State<AdvertisementManagementPag
             ? 'activée'
             : newStatus == 'rejected'
                 ? 'rejetée'
-                : 'annulée';
+                : newStatus == 'pending'
+                    ? 'remise en attente'
+                    : 'annulée';
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Publicité $label'),
           backgroundColor: _colors.primary,
@@ -363,6 +365,17 @@ class _AdvertisementManagementPageState extends State<AdvertisementManagementPag
         ],
       ),
     );
+  }
+
+  Future<void> _reactivateAd(Advertisement ad) async {
+    final now = DateTime.now().microsecondsSinceEpoch;
+    if (ad.endDate != null && ad.endDate! > now) {
+      // Date encore valide : on restaure directement sans changer la durée
+      await _updateAdStatus(ad, 'active');
+    } else {
+      // Date dépassée : l'admin choisit une nouvelle durée
+      _showRenewalDialog(ad);
+    }
   }
 
   void _showRenewalDialog(Advertisement ad) {
@@ -1218,17 +1231,52 @@ class _AdvertisementManagementPageState extends State<AdvertisementManagementPag
       ]);
     }
 
-    // rejected / cancelled : seulement supprimer
+    // cancelled → Réactiver + Supprimer
+    if (effectiveStatus == 'cancelled') {
+      return Row(children: [
+        Expanded(child: ElevatedButton.icon(
+          onPressed: () => _reactivateAd(ad),
+          icon: const Icon(Icons.play_circle_outline, size: 15),
+          label: const Text('Réactiver', style: TextStyle(fontSize: 13)),
+          style: ElevatedButton.styleFrom(
+              backgroundColor: _colors.primary,
+              foregroundColor: _colors.onPrimary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              padding: const EdgeInsets.symmetric(vertical: 8)),
+        )),
+        const SizedBox(width: 8),
+        OutlinedButton(
+          onPressed: () => _deleteAd(ad),
+          style: OutlinedButton.styleFrom(
+              side: BorderSide(color: _colors.danger.withOpacity(0.6)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              padding: const EdgeInsets.all(8),
+              minimumSize: const Size(40, 40)),
+          child: Icon(Icons.delete_outline, color: _colors.danger, size: 18),
+        ),
+      ]);
+    }
+
+    // rejected → Remettre en attente + Supprimer
     return Row(children: [
-      const Spacer(),
-      OutlinedButton.icon(
+      Expanded(child: OutlinedButton.icon(
+        onPressed: () => _updateAdStatus(ad, 'pending'),
+        icon: Icon(Icons.refresh, size: 15, color: _colors.warning),
+        label: Text('Remettre en attente', style: TextStyle(color: _colors.warning, fontSize: 13)),
+        style: OutlinedButton.styleFrom(
+            side: BorderSide(color: _colors.warning.withOpacity(0.6)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            padding: const EdgeInsets.symmetric(vertical: 8)),
+      )),
+      const SizedBox(width: 8),
+      OutlinedButton(
         onPressed: () => _deleteAd(ad),
-        icon: Icon(Icons.delete_outline, size: 15, color: _colors.danger),
-        label: Text('Supprimer', style: TextStyle(color: _colors.danger, fontSize: 13)),
         style: OutlinedButton.styleFrom(
             side: BorderSide(color: _colors.danger.withOpacity(0.6)),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8)),
+            padding: const EdgeInsets.all(8),
+            minimumSize: const Size(40, 40)),
+        child: Icon(Icons.delete_outline, color: _colors.danger, size: 18),
       ),
     ]);
   }

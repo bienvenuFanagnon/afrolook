@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import 'package:video_player/video_player.dart';
+import '../../services/media_cache_service.dart';
 
 import 'package:chewie/chewie.dart';
 
@@ -137,8 +138,7 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
         : widget.content.videoUrl ?? '';
     if (videoUrl!.isEmpty) return;
     final String optimizedUrl = _authProvider.convertToCdnUrl(videoUrl, _authProvider.appDefaultData);
-    _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(optimizedUrl));
-    // _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(videoUrl));
+    _videoPlayerController = await MediaCacheService.videoController(optimizedUrl);
     await _videoPlayerController!.initialize();
     _videoDuration = _videoPlayerController!.value.duration.inSeconds.toDouble();
 
@@ -174,7 +174,7 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
     final String optimizedUrl = _authProvider.convertToCdnUrl(videoUrl, _authProvider.appDefaultData);
 
     // Récupérer la durée de la vidéo (besoin d'un contrôleur temporaire)
-    final tempController = VideoPlayerController.networkUrl(Uri.parse(optimizedUrl));
+    final tempController = await MediaCacheService.videoController(optimizedUrl);
     await tempController.initialize();
     _videoDuration = tempController.value.duration.inSeconds.toDouble();
     await tempController.dispose();
@@ -184,23 +184,31 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
     double middlePos = max(0, (_videoDuration / 2) - (_capsuleDuration / 2));
     double endPos = max(0, _videoDuration - _capsuleDuration);
 
-    // Charger la capsule début
-    _capsuleStartController = VideoPlayerController.networkUrl(Uri.parse(optimizedUrl));
-    await _capsuleStartController!.initialize();
-    await _capsuleStartController!.seekTo(Duration(seconds: startPos.toInt()));
-    await _capsuleStartController!.pause();
+    // Charger les 3 capsules en parallèle depuis le cache
+    final controllers = await Future.wait([
+      MediaCacheService.videoController(optimizedUrl),
+      MediaCacheService.videoController(optimizedUrl),
+      MediaCacheService.videoController(optimizedUrl),
+    ]);
+    _capsuleStartController = controllers[0];
+    _capsuleMiddleController = controllers[1];
+    _capsuleEndController = controllers[2];
 
-    // Charger la capsule milieu
-    _capsuleMiddleController = VideoPlayerController.networkUrl(Uri.parse(optimizedUrl));
-    await _capsuleMiddleController!.initialize();
-    await _capsuleMiddleController!.seekTo(Duration(seconds: middlePos.toInt()));
-    await _capsuleMiddleController!.pause();
-
-    // Charger la capsule fin
-    _capsuleEndController = VideoPlayerController.networkUrl(Uri.parse(optimizedUrl));
-    await _capsuleEndController!.initialize();
-    await _capsuleEndController!.seekTo(Duration(seconds: endPos.toInt()));
-    await _capsuleEndController!.pause();
+    await Future.wait([
+      _capsuleStartController!.initialize(),
+      _capsuleMiddleController!.initialize(),
+      _capsuleEndController!.initialize(),
+    ]);
+    await Future.wait([
+      _capsuleStartController!.seekTo(Duration(seconds: startPos.toInt())),
+      _capsuleMiddleController!.seekTo(Duration(seconds: middlePos.toInt())),
+      _capsuleEndController!.seekTo(Duration(seconds: endPos.toInt())),
+    ]);
+    await Future.wait([
+      _capsuleStartController!.pause(),
+      _capsuleMiddleController!.pause(),
+      _capsuleEndController!.pause(),
+    ]);
 
     setState(() {
       _isCapsuleStartReady = true;

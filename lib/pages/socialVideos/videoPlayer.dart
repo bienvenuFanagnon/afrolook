@@ -1,6 +1,7 @@
 import 'package:chewie/chewie.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import '../../services/media_cache_service.dart';
 
 class VideoPlayerWidget extends StatefulWidget {
   final String videoUrl;
@@ -25,7 +26,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   Future<void> _init() async {
     try {
-      final ctrl = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
+      final ctrl = await MediaCacheService.videoController(widget.videoUrl);
       _vpController = ctrl;
       await ctrl.initialize();
       if (!mounted) return;

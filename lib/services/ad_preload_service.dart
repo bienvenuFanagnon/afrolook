@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:video_player/video_player.dart';
 
 import '../models/model_data.dart';
+import 'media_cache_service.dart';
 
 /// Service singleton qui pré-initialise les contrôleurs vidéo des pubs actives.
 /// Appeler [preload()] au démarrage ou avant d'afficher une page qui injecte des pubs.
@@ -52,7 +53,7 @@ class AdPreloadService {
 
         if (type == 'VIDEO') {
           try {
-            final ctrl = VideoPlayerController.networkUrl(Uri.parse(mediaUrl));
+            final ctrl = await MediaCacheService.videoController(mediaUrl);
             await ctrl.initialize();
             await ctrl.setVolume(0);
             await ctrl.setLooping(true);
@@ -68,6 +69,10 @@ class AdPreloadService {
 
   /// Retourne le contrôleur vidéo pré-initialisé pour une pub donnée (ou null).
   VideoPlayerController? getController(String adId) => _controllers[adId];
+
+  /// Transfère la propriété du contrôleur au widget demandeur.
+  /// Le widget devient responsable du dispose. Un rechargement en arrière-plan peut suivre.
+  VideoPlayerController? claimController(String adId) => _controllers.remove(adId);
 
   /// Retourne une pub active aléatoire parmi celles chargées.
   Advertisement? getRandomActiveAd() {

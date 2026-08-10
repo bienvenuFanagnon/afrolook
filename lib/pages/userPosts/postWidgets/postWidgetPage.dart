@@ -2310,31 +2310,33 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           // FAVORIS (NOUVEAU)
           _buildFavoriteButton(hasAccess),
 
-          // Cadeau
-          if (hasAccess && authProvider.loginUserData.id != widget.post.user_id)
-            QuickGiftBar(
-              receiverId: widget.post.user_id!,
-              receiverName: widget.post.user?.pseudo ?? 'Créateur',
-              receiverAvatar: widget.post.user?.imageUrl ?? '',
-              post: widget.post,
-              giftCount: widget.post.totalGiftCoinsSentOnThisPost ?? 0,
-              onGiftSuccess: () async {
-                setState(() {
-                  widget.post.users_cadeau_id ??= [];
-                  if (!widget.post.users_cadeau_id!.contains(authProvider.loginUserData.id!)) {
-                    widget.post.users_cadeau_id!.add(authProvider.loginUserData.id!);
-                  }
-                });
-                await  _coinProvider.refreshBalance(authProvider.loginUserData.id!);
-              },
-            )
-          else
-            _buildActionButton(
-              icon: FontAwesome.gift,
-              count: widget.post.totalGiftCoinsSentOnThisPost ?? 0,
-              color: colors.textSecondary,
-              onPressed: null,
-            ),
+          // Cadeau (masqué pour les pubs)
+          if (widget.post.isAdvertisement != true) ...[
+            if (hasAccess && authProvider.loginUserData.id != widget.post.user_id)
+              QuickGiftBar(
+                receiverId: widget.post.user_id!,
+                receiverName: widget.post.user?.pseudo ?? 'Créateur',
+                receiverAvatar: widget.post.user?.imageUrl ?? '',
+                post: widget.post,
+                giftCount: widget.post.totalGiftCoinsSentOnThisPost ?? 0,
+                onGiftSuccess: () async {
+                  setState(() {
+                    widget.post.users_cadeau_id ??= [];
+                    if (!widget.post.users_cadeau_id!.contains(authProvider.loginUserData.id!)) {
+                      widget.post.users_cadeau_id!.add(authProvider.loginUserData.id!);
+                    }
+                  });
+                  await  _coinProvider.refreshBalance(authProvider.loginUserData.id!);
+                },
+              )
+            else
+              _buildActionButton(
+                icon: FontAwesome.gift,
+                count: widget.post.totalGiftCoinsSentOnThisPost ?? 0,
+                color: colors.textSecondary,
+                onPressed: null,
+              ),
+          ],
 
           // Partager
           // _isSharing
@@ -2808,15 +2810,16 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     return name;
   }
 
-  /// Badge 🔥{n} affiché à côté du pseudo si l'auteur a une série active.
+  /// Badge flamme affiché à côté du pseudo — emoji et couleur selon le niveau de la bannière.
   Widget _buildFlameStreakBadge(int streak) {
-    final Color color = streak >= 30
-        ? const Color(0xFFFFD700)
-        : streak >= 14
-            ? const Color(0xFFFF3A00)
-            : streak >= 7
-                ? const Color(0xFFFF6B35)
-                : const Color(0xFFFF9500);
+    const emojis = ['🧊', '🌊', '☀️', '🔥', '💥', '⚡'];
+    const colors = [
+      Color(0xFF8E8E93), Color(0xFF5B9CFA), Color(0xFFFF9500),
+      Color(0xFFFF6B35), Color(0xFFFF3B30), Color(0xFFAF52DE),
+    ];
+    final level = streak == 0 ? 0 : streak < 3 ? 1 : streak < 7 ? 2 : streak < 14 ? 3 : streak < 30 ? 4 : 5;
+    final color = colors[level];
+    final emoji = emojis[level];
     return Container(
       margin: const EdgeInsets.only(left: 4),
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
@@ -2826,9 +2829,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         border: Border.all(color: color.withOpacity(0.3), width: 1),
       ),
       child: Text(
-        '🔥$streak',
-        style: TextStyle(
-            fontSize: 10, fontWeight: FontWeight.w800, color: color),
+        '$emoji$streak',
+        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: color),
       ),
     );
   }
@@ -3916,8 +3918,6 @@ void showInsufficientBalanceDialog(BuildContext context) {
     },
   );
 }
-
-
 
 
 

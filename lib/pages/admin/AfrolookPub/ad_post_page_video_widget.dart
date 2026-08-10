@@ -1,5 +1,6 @@
 ﻿import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
+import 'package:afrotok/services/media_cache_service.dart';
 
 import 'dart:math';
 import 'package:afrotok/pages/pub/native_ad_widget.dart';
@@ -173,7 +174,7 @@ class _AdPostWidgetState extends State<AdPostWidget> {
       return;
     }
     try {
-      _videoController = VideoPlayerController.networkUrl(Uri.parse(post.url_media!));
+      _videoController = await MediaCacheService.videoController(post.url_media!);
       await _videoController!.initialize();
       // Suppression de l'aspectRatio forcé : la vidéo prend tout l'espace disponible
       _chewieController = ChewieController(

@@ -11,8 +11,11 @@ import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../../providers/authProvider.dart';
+import '../../../services/ad_preload_service.dart';
 import '../../../theme/app_colors.dart';
+import '../../postComments.dart';
 import '../../userPosts/video_preload_manager.dart';
+import '../../post_video_format_tel_details.dart';
 
 class AdvertisementVideoWidget extends StatefulWidget {
   final Post post;
@@ -51,6 +54,10 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
   bool _isVideoLoading = false;
   bool _adVideoMuted = true;
 
+  bool _isLiked = false;
+  int _likesCount = 0;
+  bool _isLiking = false;
+
   late AppColors _colors;
   static const Color _primaryColor = Color(0xFFE21221);
 
@@ -58,6 +65,9 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
   void initState() {
     super.initState();
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    final uid = authProvider.loginUserData.id;
+    _isLiked = widget.post.users_love_id?.contains(uid) ?? false;
+    _likesCount = widget.post.loves ?? 0;
     _initAdVideo();
   }
 
@@ -69,14 +79,21 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
     if (mounted) setState(() => _isVideoLoading = true);
 
     try {
-      final preloaded = VideoPreloadManager.claimController(widget.post.id ?? widget.ad.id ?? '');
-      if (preloaded != null) {
-        _videoController = preloaded;
-      } else {
+      // 1. Contrôleur pré-initialisé par AdPreloadService (le plus rapide)
+      final adKey = widget.ad.id ?? '';
+      VideoPlayerController? ctrl = adKey.isNotEmpty ? AdPreloadService.instance.claimController(adKey) : null;
+
+      // 2. Cache VideoPreloadManager (post déjà vu dans le feed)
+      ctrl ??= VideoPreloadManager.claimController(widget.post.id ?? '');
+
+      // 3. Initialisation fraîche
+      if (ctrl == null) {
         final optimizedUrl = authProvider.convertToCdnUrl(url, authProvider.appDefaultData);
-        _videoController = VideoPlayerController.networkUrl(Uri.parse(optimizedUrl));
-        await _videoController!.initialize();
+        ctrl = VideoPlayerController.networkUrl(Uri.parse(optimizedUrl));
+        await ctrl.initialize();
       }
+
+      _videoController = ctrl;
       _videoController!.setLooping(true);
       await _videoController!.setVolume(0);
 
@@ -90,6 +107,49 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
     } catch (e) {
       if (mounted) setState(() => _isVideoLoading = false);
     }
+  }
+
+  Future<void> _handleLike() async {
+    if (_isLiking) return;
+    final uid = authProvider.loginUserData.id;
+    if (uid == null || widget.post.id == null) return;
+
+    setState(() {
+      _isLiking = true;
+      _isLiked = !_isLiked;
+      _likesCount += _isLiked ? 1 : -1;
+    });
+
+    try {
+      final postRef = _firestore.collection('Posts').doc(widget.post.id);
+      if (_isLiked) {
+        await postRef.update({
+          'loves': FieldValue.increment(1),
+          'users_love_id': FieldValue.arrayUnion([uid]),
+        });
+      } else {
+        await postRef.update({
+          'loves': FieldValue.increment(-1),
+          'users_love_id': FieldValue.arrayRemove([uid]),
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _isLiked = !_isLiked;
+          _likesCount += _isLiked ? 1 : -1;
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _isLiking = false);
+    }
+  }
+
+  void _openComments() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => PostComments(post: widget.post)),
+    );
   }
 
   @override
@@ -252,8 +312,43 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Interactions : like + commentaire
           Row(
             children: [
+              GestureDetector(
+                onTap: _handleLike,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _isLiked ? Icons.favorite : Icons.favorite_border,
+                      color: _isLiked ? Colors.red : _colors.textSecondary,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 3),
+                    Text(
+                      _formatCount(_likesCount),
+                      style: TextStyle(color: _colors.textSecondary, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              GestureDetector(
+                onTap: _openComments,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.chat_bubble_outline, color: _colors.textSecondary, size: 18),
+                    const SizedBox(width: 3),
+                    Text(
+                      _formatCount(widget.post.comments ?? 0),
+                      style: TextStyle(color: _colors.textSecondary, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
               Icon(Icons.remove_red_eye, color: _colors.textSecondary, size: 13),
               const SizedBox(width: 3),
               Text(
@@ -261,11 +356,11 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
                 style: TextStyle(color: _colors.textSecondary, fontSize: 11),
               ),
               if ((widget.ad.views ?? 0) > 0) ...[
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 const Icon(Icons.ads_click, color: _primaryColor, size: 13),
                 const SizedBox(width: 3),
                 Text(
-                  '${widget.ad.ctr.toStringAsFixed(1)}% CTR',
+                  '${widget.ad.ctr.toStringAsFixed(1)}%',
                   style: const TextStyle(color: _primaryColor, fontSize: 11, fontWeight: FontWeight.w500),
                 ),
               ],
@@ -301,83 +396,97 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
     );
   }
 
-  Widget _buildVideoSection(double screenWidth) {
-    // Même hauteur que YouTubeVideoCard._buildVideoContent()
-    final videoHeight = (screenWidth * 1.15).clamp(320.0, 500.0);
-
-    return Stack(
-      children: [
-        ClipRRect(
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(16),
-            topRight: Radius.circular(16),
-          ),
-          child: _isVideoInitialized && _videoController != null
-              ? SizedBox(
-                  width: double.infinity,
-                  height: videoHeight,
-                  child: VideoPlayer(_videoController!),
-                )
-              : _buildVideoPlaceholder(videoHeight),
+  void _navigateToDetails() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PostDetailsVideoFormatTel(
+          initialPost: widget.post,
+          isIn: false,
         ),
-        // Indicateur de chargement
-        if (_isVideoLoading)
-          Positioned(
-            left: 0, right: 0, top: 0, bottom: 0,
-            child: Container(
-              color: Colors.black.withOpacity(0.4),
-              child: Center(child: CircularProgressIndicator(color: _primaryColor)),
-            ),
-          ),
-        // Badge SPONSORISÉ
-        Positioned(top: 8, right: 8, child: _buildSponsoredBadge()),
-        // Bouton son bas-droite
-        Positioned(
-          bottom: 8,
-          right: 8,
-          child: GestureDetector(
-            onTap: () {
-              setState(() => _adVideoMuted = !_adVideoMuted);
-              _videoController?.setVolume(_adVideoMuted ? 0 : 1);
-            },
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.6),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              padding: const EdgeInsets.all(8),
-              child: Icon(
-                _adVideoMuted ? Icons.volume_off : Icons.volume_up,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
-  Widget _buildVideoPlaceholder(double height) {
-    final thumb = widget.post.thumbnail;
-    if (thumb != null && thumb.isNotEmpty) {
-      return Image.network(
-        thumb,
-        fit: BoxFit.cover,
-        height: height,
-        width: double.infinity,
-        errorBuilder: (_, __, ___) => _buildFallback(height),
-      );
-    }
-    return _buildFallback(height);
+  Widget _buildVideoSection(double screenWidth) {
+    return GestureDetector(
+      onTap: _navigateToDetails,
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(16),
+              topRight: Radius.circular(16),
+            ),
+            child: _isVideoInitialized && _videoController != null
+                ? AspectRatio(
+                    aspectRatio: _videoController!.value.aspectRatio > 0
+                        ? _videoController!.value.aspectRatio
+                        : 16 / 9,
+                    child: VideoPlayer(_videoController!),
+                  )
+                : _buildVideoPlaceholder(),
+          ),
+          if (_isVideoLoading)
+            Positioned(
+              left: 0, right: 0, top: 0, bottom: 0,
+              child: Container(
+                color: Colors.black.withOpacity(0.4),
+                child: Center(child: CircularProgressIndicator(color: _primaryColor)),
+              ),
+            ),
+          Positioned(top: 8, right: 8, child: _buildSponsoredBadge()),
+          Positioned(
+            bottom: 8,
+            right: 8,
+            child: GestureDetector(
+              onTap: () {
+                setState(() => _adVideoMuted = !_adVideoMuted);
+                _videoController?.setVolume(_adVideoMuted ? 0 : 1);
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.6),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                padding: const EdgeInsets.all(8),
+                child: Icon(
+                  _adVideoMuted ? Icons.volume_off : Icons.volume_up,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
-  Widget _buildFallback(double height) {
-    return Container(
-      height: height,
-      width: double.infinity,
-      color: Colors.black,
-      child: const Icon(Icons.videocam, color: Colors.grey, size: 50),
+  Widget _buildVideoPlaceholder() {
+    final thumb = widget.post.thumbnail;
+    if (thumb != null && thumb.isNotEmpty) {
+      return AspectRatio(
+        aspectRatio: 16 / 9,
+        child: Image.network(
+          thumb,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          errorBuilder: (_, __, ___) => _buildFallback(),
+        ),
+      );
+    }
+    return _buildFallback();
+  }
+
+  Widget _buildFallback() {
+    return AspectRatio(
+      aspectRatio: 16 / 9,
+      child: Container(
+        width: double.infinity,
+        color: Colors.black,
+        child: const Icon(Icons.videocam, color: Colors.grey, size: 50),
+      ),
     );
   }
 
