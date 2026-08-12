@@ -1,11 +1,8 @@
-﻿// import 'dart:js' as js;
-// import 'dart:html' as html;
-//
-
-import 'package:afrotok/pages/component/consoleWidget.dart';
+﻿import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // Couleurs
 final Color _primaryColor = Color(0xFFE21221);
@@ -18,104 +15,319 @@ final Color _successColor = Color(0xFF4CAF50);
 final Color _audioColor = Color(0xFF2196F3);
 final String appId = 'XgkSxKc10vWsJJ2uBraT';
 
+const _kPlayStoreUrl = 'https://play.google.com/store/apps/details?id=com.afrotok.afrotok';
+const _kPrefNeverShow  = 'install_modal_never_show';
+const _kPrefLastShown  = 'install_modal_last_shown';
+
 Future<void> showInstallModal(BuildContext context) async {
   if (!kIsWeb) return;
 
   final prefs = await SharedPreferences.getInstance();
 
-  // // 1. Vérifier si l'utilisateur a demandé de ne plus voir le modal
-  // bool hideModal = prefs.getBool('hide_install_modal') ?? false;
-  //
-  // // 2. Vérifier si l'app est DÉJÀ lancée en tant que PWA (installée)
-  // // On vérifie si le média query 'display-mode: standalone' est actif
-  // bool isInstalled = html.window.matchMedia('(display-mode: standalone)').matches;
-  //
-  // if (hideModal || isInstalled) {
-  //   printVm("PWA: Modal masqué (Déjà installé ou refusé)");
-  //   return;
-  // }
-  //
-  // // Affichage du modal
-  // showDialog(
-  //   context: context,
-  //   barrierDismissible: false, // Force une action
-  //   builder: (BuildContext context) {
-  //     return Dialog(
-  //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-  //       backgroundColor: Colors.transparent,
-  //       child: Container(
-  //         padding: const EdgeInsets.all(20),
-  //         decoration: BoxDecoration(
-  //           color: const Color(0xFF1A1A1A),
-  //           borderRadius: BorderRadius.circular(20),
-  //           border: Border.all(color: const Color(0xFFFFD700), width: 1.5),
-  //         ),
-  //         child: Column(
-  //           mainAxisSize: MainAxisSize.min,
-  //           children: [
-  //             Container(
-  //               padding: const EdgeInsets.all(15),
-  //               decoration: const BoxDecoration(
-  //                 color: Color(0xFFE53935),
-  //                 shape: BoxShape.circle,
-  //               ),
-  //               child: const Icon(Icons.add_to_home_screen_rounded, color: Colors.white, size: 40),
-  //             ),
-  //             const SizedBox(height: 20),
-  //             const Text(
-  //               "Installe Afrolook",
-  //               style: TextStyle(color: Color(0xFFFFD700), fontSize: 22, fontWeight: FontWeight.bold),
-  //             ),
-  //             const SizedBox(height: 10),
-  //             const Text(
-  //               "Accède à ton réseau social préféré plus rapidement et sans passer par le navigateur.",
-  //               textAlign: TextAlign.center,
-  //               style: TextStyle(color: Colors.white70, fontSize: 14),
-  //             ),
-  //             const SizedBox(height: 25),
-  //             // BOUTON INSTALLER
-  //             SizedBox(
-  //               width: double.infinity,
-  //               child: ElevatedButton(
-  //                 style: ElevatedButton.styleFrom(
-  //                   backgroundColor: const Color(0xFFE53935),
-  //                   foregroundColor: Colors.white,
-  //                   padding: const EdgeInsets.symmetric(vertical: 15),
-  //                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-  //                 ),
-  //                 onPressed: () async {
-  //                   js.context.callMethod('installPWA');
-  //                   // On enregistre qu'il a essayé d'installer pour ne plus le harceler
-  //                   await prefs.setBool('hide_install_modal', true);
-  //                   Navigator.pop(context);
-  //                 },
-  //                 child: const Text("Installer maintenant", style: TextStyle(fontWeight: FontWeight.bold)),
-  //               ),
-  //             ),
-  //             const SizedBox(height: 10),
-  //             // BOUTON DÉJÀ INSTALLÉ (Nouveau !)
-  //             TextButton(
-  //               onPressed: () async {
-  //                 await prefs.setBool('hide_install_modal', true);
-  //                 Navigator.pop(context);
-  //               },
-  //               child: const Text(
-  //                 "C'est déjà fait / Ne plus afficher",
-  //                 style: TextStyle(color: Color(0xFFFFD700), fontSize: 12, decoration: TextDecoration.underline),
-  //               ),
-  //             ),
-  //             // BOUTON FERMER TEMPORAIREMENT
-  //             TextButton(
-  //               onPressed: () => Navigator.pop(context),
-  //               child: const Text("Plus tard", style: TextStyle(color: Colors.white54)),
-  //             ),
-  //           ],
-  //         ),
-  //       ),
-  //     );
-  //   },
-  // );
+  // Ne plus jamais afficher si l'utilisateur a coché "Ne plus afficher"
+  if (prefs.getBool(_kPrefNeverShow) ?? false) return;
 
+  // Afficher max 1 fois par jour
+  final lastShown = prefs.getString(_kPrefLastShown);
+  final today = DateTime.now().toIso8601String().substring(0, 10);
+  if (lastShown == today) return;
+
+  await prefs.setString(_kPrefLastShown, today);
+
+  if (!context.mounted) return;
+
+  showDialog(
+    context: context,
+    barrierDismissible: true,
+    barrierColor: Colors.black.withOpacity(0.75),
+    builder: (ctx) => _InstallAppModal(prefs: prefs),
+  );
+}
+
+class _InstallAppModal extends StatefulWidget {
+  final SharedPreferences prefs;
+  const _InstallAppModal({required this.prefs});
+
+  @override
+  State<_InstallAppModal> createState() => _InstallAppModalState();
+}
+
+class _InstallAppModalState extends State<_InstallAppModal>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _scale;
+  late Animation<double> _fade;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 350));
+    _scale = CurvedAnimation(parent: _ctrl, curve: Curves.easeOutBack);
+    _fade  = CurvedAnimation(parent: _ctrl, curve: Curves.easeIn);
+    _ctrl.forward();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _openPlayStore() async {
+    final uri = Uri.parse(_kPlayStoreUrl);
+    if (await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  Future<void> _neverShow() async {
+    await widget.prefs.setBool(_kPrefNeverShow, true);
+    if (mounted) Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _fade,
+      child: ScaleTransition(
+        scale: _scale,
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF141414),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: const Color(0xFFE21221).withOpacity(0.35), width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFE21221).withOpacity(0.15),
+                  blurRadius: 40,
+                  spreadRadius: 4,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // ── Barre rouge supérieure + bouton fermer ──────────────────
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  child: Container(
+                    height: 4,
+                    color: const Color(0xFFE21221),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 12, 0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.06),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.close, color: Colors.white54, size: 18),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // ── Logo ────────────────────────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.only(top: 4, bottom: 12),
+                  child: Image.asset(
+                    'assets/logo/afrolook_logo.png',
+                    width: 72,
+                    height: 72,
+                  ),
+                ),
+
+                // ── Titre ───────────────────────────────────────────────────
+                const Text(
+                  'Afrolook',
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 28),
+                  child: Text(
+                    'Vis l\'expérience Afrolook pleinement sur mobile — plus rapide, plus fluide.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.white.withOpacity(0.65),
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // ── Boutons stores ──────────────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    children: [
+                      // Google Play
+                      GestureDetector(
+                        onTap: _openPlayStore,
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1A8F3C),
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF1A8F3C).withOpacity(0.35),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Image.asset(
+                                'assets/logo/afrolook_logo.png',
+                                width: 24,
+                                height: 24,
+                                color: Colors.white,
+                                colorBlendMode: BlendMode.srcIn,
+                              ),
+                              const SizedBox(width: 10),
+                              const Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Disponible sur',
+                                    style: TextStyle(fontSize: 10, color: Colors.white70),
+                                  ),
+                                  Text(
+                                    'Google Play',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                      letterSpacing: 0.2,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Spacer(),
+                              const Icon(Icons.arrow_forward_ios, color: Colors.white60, size: 14),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Apple Store — bientôt
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: Colors.white.withOpacity(0.1)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.apple, color: Colors.white38, size: 26),
+                            const SizedBox(width: 10),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Bientôt sur',
+                                  style: TextStyle(fontSize: 10, color: Colors.white38),
+                                ),
+                                Text(
+                                  'App Store',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white.withOpacity(0.3),
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFD600).withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: const Color(0xFFFFD600).withOpacity(0.3)),
+                              ),
+                              child: const Text(
+                                'Bientôt',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFFFFD600),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // ── Actions secondaires ─────────────────────────────────────
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton(
+                        onPressed: _neverShow,
+                        child: Text(
+                          'Ne plus afficher',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.white.withOpacity(0.35),
+                            decoration: TextDecoration.underline,
+                            decorationColor: Colors.white.withOpacity(0.2),
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text(
+                          'Plus tard',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFFE21221),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 
