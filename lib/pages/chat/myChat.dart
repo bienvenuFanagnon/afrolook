@@ -16,7 +16,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:path/path.dart' as Path;
+import 'package:path/path.dart' as p;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
@@ -56,6 +56,10 @@ import '../post_video_format_tel_details.dart';
 import '../LiveAgora/livesAgora.dart';
 import '../LiveAgora/livePage.dart';
 import '../LiveAgora/live_ended_page.dart';
+import '../../services/chat_sound_service.dart';
+import 'package:flutter_windowmanager/flutter_windowmanager.dart';
+import 'package:universal_platform/universal_platform.dart';
+import 'package:confetti/confetti.dart';
 
 class MyChat extends StatefulWidget {
   final String title;
@@ -141,6 +145,17 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   // Typing indicator — debounce 3s avant de passer à NOTSENDING
   Timer? _typingDebounce;
   bool _isSendingTyping = false;
+  String _currentTypingType = '';
+
+  // Types d'état de frappe
+  static const _kTypingText  = 'SENDING_TEXT';
+  static const _kTypingAudio = 'SENDING_AUDIO';
+  static const _kTypingImage = 'SENDING_IMAGE';
+
+  // État de frappe de l'autre utilisateur (lu depuis Firestore via _chatStream)
+  // ValueNotifier pour éviter setState → rebuild de toute la page à chaque frappe
+  final _otherTypingNotifier = ValueNotifier<String>('');
+  StreamSubscription<Chat>? _chatSubscription;
 
   /// Clé AES-256 dérivée pour cette conversation (chiffrement au repos).
   /// Si `null` après init, l'envoi de texte est bloqué jusqu'à résolution.
@@ -159,6 +174,34 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   // Pour éviter les reconstructions inutiles
   final _messageKey = GlobalKey();
 
+  // Vue unique — toggle actif lors de l'envoi d'image
+  bool _viewOnce = false;
+
+  // Dernier count connu — pour détecter les nouveaux messages et jouer un son
+  int _lastMessageCount = 0;
+
+  // IDs des messages déjà rendus (pour n'animer que les nouveaux)
+  final Set<String> _renderedMessageIds = {};
+
+  // Confetti — déclenché sur ❤️ / 🎉 envoyés seuls
+  late ConfettiController _confettiController;
+  static const _kHeartEmojis = {'❤️', '💕', '💖', '💗', '🥰', '😍', '💓', '💞'};
+  static const _kCelebEmojis = {'🎉', '🎊', '🥳', '🎈', '✨', '🎆', '🎇'};
+
+  // Streak 🔥 (lu depuis le doc Chat)
+  int _streak = 0;
+
+  // Confetti type: true = cœurs, false = célébration
+  bool _confettiIsHeart = false;
+
+  // Emoji animé — sélection du type d'animation avant envoi
+  String _selectedEmojiAnim = 'float';
+  bool _showEmojiAnimSelector = false;
+
+  // Streams stables pour le header (initialisés une seule fois dans initState)
+  late Stream<UserData> _receiverStream;
+  late Stream<Chat> _chatStream;
+
   @override
   void initState() {
     super.initState();
@@ -171,6 +214,14 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         ? widget.chat.receiverId!
         : widget.chat.senderId!;
 
+    _receiverStream = _userProvider.getStreamUser(_otherId).asBroadcastStream();
+    _chatStream = _userProvider.getStreamChat(widget.chat.id!).asBroadcastStream();
+
+    _markActiveInChat(true);
+    if (UniversalPlatform.isAndroid) {
+      FlutterWindowManager.addFlags(FlutterWindowManager.FLAG_SECURE);
+    }
+
     _audioRecorder = AudioRecorder();
     _initializeChat();
     _setupAudioListener();
@@ -181,6 +232,26 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     _loadMyPrivacySettings();
     _scrollController.addListener(_onScroll);
     _textController.addListener(_onTextChanged);
+
+    _confettiController = ConfettiController(duration: const Duration(seconds: 2));
+
+    // Écoute l'état de frappe + streak de l'autre utilisateur (sans setState → pas de rebuild global)
+    _chatSubscription = _chatStream.listen((chat) {
+      final myId = _authProvider.loginUserData.id;
+      if (myId == null) return;
+      final rawState = (myId == chat.senderId)
+          ? (chat.receiver_sending ?? '')
+          : (chat.send_sending ?? '');
+      final newState = rawState.startsWith('SENDING') && rawState != 'NOTSENDING' ? rawState : '';
+      if (newState != _otherTypingNotifier.value) {
+        _otherTypingNotifier.value = newState;
+      }
+      // Streak 🔥
+      final streakVal = chat.streak ?? 0;
+      if (streakVal != _streak && mounted) {
+        setState(() => _streak = streakVal);
+      }
+    });
 
     // Scroll vers le bas après initialisation
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -539,7 +610,22 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
 
   // ── Typing indicator ────────────────────────────────────────────────────────
 
+  bool _isPureEmojiMsg(String text) {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return false;
+    // Pas de lettres/chiffres ASCII → probablement pur emoji
+    if (RegExp(r'[a-zA-Z0-9\s]').hasMatch(trimmed)) return false;
+    // Compte approximatif des glyphes emoji via les runes de base
+    // On accepte 1 à 3 emojis (avec variantes, un emoji peut faire 2-4 runes)
+    final runeCount = trimmed.runes.length;
+    return runeCount >= 1 && runeCount <= 12;
+  }
+
   void _onTextChanged() {
+    final isEmoji = _isPureEmojiMsg(_textController.text);
+    if (isEmoji != _showEmojiAnimSelector) {
+      setState(() => _showEmojiAnimSelector = isEmoji);
+    }
     if (_textController.text.trim().isEmpty) {
       _typingDebounce?.cancel();
       _clearTypingState();
@@ -550,13 +636,14 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _setTypingState() async {
-    if (_isSendingTyping) return;
+  Future<void> _setTypingState([String type = _kTypingText]) async {
+    if (_currentTypingType == type) return;
+    _currentTypingType = type;
     _isSendingTyping = true;
     try {
       final myId = _authProvider.loginUserData.id!;
       final field = widget.chat.senderId == myId ? 'send_sending' : 'receiver_sending';
-      await _firestore.collection('Chats').doc(widget.chat.id).update({field: 'SENDING'});
+      await _firestore.collection('Chats').doc(widget.chat.id).update({field: type});
     } catch (_) {}
   }
 
@@ -569,6 +656,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
 
   Future<void> _clearTypingState() async {
     _isSendingTyping = false;
+    _currentTypingType = '';
     try {
       final myId = _authProvider.loginUserData.id!;
       final field = widget.chat.senderId == myId ? 'send_sending' : 'receiver_sending';
@@ -576,10 +664,77 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     } catch (_) {}
   }
 
+  Future<void> _sendReaction(Message message, String emoji) async {
+    final myId = _authProvider.loginUserData.id!;
+    final alreadyReacted = message.reaction.reactedUserIds.contains(myId);
+    try {
+      await _firestore.collection('Messages').doc(message.id).update({
+        'reaction.reactions': alreadyReacted
+            ? FieldValue.arrayRemove([emoji])
+            : FieldValue.arrayUnion([emoji]),
+        'reaction.reactedUserIds': alreadyReacted
+            ? FieldValue.arrayRemove([myId])
+            : FieldValue.arrayUnion([myId]),
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _updateStreak() async {
+    try {
+      final today = DateTime.now();
+      final todayStr = '${today.year}-${today.month}-${today.day}';
+      final doc = await _firestore.collection('Chats').doc(widget.chat.id).get();
+      final data = doc.data();
+      if (data == null) return;
+      final lastDate = data['lastStreakDate'] as String?;
+      final currentStreak = (data['streak'] as int?) ?? 0;
+
+      int newStreak;
+      if (lastDate == null) {
+        newStreak = 1;
+      } else if (lastDate == todayStr) {
+        return; // déjà compté aujourd'hui
+      } else {
+        final last = DateTime.tryParse(lastDate);
+        final diff = last != null ? today.difference(last).inDays : 999;
+        newStreak = diff == 1 ? currentStreak + 1 : 1;
+      }
+      await _firestore.collection('Chats').doc(widget.chat.id).update({
+        'streak': newStreak,
+        'lastStreakDate': todayStr,
+      });
+    } catch (_) {}
+  }
+
   // ────────────────────────────────────────────────────────────────────────────
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
+      _markActiveInChat(false);
+    } else if (state == AppLifecycleState.resumed) {
+      _markActiveInChat(true);
+    }
+  }
+
+  Future<void> _markActiveInChat(bool active) async {
+    final myId = _authProvider.loginUserData.id;
+    if (myId == null) return;
+    try {
+      await _firestore.collection('Chats').doc(widget.chat.id).update({
+        'activeViewers': active
+            ? FieldValue.arrayUnion([myId])
+            : FieldValue.arrayRemove([myId]),
+      });
+    } catch (_) {}
+  }
+
+  @override
   void dispose() {
+    _markActiveInChat(false);
+    if (UniversalPlatform.isAndroid) {
+      FlutterWindowManager.clearFlags(FlutterWindowManager.FLAG_SECURE);
+    }
     WidgetsBinding.instance.removeObserver(this);
     _audioPlayer.dispose();
     _audioRecorder?.dispose();
@@ -587,6 +742,9 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     _readReceiptDebounce?.cancel();
     _typingDebounce?.cancel();
     _ephemeralTimer?.cancel();
+    _chatSubscription?.cancel();
+    _otherTypingNotifier.dispose();
+    _confettiController.dispose();
     _clearTypingState();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
@@ -643,6 +801,8 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
           _multiImages.clear();
           _showEmojiPicker = false;
         });
+        _typingDebounce?.cancel();
+        _setTypingState(_kTypingImage);
       }
     } catch (e) {
       _showErrorSnackbar("Erreur lors de la sélection de l'image");
@@ -725,7 +885,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       final urls = <String>[];
       for (final img in _multiImages) {
         final ref = FirebaseStorage.instance.ref().child(
-            'chat_images/${Path.basename(img.path)}_${DateTime.now().millisecondsSinceEpoch}');
+            'chat_images/${p.basename(img.path)}_${DateTime.now().millisecondsSinceEpoch}');
         final snap = await ref.putFile(img);
         urls.add(await snap.ref.getDownloadURL());
       }
@@ -844,6 +1004,8 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
           _isRecording = true;
           _recordingDuration = 0;
         });
+        _typingDebounce?.cancel();
+        _setTypingState(_kTypingAudio);
 
         _recordingTimer = Timer.periodic(Duration(seconds: 1), (timer) {
           if (mounted) {
@@ -874,6 +1036,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   }
 
   Future<void> _stopRecording({bool cancel = false}) async {
+    _clearTypingState();
     try {
       _recordingTimer?.cancel();
       await _audioRecorder?.stop();
@@ -903,7 +1066,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
 
     try {
       Reference storageReference = FirebaseStorage.instance.ref().child(
-          'chat_images/${Path.basename(_image!.path)}_${DateTime.now().millisecondsSinceEpoch}'
+          'chat_images/${p.basename(_image!.path)}_${DateTime.now().millisecondsSinceEpoch}'
       );
 
       UploadTask uploadTask = storageReference.putFile(_image!);
@@ -934,6 +1097,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         is_valide: true,
         expires_at: _messageExpiresAt,
         imageText: imageText.isNotEmpty ? imageText : null,
+        isViewOnce: _viewOnce,
       );
 
       _updateChatCounters("📷 Image");
@@ -952,6 +1116,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         setState(() {
           _isSendingImage = false;
           _image = null;
+          _viewOnce = false;
         });
       }
     }
@@ -1034,6 +1199,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         messageId: _replyingToMessage?.id ?? '',
       );
 
+      final isPureEmoji = _isPureEmojiMsg(messageText);
       Message msg = Message(
         id: '',
         createdAt: DateTime.now(),
@@ -1049,10 +1215,24 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
             : widget.chat.senderId!,
         is_valide: true,
         expires_at: _messageExpiresAt,
+        emojiAnimType: isPureEmoji ? _selectedEmojiAnim : null,
       );
 
       _updateChatCounters(messageText);
       _textController.clear();
+
+      // Confetti / cœurs sur emoji seul
+      final trimmed = messageText.trim();
+      if (_kHeartEmojis.contains(trimmed)) {
+        _confettiController.play();
+        _confettiIsHeart = true;
+      } else if (_kCelebEmojis.contains(trimmed)) {
+        _confettiController.play();
+        _confettiIsHeart = false;
+      }
+
+      // Mise à jour du streak
+      _updateStreak();
 
       String msgid = _firestore.collection('Messages').doc().id;
       msg.id = msgid;
@@ -1096,6 +1276,11 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       final receiverId = widget.chat.senderId == _authProvider.loginUserData.id!
           ? widget.chat.receiverId!
           : widget.chat.senderId!;
+
+      // Si le destinataire est activement dans CE chat → pas de notif
+      final chatDoc = await _firestore.collection('Chats').doc(widget.chat.id).get();
+      final activeViewers = List<String>.from(chatDoc.data()?['activeViewers'] ?? []);
+      if (activeViewers.contains(receiverId)) return;
 
       final users = await _authProvider.getUserById(receiverId);
 
@@ -1217,7 +1402,17 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
                   child: Column(
                     crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                     children: [
-                      _buildMessageContent(message, isMe),
+                      _SwipeToReplyWrapper(
+                        isMe: isMe,
+                        onReply: () {
+                          setState(() {
+                            _replying = true;
+                            _replyingToMessage = message;
+                          });
+                          _focusNode.requestFocus();
+                        },
+                        child: _buildMessageContent(message, isMe),
+                      ),
                       _buildMessageStatus(message, isMe),
                     ],
                   ),
@@ -1506,6 +1701,15 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         ),
       );
     }
+    // Emoji animé — uniquement si pur emoji sans texte
+    if (message.emojiAnimType != null && _isPureEmojiMsg(message.message)) {
+      return _EmojiAnimBubble(
+        message: message,
+        isMe: isMe,
+        onLongPress: () => _showMessageOptions(message),
+      );
+    }
+
     return TextBubble(
       message: message,
       isMe: isMe,
@@ -1529,12 +1733,41 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         onLongPress: () => _showMessageOptions(message),
       );
     }
+    // Vue unique
+    if (message.isViewOnce) {
+      return _buildViewOnceBubble(message, isMe);
+    }
     return ImageBubble(
       message: message,
       isMe: isMe,
       onTap: () => _showImageFullScreen(message.message),
       onLongPress: () => _showMessageOptions(message),
     );
+  }
+
+  Widget _buildViewOnceBubble(Message message, bool isMe) {
+    final colors = _colors;
+    // Expéditeur — voit juste l'indicateur "Vue unique"
+    if (isMe) {
+      return _ViewOnceSentBubble(message: message, colors: colors);
+    }
+    // Destinataire — déjà ouvert
+    if (message.viewOnceOpened) {
+      return _ViewOnceOpenedBubble(colors: colors);
+    }
+    // Destinataire — pas encore ouvert → tap pour voir
+    return GestureDetector(
+      onTap: () => _openViewOnce(message),
+      child: _ViewOnceTapBubble(colors: colors),
+    );
+  }
+
+  Future<void> _openViewOnce(Message message) async {
+    // Marquer comme ouvert en Firestore avant d'afficher
+    await _firestore.collection('Messages').doc(message.id).update({'viewOnceOpened': true});
+    message.viewOnceOpened = true;
+    if (mounted) setState(() {});
+    _showImageFullScreen(message.message);
   }
 
   Widget _buildMessageStatus(Message message, bool isMe) {
@@ -1572,6 +1805,39 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
+                // Barre de réactions rapides
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: ['❤️', '😂', '😮', '😢', '🔥', '👏'].map((emoji) {
+                      final myId = _authProvider.loginUserData.id!;
+                      final alreadyReacted = message.reaction.reactedUserIds.contains(myId);
+                      return GestureDetector(
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          Navigator.pop(ctx);
+                          _sendReaction(message, emoji);
+                        },
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: alreadyReacted
+                                ? _colors.primary.withOpacity(0.15)
+                                : _colors.background,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: _colors.border.withOpacity(0.4)),
+                          ),
+                          child: Center(
+                            child: Text(emoji, style: const TextStyle(fontSize: 22)),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                const Divider(height: 1),
                 // Aperçu du message (texte uniquement, tronqué)
                 if (isText && message.message.isNotEmpty)
                   Container(
@@ -2195,8 +2461,51 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
           child: _isRecording ? _buildRecordingBar() : Column(
             children: [
               if (_replying && _replyingToMessage != null) _buildReplyIndicatorBar(),
-              if (_image != null) _buildImagePreview(),
+              if (_image != null) ...[
+                _buildImagePreview(),
+                // Toggle vue unique
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: GestureDetector(
+                    onTap: () => setState(() => _viewOnce = !_viewOnce),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _viewOnce
+                            ? _colors.primary.withValues(alpha: 0.15)
+                            : _colors.surfaceVariant,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _viewOnce ? _colors.primary : _colors.border,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _viewOnce ? Icons.timer : Icons.timer_outlined,
+                            size: 14,
+                            color: _viewOnce ? _colors.primary : _colors.textSecondary,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Vue unique',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: _viewOnce ? _colors.primary : _colors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
               if (_multiImages.isNotEmpty) _buildMultiImagePreview(),
+              if (_showEmojiAnimSelector && _image == null && _multiImages.isEmpty)
+                _buildEmojiAnimSelector(),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -2325,6 +2634,60 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildEmojiAnimSelector() {
+    const types = [
+      ('float',     '🫧', 'Float'),
+      ('pop',       '💥', 'Pop'),
+      ('heartbeat', '💓', 'Pulse'),
+      ('spin',      '🌀', 'Spin'),
+      ('bounce',    '🏀', 'Bounce'),
+    ];
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 200),
+      child: Container(
+        padding: const EdgeInsets.only(bottom: 6, top: 2),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: types.map((t) {
+            final key = t.$1; final icon = t.$2; final label = t.$3;
+            final selected = _selectedEmojiAnim == key;
+            return GestureDetector(
+              onTap: () => setState(() => _selectedEmojiAnim = key),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                decoration: BoxDecoration(
+                  color: selected ? _colors.primary.withOpacity(0.15) : _colors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: selected ? _colors.primary : _colors.border.withOpacity(0.35),
+                    width: selected ? 1.5 : 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(icon, style: const TextStyle(fontSize: 15)),
+                    const SizedBox(width: 3),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+                        color: selected ? _colors.primary : _colors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
     );
   }
 
@@ -2690,18 +3053,14 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   }
   Widget _buildChatHeader() {
     return StreamBuilder<UserData>(
-      stream: _userProvider.getStreamUser(
-        widget.chat.receiver!.id!,
-      ),
+      stream: _receiverStream,
       builder: (context, userSnapshot) {
         final user = userSnapshot.hasData
             ? userSnapshot.data!
             : widget.chat.receiver!;
 
         return StreamBuilder<Chat>(
-          stream: _userProvider.getStreamChat(
-            widget.chat.id!,
-          ),
+          stream: _chatStream,
           builder: (context, chatSnapshot) {
             final chat = chatSnapshot.hasData
                 ? chatSnapshot.data!
@@ -2777,18 +3136,44 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
                             ),
                             const SizedBox(width: 4),
                             UserBadgeWidget(user: user, size: 14),
+                            if (_streak > 1) ...[
+                              const SizedBox(width: 6),
+                              Text('🔥$_streak',
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                            ],
                           ],
                         ),
                         const SizedBox(height: 2),
-                        if (isTyping)
-                          Row(mainAxisSize: MainAxisSize.min, children: [
-                            const TypingIndicator(),
-                            const SizedBox(width: 6),
-                            Text("en train d'écrire…",
-                                style: TextStyle(color: _colors.primary, fontSize: 11, fontWeight: FontWeight.w500)),
-                          ])
-                        else
-                          UserPresenceWidget(userId: user.id!, showTextStatus: true, isChatHeader: true),
+                        Stack(
+                          children: [
+                            // Toujours en vie (maintainState) → pas de réinitialisation
+                            Visibility(
+                              visible: !isTyping,
+                              maintainState: true,
+                              maintainAnimation: true,
+                              child: UserPresenceWidget(
+                                userId: user.id!,
+                                showTextStatus: true,
+                                isChatHeader: true,
+                              ),
+                            ),
+                            Visibility(
+                              visible: isTyping,
+                              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                const TypingIndicator(),
+                                const SizedBox(width: 6),
+                                Text(
+                                  "en train d'écrire…",
+                                  style: TextStyle(
+                                    color: _colors.primary,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ]),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -2802,12 +3187,13 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   }
 
   bool _isUserTyping(Chat chat) {
+    final String state;
     if (_authProvider.loginUserData.id == chat.senderId) {
-      return chat.receiver_sending == IsSendMessage.SENDING.name;
-    } else if (_authProvider.loginUserData.id == chat.receiverId) {
-      return chat.send_sending == IsSendMessage.SENDING.name;
+      state = chat.receiver_sending ?? '';
+    } else {
+      state = chat.send_sending ?? '';
     }
-    return false;
+    return state.startsWith('SENDING') && state != 'NOTSENDING';
   }
 
   /// Délai max entre deux messages du même expéditeur pour les regrouper
@@ -2872,19 +3258,34 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         final isLastItem = itemIndex == items.length - 1;
         final isHighlighted = _highlightedMessageId == message.id;
 
-        return KeyedSubtree(
-          key: GlobalObjectKey(message.id!),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            decoration: isHighlighted
-                ? BoxDecoration(
-                    color: _colors.primary.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(8),
-                  )
-                : null,
-            child: _buildMessageBubble(message, isLastItem, item.isFirstInGroup, item.isLastInGroup),
-          ),
+        final isNew = !_renderedMessageIds.contains(message.id);
+        if (isNew) _renderedMessageIds.add(message.id!);
+
+        Widget bubble = AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          decoration: isHighlighted
+              ? BoxDecoration(
+                  color: _colors.primary.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(8),
+                )
+              : null,
+          child: _buildMessageBubble(message, isLastItem, item.isFirstInGroup, item.isLastInGroup),
         );
+
+        // Bounce d'apparition uniquement sur les nouveaux messages
+        if (isNew) {
+          bubble = bubble
+              .animate()
+              .scale(
+                begin: const Offset(0.75, 0.75),
+                end: const Offset(1.0, 1.0),
+                duration: const Duration(milliseconds: 380),
+                curve: Curves.elasticOut,
+              )
+              .fade(begin: 0, duration: const Duration(milliseconds: 160));
+        }
+
+        return KeyedSubtree(key: GlobalObjectKey(message.id!), child: bubble);
       },
     );
   }
@@ -2939,6 +3340,20 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
                         );
                       }
 
+                      // Son à la réception d'un nouveau message de l'autre
+                      if (messages.length > _lastMessageCount && _lastMessageCount > 0) {
+                        final myId = _authProvider.loginUserData.id!;
+                        final hasNewFromOther = messages
+                            .skip(_lastMessageCount)
+                            .any((m) => m.sendBy != myId);
+                        if (hasNewFromOther) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            ChatSoundService.playInChat();
+                          });
+                        }
+                      }
+                      _lastMessageCount = messages.length;
+
                       if (messages.length > _messages.length) {
                         WidgetsBinding.instance.addPostFrameCallback((_) {
                           _scrollToBottom();
@@ -2956,6 +3371,34 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
                     }
                     return Center(child: CircularProgressIndicator(color: _colors.primary));
                   },
+                ),
+                // Confetti cœurs / célébration
+                Align(
+                  alignment: Alignment.topCenter,
+                  child: ConfettiWidget(
+                    confettiController: _confettiController,
+                    blastDirectionality: BlastDirectionality.explosive,
+                    particleDrag: 0.05,
+                    emissionFrequency: 0.08,
+                    numberOfParticles: _confettiIsHeart ? 12 : 20,
+                    gravity: 0.2,
+                    colors: _confettiIsHeart
+                        ? const [Color(0xFFFF3B77), Color(0xFFFF6B9D), Color(0xFFFF1493), Color(0xFFFFB7CE)]
+                        : const [Color(0xFFFFD700), Color(0xFF00C9FF), Color(0xFFFF6B35), Color(0xFF00FF87), Color(0xFFBF5FFF)],
+                    createParticlePath: _confettiIsHeart ? _heartPath : null,
+                  ),
+                ),
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: ValueListenableBuilder<String>(
+                    valueListenable: _otherTypingNotifier,
+                    builder: (_, state, __) {
+                      if (state.isEmpty) return const SizedBox.shrink();
+                      return _buildTypingOverlay(state);
+                    },
+                  ),
                 ),
                 if (_showScrollBtn)
                   Positioned(
@@ -2988,10 +3431,129 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       ),
     );
   }
+
+  // Forme de cœur pour le confetti
+  Path _heartPath(Size size) {
+    final path = Path();
+    path.moveTo(size.width / 2, size.height * 0.25);
+    path.cubicTo(size.width * 0.15, -size.height * 0.1, -size.width * 0.3, size.height * 0.5,
+        size.width / 2, size.height);
+    path.cubicTo(size.width * 1.3, size.height * 0.5, size.width * 0.85, -size.height * 0.1,
+        size.width / 2, size.height * 0.25);
+    path.close();
+    return path;
+  }
+
+  Widget _buildTypingOverlay(String state) {
+    return StreamBuilder<UserData>(
+      stream: _receiverStream,
+      builder: (context, snapshot) {
+        return _TypingAnimationOverlay(
+          typingState: state,
+          avatarUrl: snapshot.data?.imageUrl,
+          colors: _colors,
+        );
+      },
+    );
+  }
 }
 
 /// Élément de la liste affichée : soit un séparateur de date, soit un
 /// message avec ses informations de regroupement visuel.
+// ─── Widgets vue unique ──────────────────────────────────────────────────────
+
+class _ViewOnceSentBubble extends StatelessWidget {
+  final Message message;
+  final AppColors colors;
+  const _ViewOnceSentBubble({required this.message, required this.colors});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: colors.primary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.primary.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.timer, size: 18, color: colors.primary),
+          const SizedBox(width: 8),
+          Text(
+            message.viewOnceOpened ? 'Image vue' : 'Vue unique • En attente',
+            style: TextStyle(fontSize: 13, color: colors.primary, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ViewOnceTapBubble extends StatelessWidget {
+  final AppColors colors;
+  const _ViewOnceTapBubble({required this.colors});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      decoration: BoxDecoration(
+        color: colors.surfaceVariant,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.border),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.remove_red_eye_outlined, size: 28, color: colors.primary),
+          const SizedBox(height: 6),
+          Text(
+            'Appuie pour voir',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: colors.primary),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Image • Vue unique',
+            style: TextStyle(fontSize: 11, color: colors.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ViewOnceOpenedBubble extends StatelessWidget {
+  final AppColors colors;
+  const _ViewOnceOpenedBubble({required this.colors});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: colors.surfaceVariant,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.timer_off_outlined, size: 16, color: colors.textSecondary),
+          const SizedBox(width: 6),
+          Text(
+            'Déjà ouvert',
+            style: TextStyle(fontSize: 12, color: colors.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 class _ChatListItem {
   final DateTime? date;
   final Message? message;
@@ -3004,5 +3566,616 @@ class _ChatListItem {
         isLastInGroup = false;
 
   _ChatListItem.message(this.message, {required this.isFirstInGroup, required this.isLastInGroup}) : date = null;
+}
+
+// ─── Typing animation overlay ────────────────────────────────────────────────
+
+class _TypingAnimationOverlay extends StatefulWidget {
+  final String typingState;
+  final String? avatarUrl;
+  final AppColors colors;
+
+  const _TypingAnimationOverlay({
+    required this.typingState,
+    required this.colors,
+    this.avatarUrl,
+  });
+
+  @override
+  State<_TypingAnimationOverlay> createState() => _TypingAnimationOverlayState();
+}
+
+class _TypingAnimationOverlayState extends State<_TypingAnimationOverlay>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _fadeAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 250));
+    _fadeAnim = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
+    _ctrl.forward();
+  }
+
+  @override
+  void didUpdateWidget(_TypingAnimationOverlay old) {
+    super.didUpdateWidget(old);
+    if (widget.typingState.isNotEmpty && old.typingState.isEmpty) {
+      _ctrl.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _fadeAnim,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: widget.colors.surface.withOpacity(0.92),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8, offset: const Offset(0, 2))],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Mini avatar
+            CircleAvatar(
+              radius: 14,
+              backgroundImage: (widget.avatarUrl?.isNotEmpty == true)
+                  ? NetworkImage(widget.avatarUrl!) as ImageProvider
+                  : null,
+              backgroundColor: widget.colors.primary.withOpacity(0.2),
+              child: (widget.avatarUrl?.isNotEmpty == true)
+                  ? null
+                  : Icon(Icons.person, size: 14, color: widget.colors.primary),
+            ),
+            const SizedBox(width: 8),
+            _buildAnimationForState(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAnimationForState() {
+    switch (widget.typingState) {
+      case 'SENDING_AUDIO':
+        return _MicPulseAnimation(color: widget.colors.primary);
+      case 'SENDING_IMAGE':
+        return _CameraShimmerAnimation(color: widget.colors.primary);
+      default:
+        return _DotsAnimation(color: widget.colors.primary);
+    }
+  }
+}
+
+// ── 3 dots animation (texte) ─────────────────────────────────────────────────
+
+class _DotsAnimation extends StatefulWidget {
+  final Color color;
+  const _DotsAnimation({required this.color});
+
+  @override
+  State<_DotsAnimation> createState() => _DotsAnimationState();
+}
+
+class _DotsAnimationState extends State<_DotsAnimation> with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))
+      ..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text('en train d\'écrire ', style: TextStyle(fontSize: 12, color: widget.color, fontWeight: FontWeight.w500)),
+        AnimatedBuilder(
+          animation: _ctrl,
+          builder: (_, __) => Row(
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(3, (i) {
+              final delay = i / 3;
+              final t = ((_ctrl.value - delay) % 1.0).clamp(0.0, 1.0);
+              final opacity = (t < 0.5 ? t * 2 : (1 - t) * 2).clamp(0.3, 1.0);
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 1.5),
+                child: Opacity(
+                  opacity: opacity,
+                  child: Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(color: widget.color, shape: BoxShape.circle),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Mic pulse (audio) ────────────────────────────────────────────────────────
+
+class _MicPulseAnimation extends StatefulWidget {
+  final Color color;
+  const _MicPulseAnimation({required this.color});
+
+  @override
+  State<_MicPulseAnimation> createState() => _MicPulseAnimationState();
+}
+
+class _MicPulseAnimationState extends State<_MicPulseAnimation> with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 600))
+      ..repeat(reverse: true);
+    _scale = Tween<double>(begin: 0.85, end: 1.15)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ScaleTransition(
+          scale: _scale,
+          child: Icon(Icons.mic_rounded, size: 18, color: widget.color),
+        ),
+        const SizedBox(width: 6),
+        Text('enregistrement audio…', style: TextStyle(fontSize: 12, color: widget.color, fontWeight: FontWeight.w500)),
+      ],
+    );
+  }
+}
+
+// ── Camera shimmer (image) ───────────────────────────────────────────────────
+
+class _CameraShimmerAnimation extends StatefulWidget {
+  final Color color;
+  const _CameraShimmerAnimation({required this.color});
+
+  @override
+  State<_CameraShimmerAnimation> createState() => _CameraShimmerAnimationState();
+}
+
+class _CameraShimmerAnimationState extends State<_CameraShimmerAnimation> with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _opacity;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 800))
+      ..repeat(reverse: true);
+    _opacity = Tween<double>(begin: 0.4, end: 1.0)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        FadeTransition(
+          opacity: _opacity,
+          child: Icon(Icons.photo_camera_rounded, size: 18, color: widget.color),
+        ),
+        const SizedBox(width: 6),
+        Text('envoi d\'une image…', style: TextStyle(fontSize: 12, color: widget.color, fontWeight: FontWeight.w500)),
+      ],
+    );
+  }
+}
+
+// ─── Swipe to reply ──────────────────────────────────────────────────────────
+
+class _SwipeToReplyWrapper extends StatefulWidget {
+  final Widget child;
+  final bool isMe;
+  final VoidCallback onReply;
+
+  const _SwipeToReplyWrapper({
+    required this.child,
+    required this.isMe,
+    required this.onReply,
+  });
+
+  @override
+  State<_SwipeToReplyWrapper> createState() => _SwipeToReplyWrapperState();
+}
+
+class _SwipeToReplyWrapperState extends State<_SwipeToReplyWrapper>
+    with SingleTickerProviderStateMixin {
+  static const _kThreshold = 62.0;
+
+  double _offset = 0;
+  double _startOffset = 0;
+  bool _triggered = false;
+
+  late AnimationController _returnCtrl;
+  late Animation<double> _returnAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _returnCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 380),
+    );
+    _returnAnim = Tween<double>(begin: 0, end: 0).animate(
+      CurvedAnimation(parent: _returnCtrl, curve: Curves.elasticOut),
+    );
+    _returnCtrl.addListener(() {
+      if (mounted) setState(() => _offset = _returnAnim.value);
+    });
+  }
+
+  @override
+  void dispose() {
+    _returnCtrl.dispose();
+    super.dispose();
+  }
+
+  void _onUpdate(DragUpdateDetails d) {
+    if (_returnCtrl.isAnimating) return;
+    // Swipe droite uniquement
+    if (d.delta.dx < 0 && _offset == 0) return;
+    setState(() {
+      _offset = (_offset + d.delta.dx).clamp(0.0, _kThreshold * 1.15);
+    });
+    if (!_triggered && _offset >= _kThreshold) {
+      _triggered = true;
+      HapticFeedback.mediumImpact();
+      widget.onReply();
+    }
+  }
+
+  void _onEnd(DragEndDetails d) {
+    _triggered = false;
+    _startOffset = _offset;
+    _returnAnim = Tween<double>(begin: _startOffset, end: 0.0).animate(
+      CurvedAnimation(parent: _returnCtrl, curve: Curves.elasticOut),
+    );
+    _returnCtrl.forward(from: 0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = (_offset / _kThreshold).clamp(0.0, 1.0);
+    final iconOpacity = Curves.easeIn.transform(t);
+    final iconScale = Curves.easeOut.transform(t);
+
+    return GestureDetector(
+      onHorizontalDragUpdate: _onUpdate,
+      onHorizontalDragEnd: _onEnd,
+      behavior: HitTestBehavior.translucent,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Icône de réponse révélée derrière la bulle
+          Positioned(
+            left: _offset - 36,
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: Opacity(
+                opacity: iconOpacity,
+                child: Transform.scale(
+                  scale: iconScale,
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade700.withOpacity(0.85),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.reply_rounded, color: Colors.white, size: 16),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // Bulle qui glisse
+          Transform.translate(
+            offset: Offset(_offset, 0),
+            child: widget.child,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Emoji animé ────────────────────────────────────────────────────────────────
+
+class _EmojiAnimBubble extends StatefulWidget {
+  final Message message;
+  final bool isMe;
+  final VoidCallback onLongPress;
+
+  const _EmojiAnimBubble({
+    required this.message,
+    required this.isMe,
+    required this.onLongPress,
+  });
+
+  @override
+  State<_EmojiAnimBubble> createState() => _EmojiAnimBubbleState();
+}
+
+class _EmojiAnimBubbleState extends State<_EmojiAnimBubble>
+    with TickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final AnimationController _floatCtrl;
+  bool _floatDone = false;
+
+  String get _animType => widget.message.emojiAnimType ?? 'float';
+
+  @override
+  void initState() {
+    super.initState();
+
+    int ms = 700;
+    if (_animType == 'heartbeat') ms = 950;
+    if (_animType == 'float') ms = 1800;
+    if (_animType == 'bounce') ms = 900;
+
+    _ctrl = AnimationController(vsync: this, duration: Duration(milliseconds: ms));
+    _floatCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1600),
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _ctrl.forward().then((_) {
+        if (_animType == 'float' && mounted) {
+          setState(() => _floatDone = true);
+        }
+      });
+      if (_animType == 'float') _floatCtrl.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    _floatCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final emojiText = widget.message.message.trim();
+    // Approximate emoji count via rune groups
+    final runeList = emojiText.runes.toList();
+    final count = runeList.length > 8 ? 3 : runeList.length > 4 ? 2 : 1;
+    final double fontSize = count == 1 ? 68 : count == 2 ? 52 : 42;
+
+    return Align(
+      alignment: widget.isMe ? Alignment.centerRight : Alignment.centerLeft,
+      child: GestureDetector(
+        onLongPress: widget.onLongPress,
+        child: Container(
+          margin: EdgeInsets.only(
+            left: widget.isMe ? 60 : 12,
+            right: widget.isMe ? 12 : 60,
+            top: 4, bottom: 4,
+          ),
+          child: _buildAnimatedContent(emojiText, fontSize, count),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAnimatedContent(String emoji, double fontSize, int count) {
+    switch (_animType) {
+      case 'float':
+        return _buildFloat(emoji, fontSize, count);
+      case 'pop':
+        return _buildPop(emoji, fontSize, count);
+      case 'heartbeat':
+        return _buildHeartbeat(emoji, fontSize, count);
+      case 'spin':
+        return _buildSpin(emoji, fontSize, count);
+      case 'bounce':
+        return _buildBounce(emoji, fontSize, count);
+      default:
+        return Text(emoji, style: TextStyle(fontSize: fontSize));
+    }
+  }
+
+  // ── Float : TikTok-style ─────────────────────────────────
+  Widget _buildFloat(String emoji, double fontSize, int count) {
+    final singleEmoji = _firstEmoji(emoji);
+    return SizedBox(
+      width: fontSize * 2.2,
+      height: _floatDone ? fontSize * 1.4 : fontSize * 3.5,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.bottomCenter,
+        children: [
+          // Base
+          Text(emoji, style: TextStyle(fontSize: fontSize)),
+          // Particules flottantes
+          if (!_floatDone)
+            for (int i = 0; i < 5; i++)
+              AnimatedBuilder(
+                animation: _floatCtrl,
+                builder: (_, __) {
+                  final delay = i * 0.15;
+                  final progress = (_floatCtrl.value - delay).clamp(0.0, 1.0) / (1.0 - delay).clamp(0.01, 1.0);
+                  if (progress <= 0) return const SizedBox.shrink();
+                  final dx = (i % 2 == 0 ? -1.0 : 1.0) * (i * 14.0);
+                  final dy = -progress * (80 + i * 18.0);
+                  final opacity = (1.0 - progress).clamp(0.0, 1.0);
+                  final scale = 0.5 + progress * 0.3;
+                  return Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: Transform.translate(
+                      offset: Offset(dx, dy),
+                      child: RepaintBoundary(
+                        child: Center(
+                          child: Transform.scale(
+                            scale: scale * opacity, // intègre opacity dans scale pour éviter Opacity+emoji
+                            child: Text(singleEmoji, style: TextStyle(fontSize: fontSize * 0.9)),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+        ],
+      ),
+    );
+  }
+
+  // ── Pop : explosion scale ─────────────────────────────────
+  Widget _buildPop(String emoji, double fontSize, int count) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (_, __) {
+        final scale = CurvedAnimation(parent: _ctrl, curve: Curves.elasticOut).value;
+        return Transform.scale(
+          scale: scale.clamp(0.0, 1.4),
+          child: _buildEmojiRow(emoji, fontSize, count),
+        );
+      },
+    );
+  }
+
+  // ── Heartbeat : lub-dub ───────────────────────────────────
+  Widget _buildHeartbeat(String emoji, double fontSize, int count) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (_, __) {
+        final t = _ctrl.value;
+        double scale;
+        if (t < 0.15) scale = 1.0 + t / 0.15 * 0.3;
+        else if (t < 0.30) scale = 1.3 - (t - 0.15) / 0.15 * 0.3;
+        else if (t < 0.45) scale = 1.0 + (t - 0.30) / 0.15 * 0.2;
+        else if (t < 0.60) scale = 1.2 - (t - 0.45) / 0.15 * 0.2;
+        else scale = 1.0;
+        return Transform.scale(
+          scale: scale,
+          child: _buildEmojiRow(emoji, fontSize, count),
+        );
+      },
+    );
+  }
+
+  // ── Spin : rotation + scale in ───────────────────────────
+  Widget _buildSpin(String emoji, double fontSize, int count) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (_, __) {
+        final curved = CurvedAnimation(parent: _ctrl, curve: Curves.elasticOut);
+        final angle = (1.0 - _ctrl.value) * -2 * 3.14159;
+        final scale = curved.value.clamp(0.0, 1.0);
+        return Transform.rotate(
+          angle: angle,
+          child: Transform.scale(
+            scale: scale,
+            child: _buildEmojiRow(emoji, fontSize, count),
+          ),
+        );
+      },
+    );
+  }
+
+  // ── Bounce : tombe d'en haut ──────────────────────────────
+  Widget _buildBounce(String emoji, double fontSize, int count) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (_, __) {
+        final curved = CurvedAnimation(parent: _ctrl, curve: Curves.bounceOut);
+        final dy = (1.0 - curved.value) * -80;
+        return Transform.translate(
+          offset: Offset(0, dy),
+          child: _buildEmojiRow(emoji, fontSize, count),
+        );
+      },
+    );
+  }
+
+  // ── Row d'emojis (gère 1/2/3) ────────────────────────────
+  Widget _buildEmojiRow(String emoji, double fontSize, int count) {
+    if (count == 1) {
+      return Text(emoji, style: TextStyle(fontSize: fontSize));
+    }
+    // Reconstruit les emojis individuels (approx)
+    final parts = _splitEmojis(emoji, count);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: parts.asMap().entries.map((e) {
+        final delay = e.key * 0.15;
+        return Text(e.value, style: TextStyle(fontSize: fontSize));
+      }).toList(),
+    );
+  }
+
+  String _firstEmoji(String text) {
+    if (text.isEmpty) return text;
+    final runes = text.runes.toList();
+    if (runes.length <= 2) return text;
+    // Retourne les 2 premiers runes (base + variation selector si présent)
+    return String.fromCharCodes(runes.take(2));
+  }
+
+  List<String> _splitEmojis(String text, int count) {
+    if (count <= 1) return [text];
+    final runes = text.runes.toList();
+    final perEmoji = (runes.length / count).ceil();
+    final result = <String>[];
+    for (int i = 0; i < count && i * perEmoji < runes.length; i++) {
+      final start = i * perEmoji;
+      final end = (start + perEmoji).clamp(0, runes.length);
+      result.add(String.fromCharCodes(runes.sublist(start, end)));
+    }
+    return result;
+  }
 }
 

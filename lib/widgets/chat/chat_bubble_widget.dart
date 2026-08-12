@@ -377,7 +377,11 @@ class TextBubble extends StatelessWidget {
               const SizedBox(height: 3),
               Align(
                 alignment: Alignment.bottomRight,
-                child: MessageMeta(message: message, isMe: isMe),
+                child: MessageMeta(
+                  message: message,
+                  isMe: isMe,
+                  textColor: isMe ? Colors.white70 : colors.textSecondary,
+                ),
               ),
             ],
           ),
@@ -794,7 +798,11 @@ class _AudioBubbleState extends State<AudioBubble> with SingleTickerProviderStat
                           color: widget.isMe ? Colors.white70 : colors.textSecondary,
                         ),
                       ),
-                      MessageMeta(message: widget.message, isMe: widget.isMe),
+                      MessageMeta(
+                        message: widget.message,
+                        isMe: widget.isMe,
+                        textColor: widget.isMe ? Colors.white70 : colors.textSecondary,
+                      ),
                     ],
                   ),
                 ],
@@ -896,7 +904,11 @@ class PostBubble extends StatelessWidget {
                   const SizedBox(height: 6),
                   Align(
                     alignment: Alignment.bottomRight,
-                    child: MessageMeta(message: message, isMe: isMe),
+                    child: MessageMeta(
+                      message: message,
+                      isMe: isMe,
+                      textColor: colors.textSecondary,
+                    ),
                   ),
                 ],
               ),

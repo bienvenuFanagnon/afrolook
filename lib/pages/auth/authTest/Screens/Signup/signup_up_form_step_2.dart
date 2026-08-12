@@ -17,6 +17,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import '../../../../../../models/model_data.dart';
+import '../../../../../../constants/user_interests.dart';
+import '../../../../../../widgets/interests_selector_widget.dart';
 
 import '../../../../../../providers/authProvider.dart';
 import 'dart:async';
@@ -48,6 +50,8 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
   final _auth = FirebaseAuth.instance;
   bool adreseLoging = false;
   bool onTap = false;
+
+  List<String> _selectedInterests = [];
 
   // Gestion de l'image pour mobile (File) et web (Uint8List)
   File? _imageFile;
@@ -376,6 +380,17 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
       return;
     }
 
+    // Vérification des centres d'intérêt (min 3)
+    if (_selectedInterests.length < 3) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: _colors.warning,
+          content: Text('Choisis au moins 3 centres d\'intérêt', style: TextStyle(color: _colors.onPrimary)),
+        ),
+      );
+      return;
+    }
+
     // Vérification de la taille de l'image (max 5MB)
     final bool isSizeValid = await _checkImageSize();
     if (!isSizeValid) {
@@ -405,6 +420,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
       authProvider.registerUser.adresse = adresseController.text;
       authProvider.registerUser.apropos = aproposController.text;
       authProvider.registerUser.votre_solde = 0.0;
+      authProvider.registerUser.interests = List.from(_selectedInterests);
 
       UserPseudo pseudo = UserPseudo();
       String id = "";
@@ -748,6 +764,14 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
 
                     // Champ à propos
                     _buildAboutSection(),
+                    SizedBox(height: 24),
+
+                    // Centres d'intérêt
+                    InterestsSelectorWidget(
+                      selected: _selectedInterests,
+                      onChanged: (codes) => setState(() => _selectedInterests = codes),
+                      minRequired: 3,
+                    ),
                     SizedBox(height: 20),
 
                     // Section pays

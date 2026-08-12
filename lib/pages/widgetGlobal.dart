@@ -1,8 +1,13 @@
 ﻿import 'package:afrotok/pages/component/consoleWidget.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../constants/user_interests.dart';
+import '../providers/authProvider.dart';
+import '../widgets/interests_selector_widget.dart';
 
 // Couleurs
 final Color _primaryColor = Color(0xFFE21221);
@@ -777,4 +782,229 @@ String formatCount(int count) {
   if (count < 1000) return count.toString();
   if (count < 1000000) return '${(count / 1000).toStringAsFixed(1)}K';
   return '${(count / 1000000).toStringAsFixed(1)}M';
+}
+
+// ── Modal onboarding centres d'intérêt ───────────────────────────────────────
+
+const _kPrefInterestsOnboardingShown = 'interests_onboarding_shown';
+
+Future<void> showInterestsOnboardingModal(BuildContext context) async {
+  final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+  final uid = authProvider.loginUserData.id;
+  if (uid == null) return;
+
+  final prefs = await SharedPreferences.getInstance();
+  if (prefs.getBool(_kPrefInterestsOnboardingShown) ?? false) return;
+
+  // Vérification Firestore directe pour éviter la race condition au démarrage
+  final doc = await FirebaseFirestore.instance.collection('Users').doc(uid).get();
+  if (!doc.exists) return;
+  final firestoreInterests = (doc.data()?['interests'] as List<dynamic>?)
+          ?.map((e) => e.toString())
+          .toList() ??
+      [];
+  if (firestoreInterests.isNotEmpty) {
+    // Sync en mémoire si pas encore chargé
+    if (authProvider.loginUserData.interests?.isEmpty ?? true) {
+      authProvider.loginUserData.interests = firestoreInterests;
+    }
+    return;
+  }
+
+  if (!context.mounted) return;
+  await showDialog(
+    context: context,
+    barrierDismissible: false,
+    barrierColor: Colors.black.withValues(alpha: 0.80),
+    builder: (ctx) => _InterestsOnboardingModal(
+      authProvider: authProvider,
+      prefs: prefs,
+    ),
+  );
+}
+
+class _InterestsOnboardingModal extends StatefulWidget {
+  final UserAuthProvider authProvider;
+  final SharedPreferences prefs;
+
+  const _InterestsOnboardingModal({
+    required this.authProvider,
+    required this.prefs,
+  });
+
+  @override
+  State<_InterestsOnboardingModal> createState() => _InterestsOnboardingModalState();
+}
+
+class _InterestsOnboardingModalState extends State<_InterestsOnboardingModal>
+    with SingleTickerProviderStateMixin {
+  List<String> _selected = [];
+  bool _saving = false;
+  late AnimationController _animCtrl;
+  late Animation<double> _scaleAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _animCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 300));
+    _scaleAnim = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOutBack);
+    _animCtrl.forward();
+  }
+
+  @override
+  void dispose() {
+    _animCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (_selected.length < 3) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Choisis au moins 3 centres d\'intérêt'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+    setState(() => _saving = true);
+    try {
+      final uid = widget.authProvider.loginUserData.id;
+      if (uid != null) {
+        await FirebaseFirestore.instance
+            .collection('Users')
+            .doc(uid)
+            .update({'interests': _selected});
+        widget.authProvider.loginUserData.interests = List.from(_selected);
+      }
+      await widget.prefs.setBool(_kPrefInterestsOnboardingShown, true);
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      printVm('Erreur sauvegarde intérêts: $e');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _skipForNow() async {
+    await widget.prefs.setBool(_kPrefInterestsOnboardingShown, true);
+    if (mounted) Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scaleAnim,
+      child: Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 40),
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A1A1A),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // En-tête
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: const BoxDecoration(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF1FAA59), Color(0xFF0D7A3E)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Text('❤️', style: TextStyle(fontSize: 28)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text(
+                            'Tes centres d\'intérêt',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Personnalise ton expérience Afrolook',
+                            style: TextStyle(color: Colors.white70, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Sélecteur (scrollable)
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: InterestsSelectorWidget(
+                    selected: _selected,
+                    onChanged: (codes) => setState(() => _selected = codes),
+                    minRequired: 3,
+                  ),
+                ),
+              ),
+
+              // Boutons
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: Column(
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: _saving ? null : _save,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1FAA59),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: _saving
+                            ? const SizedBox(
+                                width: 20, height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white,
+                                ),
+                              )
+                            : Text(
+                                'Enregistrer (${_selected.length} / min 3)',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                ),
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: _saving ? null : _skipForNow,
+                      child: const Text(
+                        'Plus tard',
+                        style: TextStyle(color: Colors.grey, fontSize: 13),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

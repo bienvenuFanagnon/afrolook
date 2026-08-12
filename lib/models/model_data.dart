@@ -964,6 +964,9 @@ class UserData {
   // {"creatorId": 3, ...} — remis à zéro quand l'user ouvre la page du créateur
   Map<String, int>? newPostsByCreator = {};
 
+  // Centres d'intérêt (codes de UserInterests.all)
+  List<String>? interests = [];
+
   // ── Compte officiel ───────────────────────────────────────────────────────
   String? officialAccountType;             // OfficialAccountCategory.id (null = non officiel)
   String? officialAccountStatus;           // 'approved' | 'suspended' | 'rejected'
@@ -1319,6 +1322,7 @@ class UserData {
     todayCommentCount = json['todayCommentCount'] ?? 0;
     todayCommentDate = json['todayCommentDate'] as String?;
     todayCommentedPostIds = List<String>.from(json['todayCommentedPostIds'] ?? []);
+    interests = (json['interests'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
   }
 
   Map<String, dynamic> toJson() {
@@ -1376,6 +1380,7 @@ class UserData {
     data['todayCommentCount'] = todayCommentCount;
     data['todayCommentDate'] = todayCommentDate;
     // todayCommentedPostIds reste local (SharedPreferences), ne pas envoyer en Firestore
+    data['interests'] = interests ?? [];
 
     return data;
   }
@@ -1482,6 +1487,7 @@ class Post {
   int? eventDate;
 
   List<String>? commentSuggestions; // Suggestions générées par l'IA (Cloud Functions + Gemini)
+  List<String>? postInterests;      // Centres d'intérêt du post détectés par Gemini
 
   Post({
     this.id,
@@ -1659,6 +1665,9 @@ class Post {
     commentSuggestions = json['commentSuggestions'] != null
         ? List<String>.from(json['commentSuggestions'])
         : null;
+    postInterests = json['postInterests'] != null
+        ? List<String>.from(json['postInterests'])
+        : null;
 
   }
 
@@ -1740,6 +1749,7 @@ class Post {
     // Dans toJson
     data['isPortrait'] = isPortrait;
     if (eventDate != null) data['eventDate'] = _tsToMs(eventDate);
+    if (postInterests != null) data['postInterests'] = postInterests;
     return data;
   }
 
@@ -3403,6 +3413,7 @@ class Chat {
   int? your_msg_not_read = 0;
   String? send_sending;
   String? receiver_sending;
+  int? streak;
   UserData? sender;
   Post? post;
   EntrepriseData? entreprise;
@@ -3443,6 +3454,7 @@ class Chat {
     send_sending = json["send_sending"] == null ? "" : json["send_sending"];
     receiver_sending =
         json["receiver_sending"] == null ? "" : json["receiver_sending"];
+    streak = json['streak'] as int?;
     receiverId = json['receiver_id'];
     lastMessage = json['last_message'];
     type = json['type'];

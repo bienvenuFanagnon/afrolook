@@ -79,6 +79,14 @@ class Message {
   /// Timestamp (ms) d'expiration pour les messages éphémères. 0 = pas éphémère.
   int? expires_at;
 
+  /// Message à vue unique (image/vidéo — disparaît après ouverture)
+  bool isViewOnce;
+  bool viewOnceOpened;
+
+  /// Animation type pour les messages pur-emoji (1-3 emojis sans texte).
+  /// Valeurs : 'float' | 'pop' | 'heartbeat' | 'spin' | 'bounce'
+  String? emojiAnimType;
+
   /// Status of the message.
   final ValueNotifier<MessageStatus> _status;
 
@@ -106,6 +114,9 @@ class Message {
     this.itemSubtitle,
     this.is_encrypted = false,
     this.expires_at,
+    this.isViewOnce = false,
+    this.viewOnceOpened = false,
+    this.emojiAnimType,
     MessageStatus status = MessageStatus.pending,
   })  : reaction = reaction ?? Reaction(reactions: [], reactedUserIds: []),
         key = GlobalKey(),
@@ -163,6 +174,9 @@ class Message {
     itemSubtitle: json['item_subtitle'] as String?,
     is_encrypted: json['is_encrypted'] == true,
     expires_at: json['expires_at'] as int?,
+    isViewOnce: json['isViewOnce'] == true,
+    viewOnceOpened: json['viewOnceOpened'] == true,
+    emojiAnimType: json['emojiAnimType'] as String?,
   );
 
   Map<String, dynamic> toJson() => {
@@ -185,6 +199,9 @@ class Message {
     'imageText': imageText,
     'is_encrypted': is_encrypted,
     if (expires_at != null) 'expires_at': expires_at,
+    if (isViewOnce) 'isViewOnce': true,
+    if (isViewOnce) 'viewOnceOpened': viewOnceOpened,
+    if (emojiAnimType != null) 'emojiAnimType': emojiAnimType,
   };
 }
 class ReplyMessage {

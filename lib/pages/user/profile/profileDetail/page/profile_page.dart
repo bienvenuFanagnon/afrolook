@@ -28,6 +28,8 @@ import '../../../../../theme/app_colors.dart';
 import '../../../../../constant/logo.dart';
 
 import '../../../../../providers/authProvider.dart';
+import '../../../../../constants/user_interests.dart';
+import '../../../../../widgets/interests_selector_widget.dart';
 
 import '../widget/numbers_widget.dart';
 
@@ -52,6 +54,8 @@ class _ProfilePageState extends State<ProfilePage> {
   TextEditingController _phoneController = TextEditingController();
   TextEditingController _aproposController = TextEditingController();
   TextEditingController _pseudoController = TextEditingController();
+  List<String> _editInterests = [];
+
   // 'same' | 'checking' | 'available' | 'taken' | 'invalid' | 'locked'
   String _pseudoStatus = 'same';
   Timer? _pseudoDebounce;
@@ -141,6 +145,7 @@ class _ProfilePageState extends State<ProfilePage> {
     _emailController.text = authProvider.loginUserData.email ?? '';
     _phoneController.text = authProvider.loginUserData.numeroDeTelephone ?? '';
     _aproposController.text = authProvider.loginUserData.apropos ?? '';
+    _editInterests = List.from(authProvider.loginUserData.interests ?? []);
     // On lit le pseudo directement depuis Firestore pour avoir la vérité serveur
     _loadPseudoFromServer();
     _pseudoController.addListener(_onPseudoChanged);
@@ -392,6 +397,11 @@ class _ProfilePageState extends State<ProfilePage> {
       if (_aproposController.text != authProvider.loginUserData.apropos) {
         updates['apropos'] = _aproposController.text;
       }
+      final currentInterests = authProvider.loginUserData.interests ?? [];
+      final interestsChanged = !_listsEqual(_editInterests, currentInterests);
+      if (interestsChanged) {
+        updates['interests'] = _editInterests;
+      }
       final nowMs = DateTime.now().millisecondsSinceEpoch;
       if (pseudoChanged && _pseudoStatus == 'available') {
         updates['pseudo'] = formattedPseudo;
@@ -438,6 +448,9 @@ class _ProfilePageState extends State<ProfilePage> {
       authProvider.loginUserData.email = _emailController.text;
       authProvider.loginUserData.numeroDeTelephone = _phoneController.text;
       authProvider.loginUserData.apropos = _aproposController.text;
+      if (interestsChanged) {
+        authProvider.loginUserData.interests = List.from(_editInterests);
+      }
       authProvider.notifyListeners();
 
       if (!mounted) return;
@@ -1212,6 +1225,11 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ),
 
+              SizedBox(height: 12),
+
+              // Centres d'intérêt
+              _buildInterestsSection(),
+
               SizedBox(height: 20),
 
               // Section Parrainage
@@ -1221,6 +1239,66 @@ class _ProfilePageState extends State<ProfilePage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  bool _listsEqual(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    final sa = Set.from(a);
+    return b.every((e) => sa.contains(e));
+  }
+
+  Widget _buildInterestsSection() {
+    final interests = authProvider.loginUserData.interests ?? [];
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _colors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _colors.border, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: _colors.background,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: _colors.accent.withOpacity(0.3)),
+                ),
+                child: Icon(Icons.favorite_outline, color: _colors.accent, size: 20),
+              ),
+              const SizedBox(width: 16),
+              Text(
+                'Centres d\'intérêt',
+                style: TextStyle(
+                  color: _colors.textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (isEditMode)
+            InterestsSelectorWidget(
+              selected: _editInterests,
+              onChanged: (codes) => setState(() => _editInterests = codes),
+              minRequired: 3,
+            )
+          else if (interests.isNotEmpty)
+            InterestsDisplayWidget(codes: interests)
+          else
+            Text(
+              'Aucun centre d\'intérêt renseigné',
+              style: TextStyle(color: _colors.textSecondary, fontSize: 14),
+            ),
+        ],
       ),
     );
   }

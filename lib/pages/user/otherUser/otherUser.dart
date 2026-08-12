@@ -22,6 +22,7 @@ import '../../../providers/userProvider.dart';
 import '../../../services/linkService.dart';
 import '../../home/user_presence_widget.dart';
 import '../../widgetGlobal.dart';
+import '../../../widgets/interests_selector_widget.dart';
 
 class OtherUserPage extends StatefulWidget {
   final UserData otherUser;
@@ -1204,6 +1205,10 @@ class _OtherUserPageState extends State<OtherUserPage> {
                     ),
                     const SizedBox(height: 16),
                     _buildAboutSection(),
+                    if ((widget.otherUser.interests ?? []).isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      _buildInterestsSection(),
+                    ],
                     const SizedBox(height: 16),
                     _buildFilterSection(),
                   ],
@@ -1424,6 +1429,41 @@ class _OtherUserPageState extends State<OtherUserPage> {
               height: 1.4,
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInterestsSection() {
+    final colors = AppColors.of(context);
+    final interests = widget.otherUser.interests ?? [];
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.favorite_outline, color: colors.primary, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                'Centres d\'intérêt',
+                style: TextStyle(
+                  color: colors.primary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          InterestsDisplayWidget(codes: interests, compact: true),
         ],
       ),
     );

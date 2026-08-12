@@ -1439,6 +1439,10 @@ class _MyHomePageState extends State<MyHomePage>
             _showDailyModal();
 
           });
+          // Onboarding centres d'intérêt pour les utilisateurs qui n'en ont pas
+          if (context.mounted) {
+            showInterestsOnboardingModal(context);
+          }
             // Appeler cette fonction quand tu veux afficher le modal
 
         });

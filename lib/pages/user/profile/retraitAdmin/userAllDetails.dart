@@ -10,6 +10,7 @@ import 'package:iconsax/iconsax.dart';
 
 import '../../../../models/model_data.dart';
 import '../../../../providers/authProvider.dart';
+import '../../../../widgets/interests_selector_widget.dart';
 import '../../mes_gains_post_page.dart';
 import '../../userTransactionListe.dart';
 
@@ -494,6 +495,12 @@ class _UserManagementPageState extends State<UserManagementPage> {
             _buildProfileCard(),
             SizedBox(height: 20),
 
+            // Centres d'intérêt
+            if ((_userData!.interests ?? []).isNotEmpty)
+              _buildInterestsCard(),
+            if ((_userData!.interests ?? []).isNotEmpty)
+              SizedBox(height: 20),
+
             // Carte solde principal
             _buildBalanceCard(),
             SizedBox(height: 20),
@@ -599,6 +606,40 @@ class _UserManagementPageState extends State<UserManagementPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildInterestsCard() {
+    final interests = _userData!.interests ?? [];
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E1E),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Icon(Icons.favorite_outline, color: Color(0xFF1FAA59), size: 18),
+              SizedBox(width: 8),
+              Text(
+                'Centres d\'intérêt',
+                style: TextStyle(
+                  color: Color(0xFF1FAA59),
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          InterestsDisplayWidget(codes: interests, compact: true),
+        ],
       ),
     );
   }

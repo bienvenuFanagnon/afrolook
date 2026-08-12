@@ -60,6 +60,7 @@ import '../../../services/active_creators_service.dart';
 import '../../../widgets/feed/sections/feed_profiles_section.dart';
 import '../creator_unseen_posts_page.dart';
 import '../active_creators_list_page.dart';
+import '../../../services/chat_sound_service.dart';
 
 class ListUserChatsOptimized extends StatefulWidget {
   const ListUserChatsOptimized({super.key});
@@ -76,6 +77,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   bool _isSearching = false;
   List<Chat> _searchResults = [];
   bool _isSearchLoading = false;
+  bool _isSoundMuted = false;
 
   // Gestion de la pagination par lots de 5 - chargement automatique
   List<ChatWithLastMessage> _chats = [];
@@ -231,6 +233,9 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     chatService = ChatService();
 
     _scrollController.addListener(_onScroll);
+    ChatSoundService.isMuted().then((v) {
+      if (mounted) setState(() => _isSoundMuted = v);
+    });
 
     // Cache affiché immédiatement, stream Firebase en parallèle
     _loadArchiveCache();
@@ -1116,6 +1121,18 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
                 Navigator.pushNamed(context, '/amis');
               },
             ),
+            IconButton(
+              tooltip: _isSoundMuted ? 'Activer les sons' : 'Couper les sons',
+              icon: Icon(
+                _isSoundMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+                color: _isSoundMuted ? _colors.textSecondary : _colors.accent,
+              ),
+              onPressed: () async {
+                final newVal = !_isSoundMuted;
+                await ChatSoundService.setMuted(newVal);
+                if (mounted) setState(() => _isSoundMuted = newVal);
+              },
+            ),
             PopupMenuButton<String>(
               icon: Icon(Icons.more_vert, color: _colors.accent),
               color: _colors.surface,
@@ -1713,6 +1730,8 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
                 style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
               ),
             ),
+            const SizedBox(width: 4),
+            _GroupAttentionBadge(lastMsgAtMs: lastMsgAt),
           ],
         ],
       ),
@@ -2026,6 +2045,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
           isPro: isPro,
           messageType: lastMessage?.messageType,
           chatFriend: chat.chatFriend,
+          unreadSinceMs: unreadCount > 0 ? (chat.updatedAt ?? 0) : 0,
         ),
       ),
     );
@@ -2560,6 +2580,8 @@ class ConversationList extends StatefulWidget {
   final bool isPro;
   final String? messageType;
   final UserData? chatFriend;
+  /// Timestamp (ms) du dernier message non lu — 0 si tout est lu.
+  final int unreadSinceMs;
 
   const ConversationList({
     Key? key,
@@ -2580,6 +2602,7 @@ class ConversationList extends StatefulWidget {
     this.isPro = false,
     this.messageType,
     this.chatFriend,
+    this.unreadSinceMs = 0,
   }) : super(key: key);
 
   @override
@@ -2767,7 +2790,7 @@ class _ConversationListState extends State<ConversationList> {
             ),
           ),
         const SizedBox(height: 5),
-        if (widget.unreadCount > 0)
+        if (widget.unreadCount > 0) ...[
           Container(
             constraints: const BoxConstraints(minWidth: 22),
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
@@ -2780,8 +2803,10 @@ class _ConversationListState extends State<ConversationList> {
               style: const TextStyle(fontSize: 11, color: Colors.black, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
-          )
-        else if (widget.isSearchResult)
+          ),
+          if (widget.unreadSinceMs > 0)
+            _UnreadEmotionBadge(unreadSinceMs: widget.unreadSinceMs),
+        ] else if (widget.isSearchResult)
           Icon(Icons.add_circle_outline, color: _colors.primary, size: 20)
         else if (widget.isLastMessageFromMe)
           widget.messageStatus
@@ -2792,4 +2817,187 @@ class _ConversationListState extends State<ConversationList> {
   }
 }
 
-// ---------------------------------------------------------------------------
+// ── Émotion animée sur messages non lus (chats simples) ────────────────────
+
+class _UnreadEmotionBadge extends StatefulWidget {
+  final int unreadSinceMs;
+  const _UnreadEmotionBadge({required this.unreadSinceMs});
+
+  @override
+  State<_UnreadEmotionBadge> createState() => _UnreadEmotionBadgeState();
+}
+
+class _UnreadEmotionBadgeState extends State<_UnreadEmotionBadge>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  int get _level {
+    final elapsed = DateTime.now().millisecondsSinceEpoch - widget.unreadSinceMs;
+    if (elapsed < 5 * 60 * 1000) return 0;
+    if (elapsed < 30 * 60 * 1000) return 1;
+    if (elapsed < 2 * 60 * 60 * 1000) return 2;
+    if (elapsed < 6 * 60 * 60 * 1000) return 3;
+    return 4;
+  }
+
+  static const _emojis = ['', '👀', '😅', '🥺', '😱'];
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final level = _level;
+    if (level == 0) return const SizedBox.shrink();
+
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (_, __) {
+        double scale;
+        double opacity;
+        double angle = 0;
+
+        switch (level) {
+          case 1: // 👀 clignote → scale 0.7↔1.0 (évite Opacity+emoji Impeller bug)
+            scale = 0.7 + _ctrl.value * 0.3;
+            opacity = 1.0;
+            break;
+          case 2: // 😅 tremble légèrement
+            scale = 1.0 + (_ctrl.value - 0.5).abs() * 0.12;
+            opacity = 1.0;
+            angle = (_ctrl.value - 0.5) * 0.25;
+            break;
+          case 3: // 🥺 pulse lent
+            scale = 0.85 + _ctrl.value * 0.3;
+            opacity = 1.0;
+            break;
+          case 4: // 😱 pulse rapide et fort
+            scale = 0.75 + _ctrl.value * 0.5;
+            opacity = 1.0;
+            angle = (_ctrl.value - 0.5) * 0.4;
+            break;
+          default:
+            scale = 1.0;
+            opacity = 1.0;
+        }
+
+        // RepaintBoundary évite le bug Impeller SetInheritedOpacity sur emoji
+        return Padding(
+          padding: const EdgeInsets.only(top: 3),
+          child: RepaintBoundary(
+            child: Transform.rotate(
+              angle: angle,
+              child: Transform.scale(
+                scale: scale,
+                child: Text(_emojis[level], style: const TextStyle(fontSize: 15)),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+
+// ── Animation "appel à regarder" pour les groupes ──────────────────────────
+
+class _GroupAttentionBadge extends StatefulWidget {
+  final int lastMsgAtMs;
+  const _GroupAttentionBadge({required this.lastMsgAtMs});
+
+  @override
+  State<_GroupAttentionBadge> createState() => _GroupAttentionBadgeState();
+}
+
+class _GroupAttentionBadgeState extends State<_GroupAttentionBadge>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  // < 5 min → 🔔 pulse rapide (nouveau message)
+  // 5-30 min → 👁️ clignote
+  // 30min-2h → 👁️ + rotation lente
+  // 2h+ → 👁️ pulse fort + rotation
+  int get _level {
+    if (widget.lastMsgAtMs <= 0) return 0;
+    final elapsed = DateTime.now().millisecondsSinceEpoch - widget.lastMsgAtMs;
+    if (elapsed < 5 * 60 * 1000) return 0;
+    if (elapsed < 30 * 60 * 1000) return 1;
+    if (elapsed < 2 * 60 * 60 * 1000) return 2;
+    return 3;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final duration = _level <= 1
+        ? const Duration(milliseconds: 900)
+        : const Duration(milliseconds: 600);
+    _ctrl = AnimationController(vsync: this, duration: duration)
+      ..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final level = _level;
+    if (level == 0) return const SizedBox.shrink();
+
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (_, __) {
+        final t = _ctrl.value;
+        double scale;
+        double angle = 0;
+        String icon;
+
+        switch (level) {
+          case 1: // 👁️ scale 0.6↔1.0 (effet clignotant sans Opacity)
+            icon = '👁️';
+            scale = 0.6 + t * 0.4;
+            break;
+          case 2: // 👁️ tourne lentement
+            icon = '👁️';
+            scale = 0.9 + t * 0.2;
+            angle = (t - 0.5) * 0.3;
+            break;
+          case 3: // 👁️ pulse fort
+            icon = '👁️';
+            scale = 0.8 + t * 0.5;
+            angle = (t - 0.5) * 0.5;
+            break;
+          default:
+            return const SizedBox.shrink();
+        }
+
+        // RepaintBoundary évite le bug Impeller SetInheritedOpacity sur emoji
+        return RepaintBoundary(
+          child: Transform.rotate(
+            angle: angle,
+            child: Transform.scale(
+              scale: scale,
+              child: Text(icon, style: const TextStyle(fontSize: 14)),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
