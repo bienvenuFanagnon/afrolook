@@ -15,24 +15,16 @@ final Color _successColor = Color(0xFF4CAF50);
 final Color _audioColor = Color(0xFF2196F3);
 final String appId = 'XgkSxKc10vWsJJ2uBraT';
 
-const _kPlayStoreUrl = 'https://play.google.com/store/apps/details?id=com.afrotok.afrotok';
-const _kPrefNeverShow  = 'install_modal_never_show';
-const _kPrefLastShown  = 'install_modal_last_shown';
+const _kPlayStoreUrl  = 'https://play.google.com/store/apps/details?id=com.afrotok.afrotok';
+const _kPrefNeverShow = 'install_modal_never_show';
 
 Future<void> showInstallModal(BuildContext context) async {
   if (!kIsWeb) return;
 
   final prefs = await SharedPreferences.getInstance();
 
-  // Ne plus jamais afficher si l'utilisateur a coché "Ne plus afficher"
+  // Ne plus jamais afficher uniquement si l'utilisateur a explicitement cliqué "Ne plus afficher"
   if (prefs.getBool(_kPrefNeverShow) ?? false) return;
-
-  // Afficher max 1 fois par jour
-  final lastShown = prefs.getString(_kPrefLastShown);
-  final today = DateTime.now().toIso8601String().substring(0, 10);
-  if (lastShown == today) return;
-
-  await prefs.setString(_kPrefLastShown, today);
 
   if (!context.mounted) return;
 
