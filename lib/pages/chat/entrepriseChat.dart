@@ -807,7 +807,8 @@ class _EntrepriseMyChatState extends State<EntrepriseMyChat> {
                                       MessageStatus.undelivered;
                                   msg.id=msgid;
                                   msg.replyMessage=reply;
-                                  await firestore.collection('Messages').doc(msgid).set(msg.toJson());
+                                  final _eMsgData = msg.toJson()..['createdAt'] = FieldValue.serverTimestamp();
+                                  await firestore.collection('Messages').doc(msgid).set(_eMsgData);
                                   widget.chat.updatedAt= DateTime.now().millisecondsSinceEpoch;
 
 

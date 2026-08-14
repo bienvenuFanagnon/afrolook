@@ -140,6 +140,7 @@ class _PostShareSheetState extends State<PostShareSheet>
         'is_encrypted': false,
         'message_state': 'NONLU',
         'create_at_time_spam': now,
+        'createdAt': FieldValue.serverTimestamp(),
         'reply_message': {
           'message': '', 'message_type': 'text', 'messageId': '', 'replyTo': ''
         },

@@ -919,7 +919,8 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       _updateChatCounters('📷 ${urls.length} photos');
       final msgId = _firestore.collection('Messages').doc().id;
       msg.id = msgId;
-      await _firestore.collection('Messages').doc(msgId).set(msg.toJson());
+      final _msgDataMulti = msg.toJson()..['createdAt'] = FieldValue.serverTimestamp();
+      await _firestore.collection('Messages').doc(msgId).set(_msgDataMulti);
       await _sendNotification('📷 ${urls.length} photos');
       await _resetAfterMessage();
     } catch (e) {
@@ -1105,7 +1106,8 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       String msgid = _firestore.collection('Messages').doc().id;
       msg.id = msgid;
 
-      await _firestore.collection('Messages').doc(msgid).set(msg.toJson());
+      final _msgData = msg.toJson()..['createdAt'] = FieldValue.serverTimestamp();
+      await _firestore.collection('Messages').doc(msgid).set(_msgData);
       await _sendNotification("📷 Image");
       await _resetAfterMessage();
 
@@ -1175,7 +1177,8 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       String msgid = _firestore.collection('Messages').doc().id;
       msg.id = msgid;
 
-      await _firestore.collection('Messages').doc(msgid).set(msg.toJson());
+      final _msgData = msg.toJson()..['createdAt'] = FieldValue.serverTimestamp();
+      await _firestore.collection('Messages').doc(msgid).set(_msgData);
       await _sendNotification("🎤 Message audio");
       await _resetAfterMessage();
 
@@ -1237,7 +1240,8 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       String msgid = _firestore.collection('Messages').doc().id;
       msg.id = msgid;
 
-      await _firestore.collection('Messages').doc(msgid).set(msg.toJson());
+      final _msgData = msg.toJson()..['createdAt'] = FieldValue.serverTimestamp();
+      await _firestore.collection('Messages').doc(msgid).set(_msgData);
       await _sendNotification(messageText);
       await _resetAfterMessage();
 

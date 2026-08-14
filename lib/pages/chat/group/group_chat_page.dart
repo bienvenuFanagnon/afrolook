@@ -742,7 +742,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
     _firestore
         .collection('GroupMessages')
         .where('group_id', isEqualTo: widget.groupId)
-        .orderBy('create_at_time_spam', descending: false)
+        .orderBy('createdAt', descending: false)
         .limit(150)
         .snapshots()
         .listen((snap) {
@@ -924,6 +924,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
         'is_encrypted': false,
         'is_hidden': _sendHidden, // message invisible (Gold owner)
         'create_at_time_spam': now,
+        'createdAt': FieldValue.serverTimestamp(),
         'message_state': 'NONLU',
       };
 
@@ -1001,6 +1002,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
         'is_deleted': false,
         'is_encrypted': false,
         'create_at_time_spam': now,
+        'createdAt': FieldValue.serverTimestamp(),
         'message_state': 'NONLU',
       });
 
@@ -1083,6 +1085,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
         'is_deleted': false,
         'is_encrypted': false,
         'create_at_time_spam': now,
+        'createdAt': FieldValue.serverTimestamp(),
         'message_state': 'NONLU',
       });
 
@@ -1204,6 +1207,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
         'is_deleted': false,
         'is_encrypted': false,
         'create_at_time_spam': now,
+        'createdAt': FieldValue.serverTimestamp(),
         'message_state': 'NONLU',
       });
 

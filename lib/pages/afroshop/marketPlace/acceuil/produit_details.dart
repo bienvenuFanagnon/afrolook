@@ -57,6 +57,9 @@ import '../../../entreprise/profile/ProfileEntreprise.dart';
 import '../../../user/conponent.dart';
 
 import 'package:flutter/services.dart'; // Pour Clipboard
+import '../../../../theme/app_colors.dart';
+import 'package:video_player/video_player.dart';
+import '../shop_product_comments.dart';
 
 class ProduitDetail extends StatefulWidget {
   final String productId;
@@ -89,6 +92,10 @@ class _ProduitDetailState extends State<ProduitDetail> {
   int selectedBoostDays = 20;
   bool isLiked = false;
 
+  VideoPlayerController? _videoController;
+  bool _videoInitialized = false;
+  AppColors? _clrs;
+
   @override
   void initState() {
     super.initState();
@@ -111,6 +118,11 @@ class _ProduitDetailState extends State<ProduitDetail> {
       setState(() {
         article = articles.first;
       });
+
+      // Initialiser le lecteur vidéo si l'article en a une
+      if (articles.first.videoUrl != null) {
+        _initVideoPlayer(articles.first.videoUrl!);
+      }
 
       // Vérifier si l'utilisateur a déjà liké
       if (article!.user != null && article!.user!.id != null) {
@@ -151,6 +163,29 @@ class _ProduitDetailState extends State<ProduitDetail> {
         isLoading = false;
       });
     }
+  }
+
+  Future<void> _initVideoPlayer(String url) async {
+    final ctrl = VideoPlayerController.networkUrl(Uri.parse(url));
+    try {
+      await ctrl.initialize();
+      if (mounted) {
+        setState(() {
+          _videoController = ctrl;
+          _videoInitialized = true;
+        });
+      } else {
+        ctrl.dispose();
+      }
+    } catch (e) {
+      ctrl.dispose();
+    }
+  }
+
+  @override
+  void dispose() {
+    _videoController?.dispose();
+    super.dispose();
   }
 
   Future<void> _incrementViews() async {
@@ -822,15 +857,91 @@ class _ProduitDetailState extends State<ProduitDetail> {
     }
   }
 
+  Widget _buildVideoPlayer() {
+    if (article?.videoUrl == null) return SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          height: 220,
+          decoration: BoxDecoration(
+            color: Colors.black,
+            borderRadius: BorderRadius.circular(15),
+          ),
+          clipBehavior: Clip.hardEdge,
+          child: _videoInitialized && _videoController != null
+              ? GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _videoController!.value.isPlaying
+                          ? _videoController!.pause()
+                          : _videoController!.play();
+                    });
+                  },
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Center(
+                        child: AspectRatio(
+                          aspectRatio: _videoController!.value.aspectRatio,
+                          child: VideoPlayer(_videoController!),
+                        ),
+                      ),
+                      if (!_videoController!.value.isPlaying)
+                        Center(
+                          child: Container(
+                            padding: EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.black54,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(Icons.play_arrow_rounded,
+                                color: Colors.white, size: 40),
+                          ),
+                        ),
+                    ],
+                  ),
+                )
+              : Center(
+                  child: CircularProgressIndicator(
+                      color: CustomConstants.kPrimaryColor),
+                ),
+        ),
+        SizedBox(height: 8),
+        if (_videoInitialized && _videoController != null)
+          VideoProgressIndicator(
+            _videoController!,
+            allowScrubbing: true,
+            colors: VideoProgressColors(
+              playedColor: CustomConstants.kPrimaryColor,
+              bufferedColor: CustomConstants.kPrimaryColor.withOpacity(0.3),
+              backgroundColor: Colors.grey[300]!,
+            ),
+          ),
+        SizedBox(height: 16),
+      ],
+    );
+  }
+
+  void _openComments() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => ShopProductComments(articleId: widget.productId),
+    );
+  }
+
   Widget _buildImageGallery() {
     if (article?.images?.isEmpty ?? true) {
       return Container(
         height: 300,
         decoration: BoxDecoration(
-          color: Colors.black12,
+          color: _clrs!.surfaceVariant,
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Icon(Icons.image, size: 50, color: Colors.grey),
+        child: Icon(Icons.image, size: 50, color: _clrs!.textSecondary),
       );
     }
 
@@ -841,7 +952,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
           height: 300,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(15),
-            color: Colors.black12,
+            color: _clrs!.surfaceVariant,
           ),
           child: Stack(
             children: [
@@ -853,7 +964,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
                     fit: BoxFit.cover,
                     width: double.infinity,
                     placeholder: (context, url) => Container(
-                      color: Colors.black12,
+                      color: _clrs!.surfaceVariant,
                       child: Center(child: CircularProgressIndicator(color: CustomConstants.kPrimaryColor)),
                     ),
                     errorWidget: (context, url, error) => Icon(Icons.error, color: Colors.red),
@@ -903,7 +1014,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
                     child: CachedNetworkImage(
                       imageUrl: article!.images![index],
                       fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(color: Colors.black12),
+                      placeholder: (context, url) => Container(color: _clrs!.surfaceVariant),
                       errorWidget: (context, url, error) => Icon(Icons.error),
                     ),
                   ),
@@ -1337,7 +1448,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
       child: Container(
         padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.grey[900],
+          color: _clrs!.surface,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
@@ -1352,9 +1463,9 @@ class _ProduitDetailState extends State<ProduitDetail> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(entrepriseData!.titre!,
-                      style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                      style: TextStyle(fontWeight: FontWeight.bold, color: _clrs!.textPrimary)),
                   Text("${entrepriseData!.suivi} abonnés",
-                      style: TextStyle(color: Colors.grey, fontSize: 12)),
+                      style: TextStyle(color: _clrs!.textSecondary, fontSize: 12)),
                 ],
               ),
             ),
@@ -1389,13 +1500,13 @@ class _ProduitDetailState extends State<ProduitDetail> {
                 countryFlag(article!.countryData!['countryCode'] ?? "TG", size: 20),
                 SizedBox(width: 8),
                 Text(article!.countryData!['country'] ?? "Togo",
-                    style: TextStyle(fontWeight: FontWeight.w600, color: Colors.grey)),
+                    style: TextStyle(fontWeight: FontWeight.w600, color: _clrs!.textSecondary)),
               ],
             ),
           ),
 
         Text(article!.titre!,
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: _clrs!.textPrimary)),
 
         SizedBox(height: 8),
 
@@ -1412,7 +1523,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
         SizedBox(height: 12),
 
         Text(article!.description!,
-            style: TextStyle(color: Colors.grey, fontSize: 14)),
+            style: TextStyle(color: _clrs!.textSecondary, fontSize: 14)),
       ],
     );
   }
@@ -1423,7 +1534,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[900],
+        color: _clrs!.surface,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -1442,14 +1553,14 @@ class _ProduitDetailState extends State<ProduitDetail> {
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[900],
+        color: _clrs!.surface,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text("Contact du vendeur",
-              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 16)),
+              style: TextStyle(fontWeight: FontWeight.bold, color: _clrs!.textPrimary, fontSize: 16)),
 
           SizedBox(height: 12),
 
@@ -1459,10 +1570,10 @@ class _ProduitDetailState extends State<ProduitDetail> {
               SizedBox(width: 8),
               Expanded(
                 child: Text(article!.phone!,
-                    style: TextStyle(color: Colors.white, fontSize: 16)),
+                    style: TextStyle(color: _clrs!.textPrimary, fontSize: 16)),
               ),
               IconButton(
-                icon: Icon(Icons.content_copy, size: 20, color: Colors.grey),
+                icon: Icon(Icons.content_copy, size: 20, color: _clrs!.textSecondary),
                 onPressed: () {
                   Clipboard.setData(ClipboardData(text: article!.phone!));
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -1478,11 +1589,12 @@ class _ProduitDetailState extends State<ProduitDetail> {
   }
 
   @override
-  @override
   Widget build(BuildContext context) {
+    _clrs = AppColors.of(context);
+    final colors = _clrs!;
     if (isLoading) {
       return Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: colors.background,
         body: Center(
           child: LoadingAnimationWidget.flickr(
             size: 50,
@@ -1504,12 +1616,12 @@ class _ProduitDetailState extends State<ProduitDetail> {
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colors.background,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        backgroundColor: colors.background,
+        foregroundColor: colors.textPrimary,
         elevation: 0,
-        title: Text("Détails du produit", style: TextStyle(color: Colors.white)),
+        title: Text("Détails du produit", style: TextStyle(color: colors.textPrimary)),
       ),
       body: Stack(
         children: [
@@ -1518,6 +1630,9 @@ class _ProduitDetailState extends State<ProduitDetail> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Vidéo en premier si disponible
+                _buildVideoPlayer(),
+
                 _buildImageGallery(),
 
                 SizedBox(height: 20),
@@ -1535,6 +1650,26 @@ class _ProduitDetailState extends State<ProduitDetail> {
                 SizedBox(height: 20),
 
                 _buildStats(),
+
+                SizedBox(height: 20),
+
+                // Bouton commentaires
+                if (article != null)
+                  OutlinedButton.icon(
+                    onPressed: _openComments,
+                    icon: Icon(Icons.comment_rounded,
+                        color: CustomConstants.kPrimaryColor),
+                    label: Text(
+                      'Commentaires (${article!.commentaires ?? 0})',
+                      style: TextStyle(color: CustomConstants.kPrimaryColor),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: Size(double.infinity, 48),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      side: BorderSide(color: CustomConstants.kPrimaryColor),
+                    ),
+                  ),
 
                 SizedBox(height: 20),
 
@@ -1556,7 +1691,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Colors.black.withOpacity(0.9), Colors.black],
+                  colors: [Colors.transparent, colors.background.withOpacity(0.9), colors.background],
                 ),
               ),
               child: ElevatedButton(

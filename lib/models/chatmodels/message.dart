@@ -21,7 +21,7 @@
  */
 import 'dart:convert';
 
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:afrotok/models/chatmodels/reaction.dart';
 import 'package:afrotok/models/chatmodels/reply_message.dart';
 import 'package:flutter/cupertino.dart';
@@ -147,7 +147,10 @@ class Message {
   factory Message.fromJson(Map<String, dynamic> json) => Message(
     id: json["id"].toString(),
     message: json["message"],
-    createdAt: DateTime.fromMillisecondsSinceEpoch(json["create_at_time_spam"]),
+    // Priorité au timestamp serveur Firestore (évite les décalages d'horloge client)
+    createdAt: json["createdAt"] != null && json["createdAt"] is Timestamp
+        ? (json["createdAt"] as Timestamp).toDate()
+        : DateTime.fromMillisecondsSinceEpoch(json["create_at_time_spam"]),
     sendBy: json["send_by"],
     is_valide: json["is_valide"] == null ? true : json["is_valide"],
     send_sending: json["send_sending"] == null ? false : json["send_sending"],

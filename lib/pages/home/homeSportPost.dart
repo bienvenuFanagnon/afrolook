@@ -45,6 +45,7 @@ import '../../theme/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 import '../../services/postService/post_view_service.dart';
 import '../../widgets/feed/sections/feed_articles_section.dart';
+import '../../widgets/feed/sections/shop_promo_feed_widget.dart';
 import '../../widgets/feed/sections/feed_canaux_section.dart';
 import '../../widgets/feed/sections/active_creators_section_widget.dart';
 import '../contenuPayant/recent_vip_content_widget.dart';
@@ -119,7 +120,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
 
   // === Pool de widgets rotatifs ===
   static const List<String> _kPoolOrder = [
-    'WeeklyTopCreators', 'BoostedContent', 'Articles', 'Canaux',
+    'WeeklyTopCreators', 'BoostedContent', 'Articles', 'ShopPromo', 'Canaux',
     'TopDating', 'VIPContent', 'Profiles',
   ];
   final int _maxBackgroundPosts = 20;
@@ -2097,6 +2098,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       case 'WeeklyTopCreators': return const WeeklyTopCreatorsWidget();
       case 'BoostedContent':   return const BoostedContentStripWidget();
       case 'Articles':         return _buildArticlesSection();
+      case 'ShopPromo':        return ShopPromoFeedWidget(articles: _articles);
       case 'Canaux':           return _buildCanauxSection();
       case 'TopDating':        return const TopDatingProfilesWidget();
       case 'VIPContent':       return const RecentVIPContentWidget();
@@ -2511,6 +2513,15 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
 
     if (finalPosts.isNotEmpty) {
       contentWidgets.add(const PronosticsCarouselWidget());
+    }
+
+    // AfroShop promo en première position — lundi (1) et jeudi (4)
+    final _sportWeekday = DateTime.now().weekday;
+    if ((_sportWeekday == DateTime.monday || _sportWeekday == DateTime.thursday) &&
+        _articles.isNotEmpty) {
+      contentWidgets.add(
+        ShopPromoFeedWidget(articles: _articles, isFirstPosition: true),
+      );
     }
 
     for (int i = 0; i < finalPosts.length; i++) {

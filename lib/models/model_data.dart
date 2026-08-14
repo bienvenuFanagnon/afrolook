@@ -2091,6 +2091,13 @@ class ArticleData {
   String? modBy; // Modérateur
   int? modDate;
 
+  // Vidéo & social
+  String? videoUrl;         // URL CDN vidéo produit (optionnelle)
+  String? thumbnailUrl;     // Image de couverture (obligatoire si vidéo)
+  int?    videoDurationSec; // Durée vidéo en secondes
+  int?    commentaires;     // Compteur dénormalisé (source: ArticleComments)
+  List<String>? hashTags;  // ex: ['wax', 'dakar', 'mode']
+
   ArticleData({
     this.id,
     this.user_id,
@@ -2137,6 +2144,11 @@ class ArticleData {
     this.modReason,
     this.modBy,
     this.modDate,
+    this.videoUrl,
+    this.thumbnailUrl,
+    this.videoDurationSec,
+    this.commentaires,
+    this.hashTags,
   });
 
   factory ArticleData.fromJson(Map<String, dynamic> json) {
@@ -2189,6 +2201,11 @@ class ArticleData {
       modReason: json['modReason'] as String?,
       modBy: json['modBy'] as String?,
       modDate: (json['modDate'] as num?)?.toInt(),
+      videoUrl: json['videoUrl'] as String?,
+      thumbnailUrl: json['thumbnailUrl'] as String?,
+      videoDurationSec: (json['videoDurationSec'] as num?)?.toInt(),
+      commentaires: (json['commentaires'] as num?)?.toInt(),
+      hashTags: (json['hashTags'] as List<dynamic>?)?.map((e) => e as String).toList(),
     );
   }
 
@@ -2240,6 +2257,11 @@ class ArticleData {
       'modReason': modReason,
       'modBy': modBy,
       'modDate': modDate,
+      if (videoUrl != null) 'videoUrl': videoUrl,
+      if (thumbnailUrl != null) 'thumbnailUrl': thumbnailUrl,
+      if (videoDurationSec != null) 'videoDurationSec': videoDurationSec,
+      if (commentaires != null) 'commentaires': commentaires,
+      if (hashTags != null && hashTags!.isNotEmpty) 'hashTags': hashTags,
     };
   }
 

@@ -49,6 +49,7 @@ import '../../l10n/app_localizations.dart';
 import '../../theme/theme_provider.dart';
 import '../../widgets/feed/sections/feed_articles_section.dart';
 import '../../widgets/feed/sections/feed_canaux_section.dart';
+import '../../widgets/feed/sections/shop_promo_feed_widget.dart';
 import '../../widgets/feed/sections/feed_profiles_section.dart';
 import '../../widgets/feed/sections/feed_state_widgets.dart';
 import '../../widgets/feed/sections/feed_filter_bar.dart';
@@ -131,7 +132,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
   // === Pool de widgets rotatifs (1 apparition max par widget dans le fil) ===
   static const List<String> _kPoolOrder = [
-    'WeeklyTopCreators', 'BoostedContent', 'Articles', 'Canaux',
+    'WeeklyTopCreators', 'BoostedContent', 'Articles', 'ShopPromo', 'Canaux',
     'TopDating', 'VIPContent', 'Profiles',
   ];
 
@@ -2541,6 +2542,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       case 'WeeklyTopCreators': return const WeeklyTopCreatorsWidget();
       case 'BoostedContent':   return const BoostedContentStripWidget();
       case 'Articles':         return _buildArticlesSection();
+      case 'ShopPromo':        return ShopPromoFeedWidget(articles: _articles);
       case 'Canaux':           return _buildCanauxSection();
       case 'TopDating':        return const TopDatingProfilesWidget();
       case 'VIPContent':       return const RecentVIPContentWidget();
@@ -2979,6 +2981,15 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     } else {
       // Pas de posts : afficher la section créateurs en haut quand même
       contentWidgets.add(_buildProfilesSection());
+    }
+
+    // AfroShop promo en première position — lundi (1) et jeudi (4)
+    final _weekday = DateTime.now().weekday;
+    if ((_weekday == DateTime.monday || _weekday == DateTime.thursday) &&
+        _articles.isNotEmpty) {
+      contentWidgets.add(
+        ShopPromoFeedWidget(articles: _articles, isFirstPosition: true),
+      );
     }
 
     for (int i = 0; i < finalPosts.length; i++) {

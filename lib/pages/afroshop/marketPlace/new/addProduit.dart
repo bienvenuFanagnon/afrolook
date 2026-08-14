@@ -1,6 +1,7 @@
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:io';
 import 'package:afrotok/pages/component/consoleWidget.dart';
+import 'package:video_player/video_player.dart';
 
 import 'package:afrotok/pages/entreprise/abonnement/Subscription.dart';
 import 'package:afrotok/pages/user/conponent.dart';
@@ -77,6 +78,8 @@ class _AddAnnonceState extends State<AddNewProduit> {
   Provider.of<CategorieProduitProvider>(context, listen: false);
   final ImagePicker picker = ImagePicker();
   List<XFile>? _mediaFileList = [];
+  XFile? _videoFile;
+  int? _videoDurationSec;
 
   String selectedCountryCode = "TG"; // Code par défaut (Togo)
   String selectedCountryName = "Togo"; // Nom par défaut (Togo)
@@ -177,6 +180,38 @@ class _AddAnnonceState extends State<AddNewProduit> {
         }
       });
     });
+  }
+
+  Future<void> _pickVideo() async {
+    final XFile? video = await picker.pickVideo(source: ImageSource.gallery);
+    if (video == null) return;
+    final sizeBytes = await video.length();
+    if (sizeBytes > 50 * 1024 * 1024) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          backgroundColor: Colors.red,
+          content: Text('Vidéo trop lourde — max 50 Mo'),
+        ));
+      }
+      return;
+    }
+    final duration = await _getVideoDuration(video.path);
+    setState(() {
+      _videoFile = video;
+      _videoDurationSec = duration;
+    });
+  }
+
+  Future<int?> _getVideoDuration(String path) async {
+    final controller = VideoPlayerController.file(File(path));
+    try {
+      await controller.initialize();
+      return controller.value.duration.inSeconds;
+    } catch (_) {
+      return null;
+    } finally {
+      await controller.dispose();
+    }
   }
 
   void _showImageLimitDialog(int maxImages) {
@@ -660,6 +695,110 @@ class _AddAnnonceState extends State<AddNewProduit> {
                     imagesInfo, Colors.blue),
 
                 SizedBox(height: 20),
+
+                // Section vidéo (priorité visuelle)
+                Card(
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.videocam_rounded, color: CustomConstants.kPrimaryColor),
+                            SizedBox(width: 8),
+                            Text(
+                              'Vidéo du produit',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.green.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                'Optionnelle',
+                                style: TextStyle(fontSize: 11, color: Colors.green[700], fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Ajoutez une vidéo pour présenter votre produit (max 50 Mo)',
+                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        ),
+                        SizedBox(height: 12),
+                        if (_videoFile != null) ...[
+                          Container(
+                            padding: EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: CustomConstants.kPrimaryColor.withOpacity(0.07),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: CustomConstants.kPrimaryColor.withOpacity(0.3)),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.videocam_rounded, color: CustomConstants.kPrimaryColor, size: 28),
+                                SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        Path.basename(_videoFile!.path),
+                                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.black87),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      if (_videoDurationSec != null)
+                                        Text(
+                                          '${_videoDurationSec! ~/ 60}:${(_videoDurationSec! % 60).toString().padLeft(2, '0')}',
+                                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  onPressed: () => setState(() { _videoFile = null; _videoDurationSec = null; }),
+                                  icon: Icon(Icons.close, color: Colors.red, size: 20),
+                                  padding: EdgeInsets.zero,
+                                  constraints: BoxConstraints(),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                        ],
+                        OutlinedButton.icon(
+                          onPressed: _pickVideo,
+                          icon: Icon(Icons.add_circle_outline,
+                              color: CustomConstants.kPrimaryColor),
+                          label: Text(
+                            _videoFile == null ? 'Ajouter une vidéo' : 'Changer la vidéo',
+                            style: TextStyle(color: CustomConstants.kPrimaryColor),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            side: BorderSide(color: CustomConstants.kPrimaryColor),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                SizedBox(height: 16),
 
                 // Section images
                 Card(
@@ -1195,6 +1334,27 @@ class _AddAnnonceState extends State<AddNewProduit> {
       annonceRegisterData.updatedAt = DateTime.now().microsecondsSinceEpoch;
       annonceRegisterData.createdAt = DateTime.now().microsecondsSinceEpoch;
 
+      // Upload de la vidéo (si présente)
+      if (_videoFile != null) {
+        final sizeBytes = await _videoFile!.length();
+        if (sizeBytes > 50 * 1024 * 1024) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              backgroundColor: Colors.red,
+              content: Text('Vidéo trop lourde — max 50 Mo'),
+            ));
+          }
+          setState(() { onSaveTap = false; });
+          return;
+        }
+        final videoRef = FirebaseStorage.instance.ref()
+            .child('videos_article/${Path.basename(_videoFile!.path)}');
+        await videoRef.putFile(File(_videoFile!.path));
+        final rawVideoUrl = await videoRef.getDownloadURL();
+        annonceRegisterData.videoUrl = authProvider.convertToCdnUrl(rawVideoUrl, authProvider.appDefaultData);
+        annonceRegisterData.videoDurationSec = _videoDurationSec;
+      }
+
       // Upload des images
       for (XFile _image in _mediaFileList!) {
         Reference storageReference = FirebaseStorage.instance.ref().child(
@@ -1203,9 +1363,15 @@ class _AddAnnonceState extends State<AddNewProduit> {
         UploadTask uploadTask = storageReference.putFile(File(_image.path)!);
         await uploadTask.whenComplete(() async {
           await storageReference.getDownloadURL().then((fileURL) {
-            annonceRegisterData.images!.add(fileURL);
+            final cdnUrl = authProvider.convertToCdnUrl(fileURL, authProvider.appDefaultData);
+            annonceRegisterData.images!.add(cdnUrl);
           });
         });
+      }
+
+      // Thumbnail = première image (couverture pour le feed et la grille)
+      if (annonceRegisterData.images!.isNotEmpty) {
+        annonceRegisterData.thumbnailUrl = annonceRegisterData.images!.first;
       }
 
       String postId = FirebaseFirestore.instance.collection('Articles').doc().id;
@@ -1233,6 +1399,8 @@ class _AddAnnonceState extends State<AddNewProduit> {
         // _description = '';
         // _prix = 0;
         _mediaFileList = [];
+        _videoFile = null;
+        _videoDurationSec = null;
         // _formKey.currentState!.reset();
         // // setState(() {
         // //   categorieSelected = null;

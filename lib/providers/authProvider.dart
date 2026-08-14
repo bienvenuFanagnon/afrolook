@@ -3338,7 +3338,7 @@ if(actionType == 'comment'){
           final fileWithParams = parts[1];
           final urfinal = "https://cdn.afrolookmedia.com/media/$fileWithParams";
 
-          printVm("urfinalmedia: ${urfinal}");
+          // printVm("urfinalmedia: ${urfinal}");
 
           // On construit l'URL finale en passant par ton domaine et le préfixe /media/
           return urfinal;

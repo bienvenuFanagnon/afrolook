@@ -1,4 +1,4 @@
-import 'package:afrotok/utils/responsive_sheet.dart';
+﻿import 'package:afrotok/utils/responsive_sheet.dart';
 import 'package:afrotok/pages/afroshop/marketPlace/acceuil/produit_details.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
@@ -40,6 +40,10 @@ import '../../../user/conponent.dart';
 import '../component.dart';
 
 import '../new/addProduit.dart';
+import 'shop_video_feed.dart';
+import '../../../../theme/app_colors.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shimmer/shimmer.dart';
 
 class HomeAfroshopPage extends StatefulWidget {
   const HomeAfroshopPage({super.key, required this.title});
@@ -50,7 +54,9 @@ class HomeAfroshopPage extends StatefulWidget {
   State<HomeAfroshopPage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomeAfroshopPage> {
+class _HomePageState extends State<HomeAfroshopPage>
+    with TickerProviderStateMixin {
+  late TabController _tabController;
   late UserShopAuthProvider authShopProvider =
   Provider.of<UserShopAuthProvider>(context, listen: false);
   late UserAuthProvider authProvider =
@@ -72,7 +78,7 @@ class _HomePageState extends State<HomeAfroshopPage> {
   String searchQuery = "";
   String selectedSort = 'createdAt_desc';
 
-  // États de chargement
+  // Ã‰tats de chargement
   bool _isLoading = true;
   bool _isLoadingMore = false;
   bool _isLoadingBoosted = true;
@@ -83,6 +89,11 @@ class _HomePageState extends State<HomeAfroshopPage> {
   final int _pageSize = 5;
   int _currentPage = 0;
   DocumentSnapshot? _lastDocument;
+  AppColors? _clrs;
+
+  // CatÃ©gories favorites
+  List<String> _favoriteCategories = [];
+  bool _showFavoritesOnly = false;
 
   final _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -98,14 +109,14 @@ class _HomePageState extends State<HomeAfroshopPage> {
   };
 
   final Map<String, String> sortOptions = {
-    'createdAt_desc': 'Plus récents',
+    'createdAt_desc': 'Plus rÃ©cents',
     'createdAt_asc': 'Plus anciens',
     'prix_asc': 'Prix croissant',
-    'prix_desc': 'Prix décroissant',
+    'prix_desc': 'Prix dÃ©croissant',
     'popularite_desc': 'Plus populaires',
   };
 
-  // Liste des codes ISO des pays africains (identique à la page de création)
+  // Liste des codes ISO des pays africains (identique Ã  la page de crÃ©ation)
   final List<String> africanCountries = [
     'TG', 'DZ', 'AO', 'BJ', 'BW', 'BF', 'BI', 'CV', 'CM', 'CF', 'TD', 'KM',
     'CD', 'DJ', 'EG', 'GQ', 'ER', 'SZ', 'ET', 'GA', 'GM', 'GH', 'GN', 'GW',
@@ -117,33 +128,33 @@ class _HomePageState extends State<HomeAfroshopPage> {
   // Mapping des codes pays vers les noms complets
   final Map<String, String> countryNames = {
     'TG': 'Togo',
-    'DZ': 'Algérie',
+    'DZ': 'AlgÃ©rie',
     'AO': 'Angola',
-    'BJ': 'Bénin',
+    'BJ': 'BÃ©nin',
     'BW': 'Botswana',
     'BF': 'Burkina Faso',
     'BI': 'Burundi',
     'CV': 'Cap-Vert',
     'CM': 'Cameroun',
-    'CF': 'République centrafricaine',
+    'CF': 'RÃ©publique centrafricaine',
     'TD': 'Tchad',
     'KM': 'Comores',
-    'CD': 'République démocratique du Congo',
+    'CD': 'RÃ©publique dÃ©mocratique du Congo',
     'DJ': 'Djibouti',
-    'EG': 'Égypte',
-    'GQ': 'Guinée équatoriale',
-    'ER': 'Érythrée',
+    'EG': 'Ã‰gypte',
+    'GQ': 'GuinÃ©e Ã©quatoriale',
+    'ER': 'Ã‰rythrÃ©e',
     'SZ': 'Eswatini',
-    'ET': 'Éthiopie',
+    'ET': 'Ã‰thiopie',
     'GA': 'Gabon',
     'GM': 'Gambie',
     'GH': 'Ghana',
-    'GN': 'Guinée',
-    'GW': 'Guinée-Bissau',
-    'CI': 'Côte d\'Ivoire',
+    'GN': 'GuinÃ©e',
+    'GW': 'GuinÃ©e-Bissau',
+    'CI': 'CÃ´te d\'Ivoire',
     'KE': 'Kenya',
     'LS': 'Lesotho',
-    'LR': 'Libéria',
+    'LR': 'LibÃ©ria',
     'LY': 'Libye',
     'MG': 'Madagascar',
     'MW': 'Malawi',
@@ -156,8 +167,8 @@ class _HomePageState extends State<HomeAfroshopPage> {
     'NE': 'Niger',
     'NG': 'Nigeria',
     'RW': 'Rwanda',
-    'ST': 'Sao Tomé-et-Principe',
-    'SN': 'Sénégal',
+    'ST': 'Sao TomÃ©-et-Principe',
+    'SN': 'SÃ©nÃ©gal',
     'SC': 'Seychelles',
     'SL': 'Sierra Leone',
     'SO': 'Somalie',
@@ -174,12 +185,15 @@ class _HomePageState extends State<HomeAfroshopPage> {
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _initializeData();
+    _loadFavoriteCategories();
     _scrollController.addListener(_scrollListener);
   }
 
   @override
   void dispose() {
+    _tabController.dispose();
     _scrollController.dispose();
     _searchController.dispose();
     super.dispose();
@@ -192,16 +206,16 @@ class _HomePageState extends State<HomeAfroshopPage> {
     });
 
     try {
-      // Définir le pays par défaut de l'utilisateur
+      // DÃ©finir le pays par dÃ©faut de l'utilisateur
       final userCountry = authProvider.loginUserData.countryData?['countryCode'] ?? 'TG';
       setState(() {
         selectedCountry = userCountry;
       });
 
-      // Charger les catégories
+      // Charger les catÃ©gories
       categories = await categorieProduitProvider.getCategories();
 
-      // Charger les produits boostés
+      // Charger les produits boostÃ©s
       _loadBoostedProducts();
 
       // Charger le premier lot de produits
@@ -214,6 +228,42 @@ class _HomePageState extends State<HomeAfroshopPage> {
         _isLoadingBoosted = false;
       });
     }
+  }
+
+  Future<void> _loadFavoriteCategories() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getStringList('afroshop_fav_categories') ?? [];
+    final isFirstTime = !prefs.containsKey('afroshop_fav_setup_done');
+    if (mounted) {
+      setState(() => _favoriteCategories = saved);
+      if (isFirstTime && categories.isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _showCategoryOnboarding());
+      }
+    }
+  }
+
+  Future<void> _saveFavoriteCategories(List<String> ids) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('afroshop_fav_categories', ids);
+    await prefs.setBool('afroshop_fav_setup_done', true);
+    if (mounted) setState(() => _favoriteCategories = ids);
+  }
+
+  void _showCategoryOnboarding() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _CategoryOnboardingSheet(
+        categories: categories,
+        initialFavorites: _favoriteCategories,
+        onSave: (ids) {
+          _saveFavoriteCategories(ids);
+          Navigator.pop(context);
+        },
+        colors: _clrs ?? AppColors.of(context),
+      ),
+    );
   }
 
   void _loadBoostedProducts() async {
@@ -294,7 +344,7 @@ class _HomePageState extends State<HomeAfroshopPage> {
         articles.add(article);
       }
 
-      // Vérifier s'il reste des données
+      // VÃ©rifier s'il reste des donnÃ©es
       if (snapshot.docs.length < _pageSize) {
         _hasMoreData = false;
       }
@@ -337,8 +387,11 @@ class _HomePageState extends State<HomeAfroshopPage> {
   void _applyFilters() {
     List<ArticleData> filtered = List.from(allArticles);
 
-    // Filtre par catégorie
-    if (selectedCategoryIndex != -1 && categories.isNotEmpty) {
+    // Filtre par catÃ©gorie
+    if (_showFavoritesOnly && _favoriteCategories.isNotEmpty) {
+      filtered = filtered.where((article) =>
+          _favoriteCategories.contains(article.categorie_id)).toList();
+    } else if (selectedCategoryIndex != -1 && categories.isNotEmpty) {
       final selectedCategory = categories[selectedCategoryIndex];
       filtered = filtered.where((article) =>
       article.categorie_id == selectedCategory.id).toList();
@@ -395,7 +448,7 @@ class _HomePageState extends State<HomeAfroshopPage> {
   void _onCountrySelected(String? country) {
     setState(() {
       selectedCountry = country ?? '';
-      // Réinitialiser la pagination quand le pays change
+      // RÃ©initialiser la pagination quand le pays change
       _currentPage = 0;
       _lastDocument = null;
       _hasMoreData = true;
@@ -413,7 +466,7 @@ class _HomePageState extends State<HomeAfroshopPage> {
   void _onSortSelected(String? sort) {
     setState(() {
       selectedSort = sort ?? 'createdAt_desc';
-      // Réinitialiser la pagination quand le tri change
+      // RÃ©initialiser la pagination quand le tri change
       _currentPage = 0;
       _lastDocument = null;
       _hasMoreData = true;
@@ -440,378 +493,57 @@ class _HomePageState extends State<HomeAfroshopPage> {
   }
 
   void _showFilterDialog() {
-    showResponsiveBottomSheet(
+    final colors = _clrs ?? AppColors.of(context);
+    showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) {
-        // Liste des pays sans doublons
-        final uniqueAfricanCountries = [
-          'TG', 'DZ', 'AO', 'BJ', 'BW', 'BF', 'BI', 'CV', 'CM', 'CF', 'TD', 'KM',
-          'CD', 'DJ', 'EG', 'GQ', 'ER', 'SZ', 'ET', 'GA', 'GM', 'GH', 'GN', 'GW',
-          'CI', 'KE', 'LS', 'LR', 'LY', 'MG', 'MW', 'ML', 'MR', 'MU', 'MA', 'MZ',
-          'NA', 'NE', 'NG', 'RW', 'ST', 'SN', 'SC', 'SL', 'SO', 'ZA', 'SS', 'SD',
-          'TZ', 'TN', 'UG', 'ZM', 'ZW'
-        ];
-
-        // S'assurer que la valeur est valide
-        String currentCountryValue = selectedCountry;
-        if (!uniqueAfricanCountries.contains(currentCountryValue)) {
-          currentCountryValue = ''; // Valeur par défaut si invalide
-        }
-
-        // Contrôleur pour la recherche dans le filtre
-        final _filterSearchController = TextEditingController(text: searchQuery);
-
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.85,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            ),
-          ),
-          child: Column(
-            children: [
-              // Header
-              Container(
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.black,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Filtrer et Trier',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.close, color: Colors.white),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Recherche par nom de produit
-                      _buildFilterSection(
-                        title: 'Recherche par nom',
-                        icon: Icons.search,
-                        child: TextFormField(
-                          controller: _filterSearchController,
-                          decoration: InputDecoration(
-                            hintText: 'Ex: Téléphone, Chaussures, Sac...',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            filled: true,
-                            fillColor: Colors.grey[50],
-                            prefixIcon: Icon(Icons.search, color: CustomConstants.kPrimaryColor),
-                            suffixIcon: _filterSearchController.text.isNotEmpty
-                                ? IconButton(
-                              icon: Icon(Icons.clear, color: Colors.grey),
-                              onPressed: () {
-                                _filterSearchController.clear();
-                                setState(() {
-                                  searchQuery = '';
-                                });
-                              },
-                            )
-                                : null,
-                          ),
-                          onChanged: (value) {
-                            setState(() {
-                              searchQuery = value;
-                            });
-                          },
-                        ),
-                      ),
-
-                      SizedBox(height: 20),
-
-                      // Filtre par pays avec recherche
-                      _buildFilterSection(
-                        title: 'Pays',
-                        icon: Icons.flag,
-                        child: DropdownSearch<String>(
-                          popupProps: PopupProps.menu(
-                            showSearchBox: true,
-                            searchFieldProps: TextFieldProps(
-                              decoration: InputDecoration(
-                                hintText: "Rechercher un pays...",
-                                prefixIcon: Icon(Icons.search),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                            ),
-                            itemBuilder: (context, item, isSelected) {
-                              final countryName = countryNames[item] ?? item;
-                              return ListTile(
-                                leading: countryFlag(item, size: 24),
-                                title: Text(countryName),
-                                subtitle: Text(item),
-                                trailing: isSelected
-                                    ? Icon(Icons.check, color: CustomConstants.kPrimaryColor)
-                                    : null,
-                              );
-                            },
-                          ),
-                          dropdownBuilder: (context, selectedItem) {
-                            if (selectedItem == null || selectedItem.isEmpty) {
-                              return Padding(
-                                padding: EdgeInsets.only(left: 8.0),
-                                child: Text('Tous les pays africains'),
-                              );
-                            }
-                            final countryName = countryNames[selectedItem] ?? selectedItem;
-                            return Padding(
-                              padding: EdgeInsets.only(left: 8.0),
-                              child: Row(
-                                children: [
-                                  countryFlag(selectedItem, size: 20),
-                                  SizedBox(width: 8),
-                                  Text(countryName),
-                                ],
-                              ),
-                            );
-                          },
-                          items: uniqueAfricanCountries,
-                          selectedItem: currentCountryValue.isEmpty ? null : currentCountryValue,
-                          onChanged: (String? newValue) {
-                            _onCountrySelected(newValue);
-                          },
-                          dropdownDecoratorProps: DropDownDecoratorProps(
-                            dropdownSearchDecoration: InputDecoration(
-                              labelText: "Sélectionner un pays",
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              filled: true,
-                              fillColor: Colors.grey[50],
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      SizedBox(height: 20),
-
-                      // Filtre par catégorie
-                      _buildFilterSection(
-                        title: 'Catégories',
-                        icon: Icons.category,
-                        child: Container(
-                          height: 50,
-                          child: ListView(
-                            scrollDirection: Axis.horizontal,
-                            children: [
-                              _buildFilterChip('Tous', -1),
-                              ...List.generate(categories.length, (index) {
-                                return _buildFilterChip(
-                                    categories[index].nom ?? "Catégorie", index);
-                              }),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      SizedBox(height: 20),
-
-                      // Filtre par prix
-                      _buildFilterSection(
-                        title: 'Fourchette de prix',
-                        icon: Icons.attach_money,
-                        child: DropdownButtonFormField<String>(
-                          value: selectedPriceRange.isEmpty ? null : selectedPriceRange,
-                          decoration: InputDecoration(
-                            labelText: 'Sélectionner une fourchette',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            filled: true,
-                            fillColor: Colors.grey[50],
-                          ),
-                          items: priceRanges.entries.map((entry) {
-                            return DropdownMenuItem(
-                              value: entry.key,
-                              child: Text(entry.value),
-                            );
-                          }).toList(),
-                          onChanged: _onPriceRangeSelected,
-                        ),
-                      ),
-
-                      SizedBox(height: 20),
-
-                      // Tri des produits
-                      _buildFilterSection(
-                        title: 'Trier par',
-                        icon: Icons.sort,
-                        child: DropdownButtonFormField<String>(
-                          value: selectedSort,
-                          decoration: InputDecoration(
-                            labelText: 'Ordre d\'affichage',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            filled: true,
-                            fillColor: Colors.grey[50],
-                          ),
-                          items: sortOptions.entries.map((entry) {
-                            return DropdownMenuItem(
-                              value: entry.key,
-                              child: Text(entry.value),
-                            );
-                          }).toList(),
-                          onChanged: _onSortSelected,
-                        ),
-                      ),
-
-                      // Résumé des filtres actifs
-                      if (selectedCategoryIndex != -1 || selectedPriceRange.isNotEmpty || searchQuery.isNotEmpty || selectedCountry != (authProvider.loginUserData.countryData?['countryCode'] ?? 'TG'))
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            SizedBox(height: 20),
-                            _buildFilterSection(
-                              title: 'Filtres actifs',
-                              icon: Icons.filter_alt,
-                              child: Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: [
-                                  if (searchQuery.isNotEmpty)
-                                    _buildActiveFilterChip(
-                                      'Recherche: "$searchQuery"',
-                                      onTap: () {
-                                        _filterSearchController.clear();
-                                        setState(() {
-                                          searchQuery = '';
-                                        });
-                                      },
-                                    ),
-                                  if (selectedCategoryIndex != -1)
-                                    _buildActiveFilterChip(
-                                      'Catégorie: ${categories[selectedCategoryIndex].nom}',
-                                      onTap: () {
-                                        setState(() {
-                                          selectedCategoryIndex = -1;
-                                        });
-                                      },
-                                    ),
-                                  if (selectedPriceRange.isNotEmpty)
-                                    _buildActiveFilterChip(
-                                      'Prix: ${priceRanges[selectedPriceRange]}',
-                                      onTap: () {
-                                        setState(() {
-                                          selectedPriceRange = '';
-                                        });
-                                      },
-                                    ),
-                                  if (selectedCountry != (authProvider.loginUserData.countryData?['countryCode'] ?? 'TG') && selectedCountry.isNotEmpty)
-                                    _buildActiveFilterChip(
-                                      'Pays: ${countryNames[selectedCountry]}',
-                                      onTap: () {
-                                        setState(() {
-                                          selectedCountry = authProvider.loginUserData.countryData?['countryCode'] ?? 'TG';
-                                        });
-                                      },
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-
-                      SizedBox(height: 30),
-
-                      // Boutons d'action
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () {
-                                setState(() {
-                                  selectedCategoryIndex = -1;
-                                  selectedCountry = authProvider.loginUserData.countryData?['countryCode'] ?? 'TG';
-                                  selectedPriceRange = '';
-                                  selectedSort = 'createdAt_desc';
-                                  searchQuery = '';
-                                  _searchController.clear();
-                                  _filterSearchController.clear();
-                                });
-                                Navigator.pop(context);
-                                _loadInitialProducts();
-                              },
-                              style: OutlinedButton.styleFrom(
-                                padding: EdgeInsets.symmetric(vertical: 15),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                side: BorderSide(color: CustomConstants.kPrimaryColor),
-                              ),
-                              child: Text(
-                                'Tout effacer',
-                                style: TextStyle(
-                                  color: CustomConstants.kPrimaryColor,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: 10),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () {
-                                Navigator.pop(context);
-                                _applyFilters();
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: CustomConstants.kPrimaryColor,
-                                padding: EdgeInsets.symmetric(vertical: 15),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: Text(
-                                'Appliquer',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 10),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+      builder: (bsCtx) => _FilterBottomSheet(
+        colors: colors,
+        selectedPriceRange: selectedPriceRange,
+        selectedCountry: selectedCountry,
+        selectedSort: selectedSort,
+        searchQuery: searchQuery,
+        priceRanges: priceRanges,
+        sortOptions: sortOptions,
+        africanCountries: africanCountries,
+        countryNames: countryNames,
+        defaultCountry: authProvider.loginUserData.countryData?['countryCode'] ?? 'TG',
+        onApply: ({required String price, required String country, required String sort}) {
+          final countryChanged = country != selectedCountry;
+          final sortChanged = sort != selectedSort;
+          setState(() {
+            selectedPriceRange = price;
+            selectedCountry = country;
+            selectedSort = sort;
+            if (countryChanged || sortChanged) {
+              _currentPage = 0; _lastDocument = null; _hasMoreData = true;
+            }
+          });
+          if (countryChanged || sortChanged) {
+            _loadInitialProducts();
+          } else {
+            _applyFilters();
+          }
+          Navigator.pop(bsCtx);
+        },
+        onClear: () {
+          setState(() {
+            selectedPriceRange = '';
+            selectedCountry = authProvider.loginUserData.countryData?['countryCode'] ?? 'TG';
+            selectedSort = 'createdAt_desc';
+            searchQuery = '';
+            _searchController.clear();
+            _currentPage = 0; _lastDocument = null; _hasMoreData = true;
+          });
+          _loadInitialProducts();
+          Navigator.pop(bsCtx);
+        },
+      ),
     );
   }
 
-// Nouvelle méthode pour les chips de filtres actifs
+// Nouvelle mÃ©thode pour les chips de filtres actifs
   Widget _buildActiveFilterChip(String label, {required VoidCallback onTap}) {
     return Container(
       decoration: BoxDecoration(
@@ -859,7 +591,7 @@ class _HomePageState extends State<HomeAfroshopPage> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: _clrs!.textPrimary,
               ),
             ),
           ],
@@ -880,17 +612,17 @@ class _HomePageState extends State<HomeAfroshopPage> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: isSelected ? Colors.white : Colors.black87,
+            color: isSelected ? Colors.white : _clrs!.textPrimary,
           ),
         ),
         selected: isSelected,
         onSelected: (selected) => _onCategorySelected(selected ? index : -1),
-        backgroundColor: Colors.grey[200],
+        backgroundColor: _clrs!.surfaceVariant,
         selectedColor: CustomConstants.kPrimaryColor,
         labelPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         shape: StadiumBorder(
           side: BorderSide(
-            color: isSelected ? CustomConstants.kPrimaryColor : Colors.grey[300]!,
+            color: isSelected ? CustomConstants.kPrimaryColor : _clrs!.border,
           ),
         ),
       ),
@@ -904,7 +636,7 @@ class _HomePageState extends State<HomeAfroshopPage> {
       builder: (context) {
         return Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: _clrs!.surface,
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(20),
               topRight: Radius.circular(20),
@@ -932,14 +664,14 @@ class _HomePageState extends State<HomeAfroshopPage> {
                   style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black
+                      color: _clrs!.textPrimary
                   ),
                 ),
                 SizedBox(height: 15),
                 Text(
-                  "Pour mettre en ligne un produit, vous devez avoir un compte entreprise. Veuillez créer un compte entreprise depuis votre profil.",
+                  "Pour mettre en ligne un produit, vous devez avoir un compte entreprise. Veuillez crÃ©er un compte entreprise depuis votre profil.",
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey[700], fontSize: 14),
+                  style: TextStyle(color: _clrs!.textSecondary, fontSize: 14),
                 ),
                 SizedBox(height: 20),
                 ElevatedButton(
@@ -952,7 +684,7 @@ class _HomePageState extends State<HomeAfroshopPage> {
                     children: [
                       Icon(Icons.business, color: Colors.white),
                       SizedBox(width: 8),
-                      Text('Créer un compte entreprise',
+                      Text('CrÃ©er un compte entreprise',
                           style: TextStyle(color: Colors.white)),
                     ],
                   ),
@@ -974,91 +706,240 @@ class _HomePageState extends State<HomeAfroshopPage> {
   }
 
   PreferredSizeWidget _buildAppBar() {
+    final colors = _clrs ?? AppColors.of(context);
     final hasActiveFilters = selectedCategoryIndex != -1 ||
+        _showFavoritesOnly ||
         selectedPriceRange.isNotEmpty ||
         searchQuery.isNotEmpty ||
         selectedCountry != (authProvider.loginUserData.countryData?['countryCode'] ?? 'TG');
 
-    return AppBar(
-      backgroundColor: Colors.black,
-      elevation: 0,
-      centerTitle: true,
-      title: Container(
-        height: 50,
-        child: Image.asset(
-          "assets/icons/afroshop_logo-removebg-preview.png",
-          fit: BoxFit.contain,
-        ),
-      ),
-      actions: [
-        // Bouton filtre avec badge si des filtres sont actifs
-        Stack(
-          children: [
-            IconButton(
-              icon: Icon(
-                  Icons.filter_list,
-                  color: hasActiveFilters ? Colors.amber : Colors.white
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(148),
+      child: Container(
+        color: colors.surface,
+        child: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              // â”€â”€ Ligne 1 : logo + toggle vidÃ©o/grille + actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
+                child: Row(
+                  children: [
+                    // Logo pill
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: CustomConstants.kPrimaryColor,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text('AfroShop',
+                          style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                    ),
+                    const SizedBox(width: 10),
+                    // Toggle vidÃ©o / grille
+                    AnimatedBuilder(
+                      animation: _tabController,
+                      builder: (_, __) => Container(
+                        decoration: BoxDecoration(
+                          color: colors.surfaceVariant,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _buildTabToggle(Icons.play_circle_filled_rounded, 0, colors),
+                            _buildTabToggle(Icons.grid_view_rounded, 1, colors),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    // Publier
+                    GestureDetector(
+                      onTap: () => postProvider.getEntreprise(authProvider.loginUserData.id!).then((v) {
+                        if (v.isNotEmpty) {
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => AddNewProduit(entrepriseData: v.first)));
+                        } else {
+                          _showBottomSheetCompterNonValide();
+                        }
+                      }),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: CustomConstants.kPrimaryColor,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(Icons.add, color: Colors.white, size: 15),
+                            SizedBox(width: 4),
+                            Text('Publier', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Filtre avec badge
+                    GestureDetector(
+                      onTap: _showFilterDialog,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Container(
+                            width: 34, height: 34,
+                            decoration: BoxDecoration(
+                              color: hasActiveFilters
+                                  ? CustomConstants.kPrimaryColor.withOpacity(0.12)
+                                  : colors.surfaceVariant,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: hasActiveFilters
+                                  ? CustomConstants.kPrimaryColor
+                                  : colors.border),
+                            ),
+                            child: Icon(Icons.tune_rounded,
+                                color: hasActiveFilters ? CustomConstants.kPrimaryColor : colors.textSecondary,
+                                size: 18),
+                          ),
+                          if (hasActiveFilters)
+                            Positioned(
+                              top: -2, right: -2,
+                              child: Container(
+                                width: 10, height: 10,
+                                decoration: BoxDecoration(
+                                    color: colors.accent, shape: BoxShape.circle),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              onPressed: _showFilterDialog,
-            ),
-            if (hasActiveFilters)
-              Positioned(
-                right: 8,
-                top: 8,
+              const SizedBox(height: 8),
+              // â”€â”€ Ligne 2 : barre de recherche â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
                 child: Container(
-                  padding: EdgeInsets.all(2),
+                  height: 38,
                   decoration: BoxDecoration(
-                    color: Colors.amber,
-                    borderRadius: BorderRadius.circular(6),
+                    color: colors.surfaceVariant,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: colors.border),
                   ),
-                  constraints: BoxConstraints(
-                    minWidth: 12,
-                    minHeight: 12,
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: _onSearch,
+                    style: TextStyle(color: colors.textPrimary, fontSize: 13),
+                    decoration: InputDecoration(
+                      hintText: 'Rechercher un articleâ€¦',
+                      hintStyle: TextStyle(color: colors.textSecondary, fontSize: 13),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                      prefixIcon: Icon(Icons.search, color: colors.textSecondary, size: 18),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: Icon(Icons.close, size: 16, color: colors.textSecondary),
+                              onPressed: () { _searchController.clear(); _onSearch(''); })
+                          : null,
+                    ),
                   ),
                 ),
               ),
-          ],
-        ),
-        // Bouton publier
-        Padding(
-          padding: const EdgeInsets.only(right: 16.0),
-          child: ElevatedButton.icon(
-            onPressed: () {
-              postProvider.getEntreprise(authProvider.loginUserData.id!).then((value) {
-                if (value.isNotEmpty) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => AddNewProduit(entrepriseData: value.first),
-                    ),
-                  );
-                } else {
-                  _showBottomSheetCompterNonValide();
-                }
-              });
-            },
-            icon: Icon(Icons.add, color: Colors.white, size: 18),
-            label: Text("Publier",
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: CustomConstants.kPrimaryColor,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+              const SizedBox(height: 6),
+              // â”€â”€ Ligne 3 : bandeau catÃ©gories scrollable â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+              SizedBox(
+                height: 36,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  children: [
+                    if (_favoriteCategories.isNotEmpty)
+                      _buildCategoryChip('Mes favoris', -99, colors, icon: Icons.favorite_rounded),
+                    _buildCategoryChip('Tous', -1, colors),
+                    ...List.generate(categories.length, (i) =>
+                        _buildCategoryChip(categories[i].nom ?? '', i, colors)),
+                  ],
+                ),
               ),
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            ),
+              const SizedBox(height: 4),
+              Divider(height: 1, color: colors.border),
+            ],
           ),
         ),
-      ],
+      ),
+    );
+  }
+
+  Widget _buildTabToggle(IconData icon, int index, AppColors colors) {
+    final selected = _tabController.index == index;
+    return GestureDetector(
+      onTap: () => setState(() => _tabController.animateTo(index)),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected ? CustomConstants.kPrimaryColor : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Icon(icon, color: selected ? Colors.white : colors.textSecondary, size: 16),
+      ),
+    );
+  }
+
+  Widget _buildCategoryChip(String label, int index, AppColors colors, {IconData? icon}) {
+    final isFavChip = index == -99;
+    final isSelected = isFavChip ? _showFavoritesOnly : (!_showFavoritesOnly && selectedCategoryIndex == index);
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          if (isFavChip) {
+            _showFavoritesOnly = !_showFavoritesOnly;
+            if (_showFavoritesOnly) selectedCategoryIndex = -1;
+          } else {
+            _showFavoritesOnly = false;
+            selectedCategoryIndex = index;
+          }
+        });
+        _applyFilters();
+      },
+      child: Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? CustomConstants.kPrimaryColor.withOpacity(0.12) : colors.surfaceVariant,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? CustomConstants.kPrimaryColor : colors.border,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 12, color: isSelected ? CustomConstants.kPrimaryColor : colors.textSecondary),
+              const SizedBox(width: 4),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                color: isSelected ? CustomConstants.kPrimaryColor : colors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
   Widget _buildSearchBar() {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: _clrs!.surface,
         borderRadius: BorderRadius.circular(25),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: _clrs!.border),
       ),
       child: Row(
         children: [
@@ -1074,13 +955,13 @@ class _HomePageState extends State<HomeAfroshopPage> {
               decoration: InputDecoration(
                 hintText: "Rechercher un article...",
                 border: InputBorder.none,
-                hintStyle: TextStyle(color: Colors.grey[600]),
+                hintStyle: TextStyle(color: _clrs!.textSecondary),
               ),
             ),
           ),
           if (_searchController.text.isNotEmpty)
             IconButton(
-              icon: Icon(Icons.clear, color: Colors.grey),
+              icon: Icon(Icons.clear, color: _clrs!.textSecondary),
               onPressed: () {
                 _searchController.clear();
                 _onSearch("");
@@ -1170,7 +1051,7 @@ class _HomePageState extends State<HomeAfroshopPage> {
               ),
               SizedBox(width: 8),
               Text(
-                'Produits Boostés',
+                'Produits BoostÃ©s',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -1241,27 +1122,30 @@ class _HomePageState extends State<HomeAfroshopPage> {
           },
         ),
 
-        // Indicateur de chargement pour plus de données
+        // Skeleton "load more" animé
         if (_isLoadingMore)
-          Container(
-            padding: EdgeInsets.all(20),
-            child: Center(
-              child: CircularProgressIndicator(
-                color: CustomConstants.kPrimaryColor,
+          Shimmer.fromColors(
+            baseColor: _clrs!.shimmerBase,
+            highlightColor: _clrs!.shimmerHighlight,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                children: [
+                  Expanded(child: _buildProductSkeleton()),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildProductSkeleton()),
+                ],
               ),
             ),
           ),
 
         if (!_hasMoreData && displayedArticles.isNotEmpty)
-          Container(
-            padding: EdgeInsets.all(20),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
             child: Center(
               child: Text(
                 'Vous avez vu tous les produits',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: _clrs!.textSecondary, fontSize: 13),
               ),
             ),
           ),
@@ -1270,61 +1154,75 @@ class _HomePageState extends State<HomeAfroshopPage> {
   }
 
   Widget _buildLoadingGrid() {
-    return GridView.builder(
-      physics: NeverScrollableScrollPhysics(),
-      shrinkWrap: true,
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.75,
+    final colors = _clrs!;
+    return Shimmer.fromColors(
+      baseColor: colors.shimmerBase,
+      highlightColor: colors.shimmerHighlight,
+      child: GridView.builder(
+        physics: NeverScrollableScrollPhysics(),
+        shrinkWrap: true,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 0.75,
+        ),
+        itemCount: 6,
+        itemBuilder: (context, index) => _buildProductSkeleton(),
       ),
-      itemCount: 6,
-      itemBuilder: (context, index) {
-        return _buildProductSkeleton();
-      },
     );
   }
 
   Widget _buildProductSkeleton() {
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Container(
-        padding: EdgeInsets.all(8),
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image skeleton
+            // Image
             Container(
-              height: 120,
+              height: 130,
               width: double.infinity,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(8),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
               ),
             ),
-            SizedBox(height: 8),
-            // Title skeleton
+            const SizedBox(height: 10),
+            // Titre ligne 1
             Container(
-              height: 12,
+              height: 11,
               width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(4),
-              ),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4)),
             ),
-            SizedBox(height: 6),
-            // Price skeleton
+            const SizedBox(height: 5),
+            // Titre ligne 2 (plus courte)
             Container(
-              height: 14,
-              width: 80,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(4),
-              ),
+              height: 11,
+              width: 100,
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4)),
+            ),
+            const SizedBox(height: 10),
+            // Prix badge
+            Container(
+              height: 18,
+              width: 70,
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(9)),
+            ),
+            const Spacer(),
+            // Stats row
+            Row(
+              children: [
+                Container(height: 22, width: 42, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8))),
+                const SizedBox(width: 6),
+                Container(height: 22, width: 42, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8))),
+                const SizedBox(width: 6),
+                Container(height: 22, width: 42, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8))),
+              ],
             ),
           ],
         ),
@@ -1339,22 +1237,22 @@ class _HomePageState extends State<HomeAfroshopPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.search_off, size: 80, color: Colors.grey[400]),
+            Icon(Icons.search_off, size: 80, color: _clrs!.textSecondary),
             SizedBox(height: 16),
             Text(
-              "Aucun produit trouvé",
+              "Aucun produit trouvÃ©",
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.grey[600],
+                color: _clrs!.textSecondary,
               ),
             ),
             SizedBox(height: 8),
             Text(
-              "Essayez de modifier vos critères de recherche ou de filtres",
+              "Essayez de modifier vos critÃ¨res de recherche ou de filtres",
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey[500],
+                color: _clrs!.textSecondary,
               ),
               textAlign: TextAlign.center,
             ),
@@ -1377,7 +1275,7 @@ class _HomePageState extends State<HomeAfroshopPage> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: Text('Réinitialiser les filtres'),
+              child: Text('RÃ©initialiser les filtres'),
             ),
           ],
         ),
@@ -1387,78 +1285,423 @@ class _HomePageState extends State<HomeAfroshopPage> {
 
   @override
   Widget build(BuildContext context) {
+    _clrs = AppColors.of(context);
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: _clrs!.background,
       appBar: _buildAppBar(),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          await _loadInitialProducts();
-          _loadBoostedProducts();
-        },
-        color: CustomConstants.kPrimaryColor,
-        child: SingleChildScrollView(
-          controller: _scrollController,
-          physics: AlwaysScrollableScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Barre de recherche
-              _buildSearchBar(),
-
-              // Indicateur de pays sélectionné
-              _buildCountryIndicator(),
-
-              // Produits boostés avec Carousel
-              _buildBoostedProductsCarousel(),
-
-              // En-tête section produits avec compteur et tri
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: CustomConstants.kPrimaryColor.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(Icons.category,
-                          color: CustomConstants.kPrimaryColor, size: 20),
-                    ),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        selectedCategoryIndex == -1
-                            ? 'Tous les produits'
-                            : 'Produits ${categories[selectedCategoryIndex].nom}',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      '${displayedArticles.length} produit(s)',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Grille de produits
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: _buildProductsGrid(),
-              ),
-              SizedBox(height: 20),
-            ],
+      body: TabBarView(
+        controller: _tabController,
+        physics: NeverScrollableScrollPhysics(),
+        children: [
+          // â”€â”€ Onglet VidÃ©os â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          ShopVideoFeed(
+            articles: displayedArticles,
+            onLoadMore: _loadMoreProducts,
           ),
+
+          // â”€â”€ Onglet Grille â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          RefreshIndicator(
+            onRefresh: () async {
+              await _loadInitialProducts();
+              _loadBoostedProducts();
+            },
+            color: CustomConstants.kPrimaryColor,
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              physics: AlwaysScrollableScrollPhysics(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Produits boostés avec Carousel
+                  _buildBoostedProductsCarousel(),
+
+                  // Banner personnalisé si favoris activés
+                  if (_showFavoritesOnly && _favoriteCategories.isNotEmpty)
+                    _buildPersonalizedBanner(),
+
+                  // En-tête section produits avec compteur et tri
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: CustomConstants.kPrimaryColor.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.category,
+                              color: CustomConstants.kPrimaryColor, size: 20),
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            selectedCategoryIndex == -1
+                                ? 'Tous les produits'
+                                : 'Produits ${categories[selectedCategoryIndex].nom}',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: _clrs!.textPrimary,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          '${displayedArticles.length} produit(s)',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: _clrs!.textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Grille de produits
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildProductsGrid(),
+                  ),
+                  SizedBox(height: 20),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPersonalizedBanner() {
+    final colors = _clrs!;
+    return GestureDetector(
+      onTap: _showCategoryOnboarding,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: CustomConstants.kPrimaryColor.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: CustomConstants.kPrimaryColor.withOpacity(0.3)),
         ),
+        child: Row(
+          children: [
+            Icon(Icons.auto_awesome_rounded, color: CustomConstants.kPrimaryColor, size: 16),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text('Sélection basée sur vos préférences',
+                  style: TextStyle(fontSize: 12, color: CustomConstants.kPrimaryColor)),
+            ),
+            Text('Modifier', style: TextStyle(fontSize: 11, color: CustomConstants.kPrimaryColor, fontWeight: FontWeight.w600)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Filter bottom sheet
+// ─────────────────────────────────────────────────────────────────────────────
+class _FilterBottomSheet extends StatefulWidget {
+  final AppColors colors;
+  final String selectedPriceRange;
+  final String selectedCountry;
+  final String selectedSort;
+  final String searchQuery;
+  final Map<String, String> priceRanges;
+  final Map<String, String> sortOptions;
+  final List<String> africanCountries;
+  final Map<String, String> countryNames;
+  final String defaultCountry;
+  final void Function({required String price, required String country, required String sort}) onApply;
+  final VoidCallback onClear;
+
+  const _FilterBottomSheet({
+    required this.colors,
+    required this.selectedPriceRange,
+    required this.selectedCountry,
+    required this.selectedSort,
+    required this.searchQuery,
+    required this.priceRanges,
+    required this.sortOptions,
+    required this.africanCountries,
+    required this.countryNames,
+    required this.defaultCountry,
+    required this.onApply,
+    required this.onClear,
+  });
+
+  @override
+  State<_FilterBottomSheet> createState() => _FilterBottomSheetState();
+}
+
+class _FilterBottomSheetState extends State<_FilterBottomSheet> {
+  late String _price;
+  late String _country;
+  late String _sort;
+
+  @override
+  void initState() {
+    super.initState();
+    _price = widget.selectedPriceRange;
+    _country = widget.selectedCountry;
+    _sort = widget.selectedSort;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.colors;
+    return Container(
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Drag handle
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 10),
+            width: 36, height: 4,
+            decoration: BoxDecoration(color: c.border, borderRadius: BorderRadius.circular(4)),
+          ),
+          // Header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                Text('Filtres', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: c.textPrimary)),
+                const Spacer(),
+                TextButton(
+                  onPressed: widget.onClear,
+                  child: Text('Tout effacer', style: TextStyle(fontSize: 13, color: CustomConstants.kPrimaryColor)),
+                ),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: c.border),
+          // Scrollable content
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Prix ──
+                  _sectionLabel('Fourchette de prix', c),
+                  DropdownButtonFormField<String>(
+                    value: _price.isEmpty ? null : _price,
+                    dropdownColor: c.surface,
+                    style: TextStyle(color: c.textPrimary, fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: 'Tous les prix',
+                      hintStyle: TextStyle(color: c.textSecondary),
+                      filled: true,
+                      fillColor: c.surfaceVariant,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: c.border)),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: c.border)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    ),
+                    items: widget.priceRanges.entries.map((e) => DropdownMenuItem(value: e.key.isEmpty ? null : e.key, child: Text(e.value))).toList(),
+                    onChanged: (v) => setState(() => _price = v ?? ''),
+                  ),
+                  const SizedBox(height: 16),
+                  // ── Pays ──
+                  _sectionLabel('Pays / Région', c),
+                  DropdownButtonFormField<String>(
+                    value: _country.isEmpty ? null : _country,
+                    dropdownColor: c.surface,
+                    style: TextStyle(color: c.textPrimary, fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: 'Tous les pays',
+                      hintStyle: TextStyle(color: c.textSecondary),
+                      filled: true,
+                      fillColor: c.surfaceVariant,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: c.border)),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: c.border)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    ),
+                    items: widget.africanCountries.map((code) {
+                      final name = widget.countryNames[code] ?? code;
+                      return DropdownMenuItem(value: code, child: Text('$name ($code)'));
+                    }).toList(),
+                    onChanged: (v) => setState(() => _country = v ?? widget.defaultCountry),
+                  ),
+                  const SizedBox(height: 16),
+                  // ── Tri ──
+                  _sectionLabel('Trier par', c),
+                  ...widget.sortOptions.entries.map((e) => GestureDetector(
+                    onTap: () => setState(() => _sort = e.key),
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: _sort == e.key ? CustomConstants.kPrimaryColor.withOpacity(0.08) : c.surfaceVariant,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: _sort == e.key ? CustomConstants.kPrimaryColor : c.border),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(child: Text(e.value, style: TextStyle(fontSize: 13, color: _sort == e.key ? CustomConstants.kPrimaryColor : c.textPrimary))),
+                          if (_sort == e.key)
+                            Icon(Icons.check_circle_rounded, color: CustomConstants.kPrimaryColor, size: 18),
+                        ],
+                      ),
+                    ),
+                  )),
+                  const SizedBox(height: 8),
+                  // Apply button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => widget.onApply(price: _price, country: _country, sort: _sort),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: CustomConstants.kPrimaryColor,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('Appliquer les filtres', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 15)),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionLabel(String text, AppColors c) => Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Text(text, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: c.textSecondary, letterSpacing: .4)),
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Category onboarding sheet
+// ─────────────────────────────────────────────────────────────────────────────
+class _CategoryOnboardingSheet extends StatefulWidget {
+  final List<Categorie> categories;
+  final List<String> initialFavorites;
+  final void Function(List<String> ids) onSave;
+  final AppColors colors;
+
+  const _CategoryOnboardingSheet({
+    required this.categories,
+    required this.initialFavorites,
+    required this.onSave,
+    required this.colors,
+  });
+
+  @override
+  State<_CategoryOnboardingSheet> createState() => _CategoryOnboardingSheetState();
+}
+
+class _CategoryOnboardingSheetState extends State<_CategoryOnboardingSheet> {
+  late Set<String> _selected;
+
+  @override
+  void initState() {
+    super.initState();
+    _selected = widget.initialFavorites.toSet();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.colors;
+    return Container(
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 10),
+            width: 36, height: 4,
+            decoration: BoxDecoration(color: c.border, borderRadius: BorderRadius.circular(4)),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Vos catégories préférées',
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: c.textPrimary)),
+                const SizedBox(height: 4),
+                Text('Sélectionnez au moins 2 — votre fil sera personnalisé',
+                    style: TextStyle(fontSize: 13, color: c.textSecondary)),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: c.border),
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              child: Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: widget.categories.map((cat) {
+                  final id = cat.id ?? '';
+                  final nom = cat.nom ?? '';
+                  final sel = _selected.contains(id);
+                  return GestureDetector(
+                    onTap: () => setState(() { if (sel) _selected.remove(id); else _selected.add(id); }),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                      decoration: BoxDecoration(
+                        color: sel ? CustomConstants.kPrimaryColor.withOpacity(0.12) : c.surfaceVariant,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: sel ? CustomConstants.kPrimaryColor : c.border),
+                      ),
+                      child: Text(nom,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: sel ? CustomConstants.kPrimaryColor : c.textSecondary,
+                            fontWeight: sel ? FontWeight.w600 : FontWeight.normal,
+                          )),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            child: Column(
+              children: [
+                Text('${_selected.length} catégorie(s) sélectionnée(s)',
+                    style: TextStyle(fontSize: 12, color: c.textSecondary)),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _selected.isEmpty ? null : () => widget.onSave(_selected.toList()),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: CustomConstants.kPrimaryColor,
+                      disabledBackgroundColor: c.border,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Voir ma sélection', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 15)),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => widget.onSave([]),
+                  child: Text('Passer — tout afficher', style: TextStyle(fontSize: 13, color: c.textSecondary)),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -969,11 +969,13 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
           _StatChip(
               icon: Icons.comment_outlined,
               value: _formatCount(_content.comments)),
-          const SizedBox(width: 12),
-          _StatChip(
-              icon: Icons.shopping_bag_outlined,
-              value: _formatCount(_content.sales),
-              label: 'vente${_content.sales != 1 ? 's' : ''}'),
+          if (_isOwner || _isAdmin) ...[
+            const SizedBox(width: 12),
+            _StatChip(
+                icon: Icons.shopping_bag_outlined,
+                value: _formatCount(_content.sales),
+                label: 'vente${_content.sales != 1 ? 's' : ''}'),
+          ],
           if (_content.duration > 0) ...[
             const SizedBox(width: 12),
             _StatChip(

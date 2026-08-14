@@ -143,6 +143,7 @@ class _GenericShareSheetState extends State<GenericShareSheet>
         'is_encrypted': false,
         'message_state': 'NONLU',
         'create_at_time_spam': now,
+        'createdAt': FieldValue.serverTimestamp(),
         'reply_message': {'message': '', 'message_type': 'text', 'messageId': '', 'replyTo': ''},
       });
       await FirebaseFirestore.instance.collection('Chats').doc(chat.id).update({
@@ -226,6 +227,7 @@ class _GenericShareSheetState extends State<GenericShareSheet>
         'is_encrypted': false,
         'reply_to_id': '',
         'create_at_time_spam': now,
+        'createdAt': FieldValue.serverTimestamp(),
       });
       final otherMembers = (group['member_ids'] as List<dynamic>? ?? [])
           .cast<String>()

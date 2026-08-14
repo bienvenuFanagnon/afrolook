@@ -10,6 +10,7 @@ import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../constant/custom_theme.dart';
 import '../../../models/model_data.dart';
+import '../../../theme/app_colors.dart';
 import '../../../providers/afroshop/authAfroshopProvider.dart';
 import '../../../providers/afroshop/categorie_produits_provider.dart';
 import '../../../providers/authProvider.dart';
@@ -45,14 +46,16 @@ class _ArticleTileState extends State<ArticleTile> {
 
   bool _isLoading = false;
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
+  AppColors? _clrs;
 
   Widget _buildStatItem(IconData icon, int count, Color color, {VoidCallback? onTap}) {
+    final colors = _clrs;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colors?.surfaceVariant ?? Colors.white,
           borderRadius: BorderRadius.circular(10),
           boxShadow: [
             BoxShadow(
@@ -72,7 +75,7 @@ class _ArticleTileState extends State<ArticleTile> {
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
-                color: Colors.black87,
+                color: colors?.textPrimary ?? Colors.black87,
               ),
             ),
           ],
@@ -147,36 +150,20 @@ class _ArticleTileState extends State<ArticleTile> {
 
   @override
   Widget build(BuildContext context) {
+    _clrs = AppColors.of(context);
+    final colors = _clrs!;
     return Card(
-      elevation: 3,
+      elevation: 2,
       margin: EdgeInsets.all(6),
+      color: colors.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: colors.border, width: 1),
       ),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.black.withOpacity(0.8),
-              CustomConstants.kPrimaryColor.withOpacity(0.1),
-              Colors.amber.withOpacity(0.05),
-            ],
-          ),
-          border: Border.all(
-            color: CustomConstants.kPrimaryColor.withOpacity(0.3),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: CustomConstants.kPrimaryColor.withOpacity(0.2),
-              blurRadius: 8,
-              spreadRadius: 1,
-              offset: Offset(0, 2),
-            ),
-          ],
+          color: colors.surface,
         ),
         child: Stack(
           children: [
@@ -194,8 +181,8 @@ class _ArticleTileState extends State<ArticleTile> {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: Colors.amber.withOpacity(0.4),
-                        width: 2,
+                        color: colors.primary.withOpacity(0.3),
+                        width: 1.5,
                       ),
                       boxShadow: [
                         BoxShadow(
@@ -216,19 +203,13 @@ class _ArticleTileState extends State<ArticleTile> {
                               fit: BoxFit.cover,
                               width: double.infinity,
                               height: double.infinity,
-                              imageUrl: '${widget.article.images!.first}',
+                              imageUrl: widget.article.thumbnailUrl ??
+                                  (widget.article.images?.isNotEmpty == true
+                                      ? widget.article.images!.first
+                                      : ''),
                               progressIndicatorBuilder: (context, url, downloadProgress) =>
                                   Container(
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                        colors: [
-                                          Colors.grey[300]!,
-                                          Colors.grey[200]!,
-                                        ],
-                                      ),
-                                    ),
+                                    color: colors.shimmerBase,
                                     child: Center(
                                       child: CircularProgressIndicator(
                                         value: downloadProgress.progress,
@@ -238,20 +219,11 @@ class _ArticleTileState extends State<ArticleTile> {
                                     ),
                                   ),
                               errorWidget: (context, url, error) => Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [
-                                      Colors.grey[300]!,
-                                      Colors.grey[200]!,
-                                    ],
-                                  ),
-                                ),
+                                color: colors.shimmerBase,
                                 child: Center(
                                   child: Icon(
                                     Icons.shopping_bag_rounded,
-                                    color: Colors.grey[500],
+                                    color: colors.textSecondary,
                                     size: 40,
                                   ),
                                 ),
@@ -321,6 +293,50 @@ class _ArticleTileState extends State<ArticleTile> {
                               ),
                             ),
 
+                            // Badge drapeau pays (bas-gauche)
+                            Positioned(
+                              bottom: 6,
+                              left: 6,
+                              child: Container(
+                                padding: EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.4),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: countryFlag(
+                                  widget.article.countryData?['countryCode'] ?? 'TG',
+                                  size: 14,
+                                ),
+                              ),
+                            ),
+
+                            // Badge vidéo
+                            if (widget.article.videoUrl != null)
+                              Positioned(
+                                bottom: 6,
+                                right: 6,
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.75),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.play_arrow_rounded, color: Colors.white, size: 12),
+                                      if (widget.article.videoDurationSec != null) ...[
+                                        SizedBox(width: 2),
+                                        Text(
+                                          '${widget.article.videoDurationSec! ~/ 60}:${(widget.article.videoDurationSec! % 60).toString().padLeft(2, '0')}',
+                                          style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w600),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ),
+
                             // Overlay de dégradé en bas de l'image
                             Positioned(
                               bottom: 0,
@@ -365,7 +381,7 @@ class _ArticleTileState extends State<ArticleTile> {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: Colors.black87,
+                              color: colors.textPrimary,
                               height: 1.3,
                             ),
                             maxLines: 1, // 👉 une seule ligne
@@ -385,7 +401,7 @@ class _ArticleTileState extends State<ArticleTile> {
                               _buildStatItem(
                                 Icons.remove_red_eye_rounded,
                                 widget.article.vues ?? 0,
-                                Colors.grey[700]!,
+                                colors.textSecondary,
                               ),
 
                               // Contact WhatsApp
@@ -577,18 +593,16 @@ class _ArticleTileBoosterState extends State<ArticleTileBooster> {
                   width: widget.w * 0.6,
                   child: CachedNetworkImage(
                     fit: BoxFit.cover,
-                    imageUrl: '${widget.article.images!.first}',
+                    imageUrl: widget.article.thumbnailUrl ?? (widget.article.images?.isNotEmpty == true ? widget.article.images!.first : ''),
                     progressIndicatorBuilder: (context, url, downloadProgress) => Skeletonizer(
                       child: SizedBox(
                         child: ClipRRect(
                           borderRadius: BorderRadius.all(Radius.circular(10)),
-                          child: Image.network('${widget.article.images!.first}'),
+                          child: Container(color: Colors.grey[300]),
                         ),
                       ),
                     ),
-                    errorWidget: (context, url, error) => Container(
-                      child: Image.network('${widget.article.images!.first}', fit: BoxFit.cover),
-                    ),
+                    errorWidget: (context, url, error) => Container(color: Colors.grey[300]),
                   ),
                 ),
               ),
@@ -717,20 +731,17 @@ onTap: () {
                   child: Container(
                     child: CachedNetworkImage(
                       fit: BoxFit.cover,
-                      imageUrl: '${widget.article.images!.first}',
+                      imageUrl: widget.article.thumbnailUrl ?? (widget.article.images?.isNotEmpty == true ? widget.article.images!.first : ''),
                       progressIndicatorBuilder:
                           (context, url, downloadProgress) => Skeletonizer(
                         child: SizedBox(
                           child: ClipRRect(
                             borderRadius: BorderRadius.all(Radius.circular(10)),
-                            child: Image.network('${widget.article.images!.first}'),
+                            child: Container(color: Colors.grey[300]),
                           ),
                         ),
                       ),
-                      errorWidget: (context, url, error) => Container(
-                        child: Image.network('${widget.article.images!.first}',
-                            fit: BoxFit.cover),
-                      ),
+                      errorWidget: (context, url, error) => Container(color: Colors.grey[300]),
                     ),
                   ),
                 ),
@@ -837,7 +848,7 @@ class ProductWidget extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: CachedNetworkImage(
-                imageUrl: article.images?.first ?? '',
+                imageUrl: article.thumbnailUrl ?? (article.images?.isNotEmpty == true ? article.images!.first : ''),
                 fit: BoxFit.cover,
                 width: double.infinity,
                 height: double.infinity,

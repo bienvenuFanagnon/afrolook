@@ -97,6 +97,7 @@ import '../providers/locale_provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../services/postService/post_view_service.dart';
+import '../widgets/feed/sections/shop_promo_feed_widget.dart';
 
 const _afroBlack = Color(0xFF000000);
 const _afroGreen = Color(0xFF2ECC71);
@@ -135,8 +136,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
   final FirebaseAuth _auth = FirebaseAuth.instance;
   late SharedPreferences _prefs;
   int _itemsSinceLastLoad = 0;
-  // Feed mixte : contient soit Post soit Map<String,dynamic> (pub)
+  // Feed mixte : contient Post, Map<String,dynamic> (pub), ou _ShopPromoSentinel
   List<dynamic> _feedItems = [];
+  List<ArticleData> _promoArticles = [];
   List<Post> _videoPosts = [];
   final Set<String> _loadedPostIds = {};
   final Set<String> _loadingRelations = {};
@@ -895,22 +897,49 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
       mixedPosts.add(oldPost);
     }
 
-    // insertion ads
+    // insertion ads + promo AfroShop (toutes les 7 vidéos)
     final ads = authProvider.advertisements;
     _feedItems.clear();
 
     int adIdx = 0;
+    int postCount = 0; // compte uniquement les Post (pas les pubs)
 
     for (int i = 0; i < mixedPosts.length; i++) {
       _feedItems.add(mixedPosts[i]);
+      postCount++;
 
-      if ((i + 1) % 3 == 0 &&
+      // Pub toutes les 3 vidéos
+      if (postCount % 3 == 0 &&
           i != mixedPosts.length - 1 &&
           adIdx < ads.length) {
         _feedItems.add(ads[adIdx]);
         adIdx++;
       }
+
+      // Promo AfroShop toutes les 7 vidéos
+      if (postCount % 7 == 0 && _promoArticles.isNotEmpty) {
+        _feedItems.add(const _ShopPromoSentinel());
+      }
     }
+
+    // Charger les articles promo si pas encore fait
+    if (_promoArticles.isEmpty) _loadPromoArticles();
+  }
+
+  Future<void> _loadPromoArticles() async {
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('Articles')
+          .where('status', isEqualTo: 'ACTIF')
+          .limit(20)
+          .get();
+      if (!mounted) return;
+      setState(() {
+        _promoArticles = snap.docs
+            .map((d) => ArticleData.fromJson(d.data()))
+            .toList();
+      });
+    } catch (_) {}
   }
   void _rebuildFeedItems2() {
     _feedItems.clear();
@@ -3419,6 +3448,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
               final item = _feedItems[index];
               if (item is Post) {
                 return _buildVideoPage(item);
+              } else if (item is _ShopPromoSentinel) {
+                return ShopPromoVideoItem(articles: _promoArticles);
               } else if (item is Map<String, dynamic>) {
                 return AdPostWidget(
                   adData: item,
@@ -3462,6 +3493,11 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
     }
     return _videoStack;
   }
+}
+
+/// Sentinel inséré dans _feedItems pour déclencher l'affichage de la promo AfroShop.
+class _ShopPromoSentinel {
+  const _ShopPromoSentinel();
 }
 
 // Remplacer la classe FlyingHeart par celle-ci

@@ -501,582 +501,509 @@ class _MyHomePageState extends State<MyHomePage>
             Expanded(
               child: ListView(
                 children: [
+                  // ── Mon Profil (épinglé, toujours visible) ─────────────────
                   ListTile(
                     trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
-                    leading: Icon(Fontisto.tinder, size: 30, color: Colors.red), // Icône jaune
-                    title: TextCustomerMenu(
-                      titre: "Afro Love",
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: colors.textPrimary, // Texte adapté au thème
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onTap: () async {
-                      Navigator.pop(context);
-
-                      Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => DatingSwipePage(),
-                      ));
-                    },
-                  ),
-
-                  // BASCULE THEME CLAIR / SOMBRE
-                  Consumer<ThemeProvider>(
-                    builder: (context, themeProvider, _) => ListTile(
-                      leading: Icon(
-                        colors.isDark ? Icons.dark_mode : Icons.light_mode,
-                        color: colors.accent,
-                      ),
-                      title: TextCustomerMenu(
-                        titre: colors.isDark ? l10n.menuDarkMode : l10n.menuLightMode,
-                        fontSize: SizeText.homeProfileTextSize,
-                        couleur: colors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      trailing: Switch(
-                        value: themeProvider.themeMode == ThemeMode.dark,
-                        activeColor: colors.primary,
-                        onChanged: (value) {
-                          themeProvider.setThemeMode(value ? ThemeMode.dark : ThemeMode.light);
-                        },
-                      ),
-                      onTap: () => themeProvider.toggleTheme(),
-                    ),
-                  ),
-                  // SÉLECTEUR DE LANGUE
-                  Consumer<LocaleProvider>(
-                    builder: (context, localeProvider, _) => ListTile(
-                      leading: Icon(Icons.language, color: colors.primary),
-                      title: TextCustomerMenu(
-                        titre: l10n.menuLanguage,
-                        fontSize: SizeText.homeProfileTextSize,
-                        couleur: colors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      trailing: GestureDetector(
-                        onTap: () => _showLanguagePicker(context, localeProvider),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: colors.surfaceVariant,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: colors.primary, width: 1),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                kSupportedLocales[localeProvider.locale.languageCode] ?? '🇫🇷 Français',
-                                style: TextStyle(
-                                  color: colors.primary,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              Icon(Icons.expand_more, color: colors.primary, size: 16),
-                            ],
-                          ),
-                        ),
-                      ),
-                      onTap: () => _showLanguagePicker(context, localeProvider),
-                    ),
-                  ),
-                  // NOUVELLE OPTION: RECHERCHER UN UTILISATEUR
-                  ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
-                    leading: Icon(Icons.search, color: colors.primary), // Icône jaune
-                    title: TextCustomerMenu(
-                      titre: l10n.menuSearchUsers,
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: colors.textPrimary, // Texte adapté au thème
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onTap: () {
-                      Navigator.pop(context); // Fermer le menu
-                      Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => AddListAmis(), // Page de recherche
-                      ));
-                    },
-                  ),
-                  ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
-                    leading: Icon(Icons.supervised_user_circle,size: 30,                      color: colors.primary, // Icône jaune
-                    ),
+                    leading: Icon(Icons.supervised_user_circle, size: 30, color: colors.primary),
                     title: TextCustomerMenu(
                       titre: l10n.menuProfile,
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: colors.textPrimary, // Texte adapté au thème
+                      couleur: colors.textPrimary,
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () {
                       Navigator.pop(context);
-
                       Navigator.pushNamed(context, '/home_profile_user');
                     },
                   ),
-                  ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
-                    leading: Icon(Icons.emoji_events, color: colors.primary,size: 30,), // Trophée jaune
+                  const Divider(height: 1),
+
+                  // ── GROUPE 1 : Applications ────────────────────────────────
+                  ExpansionTile(
+                    initiallyExpanded: true,
+                    leading: Icon(Icons.apps_rounded, color: colors.primary),
                     title: TextCustomerMenu(
-                      titre: l10n.menuTopPostsMonth,
+                      titre: 'Applications',
                       fontSize: SizeText.homeProfileTextSize,
                       couleur: colors.textPrimary,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                     ),
-                    onTap: () {
-                      Navigator.pop(context); // Ferme le menu
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const ChallengeMonthPage(),
+                    iconColor: colors.primary,
+                    collapsedIconColor: colors.textSecondary,
+                    children: [
+                      // Afro Love
+                      ListTile(
+                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                        leading: Icon(Fontisto.tinder, size: 24, color: Colors.red),
+                        title: TextCustomerMenu(
+                          titre: 'Afro Love',
+                          fontSize: SizeText.homeProfileTextSize,
+                          couleur: colors.textPrimary,
+                          fontWeight: FontWeight.w600,
                         ),
-                      );
-                    },
-                  ),
-                  ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
-                    leading: Icon(Icons.group,size: 30,
-                      color: colors.primary, // Icône jaune
-                    ),
-                    title: TextCustomerMenu(
-                      titre: l10n.menuFriends,
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: colors.textPrimary, // Texte adapté au thème
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onTap: () {
-                      Navigator.pop(context);
-
-                      Navigator.pushNamed(context, '/amis');
-                    },
-                  ),
-                  ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
-                    leading: Icon(Icons.monetization_on, color: colors.primary, size: 30,),
-                    title: TextCustomerMenu(
-                      titre: l10n.profileMenuRemunerationSpace,
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: colors.textPrimary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => RemunerationHomePage(user: authProvider.loginUserData!,)));
-                    },
-                  ),
-                  ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
-                    leading: Icon(Icons.play_lesson_outlined, color: const Color(0xFFFFD400), size: 30),
-                    title: TextCustomerMenu(
-                      titre: 'Contenu Business',
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: colors.textPrimary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(context, MaterialPageRoute(
-                        builder: (_) => DashboardContentScreen(),
-                      ));
-                    },
-                  ),
-
-                  // if(authProvider.loginUserData.role == UserRole.ADM.name)
-                  ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
-                    leading: Icon(Icons.connect_without_contact, size: 30, color: colors.primary), // Icône jaune
-                    title: TextCustomerMenu(
-                      titre: l10n.menuMarketing,
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: colors.textPrimary, // Texte adapté au thème
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onTap: () async {
-                      Navigator.pop(context);
-
-                      Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => MarketingAffiliationPage(),
-                      ));
-                    },
-                  ),
-                  ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
-                    leading: Icon(Entypo.trophy, size: 30, color: colors.primary), // Icône jaune
-                    title: TextCustomerMenu(
-                      titre: l10n.menuTopStars,
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: colors.textPrimary, // Texte adapté au thème
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onTap: () async {
-                      Navigator.pop(context);
-
-                      Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => UserClassement(),
-                      ));
-                    },
-                  ),
-                  ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
-                    leading: Icon(MaterialIcons.sports_soccer, size: 30, color: colors.primary), // Icône jaune
-                    title: TextCustomerMenu(
-                      titre: l10n.menuPronosticsBetting,
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: colors.textPrimary, // Texte adapté au thème
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onTap: () async {
-                      Navigator.pop(context);
-
-                      Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => PronosticsFeedPage(),
-                      ));
-                    },
-                  ),
-
-
-
-                  // ListTile(
-                  //   trailing: TextCustomerMenu(
-                  //     titre: "Discuter",
-                  //     fontSize: SizeText.homeProfileTextSize,
-                  //     couleur: Colors.blue,
-                  //     fontWeight: FontWeight.w600,
-                  //   ),
-                  //   leading: CircleAvatar(
-                  //     radius: 15,
-                  //     backgroundColor: Colors.yellow, // Fond jaune
-                  //     child: Image.asset(
-                  //       'assets/icon/X.png',
-                  //       color: Colors.black, // Icône noire
-                  //     ),
-                  //   ),
-                  //   title: TextCustomerMenu(
-                  //     titre: "Xilo",
-                  //     fontSize: SizeText.homeProfileTextSize,
-                  //     couleur: colors.textPrimary, // Texte adapté au thème
-                  //     fontWeight: FontWeight.w600,
-                  //   ),
-                  //   subtitle: TextCustomerMenu(
-                  //     titre: "Votre ami(e)",
-                  //     fontSize: 9,
-                  //     couleur: colors.textPrimary, // Texte adapté au thème
-                  //     fontWeight: FontWeight.w600,
-                  //   ),
-                  //   onTap: () async {
-                  //     setState(() {
-                  //       onTap = true;
-                  //     });
-                  //
-                  //     await authProvider.getAppData().then(
-                  //           (appdata) async {
-                  //         await authProvider
-                  //             .getUserIa(authProvider.loginUserData.id!)
-                  //             .then(
-                  //               (value) async {
-                  //             if (value.isNotEmpty) {
-                  //               await getIAChatsData(value.first).then((chat) {
-                  //                 setState(() {
-                  //                   onTap = false;
-                  //                 });
-                  //                 Navigator.push(context, MaterialPageRoute(
-                  //                   builder: (context) => IaChat(
-                  //                     chat: chat,
-                  //                     user: authProvider.loginUserData,
-                  //                     userIACompte: value.first,
-                  //                     instruction: '${authProvider.appDefaultData.ia_instruction!}',
-                  //                     appDefaultData: authProvider.appDefaultData,
-                  //                   ),
-                  //                 ));
-                  //               });
-                  //             } else {
-                  //               Navigator.push(
-                  //                   context,
-                  //                   MaterialPageRoute(
-                  //                     builder: (context) => IntroIaCompagnon(
-                  //                       instruction: authProvider.appDefaultData.ia_instruction!,
-                  //                     ),
-                  //                   ));
-                  //             }
-                  //           },
-                  //         );
-                  //       },
-                  //     );
-                  //   },
-                  // ),
-                  ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
-                    leading: Icon(Icons.bookmark_outlined, color: colors.primary,size: 30,), // Icône jaune
-                    title: TextCustomerMenu(
-                      titre: l10n.menuFavorites,
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: colors.textPrimary, // Texte adapté au thème
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onTap: () async {
-                      Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => FavoritePostsPage(),
-                      ));
-                    },
-                  ),
-                  ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
-                    leading: AnimateIcon(
-                      key: UniqueKey(),
-                      onTap: () {
-                        Navigator.pop(context);
-
-                        Navigator.push(context, MaterialPageRoute(
-                          builder: (context) => UserServiceListPage(),
-                        ));
-                      },
-                      iconType: IconType.continueAnimation,
-                      height: 30,
-                      width: 30,
-                      color: colors.primary, // Icône jaune
-                      animateIcon: AnimateIcons.settings,
-                    ),
-                    title: TextCustomerMenu(
-                      titre: l10n.menuServicesJobs,
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: colors.textPrimary, // Texte adapté au thème
-                      fontWeight: FontWeight.w600,
-                    ),
-                    subtitle: TextCustomerMenu(
-                      titre: l10n.menuServicesJobsSubtitle,
-                      fontSize: 9,
-                      couleur: colors.textPrimary, // Texte adapté au thème
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onTap: () async {
-                      Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => UserServiceListPage(),
-                      ));
-                    },
-                  ),
-
-                  ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
-                    leading: Icon(Icons.store_mall_directory, color: colors.primary,size: 35,), // Icône jaune
-                    title: TextCustomerMenu(
-                      titre: l10n.menuAfroshopMarket,
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: colors.textPrimary, // Texte adapté au thème
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onTap: () async {
-                      Navigator.pop(context);
-
-                      Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => HomeAfroshopPage(title: ''),
-                      ));
-                    },
-                  ),
-
-                  ListTile(
-                    trailing: Icon(
-                      Icons.arrow_right_outlined,
-                      color: colors.primary,
-                    ),
-                    leading: Container(
-                      padding: EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: colors.primary.withOpacity(0.15),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: colors.primary, width: 2),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (context) => DatingSwipePage(),
+                          ));
+                        },
                       ),
-                      child: Icon(
-                        AntDesign.linechart, // Icône crypto native Flutter
-                        color: colors.primary,
-                        size: 18,
+                      // AfroShop Market — mis en avant
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: colors.primary.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: colors.primary.withOpacity(0.4)),
+                        ),
+                        child: ListTile(
+                          leading: Icon(Icons.store_mall_directory, size: 28, color: colors.primary),
+                          title: TextCustomerMenu(
+                            titre: l10n.menuAfroshopMarket,
+                            fontSize: SizeText.homeProfileTextSize,
+                            couleur: colors.primary,
+                            fontWeight: FontWeight.w800,
+                          ),
+                          trailing: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF0A500),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text(
+                              'VIDÉOS',
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.push(context, MaterialPageRoute(
+                              builder: (context) => HomeAfroshopPage(title: ''),
+                            ));
+                          },
+                        ),
                       ),
-                    ),
+                      // Services & Jobs
+                      ListTile(
+                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                        leading: AnimateIcon(
+                          key: UniqueKey(),
+                          onTap: () {},
+                          iconType: IconType.continueAnimation,
+                          height: 24,
+                          width: 24,
+                          color: colors.primary,
+                          animateIcon: AnimateIcons.settings,
+                        ),
+                        title: TextCustomerMenu(
+                          titre: l10n.menuServicesJobs,
+                          fontSize: SizeText.homeProfileTextSize,
+                          couleur: colors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        onTap: () {
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (context) => UserServiceListPage(),
+                          ));
+                        },
+                      ),
+                      // Pronostics
+                      ListTile(
+                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                        leading: Icon(MaterialIcons.sports_soccer, size: 24, color: colors.primary),
+                        title: TextCustomerMenu(
+                          titre: l10n.menuPronosticsBetting,
+                          fontSize: SizeText.homeProfileTextSize,
+                          couleur: colors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (context) => PronosticsFeedPage(),
+                          ));
+                        },
+                      ),
+                    ],
+                  ),
+
+                  // ── GROUPE 2 : Communauté ──────────────────────────────────
+                  ExpansionTile(
+                    leading: Icon(Icons.group, color: colors.primary),
                     title: TextCustomerMenu(
-                      titre: l10n.menuAfroCoinMarket,
+                      titre: 'Communauté',
                       fontSize: SizeText.homeProfileTextSize,
                       couleur: colors.textPrimary,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                     ),
-                    onTap: () {
-                      Navigator.pop(context);
-
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => CryptoMarketPage()),
-                      );
-                    },
+                    iconColor: colors.primary,
+                    collapsedIconColor: colors.textSecondary,
+                    children: [
+                      // Amis
+                      ListTile(
+                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                        leading: Icon(Icons.group, size: 24, color: colors.primary),
+                        title: TextCustomerMenu(
+                          titre: l10n.menuFriends,
+                          fontSize: SizeText.homeProfileTextSize,
+                          couleur: colors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.pushNamed(context, '/amis');
+                        },
+                      ),
+                      // Canaux
+                      ListTile(
+                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                        leading: Icon(FontAwesome.forumbee, size: 24, color: colors.primary),
+                        title: TextCustomerMenu(
+                          titre: l10n.menuCanaux,
+                          fontSize: SizeText.homeProfileTextSize,
+                          couleur: colors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        onTap: () {
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (context) => CanalListPage(isUserCanals: false),
+                          ));
+                        },
+                      ),
+                      // Rechercher
+                      ListTile(
+                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                        leading: Icon(Icons.search, size: 24, color: colors.primary),
+                        title: TextCustomerMenu(
+                          titre: l10n.menuSearchUsers,
+                          fontSize: SizeText.homeProfileTextSize,
+                          couleur: colors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (context) => AddListAmis(),
+                          ));
+                        },
+                      ),
+                      // Top Stars
+                      ListTile(
+                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                        leading: Icon(Entypo.trophy, size: 24, color: colors.primary),
+                        title: TextCustomerMenu(
+                          titre: l10n.menuTopStars,
+                          fontSize: SizeText.homeProfileTextSize,
+                          couleur: colors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (context) => UserClassement(),
+                          ));
+                        },
+                      ),
+                      // Top Posts du mois
+                      ListTile(
+                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                        leading: Icon(Icons.emoji_events, size: 24, color: colors.primary),
+                        title: TextCustomerMenu(
+                          titre: l10n.menuTopPostsMonth,
+                          fontSize: SizeText.homeProfileTextSize,
+                          couleur: colors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (context) => const ChallengeMonthPage(),
+                          ));
+                        },
+                      ),
+                    ],
                   ),
 
-                  ListTile(
-                    trailing: Icon(Icons.live_tv, color: colors.primary),
-                    leading: Icon(FontAwesome.tv, size: 30, color: colors.primary), // Icône jaune
+                  // ── GROUPE 3 : Mes contenus ────────────────────────────────
+                  ExpansionTile(
+                    leading: Icon(Icons.person_outline, color: colors.primary),
                     title: TextCustomerMenu(
-                      titre: l10n.menuMyLives,
+                      titre: 'Mes contenus',
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: colors.textPrimary, // Texte adapté au thème
-                      fontWeight: FontWeight.w600,
+                      couleur: colors.textPrimary,
+                      fontWeight: FontWeight.w700,
                     ),
-                    onTap: () async {
-                      Navigator.pop(context);
-
-                      Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => UserLivesPage(),
-                      ));
-                    },
+                    iconColor: colors.primary,
+                    collapsedIconColor: colors.textSecondary,
+                    children: [
+                      // Mes Lives
+                      ListTile(
+                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                        leading: Icon(FontAwesome.tv, size: 24, color: colors.primary),
+                        title: TextCustomerMenu(
+                          titre: l10n.menuMyLives,
+                          fontSize: SizeText.homeProfileTextSize,
+                          couleur: colors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (context) => UserLivesPage(),
+                          ));
+                        },
+                      ),
+                      // Mes Challenges
+                      ListTile(
+                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                        leading: Icon(Icons.emoji_events, size: 24, color: colors.primary),
+                        title: TextCustomerMenu(
+                          titre: l10n.menuMyChallenges,
+                          fontSize: SizeText.homeProfileTextSize,
+                          couleur: colors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (context) => UserChallengesPage(),
+                          ));
+                        },
+                      ),
+                      // Mes Chroniques
+                      ListTile(
+                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                        leading: Icon(Icons.history_toggle_off_sharp, size: 24, color: colors.primary),
+                        title: TextCustomerMenu(
+                          titre: l10n.menuMyChroniques,
+                          fontSize: SizeText.homeProfileTextSize,
+                          couleur: colors.textPrimary,
+                          fontWeight: FontWeight.w900,
+                        ),
+                        onTap: () {
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (context) => MyChroniquesPage(),
+                          ));
+                        },
+                      ),
+                      // Favoris
+                      ListTile(
+                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                        leading: Icon(Icons.bookmark_outlined, size: 24, color: colors.primary),
+                        title: TextCustomerMenu(
+                          titre: l10n.menuFavorites,
+                          fontSize: SizeText.homeProfileTextSize,
+                          couleur: colors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        onTap: () {
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (context) => FavoritePostsPage(),
+                          ));
+                        },
+                      ),
+                    ],
                   ),
-                  ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
-                    leading: Icon(Icons.emoji_events, size: 30, color: colors.primary), // Icône jaune
+
+                  // ── GROUPE 4 : Business & Revenus ──────────────────────────
+                  ExpansionTile(
+                    leading: Icon(Icons.monetization_on, color: colors.primary),
                     title: TextCustomerMenu(
-                      titre: l10n.menuMyChallenges,
+                      titre: 'Business & Revenus',
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: colors.textPrimary, // Texte adapté au thème
-                      fontWeight: FontWeight.w600,
+                      couleur: colors.textPrimary,
+                      fontWeight: FontWeight.w700,
                     ),
-                    onTap: () async {
-                      Navigator.pop(context);
-
-                      Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => UserChallengesPage(),
-                      ));
-                    },
+                    iconColor: colors.primary,
+                    collapsedIconColor: colors.textSecondary,
+                    children: [
+                      // Rémunération
+                      ListTile(
+                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                        leading: Icon(Icons.monetization_on, size: 24, color: colors.primary),
+                        title: TextCustomerMenu(
+                          titre: l10n.profileMenuRemunerationSpace,
+                          fontSize: SizeText.homeProfileTextSize,
+                          couleur: colors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        onTap: () {
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (context) => RemunerationHomePage(user: authProvider.loginUserData!),
+                          ));
+                        },
+                      ),
+                      // Marketing
+                      ListTile(
+                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                        leading: Icon(Icons.connect_without_contact, size: 24, color: colors.primary),
+                        title: TextCustomerMenu(
+                          titre: l10n.menuMarketing,
+                          fontSize: SizeText.homeProfileTextSize,
+                          couleur: colors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (context) => MarketingAffiliationPage(),
+                          ));
+                        },
+                      ),
+                      // Contenu Business
+                      ListTile(
+                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                        leading: Icon(Icons.play_lesson_outlined, size: 24, color: const Color(0xFFFFD400)),
+                        title: TextCustomerMenu(
+                          titre: 'Contenu Business',
+                          fontSize: SizeText.homeProfileTextSize,
+                          couleur: colors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (_) => DashboardContentScreen(),
+                          ));
+                        },
+                      ),
+                    ],
                   ),
-                  ListTile(
-                    trailing: Icon(Icons.info, color: colors.primary),
-                    leading: Icon(Icons.info,size: 20,
-                      color: colors.primary, // Icône jaune
-                    ),                    title: TextCustomerMenu(
-                      titre: l10n.menuNewsInfo,
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: colors.textPrimary, // Texte adapté au thème
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onTap: () async {
-                      Navigator.pop(context);
 
-                      Navigator.pushNamed(context, '/app_info');
-
-                    },
-                  ),
-                  ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
-                    leading: Icon(FontAwesome.forumbee, size: 30, color: colors.primary), // Icône jaune
+                  // ── GROUPE 5 : Paramètres ──────────────────────────────────
+                  ExpansionTile(
+                    leading: Icon(Icons.settings_outlined, color: colors.primary),
                     title: TextCustomerMenu(
-                      titre: l10n.menuCanaux,
+                      titre: 'Paramètres',
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: colors.textPrimary, // Texte adapté au thème
-                      fontWeight: FontWeight.w600,
+                      couleur: colors.textPrimary,
+                      fontWeight: FontWeight.w700,
                     ),
-                    onTap: () async {
-                      Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => CanalListPage(isUserCanals: false),
-                      ));
-                    },
-                  ),
-
-
-                  ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
-                    leading: Icon(Icons.history_toggle_off_sharp, size: 30, color: colors.primary), // Icône jaune
-                    title: TextCustomerMenu(
-                      titre: l10n.menuMyChroniques,
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: colors.textPrimary, // Texte adapté au thème
-                      fontWeight: FontWeight.w900,
-                    ),
-                    onTap: () async {
-                      Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => MyChroniquesPage(),
-                      ));
-                    },
-                  ),
-
-
-// Dans votre menu principal
-
-
-
-                  // ListTile(
-                  //   trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
-                  //   leading: Image.asset(
-                  //     'assets/menu/6.png',
-                  //     height: 20,
-                  //     width: 20,
-                  //     color: colors.primary, // Icône jaune
-                  //   ),
-                  //   title: TextCustomerMenu(
-                  //     titre: "Challenges Disponibles 🔥🎁  Gagnez un Prix 🏆",
-                  //     fontSize: SizeText.homeProfileTextSize,
-                  //     couleur: colors.textPrimary, // Texte adapté au thème
-                  //     fontWeight: FontWeight.w600,
-                  //   ),
-                  //   onTap: () async {
-                  //     Navigator.push(context, MaterialPageRoute(
-                  //       builder: (context) => ChallengeListPage(),
-                  //     ));
-                  //   },
-                  // ),
-
-                  // ListTile(
-                  //   trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
-                  //   leading: Image.asset(
-                  //     'assets/menu/6.png',
-                  //     height: 20,
-                  //     width: 20,
-                  //     color: colors.primary, // Icône jaune
-                  //   ),
-                  //   title: TextCustomerMenu(
-                  //     titre: "Mes Looks Challenges 🔥🎁🏆",
-                  //     fontSize: SizeText.homeProfileTextSize,
-                  //     couleur: colors.textPrimary, // Texte adapté au thème
-                  //     fontWeight: FontWeight.w600,
-                  //   ),
-                  //   onTap: () async {
-                  //     Navigator.push(context, MaterialPageRoute(
-                  //       builder: (context) => MesLookChallengeListPage(),
-                  //     ));
-                  //   },
-                  // ),
-
-
-
-                  ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
-                    leading: Icon(Icons.contact_mail, color: colors.primary), // Icône jaune
-                    title: TextCustomerMenu(
-                      titre: l10n.menuContacts,
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: colors.textPrimary, // Texte adapté au thème
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onTap: () async {
-                      Navigator.pop(context);
-
-                      Navigator.pushNamed(context, '/contact');
-
-                    },
-                  ),
-
-                  ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
-                    leading: Icon(Icons.smartphone, color: colors.primary), // Icône jaune
-                    title: TextCustomerMenu(
-                      titre: l10n.menuShareApp,
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: colors.textPrimary, // Texte adapté au thème
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onTap: () async {
-                      final box = context.findRenderObject() as RenderBox?;
-
-                      await authProvider.getAppData().then(
+                    iconColor: colors.primary,
+                    collapsedIconColor: colors.textSecondary,
+                    children: [
+                      // Thème
+                      Consumer<ThemeProvider>(
+                        builder: (context, themeProvider, _) => ListTile(
+                          contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                          leading: Icon(
+                            colors.isDark ? Icons.dark_mode : Icons.light_mode,
+                            color: colors.accent,
+                          ),
+                          title: TextCustomerMenu(
+                            titre: colors.isDark ? l10n.menuDarkMode : l10n.menuLightMode,
+                            fontSize: SizeText.homeProfileTextSize,
+                            couleur: colors.textPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          trailing: Switch(
+                            value: themeProvider.themeMode == ThemeMode.dark,
+                            activeColor: colors.primary,
+                            onChanged: (value) {
+                              themeProvider.setThemeMode(value ? ThemeMode.dark : ThemeMode.light);
+                            },
+                          ),
+                          onTap: () => themeProvider.toggleTheme(),
+                        ),
+                      ),
+                      // Langue
+                      Consumer<LocaleProvider>(
+                        builder: (context, localeProvider, _) => ListTile(
+                          contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                          leading: Icon(Icons.language, color: colors.primary),
+                          title: TextCustomerMenu(
+                            titre: l10n.menuLanguage,
+                            fontSize: SizeText.homeProfileTextSize,
+                            couleur: colors.textPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          trailing: GestureDetector(
+                            onTap: () => _showLanguagePicker(context, localeProvider),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: colors.surfaceVariant,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: colors.primary, width: 1),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    kSupportedLocales[localeProvider.locale.languageCode] ?? '🇫🇷 Français',
+                                    style: TextStyle(
+                                      color: colors.primary,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(Icons.expand_more, color: colors.primary, size: 16),
+                                ],
+                              ),
+                            ),
+                          ),
+                          onTap: () => _showLanguagePicker(context, localeProvider),
+                        ),
+                      ),
+                      // Infos & MàJ
+                      ListTile(
+                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                        leading: Icon(Icons.info, size: 24, color: colors.primary),
+                        title: TextCustomerMenu(
+                          titre: l10n.menuNewsInfo,
+                          fontSize: SizeText.homeProfileTextSize,
+                          couleur: colors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.pushNamed(context, '/app_info');
+                        },
+                      ),
+                      // Contacts
+                      ListTile(
+                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                        leading: Icon(Icons.contact_mail, size: 24, color: colors.primary),
+                        title: TextCustomerMenu(
+                          titre: l10n.menuContacts,
+                          fontSize: SizeText.homeProfileTextSize,
+                          couleur: colors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.pushNamed(context, '/contact');
+                        },
+                      ),
+                      // Partager l'app
+                      ListTile(
+                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                        leading: Icon(Icons.smartphone, size: 24, color: colors.primary),
+                        title: TextCustomerMenu(
+                          titre: l10n.menuShareApp,
+                          fontSize: SizeText.homeProfileTextSize,
+                          couleur: colors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        onTap: () async {
+                          final box = context.findRenderObject() as RenderBox?;
+                          await authProvider.getAppData().then(
                             (value) async {
-                          await Share.shareUri(
-                            Uri.parse('${authProvider.appDefaultData.app_link}'),
-                            sharePositionOrigin: box!.localToGlobal(Offset.zero) & box.size,
+                              await Share.shareUri(
+                                Uri.parse('${authProvider.appDefaultData.app_link}'),
+                                sharePositionOrigin: box!.localToGlobal(Offset.zero) & box.size,
+                              );
+                            },
                           );
                         },
-                      );
-                    },
+                      ),
+                    ],
                   ),
                 ],
               ),

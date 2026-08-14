@@ -265,6 +265,7 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
         'is_valide': true,
         'is_encrypted': false,
         'create_at_time_spam': now,
+        'createdAt': FieldValue.serverTimestamp(),
         'message_state': 'LU',
       });
 
