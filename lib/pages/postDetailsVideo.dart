@@ -97,22 +97,11 @@ import '../services/postService/post_view_service.dart';
 import '../services/comment_suggestion_service.dart';
 import '../widgets/marquee_comment_chips.dart';
 
-// Couleurs Afrolook
-const _afroBlack = Color(0xFF000000);
+// Couleurs Afrolook (accent, non remplacées par AppColors)
 const _afroGreen = Color(0xFF2ECC71);
 const _afroYellow = Color(0xFFF1C40F);
 const _afroRed = Color(0xFFE74C3C);
-const _afroDarkGrey = Color(0xFF16181C);
 const _afroLightGrey = Color(0xFF71767B);
-
-const _twitterDarkBg = Color(0xFF000000);
-const _twitterCardBg = Color(0xFF16181C);
-const _twitterTextPrimary = Color(0xFFFFFFFF);
-const _twitterTextSecondary = Color(0xFF71767B);
-const _twitterBlue = Color(0xFF1D9BF0);
-const _twitterRed = Color(0xFFF91880);
-const _twitterGreen = Color(0xFF00BA7C);
-const _twitterYellow = Color(0xFFFFD400);
 
 class VideoYoutubePageDetails extends StatefulWidget {
   final Post initialPost;
@@ -934,7 +923,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
           backgroundColor: _afroLightGrey.withOpacity(0.3),
           bufferedColor: _afroLightGrey.withOpacity(0.1),
         ),
-        placeholder: Container(color: _afroBlack, child: Center(child: CircularProgressIndicator(color: _afroGreen))),
+        placeholder: Container(color: Colors.black, child: Center(child: CircularProgressIndicator(color: _afroGreen))),
         autoInitialize: true,
       );
       setState(() => _isVideoInitialized = true);
@@ -1177,7 +1166,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.85,
-        decoration: BoxDecoration(color: _afroBlack, borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+        decoration: BoxDecoration(color: AppColors.of(context).background, borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
         child: Column(
           children: [
             Container(padding: EdgeInsets.all(16), child: Row(
@@ -1435,7 +1424,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
   void _showPostMenu() {
     showResponsiveBottomSheet(
       context: context,
-      backgroundColor: _afroDarkGrey,
+      backgroundColor: AppColors.of(context).surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
       builder: (context) => Container(
         padding: EdgeInsets.all(16),
@@ -1465,33 +1454,32 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     return InkWell(onTap: onTap, child: Container(padding: EdgeInsets.symmetric(vertical: 12), child: Row(children: [Icon(icon, color: color, size: 20), SizedBox(width: 12), Text(text, style: TextStyle(color: color, fontSize: 16))])));
   }
 
-  // ==================== WIDGETS (version modifiée pour suggestions avec indicateur) ====================
+  // ==================== SUGGESTIONS — style YouTube plein-écran ====================
   Widget _buildSuggestedVideos() {
+    final colors = AppColors.of(context);
     final suggestions = getFilteredSuggestions();
     final isLoading = postProvider.isLoadingSuggestions;
 
     if (isLoading && suggestions.isEmpty) {
       return Center(
         child: Padding(
-          padding: EdgeInsets.all(20),
-          child: CircularProgressIndicator(color: Colors.yellow),
+          padding: const EdgeInsets.all(20),
+          child: CircularProgressIndicator(color: colors.accent),
         ),
       );
     }
 
-    if (suggestions.isEmpty) {
-      return SizedBox.shrink();
-    }
+    if (suggestions.isEmpty) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 12),
           child: Text(
             'Suggestions',
             style: TextStyle(
-              color: Colors.white,
+              color: colors.textPrimary,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -1499,133 +1487,27 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
         ),
         ListView.builder(
           shrinkWrap: true,
-          physics: NeverScrollableScrollPhysics(),
+          physics: const NeverScrollableScrollPhysics(),
           itemCount: suggestions.length + 1, // +1 pour la pub
           itemBuilder: (context, index) {
             if (index == 3) {
               return Column(
                 children: [
-                  Divider(color: Colors.grey[800]),
+                  Divider(color: colors.border),
                   Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
                     child: _buildAdBanner(key: 'ad_suggestion_unique'),
                   ),
-                  Divider(color: Colors.grey[800]),
+                  Divider(color: colors.border),
                 ],
               );
             }
-
             final int postIndex = index > 3 ? index - 1 : index;
-            if (postIndex >= suggestions.length) return SizedBox.shrink();
-
+            if (postIndex >= suggestions.length) return const SizedBox.shrink();
             final post = suggestions[postIndex];
-            final bool isLastItem = index == suggestions.length;
-
-            return Column(
-              children: [
-                InkWell(
-                  onTap: () => _onSuggestedPostSelected(post),
-                  child: Container(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: Row(
-                      children: [
-                        Container(
-                            width: 80,
-                            height: 80,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              color: Colors.grey[800],
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  // Miniature (image ou vidéo)
-                                  (post.dataType == PostDataType.VIDEO.name && post.thumbnail != null && post.thumbnail!.isNotEmpty)
-                                      ? CachedNetworkImage(
-                                    imageUrl: post.thumbnail!,
-                                    fit: BoxFit.cover,
-                                    placeholder: (context, url) => Center(
-                                      child: CircularProgressIndicator(color: Colors.yellow),
-                                    ),
-                                    errorWidget: (context, url, error) => Icon(Icons.video_library, color: Colors.grey, size: 40),
-                                  )
-                                      : (post.images != null && post.images!.isNotEmpty)
-                                      ? CachedNetworkImage(
-                                    imageUrl: post.images!.first,
-                                    fit: BoxFit.cover,
-                                    placeholder: (context, url) => Center(
-                                      child: CircularProgressIndicator(color: Colors.yellow),
-                                    ),
-                                    errorWidget: (context, url, error) => Icon(Icons.image, color: Colors.grey, size: 40),
-                                  )
-                                      : Icon(Icons.image, color: Colors.grey, size: 40),
-
-                                  // Badge vidéo (seulement si c'est une vidéo)
-                                  if (post.dataType == PostDataType.VIDEO.name)
-                                    Positioned(
-                                      bottom: 8,
-                                      right: 8,
-                                      child: Container(
-                                        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                                        decoration: BoxDecoration(
-                                          color: Colors.black.withOpacity(0.7),
-                                          borderRadius: BorderRadius.circular(4),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(Icons.play_arrow, color: Colors.white, size: 14),
-                                            SizedBox(width: 2),
-                                            Text(
-                                              'VIDEO',
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            )
-                        ),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                post.description ?? '',
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(color: Colors.white, fontSize: 14),
-                              ),
-
-                              SizedBox(height: 2),
-                              Row(
-                                children: [
-                                  Icon(Icons.bar_chart, size: 12, color: Colors.blue),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    '${post.totalInteractions ?? 0}',
-                                    style: TextStyle(color: Colors.grey[400], fontSize: 11),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                if (!isLastItem) Divider(color: Colors.grey[800]),
-              ],
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildYouTubeCard(post),
             );
           },
         ),
@@ -1640,7 +1522,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       final url = _currentPost.url_media;
       if (url == null || url.isEmpty) {
         return Container(
-          color: _afroBlack,
+          color: AppColors.of(context).background,
           height: MediaQuery.of(context).size.width * 9 / 16,
           child: const Center(child: Icon(Icons.play_circle_outline, color: Colors.white54, size: 48)),
         );
@@ -1652,7 +1534,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     }
     if (!_isVideoInitialized || _chewieController == null) {
       return Container(
-        color: _afroBlack,
+        color: AppColors.of(context).background,
         height: MediaQuery.of(context).size.width * 9 / 16,
         child: Center(child: CircularProgressIndicator(color: _afroGreen)),
       );
@@ -1671,11 +1553,11 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       },
       child: Row(
         children: [
-          CircleAvatar(radius: 25, backgroundImage: NetworkImage(canal?.urlImage ?? user?.imageUrl ?? ''), backgroundColor: _afroDarkGrey),
+          CircleAvatar(radius: 25, backgroundImage: NetworkImage(canal?.urlImage ?? user?.imageUrl ?? ''), backgroundColor: AppColors.of(context).surface),
           SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
-              Text(canal != null ? '#${canal.titre}' : '@${user?.pseudo ?? ''}', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+              Text(canal != null ? '#${canal.titre}' : '@${user?.pseudo ?? ''}', style: TextStyle(color: AppColors.of(context).textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
               if (user != null) UserBadgeWidget(user: user, size: 15),
               if (isLocked) Icon(Icons.lock, color: _afroYellow, size: 16),
             ]),
@@ -2101,12 +1983,12 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     return Container(
       margin: EdgeInsets.symmetric(vertical: 8),
       padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(color: _afroDarkGrey, borderRadius: BorderRadius.circular(12), border: Border.all(color: _afroGreen)),
+      decoration: BoxDecoration(color: AppColors.of(context).surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: _afroGreen)),
       child: Column(children: [
         Row(children: [Icon(Icons.emoji_events, color: _afroGreen), SizedBox(width: 8), Text('LOOK CHALLENGE', style: TextStyle(color: _afroGreen, fontWeight: FontWeight.bold))]),
         SizedBox(height: 8),
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Text('${_currentPost.votesChallenge ?? 0} votes', style: TextStyle(color: Colors.white)),
+          Text('${_currentPost.votesChallenge ?? 0} votes', style: TextStyle(color: AppColors.of(context).textPrimary)),
           if (!_hasVoted && _challenge!.isEnCours)
             ElevatedButton(onPressed: _isVoting ? null : _showVoteConfirmationDialog, style: ElevatedButton.styleFrom(backgroundColor: _afroGreen), child: _isVoting ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : Text('VOTER', style: TextStyle(color: Colors.white))),
           if (_hasVoted) Container(padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: _afroGreen.withOpacity(0.2), borderRadius: BorderRadius.circular(12)), child: Text('DÉJÀ VOTÉ', style: TextStyle(color: _afroGreen, fontSize: 12, fontWeight: FontWeight.bold))),
@@ -2117,8 +1999,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
 
   void _showVoteConfirmationDialog() {
     showDialog(context: context, builder: (context) => AlertDialog(
-      backgroundColor: _afroDarkGrey,
-      title: Text('Confirmer le vote', style: TextStyle(color: Colors.white)),
+      backgroundColor: AppColors.of(context).surface,
+      title: Text('Confirmer le vote', style: TextStyle(color: AppColors.of(context).textPrimary)),
       content: Text(_challenge!.voteGratuit! ? 'Voter pour ce look est gratuit.' : 'Ce vote vous coûtera ${_challenge!.prixVote} FCFA.', style: TextStyle(color: Colors.grey)),
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: Text('Annuler')),
@@ -2167,9 +2049,9 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
 
   void _showSupportModal() {
     showDialog(context: context, builder: (context) => AlertDialog(
-      backgroundColor: _afroDarkGrey,
-      title: Row(children: [Icon(Icons.volunteer_activism, color: _afroYellow), Text('Soutenir le créateur', style: TextStyle(color: Colors.white))]),
-      content: Text('Regardez une publicité pour offrir 10 pièces au créateur.', style: TextStyle(color: Colors.grey)),
+      backgroundColor: AppColors.of(context).surface,
+      title: Row(children: [Icon(Icons.volunteer_activism, color: _afroYellow), Text('Soutenir le créateur', style: TextStyle(color: AppColors.of(context).textPrimary))]),
+      content: Text('Regardez une publicité pour offrir 10 pièces au créateur.', style: TextStyle(color: AppColors.of(context).textSecondary)),
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: Text('Plus tard')),
         ElevatedButton(onPressed: () async { Navigator.pop(context); await _markSupportModalSeen(); _startSupportAd(); }, style: ElevatedButton.styleFrom(backgroundColor: _afroYellow), child: Text('Regarder la pub', style: TextStyle(color: Colors.black))),
@@ -2407,9 +2289,10 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
   @override
   Widget build(BuildContext context) {
     final isLocked = _isLockedContent();
+    final colors = AppColors.of(context);
     return Scaffold(
-      backgroundColor: _afroBlack,
-      appBar: AppBar(backgroundColor: _afroBlack, elevation: 0, leading: IconButton(icon: Icon(Icons.arrow_back, color: _afroYellow), onPressed: () => Navigator.pop(context)), title: Text('Afrolook Vidéo', style: TextStyle(color: _afroGreen, fontWeight: FontWeight.bold))),
+      backgroundColor: colors.background,
+      appBar: AppBar(backgroundColor: colors.surface, elevation: 0, leading: IconButton(icon: Icon(Icons.arrow_back, color: _afroYellow), onPressed: () => Navigator.pop(context)), title: Text('Afrolook Vidéo', style: TextStyle(color: _afroGreen, fontWeight: FontWeight.bold))),
       body: Stack(
         children: [
           CenteredContent(
