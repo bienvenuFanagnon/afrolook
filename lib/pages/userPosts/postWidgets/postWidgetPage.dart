@@ -1150,7 +1150,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                         ),
                         SizedBox(width: 4),
                         UserBadgeWidget(user: widget.post.user, size: 14),
-                        if ((widget.post.user?.commentStreak ?? 0) >= 1)
+                        if (currentCanal == null && (widget.post.user?.commentStreak ?? 0) >= 1)
                           _buildFlameStreakBadge(widget.post.user!.commentStreak),
                       ],
                     ),
@@ -1256,7 +1256,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                         SizedBox(width: 4),
                         // if (_isVerified())
                           UserBadgeWidget(user: widget.post.user, size: 14),
-                        if ((widget.post.user?.commentStreak ?? 0) >= 1)
+                        if (currentCanal == null && (widget.post.user?.commentStreak ?? 0) >= 1)
                           _buildFlameStreakBadge(widget.post.user!.commentStreak),
                       ],
                     ),
