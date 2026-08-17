@@ -3,6 +3,8 @@ import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:afrotok/models/chatmodels/message.dart';
 import 'package:afrotok/models/chatmodels/models.dart';
 import 'package:afrotok/models/model_data.dart';
@@ -49,6 +51,8 @@ import 'package:share_plus/share_plus.dart';
 
 import '../user/privacy_settings_page.dart';
 import 'chat_media_gallery_page.dart';
+import 'group/media_preview_page.dart';
+import '../../widgets/smart_video_player.dart';
 import '../afroshop/marketPlace/acceuil/produit_details.dart';
 import '../contenuPayant/contentDetails.dart';
 import '../postDetails.dart';
@@ -795,17 +799,127 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   Future<void> _getImage() async {
     try {
       final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-      if (pickedFile != null) {
-        setState(() {
-          _image = File(pickedFile.path);
-          _multiImages.clear();
-          _showEmojiPicker = false;
-        });
-        _typingDebounce?.cancel();
-        _setTypingState(_kTypingImage);
-      }
+      if (pickedFile == null) return;
+      if (!mounted) return;
+
+      final caption = await Navigator.push<String?>(
+        context,
+        MaterialPageRoute(builder: (_) => MediaPreviewPage(file: pickedFile, type: 'image')),
+      );
+      if (caption == null) return; // annulé
+
+      await _sendImageWithCaption(pickedFile, caption);
     } catch (e) {
       _showErrorSnackbar("Erreur lors de la sélection de l'image");
+    }
+  }
+
+  Future<void> _getVideo() async {
+    try {
+      final pickedFile = await _picker.pickVideo(source: ImageSource.gallery);
+      if (pickedFile == null) return;
+      if (!mounted) return;
+
+      final caption = await Navigator.push<String?>(
+        context,
+        MaterialPageRoute(builder: (_) => MediaPreviewPage(file: pickedFile, type: 'video')),
+      );
+      if (caption == null) return; // annulé
+
+      await _sendVideoMessage(pickedFile, caption);
+    } catch (e) {
+      _showErrorSnackbar("Erreur lors de la sélection de la vidéo");
+    }
+  }
+
+  Future<void> _sendImageWithCaption(XFile file, String caption) async {
+    setState(() => _isSendingImage = true);
+    try {
+      final Uint8List bytes = await file.readAsBytes();
+      final ext = file.name.split('.').last.toLowerCase();
+      final ref = FirebaseStorage.instance.ref().child(
+          'chat_images/${file.name}_${DateTime.now().millisecondsSinceEpoch}');
+      final snap = await ref.putData(bytes, SettableMetadata(contentType: 'image/$ext'));
+      final fileURL = await snap.ref.getDownloadURL();
+
+      final reply = ReplyMessage(
+        message: _replyingToMessage != null ? _getReplyMessageText(_replyingToMessage!) : '',
+        messageType: _replyingToMessage?.messageType ?? '',
+        messageId: _replyingToMessage?.id ?? '',
+      );
+      final msg = Message(
+        id: '',
+        createdAt: DateTime.now(),
+        message: fileURL,
+        sendBy: _authProvider.loginUserData.id!,
+        replyMessage: reply,
+        messageType: MessageType.image.name,
+        chat_id: widget.chat.docId!,
+        create_at_time_spam: DateTime.now().millisecondsSinceEpoch,
+        message_state: MessageState.NONLU.name,
+        receiverBy: widget.chat.senderId == _authProvider.loginUserData.id!
+            ? widget.chat.receiverId!
+            : widget.chat.senderId!,
+        is_valide: true,
+        expires_at: _messageExpiresAt,
+        imageText: caption.isNotEmpty ? caption : null,
+      );
+
+      _updateChatCounters(caption.isNotEmpty ? '📷 $caption' : '📷 Image');
+      final msgid = _firestore.collection('Messages').doc().id;
+      msg.id = msgid;
+      await _firestore.collection('Messages').doc(msgid).set(msg.toJson()..['createdAt'] = FieldValue.serverTimestamp());
+      await _sendNotification(caption.isNotEmpty ? '📷 $caption' : '📷 Image');
+      await _resetAfterMessage();
+    } catch (e) {
+      _showErrorSnackbar("Erreur lors de l'envoi de l'image");
+    } finally {
+      if (mounted) setState(() => _isSendingImage = false);
+    }
+  }
+
+  Future<void> _sendVideoMessage(XFile file, String caption) async {
+    setState(() => _isSendingImage = true);
+    try {
+      final Uint8List bytes = await file.readAsBytes();
+      final ref = FirebaseStorage.instance.ref().child(
+          'chat_videos/${file.name}_${DateTime.now().millisecondsSinceEpoch}');
+      final snap = await ref.putData(bytes, SettableMetadata(contentType: 'video/mp4'));
+      final fileURL = await snap.ref.getDownloadURL();
+
+      final reply = ReplyMessage(
+        message: _replyingToMessage != null ? _getReplyMessageText(_replyingToMessage!) : '',
+        messageType: _replyingToMessage?.messageType ?? '',
+        messageId: _replyingToMessage?.id ?? '',
+      );
+      final msg = Message(
+        id: '',
+        createdAt: DateTime.now(),
+        message: fileURL,
+        sendBy: _authProvider.loginUserData.id!,
+        replyMessage: reply,
+        messageType: MessageType.video.name,
+        chat_id: widget.chat.docId!,
+        create_at_time_spam: DateTime.now().millisecondsSinceEpoch,
+        message_state: MessageState.NONLU.name,
+        receiverBy: widget.chat.senderId == _authProvider.loginUserData.id!
+            ? widget.chat.receiverId!
+            : widget.chat.senderId!,
+        is_valide: true,
+        expires_at: _messageExpiresAt,
+        imageText: caption.isNotEmpty ? caption : null,
+      );
+
+      _updateChatCounters(caption.isNotEmpty ? '🎥 $caption' : '🎥 Vidéo');
+      final msgid = _firestore.collection('Messages').doc().id;
+      msg.id = msgid;
+      await _firestore.collection('Messages').doc(msgid).set(msg.toJson()..['createdAt'] = FieldValue.serverTimestamp());
+      await _sendNotification(caption.isNotEmpty ? '🎥 $caption' : '🎥 Vidéo');
+      await _resetAfterMessage();
+    } catch (e) {
+      _showErrorSnackbar("Erreur lors de l'envoi de la vidéo");
+    } finally {
+      if (mounted) setState(() => _isSendingImage = false);
     }
   }
 
@@ -1129,7 +1243,9 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       case 'text':
         return message.message;
       case 'image':
-        return '📷 Image';
+        return message.imageText?.isNotEmpty == true ? '📷 ${message.imageText}' : '📷 Image';
+      case 'video':
+        return message.imageText?.isNotEmpty == true ? '🎥 ${message.imageText}' : '🎥 Vidéo';
       case 'voice':
         return '🎤 Message audio';
       default:
@@ -1459,6 +1575,8 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         return _buildTextMessage(message, isMe);
       case 'image':
         return _buildImageMessage(message, isMe);
+      case 'video':
+        return _buildVideoMessage(message, isMe);
       case 'voice':
         return _buildCompactAudioPlayer(message, isMe);
       case 'post':
@@ -1746,6 +1864,40 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       isMe: isMe,
       onTap: () => _showImageFullScreen(message.message),
       onLongPress: () => _showMessageOptions(message),
+    );
+  }
+
+  Widget _buildVideoMessage(Message message, bool isMe) {
+    final caption = message.imageText ?? '';
+    return GestureDetector(
+      onLongPress: () => _showMessageOptions(message),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 220),
+              child: SmartVideoPlayer(
+                url: message.message,
+                autoPlay: false,
+              ),
+            ),
+          ),
+          if (caption.isNotEmpty) ...[
+            const SizedBox(height: 5),
+            Text(
+              caption,
+              style: TextStyle(
+                fontSize: 13,
+                color: isMe ? Colors.white : _colors.textPrimary,
+                height: 1.35,
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -2739,6 +2891,10 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
                     _attachItem(Icons.photo_library_rounded, 'Photo', Colors.blue, () {
                       Navigator.pop(context);
                       _getImage();
+                    }),
+                    _attachItem(Icons.videocam_rounded, 'Vidéo', Colors.purple, () {
+                      Navigator.pop(context);
+                      _getVideo();
                     }),
                     _attachItem(
                       Icons.photo_library_outlined,

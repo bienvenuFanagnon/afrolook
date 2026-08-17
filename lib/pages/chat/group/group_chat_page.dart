@@ -33,6 +33,7 @@ import '../../LiveAgora/livesAgora.dart';
 import '../../LiveAgora/livePage.dart';
 import '../../LiveAgora/live_ended_page.dart';
 import 'group_info_page.dart';
+import 'media_preview_page.dart';
 
 class GroupChatPage extends StatefulWidget {
   final String groupId;
@@ -976,6 +977,14 @@ class _GroupChatPageState extends State<GroupChatPage> {
     final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 75);
     if (picked == null) return;
 
+    // Aperçu + légende avant envoi
+    if (!mounted) return;
+    final caption = await Navigator.push<String?>(
+      context,
+      MaterialPageRoute(builder: (_) => MediaPreviewPage(file: picked, type: 'image')),
+    );
+    if (caption == null) return; // annulé
+
     setState(() => _isSending = true);
     _lastSentAt = DateTime.now().millisecondsSinceEpoch;
 
@@ -998,6 +1007,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
         'sender_image': _auth.loginUserData.imageUrl ?? '',
         'message': url,
         'message_type': 'image',
+        if (caption.isNotEmpty) 'caption': caption,
         'is_valide': true,
         'is_deleted': false,
         'is_encrypted': false,
@@ -1006,7 +1016,6 @@ class _GroupChatPageState extends State<GroupChatPage> {
         'message_state': 'NONLU',
       });
 
-      // Photo visible — libérer l'UI immédiatement
       if (mounted) setState(() => _isSending = false);
 
       final otherMembersImg = (_groupData['member_ids'] as List<dynamic>? ?? [])
@@ -1014,8 +1023,9 @@ class _GroupChatPageState extends State<GroupChatPage> {
           .where((id) => id.isNotEmpty && id != myId)
           .toList();
 
+      final lastMsg = caption.isNotEmpty ? '📷 $caption' : '📷 Photo';
       _firestore.collection('GroupChats').doc(widget.groupId).update({
-        'last_message': 'Photo',
+        'last_message': lastMsg,
         'last_message_at': now,
         'updated_at': now,
       }).catchError((e) => debugPrint('[GroupChatPage] last_message (image) failed: $e'));
@@ -1182,6 +1192,14 @@ class _GroupChatPageState extends State<GroupChatPage> {
       return;
     }
 
+    // Aperçu + légende avant envoi
+    if (!mounted) return;
+    final caption = await Navigator.push<String?>(
+      context,
+      MaterialPageRoute(builder: (_) => MediaPreviewPage(file: picked, type: 'video')),
+    );
+    if (caption == null) return; // annulé
+
     setState(() => _isSending = true);
     _lastSentAt = DateTime.now().millisecondsSinceEpoch;
 
@@ -1203,6 +1221,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
         'sender_image': _auth.loginUserData.imageUrl ?? '',
         'message': url,
         'message_type': 'video',
+        if (caption.isNotEmpty) 'caption': caption,
         'is_valide': true,
         'is_deleted': false,
         'is_encrypted': false,
@@ -1218,8 +1237,9 @@ class _GroupChatPageState extends State<GroupChatPage> {
           .where((id) => id.isNotEmpty && id != myId)
           .toList();
 
+      final lastMsg = caption.isNotEmpty ? '🎥 $caption' : '🎥 Vidéo';
       _firestore.collection('GroupChats').doc(widget.groupId).update({
-        'last_message': 'Vidéo',
+        'last_message': lastMsg,
         'last_message_at': now,
         'updated_at': now,
         'video_daily_stats': {
@@ -2845,28 +2865,62 @@ class _GroupChatPageState extends State<GroupChatPage> {
                         ],
                       )
                     else if (type == 'image')
-                      GestureDetector(
-                        onTap: () => _openImage(text),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: CachedNetworkImage(
-                            imageUrl: text,
-                            width: 200,
-                            fit: BoxFit.cover,
-                            placeholder: (_, __) => Container(
-                              width: 200,
-                              height: 140,
-                              color: _colors.surfaceVariant,
-                              child: Icon(Icons.image_rounded,
-                                  color: _colors.textSecondary, size: 32),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          GestureDetector(
+                            onTap: () => _openImage(text),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: CachedNetworkImage(
+                                imageUrl: text,
+                                width: 200,
+                                fit: BoxFit.cover,
+                                placeholder: (_, __) => Container(
+                                  width: 200,
+                                  height: 140,
+                                  color: _colors.surfaceVariant,
+                                  child: Icon(Icons.image_rounded,
+                                      color: _colors.textSecondary, size: 32),
+                                ),
+                              ),
                             ),
                           ),
-                        ),
+                          if ((msg['caption'] as String? ?? '').isNotEmpty) ...[
+                            const SizedBox(height: 5),
+                            Text(
+                              msg['caption'] as String,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: isMe ? Colors.white : _colors.textPrimary,
+                                height: 1.35,
+                              ),
+                            ),
+                          ],
+                        ],
                       )
                     else if (type == 'multi_image')
                       _buildMultiImageGrid(msg, isMe)
                     else if (type == 'video')
-                      _buildVideoCard(text, isMe)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildVideoCard(text, isMe),
+                          if ((msg['caption'] as String? ?? '').isNotEmpty) ...[
+                            const SizedBox(height: 5),
+                            Text(
+                              msg['caption'] as String,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: isMe ? Colors.white : _colors.textPrimary,
+                                height: 1.35,
+                              ),
+                            ),
+                          ],
+                        ],
+                      )
                     else if (type == 'post')
                       _buildSharedPostCard(msg, isMe)
                     else if (type == 'link_share')

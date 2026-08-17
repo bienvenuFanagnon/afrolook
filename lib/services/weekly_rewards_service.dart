@@ -206,6 +206,7 @@ class WeeklyRewardsService {
 
     await _enrichCommentatorRankings(rankings);
 
+    _cachedWeekId = wid;
     _cachedCommentators = rankings;
     return rankings;
   }

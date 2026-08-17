@@ -13,10 +13,8 @@ const TOP_POSTS_STORED = 20; // stocke top 20, récompense top 3
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-/** Retourne l'identifiant ISO de la semaine en cours, ex. "2026-W34". */
-function getCurrentWeekId(): string {
-  const now = new Date();
-  const date = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+function _isoWeekId(d: Date): string {
+  const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
   const dayNum = date.getUTCDay() || 7;
   date.setUTCDate(date.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
@@ -24,13 +22,32 @@ function getCurrentWeekId(): string {
   return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
 }
 
-/** Retourne le timestamp (microsecondes) du début de la semaine ISO (lundi 00:00 UTC). */
+/** Retourne l'identifiant ISO de la semaine en cours, ex. "2026-W34". */
+function getCurrentWeekId(): string {
+  return _isoWeekId(new Date());
+}
+
+/** Retourne l'identifiant ISO de la semaine précédente, ex. "2026-W33". */
+function getLastWeekId(): string {
+  return _isoWeekId(new Date(Date.now() - 7 * 86400000));
+}
+
+/** Retourne le timestamp microsecondes du lundi 00:00 UTC de la semaine précédente. */
+function getLastWeekStartMicros(): number {
+  const now = new Date();
+  const day = now.getUTCDay() || 7;
+  const monday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - (day - 1) - 7));
+  monday.setUTCHours(0, 0, 0, 0);
+  return monday.getTime() * 1000;
+}
+
+/** Retourne le timestamp microsecondes du lundi 00:00 UTC de la semaine en cours (= fin semaine précédente). */
 function getWeekStartMicros(): number {
   const now = new Date();
   const day = now.getUTCDay() || 7;
   const monday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - (day - 1)));
   monday.setUTCHours(0, 0, 0, 0);
-  return monday.getTime() * 1000; // microsecondes (même unité que created_at Dart)
+  return monday.getTime() * 1000;
 }
 
 /** Tente de créer le verrou. Retourne false si la semaine est déjà traitée. */
@@ -104,8 +121,9 @@ export const weeklyTopCommentatorsReward = onSchedule(
     timeoutSeconds: 300,
   },
   async () => {
-    const weekId = getCurrentWeekId();
-    console.log(`[weeklyCommentators] Semaine : ${weekId}`);
+    // La fonction tourne le lundi matin → on récompense la semaine qui vient de se terminer
+    const weekId = getLastWeekId();
+    console.log(`[weeklyCommentators] Semaine récompensée : ${weekId}`);
 
     const locked = await acquireLock(weekId, "commentators");
     if (!locked) {
@@ -113,10 +131,11 @@ export const weeklyTopCommentatorsReward = onSchedule(
       return;
     }
 
-    const weekStartMicros = getWeekStartMicros();
+    const lastWeekStartMicros = getLastWeekStartMicros(); // lundi précédent 00:00
+    const thisWeekStartMicros = getWeekStartMicros();      // lundi actuel 00:00 (fin de la période)
     const minAccountDate = new Date(Date.now() - MIN_ACCOUNT_AGE_DAYS * 86400000);
 
-    // ── Charger tous les commentaires de la semaine (par batch Firestore) ──
+    // ── Charger tous les commentaires de la semaine écoulée ──
     // scoreMap : userId -> Set<post_id>  (1 post = 1 point max)
     const scoreMap = new Map<string, Set<string>>();
 
@@ -126,7 +145,8 @@ export const weeklyTopCommentatorsReward = onSchedule(
     while (true) {
       let query = db
         .collection("PostComments")
-        .where("created_at", ">=", weekStartMicros)
+        .where("created_at", ">=", lastWeekStartMicros)
+        .where("created_at", "<", thisWeekStartMicros)
         .orderBy("created_at", "asc")
         .limit(500);
 
@@ -253,8 +273,8 @@ export const weeklyTopPostsReward = onSchedule(
     timeoutSeconds: 540,
   },
   async () => {
-    const weekId = getCurrentWeekId();
-    console.log(`[weeklyPosts] Semaine : ${weekId}`);
+    const weekId = getLastWeekId();
+    console.log(`[weeklyPosts] Semaine récompensée : ${weekId}`);
 
     const locked = await acquireLock(weekId, "posts");
     if (!locked) {
@@ -262,16 +282,18 @@ export const weeklyTopPostsReward = onSchedule(
       return;
     }
 
-    const weekStartMicros = getWeekStartMicros();
+    const lastWeekStartMicros = getLastWeekStartMicros();
+    const thisWeekStartMicros = getWeekStartMicros();
 
-    // ── Récupérer tous les posts publiés cette semaine ──
+    // ── Récupérer tous les posts publiés la semaine écoulée ──
     const postsSnap = await db
       .collection("Posts")
-      .where("created_at", ">=", weekStartMicros)
+      .where("created_at", ">=", lastWeekStartMicros)
+      .where("created_at", "<", thisWeekStartMicros)
       .select("user_id", "userlikes", "vue", "uniqueViewerIds", "created_at")
       .get();
 
-    console.log(`[weeklyPosts] ${postsSnap.size} posts de la semaine.`);
+    console.log(`[weeklyPosts] ${postsSnap.size} posts de la semaine écoulée.`);
 
     if (postsSnap.empty) {
       console.log("[weeklyPosts] Aucun post cette semaine.");
@@ -325,7 +347,8 @@ export const weeklyTopPostsReward = onSchedule(
             const commentsSnap = await db
               .collection("PostComments")
               .where("post_id", "==", postId)
-              .where("created_at", ">=", weekStartMicros)
+              .where("created_at", ">=", lastWeekStartMicros)
+              .where("created_at", "<", thisWeekStartMicros)
               .select("user_id")
               .get();
 

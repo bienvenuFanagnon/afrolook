@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/model_data.dart';
 import '../pages/component/showUserDetails.dart';
 import '../providers/authProvider.dart';
+import '../services/weekly_rewards_service.dart';
 import '../theme/app_colors.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -68,12 +69,16 @@ class _FlameLeaderboardState extends State<FlameLeaderboard> {
   int _myRank = -1;
   int _myScore = 0;
 
+  List<WeeklyCommentatorRanking> _weeklyEntries = [];
+  bool _weeklyLoading = true;
+
   static const _medals = ['🥇', '🥈', '🥉'];
 
   @override
   void initState() {
     super.initState();
     _load();
+    _loadWeekly();
   }
 
   Future<void> _load() async {
@@ -123,6 +128,20 @@ class _FlameLeaderboardState extends State<FlameLeaderboard> {
     }
   }
 
+  Future<void> _loadWeekly() async {
+    try {
+      final weekId = WeeklyRewardsService.getLastWeekId();
+      final entries = await WeeklyRewardsService().getWeeklyTopCommentators(weekId: weekId);
+      if (!mounted) return;
+      setState(() {
+        _weeklyEntries = entries.take(5).toList();
+        _weeklyLoading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _weeklyLoading = false);
+    }
+  }
+
   Future<void> _openProfile(BuildContext ctx, String userId) async {
     try {
       final snap = await FirebaseFirestore.instance
@@ -154,6 +173,134 @@ class _FlameLeaderboardState extends State<FlameLeaderboard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // ── Top hebdomadaire ──────────────────────────────────────────────
+          if (_weeklyLoading)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+              child: Row(
+                children: [
+                  const Text('🏆', style: TextStyle(fontSize: 14)),
+                  const SizedBox(width: 8),
+                  Container(
+                    width: 140,
+                    height: 11,
+                    decoration: BoxDecoration(
+                      color: colors.border,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else if (_weeklyEntries.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 12, 8),
+              child: Row(
+                children: [
+                  const Text('🏆', style: TextStyle(fontSize: 14)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Top Commentateurs · Semaine passée',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                        Text(
+                          WeeklyRewardsService.getLastWeekId(),
+                          style: TextStyle(fontSize: 9, color: colors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(
+              height: 88,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                primary: false,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                itemCount: _weeklyEntries.length,
+                itemBuilder: (context, i) {
+                  final entry = _weeklyEntries[i];
+                  final rank = entry.rank;
+                  final user = entry.user;
+                  final imgUrl = user?.imageUrl ?? '';
+                  final pseudo = user?.pseudo ?? entry.userId;
+                  const medals = ['🥇', '🥈', '🥉'];
+                  final rankLabel = rank <= 3 ? medals[rank - 1] : '#$rank';
+                  final rankColor = rank == 1
+                      ? const Color(0xFFFFD700)
+                      : rank == 2
+                          ? const Color(0xFFC0C0C0)
+                          : rank == 3
+                              ? const Color(0xFFCD7F32)
+                              : colors.border;
+
+                  return GestureDetector(
+                    onTap: () => _openProfile(context, entry.userId),
+                    child: Container(
+                      width: 64,
+                      margin: const EdgeInsets.only(right: 8),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Stack(
+                            alignment: Alignment.topRight,
+                            children: [
+                              CircleAvatar(
+                                radius: 26,
+                                backgroundColor: colors.shimmerBase,
+                                backgroundImage: imgUrl.isNotEmpty
+                                    ? CachedNetworkImageProvider(imgUrl)
+                                    : null,
+                                child: imgUrl.isEmpty
+                                    ? Icon(Icons.person, size: 22, color: colors.textSecondary)
+                                    : null,
+                              ),
+                              Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: BoxDecoration(
+                                  color: rankColor,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: colors.surfaceVariant, width: 1.5),
+                                ),
+                                child: Text(rankLabel, style: const TextStyle(fontSize: 9)),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '@$pseudo',
+                            style: TextStyle(fontSize: 9, color: colors.textSecondary, fontWeight: FontWeight.w600),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                          ),
+                          Text(
+                            '${entry.commentCount} 💬',
+                            style: TextStyle(fontSize: 9, color: colors.textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+              child: Divider(color: colors.border, height: 1),
+            ),
+          ],
+
           // ── Header ────────────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 12, 12, 8),

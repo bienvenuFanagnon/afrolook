@@ -194,14 +194,16 @@ class _DetailsPostState extends State<DetailsPost>
   }
 
 
-// Nouvelle méthode pour obtenir les suggestions filtrées (exclut le post courant)
   List<Post> getFilteredSuggestions() {
-    final allSuggestions = postProvider.suggestedPosts;
-    // Exclure le post actuel
-    return allSuggestions.where((p) => p.id != widget.post.id).toList();
+    final seen = <String>{widget.post.id ?? ''};
+    final result = <Post>[];
+    for (final p in postProvider.suggestedPosts) {
+      if (p.id != null && seen.add(p.id!)) result.add(p);
+    }
+    return result;
   }
 
-  // Widget d'affichage des suggestions (modifié)
+  // Widget d'affichage des suggestions — style YouTube
   Widget _buildSuggestedPosts() {
     final suggestions = getFilteredSuggestions();
     final isLoading = postProvider.isLoadingSuggestions;
@@ -209,21 +211,19 @@ class _DetailsPostState extends State<DetailsPost>
     if (isLoading && suggestions.isEmpty) {
       return Center(
         child: Padding(
-          padding: EdgeInsets.all(20),
+          padding: const EdgeInsets.all(20),
           child: CircularProgressIndicator(color: _colors.accent),
         ),
       );
     }
 
-    if (suggestions.isEmpty) {
-      return SizedBox.shrink();
-    }
+    if (suggestions.isEmpty) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 12),
           child: Text(
             'Suggestions',
             style: TextStyle(
@@ -235,123 +235,175 @@ class _DetailsPostState extends State<DetailsPost>
         ),
         ListView.builder(
           shrinkWrap: true,
-          physics: NeverScrollableScrollPhysics(),
-          itemCount: suggestions.length + 1, // +1 pour la pub
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: suggestions.length + 1,
           itemBuilder: (context, index) {
             final int postIndex = index > 3 ? index - 1 : index;
-            if (postIndex >= suggestions.length) return SizedBox.shrink();
-
+            if (postIndex >= suggestions.length) return const SizedBox.shrink();
             final post = suggestions[postIndex];
-            final bool isLastItem = index == suggestions.length;
 
-            return Column(
-              children: [
-                InkWell(
-                  onTap: () => _onSuggestedPostSelected(post),
-                  child: Container(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            color: _colors.surfaceVariant,
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                // Miniature (image ou vidéo)
-                                (post.dataType == PostDataType.VIDEO.name && post.thumbnail != null && post.thumbnail!.isNotEmpty)
-                                    ? CachedNetworkImage(
-                                  imageUrl:_optimizeImageUrl( post.thumbnail!),
-                                  fit: BoxFit.cover,
-                                  placeholder: (context, url) => Center(
-                                    child: CircularProgressIndicator(color: _colors.accent),
-                                  ),
-                                  errorWidget: (context, url, error) => Icon(Icons.video_library, color: _colors.textSecondary, size: 40),
-                                )
-                                    : (post.images != null && post.images!.isNotEmpty)
-                                    ? CachedNetworkImage(
-                                  imageUrl: _optimizeImageUrl( post.images!.first),
-                                  fit: BoxFit.cover,
-                                  placeholder: (context, url) => Center(
-                                    child: CircularProgressIndicator(color: _colors.accent),
-                                  ),
-                                  errorWidget: (context, url, error) => Icon(Icons.image, color: _colors.textSecondary, size: 40),
-                                )
-                                    : Icon(Icons.image, color: _colors.textSecondary, size: 40),
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildYouTubeCard(post),
+            ).animate()
+              .fadeIn(duration: 300.ms, delay: (50 * index).ms)
+              .slideY(begin: 0.04, end: 0, duration: 300.ms, curve: Curves.easeOut);
+          },
+        ),
+      ],
+    );
+  }
 
-                                // Badge vidéo (seulement si c'est une vidéo)
-                                if (post.dataType == PostDataType.VIDEO.name)
-                                  Positioned(
-                                    bottom: 8,
-                                    right: 8,
-                                    child: Container(
-                                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withOpacity(0.7),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(Icons.play_arrow, color: Colors.white, size: 14),
-                                          SizedBox(width: 2),
-                                          Text(
-                                            'VIDEO',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          )
-                        ),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                post.description ?? '',
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(color: _colors.textPrimary, fontSize: 14),
-                              ),
+  Widget _buildYouTubeCard(Post post) {
+    final thumb = _thumbUrlFor(post);
+    return GestureDetector(
+      onTap: () => _onSuggestedPostSelected(post),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: SizedBox(
+          height: 170,
+          width: double.infinity,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // ── Miniature plein-écran ──────────────────────────────────
+              thumb.isNotEmpty
+                  ? CachedNetworkImage(
+                      imageUrl: thumb,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) => Container(color: _colors.shimmerBase),
+                      errorWidget: (_, __, ___) => _thumbFallback(post),
+                    )
+                  : _thumbFallback(post),
 
-                              SizedBox(height: 2),
-                              Row(
-                                children: [
-                                  Icon(Icons.bar_chart, size: 12, color: _colors.info),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    '${post.totalInteractions ?? 0}',
-                                    style: TextStyle(color: _colors.textSecondary, fontSize: 11),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+              // ── Gradient bas ───────────────────────────────────────────
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      stops: const [0.25, 1.0],
+                      colors: [Colors.transparent, Colors.black.withOpacity(0.88)],
                     ),
                   ),
                 ),
-                if (!isLastItem) Divider(color: _colors.divider),
-              ],
-            ).animate().fadeIn(duration: 300.ms, delay: (50 * index).ms).slideX(begin: 0.05, end: 0);
-          },
+              ),
+
+              // ── Badge type (coin haut-droite) ──────────────────────────
+              Positioned(
+                top: 8,
+                right: 8,
+                child: _buildPostTypeBadge(post),
+              ),
+
+              // ── Description + stats (overlay bas) ─────────────────────
+              Positioned(
+                bottom: 0, left: 0, right: 0,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        post.description ?? '',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          height: 1.35,
+                          shadows: [Shadow(color: Colors.black54, blurRadius: 4)],
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          _suggStatItem(Icons.remove_red_eye_outlined, _formatCount(post.vues ?? post.totalInteractions ?? 0)),
+                          const SizedBox(width: 12),
+                          _suggStatItem(Icons.favorite_rounded, _formatCount(post.loves ?? 0), color: const Color(0xFFFF6B6B)),
+                          const SizedBox(width: 12),
+                          _suggStatItem(Icons.chat_bubble_outline_rounded, _formatCount(post.comments ?? 0)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  String _thumbUrlFor(Post post) {
+    if (post.dataType == PostDataType.VIDEO.name && post.thumbnail != null && post.thumbnail!.isNotEmpty) {
+      return _optimizeImageUrl(post.thumbnail!);
+    }
+    if (post.images != null && post.images!.isNotEmpty) {
+      return _optimizeImageUrl(post.images!.first);
+    }
+    if (post.url_media != null && post.url_media!.isNotEmpty) {
+      return _optimizeImageUrl(post.url_media!);
+    }
+    return '';
+  }
+
+  Widget _thumbFallback(Post post) {
+    final isVideo = post.dataType == PostDataType.VIDEO.name;
+    final isAudio = post.dataType == PostDataType.AUDIO.name;
+    return Container(
+      color: _colors.shimmerBase,
+      child: Center(
+        child: Icon(
+          isVideo ? Icons.play_circle_outline_rounded
+              : isAudio ? Icons.music_note_rounded
+              : Icons.image_outlined,
+          size: 48,
+          color: _colors.textSecondary.withOpacity(0.5),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPostTypeBadge(Post post) {
+    final bool isVideo = post.dataType == PostDataType.VIDEO.name;
+    final bool isAudio = post.dataType == PostDataType.AUDIO.name;
+    final bool isText  = post.dataType == PostDataType.TEXT.name;
+    final String emoji = isVideo ? '🎬' : isAudio ? '🎵' : isText ? '✍️' : '📷';
+    final String label = isVideo ? 'VIDÉO' : isAudio ? 'AUDIO' : isText ? 'TEXTE' : 'IMAGE';
+    final Color bg = isVideo
+        ? Colors.red.withOpacity(0.85)
+        : isAudio
+            ? Colors.purple.withOpacity(0.85)
+            : isText
+                ? Colors.blueAccent.withOpacity(0.85)
+                : Colors.black54;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 10)),
+          const SizedBox(width: 4),
+          Text(label, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+
+  Widget _suggStatItem(IconData icon, String value, {Color? color}) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 12, color: color ?? Colors.white70),
+        const SizedBox(width: 3),
+        Text(value, style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600)),
       ],
     );
   }
@@ -701,75 +753,7 @@ class _DetailsPostState extends State<DetailsPost>
     );
   }
   Widget _buildSuggestionItem(Post post) {
-    return GestureDetector(
-      onTap: () {
-        _onSuggestedPostSelected(post);
-      },
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Stack(
-              children: [
-                Container(
-                  width: 60,
-                  height: 60,
-                  color: _colors.surfaceVariant,
-                  child: post.dataType == PostDataType.VIDEO.name && post.thumbnail != null
-                      ? CachedNetworkImage(imageUrl:_optimizeImageUrl( post.thumbnail!), fit: BoxFit.cover)
-                      : (post.images != null && post.images!.isNotEmpty
-                      ? CachedNetworkImage(imageUrl:_optimizeImageUrl( post.images!.first), fit: BoxFit.cover)
-                      : Icon(Icons.videocam, color: _colors.textSecondary)),
-                ),
-                if (post.dataType == PostDataType.VIDEO.name)
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.4),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Center(
-                        child: Icon(Icons.play_arrow, color: Colors.white, size: 24),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  post.description ?? '',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: _colors.textPrimary),
-                ),
-                Row(
-                  children: [
-                    Icon(Icons.bar_chart, size: 12, color: _colors.textSecondary),
-                    SizedBox(width: 2),
-                    Text(
-                      _formatCount(post.totalInteractions ?? 0),
-                      style: TextStyle(color: _colors.textSecondary, fontSize: 12),
-                    ),
-                    SizedBox(width: 8),
-                    Icon(Icons.favorite, size: 12, color: _colors.danger),
-                    SizedBox(width: 2),
-                    Text(
-                      _formatCount(post.loves ?? 0),
-                      style: TextStyle(color: _colors.textSecondary, fontSize: 12),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+    return _buildYouTubeCard(post);
   }
   String _formatCount(int count) {
     if (count >= 1000000) return '${(count / 1000000).toStringAsFixed(1)}M';
@@ -2066,12 +2050,12 @@ class _DetailsPostState extends State<DetailsPost>
 
     final images = widget.post.images ?? [];
     if (images.length > 1) {
-      _carouselTimer = Timer.periodic(Duration(seconds: 2), (timer) {
+      _carouselTimer = Timer.periodic(Duration(seconds: 5), (timer) {
         if (mounted && _carouselController.hasClients) {
           final nextPage = (_currentImageIndex + 1) % images.length;
           _carouselController.animateToPage(
             nextPage,
-            duration: Duration(milliseconds: 300),
+            duration: Duration(milliseconds: 500),
             curve: Curves.easeInOut,
           );
         }

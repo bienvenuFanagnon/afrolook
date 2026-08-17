@@ -80,6 +80,7 @@ enum CreatorType {
 enum MessageType {
   text,
   image,
+  video,
   audio,
     voice,
   custom,

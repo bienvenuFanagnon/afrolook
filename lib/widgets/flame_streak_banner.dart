@@ -1,7 +1,10 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/streakProvider.dart';
 import '../providers/authProvider.dart';
+import '../services/weekly_rewards_service.dart';
 import '../theme/app_colors.dart';
 import 'flame_leaderboard.dart';
 
@@ -21,11 +24,29 @@ String _levelEmoji(int level) => _kLevels[level.clamp(0, 5)].emoji;
 String _levelLabel(int level) => _kLevels[level.clamp(0, 5)].label;
 Color  _levelColor(int level) => _kLevels[level.clamp(0, 5)].color;
 
+int _levelFromStreak(int streak) {
+  if (streak >= 30) return 5;
+  if (streak >= 14) return 4;
+  if (streak >= 7)  return 3;
+  if (streak >= 3)  return 2;
+  if (streak >= 1)  return 1;
+  return 0;
+}
+
 int _computeScore(int streak, int bestStreak) =>
     (streak * 10) + (bestStreak * 5);
 
+// Modèle léger pour les avatars de la bannière
+class _BannerUser {
+  final String id;
+  final String pseudo;
+  final String? imageUrl;
+  final int commentCount;
+  _BannerUser({required this.id, required this.pseudo, this.imageUrl, required this.commentCount});
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
-// Bannière compacte — affichée dans le feed
+// Bannière — affichée dans les pages de posts
 // ─────────────────────────────────────────────────────────────────────────────
 class FlameStreakBanner extends StatefulWidget {
   const FlameStreakBanner({super.key});
@@ -37,6 +58,8 @@ class FlameStreakBanner extends StatefulWidget {
 class _FlameStreakBannerState extends State<FlameStreakBanner>
     with SingleTickerProviderStateMixin {
   late AnimationController _pulseCtrl;
+  List<_BannerUser> _topUsers = [];
+  bool _topUsersIsFallback = false;
 
   @override
   void initState() {
@@ -52,7 +75,54 @@ class _FlameStreakBannerState extends State<FlameStreakBanner>
       if (uid != null && uid.isNotEmpty) {
         context.read<StreakProvider>().listenToUser(uid);
       }
+      _loadTopUsers();
     });
+  }
+
+  Future<void> _loadTopUsers() async {
+    try {
+      final weekId = WeeklyRewardsService.getLastWeekId();
+      final rankings = await WeeklyRewardsService().getWeeklyTopCommentators(weekId: weekId);
+      if (!mounted) return;
+      final users = rankings.take(5).map((r) => _BannerUser(
+        id: r.userId,
+        pseudo: r.user?.pseudo ?? r.userId,
+        imageUrl: r.user?.imageUrl,
+        commentCount: r.commentCount,
+      )).toList();
+      if (users.isNotEmpty) {
+        setState(() => _topUsers = users);
+      } else {
+        await _loadTopUsersFallback();
+      }
+    } catch (_) {
+      await _loadTopUsersFallback();
+    }
+  }
+
+  // Fallback : top 5 par meilleure série all-time si aucune donnée hebdo disponible
+  Future<void> _loadTopUsersFallback() async {
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('Users')
+          .where('bestCommentStreak', isGreaterThan: 0)
+          .orderBy('bestCommentStreak', descending: true)
+          .limit(5)
+          .get();
+      if (!mounted) return;
+      setState(() {
+        _topUsers = snap.docs.map((d) {
+          final data = d.data();
+          return _BannerUser(
+            id: d.id,
+            pseudo: data['pseudo'] as String? ?? '',
+            imageUrl: data['imageUrl'] as String?,
+            commentCount: (data['bestCommentStreak'] as num?)?.toInt() ?? 0,
+          );
+        }).toList();
+        _topUsersIsFallback = true;
+      });
+    } catch (_) {}
   }
 
   @override
@@ -374,6 +444,72 @@ class _FlameStreakBannerState extends State<FlameStreakBanner>
                             ],
                           );
                         }),
+
+                        // ── Top 5 Commentateurs ────────────────────────────
+                        if (_topUsers.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Divider(height: 1, color: colors.border),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              const Text('💬', style: TextStyle(fontSize: 11)),
+                              const SizedBox(width: 6),
+                              Text(
+                                _topUsersIsFallback ? 'Top séries 💬 (all-time)' : 'Top commentateurs · semaine passée',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: colors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: _topUsers.asMap().entries.map((e) {
+                              final i = e.key;
+                              final user = e.value;
+                              const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+                              return Expanded(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Stack(
+                                      alignment: Alignment.topRight,
+                                      children: [
+                                        CircleAvatar(
+                                          radius: 20,
+                                          backgroundColor: colors.shimmerBase,
+                                          backgroundImage: (user.imageUrl?.isNotEmpty == true)
+                                              ? CachedNetworkImageProvider(user.imageUrl!)
+                                              : null,
+                                          child: (user.imageUrl?.isEmpty ?? true)
+                                              ? Icon(Icons.person, size: 16, color: colors.textSecondary)
+                                              : null,
+                                        ),
+                                        Text(medals[i], style: const TextStyle(fontSize: 9)),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      '@${user.pseudo}',
+                                      style: TextStyle(fontSize: 9, color: colors.textSecondary, fontWeight: FontWeight.w600),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    Text(
+                                      _topUsersIsFallback
+                                          ? '${user.commentCount}j 🔥'
+                                          : '${user.commentCount} 💬',
+                                      style: TextStyle(fontSize: 9, color: colors.textSecondary),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
                       ],
                     ),
                   ),

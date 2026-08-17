@@ -268,10 +268,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
   }
 
   void _showSuggestionsModal() {
-    final suggestions = postProvider.suggestedPosts
-        .where((p) => p.id != widget.initialPost.id)
-        .take(10) // 10 suggestions
-        .toList();
+    final suggestions = getFilteredSuggestions().take(10).toList();
 
     if (suggestions.isEmpty) return;
 
@@ -349,75 +346,156 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     );
   }
   Widget _buildSuggestionItem(Post post) {
+    return _buildYouTubeCard(post);
+  }
+
+  Widget _buildYouTubeCard(Post post) {
     final colors = AppColors.of(context);
+    final thumb = _thumbUrlFor(post);
     return GestureDetector(
-      onTap: () {
-        _onSuggestedPostSelected(post);
-      },
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Stack(
-              children: [
-                Container(
-                  width: 60,
-                  height: 60,
-                  color: colors.shimmerBase,
-                  child: post.dataType == PostDataType.VIDEO.name && post.thumbnail != null
-                      ? CachedNetworkImage(imageUrl: post.thumbnail!, fit: BoxFit.cover)
-                      : (post.images != null && post.images!.isNotEmpty
-                      ? CachedNetworkImage(imageUrl: post.images!.first, fit: BoxFit.cover)
-                      : Icon(Icons.videocam, color: colors.textSecondary)),
-                ),
-                if (post.dataType == PostDataType.VIDEO.name)
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.4),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Center(
-                        child: Icon(Icons.play_arrow, color: Colors.white, size: 24),
-                      ),
+      onTap: () => _onSuggestedPostSelected(post),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: SizedBox(
+          height: 170,
+          width: double.infinity,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // ── Miniature plein-écran ──────────────────────────────────
+              thumb.isNotEmpty
+                  ? CachedNetworkImage(
+                      imageUrl: thumb,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) => Container(color: colors.shimmerBase),
+                      errorWidget: (_, __, ___) => _thumbFallback(post, colors),
+                    )
+                  : _thumbFallback(post, colors),
+
+              // ── Gradient bas ───────────────────────────────────────────
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      stops: const [0.25, 1.0],
+                      colors: [Colors.transparent, Colors.black.withOpacity(0.88)],
                     ),
                   ),
-              ],
-            ),
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  post.description ?? '',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: colors.textPrimary),
                 ),
-                Row(
-                  children: [
-                    Icon(Icons.bar_chart, size: 12, color: colors.textSecondary),
-                    SizedBox(width: 2),
-                    Text(
-                      _formatCount(post.totalInteractions ?? 0),
-                      style: TextStyle(color: colors.textSecondary, fontSize: 12),
-                    ),
-                    SizedBox(width: 8),
-                    Icon(Icons.favorite, size: 12, color: colors.danger),
-                    SizedBox(width: 2),
-                    Text(
-                      _formatCount(post.loves ?? 0),
-                      style: TextStyle(color: colors.textSecondary, fontSize: 12),
-                    ),
-                  ],
+              ),
+
+              // ── Badge type ─────────────────────────────────────────────
+              Positioned(
+                top: 8,
+                right: 8,
+                child: _buildPostTypeBadge(post),
+              ),
+
+              // ── Description + stats ────────────────────────────────────
+              Positioned(
+                bottom: 0, left: 0, right: 0,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        post.description ?? '',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          height: 1.35,
+                          shadows: [Shadow(color: Colors.black54, blurRadius: 4)],
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          _suggStatItem(Icons.remove_red_eye_outlined, _formatCount(post.vues ?? post.totalInteractions ?? 0)),
+                          const SizedBox(width: 12),
+                          _suggStatItem(Icons.favorite_rounded, _formatCount(post.loves ?? 0), color: const Color(0xFFFF6B6B)),
+                          const SizedBox(width: 12),
+                          _suggStatItem(Icons.chat_bubble_outline_rounded, _formatCount(post.comments ?? 0)),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
+        ),
+      ),
+    );
+  }
+
+  String _thumbUrlFor(Post post) {
+    if (post.dataType == PostDataType.VIDEO.name && post.thumbnail != null && post.thumbnail!.isNotEmpty) {
+      return post.thumbnail!;
+    }
+    if (post.images != null && post.images!.isNotEmpty) return post.images!.first;
+    if (post.url_media != null && post.url_media!.isNotEmpty) return post.url_media!;
+    return '';
+  }
+
+  Widget _thumbFallback(Post post, AppColors colors) {
+    final isVideo = post.dataType == PostDataType.VIDEO.name;
+    final isAudio = post.dataType == PostDataType.AUDIO.name;
+    return Container(
+      color: colors.shimmerBase,
+      child: Center(
+        child: Icon(
+          isVideo ? Icons.play_circle_outline_rounded
+              : isAudio ? Icons.music_note_rounded
+              : Icons.image_outlined,
+          size: 48,
+          color: colors.textSecondary.withOpacity(0.5),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPostTypeBadge(Post post) {
+    final bool isVideo = post.dataType == PostDataType.VIDEO.name;
+    final bool isAudio = post.dataType == PostDataType.AUDIO.name;
+    final bool isText  = post.dataType == PostDataType.TEXT.name;
+    final String emoji = isVideo ? '🎬' : isAudio ? '🎵' : isText ? '✍️' : '📷';
+    final String label = isVideo ? 'VIDÉO' : isAudio ? 'AUDIO' : isText ? 'TEXTE' : 'IMAGE';
+    final Color bg = isVideo
+        ? Colors.red.withOpacity(0.85)
+        : isAudio
+            ? Colors.purple.withOpacity(0.85)
+            : isText
+                ? Colors.blueAccent.withOpacity(0.85)
+                : Colors.black54;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 10)),
+          const SizedBox(width: 4),
+          Text(label, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
         ],
       ),
+    );
+  }
+
+  Widget _suggStatItem(IconData icon, String value, {Color? color}) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 12, color: color ?? Colors.white70),
+        const SizedBox(width: 3),
+        Text(value, style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600)),
+      ],
     );
   }
 
@@ -612,11 +690,13 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
   }
 
   // ==================== SUGGESTIONS ====================
-// Nouvelle méthode pour obtenir les suggestions filtrées (exclut le post courant)
   List<Post> getFilteredSuggestions() {
-    final allSuggestions = postProvider.suggestedPosts;
-    // Exclure le post actuel
-    return allSuggestions.where((p) => p.id != widget.initialPost.id).toList();
+    final seen = <String>{widget.initialPost.id ?? ''};
+    final result = <Post>[];
+    for (final p in postProvider.suggestedPosts) {
+      if (p.id != null && seen.add(p.id!)) result.add(p);
+    }
+    return result;
   }
 
 // Navigation vers un post suggéré
