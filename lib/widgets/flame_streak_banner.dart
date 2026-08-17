@@ -500,7 +500,7 @@ class _FlameStreakBannerState extends State<FlameStreakBanner>
                                     ),
                                     Text(
                                       _topUsersIsFallback
-                                          ? '${user.commentCount}j 🔥'
+                                          ? '${user.commentCount}j 💬'
                                           : '${user.commentCount} 💬',
                                       style: TextStyle(fontSize: 9, color: colors.textSecondary),
                                     ),
