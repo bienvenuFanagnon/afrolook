@@ -474,7 +474,7 @@ class _CreatorTile extends StatelessWidget {
                             color: colors.background, width: 1.5),
                       ),
                       child: Text(
-                        '${creator.unseenCount}',
+                        creator.unseenCount > 9 ? '9+' : '${creator.unseenCount}',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 9,
@@ -529,7 +529,7 @@ class _CreatorTile extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         creator.unseenCount > 0
-                            ? '${creator.unseenCount} nouveau${creator.unseenCount > 1 ? 'x' : ''} post${creator.unseenCount > 1 ? 's' : ''}'
+                            ? '${creator.unseenCount > 9 ? '9+' : creator.unseenCount} nouveau${creator.unseenCount > 1 ? 'x' : ''} post${creator.unseenCount > 1 ? 's' : ''}'
                             : 'Actif récemment',
                         style: TextStyle(
                           color: creator.unseenCount > 0

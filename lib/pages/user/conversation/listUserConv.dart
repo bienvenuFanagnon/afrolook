@@ -720,19 +720,29 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     return isConnected && (now - lastTimeActive) < tenMinutesInMs;
   }
 
-  // Charger les créateurs actifs (newPostsByCreator + followings)
+  // Charger les créateurs actifs avec comptage réel depuis viewedPostIds
   Future<void> _loadCreators() async {
     if (!mounted) return;
     final me = authProvider.loginUserData;
     try {
       final list = await _activeCreatorsService.resolve(me, limit: 10);
+      final creatorIds = list
+          .where((c) => c.user.id != null)
+          .map((c) => c.user.id!)
+          .toList();
+      Map<String, int> calibrated = {};
+      if (creatorIds.isNotEmpty) {
+        final viewedSet = Set<String>.from(me.viewedPostIds ?? []);
+        calibrated = await _activeCreatorsService.recalibrateUnseenCounts(
+          creatorIds: creatorIds,
+          viewedPostIds: viewedSet,
+          userCreatedAtMs: me.createdAt ?? 0,
+        );
+      }
       if (mounted) {
         setState(() {
           _creators = list.map((c) => c.user).toList();
-          _unseenCounts = {
-            for (final c in list)
-              if (c.unseenCount > 0 && c.user.id != null) c.user.id!: c.unseenCount,
-          };
+          _unseenCounts = calibrated;
           _loadingCreators = false;
         });
       }

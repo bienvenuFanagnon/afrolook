@@ -3332,7 +3332,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
   }
 
-  /// Décrémente newPostsByCreator quand un post est vu dans le feed.
+  /// Décrémente directement _unseenCounts quand un post est vu dans le feed.
   /// Chaque post n'est décrémenté qu'une seule fois par session.
   void _decrementCreatorUnseenCount(Post post) {
     final postId = post.id;
@@ -3341,21 +3341,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     if (_decrementedPostIds.contains(postId)) return;
     _decrementedPostIds.add(postId);
 
-    final me = authProvider.loginUserData;
-    final counts = me.newPostsByCreator;
-    if (counts == null || !counts.containsKey(creatorId)) return;
-
-    final current = counts[creatorId] ?? 0;
+    // Source de vérité : _unseenCounts (issu de recalibrateUnseenCounts)
+    final current = _unseenCounts[creatorId] ?? 0;
     if (current <= 0) return;
 
     final newCount = current - 1;
-
-    // Mise à jour locale du modèle
-    if (newCount <= 0) {
-      counts.remove(creatorId);
-    } else {
-      counts[creatorId] = newCount;
-    }
 
     // Mise à jour UI des badges
     if (mounted) {
@@ -3376,8 +3366,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       });
     }
 
-    // Mise à jour Firestore en arrière-plan
-    final userId = me.id;
+    // Garde newPostsByCreator en sync pour la prochaine session
+    final userId = authProvider.loginUserData.id;
     if (userId == null) return;
     if (newCount <= 0) {
       _activeCreatorsService.resetCreatorCounter(userId, creatorId);
@@ -3668,9 +3658,31 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   void _handleAppLifecycle(String? message) {
     if (message?.contains('resume') == true) {
       _setUserOnline();
+      _recalibrateUnseenOnFocus();
     } else {
       _setUserOffline();
     }
+  }
+
+  // Re-calibre les badges après retour sur la page (viewedPostIds peut avoir évolué)
+  Future<void> _recalibrateUnseenOnFocus() async {
+    if (!mounted) return;
+    final me = authProvider.loginUserData;
+    final creatorIds = _activeCreators
+        .where((c) => c.user.id != null)
+        .map((c) => c.user.id!)
+        .toList();
+    if (creatorIds.isEmpty) return;
+    try {
+      final viewedSet = Set<String>.from(me.viewedPostIds ?? []);
+      final calibrated = await _activeCreatorsService.recalibrateUnseenCounts(
+        creatorIds: creatorIds,
+        viewedPostIds: viewedSet,
+        userCreatedAtMs: me.createdAt ?? 0,
+      );
+      if (!mounted) return;
+      setState(() => _unseenCounts = calibrated);
+    } catch (_) {}
   }
 
   void _setUserOnline() {

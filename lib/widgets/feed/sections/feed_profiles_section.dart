@@ -324,7 +324,7 @@ class _RoundCard extends StatelessWidget {
                             color: colors.surface, width: 1.5),
                       ),
                       child: Text(
-                        '$unseenCount',
+                        unseenCount > 9 ? '9+' : '$unseenCount',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 9,
@@ -723,7 +723,7 @@ class _RectCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          '$unseenCount nouveau${unseenCount > 1 ? 'x' : ''}',
+                          '${unseenCount > 9 ? '9+' : unseenCount} nouveau${unseenCount > 1 ? 'x' : ''}',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 8,
