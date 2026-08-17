@@ -1828,7 +1828,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
             send_user_id: authProvider.loginUserData.id!,
             recever_user_id: "",
             message: "🚀 @${authProvider.loginUserData.pseudo!} vient de lancer un live : ${newLive.title}",
-            type_notif: NotificationType.CHRONIQUE.name,
+            type_notif: NotificationType.LIVE.name,
             post_id: newLive.liveId ?? "id",
             post_type: PostDataType.TEXT.name,
             chat_id: '',

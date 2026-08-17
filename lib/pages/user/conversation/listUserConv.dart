@@ -1208,6 +1208,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
               unseenCount: unseen,
               viewedPostIds: me.viewedPostIds ?? [],
               currentUserId: me.id ?? '',
+              userCreatedAtMs: me.createdAt ?? 0,
             ),
           ),
         ).then((_) {

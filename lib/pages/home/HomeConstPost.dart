@@ -65,8 +65,8 @@ import '../user/creator_unseen_posts_page.dart';
 import '../user/following_unseen_feed_page.dart';
 import 'home_boot_cache.dart';
 import '../../widgets/feed/weekly_top_creators_widget.dart';
+import '../../widgets/feed/sections/weekly_top_posts_section_widget.dart';
 import '../../widgets/flame_streak_banner.dart';
-import '../../widgets/flame_leaderboard.dart';
 
 
 // Constantes de couleur
@@ -696,9 +696,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     );
   }
   void _initializeData() async {
-    // Précharger les top créateurs en parallèle
-
+    // Précharger les top créateurs et top posts en parallèle
     WeeklyTopCreatorsWidget.preload();
+    WeeklyTopPostsSectionWidget.preload();
 
     // 1. Détecter le pays de l'utilisateur
     _selectedCountryCode = authProvider.loginUserData.countryData?['countryCode']?.toUpperCase();
@@ -1071,6 +1071,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   }
 
   bool _isUserScrolling() {
+    if (!_scrollController.hasClients) return false;
     return _scrollController.position.isScrollingNotifier.value;
   }
 
@@ -1749,11 +1750,14 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           _isFirstLoad = false;
         });
       } else {
-        // Cache déjà affiché : ne pas remplacer les posts (évite le flash visible).
-        // Prépendre uniquement les posts vraiment nouveaux (absents du cache).
+        // Cache déjà affiché : mettre à jour les stats des posts existants
+        // et prépendre uniquement les posts vraiment nouveaux.
         final alreadyShown = Set<String>.from(_loadedPostIds);
+        final freshById = {for (final p in newPosts) if (p.id != null) p.id!: p};
         final trulyNew = newPosts.where((p) => p.id != null && !alreadyShown.contains(p.id)).toList();
         setState(() {
+          // Remplacer les posts du cache par leur version fraîche (stats à jour)
+          _posts = _posts.map((p) => p.id != null && freshById.containsKey(p.id) ? freshById[p.id]! : p).toList();
           if (trulyNew.isNotEmpty) {
             _posts = _spreadCreators([...trulyNew, ..._posts]);
           }
@@ -2032,6 +2036,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   // ===========================================================================
 
   void _scrollListener() {
+    if (!_scrollController.hasClients) return;
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 1500 &&
         !_isLoadingMorePosts &&
@@ -2351,18 +2356,37 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         freshCounts: freshCounts,
       );
 
+      // Recalibration des compteurs contre viewedPostIds pour les créateurs
+      // ayant un count > 0 (évite les décalages entre CF et réalité Firestore)
+      final hotCreatorIds = creators
+          .where((c) => c.unseenCount > 0 && c.user.id != null)
+          .map((c) => c.user.id!)
+          .toList();
+
+      Map<String, int> calibratedCounts = {
+        for (final c in creators)
+          if (c.unseenCount > 0 && c.user.id != null) c.user.id!: c.unseenCount,
+      };
+
+      if (hotCreatorIds.isNotEmpty) {
+        final viewedSet = Set<String>.from(me.viewedPostIds ?? []);
+        final real = await _activeCreatorsService.recalibrateUnseenCounts(
+          creatorIds: hotCreatorIds,
+          viewedPostIds: viewedSet,
+          userCreatedAtMs: me.createdAt ?? 0,
+        );
+        calibratedCounts = real;
+      }
+
       // Si aucun post non vu, mélanger pour varier l'ordre à chaque chargement
-      final hasUnseen = creators.any((c) => c.unseenCount > 0);
+      final hasUnseen = calibratedCounts.values.any((c) => c > 0);
       final ordered = hasUnseen ? creators : (List.of(creators)..shuffle());
 
       if (!mounted) return;
       setState(() {
         _activeCreators = ordered;
         _suggestedUsers = ordered.map((c) => c.user).toList();
-        _unseenCounts = {
-          for (final c in ordered)
-            if (c.unseenCount > 0 && c.user.id != null) c.user.id!: c.unseenCount,
-        };
+        _unseenCounts = calibratedCounts;
         _creatorLastActivityUs = {
           for (final c in ordered)
             if (c.user.id != null) c.user.id!: c.lastActivityUs,
@@ -2539,7 +2563,13 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
   Widget _buildPoolWidget(String name) {
     switch (name) {
-      case 'WeeklyTopCreators': return const WeeklyTopCreatorsWidget();
+      case 'WeeklyTopCreators': return const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            WeeklyTopCreatorsWidget(),
+            WeeklyTopPostsSectionWidget(),
+          ],
+        );
       case 'BoostedContent':   return const BoostedContentStripWidget();
       case 'Articles':         return _buildArticlesSection();
       case 'ShopPromo':        return ShopPromoFeedWidget(articles: _articles);
@@ -2578,6 +2608,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                     ? LookChallengePostWidget(post: post, height: height, width: width)
                     : (post.type == PostType.POST.name && post.dataType == PostDataType.VIDEO.name)
                     ? YouTubeVideoCard(
+                  key: ValueKey('ytcard_${post.id}'),
                   post: post,
                   index: index,
                   onNeighborhoodPreload: _preloadVideoNeighborhood,
@@ -2814,6 +2845,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                   : (currentUser.followingIds ?? currentUser.userAbonnesIds ?? []),
               viewedPostIds: currentUser.viewedPostIds ?? [],
               currentUserId: currentUser.id ?? '',
+              userCreatedAtMs: currentUser.createdAt ?? 0,
               unseenCounts: _unseenCounts,
               followedCanalIds: _followedCanalIds,
               recentCanaux: _recentCanaux,
@@ -2833,6 +2865,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
               unseenCount: unseen,
               viewedPostIds: currentUser.viewedPostIds ?? [],
               currentUserId: currentUser.id ?? '',
+              userCreatedAtMs: currentUser.createdAt ?? 0,
             ),
           ),
         ).then((_) {
@@ -2972,7 +3005,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     // chargement) → aucun décalage de layout quand les données arrivent.
     contentWidgets.add(_buildChroniquesSection());
     contentWidgets.add(const FlameStreakBanner());
-    contentWidgets.add(const FlameLeaderboard());
     contentWidgets.add(_buildAdMrec(key: 'ad_native_user'));
 
     // Carousel pronostics avant le premier post
@@ -2983,14 +3015,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       contentWidgets.add(_buildProfilesSection());
     }
 
-    // AfroShop promo en première position — lundi (1) et jeudi (4)
     final _weekday = DateTime.now().weekday;
-    if ((_weekday == DateTime.monday || _weekday == DateTime.thursday) &&
-        _articles.isNotEmpty) {
-      contentWidgets.add(
-        ShopPromoFeedWidget(articles: _articles, isFirstPosition: true),
-      );
-    }
 
     for (int i = 0; i < finalPosts.length; i++) {
       final post = finalPosts[i];
@@ -3004,8 +3029,14 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         ),
       );
 
-      // Section créateurs actifs après le premier post
+      // Après le 1er post : AfroShop promo (lun/jeu) puis créateurs actifs
       if (i == 0) {
+        if ((_weekday == DateTime.monday || _weekday == DateTime.thursday) &&
+            _articles.isNotEmpty) {
+          contentWidgets.add(
+            ShopPromoFeedWidget(articles: _articles, isFirstPosition: true),
+          );
+        }
         contentWidgets.add(_buildProfilesSection());
       }
 

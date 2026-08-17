@@ -57,6 +57,7 @@ class DestinationData {
   final Post? post;
   final Chat? chat;
   final String? chroniqueId;
+  final String? liveId;
   final String? chatId;
   final String? sendUserId;
   final String? joinCode;
@@ -64,7 +65,7 @@ class DestinationData {
   final String? affiliateId;
   final String? creatorId;
   final Canal? canal;
-  DestinationData({required this.type, this.post, this.chat, this.chroniqueId, this.chatId, this.sendUserId, this.joinCode, this.content, this.affiliateId, this.creatorId, this.canal});
+  DestinationData({required this.type, this.post, this.chat, this.chroniqueId, this.liveId, this.chatId, this.sendUserId, this.joinCode, this.content, this.affiliateId, this.creatorId, this.canal});
 }
 
 class SplashChargement extends StatefulWidget {
@@ -104,6 +105,7 @@ class _SplashChargementState extends State<SplashChargement> {
   String? _pendingChatId;
   String? _pendingSendUserId;
   String? _pendingChroniqueId;
+  String? _pendingLiveId;
   String? _pendingJoinCode;
   String? _pendingNavigationType;
 
@@ -640,6 +642,9 @@ class _SplashChargementState extends State<SplashChargement> {
         case 'chronique':
           _pendingChroniqueId = _cachedNavigation!['chroniqueId'];
           break;
+        case 'live':
+          _pendingLiveId = _cachedNavigation!['liveId'] as String?;
+          break;
         case 'contenu':
           _pendingContentId = _cachedNavigation!['contentId'];
           _pendingAffiliateId = _cachedNavigation!['affiliateId'] as String?;
@@ -680,6 +685,9 @@ class _SplashChargementState extends State<SplashChargement> {
         break;
       case 'chronique_home':
         _destinationToSend = DestinationData(type: 'chronique_home');
+        break;
+      case 'live':
+        _destinationToSend = DestinationData(type: 'live', liveId: _pendingLiveId);
         break;
       case 'invitation':
         _destinationToSend = DestinationData(type: 'invitation');

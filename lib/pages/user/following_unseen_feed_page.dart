@@ -261,6 +261,7 @@ class _FollowingUnseenFeedPageState extends State<FollowingUnseenFeedPage> {
               : (post.type == PostType.POST.name &&
                       post.dataType == PostDataType.VIDEO.name)
                   ? YouTubeVideoCard(
+                      key: ValueKey('ytcard_${post.id}'),
                       post: post,
                       index: index,
                       onNeighborhoodPreload: (_) {},

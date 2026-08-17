@@ -233,18 +233,11 @@ class _WeeklyTopCreatorsWidgetState extends State<WeeklyTopCreatorsWidget> {
   static const String _prefKeyDate = 'weekly_view_date';
   static const int _maxViewMs = 8000; // 8 secondes cumulées
 
-  static const List<String> _encouragements = [
-    'La star de la semaine ! Un contenu exceptionnel que vous ne pouvez pas manquer.',
-    'Une créativité remarquable cette semaine. Abonnez-vous pour ne rien rater !',
-    'Top 3 cette semaine ! Des posts qui ont fait parler de toute la communauté.',
-    'Une présence forte cette semaine. Découvrez son univers unique.',
-    'Actif et inspirant ! Rejoignez sa communauté qui grandit chaque semaine.',
-  ];
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(viewportFraction: 0.85);
+    _pageController = PageController(viewportFraction: 0.37);
     _init();
   }
 
@@ -334,10 +327,10 @@ class _WeeklyTopCreatorsWidgetState extends State<WeeklyTopCreatorsWidget> {
 
     if (_isLoading) {
       return Container(
-        height: 420,
-        margin: const EdgeInsets.symmetric(vertical: 8),
+        height: 190,
+        margin: const EdgeInsets.symmetric(vertical: 6),
         child: Center(
-          child: CircularProgressIndicator(color: colors.primary),
+          child: CircularProgressIndicator(color: colors.primary, strokeWidth: 2),
         ),
       );
     }
@@ -345,23 +338,22 @@ class _WeeklyTopCreatorsWidgetState extends State<WeeklyTopCreatorsWidget> {
     if (_entries.isEmpty) return const SizedBox.shrink();
 
     final range = WeeklyTopCreatorsWidget._lastWeekRangeMicros();
-    final startDate =
-        DateTime.fromMicrosecondsSinceEpoch(range['start']!);
+    final startDate = DateTime.fromMicrosecondsSinceEpoch(range['start']!);
     final endDate = DateTime.fromMicrosecondsSinceEpoch(range['end']!)
         .subtract(const Duration(days: 1));
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 10),
+      margin: const EdgeInsets.symmetric(vertical: 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // En-tête
+          // En-tête compact
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+            padding: const EdgeInsets.fromLTRB(14, 0, 14, 6),
             child: Row(
               children: [
-                const Text('🏆', style: TextStyle(fontSize: 20)),
-                const SizedBox(width: 8),
+                const Text('🏆', style: TextStyle(fontSize: 16)),
+                const SizedBox(width: 6),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -369,35 +361,30 @@ class _WeeklyTopCreatorsWidgetState extends State<WeeklyTopCreatorsWidget> {
                       Text(
                         'Top créateurs de la semaine',
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: 13,
                           fontWeight: FontWeight.bold,
                           color: colors.textPrimary,
                         ),
                       ),
                       Text(
                         'Du ${_fmtDate(startDate)} au ${_fmtDate(endDate)}',
-                        style: TextStyle(
-                            fontSize: 10, color: colors.textSecondary),
+                        style: TextStyle(fontSize: 9, color: colors.textSecondary),
                       ),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFD400).withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                        color: const Color(0xFFFFD400), width: 0.8),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFFFD400), width: 0.8),
                   ),
-                  child: Text(
-                    DateTime.now().weekday == DateTime.monday
-                        ? 'Lundi'
-                        : 'Mardi',
-                    style: const TextStyle(
+                  child: const Text(
+                    'Semaine',
+                    style: TextStyle(
                       color: Color(0xFFFFD400),
-                      fontSize: 10,
+                      fontSize: 9,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -406,9 +393,9 @@ class _WeeklyTopCreatorsWidgetState extends State<WeeklyTopCreatorsWidget> {
             ),
           ),
 
-          // Carousel
+          // Carousel compact
           SizedBox(
-            height: 440,
+            height: 210,
             child: PageView.builder(
               controller: _pageController,
               itemCount: _entries.length,
@@ -418,21 +405,21 @@ class _WeeklyTopCreatorsWidgetState extends State<WeeklyTopCreatorsWidget> {
           ),
 
           // Dots
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(_entries.length, (i) {
               final active = i == _currentPage;
               return AnimatedContainer(
                 duration: const Duration(milliseconds: 250),
-                margin: const EdgeInsets.symmetric(horizontal: 3),
-                width: active ? 16 : 5,
-                height: 5,
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                width: active ? 12 : 4,
+                height: 4,
                 decoration: BoxDecoration(
                   color: active
                       ? const Color(0xFFFFD400)
                       : colors.textSecondary.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(3),
+                  borderRadius: BorderRadius.circular(2),
                 ),
               );
             }),
@@ -461,247 +448,139 @@ class _WeeklyTopCreatorsWidgetState extends State<WeeklyTopCreatorsWidget> {
     return GestureDetector(
       onTap: () => _openProfile(entry),
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-        decoration: BoxDecoration(
-          color: colors.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: colors.border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildCardHeader(entry, rank, colors),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Nom @pseudo ou #canal + vérifié
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '${entry.isCanal ? '#' : '@'}${entry.displayName}',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              color: colors.textPrimary,
+        margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Image plein-card
+              entry.imageUrl.isNotEmpty
+                  ? CachedNetworkImage(
+                      imageUrl: entry.imageUrl,
+                      fit: BoxFit.cover,
+                      errorWidget: (_, __, ___) => _buildAvatarFallback(entry, colors),
+                    )
+                  : _buildAvatarFallback(entry, colors),
+
+              // Overlay sombre en bas
+              Positioned(
+                bottom: 0, left: 0, right: 0,
+                child: Container(
+                  color: const Color(0xBF0A0A0A),
+                  padding: const EdgeInsets.fromLTRB(7, 7, 7, 8),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '${entry.isCanal ? '#' : '@'}${entry.displayName}',
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                        if (_isVerified(entry)) ...[
-                          const SizedBox(width: 4),
-                          const Icon(Icons.verified,
-                              color: Colors.blue, size: 13),
+                          if (_isVerified(entry)) ...[
+                            const SizedBox(width: 2),
+                            const Icon(Icons.verified, color: Colors.blue, size: 11),
+                          ],
                         ],
-                      ],
-                    ),
-                    if (entry.description.isNotEmpty) ...[
+                      ),
                       const SizedBox(height: 2),
-                      Text(
-                        entry.description,
-                        style: TextStyle(
-                            fontSize: 10, color: colors.textSecondary),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      Row(
+                        children: [
+                          Icon(Icons.people_outline, color: Colors.white.withOpacity(0.65), size: 10),
+                          const SizedBox(width: 2),
+                          Text(
+                            '${_fmtCount(entry.followerCount)} abonnés',
+                            style: TextStyle(fontSize: 9, color: Colors.white.withOpacity(0.65)),
+                          ),
+                        ],
                       ),
+                      const SizedBox(height: 3),
+                      _buildOverlayStats(entry),
+                      const SizedBox(height: 5),
+                      _buildOverlayFollowButton(entry, colors),
                     ],
-                    const SizedBox(height: 6),
-                    _buildStatsRow(entry, colors),
-                    const SizedBox(height: 5),
-                    Text(
-                      _encouragements[rank.clamp(0, 4)],
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: colors.textSecondary,
-                        fontStyle: FontStyle.italic,
-                        height: 1.4,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const Spacer(),
-                    _buildFollowButton(entry, colors),
-                  ],
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  // ── Header image ──────────────────────────────────────────────────────────
-
-  Widget _buildCardHeader(_TopEntry entry, int rank, AppColors colors) {
-    return Stack(
-      children: [
-        Container(
-          height: 230,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(20)),
-            color: colors.surfaceVariant,
-          ),
-          child: ClipRRect(
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(20)),
-            child: entry.imageUrl.isNotEmpty
-                ? CachedNetworkImage(
-                    imageUrl: entry.imageUrl,
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: double.infinity,
-                    errorWidget: (_, __, ___) =>
-                        _buildAvatarFallback(entry, colors),
-                  )
-                : _buildAvatarFallback(entry, colors),
-          ),
-        ),
-        Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(20)),
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.55),
-                ],
-                stops: const [0.55, 1.0],
+              // Badge rang (haut gauche)
+              Positioned(
+                top: 7, left: 7,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.68),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: _rankColor(rank), width: 0.8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(_rankEmoji(rank), style: const TextStyle(fontSize: 10)),
+                      const SizedBox(width: 2),
+                      Text('#${rank + 1}',
+                          style: TextStyle(color: _rankColor(rank), fontSize: 9, fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ),
-        ),
-        Positioned(
-          top: 10,
-          left: 10,
-          child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.65),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: _rankColor(rank), width: 1),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(_rankEmoji(rank),
-                    style: const TextStyle(fontSize: 11)),
-                const SizedBox(width: 3),
-                Text('#${rank + 1}',
-                    style: TextStyle(
-                        color: _rankColor(rank),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700)),
-              ],
-            ),
-          ),
-        ),
-        Positioned(
-          top: 10,
-          right: 10,
-          child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-            decoration: BoxDecoration(
-              color: entry.isCanal
-                  ? Colors.purple.withOpacity(0.8)
-                  : Colors.blue.withOpacity(0.8),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Text(
-              entry.isCanal ? 'Canal' : 'Créateur',
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w600),
-            ),
-          ),
-        ),
-        Positioned(
-          bottom: 8,
-          left: 10,
-          child: Row(
-            children: [
-              const Icon(Icons.people_outline,
-                  color: Colors.white70, size: 11),
-              const SizedBox(width: 3),
-              Text(
-                '${_fmtCount(entry.followerCount)} abonnés',
-                style:
-                    const TextStyle(color: Colors.white70, fontSize: 10),
+
+              // Badge type (haut droit)
+              Positioned(
+                top: 7, right: 7,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: entry.isCanal
+                        ? Colors.purple.withOpacity(0.82)
+                        : Colors.blue.withOpacity(0.82),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    entry.isCanal ? 'Canal' : 'Créateur',
+                    style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w500),
+                  ),
+                ),
               ),
             ],
           ),
         ),
-        Positioned(
-          bottom: 8,
-          right: 10,
-          child: Container(
-            padding: const EdgeInsets.all(5),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.5),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.person_outline,
-                color: Colors.white70, size: 12),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
-  // ── Stats compactes ───────────────────────────────────────────────────────
-
-  Widget _buildStatsRow(_TopEntry entry, AppColors colors) {
-    return Wrap(
-      spacing: 5,
-      runSpacing: 4,
+  Widget _buildOverlayStats(_TopEntry entry) {
+    return Row(
       children: [
-        _miniStat(Icons.article_outlined, '${entry.postCount}p', colors),
-        _miniStat(Icons.favorite_border, entry.uniqueLovers.toString(), colors),
-        _miniStat(Icons.chat_bubble_outline,
-            entry.uniqueCommenters.toString(), colors),
-        _miniStat(Icons.remove_red_eye_outlined,
-            _fmtCount(entry.totalViews), colors),
+        _overlayStatChip(Icons.article_outlined, '${entry.postCount}p'),
+        const SizedBox(width: 5),
+        _overlayStatChip(Icons.favorite_border, entry.uniqueLovers.toString()),
+        const SizedBox(width: 5),
+        _overlayStatChip(Icons.chat_bubble_outline, entry.uniqueCommenters.toString()),
+        const SizedBox(width: 5),
+        _overlayStatChip(Icons.remove_red_eye_outlined, _fmtCount(entry.totalViews)),
       ],
     );
   }
 
-  Widget _miniStat(IconData icon, String value, AppColors colors) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-      decoration: BoxDecoration(
-        color: colors.surfaceVariant,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 10, color: colors.textSecondary),
-          const SizedBox(width: 3),
-          Text(value,
-              style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: colors.textPrimary)),
-        ],
-      ),
+  Widget _overlayStatChip(IconData icon, String value) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 9, color: Colors.white.withOpacity(0.6)),
+        const SizedBox(width: 2),
+        Text(value, style: TextStyle(fontSize: 9, color: Colors.white.withOpacity(0.6))),
+      ],
     );
   }
 
-  // ── Bouton S'abonner ──────────────────────────────────────────────────────
-
-  Widget _buildFollowButton(_TopEntry entry, AppColors colors) {
+  Widget _buildOverlayFollowButton(_TopEntry entry, AppColors colors) {
     final isOwn = _isOwnEntry(entry);
     final isFollowing = entry.isCanal
         ? _isFollowingCanal(entry.canal!)
@@ -710,84 +589,61 @@ class _WeeklyTopCreatorsWidgetState extends State<WeeklyTopCreatorsWidget> {
     if (isOwn) {
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.symmetric(vertical: 5),
         decoration: BoxDecoration(
-          color: colors.surfaceVariant,
-          borderRadius: BorderRadius.circular(12),
+          color: Colors.white.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(8),
         ),
-        child: Center(
+        child: const Center(
           child: Text('Votre profil',
-              style: TextStyle(
-                  fontSize: 12,
-                  color: colors.textSecondary,
-                  fontWeight: FontWeight.w500)),
+              style: TextStyle(fontSize: 10, color: Colors.white70, fontWeight: FontWeight.w500)),
         ),
       );
     }
 
     if (isFollowing) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: colors.surfaceVariant,
-          borderRadius: BorderRadius.circular(12),
-          border:
-              Border.all(color: const Color(0xFFFFD400), width: 1),
-        ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.check_circle_outline,
-                color: Color(0xFFFFD400), size: 14),
-            SizedBox(width: 5),
-            Text('Abonné(e)',
-                style: TextStyle(
-                    color: Color(0xFFFFD400),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600)),
-          ],
+      return GestureDetector(
+        onTap: () => _openProfile(entry),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 5),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFFFD700), width: 0.8),
+          ),
+          child: const Center(
+            child: Text('Abonné(e)',
+                style: TextStyle(fontSize: 10, color: Color(0xFFFFD700), fontWeight: FontWeight.w500)),
+          ),
         ),
       );
     }
 
-    final isPaid =
-        entry.isCanal && (entry.canal!.subscriptionPrice > 0);
-
+    final isPaid = entry.isCanal && (entry.canal!.subscriptionPrice > 0);
     return GestureDetector(
       onTap: () {
-        if (entry.isCanal) {
-          _followCanal(entry.canal!);
-        } else {
-          _followUser(entry.userData!);
-        }
+        if (entry.isCanal) _followCanal(entry.canal!);
+        else _followUser(entry.userData!);
       },
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 11),
+        padding: const EdgeInsets.symmetric(vertical: 5),
         decoration: BoxDecoration(
-          color: const Color(0xFFFFD400),
-          borderRadius: BorderRadius.circular(12),
+          color: const Color(0xFFFFD700),
+          borderRadius: BorderRadius.circular(8),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.add, color: Colors.black, size: 16),
-            const SizedBox(width: 5),
-            Text(
-              isPaid
-                  ? 'S\'abonner · ${entry.canal!.subscriptionPrice.toStringAsFixed(0)} FCFA'
-                  : 'S\'abonner',
-              style: const TextStyle(
-                  color: Colors.black,
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold),
-            ),
-          ],
+        child: Center(
+          child: Text(
+            isPaid
+                ? 'S\'abonner · ${entry.canal!.subscriptionPrice.toStringAsFixed(0)} FCFA'
+                : 'S\'abonner',
+            style: const TextStyle(fontSize: 10, color: Colors.black, fontWeight: FontWeight.w500),
+          ),
         ),
       ),
     );
   }
+
 
   // ── Abonnement user ───────────────────────────────────────────────────────
 

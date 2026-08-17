@@ -5,6 +5,7 @@ import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/services/linkService.dart';
 import 'package:provider/provider.dart';
 import 'package:afrotok/providers/authProvider.dart';
+import 'package:afrotok/theme/app_colors.dart';
 
 /// Affiche une boîte de dialogue invitant l'utilisateur à parrainer ses amis.
 /// Inspirée du design de showRemunerationAnnounceModal, avec affichage du nombre de parrainages
@@ -17,6 +18,7 @@ Future<void> showInviteFriendsModal(BuildContext context, UserData currentUser) 
     context: context,
     barrierDismissible: true, // Permet de fermer en tapant à l'extérieur
     builder: (BuildContext context) {
+      final colors = AppColors.of(context);
       return WillPopScope(
         onWillPop: () async => true, // Autorise le retour arrière
         child: Dialog(
@@ -27,7 +29,7 @@ Future<void> showInviteFriendsModal(BuildContext context, UserData currentUser) 
             constraints: const BoxConstraints(maxWidth: 480),
             child: Container(
             decoration: BoxDecoration(
-              color: Colors.black,
+              color: colors.surface,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3)),
               boxShadow: [
@@ -73,25 +75,25 @@ Future<void> showInviteFriendsModal(BuildContext context, UserData currentUser) 
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.grey[900],
+                    color: colors.surfaceVariant,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Column(
                     children: [
-                      const Text(
+                      Text(
                         'Afrolook est encore plus génial avec tes amis ! 🌟',
                         style: TextStyle(
-                          color: Colors.white70,
+                          color: colors.textSecondary,
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
                         ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         'Invite-les avec ton code parrain et profitez ensemble des avantages :',
                         style: TextStyle(
-                          color: Colors.white54,
+                          color: colors.textSecondary,
                           fontSize: 12,
                         ),
                         textAlign: TextAlign.center,
@@ -101,11 +103,11 @@ Future<void> showInviteFriendsModal(BuildContext context, UserData currentUser) 
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          _buildAdvantageChip('📈', 'Popularité'),
+                          _buildAdvantageChip('📈', 'Popularité', colors),
                           const SizedBox(width: 4),
-                          _buildAdvantageChip('💰', 'Monétisation'),
+                          _buildAdvantageChip('💰', 'Monétisation', colors),
                           const SizedBox(width: 4),
-                          _buildAdvantageChip('🎁', 'Bonus'),
+                          _buildAdvantageChip('🎁', 'Bonus', colors),
                         ],
                       ),
                     ],
@@ -128,7 +130,7 @@ Future<void> showInviteFriendsModal(BuildContext context, UserData currentUser) 
                     '👉 Plus tes amis sont actifs, plus ta popularité et tes revenus augmentent !',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Colors.white,
+                      color: colors.textPrimary,
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                     ),
@@ -175,7 +177,7 @@ Future<void> showInviteFriendsModal(BuildContext context, UserData currentUser) 
 }
 
 // Petit widget pour les chips d'avantages
-Widget _buildAdvantageChip(String emoji, String label) {
+Widget _buildAdvantageChip(String emoji, String label, AppColors colors) {
   return Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     decoration: BoxDecoration(
@@ -194,7 +196,7 @@ Widget _buildAdvantageChip(String emoji, String label) {
         Text(
           label,
           style: TextStyle(
-            color: Colors.grey.shade300,
+            color: colors.textSecondary,
             fontSize: 10,
           ),
         ),
@@ -207,14 +209,15 @@ Widget _buildAdvantageChip(String emoji, String label) {
 Widget _buildReferralInfoCompact(UserData user, BuildContext context) {
   final int parrainagesCount = user.usersParrainer?.length ?? 0;
   final String referralCode = user.codeParrainage ?? "XXXXXXXX";
+  final colors = AppColors.of(context);
 
   return Container(
     width: double.infinity,
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
     decoration: BoxDecoration(
-      color: Colors.yellow.withOpacity(0.1),
+      color: const Color(0xFFFFD700).withOpacity(0.1),
       borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: Colors.yellow),
+      border: Border.all(color: const Color(0xFFFFD700)),
     ),
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -225,10 +228,10 @@ Widget _buildReferralInfoCompact(UserData user, BuildContext context) {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 "Ton code de parrainage",
                 style: TextStyle(
-                  color: Colors.grey,
+                  color: colors.textSecondary,
                   fontSize: 12,
                 ),
               ),
@@ -236,11 +239,11 @@ Widget _buildReferralInfoCompact(UserData user, BuildContext context) {
               Text(
                 referralCode,
                 style: const TextStyle(
-                  color: Colors.yellow,
+                  color: Color(0xFFFFD700),
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                 ),
-                overflow: TextOverflow.ellipsis,  // Évite les débordements
+                overflow: TextOverflow.ellipsis,
                 maxLines: 1,
               ),
             ],
@@ -255,17 +258,17 @@ Widget _buildReferralInfoCompact(UserData user, BuildContext context) {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.2),
+                color: colors.primary.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.people_alt, color: Colors.blue, size: 14),
+                  Icon(Icons.people_alt, color: colors.primary, size: 14),
                   const SizedBox(width: 6),
                   Text(
                     "Total invités : $parrainagesCount",
-                    style: const TextStyle(
-                      color: Colors.blue,
+                    style: TextStyle(
+                      color: colors.primary,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),
@@ -286,7 +289,7 @@ Widget _buildReferralInfoCompact(UserData user, BuildContext context) {
                   ),
                 );
               },
-              child: const Icon(Icons.copy, color: Colors.yellow, size: 20),
+              child: const Icon(Icons.copy, color: Color(0xFFFFD700), size: 20),
             ),
           ],
         ),

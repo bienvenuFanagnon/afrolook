@@ -37,6 +37,7 @@ class ActiveCreatorsListPage extends StatefulWidget {
   final List<String> abonnesIds;
   final List<String> viewedPostIds;
   final String currentUserId;
+  final int userCreatedAtMs;
 
   /// Posts non vus par créateur (en mémoire depuis HomeConstPost).
   final Map<String, int> unseenCounts;
@@ -55,6 +56,7 @@ class ActiveCreatorsListPage extends StatefulWidget {
     required this.abonnesIds,
     required this.viewedPostIds,
     required this.currentUserId,
+    this.userCreatedAtMs = 0,
     this.unseenCounts = const {},
     this.followedCanalIds = const [],
     this.recentCanaux = const [],
@@ -194,6 +196,7 @@ class _ActiveCreatorsListPageState extends State<ActiveCreatorsListPage> {
           unseenCount: ac.unseenCount,
           viewedPostIds: widget.viewedPostIds,
           currentUserId: widget.currentUserId,
+          userCreatedAtMs: widget.userCreatedAtMs,
         ),
       ),
     );

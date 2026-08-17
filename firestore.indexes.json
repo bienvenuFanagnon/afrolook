@@ -1850,6 +1850,20 @@
                 },
                 {
                     "fieldPath": "created_at",
+                    "order": "ASCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "PostComments",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "post_id",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "created_at",
                     "order": "DESCENDING"
                 }
             ]
@@ -3916,6 +3930,20 @@
                 },
                 {
                     "fieldPath": "episodeNumber",
+                    "order": "ASCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "ArticleComments",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "article_id",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
                     "order": "ASCENDING"
                 }
             ]

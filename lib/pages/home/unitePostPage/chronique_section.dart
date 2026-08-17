@@ -1,27 +1,14 @@
-﻿import 'dart:io';
+﻿import 'dart:typed_data';
+
 import 'package:afrotok/pages/component/consoleWidget.dart';
-
-import 'dart:typed_data';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 import 'package:flutter/material.dart';
-
 import 'package:shimmer/shimmer.dart';
-
 import 'package:cached_network_image/cached_network_image.dart';
-
 import 'package:afrotok/models/model_data.dart';
-
 import 'package:afrotok/pages/chronique/chroniquehome.dart';
-
 import 'package:afrotok/pages/chronique/chroniquedetails.dart';
-
 import '../../chronique/chroniqueform.dart';
-
-import 'dart:io';
-
-import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -66,7 +53,8 @@ class ChroniqueSectionComponent extends StatefulWidget {
 }
 
 class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
-  final Map<String, String> _generatedThumbnails = {};
+  // Bytes en mémoire : évite le conflit de fichiers temporaires partagés
+  final Map<String, Uint8List> _generatedThumbnails = {};
   final Map<String, bool> _isGenerating = {};
 
   @override
@@ -87,7 +75,7 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
           _isGenerating[chronique.id!] = true;
 
           try {
-            final thumbnail = await VideoThumbnail.thumbnailFile(
+            final thumbnailBytes = await VideoThumbnail.thumbnailData(
               video: chronique.mediaUrl!,
               imageFormat: ImageFormat.JPEG,
               maxWidth: 200,
@@ -95,9 +83,9 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
               timeMs: 1000,
             );
 
-            if (thumbnail != null && mounted) {
+            if (thumbnailBytes != null && mounted) {
               setState(() {
-                _generatedThumbnails[chronique.id!] = thumbnail;
+                _generatedThumbnails[chronique.id!] = thumbnailBytes;
               });
             }
           } catch (e) {
@@ -487,8 +475,8 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
                 height: double.infinity,
               )
             else if (hasGeneratedThumbnail)
-              Image.file(
-                File(_generatedThumbnails[chronique.id!]!),
+              Image.memory(
+                _generatedThumbnails[chronique.id!]!,
                 fit: BoxFit.cover,
                 width: double.infinity,
                 height: double.infinity,

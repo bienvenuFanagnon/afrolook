@@ -21,6 +21,8 @@ class CreatorUnseenPostsPage extends StatefulWidget {
   final int unseenCount;
   final List<String> viewedPostIds;
   final String currentUserId;
+  /// Timestamp ms de création du compte. Posts antérieurs exclus (0 = pas de filtre).
+  final int userCreatedAtMs;
 
   const CreatorUnseenPostsPage({
     super.key,
@@ -28,6 +30,7 @@ class CreatorUnseenPostsPage extends StatefulWidget {
     required this.unseenCount,
     required this.viewedPostIds,
     required this.currentUserId,
+    this.userCreatedAtMs = 0,
   });
 
   @override
@@ -98,25 +101,44 @@ class _CreatorUnseenPostsPageState extends State<CreatorUnseenPostsPage> {
     }
   }
 
+  // created_at Firestore = microsecondes ; UserData.createdAt = millisecondes après parsing
+  int get _sinceUs =>
+      widget.userCreatedAtMs > 0 ? widget.userCreatedAtMs * 1000 : 0;
+
+  Query<Map<String, dynamic>> get _baseQuery {
+    var q = _db
+        .collection('Posts')
+        .where('user_id', isEqualTo: widget.creator.id)
+        .orderBy('created_at', descending: true);
+    if (_sinceUs > 0) {
+      q = q.where('created_at', isGreaterThanOrEqualTo: _sinceUs);
+    }
+    return q;
+  }
+
+  List<Post> _filterUnseen(List<QueryDocumentSnapshot<Map<String, dynamic>>> docs) {
+    final viewedSet = Set<String>.from(widget.viewedPostIds);
+    return docs.map((d) {
+      final data = Map<String, dynamic>.from(d.data());
+      data['id'] = d.id;
+      return Post.fromJson(data);
+    }).where((p) => p.id != null && !viewedSet.contains(p.id)).toList();
+  }
+
   Future<void> _loadPosts() async {
     setState(() => _loading = true);
     try {
-      final snap = await _db
-          .collection('Posts')
-          .where('user_id', isEqualTo: widget.creator.id)
-          .orderBy('created_at', descending: true)
-          .limit(_pageSize)
-          .get();
+      // On charge plus de docs par page pour compenser le filtre côté client
+      final snap = await _baseQuery.limit(_pageSize * 3).get();
 
       if (mounted) {
+        final unseen = _filterUnseen(snap.docs);
         setState(() {
-          _posts = snap.docs.map((d) {
-            final data = Map<String, dynamic>.from(d.data());
-            data['id'] = d.id;
-            return Post.fromJson(data);
-          }).toList();
+          _posts = unseen;
           _lastDoc = snap.docs.isNotEmpty ? snap.docs.last : null;
-          _hasMore = snap.docs.length == _pageSize;
+          _hasMore = snap.docs.length == _pageSize * 3;
+          // Recalcul du compteur réel (posts vraiment non vus)
+          _localUnseenCount = unseen.length;
         });
       }
     } catch (_) {}
@@ -127,24 +149,17 @@ class _CreatorUnseenPostsPageState extends State<CreatorUnseenPostsPage> {
     if (_lastDoc == null || !_hasMore) return;
     setState(() => _loadingMore = true);
     try {
-      final snap = await _db
-          .collection('Posts')
-          .where('user_id', isEqualTo: widget.creator.id)
-          .orderBy('created_at', descending: true)
+      final snap = await _baseQuery
           .startAfterDocument(_lastDoc!)
-          .limit(_pageSize)
+          .limit(_pageSize * 3)
           .get();
 
       if (mounted) {
-        final newPosts = snap.docs.map((d) {
-          final data = Map<String, dynamic>.from(d.data());
-          data['id'] = d.id;
-          return Post.fromJson(data);
-        }).toList();
+        final newPosts = _filterUnseen(snap.docs);
         setState(() {
           _posts.addAll(newPosts);
           _lastDoc = snap.docs.isNotEmpty ? snap.docs.last : _lastDoc;
-          _hasMore = snap.docs.length == _pageSize;
+          _hasMore = snap.docs.length == _pageSize * 3;
         });
       }
     } catch (_) {}
@@ -218,6 +233,43 @@ class _CreatorUnseenPostsPageState extends State<CreatorUnseenPostsPage> {
     } catch (_) {}
   }
 
+  // ── Tout marquer comme vu ─────────────────────────────────────────────────────
+
+  bool _isMarkingAll = false;
+
+  Future<void> _markAllAsSeen() async {
+    if (_isMarkingAll || widget.currentUserId.isEmpty) return;
+    setState(() => _isMarkingAll = true);
+
+    try {
+      final alreadyViewed = Set<String>.from(widget.viewedPostIds)
+        ..addAll(_sessionViewedIds);
+
+      final newIds = await _service.markAllPostsSeenForCreator(
+        userId: widget.currentUserId,
+        creatorId: widget.creator.id ?? '',
+        userCreatedAtMs: widget.userCreatedAtMs,
+        alreadyViewedIds: alreadyViewed,
+      );
+
+      if (!mounted) return;
+
+      // Mettre à jour la liste locale des posts vus
+      for (final id in newIds) {
+        _sessionViewedIds.add(id);
+      }
+
+      setState(() {
+        _posts.clear();
+        _hasMore = false;
+        _localUnseenCount = 0;
+      });
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _isMarkingAll = false);
+    }
+  }
+
   // ── Builds ───────────────────────────────────────────────────────────────────
 
   void _openCreatorProfile() {
@@ -244,6 +296,7 @@ class _CreatorUnseenPostsPageState extends State<CreatorUnseenPostsPage> {
               : (post.type == PostType.POST.name &&
                       post.dataType == PostDataType.VIDEO.name)
                   ? YouTubeVideoCard(
+                      key: ValueKey('ytcard_${post.id}'),
                       post: post,
                       index: index,
                       onNeighborhoodPreload: (_) {},
@@ -397,6 +450,25 @@ class _CreatorUnseenPostsPageState extends State<CreatorUnseenPostsPage> {
           ),
         ),
         actions: [
+          if (_localUnseenCount > 0)
+            _isMarkingAll
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    child: SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation(colors.primary),
+                      ),
+                    ),
+                  )
+                : IconButton(
+                    icon: Icon(Icons.done_all_rounded,
+                        color: colors.primary, size: 22),
+                    tooltip: 'Tout marquer comme vu',
+                    onPressed: _markAllAsSeen,
+                  ),
           IconButton(
             icon: Icon(Icons.person_outline_rounded,
                 color: colors.textSecondary, size: 22),
@@ -410,9 +482,25 @@ class _CreatorUnseenPostsPageState extends State<CreatorUnseenPostsPage> {
               child: CircularProgressIndicator(color: colors.primary))
           : _posts.isEmpty
               ? Center(
-                  child: Text(
-                    'Aucun post trouvé',
-                    style: TextStyle(color: colors.textSecondary),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('🎉', style: TextStyle(fontSize: 36)),
+                      const SizedBox(height: 10),
+                      Text(
+                        'Tu es à jour !',
+                        style: TextStyle(
+                          color: colors.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Aucun post non vu de ce créateur',
+                        style: TextStyle(color: colors.textSecondary, fontSize: 13),
+                      ),
+                    ],
                   ),
                 )
               : ListView.builder(
@@ -465,14 +553,15 @@ class _CreatorUnseenPostsPageState extends State<CreatorUnseenPostsPage> {
                     }
 
                     final post = _posts[actualPostIndex];
-                    final isUnseen = !widget.viewedPostIds
-                            .contains(post.id ?? '') &&
-                        !_sessionViewedIds.contains(post.id ?? '');
+                    // Tous les posts chargés sont non-vus au départ.
+                    // Le badge disparaît dès que le post est scrollé dans cette session.
+                    final viewedThisSession =
+                        _sessionViewedIds.contains(post.id ?? '');
 
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (isUnseen)
+                        if (!viewedThisSession)
                           Padding(
                             padding:
                                 const EdgeInsets.fromLTRB(12, 8, 0, 0),

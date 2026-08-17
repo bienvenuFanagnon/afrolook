@@ -23,6 +23,9 @@ import '../providers/postProvider.dart';
 import 'UserServices/detailsUserService.dart';
 import 'afroshop/marketPlace/acceuil/produit_details.dart';
 import 'chronique/chroniquedetails.dart';
+import 'LiveAgora/livePage.dart';
+import 'LiveAgora/live_list_page.dart';
+import 'LiveAgora/livesAgora.dart';
 import 'component/showUserDetails.dart';
 import '../theme/app_colors.dart';
 import '../l10n/app_localizations.dart';
@@ -441,6 +444,9 @@ class _MesNotificationState extends State<MesNotification> {
             });
           });
           break;
+        case 'LIVE':
+          await _handleLiveNotification(notification);
+          break;
         case 'SERVICE':
           await _handleServiceNotification(notification);
           break;
@@ -486,6 +492,46 @@ class _MesNotificationState extends State<MesNotification> {
       setState(() {
         _isHandlingNotification = false;
       });
+    }
+  }
+
+  Future<void> _handleLiveNotification(NotificationData notification) async {
+    final liveId = notification.post_id;
+    try {
+      if (liveId == null || liveId.isEmpty) {
+        _hideLoadingOverlay();
+        Navigator.push(context, MaterialPageRoute(builder: (_) => LiveListPage()));
+        setState(() => _isHandlingNotification = false);
+        return;
+      }
+      final doc = await _firestore.collection('lives').doc(liveId).get();
+      _hideLoadingOverlay();
+      if (!mounted) return;
+      if (doc.exists) {
+        final live = PostLive.fromMap(doc.data()!);
+        if (live.isLive) {
+          Navigator.push(context, MaterialPageRoute(
+            builder: (_) => LivePage(
+              liveId: live.liveId!,
+              isHost: false,
+              hostName: live.hostName ?? '',
+              hostImage: live.hostImage ?? '',
+              isInvited: false,
+              postLive: live,
+            ),
+          )).then((_) => setState(() => _isHandlingNotification = false));
+          return;
+        }
+      }
+      // Live terminé ou introuvable → liste des lives
+      Navigator.push(context, MaterialPageRoute(builder: (_) => LiveListPage()))
+          .then((_) => setState(() => _isHandlingNotification = false));
+    } catch (_) {
+      _hideLoadingOverlay();
+      if (mounted) {
+        Navigator.push(context, MaterialPageRoute(builder: (_) => LiveListPage()))
+            .then((_) => setState(() => _isHandlingNotification = false));
+      }
     }
   }
 

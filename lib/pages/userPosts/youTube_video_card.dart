@@ -385,11 +385,28 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   void didUpdateWidget(covariant YouTubeVideoCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.post.id != oldWidget.post.id) {
-      // Post différent : réinitialiser les compteurs
+      // Post différent : réinitialiser tous les états visuels pour éviter
+      // qu'un ancien aperçu reste affiché sur une nouvelle carte
+      _videoController?.dispose();
+      _chewieController?.dispose();
+      _videoController = null;
+      _chewieController = null;
       setState(() {
         _localCommentsCount = widget.post.comments ?? 0;
         _localInteractionsCount = widget.post.totalInteractions ?? 0;
+        _thumbnailUrl = (widget.post.thumbnail?.isNotEmpty == true)
+            ? widget.post.thumbnail
+            : null;
+        _isVideoInitialized = false;
+        _isVideoLoading = false;
+        _isInitializingVideo = false;
+        _isGeneratingThumbnail = false;
+        _isVisible = false;
+        _isVideoCompleted = false;
       });
+      if (widget.post.thumbnail == null || widget.post.thumbnail!.isEmpty) {
+        _generateAndUploadThumbnail();
+      }
     } else {
       // Même post, données rafraîchies : synchroniser si les valeurs en ligne sont supérieures
       final onlineComments = widget.post.comments ?? 0;

@@ -3,23 +3,29 @@ import 'package:provider/provider.dart';
 import '../providers/streakProvider.dart';
 import '../providers/authProvider.dart';
 import '../theme/app_colors.dart';
+import 'flame_leaderboard.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Données niveaux partagées entre le banner compact et le modal
+// Niveaux — progression récompensante liée aux commentaires
 // ─────────────────────────────────────────────────────────────────────────────
 const _kLevels = [
-  (emoji: '🧊', label: 'Froid',      range: '0j',     color: Color(0xFF8E8E93)),
-  (emoji: '🌊', label: 'Tiède',      range: '1-2j',   color: Color(0xFF5B9CFA)),
-  (emoji: '☀️', label: 'Chaud',      range: '3-6j',   color: Color(0xFFFF9500)),
-  (emoji: '🔥', label: 'Enflammé',   range: '7-13j',  color: Color(0xFFFF6B35)),
-  (emoji: '💥', label: 'Brûlant',    range: '14-29j', color: Color(0xFFFF3B30)),
-  (emoji: '⚡', label: 'Légendaire', range: '30+j',    color: Color(0xFFAF52DE)),
+  (emoji: '👀', label: 'Observateur',     range: '0j',     color: Color(0xFF8E8E93)),
+  (emoji: '💬', label: 'Prise de Parole', range: '1-2j',   color: Color(0xFF5B9CFA)),
+  (emoji: '🗣️', label: 'Animateur',       range: '3-6j',   color: Color(0xFFFF9500)),
+  (emoji: '🔥', label: 'Influenceur',     range: '7-13j',  color: Color(0xFFFF6B35)),
+  (emoji: '⚡', label: 'Ambassadeur',     range: '14-29j', color: Color(0xFFFF3B30)),
+  (emoji: '👑', label: 'Icône des Comms', range: '30+j',   color: Color(0xFFAF52DE)),
 ];
 
 String _levelEmoji(int level) => _kLevels[level.clamp(0, 5)].emoji;
+String _levelLabel(int level) => _kLevels[level.clamp(0, 5)].label;
+Color  _levelColor(int level) => _kLevels[level.clamp(0, 5)].color;
+
+int _computeScore(int streak, int bestStreak) =>
+    (streak * 10) + (bestStreak * 5);
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Carte Flamme Streak — explique le concept + affiche la progression du jour
+// Bannière compacte — affichée dans le feed
 // ─────────────────────────────────────────────────────────────────────────────
 class FlameStreakBanner extends StatefulWidget {
   const FlameStreakBanner({super.key});
@@ -65,7 +71,6 @@ class _FlameStreakBannerState extends State<FlameStreakBanner>
         final bool urgent =
             !done && !cold && streak.commentStreak > 0 && streak.todayCount < 3;
 
-        // Couleur accent selon état
         final Color accent = done
             ? const Color(0xFF34C759)
             : urgent
@@ -75,11 +80,11 @@ class _FlameStreakBannerState extends State<FlameStreakBanner>
                     : const Color(0xFFFF9500);
 
         final String statusText = done
-            ? '🎉 Objectif du jour atteint !'
+            ? '🎉 Série du jour validée !'
             : urgent
-                ? '${streak.remainingToday} commentaire${streak.remainingToday > 1 ? 's' : ''} encore pour sauver ta flamme'
+                ? '${streak.remainingToday} commentaire${streak.remainingToday > 1 ? 's' : ''} encore pour sauver ta série'
                 : cold
-                    ? 'Commence ta série dès maintenant'
+                    ? 'Commence ta série de commentaires maintenant'
                     : '${streak.remainingToday} commentaire${streak.remainingToday > 1 ? 's' : ''} pour valider la journée';
 
         return GestureDetector(
@@ -103,7 +108,7 @@ class _FlameStreakBannerState extends State<FlameStreakBanner>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // ── Barre supérieure colorée ────────────────────────────
+                  // ── Barre supérieure colorée ──────────────────────────────
                   Container(height: 3, color: accent),
 
                   Padding(
@@ -111,7 +116,7 @@ class _FlameStreakBannerState extends State<FlameStreakBanner>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // ── En-tête : titre + badge niveau ────────────────
+                        // ── En-tête : titre + badge série ─────────────────
                         Row(
                           children: [
                             AnimatedBuilder(
@@ -132,7 +137,7 @@ class _FlameStreakBannerState extends State<FlameStreakBanner>
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Flamme Streak',
+                                    'Série Commentaires',
                                     style: TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w900,
@@ -140,18 +145,21 @@ class _FlameStreakBannerState extends State<FlameStreakBanner>
                                       letterSpacing: 0.2,
                                     ),
                                   ),
+                                  const SizedBox(height: 2),
                                   Text(
-                                    'Commente 3 posts différents chaque jour',
+                                    _levelLabel(streak.level),
                                     style: TextStyle(
-                                      fontSize: 11,
-                                      color: colors.textSecondary,
-                                      fontWeight: FontWeight.w500,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: _levelColor(streak.level),
                                     ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ],
                               ),
                             ),
-                            // Badge série
+                            // Badge jours de série
                             Container(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 10, vertical: 5),
@@ -191,7 +199,7 @@ class _FlameStreakBannerState extends State<FlameStreakBanner>
 
                         const SizedBox(height: 14),
 
-                        // ── Progression du jour ────────────────────────────
+                        // ── Progression du jour ──────────────────────────────
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
@@ -200,7 +208,6 @@ class _FlameStreakBannerState extends State<FlameStreakBanner>
                           ),
                           child: Column(
                             children: [
-                              // Dots + label
                               Row(
                                 children: [
                                   ...List.generate(3, (i) {
@@ -210,8 +217,8 @@ class _FlameStreakBannerState extends State<FlameStreakBanner>
                                         padding:
                                             const EdgeInsets.only(right: 6),
                                         child: AnimatedContainer(
-                                          duration:
-                                              const Duration(milliseconds: 300),
+                                          duration: const Duration(
+                                              milliseconds: 300),
                                           height: 6,
                                           decoration: BoxDecoration(
                                             color: filled
@@ -252,7 +259,8 @@ class _FlameStreakBannerState extends State<FlameStreakBanner>
                                   ),
                                   if (streak.shields > 0)
                                     Container(
-                                      margin: const EdgeInsets.only(left: 8),
+                                      margin:
+                                          const EdgeInsets.only(left: 8),
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 7, vertical: 2),
                                       decoration: BoxDecoration(
@@ -278,34 +286,39 @@ class _FlameStreakBannerState extends State<FlameStreakBanner>
 
                         const SizedBox(height: 12),
 
-                        // ── Niveaux horizontaux adaptatifs ─────────────────
+                        // ── Niveaux horizontaux ──────────────────────────────
                         LayoutBuilder(builder: (_, constraints) {
-                          // Largeur dispo pour les chips = totale - bouton "Détails" (~60px)
-                          final available = constraints.maxWidth - 64.0;
-                          // Chaque chip occupe une part égale
+                          final available = constraints.maxWidth - 80.0;
                           final chipW = available / _kLevels.length;
-                          // En dessous de 42px par chip on masque le label texte
-                          final showLabel = chipW >= 42;
+                          final showLabel = chipW >= 44;
 
                           return Row(
                             children: [
                               ...List.generate(_kLevels.length, (i) {
                                 final lv = _kLevels[i];
                                 final isActive = i == streak.level;
-                                final isPast   = i < streak.level;
-                                final opacity  = (isActive || isPast) ? 1.0 : 0.28;
+                                final isPast = i < streak.level;
+                                final opacity =
+                                    (isActive || isPast) ? 1.0 : 0.28;
                                 return Expanded(
                                   child: Padding(
-                                    padding: EdgeInsets.only(right: i < _kLevels.length - 1 ? 4 : 0),
+                                    padding: EdgeInsets.only(
+                                        right: i < _kLevels.length - 1
+                                            ? 4
+                                            : 0),
                                     child: Container(
                                       padding: EdgeInsets.symmetric(
                                           horizontal: 4,
                                           vertical: isActive ? 5 : 3),
                                       decoration: isActive
                                           ? BoxDecoration(
-                                              color: lv.color.withOpacity(0.14),
-                                              borderRadius: BorderRadius.circular(20),
-                                              border: Border.all(color: lv.color.withOpacity(0.5)),
+                                              color: lv.color
+                                                  .withOpacity(0.14),
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                              border: Border.all(
+                                                  color: lv.color
+                                                      .withOpacity(0.5)),
                                             )
                                           : null,
                                       child: FittedBox(
@@ -315,16 +328,24 @@ class _FlameStreakBannerState extends State<FlameStreakBanner>
                                           children: [
                                             Text(lv.emoji,
                                                 style: TextStyle(
-                                                    fontSize: isActive ? 15 : 13,
-                                                    color: Colors.white.withOpacity(opacity))),
+                                                    fontSize:
+                                                        isActive ? 16 : 14,
+                                                    color: Colors.white
+                                                        .withOpacity(
+                                                            opacity))),
                                             if (showLabel) ...[
                                               const SizedBox(width: 3),
                                               Text(
                                                 lv.label,
                                                 style: TextStyle(
-                                                  fontSize: isActive ? 11 : 10,
-                                                  fontWeight: isActive ? FontWeight.w800 : FontWeight.w500,
-                                                  color: lv.color.withOpacity(opacity),
+                                                  fontSize: isActive
+                                                      ? 13
+                                                      : 11,
+                                                  fontWeight: isActive
+                                                      ? FontWeight.w800
+                                                      : FontWeight.w500,
+                                                  color: lv.color
+                                                      .withOpacity(opacity),
                                                 ),
                                               ),
                                             ],
@@ -339,14 +360,15 @@ class _FlameStreakBannerState extends State<FlameStreakBanner>
                               Row(
                                 children: [
                                   Text(
-                                    'Détails',
+                                    'Mon score',
                                     style: TextStyle(
                                       fontSize: 11,
                                       color: accent,
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
-                                  Icon(Icons.arrow_forward_ios, size: 10, color: accent),
+                                  Icon(Icons.arrow_forward_ios,
+                                      size: 10, color: accent),
                                 ],
                               ),
                             ],
@@ -416,7 +438,7 @@ class _RuleChip extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Modal bottom sheet — détail complet
+// Modal — détail complet : score, règles, niveaux, top commentateurs
 // ─────────────────────────────────────────────────────────────────────────────
 class _FlameStreakModal extends StatefulWidget {
   const _FlameStreakModal();
@@ -462,8 +484,11 @@ class _FlameStreakModalState extends State<_FlameStreakModal>
         final Color accent = done
             ? const Color(0xFF34C759)
             : streak.commentStreak > 0
-                ? const Color(0xFFFF6B35)
+                ? _levelColor(streak.level)
                 : const Color(0xFF5B9CFA);
+
+        final int myScore =
+            _computeScore(streak.commentStreak, streak.bestStreak);
 
         return Container(
           decoration: BoxDecoration(
@@ -476,10 +501,11 @@ class _FlameStreakModalState extends State<_FlameStreakModal>
           child: SafeArea(
             top: false,
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // Poignée
                   Center(
                     child: Container(
                       width: 36,
@@ -492,6 +518,7 @@ class _FlameStreakModalState extends State<_FlameStreakModal>
                   ),
                   const SizedBox(height: 20),
 
+                  // ── Emoji animé ─────────────────────────────────────────
                   AnimatedBuilder(
                     animation: _flameCtrl,
                     builder: (_, child) => Transform(
@@ -508,6 +535,7 @@ class _FlameStreakModalState extends State<_FlameStreakModal>
                   ),
                   const SizedBox(height: 12),
 
+                  // ── Jours + label niveau ─────────────────────────────────
                   Text(
                     streak.commentStreak == 0
                         ? '0 jour'
@@ -520,7 +548,7 @@ class _FlameStreakModalState extends State<_FlameStreakModal>
                     ),
                   ),
                   Text(
-                    _streakLevelLabel(streak.level),
+                    _levelLabel(streak.level).toUpperCase(),
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -530,6 +558,7 @@ class _FlameStreakModalState extends State<_FlameStreakModal>
                   ),
                   const SizedBox(height: 20),
 
+                  // ── Progression du jour ─────────────────────────────────
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
@@ -544,7 +573,7 @@ class _FlameStreakModalState extends State<_FlameStreakModal>
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              "Aujourd'hui",
+                              "Commentaires aujourd'hui",
                               style: TextStyle(
                                 fontSize: 11,
                                 color: colors.textSecondary,
@@ -568,13 +597,14 @@ class _FlameStreakModalState extends State<_FlameStreakModal>
                             value: streak.todayCount / 3,
                             minHeight: 6,
                             backgroundColor: colors.border,
-                            valueColor: AlwaysStoppedAnimation<Color>(accent),
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(accent),
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           done
-                              ? '🎉 Flamme du jour sauvée !'
+                              ? '🎉 Série du jour validée !'
                               : '${streak.remainingToday} commentaire${streak.remainingToday > 1 ? 's' : ''} sur des posts différents pour valider',
                           style: TextStyle(
                               fontSize: 12, color: colors.textSecondary),
@@ -584,28 +614,59 @@ class _FlameStreakModalState extends State<_FlameStreakModal>
                   ),
                   const SizedBox(height: 10),
 
+                  // ── Cartes stats : record · boucliers · mon score ────────
                   Row(
                     children: [
                       Expanded(
                         child: _StatCard(
-                            icon: '🏆',
-                            label: 'Record',
-                            value: '${streak.bestStreak}j'),
+                          icon: '🏆',
+                          label: 'Record',
+                          value: '${streak.bestStreak}j',
+                        ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: _StatCard(
-                            icon: '🛡️',
-                            label: 'Boucliers',
-                            value: '${streak.shields}/3'),
+                          icon: '🛡️',
+                          label: 'Boucliers',
+                          value: '${streak.shields}/3',
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _StatCard(
+                          icon: '⭐',
+                          label: 'Mes Points',
+                          value: '$myScore pts',
+                          highlight: accent,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
 
+                  // ── Règles + niveaux ─────────────────────────────────────
                   _buildRulesSection(colors, streak.level),
                   const SizedBox(height: 16),
 
+                  // ── Top Commentateurs (top 50) ───────────────────────────
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'TOP COMMENTATEURS',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: colors.textSecondary,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const FlameLeaderboard(),
+                  const SizedBox(height: 16),
+
+                  // ── CTA ─────────────────────────────────────────────────
                   if (!done)
                     SizedBox(
                       width: double.infinity,
@@ -613,14 +674,15 @@ class _FlameStreakModalState extends State<_FlameStreakModal>
                         style: ElevatedButton.styleFrom(
                           backgroundColor: accent,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          padding:
+                              const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
                         onPressed: () => Navigator.pop(ctx),
                         child: const Text(
-                          'Aller commenter 🔥',
+                          'Commenter maintenant 💬',
                           style: TextStyle(
                               fontSize: 14, fontWeight: FontWeight.w800),
                         ),
@@ -636,7 +698,6 @@ class _FlameStreakModalState extends State<_FlameStreakModal>
   }
 
   Widget _buildRulesSection(AppColors colors, int currentLevel) {
-
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -648,7 +709,7 @@ class _FlameStreakModalState extends State<_FlameStreakModal>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'COMMENT GARDER TA FLAMME',
+            'COMMENT MAINTENIR TA SÉRIE',
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w700,
@@ -659,7 +720,7 @@ class _FlameStreakModalState extends State<_FlameStreakModal>
           const SizedBox(height: 10),
           _buildRuleRow(
             '💬',
-            'Envoie 3 commentaires sur 3 posts différents chaque jour pour valider ta flamme.',
+            'Envoie 3 commentaires sur 3 posts différents chaque jour pour valider ta série.',
             colors,
           ),
           const SizedBox(height: 6),
@@ -674,12 +735,18 @@ class _FlameStreakModalState extends State<_FlameStreakModal>
             'Un bouclier absorbe un jour raté. Tu en gagnes 1 tous les 7 jours de série (max 3).',
             colors,
           ),
+          const SizedBox(height: 6),
+          _buildRuleRow(
+            '⭐',
+            'Tes points = (jours de série × 10) + (record × 5). Les likes reçus sur tes commentaires boosteront ton score prochainement.',
+            colors,
+          ),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
             child: Divider(height: 1),
           ),
           Text(
-            'NIVEAUX DE FLAMME',
+            'NIVEAUX DE COMMENTAIRES',
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w700,
@@ -688,11 +755,19 @@ class _FlameStreakModalState extends State<_FlameStreakModal>
             ),
           ),
           const SizedBox(height: 8),
-          ..._kLevels.indexed.map(((int, ({String emoji, String label, String range, Color color})) entry) {
+          ..._kLevels.indexed.map(
+              ((int, ({String emoji, String label, String range, Color color}))
+                      entry) {
             final idx = entry.$1;
             final lv = entry.$2;
-            return _buildLevelRow(lv.emoji, lv.label, lv.range, lv.color,
-                isActive: idx == currentLevel, isReached: idx < currentLevel);
+            return _buildLevelRow(
+              lv.emoji,
+              lv.label,
+              lv.range,
+              lv.color,
+              isActive: idx == currentLevel,
+              isReached: idx < currentLevel,
+            );
           }),
         ],
       ),
@@ -708,15 +783,22 @@ class _FlameStreakModalState extends State<_FlameStreakModal>
         Expanded(
           child: Text(
             text,
-            style: TextStyle(fontSize: 12, color: colors.textSecondary, height: 1.4),
+            style: TextStyle(
+                fontSize: 12, color: colors.textSecondary, height: 1.4),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildLevelRow(String emoji, String label, String range, Color color,
-      {bool isActive = false, bool isReached = false}) {
+  Widget _buildLevelRow(
+    String emoji,
+    String label,
+    String range,
+    Color color, {
+    bool isActive = false,
+    bool isReached = false,
+  }) {
     final opacity = isActive || isReached ? 1.0 : 0.28;
     return Container(
       margin: const EdgeInsets.only(bottom: 4),
@@ -735,13 +817,15 @@ class _FlameStreakModalState extends State<_FlameStreakModal>
           Text(emoji,
               style: TextStyle(
                   fontSize: 14,
-                  color: Colors.white.withOpacity(isActive || isReached ? 1.0 : 0.3))),
+                  color: Colors.white
+                      .withOpacity(isActive || isReached ? 1.0 : 0.3))),
           const SizedBox(width: 8),
           Text(
             label,
             style: TextStyle(
               fontSize: 12,
-              fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
+              fontWeight:
+                  isActive ? FontWeight.w800 : FontWeight.w600,
               color: color.withOpacity(opacity),
             ),
           ),
@@ -755,68 +839,65 @@ class _FlameStreakModalState extends State<_FlameStreakModal>
           ),
           if (isActive) ...[
             const Spacer(),
-            Text('← toi', style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w700)),
+            Text('← toi',
+                style: TextStyle(
+                    fontSize: 10,
+                    color: color,
+                    fontWeight: FontWeight.w700)),
           ],
         ],
       ),
     );
   }
-
-  String _streakLevelLabel(int level) {
-    const labels = [
-      'Froid',
-      'Tiède',
-      'Chaud',
-      'Enflammé',
-      'Brûlant',
-      'Légendaire'
-    ];
-    return labels[level.clamp(0, 5)].toUpperCase();
-  }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Carte statistique
+// ─────────────────────────────────────────────────────────────────────────────
 class _StatCard extends StatelessWidget {
   final String icon;
   final String label;
   final String value;
+  final Color? highlight;
   const _StatCard(
-      {required this.icon, required this.label, required this.value});
+      {required this.icon,
+      required this.label,
+      required this.value,
+      this.highlight});
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
       decoration: BoxDecoration(
         color: colors.surfaceVariant,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: colors.border),
+        border: Border.all(
+          color: highlight?.withOpacity(0.3) ?? colors.border,
+        ),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(icon, style: const TextStyle(fontSize: 18)),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: colors.textSecondary,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1,
-                ),
-              ),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                  color: colors.textPrimary,
-                ),
-              ),
-            ],
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              color: colors.textSecondary,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.8,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
+              color: highlight ?? colors.textPrimary,
+            ),
           ),
         ],
       ),

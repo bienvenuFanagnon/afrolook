@@ -8,6 +8,7 @@ import '../user/otherUser/otherUser.dart';
 import 'package:afrotok/pages/canaux/listCanal.dart';
 import 'package:afrotok/pages/canaux/detailsCanal.dart';
 import 'package:afrotok/pages/challengeMonth/challenge_month_page.dart';
+import 'package:afrotok/pages/weekly_top/weekly_top_posts_page.dart';
 import 'package:afrotok/pages/chat/chatXilo.dart';
 import 'package:afrotok/pages/chronique/mychroniquepage.dart';
 import 'package:afrotok/pages/classements/userClassement.dart';
@@ -119,6 +120,7 @@ import '../../l10n/app_localizations.dart';
 import '../../services/migrations/unread_reset_migration.dart';
 import '../../layout/responsive_layout.dart';
 import '../LiveAgora/live_list_page.dart';
+import '../LiveAgora/livePage.dart';
 import '../user/conversation/listUserConv.dart';
 
 class MyHomePage extends StatefulWidget {
@@ -723,6 +725,23 @@ class _MyHomePageState extends State<MyHomePage>
                           Navigator.pop(context);
                           Navigator.push(context, MaterialPageRoute(
                             builder: (context) => const ChallengeMonthPage(),
+                          ));
+                        },
+                      ),
+                      // Top Posts de la semaine
+                      ListTile(
+                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                        leading: Icon(Icons.trending_up, size: 24, color: const Color(0xFFFFD700)),
+                        title: TextCustomerMenu(
+                          titre: 'Top Posts de la semaine',
+                          fontSize: SizeText.homeProfileTextSize,
+                          couleur: colors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (context) => const WeeklyTopPostsPage(),
                           ));
                         },
                       ),
@@ -1523,6 +1542,9 @@ class _MyHomePageState extends State<MyHomePage>
           );
         }
         break;
+      case 'live':
+        _navigateToLive(dest.liveId);
+        break;
     // 'home' : ne rien faire
     }
   }
@@ -1583,6 +1605,45 @@ class _MyHomePageState extends State<MyHomePage>
       context,
       MaterialPageRoute(builder: (context) => const ChroniqueHomePage()),
     );
+  }
+
+  Future<void> _navigateToLive(String? liveId) async {
+    if (liveId == null || liveId.isEmpty) {
+      Navigator.pushNamed(context, '/list_live');
+      return;
+    }
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('lives')
+          .doc(liveId)
+          .get();
+      if (!mounted) return;
+      if (!doc.exists) {
+        Navigator.pushNamed(context, '/list_live');
+        return;
+      }
+      final live = PostLive.fromMap(doc.data()!);
+      if (live.isLive) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => LivePage(
+              liveId: live.liveId!,
+              isHost: false,
+              hostName: live.hostName ?? '',
+              hostImage: live.hostImage ?? '',
+              isInvited: false,
+              postLive: live,
+            ),
+          ),
+        );
+      } else {
+        // Live terminé → liste des lives
+        Navigator.pushNamed(context, '/list_live');
+      }
+    } catch (_) {
+      if (mounted) Navigator.pushNamed(context, '/list_live');
+    }
   }
 
   void _navigateToInvitations() {

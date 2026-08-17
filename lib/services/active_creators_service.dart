@@ -420,6 +420,117 @@ class ActiveCreatorsService {
   Future<List<UserData>> fetchUsersById(List<String> ids) =>
       _fetchUsers(ids);
 
+  // ── Recalibration des compteurs non vus ──────────────────────────────────────
+  //
+  // Pour chaque créateur de [creatorIds] ayant un compteur > 0, interroge
+  // Firestore pour compter les posts réels non vus (non présents dans
+  // [viewedPostIds]) créés après [userCreatedAtMs].
+  // Retourne une Map creatorId → unseenCount (seulement ceux > 0).
+
+  Future<Map<String, int>> recalibrateUnseenCounts({
+    required List<String> creatorIds,
+    required Set<String> viewedPostIds,
+    required int userCreatedAtMs,
+  }) async {
+    if (creatorIds.isEmpty) return {};
+
+    final sinceUs = userCreatedAtMs > 0 ? userCreatedAtMs * 1000 : 0;
+    final Map<String, int> unseenPerCreator = {};
+    final futures = <Future<void>>[];
+
+    for (int i = 0; i < creatorIds.length; i += 10) {
+      final chunk = creatorIds.sublist(i, (i + 10).clamp(0, creatorIds.length));
+      futures.add(() async {
+        try {
+          var q = _db
+              .collection('Posts')
+              .where('user_id', whereIn: chunk)
+              .orderBy('created_at', descending: true)
+              .limit(chunk.length * 30);
+          if (sinceUs > 0) {
+            q = q.where('created_at', isGreaterThanOrEqualTo: sinceUs);
+          }
+          final snap = await q.get();
+          for (final doc in snap.docs) {
+            final uid = doc.data()['user_id'] as String? ?? '';
+            if (uid.isEmpty) continue;
+            if (!viewedPostIds.contains(doc.id)) {
+              unseenPerCreator[uid] = (unseenPerCreator[uid] ?? 0) + 1;
+            }
+          }
+        } catch (_) {}
+      }());
+    }
+    await Future.wait(futures);
+    return unseenPerCreator;
+  }
+
+  // ── Marquer tous les posts d'un créateur comme vus ───────────────────────────
+  //
+  // Identique au "tout marquer comme lu" des notifications.
+  // 1. Récupère tous les post IDs du créateur depuis [userCreatedAtMs].
+  // 2. Ajoute les nouveaux IDs dans viewedPostIds (arrayUnion, chunks de 400).
+  // 3. Remet newPostsByCreator.{creatorId} à 0.
+  // Retourne les IDs effectivement ajoutés (non déjà vus).
+
+  Future<List<String>> markAllPostsSeenForCreator({
+    required String userId,
+    required String creatorId,
+    required int userCreatedAtMs,
+    required Set<String> alreadyViewedIds,
+  }) async {
+    if (userId.isEmpty || creatorId.isEmpty) return [];
+
+    final sinceUs = userCreatedAtMs > 0 ? userCreatedAtMs * 1000 : 0;
+    final List<String> newIds = [];
+
+    try {
+      // Récupère tous les post IDs du créateur (pages de 500)
+      DocumentSnapshot? lastDoc;
+      bool hasMore = true;
+      while (hasMore) {
+        var q = _db
+            .collection('Posts')
+            .where('user_id', isEqualTo: creatorId)
+            .orderBy('created_at', descending: true)
+            .limit(500);
+        if (sinceUs > 0) {
+          q = q.where('created_at', isGreaterThanOrEqualTo: sinceUs);
+        }
+        if (lastDoc != null) q = q.startAfterDocument(lastDoc!);
+
+        final snap = await q.get();
+        for (final doc in snap.docs) {
+          if (!alreadyViewedIds.contains(doc.id)) {
+            newIds.add(doc.id);
+          }
+        }
+        lastDoc = snap.docs.isNotEmpty ? snap.docs.last : null;
+        hasMore = snap.docs.length == 500;
+      }
+
+      if (newIds.isEmpty) {
+        // Rien de nouveau, reset quand même le compteur CF
+        await _db.collection('Users').doc(userId).update({
+          'newPostsByCreator.$creatorId': FieldValue.delete(),
+        });
+        return [];
+      }
+
+      // arrayUnion en chunks de 400 (sécurité taille doc)
+      final userRef = _db.collection('Users').doc(userId);
+      for (int i = 0; i < newIds.length; i += 400) {
+        final chunk = newIds.sublist(i, (i + 400).clamp(0, newIds.length));
+        await userRef.update({
+          'viewedPostIds': FieldValue.arrayUnion(chunk),
+          'newPostsByCreator.$creatorId': FieldValue.delete(),
+        });
+      }
+    } catch (_) {}
+
+    return newIds;
+  }
+
   Future<List<UserData>> _fetchUsers(List<String> ids) async {
     final List<UserData> users = [];
     for (int i = 0; i < ids.length; i += 10) {

@@ -2810,9 +2810,9 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     return name;
   }
 
-  /// Badge flamme affiché à côté du pseudo — emoji et couleur selon le niveau de la bannière.
+  /// Badge série commentaires affiché à côté du pseudo — emoji et couleur selon le niveau.
   Widget _buildFlameStreakBadge(int streak) {
-    const emojis = ['🧊', '🌊', '☀️', '🔥', '💥', '⚡'];
+    const emojis = ['👀', '💬', '🗣️', '🔥', '⚡', '👑'];
     const colors = [
       Color(0xFF8E8E93), Color(0xFF5B9CFA), Color(0xFFFF9500),
       Color(0xFFFF6B35), Color(0xFFFF3B30), Color(0xFFAF52DE),

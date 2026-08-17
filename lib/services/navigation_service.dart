@@ -51,6 +51,7 @@ class NavigationService {
   Function()? onAcceptInvitationNotification;
   Function()? onParrainageNotification;
   Function()? onArticleNotification;
+  Function(String liveId)? onLiveNotification;
 
   // Variables pour stocker les paramètres en attente
   String? _pendingPostId;
@@ -58,6 +59,7 @@ class NavigationService {
   String? _pendingChatId;
   String? _pendingSendUserId;
   String? _pendingChroniqueId;
+  String? _pendingLiveId;
   String? _pendingType;
   bool _hasPending = false;
 
@@ -161,6 +163,20 @@ class NavigationService {
         return;
       }
 
+      // Live
+      if (typeNotif == NotificationType.LIVE.name) {
+        if (postId != null && postId.isNotEmpty) {
+          if (onLiveNotification != null) {
+            onLiveNotification!(postId);
+          } else {
+            _pendingLiveId = postId;
+            _pendingType = 'live';
+            _hasPending = true;
+          }
+        }
+        return;
+      }
+
       // Post (VIDEO / IMAGE / FAVORI)
       if (typeNotif == NotificationType.POST.name || typeNotif == NotificationType.FAVORITE.name) {
         if (postId != null && postId.isNotEmpty) {
@@ -226,6 +242,8 @@ class NavigationService {
         return {'type': 'message', 'chatId': _pendingChatId, 'sendUserId': _pendingSendUserId};
       case 'chronique':
         return {'type': 'chronique', 'chroniqueId': _pendingChroniqueId};
+      case 'live':
+        return {'type': 'live', 'liveId': _pendingLiveId};
       case 'invitation':
         return {'type': 'invitation'};
       case 'acceptInvitation':

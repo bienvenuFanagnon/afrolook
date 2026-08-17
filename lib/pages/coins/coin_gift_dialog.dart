@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../../theme/app_colors.dart';
 import 'package:provider/provider.dart';
 import '../../models/coin_pack.dart';
 import '../../models/model_data.dart';
@@ -58,6 +59,8 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
@@ -65,10 +68,12 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
         height: MediaQuery.of(context).size.height * 0.8,
         constraints: const BoxConstraints(maxWidth: 480),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF1A1A1A), Color(0xFF0D0D0D)],
+            colors: isDark
+                ? const [Color(0xFF1A1A1A), Color(0xFF0D0D0D)]
+                : [colors.surface, colors.surfaceVariant],
           ),
           borderRadius: BorderRadius.circular(28),
           border: Border.all(color: const Color(0xFFFFD700), width: 2),
@@ -84,7 +89,7 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildHeader(),
-            const Divider(color: Colors.white24, height: 1),
+            Divider(color: colors.border, height: 1),
             _buildBalanceSection(),
             const SizedBox(height: 16),
             Expanded(child: _buildGiftGrid()),
@@ -99,6 +104,7 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
 // widgets/coin_gift_dialog.dart - Version corrigée du header
 
   Widget _buildHeader() {
+    final colors = AppColors.of(context);
     // Déterminer l'avatar à afficher
     String avatarUrl = widget.receiverAvatar;
     String displayName = widget.receiverName;
@@ -136,21 +142,21 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
-                    color: Colors.grey[800],
+                    color: colors.surfaceVariant,
                     child: Icon(
                       isCanal ? Icons.group : Icons.person,
                       size: 30,
-                      color: Colors.white70,
+                      color: colors.textSecondary,
                     ),
                   );
                 },
               )
                   : Container(
-                color: Colors.grey[800],
+                color: colors.surfaceVariant,
                 child: Icon(
                   isCanal ? Icons.group : Icons.person,
                   size: 30,
-                  color: Colors.white70,
+                  color: colors.textSecondary,
                 ),
               ),
             ),
@@ -162,9 +168,9 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Envoyer un cadeau à',
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                  style: TextStyle(color: colors.textSecondary, fontSize: 12),
                 ),
                 const SizedBox(height: 4),
                 Row(
@@ -199,8 +205,8 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
                 if (isCanal && widget.post?.canal != null)
                   Text(
                     '${widget.post?.canal?.usersSuiviId?.length ?? 0} abonné(s)',
-                    style: const TextStyle(
-                      color: Colors.white54,
+                    style: TextStyle(
+                      color: colors.textSecondary,
                       fontSize: 10,
                     ),
                   ),
@@ -214,12 +220,12 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
             child: Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
+                color: colors.textPrimary.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.close,
-                color: Colors.white70,
+                color: colors.textSecondary,
                 size: 20,
               ),
             ),
@@ -230,24 +236,25 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
   }
 
   Widget _buildBalanceSection() {
+    final colors = AppColors.of(context);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.5),
+        color: colors.surfaceVariant,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Row(
+          Row(
             children: [
-              Text('🪙', style: TextStyle(fontSize: 24)),
-              SizedBox(width: 8),
+              const Text('🪙', style: TextStyle(fontSize: 24)),
+              const SizedBox(width: 8),
               Text(
                 'Vos pièces',
-                style: TextStyle(color: Colors.white70, fontSize: 14),
+                style: TextStyle(color: colors.textSecondary, fontSize: 14),
               ),
             ],
           ),
@@ -265,6 +272,7 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
   }
 
   Widget _buildGiftGrid() {
+    final colors = AppColors.of(context);
     return GridView.builder(
       shrinkWrap: true,
       physics: const BouncingScrollPhysics(),
@@ -303,8 +311,8 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   )
-                      : const LinearGradient(
-                    colors: [Color(0xFF2D2D2D), Color(0xFF1A1A1A)],
+                      : LinearGradient(
+                    colors: [colors.surfaceVariant, colors.surface],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -327,7 +335,7 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
                       Text(
                         pack.displayLabel,
                         style: TextStyle(
-                          color: isSelected ? Colors.black : Colors.white,
+                          color: isSelected ? Colors.black : colors.textPrimary,
                           fontWeight: FontWeight.bold,
                           fontSize: 10,
                         ),
@@ -342,7 +350,7 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
                           color: isSelected
                               ? Colors.black.withOpacity(0.2)
                               : (_currentBalance >= pack.coins
-                              ? Colors.black.withOpacity(0.5)
+                              ? colors.surfaceVariant
                               : Colors.red.withOpacity(0.2)),
                           borderRadius: BorderRadius.circular(10),
                         ),
@@ -536,15 +544,18 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
   void _showInsufficientBalanceDialog() {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
+      builder: (ctx) {
+        final colors = AppColors.of(ctx);
+        return AlertDialog(
+        backgroundColor: colors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Solde insuffisant', style: TextStyle(color: Colors.yellow)),
-        content: const Text('Vous n\'avez pas assez de pièces. Voulez-vous en acheter ?'),
+        title: const Text('Solde insuffisant', style: TextStyle(color: Color(0xFFFFD700))),
+        content: Text('Vous n\'avez pas assez de pièces. Voulez-vous en acheter ?',
+            style: TextStyle(color: colors.textPrimary)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Annuler', style: TextStyle(color: Colors.white70)),
+            child: Text('Annuler', style: TextStyle(color: colors.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -555,7 +566,8 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
             child: const Text('Acheter des pièces', style: TextStyle(color: Colors.black)),
           ),
         ],
-      ),
+      );
+      },
     );
   }
 

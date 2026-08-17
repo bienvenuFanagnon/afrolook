@@ -4961,6 +4961,7 @@ enum NotificationType {
   ARTICLE,
   CHALLENGE,
   CHRONIQUE,
+  LIVE,
   SERVICE,
   USER, GAIN,
   COMPTE_OFFICIEL,

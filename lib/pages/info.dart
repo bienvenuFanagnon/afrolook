@@ -58,6 +58,86 @@ class _AppInfosState extends State<AppInfos> {
     super.dispose();
   }
 
+  Widget _buildWeeklyRewardsInfo() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(14, 12, 14, 4),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── En-tête ───────────────────────────────────────────────────────
+          Row(
+            children: [
+              const Text('🏆', style: TextStyle(fontSize: 20)),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Récompenses hebdomadaires',
+                  style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFFFD700)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          // ── Top Commentateurs ─────────────────────────────────────────────
+          const Text('🗨️  Top 5 Commentateurs (chaque lundi)',
+              style: TextStyle(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          _infoRewardRow('🥇 1er', '500 🪙', const Color(0xFFFFD700)),
+          _infoRewardRow('🥈 2e',  '300 🪙', const Color(0xFFC0C0C0)),
+          _infoRewardRow('🥉 3e',  '200 🪙', const Color(0xFFCD7F32)),
+          _infoRewardRow('4️⃣  4e',  '100 🪙', Colors.white54),
+          _infoRewardRow('5️⃣  5e',  ' 50 🪙', Colors.white54),
+          const SizedBox(height: 6),
+          const Text(
+            '✅ Commentaires originaux uniquement (≥ 10 car., sur posts différents)\n'
+            '❌ Suggestions IA et auto-commentaires exclus',
+            style: TextStyle(fontSize: 9, color: Colors.white38, height: 1.5),
+          ),
+
+          const Divider(height: 18, color: Color(0xFF333333)),
+
+          // ── Top Posts ─────────────────────────────────────────────────────
+          const Text('📸  Top 3 Posts de la semaine (chaque lundi)',
+              style: TextStyle(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          _infoRewardRow('🥇 1er post', '1000 🪙', const Color(0xFFFFD700)),
+          _infoRewardRow('🥈 2e post',  ' 500 🪙', const Color(0xFFC0C0C0)),
+          _infoRewardRow('🥉 3e post',  ' 300 🪙', const Color(0xFFCD7F32)),
+          const SizedBox(height: 6),
+          const Text(
+            'Score = vues uniques + likes uniques + commentaires uniques.\n'
+            'Les récompenses sont automatiques, versées une seule fois, et enregistrées en transaction.',
+            style: TextStyle(fontSize: 9, color: Colors.white38, height: 1.5),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoRewardRow(String label, String coins, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 1.5),
+      child: Row(
+        children: [
+          Text(label, style: TextStyle(fontSize: 11, color: color)),
+          const Spacer(),
+          Text(coins,
+              style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+
   void _loadInitialData() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final userProvider = Provider.of<UserProvider>(context, listen: false);
@@ -138,6 +218,7 @@ class _AppInfosState extends State<AppInfos> {
           children: [
             if (isAdmin)
               _buildAdminStats(userProvider),
+            _buildWeeklyRewardsInfo(),
             Expanded(
               child: userProvider.listInfos.isEmpty && !userProvider.isLoading
                   ? _buildEmptyState()

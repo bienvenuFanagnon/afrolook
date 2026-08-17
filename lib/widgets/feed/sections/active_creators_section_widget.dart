@@ -85,8 +85,37 @@ class _ActiveCreatorsSectionWidgetState extends State<ActiveCreatorsSectionWidge
         freshCounts: freshCounts.isNotEmpty ? freshCounts : null,
       );
 
-      final hasUnseen = creators.any((c) => c.unseenCount > 0);
-      final ordered = hasUnseen ? creators : (List.of(creators)..shuffle());
+      // 5. Recalibration : remplacer les compteurs CF (approximatifs) par les
+      //    vrais counts basés sur viewedPostIds. Seuls les créateurs déjà
+      //    marqués "chauds" (unseenCount > 0) sont recalibrés — au max ~10
+      //    requêtes Firestore pour un utilisateur actif, acceptable.
+      final hotIds = creators
+          .where((c) => c.unseenCount > 0 && c.user.id != null)
+          .map((c) => c.user.id!)
+          .toList();
+
+      Map<String, int> realCounts = {};
+      if (hotIds.isNotEmpty) {
+        realCounts = await _service.recalibrateUnseenCounts(
+          creatorIds: hotIds,
+          viewedPostIds: Set<String>.from(me.viewedPostIds ?? []),
+          userCreatedAtMs: me.createdAt ?? 0,
+        );
+      }
+
+      // Remplacer les CF counts par les vrais counts (0 si plus de posts non vus)
+      final calibrated = creators.map((c) {
+        if (c.user.id == null || !hotIds.contains(c.user.id)) return c;
+        final real = realCounts[c.user.id!] ?? 0;
+        return ActiveCreator(
+          user: c.user,
+          unseenCount: real,
+          lastActivityUs: c.lastActivityUs,
+        );
+      }).toList();
+
+      final hasUnseen = calibrated.any((c) => c.unseenCount > 0);
+      final ordered = hasUnseen ? calibrated : (List.of(calibrated)..shuffle());
 
       if (!mounted) return;
       setState(() {
@@ -164,6 +193,7 @@ class _ActiveCreatorsSectionWidgetState extends State<ActiveCreatorsSectionWidge
               unseenCount: unseen,
               viewedPostIds: me.viewedPostIds ?? [],
               currentUserId: me.id ?? '',
+              userCreatedAtMs: me.createdAt ?? 0,
             ),
           ),
         ).then((_) {
