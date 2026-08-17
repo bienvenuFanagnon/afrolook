@@ -2356,26 +2356,24 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         freshCounts: freshCounts,
       );
 
-      // Recalibration des compteurs contre viewedPostIds pour les créateurs
-      // ayant un count > 0 (évite les décalages entre CF et réalité Firestore)
-      final hotCreatorIds = creators
-          .where((c) => c.unseenCount > 0 && c.user.id != null)
+      // Recalibration de TOUS les créateurs affichés contre viewedPostIds
+      // (source de vérité = posts Firestore réels, pas le compteur CF)
+      final allCreatorIds = creators
+          .where((c) => c.user.id != null)
           .map((c) => c.user.id!)
           .toList();
 
-      Map<String, int> calibratedCounts = {
-        for (final c in creators)
-          if (c.unseenCount > 0 && c.user.id != null) c.user.id!: c.unseenCount,
-      };
+      Map<String, int> calibratedCounts = {};
 
-      if (hotCreatorIds.isNotEmpty) {
+      if (allCreatorIds.isNotEmpty) {
         final viewedSet = Set<String>.from(me.viewedPostIds ?? []);
-        final real = await _activeCreatorsService.recalibrateUnseenCounts(
-          creatorIds: hotCreatorIds,
+        calibratedCounts = await _activeCreatorsService.recalibrateUnseenCounts(
+          creatorIds: allCreatorIds,
           viewedPostIds: viewedSet,
           userCreatedAtMs: me.createdAt ?? 0,
         );
-        calibratedCounts = real;
+        // Resync newPostsByCreator dans Firestore pour aligner CF et réalité
+        _syncNewPostsByCreatorToFirestore(userId, allCreatorIds, calibratedCounts);
       }
 
       // Si aucun post non vu, mélanger pour varier l'ordre à chaque chargement
@@ -3391,6 +3389,23 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           .catchError((_) {});
     }
   }
+  // Resynchronise newPostsByCreator dans Firestore avec les valeurs recalibrées
+  // pour corriger les décalages accumulés par les échecs de CF.
+  void _syncNewPostsByCreatorToFirestore(
+      String userId, List<String> creatorIds, Map<String, int> calibrated) {
+    if (userId.isEmpty) return;
+    final Map<String, dynamic> updates = {};
+    for (final id in creatorIds) {
+      updates['newPostsByCreator.$id'] = calibrated[id] ?? 0;
+    }
+    if (updates.isEmpty) return;
+    FirebaseFirestore.instance
+        .collection('Users')
+        .doc(userId)
+        .update(updates)
+        .catchError((_) {});
+  }
+
   Future<void> _recordPostView(Post post) async {
     final currentUserId = authProvider.loginUserData.id;
     if (currentUserId == null || post.id == null) return;

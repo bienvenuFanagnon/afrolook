@@ -446,7 +446,7 @@ class ActiveCreatorsService {
               .collection('Posts')
               .where('user_id', whereIn: chunk)
               .orderBy('created_at', descending: true)
-              .limit(chunk.length * 30);
+              .limit(500);
           if (sinceUs > 0) {
             q = q.where('created_at', isGreaterThanOrEqualTo: sinceUs);
           }
