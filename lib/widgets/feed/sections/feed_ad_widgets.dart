@@ -46,9 +46,11 @@ class FeedAdCarousel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    // Hauteur limitée à 56% de la largeur (ratio ~16:9) pour ne pas prendre trop de place dans le feed
+    final adHeight = (size.width * 0.56).clamp(200.0, 340.0);
     return AdvertisementCarouselWidget(
       key: ValueKey(adKey),
-      height: size.height,
+      height: adHeight,
       width: size.width,
       showIndicators: true,
     );

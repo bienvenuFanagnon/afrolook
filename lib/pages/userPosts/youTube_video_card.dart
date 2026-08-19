@@ -324,6 +324,10 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   bool _showSeeMoreCta = false;
   bool _seeMoreTimerStarted = false;
 
+  // Verrou canal privé — s'affiche après 10s de lecture
+  Timer? _canalLockTimer;
+  bool _showCanalLockCta = false;
+
   // Pour la publication
   final String appId = 'AfrolookApp';
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -431,10 +435,6 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   Future<void> _preInitializeVideo() async {
     // Sur web, SmartVideoPlayer gère l'affichage nativement — pas de VideoPlayerController
     if (kIsWeb) return;
-    if (_isLockedContent) {
-      printVm('🎬 Vidéo verrouillée - pré-initialisation bloquée');
-      return;
-    }
 
     if (_isVideoInitialized || _isVideoLoading || _isInitializingVideo) return;
     if (widget.post.url_media == null || widget.post.url_media!.isEmpty) return;
@@ -634,11 +634,6 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   // ==================== GESTION VIDÉO ====================
 
   Future<void> _initializeVideo() async {
-    if (_isLockedContent) {
-      printVm('🎬 Vidéo verrouillée - initialisation bloquée');
-      return;
-    }
-
     if (_isVideoInitialized || _isVideoLoading || _isInitializingVideo) return;
     if (widget.post.url_media == null || widget.post.url_media!.isEmpty) return;
 
@@ -742,11 +737,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   }
 
   void _playVideo() {
-    // 🔥 CRITIQUE: Ne pas jouer la vidéo si le contenu est verrouillé
-    if (_isLockedContent) {
-      printVm('🎬 Vidéo verrouillée - lecture bloquée');
-      return;
-    }
+    if (_showCanalLockCta) return;
 
     if (_chewieController != null) {
       // 🔥 FORCER le volume juste avant de jouer
@@ -821,16 +812,22 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     }
   }
   void _onBecameVisible() {
-    // 🔥 CRITIQUE: Ne rien faire si le contenu est verrouillé
-    if (_isLockedContent) {
-      printVm('🎬 Vidéo verrouillée - visibilité ignorée');
-      return;
-    }
-
-    // Réinitialiser le CTA "Voir plus" à chaque nouvelle apparition
+    // Réinitialiser les CTA à chaque nouvelle apparition
     _seeMoreTimer?.cancel();
     _seeMoreTimerStarted = false;
     if (_showSeeMoreCta) setState(() => _showSeeMoreCta = false);
+
+    // Verrou canal privé : laisser 10s de lecture puis bloquer
+    _canalLockTimer?.cancel();
+    if (_showCanalLockCta) setState(() => _showCanalLockCta = false);
+    if (_isLockedContent) {
+      _canalLockTimer = Timer(const Duration(seconds: 10), () {
+        if (mounted) {
+          _pauseVideo();
+          setState(() => _showCanalLockCta = true);
+        }
+      });
+    }
 
     if (_isVideoInitialized && _chewieController != null) {
       // 🔥 ÉTAPE 1: Mettre en pause les autres médias
@@ -888,12 +885,13 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   }
 
   void _onBecameInvisible() {
-    // On peut toujours mettre en pause même si verrouillé (au cas où)
     if (_isVideoInitialized && _chewieController != null) {
       _pauseVideo();
     }
     _seeMoreTimer?.cancel();
     if (_showSeeMoreCta && mounted) setState(() => _showSeeMoreCta = false);
+    _canalLockTimer?.cancel();
+    if (_showCanalLockCta && mounted) setState(() => _showCanalLockCta = false);
   }
 
   // ==================== ACTIONS DU POST ====================
@@ -1613,10 +1611,9 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       );
     }
 
-    final fullText = _translatedDescription ?? text;
-    final words = fullText.split(' ');
+    final words = text.split(' ');
     final isLong = words.length > 25;
-    final displayedText = _isExpanded || !isLong ? fullText : '${words.take(25).join(' ')}...';
+    final displayedText = _isExpanded || !isLong ? text : '${words.take(25).join(' ')}...';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1627,27 +1624,81 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
             text: displayedText,
             decoratedStyle: TextStyle(fontSize: 15, color: colors.info, height: 1.4),
             basicStyle: TextStyle(fontSize: 15, color: colors.textPrimary, height: 1.4),
-            onTap: (text) {},
+            onTap: (_) {},
           ),
         ),
-        if (widget.post.id != null)
-          TranslatableDescription(
-            postId: widget.post.id!,
-            text: text,
-            targetLang: Provider.of<LocaleProvider>(context, listen: false).locale.languageCode,
-            onToggle: (translated) => setState(() => _translatedDescription = translated),
-          ),
         if (isLong)
           GestureDetector(
-            onTap: () => setState(() => _isExpanded = !_isExpanded),
+            onTap: _navigateToDetails,
             child: Padding(
               padding: const EdgeInsets.only(top: 4),
-              child: Text(_isExpanded ? "Voir moins" : "Voir plus",
+              child: Text('Voir plus',
                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: colors.info)),
             ),
           ),
         _buildEventBadge(),
       ],
+    );
+  }
+
+  Widget _buildCanalLockOverlay(AppColors colors) {
+    return Positioned.fill(
+      child: GestureDetector(
+        onTap: () {
+          if (_creatorCanal != null) {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => CanalDetails(canal: _creatorCanal!)));
+          }
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.75),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: colors.accent.withOpacity(0.15),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: colors.accent, width: 2),
+                  ),
+                  child: Icon(Icons.lock_outline, color: colors.accent, size: 32),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Contenu réservé aux abonnés',
+                  style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold, decoration: TextDecoration.none),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Rejoignez ce canal pour continuer à regarder',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white60, fontSize: 12, decoration: TextDecoration.none),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: colors.accent,
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.verified_user, color: Colors.white, size: 16),
+                      SizedBox(width: 8),
+                      Text('S\'abonner au canal', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13, decoration: TextDecoration.none)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -1660,7 +1711,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       key: Key('video_${widget.post.id}'),
       onVisibilityChanged: (info) => onVisibilityChanged(info.visibleFraction),
       child: GestureDetector(
-        onTap: isLocked ? null : _navigateToDetails, // 🔥 Clic → détails
+        onTap: _showCanalLockCta ? null : _navigateToDetails, // 🔥 Clic → détails
         child: Stack(
           children: [
             ClipRRect(
@@ -1674,7 +1725,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                         showControls: true,
                       ),
                     )
-                  : _isVideoInitialized && _chewieController != null && !isLocked
+                  : _isVideoInitialized && _chewieController != null
                   ? AspectRatio(aspectRatio: 16 / 9, child: Chewie(controller: _chewieController!))
                   : _isGeneratingThumbnail
                   ? Container(height: h * 0.38, width: double.infinity, color: colors.shimmerBase,
@@ -1686,42 +1737,12 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                   : Container(height: h * 0.38, width: double.infinity, color: colors.shimmerBase,
                   child: Icon(Icons.videocam, size: 50, color: colors.textSecondary)),
             ),
-            if (_isVideoLoading && !isLocked)
+            if (_isVideoLoading)
               Container(height: h * 0.38, width: double.infinity, color: Colors.black.withOpacity(0.7),
                   child: Center(child: CircularProgressIndicator(color: colors.primary))),
-            // 🔥 Supprimer l'icône play superflue – on garde juste la vidéo sans contrôle
-            // Overlay de verrouillage
-            if (isLocked)
-              Positioned.fill(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.7),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.lock, color: colors.accent, size: 50),
-                        const SizedBox(height: 8),
-                        Text('Vidéo verrouillée', style: TextStyle(color: colors.accent, fontSize: 16, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 4),
-                        const Text('Abonnez-vous pour voir cette vidéo', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                        const SizedBox(height: 12),
-                        ElevatedButton(
-                          onPressed: () {
-                            if (_creatorCanal != null) {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => CanalDetails(canal: _creatorCanal!)));
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(backgroundColor: colors.accent, foregroundColor: colors.onAccent),
-                          child: const Text('S\'abonner maintenant'),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+            // Verrou canal privé — s'affiche après 10s de lecture
+            if (_showCanalLockCta)
+              _buildCanalLockOverlay(colors),
             Positioned(
               bottom: 8, right: 8,
               child: Container(
@@ -1752,13 +1773,13 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       key: Key('video_${widget.post.id}'),
       onVisibilityChanged: (info) => onVisibilityChanged(info.visibleFraction),
       child: GestureDetector(
-        onTap: isLocked ? null : _navigateToDetails,
+        onTap: _showCanalLockCta ? null : _navigateToDetails,
         child: Stack(
           children: [
             // --- Conteneur vidéo ---
             ClipRRect(
               borderRadius: BorderRadius.zero,
-              child: kIsWeb && !isLocked && widget.post.url_media != null
+              child: kIsWeb && widget.post.url_media != null
                   ? isAd
                       ? AspectRatio(
                           aspectRatio: 16 / 9,
@@ -1777,7 +1798,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                             showControls: true,
                           ),
                         )
-                  : _isVideoInitialized && _chewieController != null && !isLocked
+                  : _isVideoInitialized && _chewieController != null
                   ? isAd
                       ? AspectRatio(
                           aspectRatio: 16 / 9,
@@ -1816,47 +1837,18 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                     ),
             ),
             // --- Indicateur de chargement ---
-            if (_isVideoLoading && !isLocked)
+            if (_isVideoLoading)
               Container(
                 height: videoHeight,
                 width: double.infinity,
                 color: Colors.black.withOpacity(0.7),
                 child: Center(child: CircularProgressIndicator(color: colors.primary)),
               ),
-            // --- Overlay de contenu verrouillé (inchangé) ---
-            if (isLocked)
-              Positioned.fill(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.7),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.lock, color: colors.accent, size: 50),
-                        const SizedBox(height: 8),
-                        Text('Vidéo verrouillée', style: TextStyle(color: colors.accent, fontSize: 16, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 4),
-                        const Text('Abonnez-vous pour voir cette vidéo', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                        const SizedBox(height: 12),
-                        ElevatedButton(
-                          onPressed: () {
-                            if (_creatorCanal != null) {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => CanalDetails(canal: _creatorCanal!)));
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(backgroundColor: colors.accent, foregroundColor: colors.onAccent),
-                          child: const Text('S\'abonner maintenant'),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            // --- 🎬 Overlay "Voir plus" après 5s de preview (sauf pubs) ---
-            if (_showSeeMoreCta && !isAd && !isLocked)
+            // --- Verrou canal privé — s'affiche après 10s de lecture ---
+            if (_showCanalLockCta)
+              _buildCanalLockOverlay(colors),
+            // --- 🎬 Overlay "Voir plus" après 5s de preview (sauf pubs et verrou) ---
+            if (_showSeeMoreCta && !isAd && !_showCanalLockCta)
               Positioned.fill(
                 child: GestureDetector(
                   onTap: _navigateToDetails,
@@ -1888,6 +1880,54 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                       )
                       .animate(onPlay: (c) => c.repeat(reverse: true))
                       .scaleXY(begin: 1.0, end: 1.08, duration: 600.ms, curve: Curves.easeInOut),
+                    ),
+                  ),
+                ),
+              ),
+            // --- Description overlay en bas (masquée quand "Voir la suite" ou verrou) ---
+            if (!isLocked && !_showSeeMoreCta && !_showCanalLockCta && !isAd &&
+                (widget.post.description ?? '').trim().isNotEmpty)
+              Positioned(
+                bottom: 0, left: 0, right: 0,
+                child: GestureDetector(
+                  onTap: _navigateToDetails,
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(12, 36, 48, 10),
+                    decoration: BoxDecoration(
+                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Colors.transparent, Colors.black.withOpacity(0.78)],
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            widget.post.description!,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              height: 1.35,
+                              decoration: TextDecoration.none,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        const Text(
+                          'Voir plus',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            decoration: TextDecoration.none,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -2389,7 +2429,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
       _pauseVideo();
-    } else if (state == AppLifecycleState.resumed && _isVisible && _isVideoInitialized && !_isLockedContent) {
+    } else if (state == AppLifecycleState.resumed && _isVisible && _isVideoInitialized && !_showCanalLockCta && !_showSeeMoreCta) {
       _playVideo();
     }
   }
@@ -2399,8 +2439,9 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     final volume = _soundProvider.isMuted ? 0.0 : 1.0;
     _chewieController!.setVolume(volume);
     _videoController?.setVolume(volume);
-    // Si la vidéo est visible et en pause, la reprendre (changement de volume = intention de jouer)
-    if (!_soundProvider.isMuted && _isVisible && !_chewieController!.isPlaying) {
+    // Reprendre seulement si rien ne bloque la vidéo
+    if (!_soundProvider.isMuted && _isVisible && !_chewieController!.isPlaying
+        && !_showSeeMoreCta && !_showCanalLockCta) {
       _playVideo();
     }
     // Ne jamais mettre en pause à cause du son — seulement changer le volume
@@ -2413,6 +2454,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     _shuffleTimer?.cancel();
     _visibilityTimer?.cancel();
     _seeMoreTimer?.cancel();
+    _canalLockTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     MediaPlaybackManager.unregisterMedia(widget.post.id ?? '');
     _disposeVideoControllers();
@@ -2452,7 +2494,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildPostContent(),
+                // Description montrée en overlay sur la vidéo — ici on garde uniquement contenu verrouillé et badge
+                if (_isLockedContent) _buildPostContent() else _buildEventBadge(),
                 const SizedBox(height: 12),
                 _buildPostActions(),
                 _buildCommentPreview(),

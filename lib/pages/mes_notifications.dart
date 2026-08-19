@@ -41,19 +41,123 @@ class _MesNotificationState extends State<MesNotification> {
   late AppColors _colors;
   late AppLocalizations _l10n;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final List<NotificationData> _notifications = [];
   final Map<String, UserData> _userCache = {};
   final Map<String, Canal> _canalCache = {};
-  bool _isLoading = false;
-  bool _isLoadingMore = false;
-  bool _hasMore = true;
   bool _isHandlingNotification = false;
   bool _showFilterMenu = false;
   String? _selectedTypeFilter;
   List<String> _availableTypes = [];
 
-  DocumentSnapshot? _lastDocument;
-  final int _pageSize = 20;
+  static const int _pageSize = 60;
+
+  // Liste plate de toutes les notifications chargées
+  List<NotificationData> _notifications = [];
+  bool _isLoading = false;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
+  DocumentSnapshot? _lastDoc;
+
+  int get _totalUnreadCount => _notifications.where((n) => !(n.is_open ?? true)).length;
+
+  Future<void> _loadInitialNotifications() async {
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+    final userId = _authProvider.loginUserData.id!;
+    try {
+      final snap = await _firestore
+          .collection('Notifications')
+          .where('receiver_id', isEqualTo: userId)
+          .orderBy('created_at', descending: true)
+          .limit(_pageSize)
+          .get();
+
+      final items = snap.docs
+          .map((d) => NotificationData.fromJson(d.data() as Map<String, dynamic>))
+          .toList();
+
+      for (final n in items) {
+        if (n.canal_id != null && n.canal_id!.isNotEmpty) {
+          _loadCanalData(n.canal_id!);
+        } else if (n.user_id != null && n.user_id!.isNotEmpty) {
+          _loadUserData(n.user_id!);
+        }
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _notifications = items;
+        _isLoading = false;
+        _hasMore = snap.docs.length >= _pageSize;
+        if (snap.docs.isNotEmpty) _lastDoc = snap.docs.last;
+        // Auto-ouvrir les groupes qui ont du contenu
+        for (final g in _groupTypes.keys) {
+          if (items.any((n) => _groupForType(n.type) == g)) {
+            _groupExpanded[g] = true;
+          }
+        }
+      });
+    } catch (e) {
+      printVm("Erreur chargement notifications: $e");
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _loadMoreNotifications() async {
+    if (_isLoadingMore || !_hasMore || _lastDoc == null) return;
+    setState(() => _isLoadingMore = true);
+    final userId = _authProvider.loginUserData.id!;
+    try {
+      final snap = await _firestore
+          .collection('Notifications')
+          .where('receiver_id', isEqualTo: userId)
+          .orderBy('created_at', descending: true)
+          .startAfterDocument(_lastDoc!)
+          .limit(_pageSize)
+          .get();
+
+      final items = snap.docs
+          .map((d) => NotificationData.fromJson(d.data() as Map<String, dynamic>))
+          .toList();
+
+      for (final n in items) {
+        if (n.canal_id != null && n.canal_id!.isNotEmpty) {
+          _loadCanalData(n.canal_id!);
+        } else if (n.user_id != null && n.user_id!.isNotEmpty) {
+          _loadUserData(n.user_id!);
+        }
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _notifications = [..._notifications, ...items];
+        _isLoadingMore = false;
+        _hasMore = snap.docs.length >= _pageSize;
+        if (snap.docs.isNotEmpty) _lastDoc = snap.docs.last;
+      });
+    } catch (e) {
+      printVm("Erreur chargement plus de notifications: $e");
+      if (mounted) setState(() => _isLoadingMore = false);
+    }
+  }
+
+  // Compatibilité avec le code de chargement de counts (optionnel, pour les badges)
+  final Map<String, int> _groupUnreadCounts = {};
+
+  Future<void> _loadGroupCounts() async {
+    final userId = _authProvider.loginUserData.id!;
+    await Future.wait(_groupTypes.entries.map((entry) async {
+      try {
+        final snap = await _firestore
+            .collection('Notifications')
+            .where('receiver_id', isEqualTo: userId)
+            .where('is_open', isEqualTo: false)
+            .where('type', whereIn: entry.value)
+            .count()
+            .get();
+        if (mounted) setState(() => _groupUnreadCounts[entry.key] = snap.count ?? 0);
+      } catch (_) {}
+    }));
+  }
 
   late UserAuthProvider _authProvider;
   late PostProvider _postProvider;
@@ -68,6 +172,42 @@ class _MesNotificationState extends State<MesNotification> {
     'FAVORITE'
   ];
 
+  // ── Groupes accordion ──
+  static const Map<String, List<String>> _groupTypes = {
+    'Activité':            ['FAVORITE', 'COMMENT', 'COMMENTAIRE', 'POST'],
+    'Nouveaux abonnés':    ['ABONNER', 'INVITATION', 'ACCEPTINVITATION'],
+    'Messages':            ['MESSAGE'],
+    'Nouveaux contenus':   ['NEWPOST', 'ARTICLE', 'CHRONIQUE', 'CHALLENGE', 'LIVE', 'SERVICE'],
+    'Gains & Parrainages': ['GAIN', 'PARRAINAGE'],
+    'Afrolook':            ['SUPPORT', 'MARKETING', 'COMPTE_OFFICIEL', 'USER'],
+  };
+
+  static const Map<String, IconData> _groupIcons = {
+    'Activité':            Icons.favorite_border,
+    'Nouveaux abonnés':    Icons.person_add_alt_1_outlined,
+    'Messages':            Icons.chat_bubble_outline,
+    'Nouveaux contenus':   Icons.play_circle_outline,
+    'Gains & Parrainages': Icons.monetization_on_outlined,
+    'Afrolook':            Icons.verified_outlined,
+  };
+
+  final Map<String, bool> _groupExpanded = {
+    'Activité':            false,
+    'Nouveaux abonnés':    false,
+    'Messages':            false,
+    'Nouveaux contenus':   false,
+    'Gains & Parrainages': false,
+    'Afrolook':            false,
+  };
+
+  String _groupForType(String? type) {
+    if (type == null) return 'Afrolook';
+    for (final entry in _groupTypes.entries) {
+      if (entry.value.contains(type.toUpperCase())) return entry.key;
+    }
+    return 'Afrolook';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -75,6 +215,7 @@ class _MesNotificationState extends State<MesNotification> {
     _postProvider = Provider.of<PostProvider>(context, listen: false);
     _loadAvailableTypes();
     _loadInitialNotifications();
+    _loadGroupCounts();
   }
 
   Future<void> _loadAvailableTypes() async {
@@ -89,99 +230,7 @@ class _MesNotificationState extends State<MesNotification> {
       printVm("Erreur chargement types: $e");
     }
   }
-  Future<void> _loadInitialNotifications() async {
-    if (_isLoading) return;
 
-    setState(() {
-      _isLoading = true;
-      _notifications.clear();
-      _lastDocument = null;
-      _hasMore = true;
-    });
-
-    try {
-      await _loadNotificationsBatch();
-    } catch (e) {
-      printVm("Erreur chargement notifications: $e");
-      _showErrorSnackBar(_l10n.notifErrorLoadingNotifications);
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _loadMoreNotifications() async {
-    if (_isLoadingMore || !_hasMore) return;
-
-    setState(() {
-      _isLoadingMore = true;
-    });
-
-    try {
-      await _loadNotificationsBatch();
-    } catch (e) {
-      printVm("Erreur chargement plus: $e");
-    } finally {
-      setState(() {
-        _isLoadingMore = false;
-      });
-    }
-  }
-
-  Future<void> _loadNotificationsBatch() async {
-    Query query = _firestore
-        .collection('Notifications')
-        .where("receiver_id", isEqualTo: _authProvider.loginUserData.id!);
-
-    // Appliquer le filtre de type si sélectionné
-    if (_selectedTypeFilter != null && _selectedTypeFilter!.isNotEmpty) {
-      query = query.where("type", isEqualTo: _selectedTypeFilter);
-    } else {
-      // Sinon, filtrer par types par défaut
-      // query = query.where("type", whereIn: _defaultTypes);
-    }
-
-    query = query.orderBy('created_at', descending: true).limit(_pageSize);
-
-    if (_lastDocument != null) {
-      query = query.startAfterDocument(_lastDocument!);
-    }
-
-    final snapshot = await query.get();
-
-    if (snapshot.docs.isEmpty) {
-      setState(() {
-        _hasMore = false;
-      });
-      return;
-    }
-
-    _lastDocument = snapshot.docs.last;
-
-    for (var doc in snapshot.docs) {
-      final notification = NotificationData.fromJson(doc.data() as Map<String, dynamic>);
-
-      // Marquer comme lu si nécessaire
-      if (!isIn(notification.users_id_view!, _authProvider.loginUserData.id!)) {
-        notification.users_id_view!.add(_authProvider.loginUserData.id!);
-        await _firestore.collection('Notifications').doc(notification.id).update(notification.toJson());
-      }
-
-      _notifications.add(notification);
-
-      // Charger les données utilisateur OU canal en arrière-plan
-      if (notification.canal_id != null && notification.canal_id!.isNotEmpty) {
-        // C'est une notification d'un canal
-        _loadCanalData(notification.canal_id!);
-      } else {
-        // C'est une notification d'un utilisateur
-        _loadUserData(notification.user_id!);
-      }
-    }
-
-    setState(() {});
-  }
 
   Future<void> _loadUserData(String userId) async {
     if (_userCache.containsKey(userId)) return;
@@ -1299,24 +1348,65 @@ class _MesNotificationState extends State<MesNotification> {
                   ),
                   SizedBox(height: 4),
                   Expanded(
-                    child: ListView.separated(
-                      itemCount: _notifications.length + (_hasMore ? 1 : 0),
-                      separatorBuilder: (context, index) => SizedBox(height: 4),
-                      itemBuilder: (context, index) {
-                        if (index == _notifications.length) {
-                          return _isLoadingMore
-                              ? Padding(
-                            padding: EdgeInsets.all(16),
-                            child: Center(
-                              child: CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(_colors.danger),
+                    child: ListView(
+                      children: [
+                        ..._groupTypes.keys.map((group) {
+                          final items = _notifications
+                              .where((n) => _groupForType(n.type) == group)
+                              .toList();
+                          if (items.isEmpty) return const SizedBox.shrink();
+                          final unread = items.where((n) => !(n.is_open ?? false)).length;
+                          final isOpen = _groupExpanded[group] ?? false;
+                          return Column(
+                            children: [
+                              // ── En-tête groupe ──
+                              InkWell(
+                                onTap: () => setState(() => _groupExpanded[group] = !isOpen),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  color: _colors.surface,
+                                  child: Row(
+                                    children: [
+                                      Icon(_groupIcons[group] ?? Icons.notifications_outlined, size: 20, color: _colors.textSecondary),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(group,
+                                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: _colors.textPrimary)),
+                                      ),
+                                      if (unread > 0)
+                                        Container(
+                                          margin: const EdgeInsets.only(right: 8),
+                                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: _colors.danger,
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          child: Text(
+                                            unread > 99 ? '99+' : '$unread',
+                                            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                          ),
+                                        ),
+                                      Icon(isOpen ? Icons.expand_less : Icons.expand_more, color: _colors.textSecondary, size: 20),
+                                    ],
+                                  ),
+                                ),
                               ),
-                            ),
-                          )
-                              : SizedBox.shrink();
-                        }
-                        return _buildNotificationItem(_notifications[index]);
-                      },
+                              // ── Items du groupe ──
+                              if (isOpen)
+                                ...items.map((n) => _buildNotificationItem(n)),
+                              const Divider(height: 1),
+                            ],
+                          );
+                        }),
+                        // Chargement de plus
+                        if (_hasMore)
+                          _isLoadingMore
+                              ? Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(_colors.danger))),
+                                )
+                              : const SizedBox.shrink(),
+                      ],
                     ),
                   ),
                 ],

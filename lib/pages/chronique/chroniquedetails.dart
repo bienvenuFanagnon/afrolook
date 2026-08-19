@@ -89,8 +89,11 @@ import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/chroniqueProvider.dart';
 import '../../providers/sound_provider.dart';
+import '../canaux/detailsCanal.dart';
+import '../chat/group/group_info_page.dart';
 import '../component/showUserDetails.dart';
 import '../postComments.dart';
+import '../user/otherUser/otherUser.dart';
 import '../userPosts/video_preload_manager.dart';
 import 'chroniqueform.dart';
 
@@ -867,8 +870,18 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
   // PUBS — chargement et injection entre chroniques
   // ============================================================
 
+  // Charge les pubs depuis authProvider (déjà préchargé) ou Firestore en fallback
   Future<void> _loadActiveAds() async {
     try {
+      final auth = Provider.of<UserAuthProvider>(context, listen: false);
+      final providerAds = auth.advertisements;
+
+      if (providerAds.isNotEmpty) {
+        _loadAdsFromProvider(providerAds);
+        return;
+      }
+
+      // Fallback Firestore si le provider n'a pas encore chargé
       final snap = await FirebaseFirestore.instance
           .collection('Advertisements')
           .where('status', isEqualTo: 'active')
@@ -890,17 +903,9 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
               final post = Post.fromJson(postDoc.data()!);
               post.id = postDoc.id;
               _adPosts[ad.id!] = post;
-
-              // URL de miniature (image ou première frame)
               final images = post.images;
-              final url = (images != null && images.isNotEmpty)
-                  ? images.first
-                  : post.url_media;
-              if (url != null && url.isNotEmpty) {
-                _adImageUrls[ad.id!] = url;
-              }
-
-              // Précharger la vidéo si c'est une pub vidéo
+              final url = (images != null && images.isNotEmpty) ? images.first : post.url_media;
+              if (url != null && url.isNotEmpty) _adImageUrls[ad.id!] = url;
               final isVideo = post.dataType == PostDataType.VIDEO.name ||
                   (post.url_media ?? '').contains('.mp4') ||
                   (post.url_media ?? '').contains('.mov');
@@ -913,23 +918,81 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
       }
 
       await Future.wait(futures);
+      if (mounted && ads.isNotEmpty) _applyAds(ads);
+    } catch (_) {}
+  }
 
-      if (mounted && ads.isNotEmpty) {
-        ads.shuffle();
-        // Sauvegarder l'index chronique courant avant que _displayItems change
-        final currentChroniqueIdx = _currentPage;
-        setState(() {
-          _activeAds = ads;
-          _shuffledAds = List.from(ads);
-        });
-        // Après le rebuild, repositionner sur la même chronique
-        // (l'insertion des pubs décale les index virtuels)
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted && _pageController.hasClients) {
-            final newVirtual = _chroniqueToVirtual(currentChroniqueIdx);
-            _pageController.jumpToPage(newVirtual);
-          }
-        });
+  void _loadAdsFromProvider(List<Map<String, dynamic>> providerAds) {
+    final ads = <Advertisement>[];
+    for (final adData in providerAds) {
+      final adMap = adData['ad'] as Map<String, dynamic>?;
+      if (adMap == null) continue;
+      final ad = Advertisement.fromJson(adMap);
+      if (ad.id == null) continue;
+      ads.add(ad);
+
+      if (adData['isEntityBoost'] == true) continue;
+
+      final postMap = adData['post'] as Map<String, dynamic>?;
+      if (postMap != null) {
+        final post = Post.fromJson(postMap);
+        _adPosts[ad.id!] = post;
+        final images = post.images;
+        final url = (images != null && images.isNotEmpty) ? images.first : post.url_media;
+        if (url != null && url.isNotEmpty) _adImageUrls[ad.id!] = url;
+        final isVideo = post.dataType == PostDataType.VIDEO.name ||
+            (post.url_media ?? '').contains('.mp4') ||
+            (post.url_media ?? '').contains('.mov');
+        if (isVideo && post.url_media != null) {
+          VideoPreloadManager.preload(post.id ?? ad.id!, post.url_media);
+        }
+      }
+    }
+    if (mounted && ads.isNotEmpty) _applyAds(ads);
+  }
+
+  void _applyAds(List<Advertisement> ads) {
+    ads.shuffle();
+    final currentChroniqueIdx = _currentPage;
+    setState(() {
+      _activeAds = ads;
+      _shuffledAds = List.from(ads);
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _pageController.hasClients) {
+        final newVirtual = _chroniqueToVirtual(currentChroniqueIdx);
+        _pageController.jumpToPage(newVirtual);
+      }
+    });
+  }
+
+  Future<void> _navigateToEntityOwner(Advertisement ad) async {
+    final id = ad.ownerId;
+    if (id == null || id.isEmpty || !mounted) return;
+    try {
+      final fs = FirebaseFirestore.instance;
+      switch (ad.ownerType) {
+        case 'canal':
+          final doc = await fs.collection('Canaux').doc(id).get();
+          if (!doc.exists || !context.mounted) return;
+          final data = Map<String, dynamic>.from(doc.data()!)..['id'] = doc.id;
+          Navigator.push(context, MaterialPageRoute(
+            builder: (_) => CanalDetails(canal: Canal.fromJson(data)),
+          ));
+          break;
+        case 'group':
+          if (!context.mounted) return;
+          Navigator.push(context, MaterialPageRoute(
+            builder: (_) => GroupInfoPage(groupId: id, groupName: ad.ownerName ?? 'Groupe'),
+          ));
+          break;
+        default:
+          final doc = await fs.collection('Users').doc(id).get();
+          if (!doc.exists || !context.mounted) return;
+          final data = Map<String, dynamic>.from(doc.data()!)..['id'] = doc.id;
+          Navigator.push(context, MaterialPageRoute(
+            builder: (_) => OtherUserPage(otherUser: UserData.fromJson(data)),
+          ));
       }
     } catch (_) {}
   }
@@ -1055,8 +1118,135 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
     return chroniqueIndex;
   }
 
+  Widget _buildEntityBoostSlide(Advertisement ad) {
+    final typeLabel = ad.ownerType == 'canal' ? 'Canal' : ad.ownerType == 'group' ? 'Groupe' : 'Créateur';
+    final ctaLabel = ad.ownerType == 'canal' ? "S'abonner" : ad.ownerType == 'group' ? 'Rejoindre' : 'Suivre';
+    final adDescription = ad.description ?? '';
+    final followers = ad.ownerFollowers ?? 0;
+    final followersLabel = ad.ownerType == 'group' ? 'membres' : 'abonnés';
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // Fond dégradé
+        Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft, end: Alignment.bottomRight,
+              colors: [Color(0xFF1a0a00), Color(0xFF3a1800)],
+            ),
+          ),
+        ),
+        // Motif décoratif
+        Positioned.fill(
+          child: Opacity(
+            opacity: 0.07,
+            child: GridView.builder(
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 8),
+              itemBuilder: (_, __) => const Icon(Icons.circle, size: 4, color: Color(0xFFFFD700)),
+            ),
+          ),
+        ),
+        // Carte centrale
+        Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.07),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3), width: 1),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(colors: [Color(0xFFFFD700), Color(0xFFFF8C00)]),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.verified, size: 11, color: Colors.black),
+                        const SizedBox(width: 4),
+                        Text('SPONSORISÉ • $typeLabel',
+                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Avatar
+                  Container(
+                    width: 80, height: 80,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: const Border.fromBorderSide(BorderSide(color: Color(0xFFFFD700), width: 3)),
+                    ),
+                    child: ClipOval(
+                      child: ad.ownerAvatar?.isNotEmpty == true
+                          ? CachedNetworkImage(imageUrl: ad.ownerAvatar!, fit: BoxFit.cover,
+                              errorWidget: (_, __, ___) => Container(color: const Color(0xFF3a1800),
+                                child: const Icon(Icons.person, color: Color(0xFFFFD700), size: 36)))
+                          : Container(color: const Color(0xFF3a1800),
+                              child: const Icon(Icons.person, color: Color(0xFFFFD700), size: 36)),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Nom
+                  Text(ad.ownerName ?? '', maxLines: 1, overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                  if (followers > 0) ...[
+                    const SizedBox(height: 4),
+                    Text('$followers $followersLabel',
+                      style: const TextStyle(color: Color(0xFFFFD700), fontSize: 13, fontWeight: FontWeight.w500)),
+                  ],
+                  if (adDescription.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Text(adDescription, maxLines: 3, overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.45)),
+                  ],
+                  const SizedBox(height: 20),
+                  // CTA
+                  GestureDetector(
+                    onTap: () async {
+                      _recordAdClick(ad);
+                      await _navigateToEntityOwner(ad);
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(colors: [Color(0xFFFFD700), Color(0xFFFF8C00)]),
+                        borderRadius: BorderRadius.circular(30),
+                        boxShadow: [BoxShadow(color: const Color(0xFFFFD700).withOpacity(0.35), blurRadius: 12, offset: const Offset(0, 4))],
+                      ),
+                      child: Text(ctaLabel, textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.black, fontSize: 15, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildAdSlide(Advertisement ad) {
     WidgetsBinding.instance.addPostFrameCallback((_) => _recordAdView(ad));
+
+    // ── Boost entité (profil / canal / groupe) — format carte centré ──
+    if (ad.ownerType != null && ad.ownerType!.isNotEmpty && ad.postId == null) {
+      return _buildEntityBoostSlide(ad);
+    }
 
     final post = _adPosts[ad.id ?? ''];
     final imageUrl = _adImageUrls[ad.id ?? ''];
@@ -1286,7 +1476,8 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
   }
 
   Widget _buildAdActionsOverlay(Advertisement ad) {
-    final adPost = _adPosts[ad.id ?? ''];
+    final isEntityBoost = ad.ownerType != null && ad.ownerType!.isNotEmpty && ad.postId == null;
+    final adPost = isEntityBoost ? null : _adPosts[ad.id ?? ''];
     final commentCount = adPost?.comments ?? 0;
 
     return Positioned(
@@ -1295,47 +1486,48 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Like
-          GestureDetector(
-            onTap: _handleAdPostLike,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  _adPostLiked ? Icons.favorite : Icons.favorite_border,
-                  color: _adPostLiked ? Colors.red : Colors.white,
-                  size: 30,
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  _formatStatCount(_adPostLikesCount),
-                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
-                ),
-              ],
+          // Like + commentaire uniquement pour les pubs post (pas les boosts entité)
+          if (!isEntityBoost) ...[
+            GestureDetector(
+              onTap: _handleAdPostLike,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _adPostLiked ? Icons.favorite : Icons.favorite_border,
+                    color: _adPostLiked ? Colors.red : Colors.white,
+                    size: 30,
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    _formatStatCount(_adPostLikesCount),
+                    style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
-          // Commentaire
-          GestureDetector(
-            onTap: adPost != null
-                ? () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => PostComments(post: adPost)))
-                : null,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.chat_bubble_outline, color: Colors.white, size: 28),
-                const SizedBox(height: 3),
-                Text(
-                  _formatStatCount(commentCount),
-                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
-                ),
-              ],
+            const SizedBox(height: 20),
+            GestureDetector(
+              onTap: adPost != null
+                  ? () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => PostComments(post: adPost)))
+                  : null,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.chat_bubble_outline, color: Colors.white, size: 28),
+                  const SizedBox(height: 3),
+                  Text(
+                    _formatStatCount(commentCount),
+                    style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
-          // Vues pub
+            const SizedBox(height: 20),
+          ],
+          // Vues pub (toujours visible)
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1347,6 +1539,21 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
               ),
             ],
           ),
+          // Clics pub
+          if ((ad.clicks ?? 0) > 0) ...[
+            const SizedBox(height: 12),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.touch_app_outlined, color: Colors.white54, size: 22),
+                const SizedBox(height: 3),
+                Text(
+                  _formatStatCount(ad.clicks ?? 0),
+                  style: const TextStyle(color: Colors.white54, fontSize: 11),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );

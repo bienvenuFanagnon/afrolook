@@ -22,11 +22,6 @@ function _isoWeekId(d: Date): string {
   return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
 }
 
-/** Retourne l'identifiant ISO de la semaine en cours, ex. "2026-W34". */
-function getCurrentWeekId(): string {
-  return _isoWeekId(new Date());
-}
-
 /** Retourne l'identifiant ISO de la semaine précédente, ex. "2026-W33". */
 function getLastWeekId(): string {
   return _isoWeekId(new Date(Date.now() - 7 * 86400000));

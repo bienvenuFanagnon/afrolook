@@ -14,3 +14,4 @@ export * from "./chat/groupNotifications";
 export * from "./contenu/contentPaie";
 export * from "./contenu/payments";
 export * from "./streak/streakReminder";
+export * from "./ads/ad_notifications";

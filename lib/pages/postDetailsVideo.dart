@@ -86,6 +86,7 @@ import '../services/postService/feed_interaction_service.dart';
 import '../services/streak_service.dart';
 
 import 'canaux/detailsCanal.dart';
+import 'user/otherUser/otherUser.dart';
 
 import 'coins/coin_gift_dialog.dart';
 
@@ -97,7 +98,6 @@ import 'home/homeWidget.dart';
 
 import '../services/postService/post_view_service.dart';
 import '../services/comment_suggestion_service.dart';
-import '../widgets/marquee_comment_chips.dart';
 
 // Couleurs Afrolook (accent, non remplacées par AppColors)
 const _afroGreen = Color(0xFF2ECC71);
@@ -170,6 +170,15 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
   bool _isAd = false;
   Advertisement? _advertisement;
   bool _isLoadingAd = false;
+
+  // Midroll
+  bool _showMidrollAd = false;
+  Timer? _midrollTimer;
+  bool _midrollShownForCurrentVideo = false;
+  Map<String, dynamic>? _midrollAdData;
+  VideoPlayerController? _midrollVideoController;
+  bool _midrollVideoInitialized = false;
+  VoidCallback? _videoPositionListener;
   // Streams de mise à jour
   StreamSubscription<DocumentSnapshot>? _postSubscription;
 
@@ -483,9 +492,15 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 12, color: color ?? Colors.white70),
+        Icon(icon, size: 12, color: color ?? Colors.white,
+            shadows: const [Shadow(color: Colors.black54, blurRadius: 4)]),
         const SizedBox(width: 3),
-        Text(value, style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600)),
+        Text(value, style: const TextStyle(
+          color: Colors.white,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          shadows: [Shadow(color: Colors.black54, blurRadius: 4)],
+        )),
       ],
     );
   }
@@ -761,6 +776,10 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     _suggestionSub?.cancel();
     _postSubscription?.cancel();
     _shuffleTimer?.cancel();
+    _midrollTimer?.cancel();
+    _midrollVideoController?.dispose();
+    _midrollVideoController = null;
+    _removeMidrollListener();
     _videoController?.dispose();
     _chewieController?.dispose();
     _quickCommentController.dispose();
@@ -934,12 +953,588 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
         placeholder: Container(color: Colors.black, child: Center(child: CircularProgressIndicator(color: _afroGreen))),
         autoInitialize: true,
       );
-      setState(() => _isVideoInitialized = true);
+      if (mounted) setState(() => _isVideoInitialized = true);
+      _attachMidrollListener();
       await _recordPostView();
     } catch (e) {
       printVm('Erreur initialisation vidéo: $e');
-      setState(() => _isVideoInitialized = false);
+      if (mounted) setState(() => _isVideoInitialized = false);
     }
+  }
+
+  // ── Midroll ────────────────────────────────────────────────────────────────
+
+  bool _isUserPremium() =>
+      AbonnementUtils.isPremiumActive(authProvider.loginUserData?.abonnement) ||
+      AbonnementUtils.isAdmin(authProvider.loginUserData?.role);
+
+  void _attachMidrollListener() {
+    if (_videoController == null) return;
+    _removeMidrollListener();
+    _midrollShownForCurrentVideo = false;
+    final listener = () {
+      if (_midrollShownForCurrentVideo || !mounted) return;
+      final vpc = _videoController;
+      if (vpc == null) return;
+      final value = vpc.value;
+      if (!value.isPlaying) return;
+      final duration = value.duration;
+      final position = value.position;
+      if (duration.inSeconds < 20) return;
+      final remaining = duration - position;
+      if (remaining.inSeconds <= 15 && remaining.inSeconds > 0 && position.inSeconds > 5) {
+        _midrollShownForCurrentVideo = true;
+        _showMidrollOverlay();
+      }
+    };
+    _videoPositionListener = listener;
+    _videoController!.addListener(listener);
+  }
+
+  void _removeMidrollListener() {
+    if (_videoPositionListener != null && _videoController != null) {
+      _videoController!.removeListener(_videoPositionListener!);
+    }
+    _videoPositionListener = null;
+  }
+
+  Future<void> _showMidrollOverlay() async {
+    if (!mounted || _isUserPremium()) return;
+    _videoController?.pause();
+    _chewieController?.pause();
+    final ads = authProvider.advertisements;
+    Map<String, dynamic>? picked;
+    if (ads.isNotEmpty) {
+      picked = ads[Random().nextInt(ads.length)];
+      _midrollAdData = picked;
+    }
+    setState(() { _showMidrollAd = true; _midrollVideoInitialized = false; });
+    _midrollTimer?.cancel();
+    _midrollTimer = Timer(const Duration(seconds: 5), _closeMidrollOverlay);
+
+    if (picked != null && picked['isEntityBoost'] != true && picked['post'] != null) {
+      try {
+        final post = Post.fromJson(picked['post'] as Map<String, dynamic>);
+        final isVideo = post.dataType == PostDataType.VIDEO.name ||
+            (post.url_media?.contains('.mp4') ?? false) ||
+            (post.url_media?.contains('.mov') ?? false);
+        if (isVideo && post.url_media?.isNotEmpty == true) {
+          final cdnUrl = authProvider.convertToCdnUrl(post.url_media!, authProvider.appDefaultData);
+          _midrollVideoController?.dispose();
+          final ctrl = VideoPlayerController.networkUrl(Uri.parse(cdnUrl));
+          _midrollVideoController = ctrl;
+          await ctrl.initialize();
+          await ctrl.setVolume(0);
+          ctrl.setLooping(true);
+          ctrl.play();
+          if (mounted) setState(() => _midrollVideoInitialized = true);
+        }
+      } catch (_) {
+        _midrollVideoController?.dispose();
+        _midrollVideoController = null;
+      }
+    }
+  }
+
+  void _closeMidrollOverlay() {
+    if (!mounted) return;
+    _midrollTimer?.cancel();
+    _midrollVideoController?.dispose();
+    _midrollVideoController = null;
+    setState(() { _showMidrollAd = false; _midrollVideoInitialized = false; });
+    _videoController?.play();
+    _chewieController?.play();
+  }
+
+  String _ownerCtaLabel(String? type) {
+    switch (type) {
+      case 'canal':     return "S'abonner";
+      case 'group':     return 'Rejoindre';
+      case 'event':     return 'Participer';
+      case 'challenge': return 'Participer';
+      case 'product':   return 'Commander';
+      case 'service':   return 'Contacter';
+      case 'content':   return 'Voir';
+      case 'user':      return 'Suivre';
+      default:          return 'Voir';
+    }
+  }
+
+  Future<void> _navigateToAdOwner(BuildContext ctx, String ownerId, String? ownerType) async {
+    try {
+      final fs = FirebaseFirestore.instance;
+      switch (ownerType) {
+        case 'canal':
+          final doc = await fs.collection('Canaux').doc(ownerId).get();
+          if (!doc.exists || !ctx.mounted) return;
+          final data = Map<String, dynamic>.from(doc.data()!);
+          data['id'] = doc.id;
+          Navigator.push(ctx, MaterialPageRoute(
+            builder: (_) => CanalDetails(canal: Canal.fromJson(data)),
+          ));
+          break;
+        case 'user':
+        default:
+          final doc = await fs.collection('Users').doc(ownerId).get();
+          if (!doc.exists || !ctx.mounted) return;
+          final data = Map<String, dynamic>.from(doc.data()!);
+          data['id'] = doc.id;
+          Navigator.push(ctx, MaterialPageRoute(
+            builder: (_) => OtherUserPage(otherUser: UserData.fromJson(data)),
+          ));
+      }
+    } catch (e) {
+      debugPrint('_navigateToAdOwner error: $e');
+    }
+  }
+
+  Widget _buildMidrollCard() {
+    final screenH = MediaQuery.of(context).size.height;
+    final adData = _midrollAdData;
+
+    Post? post;
+    Advertisement? ad;
+    String? thumb;
+    String caption = '';
+    String btnText = 'En savoir plus';
+    bool isEntityBoost = adData?['isEntityBoost'] == true;
+
+    if (adData != null) {
+      try {
+        ad = Advertisement.fromJson(adData['ad'] as Map<String, dynamic>);
+        caption = ad.description ?? ''; // description de la pub, pas du post
+        btnText = ad.actionButtonText ?? 'En savoir plus';
+        if (!isEntityBoost && adData['post'] != null) {
+          post = Post.fromJson(adData['post'] as Map<String, dynamic>);
+          if (thumb == null && post.thumbnail?.isNotEmpty == true) thumb = post.thumbnail;
+          if (thumb == null && post.images?.isNotEmpty == true && post.images!.first.isNotEmpty) thumb = post.images!.first;
+          if (caption.isEmpty) caption = post.description ?? '';
+        }
+      } catch (_) {}
+    }
+
+    // ── Boost entité : carte centrée style chronique ──
+    if (isEntityBoost && ad != null) {
+      final typeLabel = ad.ownerType == 'canal' ? 'Canal' : ad.ownerType == 'group' ? 'Groupe' : 'Créateur';
+      final ctaLabel = _ownerCtaLabel(ad.ownerType);
+      return Positioned.fill(
+        child: Material(
+          color: Colors.black.withOpacity(0.93),
+          child: SafeArea(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: screenH * 0.82, maxWidth: 400),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(colors: [Color(0xFFFFD700), Color(0xFFFF8C00)]),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            const Icon(Icons.verified, color: Colors.white, size: 12),
+                            const SizedBox(width: 4),
+                            Text('SPONSORISÉ • $typeLabel',
+                              style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, decoration: TextDecoration.none)),
+                          ]),
+                        ),
+                        const Spacer(),
+                        GestureDetector(
+                          onTap: _closeMidrollOverlay,
+                          child: Container(
+                            padding: const EdgeInsets.all(7),
+                            decoration: const BoxDecoration(color: Colors.white24, shape: BoxShape.circle),
+                            child: const Icon(Icons.close, color: Colors.white, size: 18),
+                          ),
+                        ),
+                      ]),
+                      const SizedBox(height: 20),
+                      // Avatar
+                      Container(
+                        width: 84, height: 84,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: const Border.fromBorderSide(BorderSide(color: Color(0xFFFFD700), width: 3)),
+                        ),
+                        child: ClipOval(
+                          child: ad.ownerAvatar?.isNotEmpty == true
+                              ? CachedNetworkImage(imageUrl: ad.ownerAvatar!, fit: BoxFit.cover,
+                                  errorWidget: (_, __, ___) => Container(color: const Color(0xFF3a1800),
+                                    child: const Icon(Icons.person, color: Color(0xFFFFD700), size: 36)))
+                              : Container(color: const Color(0xFF3a1800),
+                                  child: const Icon(Icons.person, color: Color(0xFFFFD700), size: 36)),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      Text(ad.ownerName ?? '', maxLines: 1, overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold, decoration: TextDecoration.none)),
+                      if ((ad.ownerFollowers ?? 0) > 0) ...[
+                        const SizedBox(height: 4),
+                        Text('${ad.ownerFollowers} ${ad.ownerType == 'group' ? 'membres' : 'abonnés'}',
+                          style: const TextStyle(color: Color(0xFFFFD700), fontSize: 13, fontWeight: FontWeight.w500, decoration: TextDecoration.none)),
+                      ],
+                      if (caption.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Text(caption, maxLines: 3, overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.45, decoration: TextDecoration.none)),
+                      ],
+                      // Stats pub
+                      if ((ad.views ?? 0) > 0) ...[
+                        const SizedBox(height: 12),
+                        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                          const Icon(Icons.remove_red_eye_outlined, size: 13, color: Colors.white54),
+                          const SizedBox(width: 4),
+                          Text('${ad.views} vues', style: const TextStyle(color: Colors.white54, fontSize: 11, decoration: TextDecoration.none)),
+                          if ((ad.clicks ?? 0) > 0) ...[
+                            const SizedBox(width: 12),
+                            const Icon(Icons.touch_app_outlined, size: 13, color: Colors.white54),
+                            const SizedBox(width: 4),
+                            Text('${ad.clicks} clics', style: const TextStyle(color: Colors.white54, fontSize: 11, decoration: TextDecoration.none)),
+                          ],
+                        ]),
+                      ],
+                      const SizedBox(height: 20),
+                      GestureDetector(
+                        onTap: () {
+                          final ownerId = ad!.ownerId;
+                          final ownerType = ad.ownerType;
+                          if (ownerId == null) return;
+                          _closeMidrollOverlay();
+                          _navigateToAdOwner(context, ownerId, ownerType);
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(colors: [Color(0xFFFFD700), Color(0xFFFF8C00)]),
+                            borderRadius: BorderRadius.circular(30),
+                            boxShadow: [BoxShadow(color: const Color(0xFFFFD700).withOpacity(0.35), blurRadius: 12, offset: const Offset(0, 4))],
+                          ),
+                          child: Text(ctaLabel, textAlign: TextAlign.center,
+                            style: const TextStyle(color: Colors.black, fontSize: 15, fontWeight: FontWeight.bold, decoration: TextDecoration.none)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Positioned.fill(
+      child: Material(
+        color: Colors.black.withOpacity(0.93),
+        child: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: screenH * 0.82, maxWidth: 440),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // ── Header : badge + close ──
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(colors: [Color(0xFFFFD700), Color(0xFFFF8C00)]),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.verified, color: Colors.white, size: 12),
+                              SizedBox(width: 4),
+                              Text('SPONSORISÉ', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, decoration: TextDecoration.none)),
+                            ],
+                          ),
+                        ),
+                        const Spacer(),
+                        GestureDetector(
+                          onTap: _closeMidrollOverlay,
+                          child: Container(
+                            padding: const EdgeInsets.all(7),
+                            decoration: const BoxDecoration(color: Colors.white24, shape: BoxShape.circle),
+                            child: const Icon(Icons.close, color: Colors.white, size: 18),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // ── Carte pub ──
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        color: const Color(0xFF1A1A1A),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Zone média
+                            GestureDetector(
+                              onTap: () {
+                                if (post != null && ad != null) {
+                                  _closeMidrollOverlay();
+                                  if (post.dataType == PostDataType.VIDEO.name || (post.url_media?.contains('.mp4') ?? false)) {
+                                    Navigator.push(context, MaterialPageRoute(builder: (_) => PostDetailsVideoFormatTel(initialPost: post!, isIn: false)));
+                                  } else {
+                                    Navigator.push(context, MaterialPageRoute(builder: (_) => DetailsPost(post: post!)));
+                                  }
+                                }
+                              },
+                              child: Builder(builder: (ctx) {
+                                final isVideo = _midrollVideoInitialized && _midrollVideoController != null;
+                                final videoSize = isVideo ? _midrollVideoController!.value.size : Size.zero;
+                                final videoRatio = (isVideo && videoSize.height > 0) ? videoSize.width / videoSize.height : 16 / 9;
+                                return Container(
+                                  color: Colors.black,
+                                  constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.42),
+                                  child: AspectRatio(
+                                    aspectRatio: isVideo ? videoRatio : 4 / 3,
+                                    child: Stack(
+                                      fit: StackFit.expand,
+                                      children: [
+                                        Container(color: Colors.black),
+                                        if (isVideo)
+                                          FittedBox(
+                                            fit: BoxFit.contain,
+                                            child: SizedBox(
+                                              width: videoSize.width,
+                                              height: videoSize.height,
+                                              child: VideoPlayer(_midrollVideoController!),
+                                            ),
+                                          )
+                                        else if (thumb != null)
+                                          CachedNetworkImage(imageUrl: thumb, fit: BoxFit.contain,
+                                            placeholder: (_, __) => const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFFD700))),
+                                            errorWidget: (_, __, ___) => const Icon(Icons.image, color: Colors.white38, size: 48),
+                                          )
+                                        else
+                                          const Icon(Icons.image, color: Colors.white38, size: 48),
+                                        if (post != null && (post.dataType == PostDataType.VIDEO.name || (post.url_media?.contains('.mp4') ?? false)))
+                                          Positioned(bottom: 8, right: 8,
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                              decoration: BoxDecoration(color: Colors.black.withOpacity(0.7), borderRadius: BorderRadius.circular(6)),
+                                              child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                                                Icon(Icons.videocam, color: Colors.white, size: 12),
+                                                SizedBox(width: 3),
+                                                Text('VIDÉO', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, decoration: TextDecoration.none)),
+                                              ]),
+                                            ),
+                                          ),
+                                        if (_midrollVideoInitialized)
+                                          Positioned(top: 8, left: 8,
+                                            child: Container(
+                                              padding: const EdgeInsets.all(5),
+                                              decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                                              child: const Icon(Icons.volume_off, color: Colors.white, size: 14),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ),
+
+                            // ── Infos pub ──
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (caption.isNotEmpty)
+                                    Text(caption, maxLines: ad?.ownerName?.isNotEmpty == true ? 1 : 3, overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600, height: 1.4, decoration: TextDecoration.none)),
+                                  if (caption.isNotEmpty) const SizedBox(height: 10),
+
+                                  // ── Profil / entité boostée ──
+                                  if (ad != null && ad!.ownerName?.isNotEmpty == true) ...[
+                                    Container(
+                                      margin: const EdgeInsets.only(bottom: 10),
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.07),
+                                        borderRadius: BorderRadius.circular(14),
+                                        border: Border.all(color: Colors.white.withOpacity(0.12)),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          ClipOval(
+                                            child: SizedBox(width: 42, height: 42,
+                                              child: ad!.ownerAvatar?.isNotEmpty == true
+                                                  ? CachedNetworkImage(imageUrl: ad!.ownerAvatar!, fit: BoxFit.cover,
+                                                      placeholder: (_, __) => Container(color: const Color(0xFFFFD700).withOpacity(0.3)),
+                                                      errorWidget: (_, __, ___) => Container(color: const Color(0xFFFFD700).withOpacity(0.3), child: const Icon(Icons.person, color: Color(0xFFFFD700), size: 20)),
+                                                    )
+                                                  : Container(color: const Color(0xFFFFD700).withOpacity(0.3), child: const Icon(Icons.person, color: Color(0xFFFFD700), size: 20)),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(ad!.ownerName!, maxLines: 1, overflow: TextOverflow.ellipsis,
+                                                  style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700, decoration: TextDecoration.none)),
+                                                if (ad!.ownerDescription?.isNotEmpty == true)
+                                                  Text(ad!.ownerDescription!, maxLines: 1, overflow: TextOverflow.ellipsis,
+                                                    style: const TextStyle(color: Colors.white54, fontSize: 11, decoration: TextDecoration.none))
+                                                else if ((ad!.ownerFollowers ?? 0) > 0)
+                                                  Text('${ad!.ownerFollowers} abonnés',
+                                                    style: const TextStyle(color: Colors.white54, fontSize: 11, decoration: TextDecoration.none)),
+                                              ],
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          GestureDetector(
+                                            onTap: () {
+                                              final ownerId = ad!.ownerId;
+                                              final ownerType = ad!.ownerType;
+                                              if (ownerId == null) return;
+                                              _closeMidrollOverlay();
+                                              _navigateToAdOwner(context, ownerId, ownerType);
+                                            },
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                              decoration: BoxDecoration(color: const Color(0xFFFFD700), borderRadius: BorderRadius.circular(20)),
+                                              child: Text(_ownerCtaLabel(ad!.ownerType),
+                                                style: const TextStyle(color: Colors.black, fontSize: 11, fontWeight: FontWeight.w800, decoration: TextDecoration.none)),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    // ── Mini-feed 3 derniers posts ──
+                                    if (ad!.ownerRecentPosts?.isNotEmpty == true) ...[
+                                      Row(
+                                        children: ad!.ownerRecentPosts!.take(3).map((p) {
+                                          final pThumb = p['thumb'] as String? ?? '';
+                                          final isVideo = p['isVideo'] as bool? ?? false;
+                                          return Expanded(
+                                            child: Padding(
+                                              padding: const EdgeInsets.only(right: 6),
+                                              child: ClipRRect(
+                                                borderRadius: BorderRadius.circular(10),
+                                                child: AspectRatio(
+                                                  aspectRatio: 1,
+                                                  child: Stack(
+                                                    fit: StackFit.expand,
+                                                    children: [
+                                                      if (pThumb.isNotEmpty)
+                                                        CachedNetworkImage(imageUrl: pThumb, fit: BoxFit.cover,
+                                                          placeholder: (_, __) => Container(color: Colors.white10),
+                                                          errorWidget: (_, __, ___) => Container(color: Colors.white10),
+                                                        )
+                                                      else
+                                                        Container(color: Colors.white10),
+                                                      Container(color: Colors.black.withOpacity(0.40)),
+                                                      if (isVideo) const Center(child: Icon(Icons.play_circle_outline, color: Colors.white70, size: 22)),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        }).toList(),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      // CTA pleine largeur
+                                      GestureDetector(
+                                        onTap: () {
+                                          final ownerId = ad!.ownerId;
+                                          final ownerType = ad!.ownerType;
+                                          if (ownerId == null) return;
+                                          _closeMidrollOverlay();
+                                          _navigateToAdOwner(context, ownerId, ownerType);
+                                        },
+                                        child: Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.symmetric(vertical: 10),
+                                          decoration: BoxDecoration(color: const Color(0xFFFFD700), borderRadius: BorderRadius.circular(10)),
+                                          child: Text(
+                                            _ownerCtaLabel(ad!.ownerType) == 'Suivre' ? 'Suivre ce créateur'
+                                              : _ownerCtaLabel(ad!.ownerType) == "S'abonner" ? "S'abonner à ce canal"
+                                              : 'Rejoindre ${ad!.ownerName ?? ''}',
+                                            textAlign: TextAlign.center,
+                                            style: const TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.w800, decoration: TextDecoration.none),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 10),
+                                    ],
+                                  ],
+
+                                  // Stats pub (vues + clics)
+                                  if (ad != null && (ad!.views ?? 0) > 0) ...[
+                                    const SizedBox(height: 10),
+                                    Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                                      const Icon(Icons.remove_red_eye_outlined, size: 13, color: Colors.white54),
+                                      const SizedBox(width: 4),
+                                      Text('${ad!.views} vues',
+                                        style: const TextStyle(color: Colors.white54, fontSize: 11, decoration: TextDecoration.none)),
+                                      if ((ad!.clicks ?? 0) > 0) ...[
+                                        const SizedBox(width: 12),
+                                        const Icon(Icons.touch_app_outlined, size: 13, color: Colors.white54),
+                                        const SizedBox(width: 4),
+                                        Text('${ad!.clicks} clics',
+                                          style: const TextStyle(color: Colors.white54, fontSize: 11, decoration: TextDecoration.none)),
+                                      ],
+                                    ]),
+                                  ],
+                                  const SizedBox(height: 12),
+                                  // Bouton CTA pub
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        if (ad != null) {
+                                          _closeMidrollOverlay();
+                                          final url = ad!.actionUrl ?? '';
+                                          if (url.isNotEmpty) {
+                                            launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                                          }
+                                        }
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(vertical: 14),
+                                        decoration: BoxDecoration(
+                                          gradient: const LinearGradient(colors: [Color(0xFFFFD700), Color(0xFFFF8C00)]),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Text(btnText, textAlign: TextAlign.center,
+                                          style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold, decoration: TextDecoration.none)),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _recordPostView() async {
@@ -1565,11 +2160,12 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
 
 
   Widget _buildStatItem(IconData icon, int count, String label) {
+    final colors = AppColors.of(context);
     return Column(children: [
       Icon(icon, color: _afroYellow, size: 24),
       SizedBox(height: 4),
-      Text(_formatCount(count), style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-      Text(label, style: TextStyle(color: Colors.grey, fontSize: 12)),
+      Text(_formatCount(count), style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold)),
+      Text(label, style: TextStyle(color: colors.textSecondary, fontSize: 12)),
     ]);
   }
 
@@ -1764,91 +2360,6 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Vrais commentaires utilisateurs — défilement horizontal automatique
-          if (_preloadedComments.isNotEmpty)
-            SizedBox(
-              height: 30,
-              child: AutoScrollRow(
-                itemCount: _preloadedComments.length,
-                itemBuilder: (_, i) {
-                  final text = _preloadedComments[i].message?.trim() ?? '';
-                  if (text.isEmpty) return const SizedBox.shrink();
-                  return GestureDetector(
-                    onTap: _showCommentsModal,
-                    child: Container(
-                      margin: const EdgeInsets.only(right: 6, bottom: 2),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: colors.surfaceVariant,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: colors.border.withOpacity(0.4)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.record_voice_over_outlined, size: 11, color: colors.textSecondary),
-                          const SizedBox(width: 4),
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 150),
-                            child: Text(
-                              text,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(color: colors.textSecondary, fontSize: 11),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          const SizedBox(height: 4),
-          // Suggestions — statiques, se mélangent toutes les 10 s, cliquables
-          SizedBox(
-            height: 26,
-            child: _isSuggestionsLoading
-                ? Row(children: List.generate(3, (_) => Container(
-                    margin: const EdgeInsets.only(right: 6), width: 70,
-                    decoration: BoxDecoration(color: colors.shimmerBase, borderRadius: BorderRadius.circular(13)))))
-                : ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _previewSuggestions.length + 1,
-                    itemBuilder: (_, i) {
-                      if (i == 0) {
-                        return Container(
-                          margin: const EdgeInsets.only(right: 6),
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: _suggestionsFromAi ? const Color(0xFF6C3EDB).withOpacity(0.12) : colors.surfaceVariant,
-                            borderRadius: BorderRadius.circular(13),
-                            border: Border.all(color: _suggestionsFromAi ? const Color(0xFF6C3EDB).withOpacity(0.35) : colors.border.withOpacity(0.4)),
-                          ),
-                          child: Row(mainAxisSize: MainAxisSize.min, children: [
-                            Text(_suggestionsFromAi ? '✨' : '💡', style: const TextStyle(fontSize: 10)),
-                            const SizedBox(width: 3),
-                            Text(_suggestionsFromAi ? 'IA' : 'local', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: _suggestionsFromAi ? const Color(0xFF6C3EDB) : colors.textSecondary)),
-                          ]),
-                        );
-                      }
-                      final text = _previewSuggestions[i - 1];
-                      return GestureDetector(
-                        onTap: () => _sendQuickComment(text),
-                        child: Container(
-                          margin: const EdgeInsets.only(right: 6),
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          decoration: BoxDecoration(
-                            color: colors.surfaceVariant,
-                            borderRadius: BorderRadius.circular(13),
-                            border: Border.all(color: colors.border.withOpacity(0.6)),
-                          ),
-                          child: Center(child: Text(text, style: TextStyle(fontSize: 11, color: colors.textSecondary))),
-                        ),
-                      );
-                    },
-                  ),
-          ),
           const SizedBox(height: 5),
           Container(
             height: 34,
@@ -1907,8 +2418,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
                   child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFFD600)),
                 ),
                 const SizedBox(height: 4),
-                Text(_formatCount(_currentPost.loves ?? 0), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                const Text('J\'aime', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                Text(_formatCount(_currentPost.loves ?? 0), style: TextStyle(color: AppColors.of(context).textPrimary, fontWeight: FontWeight.bold)),
+                Text('J\'aime', style: TextStyle(color: AppColors.of(context).textSecondary, fontSize: 12)),
               ])
             : _buildStatItem(
                 isLiked ? Icons.favorite : Icons.favorite_border,
@@ -2296,9 +2807,6 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
                   maxDisplayItems: 10,
                 ),
                 _buildChallengeSection(),
-                Divider(color: Colors.grey[800]),
-                _buildAdBanner(key: 'ad_details_post'),
-
                 _buildSuggestedVideos(),
                 SizedBox(height: 20),
               ])),
@@ -2306,6 +2814,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
           ),
           ),  // CenteredContent
           if (_showRewardedAd) RewardedAdWidget(key: _rewardedAdKey, onUserEarnedReward: (amount, name)  => _onSupportAdRewarded(), onAdDismissed: () => setState(() { _showRewardedAd = false; _isSupporting = false; }), child: SizedBox.shrink()),
+          if (_showMidrollAd && !_isUserPremium()) _buildMidrollCard(),
         ],
       ),
     );

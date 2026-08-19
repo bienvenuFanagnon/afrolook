@@ -76,7 +76,10 @@ class _AdvertisementCarouselWidgetState extends State<AdvertisementCarouselWidge
     final colors = AppColors.of(context);
     return Consumer<UserAuthProvider>(
       builder: (context, authProvider, child) {
-        final List<Map<String, dynamic>> ads = authProvider.advertisements;
+        // Filtrer les boosts entité (pas de post) — ce carousel ne gère que les pubs post
+        final List<Map<String, dynamic>> ads = authProvider.advertisements
+            .where((a) => a['isEntityBoost'] != true && a['post'] != null)
+            .toList();
 
         // État de chargement : si les pubs ne sont pas encore chargées
         if (ads.isEmpty) {

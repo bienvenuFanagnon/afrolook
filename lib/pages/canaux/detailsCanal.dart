@@ -33,6 +33,7 @@ import '../paiement/newDepot.dart';
 import '../userPosts/postWidgets/postWidgetPage.dart';
 
 import 'canal_manage_admins.dart';
+import '../user/userPubs/user_profile_boost_page.dart';
 
 class CanalDetails extends StatefulWidget {
   final Canal canal;
@@ -1018,6 +1019,34 @@ class _CanalDetailsState extends State<CanalDetails> {
                       Icon(Icons.add, size: 18),
                       SizedBox(width: 6),
                       Text('POSTER', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(height: 8),
+
+              // Bouton BOOSTER CE CANAL
+              Container(
+                width: double.infinity,
+                height: 45,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => UserProfileBoostPage(canal: widget.canal)),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFFD700),
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.rocket_launch_outlined, size: 18),
+                      SizedBox(width: 6),
+                      Text('BOOSTER CE CANAL', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),

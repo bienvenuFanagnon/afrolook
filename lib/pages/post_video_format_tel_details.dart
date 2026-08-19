@@ -72,6 +72,7 @@ import 'UserServices/deviceService.dart';
 import 'admin/AfrolookPub/ad_post_page_video_widget.dart';
 
 import 'canaux/detailsCanal.dart';
+import 'user/otherUser/otherUser.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -192,6 +193,10 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
   Timer? _midrollTimer;
   int _videoPlayCount = 0;
   bool _midrollShownForCurrentVideo = false;
+  Map<String, dynamic>? _midrollAdData;
+  VideoPlayerController? _midrollVideoController;
+  bool _midrollVideoInitialized = false;
+  int _midrollCountdown = 5;
   VoidCallback? _videoPositionListener;
 
   // bool get _isLookChallenge => widget.initialPost!.type == 'CHALLENGEPARTICIPATION';
@@ -217,6 +222,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
 
   // Nouveau système de like + commentaire rapide
   bool _isLiking = false;
+  // Posts dont le like Firestore est encore en vol (optimistic update en cours)
+  final Set<String> _pendingLikePostIds = {};
   // État local du like par post — résistant aux rebuilds et replacements de _videoPosts par les snapshots
   final Map<String, bool> _likedPosts = {};
   final Map<String, int> _lovesCount = {};
@@ -506,6 +513,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
     _suggestionModalTimer?.cancel();
     _scrollHintTimer?.cancel();
     _midrollTimer?.cancel();
+    _midrollVideoController?.dispose();
+    _midrollVideoController = null;
     _removeMidrollListener();
     _pageController.dispose();
     _disposeCurrentVideo();
@@ -574,9 +583,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
       if (!value.isPlaying) return;
       final duration = value.duration;
       final position = value.position;
-      if (duration.inSeconds < 15) return;
+      if (duration.inSeconds < 20) return;
       final remaining = duration - position;
-      if (remaining.inSeconds <= 10 && remaining.inSeconds > 0 && position.inSeconds > 5) {
+      if (remaining.inSeconds <= 15 && remaining.inSeconds > 0 && position.inSeconds > 5) {
         _midrollShownForCurrentVideo = true;
         _showMidrollOverlay();
       }
@@ -592,21 +601,656 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
     _videoPositionListener = null;
   }
 
-  void _showMidrollOverlay() {
+  Future<void> _showMidrollOverlay() async {
     if (!mounted) return;
     _currentVideoController?.pause();
-    setState(() => _showMidrollAd = true);
+    // Choisir une pub aléatoire
+    final ads = authProvider.advertisements;
+    Map<String, dynamic>? picked;
+    if (ads.isNotEmpty) {
+      final idx = Random().nextInt(ads.length);
+      picked = ads[idx];
+      _midrollAdData = picked;
+    }
+    _midrollCountdown = 5;
+    setState(() { _showMidrollAd = true; _midrollVideoInitialized = false; });
     _midrollTimer?.cancel();
-    _midrollTimer = Timer(const Duration(seconds: 5), () {
-      _closeMidrollOverlay();
+    _midrollTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) { t.cancel(); return; }
+      setState(() {
+        if (_midrollCountdown > 0) _midrollCountdown--;
+      });
+      if (_midrollCountdown <= 0) t.cancel();
     });
+
+    // Init vidéo pub si c'est une vidéo (seulement pour boost post, pas entité)
+    final isEntityBoost = picked?['isEntityBoost'] == true;
+    if (picked != null && !isEntityBoost) {
+      try {
+        final post = Post.fromJson(picked['post'] as Map<String, dynamic>);
+        final isVideo = post.dataType == PostDataType.VIDEO.name ||
+            (post.url_media?.contains('.mp4') ?? false) ||
+            (post.url_media?.contains('.mov') ?? false);
+        if (isVideo && post.url_media?.isNotEmpty == true) {
+          final cdnUrl = authProvider.convertToCdnUrl(post.url_media!, authProvider.appDefaultData);
+          _midrollVideoController?.dispose();
+          final ctrl = VideoPlayerController.networkUrl(Uri.parse(cdnUrl));
+          _midrollVideoController = ctrl;
+          await ctrl.initialize();
+          await ctrl.setVolume(0);
+          ctrl.setLooping(true);
+          ctrl.play();
+          if (mounted) setState(() => _midrollVideoInitialized = true);
+        }
+      } catch (_) {
+        _midrollVideoController?.dispose();
+        _midrollVideoController = null;
+      }
+    }
   }
 
   void _closeMidrollOverlay() {
     if (!mounted) return;
     _midrollTimer?.cancel();
-    setState(() => _showMidrollAd = false);
+    _midrollVideoController?.dispose();
+    _midrollVideoController = null;
+    setState(() {
+      _showMidrollAd = false;
+      _midrollVideoInitialized = false;
+      _midrollCountdown = 5;
+    });
     _currentVideoController?.play();
+  }
+
+  String _ownerCtaLabel(String? type) {
+    switch (type) {
+      case 'canal':     return "S'abonner";
+      case 'group':     return 'Rejoindre';
+      case 'event':     return 'Participer';
+      case 'challenge': return 'Participer';
+      case 'product':   return 'Commander';
+      case 'service':   return 'Contacter';
+      case 'content':   return 'Voir';
+      case 'user':      return 'Suivre';
+      default:          return 'Voir';
+    }
+  }
+
+  Future<void> _navigateToAdOwner(BuildContext ctx, String ownerId, String? ownerType) async {
+    try {
+      final fs = FirebaseFirestore.instance;
+      switch (ownerType) {
+        case 'canal':
+          final doc = await fs.collection('Canaux').doc(ownerId).get();
+          if (!doc.exists || !ctx.mounted) return;
+          final data = Map<String, dynamic>.from(doc.data()!);
+          data['id'] = doc.id;
+          Navigator.push(ctx, MaterialPageRoute(
+            builder: (_) => CanalDetails(canal: Canal.fromJson(data)),
+          ));
+          break;
+        case 'user':
+        default:
+          final doc = await fs.collection('Users').doc(ownerId).get();
+          if (!doc.exists || !ctx.mounted) return;
+          final data = Map<String, dynamic>.from(doc.data()!);
+          data['id'] = doc.id;
+          Navigator.push(ctx, MaterialPageRoute(
+            builder: (_) => OtherUserPage(otherUser: UserData.fromJson(data)),
+          ));
+      }
+    } catch (e) {
+      debugPrint('_navigateToAdOwner error: $e');
+    }
+  }
+
+
+  Widget _buildMidrollCard() {
+    final screenH = MediaQuery.of(context).size.height;
+    final adData = _midrollAdData;
+
+    Post? post;
+    Advertisement? ad;
+    String? thumb;
+    String caption = '';
+    String btnText = 'En savoir plus';
+
+    if (adData != null) {
+      // Parse l'annonce en premier (toujours disponible)
+      try {
+        ad = Advertisement.fromJson(adData['ad'] as Map<String, dynamic>);
+      } catch (_) {}
+
+      final isEntityBoost = adData['isEntityBoost'] == true;
+      if (isEntityBoost && ad != null) {
+        // Boost entité : description de la pub (saisie par l'annonceur)
+        thumb = ad!.ownerAvatar?.isNotEmpty == true ? ad!.ownerAvatar : null;
+        caption = ad!.description ?? '';
+        btnText = _ownerCtaLabel(ad!.ownerType);
+      } else if (!isEntityBoost) {
+        // Boost post standard
+        try {
+          post = Post.fromJson(adData['post'] as Map<String, dynamic>);
+          if (post!.thumbnail?.isNotEmpty == true) thumb = post!.thumbnail;
+          else if (post!.images?.isNotEmpty == true && post!.images!.first.isNotEmpty) thumb = post!.images!.first;
+          // Description de la pub en priorité, fallback sur le post
+          caption = ad?.description?.isNotEmpty == true ? ad!.description! : post!.description ?? '';
+          btnText = ad?.actionButtonText ?? 'En savoir plus';
+        } catch (_) {}
+      }
+    }
+
+    return Positioned.fill(
+      child: Material(
+        color: Colors.black.withOpacity(0.93),
+        child: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: screenH * 0.72, maxWidth: 420),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // ── Barre de header : badge + close ──
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(colors: [Color(0xFFFFD700), Color(0xFFFF8C00)]),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.verified, color: Colors.white, size: 12),
+                              SizedBox(width: 4),
+                              Text('SPONSORISÉ',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      decoration: TextDecoration.none)),
+                            ],
+                          ),
+                        ),
+                        const Spacer(),
+                        GestureDetector(
+                          onTap: _midrollCountdown <= 0 ? _closeMidrollOverlay : null,
+                          child: Container(
+                            width: 36, height: 36,
+                            decoration: BoxDecoration(
+                              color: _midrollCountdown > 0 ? Colors.white12 : Colors.white24,
+                              shape: BoxShape.circle,
+                            ),
+                            alignment: Alignment.center,
+                            child: _midrollCountdown > 0
+                                ? Text(
+                                    '$_midrollCountdown',
+                                    style: const TextStyle(color: Colors.white54, fontSize: 14, fontWeight: FontWeight.bold, decoration: TextDecoration.none),
+                                  )
+                                : const Icon(Icons.close, color: Colors.white, size: 18),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // ── Carte principale ──
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        color: const Color(0xFF1A1A1A),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Zone média : vidéo auto-play muet ou image
+                            GestureDetector(
+                              onTap: () {
+                                if (post != null && ad != null) {
+                                  _closeMidrollOverlay();
+                                  if (post.dataType == PostDataType.VIDEO.name ||
+                                      (post.url_media?.contains('.mp4') ?? false)) {
+                                    Navigator.push(context, MaterialPageRoute(
+                                      builder: (_) => PostDetailsVideoFormatTel(initialPost: post!, isIn: false),
+                                    ));
+                                  } else {
+                                    Navigator.push(context, MaterialPageRoute(
+                                      builder: (_) => DetailsPost(post: post!),
+                                    ));
+                                  }
+                                }
+                              },
+                              child: Builder(builder: (ctx) {
+                                final isVideo = _midrollVideoInitialized && _midrollVideoController != null;
+                                final videoSize = isVideo ? _midrollVideoController!.value.size : Size.zero;
+                                final videoRatio = (isVideo && videoSize.height > 0)
+                                    ? videoSize.width / videoSize.height
+                                    : 16 / 9;
+                                return Container(
+                                  color: Colors.black,
+                                  constraints: BoxConstraints(
+                                    maxHeight: MediaQuery.of(ctx).size.height * 0.42,
+                                  ),
+                                  child: AspectRatio(
+                                    aspectRatio: isVideo ? videoRatio : 4 / 3,
+                                    child: Stack(
+                                      fit: StackFit.expand,
+                                      children: [
+                                        Container(color: Colors.black),
+                                        // Vidéo en contain : pas de déformation ni de crop
+                                        if (isVideo)
+                                          FittedBox(
+                                            fit: BoxFit.contain,
+                                            child: SizedBox(
+                                              width: videoSize.width,
+                                              height: videoSize.height,
+                                              child: VideoPlayer(_midrollVideoController!),
+                                            ),
+                                          )
+                                        else if (thumb != null)
+                                          CachedNetworkImage(
+                                            imageUrl: thumb,
+                                            fit: BoxFit.contain,
+                                            placeholder: (_, __) => const Center(
+                                              child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFFD700)),
+                                            ),
+                                            errorWidget: (_, __, ___) => const Icon(Icons.image, color: Colors.white38, size: 48),
+                                          )
+                                        else
+                                          const Icon(Icons.image, color: Colors.white38, size: 48),
+                                        // Badge VIDÉO
+                                        if (post != null && (post.dataType == PostDataType.VIDEO.name ||
+                                            (post.url_media?.contains('.mp4') ?? false)))
+                                          Positioned(
+                                            bottom: 8, right: 8,
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                              decoration: BoxDecoration(
+                                                color: Colors.black.withOpacity(0.7),
+                                                borderRadius: BorderRadius.circular(6),
+                                              ),
+                                              child: const Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(Icons.videocam, color: Colors.white, size: 12),
+                                                  SizedBox(width: 3),
+                                                  Text('VIDÉO', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, decoration: TextDecoration.none)),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        // Icône son coupé
+                                        if (_midrollVideoInitialized)
+                                          Positioned(
+                                            top: 8, left: 8,
+                                            child: Container(
+                                              padding: const EdgeInsets.all(5),
+                                              decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                                              child: const Icon(Icons.volume_off, color: Colors.white, size: 14),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ),
+
+                            // ── Infos pub ──
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (caption.isNotEmpty)
+                                    Text(
+                                      caption,
+                                      maxLines: 3,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                        height: 1.4,
+                                        decoration: TextDecoration.none,
+                                      ),
+                                    ),
+                                  if (caption.isNotEmpty) const SizedBox(height: 10),
+
+                                  // ── Profil / entité boostée ──
+                                  if (ad != null && ad!.ownerName?.isNotEmpty == true) ...[
+                                    Container(
+                                      margin: const EdgeInsets.only(bottom: 14),
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.07),
+                                        borderRadius: BorderRadius.circular(14),
+                                        border: Border.all(color: Colors.white.withOpacity(0.12)),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          // Avatar
+                                          ClipOval(
+                                            child: SizedBox(
+                                              width: 42, height: 42,
+                                              child: ad!.ownerAvatar?.isNotEmpty == true
+                                                  ? CachedNetworkImage(
+                                                      imageUrl: ad!.ownerAvatar!,
+                                                      fit: BoxFit.cover,
+                                                      placeholder: (_, __) => Container(color: const Color(0xFFFFD700).withOpacity(0.3)),
+                                                      errorWidget: (_, __, ___) => Container(
+                                                        color: const Color(0xFFFFD700).withOpacity(0.3),
+                                                        child: const Icon(Icons.person, color: Color(0xFFFFD700), size: 20),
+                                                      ),
+                                                    )
+                                                  : Container(
+                                                      color: const Color(0xFFFFD700).withOpacity(0.3),
+                                                      child: const Icon(Icons.person, color: Color(0xFFFFD700), size: 20),
+                                                    ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          // Infos
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  ad!.ownerName!,
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.w700,
+                                                    decoration: TextDecoration.none,
+                                                  ),
+                                                ),
+                                                if (ad!.ownerDescription?.isNotEmpty == true)
+                                                  Text(
+                                                    ad!.ownerDescription!,
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                    style: const TextStyle(
+                                                      color: Colors.white54,
+                                                      fontSize: 11,
+                                                      decoration: TextDecoration.none,
+                                                    ),
+                                                  )
+                                                else if (ad!.ownerFollowers != null && ad!.ownerFollowers! > 0)
+                                                  Text(
+                                                    '${ad!.ownerFollowers} abonnés',
+                                                    style: const TextStyle(
+                                                      color: Colors.white54,
+                                                      fontSize: 11,
+                                                      decoration: TextDecoration.none,
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          // Bouton suivre / rejoindre
+                                          GestureDetector(
+                                            onTap: () {
+                                              final ownerId = ad!.ownerId;
+                                              final ownerType = ad!.ownerType;
+                                              if (ownerId == null) return;
+                                              _closeMidrollOverlay();
+                                              _navigateToAdOwner(context, ownerId, ownerType);
+                                            },
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFFFD700),
+                                                borderRadius: BorderRadius.circular(20),
+                                              ),
+                                              child: Text(
+                                                _ownerCtaLabel(ad!.ownerType),
+                                                style: const TextStyle(
+                                                  color: Colors.black,
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w800,
+                                                  decoration: TextDecoration.none,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    // ── Mini-feed 3 derniers posts ──
+                                    if (ad!.ownerRecentPosts?.isNotEmpty == true)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 10),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: ad!.ownerRecentPosts!.take(3).map((p) {
+                                                final thumb = p['thumb'] as String? ?? '';
+                                                final isVideo = p['isVideo'] as bool? ?? false;
+                                                return Expanded(
+                                                  child: Padding(
+                                                    padding: const EdgeInsets.only(right: 6),
+                                                    child: ClipRRect(
+                                                      borderRadius: BorderRadius.circular(10),
+                                                      child: AspectRatio(
+                                                        aspectRatio: 1,
+                                                        child: Stack(
+                                                          fit: StackFit.expand,
+                                                          children: [
+                                                            if (thumb.isNotEmpty)
+                                                              CachedNetworkImage(
+                                                                imageUrl: thumb,
+                                                                fit: BoxFit.cover,
+                                                                placeholder: (_, __) => Container(color: Colors.white10),
+                                                                errorWidget: (_, __, ___) => Container(color: Colors.white10),
+                                                              )
+                                                            else
+                                                              Container(color: Colors.white10),
+                                                            // Overlay sombre
+                                                            Container(color: Colors.black.withOpacity(0.40)),
+                                                            // Icône vidéo
+                                                            if (isVideo)
+                                                              const Center(
+                                                                child: Icon(Icons.play_circle_outline, color: Colors.white70, size: 22),
+                                                              ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                );
+                                              }).toList(),
+                                            ),
+                                            const SizedBox(height: 12),
+                                            // CTA pleine largeur "Suivre ce créateur"
+                                            GestureDetector(
+                                              onTap: () {
+                                                final ownerId = ad!.ownerId;
+                                                final ownerType = ad!.ownerType;
+                                                if (ownerId == null) return;
+                                                _closeMidrollOverlay();
+                                                _navigateToAdOwner(context, ownerId, ownerType);
+                                              },
+                                              child: Container(
+                                                width: double.infinity,
+                                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFFFFD700),
+                                                  borderRadius: BorderRadius.circular(10),
+                                                ),
+                                                child: Text(
+                                                  _ownerCtaLabel(ad!.ownerType) == 'Suivre'
+                                                      ? 'Suivre ce créateur'
+                                                      : _ownerCtaLabel(ad!.ownerType) == "S'abonner"
+                                                          ? 'S\'abonner à ce canal'
+                                                          : 'Rejoindre ${ad!.ownerName ?? ''}',
+                                                  textAlign: TextAlign.center,
+                                                  style: const TextStyle(
+                                                    color: Colors.black,
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.w800,
+                                                    decoration: TextDecoration.none,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                  ],
+
+                                  // Stats pub (vues + clics)
+                                  if (ad != null && (ad!.views ?? 0) > 0) ...[
+                                    const SizedBox(height: 10),
+                                    Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                                      const Icon(Icons.remove_red_eye_outlined, size: 13, color: Colors.white54),
+                                      const SizedBox(width: 4),
+                                      Text('${ad!.views} vues',
+                                        style: const TextStyle(color: Colors.white54, fontSize: 11, decoration: TextDecoration.none)),
+                                      if ((ad!.clicks ?? 0) > 0) ...[
+                                        const SizedBox(width: 12),
+                                        const Icon(Icons.touch_app_outlined, size: 13, color: Colors.white54),
+                                        const SizedBox(width: 4),
+                                        Text('${ad!.clicks} clics',
+                                          style: const TextStyle(color: Colors.white54, fontSize: 11, decoration: TextDecoration.none)),
+                                      ],
+                                    ]),
+                                  ],
+                                  const SizedBox(height: 12),
+
+                                  // Bouton CTA
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        if (ad == null) return;
+                                        _closeMidrollOverlay();
+                                        if (post != null) {
+                                          if (post!.dataType == PostDataType.VIDEO.name ||
+                                              (post!.url_media?.contains('.mp4') ?? false)) {
+                                            Navigator.push(context, MaterialPageRoute(
+                                              builder: (_) => PostDetailsVideoFormatTel(initialPost: post!, isIn: false),
+                                            ));
+                                          } else {
+                                            Navigator.push(context, MaterialPageRoute(
+                                              builder: (_) => DetailsPost(post: post!),
+                                            ));
+                                          }
+                                        } else if (ad!.ownerId != null) {
+                                          _navigateToAdOwner(context, ad!.ownerId!, ad!.ownerType);
+                                        }
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(vertical: 13),
+                                        decoration: BoxDecoration(
+                                          gradient: const LinearGradient(
+                                            colors: [Color(0xFFFFD700), Color(0xFFFF8C00)],
+                                          ),
+                                          borderRadius: BorderRadius.circular(30),
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            const Icon(Icons.open_in_new, color: Colors.white, size: 16),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              btnText,
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                                decoration: TextDecoration.none,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    // ── Countdown / bouton Fermer ──
+                    if (_midrollCountdown > 0) ...[
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: _midrollCountdown / 5.0,
+                          backgroundColor: Colors.white24,
+                          valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
+                          minHeight: 4,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Fermer disponible dans ${_midrollCountdown}s',
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 11,
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
+                    ] else
+                      GestureDetector(
+                        onTap: _closeMidrollOverlay,
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.white38),
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          child: const Text(
+                            'Fermer',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              decoration: TextDecoration.none,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                    const SizedBox(height: 12),
+
+                    // ── Lien "Ne plus voir" ──
+                    GestureDetector(
+                      onTap: () {
+                        _closeMidrollOverlay();
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => AbonnementScreen(initialTab: 1)));
+                      },
+                      child: const Text(
+                        'Ne plus voir de pubs → Premium',
+                        style: TextStyle(
+                          color: Colors.white38,
+                          fontSize: 11,
+                          decoration: TextDecoration.underline,
+                          decorationColor: Colors.white38,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   // ────────────────────────────────────────────────────────────────────────────
@@ -1064,29 +1708,41 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
 
   Future<void> _loadMoreVideos({bool isInitial = false, int? limit}) async {
     if (_isLoadingMore) return;
-    if (_maxVideosReached) return; // déjà atteint 50 vidéos
 
     setState(() => _isLoadingMore = true);
     try {
-      final newPosts = await _fetchSuggestedVideosBatch(limit: limit ?? _batchSize, excludeIds: _loadedPostIds);
-      if (newPosts.isEmpty) {
-        // Aucune nouvelle vidéo trouvée, on s'arrête
-        _maxVideosReached = true;
-      } else {
+      List<Post> newPosts = await _fetchSuggestedVideosBatch(
+        limit: limit ?? _batchSize,
+        excludeIds: _loadedPostIds,
+      );
+
+      if (newPosts.isEmpty && !isInitial) {
+        // Pool épuisé — recycler en ne gardant que les 5 derniers vus
+        // pour éviter les répétitions immédiates
+        final recent = _videoPosts.length > 5
+            ? _videoPosts.sublist(_videoPosts.length - 5).map((p) => p.id!).toSet()
+            : <String>{};
+        _loadedPostIds
+          ..clear()
+          ..addAll(recent);
+        newPosts = await _fetchSuggestedVideosBatch(
+          limit: limit ?? _batchSize,
+          excludeIds: _loadedPostIds,
+        );
+      }
+
+      if (newPosts.isNotEmpty) {
         for (var post in newPosts) {
-          if (post.id != null && !_loadedPostIds.contains(post.id)) {
+          if (post.id != null) {
             _loadedPostIds.add(post.id!);
             _videoPosts.add(post);
             await _loadPostRelations(post);
             _subscribeToPostUpdates(post);
           }
         }
-        // Vérifier si on a dépassé ou atteint la limite de 50 vidéos
-        if (_videoPosts.length >= _maxVideosLimit) {
-          _maxVideosReached = true;
-        }
         _rebuildFeedItems();
       }
+      // Ne pas bloquer définitivement — prochain scroll réessaiera
     } catch (e) {
       printVm('Erreur chargement vidéos: $e');
     } finally {
@@ -1283,17 +1939,18 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
             _videoPosts[index] = updatedPost;
           }
 
-          // Mettre à jour les Maps seulement si snapshot confirme l'état local
-          // (évite d'écraser un like optimiste avec un snapshot prématuré)
+          // Mise à jour des Maps depuis Firestore
+          // Ignorer seulement si un like est en vol pour ce post (update optimiste)
           final userId = authProvider.loginUserData.id;
           if (userId != null && post.id != null) {
-            final likedLocally = _likedPosts[post.id];
             final likedInSnapshot = updatedPost.users_love_id?.contains(userId) ?? false;
-            if (likedLocally == null || likedLocally == likedInSnapshot) {
+            final hasPending = _pendingLikePostIds.contains(post.id);
+            if (!hasPending) {
+              // Pas d'opération en cours → toujours accepter Firestore
               _likedPosts[post.id!] = likedInSnapshot;
               _lovesCount[post.id!] = updatedPost.loves ?? 0;
             }
-            // Discordance → like optimiste en cours → on garde les Maps telles quelles
+            // Sinon : update optimiste en vol → conserver l'état local
           }
         });
       }
@@ -1623,6 +2280,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
     final alreadyLiked = _likedPosts[post.id] ?? (post.users_love_id?.contains(userId) ?? false);
     final previousCount = _lovesCount[post.id] ?? post.loves ?? 0;
 
+    // Marquer comme "en vol" pour protéger l'update optimiste contre le snapshot Firestore
+    _pendingLikePostIds.add(post.id!);
+
     setState(() {
       _isLiking = true;
       _likedPosts[post.id!] = !alreadyLiked;
@@ -1635,6 +2295,11 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
       }
     });
 
+    void _finalizeLike() {
+      _pendingLikePostIds.remove(post.id);
+      if (mounted) setState(() => _isLiking = false);
+    }
+
     if (alreadyLiked) {
       _firestore.collection('Posts').doc(post.id).update({
         'loves': FieldValue.increment(-1),
@@ -1645,9 +2310,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
           _likedPosts[post.id!] = true;
           _lovesCount[post.id!] = previousCount;
         });
-      }).whenComplete(() {
-        if (mounted) setState(() => _isLiking = false);
-      });
+      }).whenComplete(_finalizeLike);
     } else {
       _processLikeBackground(post, userId, alreadyLiked, previousCount);
     }
@@ -1663,17 +2326,13 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
     ).then((success) {
       if (!mounted) return;
       if (!success) {
-        // Rollback : solde insuffisant → annuler l'état optimiste
-        setState(() {
-          _likedPosts[post.id!] = alreadyLiked;
-          _lovesCount[post.id!] = previousCount;
-        });
+        // Pas de pièces → like quand même enregistré, modal informatif seulement
         _firestore.collection('Posts').doc(post.id).update({
           'loves': FieldValue.increment(1),
           'users_love_id': FieldValue.arrayUnion([userId]),
           'popularity': FieldValue.increment(1),
         });
-        _showInsufficientCoinsForLikeDialog();
+        if (mounted) _showInsufficientCoinsForLikeDialog();
         return;
       }
       if (!alreadyLiked) {
@@ -1682,12 +2341,14 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
         _sendLikeNotification(post);
       }
     }).catchError((e) {
-      // Rollback : erreur réseau ou autre → annuler l'état optimiste
-      if (mounted) setState(() {
-        _likedPosts[post.id!] = alreadyLiked;
-        _lovesCount[post.id!] = previousCount;
-      });
+      // Erreur réseau → enregistrer quand même le like sans les coins
+      _firestore.collection('Posts').doc(post.id).update({
+        'loves': FieldValue.increment(1),
+        'users_love_id': FieldValue.arrayUnion([userId]),
+        'popularity': FieldValue.increment(1),
+      }).catchError((_) {});
     }).whenComplete(() {
+      _pendingLikePostIds.remove(post.id);
       if (mounted) setState(() => _isLiking = false);
     });
   }
@@ -3385,7 +4046,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
     );
   }
 
-  Widget _buildVideoPage(Post post) {
+  Widget _buildVideoPage(Post post, int index) {
     return Stack(
       children: [
         // Vidéo avec son propre détecteur de double tap
@@ -3433,7 +4094,6 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
                 children: [
                   _buildActionButtons(post),
                   _buildQuickCommentOverlay(post),
-                  _buildLiveCommentsOverlay(),
                   _buildUserInfo(post),
                   // Hint de scroll uniquement pour les posts normaux
                   if (post.isAdvertisement != true) _buildScrollHint(),
@@ -3518,7 +4178,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
                 _showOverlay = true; // rétablir les overlays à chaque changement de vidéo
               });
               _itemsSinceLastLoad++;
-              if (_itemsSinceLastLoad >= 3 && !_maxVideosReached && !_isLoadingMore) {
+              if (_itemsSinceLastLoad >= 3 && !_isLoadingMore) {
                 _itemsSinceLastLoad = 0;
                 await _loadMoreVideos();
                 if (!mounted) return;
@@ -3538,7 +4198,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
             itemBuilder: (context, index) {
               final item = _feedItems[index];
               if (item is Post) {
-                return _buildVideoPage(item);
+                return _buildVideoPage(item, index);
               } else if (item is _ShopPromoSentinel) {
                 return ShopPromoVideoItem(articles: _promoArticles);
               } else if (item is Map<String, dynamic>) {
@@ -3557,6 +4217,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
             },
           ),
         ),
+        // Live comments — toujours dans une position fixe du Stack (évite doublon GlobalKey)
+        if (!_isLoadingFeed) _buildLiveCommentsOverlay(),
         // Pas de bannière fixe dans la page portrait — la pub passe en midroll modal
         if (_showRewardedAd)
           RewardedAdWidget(
@@ -3566,79 +4228,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
             child: const SizedBox.shrink(),
           ),
 
-        // Pub midroll — modal à 10s avant la fin, vidéo en pause (gratuit uniquement)
+        // Pub midroll — grand format centré, vidéo en pause (gratuit uniquement)
         if (_showMidrollAd && !_isUserPremium())
-          Positioned.fill(
-            child: Container(
-              color: Colors.black.withOpacity(0.88),
-              child: Stack(
-                children: [
-                  Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text(
-                          'Publicité',
-                          style: TextStyle(
-                            color: Colors.white54,
-                            fontSize: 12,
-                            letterSpacing: 1,
-                            decoration: TextDecoration.none,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        const AfrolookInlineAd(),
-                      ],
-                    ),
-                  ),
-                  // Badge SPONSORISÉ
-                  Positioned(
-                    top: MediaQuery.of(context).padding.top + 8,
-                    left: 16,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFD600),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.verified, color: Colors.black, size: 13),
-                          SizedBox(width: 4),
-                          Text(
-                            'SPONSORISÉ',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              decoration: TextDecoration.none,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  // Bouton fermer
-                  Positioned(
-                    top: MediaQuery.of(context).padding.top + 8,
-                    right: 12,
-                    child: GestureDetector(
-                      onTap: _closeMidrollOverlay,
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: Colors.white24,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.close, color: Colors.white, size: 18),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          _buildMidrollCard(),
       ],
     );
     if (_isWide) {

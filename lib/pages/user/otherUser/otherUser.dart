@@ -17,12 +17,14 @@ import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/pages/user/profile/profileDetail/widget/numbers_widget.dart';
 import 'package:afrotok/theme/app_colors.dart';
 import 'package:afrotok/l10n/app_localizations.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../../providers/userProvider.dart';
 import '../../../services/linkService.dart';
 import '../../home/user_presence_widget.dart';
 import '../../widgetGlobal.dart';
 import '../../../widgets/interests_selector_widget.dart';
+import '../userPubs/user_profile_boost_page.dart';
 
 class OtherUserPage extends StatefulWidget {
   final UserData otherUser;
@@ -386,53 +388,6 @@ class _OtherUserPageState extends State<OtherUserPage> {
     return widget.otherUser.userAbonnesIds?.contains(currentUserId) ?? false;
   }
 
-  Widget _buildFollowButton2() {
-    final isOwnProfile = authProvider.loginUserData.id == widget.otherUser.id;
-
-    if (isOwnProfile) return SizedBox(); // Ne pas afficher pour son propre profil
-
-    return Container(
-      width: double.infinity,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: _isAbonne ? Colors.grey[800] : Colors.green,
-          foregroundColor: Colors.white,
-          padding: EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          side: _isAbonne ? BorderSide(color: Colors.green, width: 1.5) : BorderSide.none,
-        ),
-        onPressed: _abonneTap ? null : _toggleAbonnement,
-        child: _abonneTap
-            ? SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(
-            color: Colors.white,
-            strokeWidth: 2,
-          ),
-        )
-            : Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              _isAbonne ? Icons.person_remove : Icons.person_add,
-              size: 20,
-            ),
-            SizedBox(width: 8),
-            Text(
-              _isAbonne ? 'SE DÉSABONNER' : "S'ABONNER",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
   Widget _buildFollowButton() {
     final isOwnProfile = authProvider.loginUserData.id == widget.otherUser.id;
     if (isOwnProfile) return const SizedBox();
@@ -440,90 +395,75 @@ class _OtherUserPageState extends State<OtherUserPage> {
     final colors = AppColors.of(context);
     final t = AppLocalizations.of(context);
 
+    Widget followBtn;
+    if (_isAbonne) {
+      // Se désabonner — discret, outlined
+      followBtn = OutlinedButton(
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: colors.textSecondary.withValues(alpha: 0.4), width: 1),
+          foregroundColor: colors.textSecondary,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        onPressed: _abonneTap ? null : _toggleAbonnement,
+        child: _abonneTap
+            ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: colors.textSecondary, strokeWidth: 2))
+            : Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Icon(Icons.check_circle_outline, size: 18, color: colors.textSecondary),
+                const SizedBox(width: 6),
+                Text(t.otherUserUnsubscribe,
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: colors.textSecondary)),
+              ]),
+      );
+    } else {
+      // S'abonner — gradient attractif + animation pulse légère
+      final btn = GestureDetector(
+        onTap: _abonneTap ? null : _toggleAbonnement,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFE21221), Color(0xFFFF5E62)],
+              begin: Alignment.centerLeft, end: Alignment.centerRight,
+            ),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [BoxShadow(color: const Color(0xFFE21221).withValues(alpha: 0.35), blurRadius: 12, offset: const Offset(0, 4))],
+          ),
+          child: _abonneTap
+              ? const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)))
+              : Row(mainAxisAlignment: MainAxisAlignment.center, children: const [
+                  Icon(Icons.person_add, size: 20, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text("S'ABONNER", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                ]),
+        ),
+      );
+      followBtn = btn
+          .animate(onPlay: (c) => c.repeat(reverse: true))
+          .scale(begin: const Offset(1.0, 1.0), end: const Offset(1.02, 1.02), duration: 900.ms, curve: Curves.easeInOut);
+    }
+
     return Row(
       children: [
-        Expanded(
-          flex: isAdmin ? 3 : 4,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _isAbonne ? colors.surfaceVariant : colors.primary,
-              foregroundColor: colors.onPrimary,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              side: _isAbonne
-                  ? BorderSide(color: colors.primary, width: 1.5)
-                  : BorderSide.none,
-            ),
-            onPressed: _abonneTap ? null : _toggleAbonnement,
-            child: _abonneTap
-                ? SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                        color: colors.onPrimary, strokeWidth: 2),
-                  )
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(_isAbonne ? Icons.person_remove : Icons.person_add,
-                          size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        _isAbonne ? t.otherUserUnsubscribe : t.otherUserSubscribe,
-                        style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-          ),
-        ),
-
-        // Bouton admin — email de rappel
+        Expanded(flex: isAdmin ? 3 : 1, child: followBtn),
         if (isAdmin) ...[
           const SizedBox(width: 8),
           Container(
             decoration: BoxDecoration(
-              color: colors.warning.withOpacity(0.2),
+              color: colors.warning.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: colors.warning, width: 1),
             ),
             child: IconButton(
               icon: _isSendingReminder
-                  ? SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                          color: colors.warning, strokeWidth: 2),
-                    )
+                  ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: colors.warning, strokeWidth: 2))
                   : Icon(Icons.email, color: colors.warning, size: 24),
               onPressed: _isSendingReminder ? null : _showConfirmReminderDialog,
               tooltip: t.otherUserSendReminder,
             ),
           ),
         ],
-
-        const SizedBox(width: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: colors.primary.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: colors.primary, width: 1),
-          ),
-          child: IconButton(
-            icon: _isSharing
-                ? SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                        color: colors.primary, strokeWidth: 2),
-                  )
-                : Icon(Icons.share, color: colors.primary, size: 24),
-            onPressed: _isSharing ? null : _shareProfile,
-            tooltip: t.otherUserShareProfile,
-          ),
-        ),
       ],
     );
   }
@@ -1177,6 +1117,34 @@ class _OtherUserPageState extends State<OtherUserPage> {
                         ),
                       ],
                     ),
+                    if (authProvider.loginUserData.id == widget.otherUser.id) ...[
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const UserProfileBoostPage(),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.rocket_launch_outlined, color: Colors.black),
+                          label: const Text(
+                            'Booster mon profil',
+                            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFFD700),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 16),
                     _buildReferralCodeCompact(),
                     const SizedBox(height: 16),

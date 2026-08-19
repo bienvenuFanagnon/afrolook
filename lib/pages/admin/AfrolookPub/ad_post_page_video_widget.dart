@@ -127,7 +127,7 @@ class _AdPostWidgetState extends State<AdPostWidget> {
       final viewIncr = Random().nextInt(3) + 1;
       await adRef.update({
         'views': FieldValue.increment(viewIncr),
-        'dailyStats.$today': FieldValue.increment(viewIncr),
+        'dailyStats.$today.views': FieldValue.increment(viewIncr),
         'updatedAt': DateTime.now().microsecondsSinceEpoch,
       });
 
@@ -413,42 +413,52 @@ class _AdPostWidgetState extends State<AdPostWidget> {
   Widget _buildActionsOverlay() {
     final commentCount = post.comments ?? 0;
     return Positioned(
-      right: 12,
-      bottom: 160,
+      left: 16,
+      right: 16,
+      bottom: 100,
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          GestureDetector(
-            onTap: _handleLike,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(_isLiked ? Icons.favorite : Icons.favorite_border,
-                    color: _isLiked ? Colors.red : Colors.white, size: 30),
-                const SizedBox(height: 3),
-                Text(_formatCount(_likesCount),
-                    style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          Column(
+          // Stats sur une seule ligne
+          Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.chat_bubble_outline, color: Colors.white, size: 28),
-              const SizedBox(height: 3),
-              Text(_formatCount(commentCount),
-                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.remove_red_eye, color: Colors.white70, size: 24),
-              const SizedBox(height: 3),
-              Text(_formatCount(ad.views ?? 0),
-                  style: const TextStyle(color: Colors.white70, fontSize: 11)),
+              GestureDetector(
+                onTap: _handleLike,
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(_isLiked ? Icons.favorite : Icons.favorite_border,
+                      color: _isLiked ? Colors.red : Colors.white, size: 20),
+                  const SizedBox(width: 4),
+                  Text(_formatCount(_likesCount),
+                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600,
+                          shadows: [Shadow(color: Colors.black54, blurRadius: 4)])),
+                ]),
+              ),
+              const SizedBox(width: 16),
+              Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.chat_bubble_outline, color: Colors.white, size: 18),
+                const SizedBox(width: 4),
+                Text(_formatCount(commentCount),
+                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600,
+                        shadows: [Shadow(color: Colors.black54, blurRadius: 4)])),
+              ]),
+              const SizedBox(width: 16),
+              Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.remove_red_eye, color: Colors.white70, size: 18),
+                const SizedBox(width: 4),
+                Text(_formatCount(ad.views ?? 0),
+                    style: const TextStyle(color: Colors.white70, fontSize: 12,
+                        shadows: [Shadow(color: Colors.black54, blurRadius: 4)])),
+              ]),
+              const SizedBox(width: 16),
+              Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.touch_app_outlined, color: Colors.white60, size: 18),
+                const SizedBox(width: 4),
+                Text(_formatCount(ad.clicks ?? 0),
+                    style: const TextStyle(color: Colors.white60, fontSize: 12,
+                        shadows: [Shadow(color: Colors.black54, blurRadius: 4)])),
+              ]),
             ],
           ),
         ],

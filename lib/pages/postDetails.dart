@@ -66,7 +66,6 @@ import '../services/postService/feed_interaction_service.dart';
 import '../services/streak_service.dart';
 import '../services/postService/post_view_service.dart';
 import '../services/comment_suggestion_service.dart';
-import '../widgets/marquee_comment_chips.dart';
 import '../services/utils/abonnement_utils.dart';
 import '../widgets/user_badge_widget.dart';
 import 'UserServices/deviceService.dart';
@@ -4507,98 +4506,94 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           _buildAudioContent(post, false)
         else if (post.images != null && post.images!.isNotEmpty)
           _buildMediaContent(post),
+
+        // Pub compacte juste sous le média (remplace la 1ère suggestion)
+        AfrolookInlineAd(compact: true, key: const ValueKey('post_details_compact_ad')),
       ],
     );
   }
 
   Widget _buildTextContent(String text, {bool isLocked = false}) {
-    final words = text.split(' ');
-    final isLong = words.length > 20;
-    final displayedText = _isExpanded || !isLong || isLocked
-        ? text
-        : words.take(20).join(' ') + '...';
+    final isLong = text.split(' ').length > 20;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Utilisation de Linkify pour les liens et HashTagText pour les hashtags
-        GestureDetector(
-          onLongPress: () {
-            if (text.isEmpty) return;
-            Clipboard.setData(ClipboardData(text: text));
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Description copiée'),
-                duration: const Duration(seconds: 2),
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-            );
-          },
-          child: Linkify(
-            onOpen: (link) async {
-              if (!await launchUrl(Uri.parse(link.url))) {
-                throw Exception('Could not launch ${link.url}');
-              }
-            },
-            text: displayedText,
-            style: TextStyle(
-              color: isLocked ? _colors.textSecondary : _colors.textPrimary,
-              fontSize: 14,
-              height: 1.4,
-            ),
-            linkStyle: TextStyle(
-              color: _colors.info,
-              fontWeight: FontWeight.w500,
-            ),
-            options: LinkifyOptions(humanize: false),
-          ),
+    void copyToClipboard() {
+      if (text.isEmpty) return;
+      Clipboard.setData(ClipboardData(text: text));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Description copiée'),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
-        if (isLong && !isLocked)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
+      );
+    }
+
+    Widget buildLinkify({int? maxLines, TextOverflow? overflow}) => Linkify(
+      onOpen: (link) async {
+        if (!await launchUrl(Uri.parse(link.url))) {
+          throw Exception('Could not launch ${link.url}');
+        }
+      },
+      text: text,
+      maxLines: maxLines,
+      overflow: overflow,
+      style: TextStyle(
+        color: isLocked ? _colors.textSecondary : _colors.textPrimary,
+        fontSize: 14,
+        height: 1.4,
+      ),
+      linkStyle: TextStyle(color: _colors.info, fontWeight: FontWeight.w500),
+      options: const LinkifyOptions(humanize: false),
+    );
+
+    if (!isLong || isLocked || _isExpanded) {
+      return GestureDetector(
+        onLongPress: copyToClipboard,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            buildLinkify(),
+            if (isLong && !isLocked && _isExpanded)
               GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _isExpanded = !_isExpanded;
-                  });
-                },
+                onTap: () => setState(() => _isExpanded = false),
                 child: Padding(
                   padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    _isExpanded ? "Voir moins" : "Voir plus",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: _colors.info,
-                    ),
-                  ),
+                  child: Text('Voir moins',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: _colors.info)),
                 ),
               ),
-              _buildSupportButton(),
-              // buildTotalInteractions(
-              //   totalCount: widget.post.totalInteractions ?? 0,
-              //   color: Colors.blue,
-              //   showLabel: false,
-              // ),
-            ],
-          ),
+          ],
+        ),
+      );
+    }
 
-        if (!isLong)
-          Row(
-            spacing: 5,
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              _buildSupportButton(),
-              // buildTotalInteractions(
-              //   totalCount: widget.post.totalInteractions ?? 0,
-              //   color: Colors.blue,
-              //   showLabel: false,
-              // ),
-            ],
+    // Collapsed: 2 lignes + "Voir plus" en overlay à droite
+    return GestureDetector(
+      onLongPress: copyToClipboard,
+      child: Stack(
+        children: [
+          buildLinkify(maxLines: 2, overflow: TextOverflow.ellipsis),
+          Positioned(
+            bottom: 0, right: 0,
+            child: GestureDetector(
+              onTap: () => setState(() => _isExpanded = true),
+              child: Container(
+                padding: const EdgeInsets.only(left: 20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft, end: Alignment.centerRight,
+                    colors: [_colors.surface.withOpacity(0), _colors.surface],
+                  ),
+                ),
+                child: Text('Voir plus',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+                    color: _colors.info, height: 1.4, decoration: TextDecoration.none)),
+              ),
+            ),
           ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -6143,91 +6138,6 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Vrais commentaires utilisateurs — défilement horizontal automatique
-          if (_preloadedComments.isNotEmpty)
-            SizedBox(
-              height: 30,
-              child: AutoScrollRow(
-                itemCount: _preloadedComments.length,
-                itemBuilder: (_, i) {
-                  final text = _preloadedComments[i].message?.trim() ?? '';
-                  if (text.isEmpty) return const SizedBox.shrink();
-                  return GestureDetector(
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PostComments(post: widget.post))),
-                    child: Container(
-                      margin: const EdgeInsets.only(right: 6, bottom: 2),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: _colors.surfaceVariant,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: _colors.border.withOpacity(0.4)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.record_voice_over_outlined, size: 11, color: _colors.textSecondary),
-                          const SizedBox(width: 4),
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 150),
-                            child: Text(
-                              text,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(color: _colors.textSecondary, fontSize: 11),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          const SizedBox(height: 4),
-          // Suggestions — statiques, se mélangent toutes les 10 s, cliquables
-          SizedBox(
-            height: 26,
-            child: _isSuggestionsLoading
-                ? Row(children: List.generate(3, (_) => Container(
-                    margin: const EdgeInsets.only(right: 6), width: 70,
-                    decoration: BoxDecoration(color: _colors.shimmerBase, borderRadius: BorderRadius.circular(13)))))
-                : ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _previewSuggestions.length + 1,
-                    itemBuilder: (_, i) {
-                      if (i == 0) {
-                        return Container(
-                          margin: const EdgeInsets.only(right: 6),
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: _suggestionsFromAi ? const Color(0xFF6C3EDB).withOpacity(0.12) : _colors.surfaceVariant,
-                            borderRadius: BorderRadius.circular(13),
-                            border: Border.all(color: _suggestionsFromAi ? const Color(0xFF6C3EDB).withOpacity(0.35) : _colors.border.withOpacity(0.4)),
-                          ),
-                          child: Row(mainAxisSize: MainAxisSize.min, children: [
-                            Text(_suggestionsFromAi ? '✨' : '💡', style: const TextStyle(fontSize: 10)),
-                            const SizedBox(width: 3),
-                            Text(_suggestionsFromAi ? 'IA' : 'local', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: _suggestionsFromAi ? const Color(0xFF6C3EDB) : _colors.textSecondary)),
-                          ]),
-                        );
-                      }
-                      final text = _previewSuggestions[i - 1];
-                      return GestureDetector(
-                        onTap: () => _sendQuickComment(text),
-                        child: Container(
-                          margin: const EdgeInsets.only(right: 6),
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          decoration: BoxDecoration(
-                            color: _colors.surfaceVariant,
-                            borderRadius: BorderRadius.circular(13),
-                            border: Border.all(color: _colors.border.withOpacity(0.6)),
-                          ),
-                          child: Center(child: Text(text, style: TextStyle(fontSize: 11, color: _colors.textSecondary))),
-                        ),
-                      );
-                    },
-                  ),
-          ),
           const SizedBox(height: 5),
           Container(
             height: 34,

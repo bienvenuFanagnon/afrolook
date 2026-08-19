@@ -154,9 +154,9 @@ class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWid
           updates['viewersIds'] = FieldValue.arrayUnion([currentUserId]);
         }
         if (currentAd.dailyStats == null) {
-          updates['dailyStats'] = {today: viewIncr};
+          updates['dailyStats'] = {today: {'views': viewIncr}};
         } else {
-          updates['dailyStats.$today'] = FieldValue.increment(viewIncr);
+          updates['dailyStats.$today.views'] = FieldValue.increment(viewIncr);
         }
         transaction.update(adRef, updates);
       });
@@ -256,61 +256,36 @@ class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWid
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Interactions : like + commentaire
+          // Stats pub : vues + clics sur une ligne
           Row(
             children: [
-              GestureDetector(
-                onTap: _handleLike,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      _isLiked ? Icons.favorite : Icons.favorite_border,
-                      color: _isLiked ? Colors.red : _colors.textSecondary,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 3),
-                    Text(
-                      _formatCount(_likesCount),
-                      style: TextStyle(color: _colors.textSecondary, fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 16),
-              GestureDetector(
-                onTap: _openComments,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.chat_bubble_outline, color: _colors.textSecondary, size: 18),
-                    const SizedBox(width: 3),
-                    Text(
-                      _formatCount(widget.post.comments ?? 0),
-                      style: TextStyle(color: _colors.textSecondary, fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-              const Spacer(),
-              Icon(Icons.remove_red_eye, color: _colors.textSecondary, size: 13),
-              const SizedBox(width: 3),
+              Icon(Icons.remove_red_eye_outlined, color: _colors.textSecondary, size: 13),
+              const SizedBox(width: 4),
               Text(
                 '${_formatCount(widget.ad.views ?? 0)} vues',
                 style: TextStyle(color: _colors.textSecondary, fontSize: 11),
               ),
-              if ((widget.ad.views ?? 0) > 0) ...[
-                const SizedBox(width: 8),
-                const Icon(Icons.ads_click, color: _primaryColor, size: 13),
-                const SizedBox(width: 3),
+              if ((widget.ad.clicks ?? 0) > 0) ...[
+                const SizedBox(width: 12),
+                Icon(Icons.touch_app_outlined, color: _colors.textSecondary, size: 13),
+                const SizedBox(width: 4),
                 Text(
-                  '${widget.ad.ctr.toStringAsFixed(1)}%',
+                  '${_formatCount(widget.ad.clicks ?? 0)} clics',
+                  style: TextStyle(color: _colors.textSecondary, fontSize: 11),
+                ),
+              ],
+              if ((widget.ad.views ?? 0) > 0 && (widget.ad.clicks ?? 0) > 0) ...[
+                const SizedBox(width: 12),
+                Icon(Icons.ads_click, color: _primaryColor, size: 13),
+                const SizedBox(width: 4),
+                Text(
+                  'CTR ${widget.ad.ctr.toStringAsFixed(1)}%',
                   style: const TextStyle(color: _primaryColor, fontSize: 11, fontWeight: FontWeight.w500),
                 ),
               ],
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           InkWell(
             onTap: _handleActionButtonClick,
             borderRadius: BorderRadius.circular(10),
@@ -359,6 +334,7 @@ class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWid
                 height: postHeight,
                 width: widget.width,
                 isPreview: widget.isPreview,
+                isAdContext: true,
               ),
               Positioned(
                 top: 8,

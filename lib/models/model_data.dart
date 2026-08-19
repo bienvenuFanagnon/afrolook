@@ -1828,9 +1828,26 @@ class Advertisement {
 
   int? pricePaid; // Prix payé par l'utilisateur (en FCFA)
 
+  // Texte de la publicité saisi par l'annonceur (champ 'description' dans Firestore)
+  String? description;
+
+  // Infos de l'entité boostée (snapshot au moment du boost)
+  // ownerType : 'user' | 'canal' | 'group' | 'event' | 'challenge'
+  //             | 'product' | 'service' | 'content' | 'post'
+  String? ownerType;
+  String? ownerId;
+  String? ownerName;
+  String? ownerAvatar;
+  int? ownerFollowers;
+  String? ownerDescription; // Bio, description courte (≤ 120 chars)
+  // Snapshot des 3 derniers posts du créateur au moment de la soumission
+  // Chaque map contient : { 'thumb': String, 'isVideo': bool, 'postId': String }
+  List<Map<String, dynamic>>? ownerRecentPosts;
+
   Advertisement({
     this.id,
     this.postId,
+    this.description,
     this.actionType,
     this.actionUrl,
     this.actionButtonText,
@@ -1852,13 +1869,20 @@ class Advertisement {
     this.viewersIds,
     this.clickersIds,
     this.pricePaid,
-
+    this.ownerType,
+    this.ownerId,
+    this.ownerName,
+    this.ownerAvatar,
+    this.ownerFollowers,
+    this.ownerDescription,
+    this.ownerRecentPosts,
   });
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'postId': postId,
+      'description': description,
       'actionType': actionType,
       'actionUrl': actionUrl,
       'actionButtonText': actionButtonText,
@@ -1880,7 +1904,13 @@ class Advertisement {
       'viewersIds': viewersIds,
       'clickersIds': clickersIds,
       'pricePaid': pricePaid,
-
+      'ownerType': ownerType,
+      'ownerId': ownerId,
+      'ownerName': ownerName,
+      'ownerAvatar': ownerAvatar,
+      'ownerFollowers': ownerFollowers,
+      'ownerDescription': ownerDescription,
+      'ownerRecentPosts': ownerRecentPosts,
     };
   }
 
@@ -1888,6 +1918,7 @@ class Advertisement {
     return Advertisement(
       id: json['id'],
       postId: json['postId'],
+      description: json['description'] as String?,
       actionType: json['actionType'],
       actionUrl: json['actionUrl'],
       actionButtonText: json['actionButtonText'],
@@ -1907,10 +1938,15 @@ class Advertisement {
       uniqueViews: json['uniqueViews'] ?? 0,
       dailyStats: json['dailyStats'] != null
           ? Map<String, int>.from(
-        (json['dailyStats'] as Map).map(
-              (key, value) => MapEntry(key.toString(), value is int ? value : 0),
-        ),
-      )
+              (json['dailyStats'] as Map).map((key, value) {
+                if (value is int) return MapEntry(key.toString(), value);
+                if (value is Map) {
+                  final v = (value['views'] as num?)?.toInt() ?? 0;
+                  return MapEntry(key.toString(), v);
+                }
+                return MapEntry(key.toString(), 0);
+              }),
+            )
           : {},
       viewersIds: json['viewersIds'] != null
           ? List<String>.from(json['viewersIds'])
@@ -1919,7 +1955,15 @@ class Advertisement {
           ? List<String>.from(json['clickersIds'])
           : [],
       pricePaid: json['pricePaid'],
-
+      ownerType: json['ownerType'],
+      ownerId: json['ownerId'],
+      ownerName: json['ownerName'],
+      ownerAvatar: json['ownerAvatar'],
+      ownerFollowers: (json['ownerFollowers'] as num?)?.toInt(),
+      ownerDescription: json['ownerDescription'],
+      ownerRecentPosts: (json['ownerRecentPosts'] as List<dynamic>?)
+          ?.map((e) => Map<String, dynamic>.from(e as Map))
+          .toList(),
     );
   }
   // Helper pour obtenir le prix selon la durée (en jours)

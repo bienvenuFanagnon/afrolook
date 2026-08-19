@@ -1,4 +1,5 @@
 import 'package:afrotok/utils/responsive_sheet.dart';
+import 'package:afrotok/pages/user/userPubs/user_create_advertisement_page.dart';
 import '../../../widgets/marquee_comment_chips.dart';
 import 'dart:async';
 import 'dart:io';
@@ -88,6 +89,7 @@ class HomePostUsersWidget extends StatefulWidget {
   // Session 13 : pays du filtre actif (HomeConstPost._selectedCountryCode), utilisé pour
   // afficher en priorité ce pays dans le badge pays du post (s'il y figure).
   final String? currentFilterCountry;
+  final bool isAdContext;
 
   HomePostUsersWidget({
     required this.post,
@@ -105,6 +107,7 @@ class HomePostUsersWidget extends StatefulWidget {
     this.onViewed,
     this.index=0,
     this.currentFilterCountry,
+    this.isAdContext = false,
   }) : super(key: key);
 
   @override
@@ -164,6 +167,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   bool _showPreviewCta = false;
   VideoPlayerController? _previewController;
   Timer? _previewTimer;
+  bool _showCanalLockCta = false;
   bool get _shouldShowAd {
     // 1 pub tous les 5 posts
     return (widget.index + 1) % 5 == 0;
@@ -642,11 +646,21 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       await ctrl.play();
       if (!mounted) return;
       setState(() {});
-      _previewTimer = Timer(const Duration(seconds: 5), () {
-        if (!mounted) return;
-        _previewController?.pause();
-        setState(() => _showPreviewCta = true);
-      });
+      final isLocked = _isLockedContent();
+      if (isLocked) {
+        // Contenu verrouillé : 10s de preview puis bloquer
+        _previewTimer = Timer(const Duration(seconds: 10), () {
+          if (!mounted) return;
+          _previewController?.pause();
+          setState(() => _showCanalLockCta = true);
+        });
+      } else {
+        _previewTimer = Timer(const Duration(seconds: 5), () {
+          if (!mounted) return;
+          _previewController?.pause();
+          setState(() => _showPreviewCta = true);
+        });
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() { _isPreviewPlaying = false; _showPreviewCta = false; });
@@ -986,20 +1000,22 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
 
 
-                // Bouton d'abonnement si contenu verrouillé
-                if (isLocked) _buildSubscribeButton(),
+                // Bouton d'abonnement — visible seulement après les 10s de preview
+                if (isLocked && _showCanalLockCta) _buildSubscribeButton(),
 
-                // Actions du post
-                SizedBox(height: 12),
-                _buildPostActions(hasAccess),
-                _buildCommentPreview(hasAccess),
-                PostGiftsList(
-                  postId: widget.post.id!,
-                  compactLevel: CompactLevel.light,
-                  maxDisplayItems: 10,
-                ),
+                // Actions du post (masquées en contexte pub)
+                if (!widget.isAdContext) ...[
+                  SizedBox(height: 12),
+                  _buildPostActions(hasAccess),
+                  _buildCommentPreview(hasAccess),
+                  PostGiftsList(
+                    postId: widget.post.id!,
+                    compactLevel: CompactLevel.light,
+                    maxDisplayItems: 10,
+                  ),
+                ],
                 // 🆕 AFFICHAGE DE LA PUB APRÈS LE POST SI CONDITION REMPLIE
-                if (_shouldShowAd && widget.post.isAdvertisement != true) ...[
+                if (!widget.isAdContext && _shouldShowAd && widget.post.isAdvertisement != true) ...[
                   const SizedBox(height: 12),
                   const AfrolookInlineAd(),
                   const SizedBox(height: 8),
@@ -1301,15 +1317,14 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   if (!isCurrentUser && !isAbonne && postOwner != null)
                     _buildFollowButton(isCanalPost, postOwner!, isAbonne),
                   SizedBox(width: 5),
-                  _buildCountryBadge(widget.post)
-                  // GestureDetector(
-                  //   onTap: () => _showPostMenu(widget.post),
-                  //   child: Icon(
-                  //     Icons.more_horiz,
-                  //     color: _afroTextSecondary,
-                  //     size: 20,
-                  //   ),
-                  // ),
+                  _buildCountryBadge(widget.post),
+                  GestureDetector(
+                    onTap: () => _showPostMenu(widget.post),
+                    child: Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: Icon(Icons.more_horiz, color: colors.textSecondary, size: 22),
+                    ),
+                  ),
                 ],
               ),
               SizedBox(height: 2),
@@ -1610,12 +1625,19 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       );
     }
 
-    // Contenu déverrouillé - afficher normalement
-    final fullText = _translatedDescription ?? text;
-    final words = fullText.split(' ');
+    // Description sur l'image (overlay) — ici on affiche seulement l'event badge
+    // pour les posts avec images. Pour les posts texte, on affiche la description.
+    final hasMedia = (widget.post.images?.isNotEmpty == true);
+
+    if (hasMedia) {
+      return _buildEventBadge(widget.post);
+    }
+
+    // Post texte uniquement — afficher la description normalement
+    final words = text.split(' ');
     final isLong = words.length > 25;
     final displayedText = _isExpanded || !isLong
-        ? fullText
+        ? text
         : words.take(25).join(' ') + '...';
 
     return Column(
@@ -1624,96 +1646,28 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         GestureDetector(
           onTap: () => Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => DetailsPost(post: widget.post),
-            ),
+            MaterialPageRoute(builder: (context) => DetailsPost(post: widget.post)),
           ),
-          onLongPress: () {
-            final desc = fullText;
-            if (desc.isEmpty) return;
-            Clipboard.setData(ClipboardData(text: desc));
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Description copiée'),
-                duration: const Duration(seconds: 2),
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-            );
-          },
           child: HashTagText(
             text: displayedText,
-            decoratedStyle: TextStyle(
-              fontSize: 15,
-              color: colors.info,
-              fontWeight: FontWeight.w400,
-              height: 1.4,
-            ),
-            basicStyle: TextStyle(
-              fontSize: 15,
-              color: colors.textPrimary,
-              fontWeight: FontWeight.w400,
-              height: 1.4,
-            ),
-            onTap: (text) {
-              // Gestion des hashtags
-            },
+            decoratedStyle: TextStyle(fontSize: 15, color: colors.info, fontWeight: FontWeight.w400, height: 1.4),
+            basicStyle: TextStyle(fontSize: 15, color: colors.textPrimary, fontWeight: FontWeight.w400, height: 1.4),
+            onTap: (_) {},
           ),
         ),
-        if (widget.post.id != null)
-          TranslatableDescription(
-            postId: widget.post.id!,
-            text: text,
-            targetLang: Provider.of<LocaleProvider>(context, listen: false).locale.languageCode,
-            onToggle: (translated) => setState(() => _translatedDescription = translated),
-          ),
-        SizedBox(height: 5,),
         if (isLong)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              GestureDetector(
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => DetailsPost(post: widget.post)),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    "Voir plus",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: colors.info,
-                    ),
-                  ),
-                ),
-              ),
-              // _buildSupportButton(true),
-              // SizedBox(width: 3,),
-              //
-              // buildTotalVues(
-              //   totalCount: widget.post.vues ?? 0,
-              //   color: Colors.yellow,
-              //   showLabel: false,
-              // ),
-            ],
+          GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => DetailsPost(post: widget.post)),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text('Voir plus',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: colors.info)),
+            ),
           ),
-        if (!isLong)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              // _buildSupportButton(true),
-              // SizedBox(width: 3,),
-              //
-              // buildTotalVues(
-              //   totalCount: widget.post.vues ?? 0,
-              //   color: Colors.yellow,
-              //   showLabel: false,
-              // ),
-            ],
-          ),
-        _buildEventBadge(widget.post)
+        _buildEventBadge(widget.post),
       ],
     );
   }
@@ -1749,6 +1703,54 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
               child: _buildImageGrid(contentHeight, imageCount),
             ),
           ),
+
+          // Description overlay en bas du media (contenu déverrouillé)
+          if (!isLocked && (widget.post.description ?? '').trim().isNotEmpty)
+            Positioned(
+              bottom: 0, left: 0, right: 0,
+              child: GestureDetector(
+                onTap: () => Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => DetailsPost(post: widget.post))),
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(12, 40, 12, 10),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Colors.transparent, Colors.black.withOpacity(0.78)],
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          widget.post.description!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            height: 1.35,
+                            decoration: TextDecoration.none,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Voir plus',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
 
           // Overlay pour contenu verrouillé
           if (isLocked)
@@ -2110,7 +2112,6 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   : (_videoThumbnailPath != null && File(_videoThumbnailPath!).existsSync())
                       ? GestureDetector(
                           onTap: () {
-                            if (isLocked) return;
                             if (widget.post.dataType == PostDataType.VIDEO.name) {
                               _startVideoPreview();
                             } else {
@@ -2120,7 +2121,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                             }
                           },
                           child: Opacity(
-                            opacity: isLocked ? 0.6 : 1.0,
+                            opacity: 1.0,
                             child: Image.file(
                               File(_videoThumbnailPath!),
                               fit: BoxFit.cover,
@@ -2132,31 +2133,62 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                       : _buildFallbackThumbnail(),
         ),
 
-        // Overlay verrouillage
-        if (isLocked)
+        // Overlay verrou canal — s'affiche après 10s de lecture
+        if (_showCanalLockCta)
           Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.4),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.lock, color: colors.accent, size: 50),
-                    const SizedBox(height: 8),
-                    Text('Vidéo verrouillée', style: TextStyle(color: colors.accent, fontSize: 16, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
-                    const Text('Abonnez-vous pour voir cette vidéo', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                  ],
+            child: GestureDetector(
+              onTap: () {
+                if (currentCanal != null) {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => CanalDetails(canal: currentCanal!)));
+                }
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.75),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: colors.accent.withOpacity(0.15),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: colors.accent, width: 2),
+                        ),
+                        child: Icon(Icons.lock_outline, color: colors.accent, size: 28),
+                      ),
+                      const SizedBox(height: 10),
+                      const Text('Contenu réservé aux abonnés',
+                          style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold, decoration: TextDecoration.none)),
+                      const SizedBox(height: 4),
+                      const Text('Rejoignez ce canal pour continuer',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.white60, fontSize: 11, decoration: TextDecoration.none)),
+                      const SizedBox(height: 14),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
+                        decoration: BoxDecoration(color: colors.accent, borderRadius: BorderRadius.circular(20)),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.verified_user, color: Colors.white, size: 14),
+                            SizedBox(width: 6),
+                            Text("S'abonner au canal", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12, decoration: TextDecoration.none)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
 
-        // Overlay play (masqué pendant la preview)
-        if (!isLocked && !_isPreviewPlaying)
+        // Overlay play (masqué pendant la preview et le verrou)
+        if (!_isPreviewPlaying && !_showCanalLockCta)
           Positioned.fill(
             child: Center(
               child: Container(
@@ -2973,6 +3005,20 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (post.user!.id == authProvider.loginUserData.id &&
+                post.isAdvertisement != true)
+              _buildMenuOption(
+                Icons.rocket_launch_outlined,
+                "Booster ce post",
+                const Color(0xFFFFD700),
+                () {
+                  Navigator.pop(context);
+                  Navigator.push(context, MaterialPageRoute(
+                    builder: (_) => UserCreateAdvertisementPage(existingPost: post),
+                  ));
+                },
+              ),
+
             if (post.user_id != authProvider.loginUserData.id)
               _buildMenuOption(
                 Icons.flag,

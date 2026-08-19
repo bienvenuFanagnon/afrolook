@@ -127,13 +127,24 @@ class UserAuthProvider extends ChangeNotifier {
       List<Map<String, dynamic>> tempAds = [];
       for (var adDoc in adsSnapshot.docs) {
         final ad = Advertisement.fromJson(adDoc.data());
-        if (ad.postId == null) continue;
+        final adDescription = adDoc.data()['description'] as String? ?? '';
+        if (ad.postId == null) {
+          // Boost entité (profil / canal / groupe) — pas de post associé
+          if (ad.ownerName?.isNotEmpty == true) {
+            final adJson = ad.toJson();
+            adJson['adDescription'] = adDescription;
+            tempAds.add({'ad': adJson, 'isEntityBoost': true});
+          }
+          continue;
+        }
         final postDoc = await _firestore.collection('Posts').doc(ad.postId).get();
         if (postDoc.exists) {
           final post = Post.fromJson(postDoc.data()!);
           post.advertisementId = ad.id;
           post.isAdvertisement = true;
-          tempAds.add({'ad': ad.toJson(), 'post': post.toJson()});
+          final adJson = ad.toJson();
+          adJson['adDescription'] = adDescription;
+          tempAds.add({'ad': adJson, 'post': post.toJson()});
         }
       }
       tempAds.shuffle();
@@ -2348,7 +2359,7 @@ if(actionType == 'comment'){
                       notif.description="@${loginUserData.pseudo!} s'est abonné(e) à votre compte";
                       notif.users_id_view=[];
                       notif.user_id=loginUserData.id;
-                      notif.receiver_id="";
+                      notif.receiver_id=updateUserData.id;
                       notif.post_id="";
                       notif.post_data_type=PostDataType.IMAGE.name!;
                       notif.updatedAt =
@@ -2488,6 +2499,7 @@ if(actionType == 'comment'){
           ..type = NotificationType.ABONNER.name
           ..description = "@${loginUserData.pseudo!} s'est abonné(e) à votre compte"
           ..user_id = currentUserId
+          ..receiver_id = updateUserData.id
           ..updatedAt = DateTime.now().microsecondsSinceEpoch
           ..createdAt = DateTime.now().microsecondsSinceEpoch
           ..status = PostStatus.VALIDE.name;

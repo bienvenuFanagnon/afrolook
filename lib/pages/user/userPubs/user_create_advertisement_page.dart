@@ -78,6 +78,12 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
   bool _isUploading = false;
   double _uploadProgress = 0;
 
+  // F6 — Boost combiné post + profil (+50%)
+  bool _combineWithProfile = false;
+
+  int get _basePrice => _durationPrices[_selectedDurationWeeks] ?? 0;
+  int get _finalPrice => _combineWithProfile ? (_basePrice * 1.5).round() : _basePrice;
+
   // Tarifs chargés depuis AdConfigService (Firestore)
   List<AdDuration> _durations = AdConfigService.defaults;
   Map<int, int> get _durationPrices => AdConfigService.toMap(_durations);
@@ -406,7 +412,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
 
     if (!_selectAllCountries && _selectedCountries.isEmpty) { _showError('Sélectionnez au moins un pays'); return; }
 
-    final int price = _durationPrices[_selectedDurationWeeks!] ?? 0;
+    final int price = _finalPrice;
     final currentBalance = authProvider.loginUserData.votre_solde_depot ?? 0;
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
 
@@ -424,7 +430,10 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
           'votre_solde_depot': FieldValue.increment(-price),
         });
         authProvider.loginUserData.votre_solde_depot = (authProvider.loginUserData.votre_solde_depot ?? 0) - price;
-        await _createTransaction(price, 'Publicité ${_getDurationLabel(_selectedDurationWeeks!)}');
+        final label = _combineWithProfile
+            ? 'Pub combinée (post + profil) ${_getDurationLabel(_selectedDurationWeeks!)}'
+            : 'Publicité ${_getDurationLabel(_selectedDurationWeeks!)}';
+        await _createTransaction(price, label);
       }
 
       final now = DateTime.now().microsecondsSinceEpoch;
@@ -506,7 +515,32 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
         await FirebaseFirestore.instance.collection('Posts').doc(postId).set(post.toJson());
       }
 
-      // 2. Créer l'annonce
+      // 2. Snapshot des 3 derniers posts du créateur (pour affichage dans la pub)
+      final userData = authProvider.loginUserData;
+      List<Map<String, dynamic>> ownerRecentPosts = [];
+      try {
+        final recentPostsSnap = await FirebaseFirestore.instance
+            .collection('Posts')
+            .where('user_id', isEqualTo: userData.id)
+            .where('isAdvertisement', isEqualTo: false)
+            .orderBy('createdAt', descending: true)
+            .limit(4)
+            .get();
+        for (final doc in recentPostsSnap.docs) {
+          if (doc.id == postId) continue; // exclure le post boosté lui-même
+          if (ownerRecentPosts.length >= 3) break;
+          final d = doc.data();
+          final isVideo = (d['dataType'] as String? ?? '').toUpperCase() == 'VIDEO';
+          final thumb = isVideo
+              ? (d['thumbnail'] as String? ?? '')
+              : ((d['images'] as List<dynamic>?)?.isNotEmpty == true
+                  ? (d['images'] as List<dynamic>).first as String
+                  : '');
+          ownerRecentPosts.add({'thumb': thumb, 'isVideo': isVideo, 'postId': doc.id});
+        }
+      } catch (_) {}
+
+      // 3. Créer l'annonce
       final String adId = FirebaseFirestore.instance.collection('Advertisements').doc().id;
       Advertisement ad = Advertisement(
         id: adId,
@@ -521,9 +555,23 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
         isRenewable: true,
         renewalCount: 0,
         pricePaid: price,
-        createdBy: authProvider.loginUserData.id,
+        createdBy: userData.id,
         createdAt: now,
         updatedAt: now,
+        // Champs profil uniquement si le toggle "boost combiné" est activé
+        ownerType: _combineWithProfile ? 'user' : null,
+        ownerId: _combineWithProfile ? userData.id : null,
+        ownerName: _combineWithProfile
+            ? ('${userData.prenom ?? ''} ${userData.nom ?? ''}'.trim().isNotEmpty
+                ? '${userData.prenom ?? ''} ${userData.nom ?? ''}'.trim()
+                : (userData.pseudo ?? ''))
+            : null,
+        ownerAvatar: _combineWithProfile ? userData.imageUrl : null,
+        ownerFollowers: _combineWithProfile ? userData.abonnes : null,
+        ownerDescription: _combineWithProfile && userData.apropos?.isNotEmpty == true
+            ? userData.apropos!.substring(0, userData.apropos!.length.clamp(0, 120))
+            : null,
+        ownerRecentPosts: _combineWithProfile && ownerRecentPosts.isNotEmpty ? ownerRecentPosts : null,
       );
       await FirebaseFirestore.instance.collection('Advertisements').doc(adId).set(ad.toJson());
       await FirebaseFirestore.instance.collection('Posts').doc(postId).update({'advertisementId': adId});
@@ -698,6 +746,9 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
                   _buildMediaCard(),
                   SizedBox(height: 16),
                 ],
+                // Toggle boost combiné (post + profil)
+                _buildCombineToggleCard(),
+                SizedBox(height: 16),
                 _buildSubmitButton(),
                 SizedBox(height: 20),
               ],
@@ -1055,15 +1106,152 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
     );
   }
 
+  Widget _buildCombineToggleCard() {
+    final userData = authProvider.loginUserData;
+    final hasCanal = userData.hasEntreprise == true; // réutilise le flag existant
+    final entityLabel = hasCanal ? 'votre canal' : 'votre profil';
+    final bonusPrice = _basePrice > 0 ? (_basePrice * 0.5).round() : 0;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 0),
+      decoration: BoxDecoration(
+        color: _c.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: _combineWithProfile ? _secondaryColor.withOpacity(0.6) : _c.border,
+          width: _combineWithProfile ? 1.5 : 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          // En-tête toggle
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: _combineWithProfile ? _secondaryColor.withOpacity(0.15) : _c.surfaceVariant,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(Icons.person_add_alt_1_outlined,
+                    color: _combineWithProfile ? _secondaryColor : _c.textSecondary, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Booster aussi $entityLabel',
+                        style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700, fontSize: 14)),
+                      Text(
+                        _combineWithProfile
+                          ? '+ $_bonusLabel FCFA (+50%) inclus'
+                          : 'Ajouter $entityLabel à cette pub',
+                        style: TextStyle(
+                          color: _combineWithProfile ? _secondaryColor : _c.textSecondary,
+                          fontSize: 12,
+                          fontWeight: _combineWithProfile ? FontWeight.w600 : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Switch(
+                  value: _combineWithProfile,
+                  onChanged: _basePrice > 0 ? (v) => setState(() => _combineWithProfile = v) : null,
+                  activeColor: _secondaryColor,
+                ),
+              ],
+            ),
+          ),
+
+          // Détail si activé
+          if (_combineWithProfile) ...[
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildPriceRow('Pub du contenu', _basePrice),
+                  const SizedBox(height: 4),
+                  _buildPriceRow('Boost $entityLabel (+50%)', bonusPrice, accent: true),
+                  const Divider(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Total', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w800, fontSize: 15)),
+                      Text('$_finalPrice FCFA',
+                        style: TextStyle(color: _secondaryColor, fontWeight: FontWeight.w900, fontSize: 16)),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: _secondaryColor.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: _secondaryColor.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.auto_awesome, color: _secondaryColor, size: 16),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Votre $entityLabel sera promu simultanément avec votre contenu. '
+                            'Les utilisateurs pourront vous suivre directement depuis la pub.',
+                            style: TextStyle(color: _c.textSecondary, fontSize: 12, height: 1.4),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPriceRow(String label, int amount, {bool accent = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: TextStyle(color: _c.textSecondary, fontSize: 13)),
+        Text('$amount FCFA',
+          style: TextStyle(
+            color: accent ? _secondaryColor : _c.textPrimary,
+            fontWeight: accent ? FontWeight.w700 : FontWeight.normal,
+            fontSize: 13,
+          )),
+      ],
+    );
+  }
+
+  String get _bonusLabel {
+    if (_basePrice <= 0) return '0';
+    return '${(_basePrice * 0.5).round()}';
+  }
+
   Widget _buildSubmitButton() {
+    final priceLabel = _selectedDurationWeeks != null
+        ? ' · $_finalPrice FCFA'
+        : '';
     return ElevatedButton(
       onPressed: _publishAdvertisement,
       style: ElevatedButton.styleFrom(
         backgroundColor: _primaryColor,
-        minimumSize: Size(double.infinity, 52),
+        minimumSize: const Size(double.infinity, 52),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
       ),
-      child: Text('PUBLIER LA PUBLICITÉ', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+      child: Text('PUBLIER LA PUBLICITÉ$priceLabel',
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
     );
   }
 

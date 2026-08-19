@@ -18,6 +18,7 @@ import '../../../providers/userProvider.dart';
 import '../../../services/utils/abonnement_utils.dart';
 import '../../../services/utils/group_permission_utils.dart';
 import '../../../theme/app_colors.dart';
+import '../../user/userPubs/user_profile_boost_page.dart';
 
 class GroupInfoPage extends StatefulWidget {
   final String groupId;
@@ -819,6 +820,43 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                   }),
                   Divider(color: _colors.border.withOpacity(0.3)),
                   const SizedBox(height: 8),
+                ],
+
+                // Boost groupe — visible pour le propriétaire uniquement
+                if (_myRole == 'owner') ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 46,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.rocket_launch_outlined, size: 18),
+                        label: const Text('BOOSTER CE GROUPE',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => UserProfileBoostPage(
+                                group: {
+                                  'id': widget.groupId,
+                                  'name': _groupData['name'] ?? widget.groupName,
+                                  'image_url': _groupData['image_url'],
+                                  'member_count': _groupData['member_count'],
+                                },
+                              ),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFFD700),
+                          foregroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Divider(color: _colors.border.withOpacity(0.3)),
                 ],
 
                 // Section Gold — visible pour le propriétaire uniquement

@@ -23,6 +23,7 @@ import '../otherUser/otherUser.dart';
 import '../remuneration_home_page.dart';
 import '../userAbonnementPage.dart';
 import '../userPubs/user_my_advertisements_page.dart';
+import '../userPubs/user_profile_boost_page.dart';
 import 'adminprofil.dart';
 class UserProfil extends StatefulWidget {
   const UserProfil({super.key});
@@ -488,6 +489,16 @@ class _UserProfilState extends State<UserProfil> {
                           color: Colors.blue,
                           onTap: () {
                             Navigator.push(context, MaterialPageRoute(builder: (context) => UserMyAdvertisementsPage()));
+                          },
+                        ),
+                        _buildMenuButton(
+                          icon: Icons.rocket_launch_outlined,
+                          label: 'Booster mon profil',
+                          color: const Color(0xFFFFD700),
+                          onTap: () {
+                            Navigator.push(context, MaterialPageRoute(
+                              builder: (_) => const UserProfileBoostPage(),
+                            ));
                           },
                         ),
                         if (authProvider.loginUserData.isCreatorProfileEnabled == true)

@@ -22,6 +22,7 @@ class AdConfigService {
   static const _docId = 'pricing';
 
   static const List<AdDuration> _defaults = [
+    AdDuration(weeks: 1,  price: 1500,  label: '1 semaine'),
     AdDuration(weeks: 2,  price: 2500,  label: '2 semaines'),
     AdDuration(weeks: 4,  price: 4500,  label: '1 mois'),
     AdDuration(weeks: 12, price: 10000, label: '3 mois'),

@@ -11,6 +11,9 @@ import '../../services/utils/abonnement_utils.dart';
 import '../../theme/app_colors.dart';
 
 class AbonnementScreen extends StatefulWidget {
+  final int? initialTab;
+  const AbonnementScreen({Key? key, this.initialTab}) : super(key: key);
+
   @override
   _AbonnementScreenState createState() => _AbonnementScreenState();
 }
@@ -31,32 +34,40 @@ class _AbonnementScreenState extends State<AbonnementScreen>
   String _selectedBalancePremium = 'votre_solde_depot';
   String _selectedBalanceGold = 'votre_solde_depot';
 
-  // Offres Premium
-  final List<Map<String, dynamic>> _offresPremium = [
-    {'mois': 1, 'prixBase': 200.0, 'reduction': 0.0},
-    {'mois': 2, 'prixBase': 400.0, 'reduction': 0.0},
-    {'mois': 3, 'prixBase': 600.0, 'reduction': 100.0},
-    {'mois': 6, 'prixBase': 1200.0, 'reduction': 200.0},
-    {'mois': 12, 'prixBase': 2400.0, 'reduction': 500.0},
-  ];
+  // Offres Premium — prix calculés depuis AfrolookAbonnement.prixPremiumBase
+  List<Map<String, dynamic>> get _offresPremium {
+    final p = AfrolookAbonnement.prixPremiumBase;
+    return [
+      {'mois': 1,  'prixBase': p * 1,  'reduction': AfrolookAbonnement.reductions[1]  ?? 0.0},
+      {'mois': 2,  'prixBase': p * 2,  'reduction': AfrolookAbonnement.reductions[2]  ?? 0.0},
+      {'mois': 3,  'prixBase': p * 3,  'reduction': AfrolookAbonnement.reductions[3]  ?? 0.0},
+      {'mois': 6,  'prixBase': p * 6,  'reduction': AfrolookAbonnement.reductions[6]  ?? 0.0},
+      {'mois': 12, 'prixBase': p * 12, 'reduction': AfrolookAbonnement.reductions[12] ?? 0.0},
+    ];
+  }
 
-  // Offres Gold
-  final List<Map<String, dynamic>> _offresGold = [
-    {'mois': 1, 'prixBase': 500.0, 'reduction': 0.0},
-    {'mois': 2, 'prixBase': 1000.0, 'reduction': 50.0},
-    {'mois': 3, 'prixBase': 1500.0, 'reduction': 150.0},
-    {'mois': 6, 'prixBase': 3000.0, 'reduction': 500.0},
-    {'mois': 12, 'prixBase': 6000.0, 'reduction': 1500.0},
-  ];
+  // Offres Gold — prix calculés depuis AfrolookAbonnement.prixGoldBase
+  List<Map<String, dynamic>> get _offresGold {
+    final g = AfrolookAbonnement.prixGoldBase;
+    return [
+      {'mois': 1,  'prixBase': g * 1,  'reduction': AfrolookAbonnement.reductionsGold[1]  ?? 0.0},
+      {'mois': 2,  'prixBase': g * 2,  'reduction': AfrolookAbonnement.reductionsGold[2]  ?? 0.0},
+      {'mois': 3,  'prixBase': g * 3,  'reduction': AfrolookAbonnement.reductionsGold[3]  ?? 0.0},
+      {'mois': 6,  'prixBase': g * 6,  'reduction': AfrolookAbonnement.reductionsGold[6]  ?? 0.0},
+      {'mois': 12, 'prixBase': g * 12, 'reduction': AfrolookAbonnement.reductionsGold[12] ?? 0.0},
+    ];
+  }
 
   @override
   void initState() {
     super.initState();
-    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    final type = authProvider.loginUserData?.abonnement?.type ?? 'gratuit';
-    int initialTab = 0;
-    if (type == 'premium') initialTab = 1;
-    if (type == 'gold') initialTab = 2;
+    int initialTab = widget.initialTab ?? 0;
+    if (widget.initialTab == null) {
+      final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+      final type = authProvider.loginUserData?.abonnement?.type ?? 'gratuit';
+      if (type == 'premium') initialTab = 1;
+      if (type == 'gold') initialTab = 2;
+    }
     _tabController = TabController(length: 3, vsync: this, initialIndex: initialTab);
   }
 
