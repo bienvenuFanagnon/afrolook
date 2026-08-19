@@ -85,7 +85,7 @@ class _AdPostWidgetState extends State<AdPostWidget> {
     _likesCount = post.loves ?? 0;
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
-      _isLiked = (post.usersLoveId ?? []).contains(uid);
+      _isLiked = (post.users_love_id ?? []).contains(uid);
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _startVisibilityTimer();

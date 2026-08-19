@@ -2088,7 +2088,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
           SizedBox(height: 12),
           Text(
             'Vous pouvez créer des publicités pour vos événements, produits ou services. '
-                'Atteignez plus de 100 000 utilisateurs en Afrique, ciblez des pays spécifiques '
+                'Atteignez plus de 1 000 000 utilisateurs par pays près de chez vous, ciblez des pays spécifiques '
                 'et suivez vos statistiques en temps réel.',
             style: TextStyle(color: _c.textSecondary, fontSize: 13),
           ),

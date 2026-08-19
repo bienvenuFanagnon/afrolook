@@ -55,6 +55,8 @@ class _AudioPostCardState extends State<AudioPostCard> {
 
   File? _cachedAudioFile;
   Timer? _visibilityTimer;
+  Timer? _seeMoreTimer;
+  bool _showSeeMoreCta = false;
 
   late UserAuthProvider _authProvider;
   late SoundProvider _soundProvider;
@@ -177,19 +179,33 @@ class _AudioPostCardState extends State<AudioPostCard> {
     }
 
     if (mounted) setState(() => _isPlaying = true);
+
+    // Démarrer le timer "Voir plus" dès que la lecture a réellement commencé
+    if (widget.post.isAdvertisement != true && !_showSeeMoreCta) {
+      _seeMoreTimer?.cancel();
+      _seeMoreTimer = Timer(const Duration(seconds: 5), () {
+        if (mounted) {
+          _pause();
+          setState(() => _showSeeMoreCta = true);
+        }
+      });
+    }
   }
 
   void _stop() {
+    _seeMoreTimer?.cancel();
     _player?.stop();
     if (mounted) {
       setState(() {
         _isPlaying = false;
         _position = Duration.zero;
+        _showSeeMoreCta = false;
       });
     }
   }
 
   void _pause() {
+    _seeMoreTimer?.cancel();
     if (_isPlaying) {
       _player?.pause();
       if (mounted) setState(() => _isPlaying = false);
@@ -258,6 +274,7 @@ class _AudioPostCardState extends State<AudioPostCard> {
   @override
   void dispose() {
     _visibilityTimer?.cancel();
+    _seeMoreTimer?.cancel();
     _soundProvider.removeListener(_onGlobalSoundChanged);
     MediaPlaybackManager.unregisterMedia(_postId);
     _player?.dispose();
@@ -272,9 +289,8 @@ class _AudioPostCardState extends State<AudioPostCard> {
     final duration = _duration;
     final position = _position;
 
-    final coverImage = widget.post.images != null && widget.post.images!.isNotEmpty
-        ? widget.post.images!.first
-        : null;
+    final _firstImg = widget.post.images?.isNotEmpty == true ? widget.post.images!.first : null;
+    final coverImage = (_firstImg?.isNotEmpty == true) ? _firstImg : null;
 
     return VisibilityDetector(
       key: Key('audio_${widget.post.id}'),
@@ -338,6 +354,52 @@ class _AudioPostCardState extends State<AudioPostCard> {
                           ),
                         ),
                       ],
+                    ),
+                  ),
+                ),
+              ),
+
+            // Overlay "Voir plus" après 5s de lecture réelle
+            if (_showSeeMoreCta && !isLocked)
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => DetailsPost(post: widget.post),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.65),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2196F3),
+                          borderRadius: BorderRadius.circular(32),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.headphones, color: Colors.white, size: 26),
+                            SizedBox(width: 10),
+                            Text(
+                              'Voir plus',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                                decoration: TextDecoration.none,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),

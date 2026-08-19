@@ -20,6 +20,7 @@ import 'package:hashtagable_v3/widgets/hashtag_text.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
+import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 import 'package:flutter_animate/flutter_animate.dart';
@@ -53,7 +54,7 @@ import '../../component/showUserDetails.dart';
 import '../../postComments.dart';
 import '../../postDetails.dart';
 import '../../postDetailsVideo.dart';
-import '../../pub/native_ad_widget.dart';
+import '../../pub/afrolook_inline_ad.dart';
 import '../../pub/rewarded_ad_widget.dart';
 import '../../widgetGlobal.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -164,10 +165,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   VideoPlayerController? _previewController;
   Timer? _previewTimer;
   bool get _shouldShowAd {
-    // Affiche la pub pour les indices 2, 5, 8, 11... (1-indexé)
-    // Exemple : index 0 -> 1er post -> pas de pub
-    //          index 2 -> 3ème post -> pub
-    return (widget.index + 1) % 2 == 0;
+    // 1 pub tous les 5 posts
+    return (widget.index + 1) % 5 == 0;
   }
   // CONFIGURATION - Paiement pour abonnés existants
   final bool _requirePaymentForExistingSubscribers = false;
@@ -1000,14 +999,9 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   maxDisplayItems: 10,
                 ),
                 // 🆕 AFFICHAGE DE LA PUB APRÈS LE POST SI CONDITION REMPLIE
-                if (_shouldShowAd) ...[
+                if (_shouldShowAd && widget.post.isAdvertisement != true) ...[
                   const SizedBox(height: 12),
-                  MrecAdWidget(  // ou AdaptiveAdWidget(useBanner: false)
-                    onAdLoaded: () {
-                      printVm('✅ Pub MREC affichée après le post ${widget.index}');
-                    },
-                    showLessAdsButton: false, // désactive le bouton "moins de pub" si tu veux
-                  ),
+                  const AfrolookInlineAd(),
                   const SizedBox(height: 8),
                 ],
 
@@ -2210,20 +2204,22 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                       builder: (context) => VideoYoutubePageDetails(initialPost: widget.post),
                     )),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                       decoration: BoxDecoration(
                         color: colors.accent,
-                        borderRadius: BorderRadius.circular(30),
+                        borderRadius: BorderRadius.circular(24),
                       ),
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.play_arrow, color: Colors.white, size: 24),
-                          SizedBox(width: 8),
-                          Text('Voir la suite', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                          Icon(Icons.play_circle_fill, color: Colors.white, size: 20),
+                          SizedBox(width: 6),
+                          Text('Voir la suite', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14, decoration: TextDecoration.none)),
                         ],
                       ),
-                    ),
+                    )
+                    .animate(onPlay: (c) => c.repeat(reverse: true))
+                    .scaleXY(begin: 1.0, end: 1.08, duration: 600.ms, curve: Curves.easeInOut),
                   ),
                 ),
               ),

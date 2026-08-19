@@ -22,9 +22,9 @@ import 'package:afrotok/widgets/chat/post_share_sheet.dart';
 import 'package:afrotok/pages/postDetailsVideo.dart';
 import 'package:afrotok/pages/user/userPubs/user_create_advertisement_page.dart';
 
-import 'package:afrotok/pages/pub/banner_ad_widget.dart';
-
-import 'package:afrotok/pages/pub/native_ad_widget.dart';
+import 'package:afrotok/pages/pub/conditional_ad_banner.dart';
+import 'package:afrotok/pages/pub/afrolook_inline_ad.dart';
+import 'package:afrotok/pages/user/userAbonnementPage.dart';
 
 import 'package:afrotok/pages/pub/rewarded_ad_widget.dart';
 
@@ -558,6 +558,10 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
 
   // ── Midroll ad ──────────────────────────────────────────────────────────────
 
+  bool _isUserPremium() =>
+      AbonnementUtils.isPremiumActive(authProvider.loginUserData?.abonnement) ||
+      AbonnementUtils.isAdmin(authProvider.loginUserData?.role);
+
   void _attachMidrollListener() {
     if (_currentVideoController == null) return;
     _removeMidrollListener();
@@ -570,9 +574,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
       if (!value.isPlaying) return;
       final duration = value.duration;
       final position = value.position;
-      if (duration.inSeconds < 8) return;
+      if (duration.inSeconds < 15) return;
       final remaining = duration - position;
-      if (remaining.inSeconds <= 5 && remaining.inSeconds > 0 && position.inSeconds > 3) {
+      if (remaining.inSeconds <= 10 && remaining.inSeconds > 0 && position.inSeconds > 5) {
         _midrollShownForCurrentVideo = true;
         _showMidrollOverlay();
       }
@@ -590,12 +594,19 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
 
   void _showMidrollOverlay() {
     if (!mounted) return;
+    _currentVideoController?.pause();
     setState(() => _showMidrollAd = true);
     _midrollTimer?.cancel();
     _midrollTimer = Timer(const Duration(seconds: 5), () {
-      if (!mounted) return;
-      setState(() => _showMidrollAd = false);
+      _closeMidrollOverlay();
     });
+  }
+
+  void _closeMidrollOverlay() {
+    if (!mounted) return;
+    _midrollTimer?.cancel();
+    setState(() => _showMidrollAd = false);
+    _currentVideoController?.play();
   }
 
   // ────────────────────────────────────────────────────────────────────────────
@@ -719,7 +730,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
 
       setState(() => _isVideoInitialized = true);
       _videoPlayCount++;
-      if ((_videoPlayCount - 1) % 3 == 0) _attachMidrollListener();
+      if ((_videoPlayCount - 1) % 3 == 0 && !_isUserPremium() && post.isAdvertisement != true) _attachMidrollListener();
       await _recordPostView(post);
       _startSuggestionModalTimer();
       return;
@@ -760,7 +771,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
 
       setState(() => _isVideoInitialized = true);
       _videoPlayCount++;
-      if ((_videoPlayCount - 1) % 3 == 0) _attachMidrollListener();
+      if ((_videoPlayCount - 1) % 3 == 0 && !_isUserPremium() && post.isAdvertisement != true) _attachMidrollListener();
       await _recordPostView(post);
       _startSuggestionModalTimer();
     } catch (e) {
@@ -957,7 +968,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
     }
 
     // insertion ads + promo AfroShop (toutes les 7 vidéos)
+    // Les pubs (AdPostWidget) sont masquées pour les utilisateurs Premium/Gold/Admin
     final ads = authProvider.advertisements;
+    final skipAds = _isUserPremium();
     _feedItems.clear();
 
     int adIdx = 0;
@@ -967,8 +980,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
       _feedItems.add(mixedPosts[i]);
       postCount++;
 
-      // Pub toutes les 3 vidéos
-      if (postCount % 3 == 0 &&
+      // Pub toutes les 3 vidéos (gratuit uniquement)
+      if (!skipAds &&
+          postCount % 3 == 0 &&
           i != mixedPosts.length - 1 &&
           adIdx < ads.length) {
         _feedItems.add(ads[adIdx]);
@@ -1003,18 +1017,18 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
   void _rebuildFeedItems2() {
     _feedItems.clear();
     final ads = authProvider.advertisements;
+    final skipAds = _isUserPremium();
     if (_videoPosts.isEmpty) return;
 
     int videoIdx = 0;
     int adIdx = 0;
 
     while (videoIdx < _videoPosts.length) {
-      // Ajouter la vidéo courante
       _feedItems.add(_videoPosts[videoIdx]);
       videoIdx++;
 
-      // Toutes les 3 vidéos (sauf si c'est la dernière), insérer une pub
-      if (videoIdx % 3 == 0 && videoIdx < _videoPosts.length && adIdx < ads.length) {
+      // Toutes les 3 vidéos (gratuit uniquement)
+      if (!skipAds && videoIdx % 3 == 0 && videoIdx < _videoPosts.length && adIdx < ads.length) {
         _feedItems.add(ads[adIdx]);
         adIdx++;
       }
@@ -3543,13 +3557,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
             },
           ),
         ),
-        // Bannière publicitaire en bas
-        Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
-          child: const MrecAdWidget(showLessAdsButton: true),
-        ),
+        // Pas de bannière fixe dans la page portrait — la pub passe en midroll modal
         if (_showRewardedAd)
           RewardedAdWidget(
             key: _rewardedAdKey,
@@ -3558,8 +3566,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
             child: const SizedBox.shrink(),
           ),
 
-        // Pub midroll — overlay 5s avant la fin de la vidéo
-        if (_showMidrollAd)
+        // Pub midroll — modal à 10s avant la fin, vidéo en pause (gratuit uniquement)
+        if (_showMidrollAd && !_isUserPremium())
           Positioned.fill(
             child: Container(
               color: Colors.black.withOpacity(0.88),
@@ -3571,16 +3579,15 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
                       children: [
                         const Text(
                           'Publicité',
-                          style: TextStyle(color: Colors.white54, fontSize: 12, letterSpacing: 1),
+                          style: TextStyle(
+                            color: Colors.white54,
+                            fontSize: 12,
+                            letterSpacing: 1,
+                            decoration: TextDecoration.none,
+                          ),
                         ),
                         const SizedBox(height: 12),
-                        const MrecAdWidget(showLessAdsButton: false),
-                        const SizedBox(height: 16),
-                        Text(
-                          'La vidéo reprend dans quelques secondes…',
-                          style: const TextStyle(color: Colors.white38, fontSize: 11),
-                          textAlign: TextAlign.center,
-                        ),
+                        const AfrolookInlineAd(),
                       ],
                     ),
                   ),
@@ -3599,8 +3606,32 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
                         children: [
                           Icon(Icons.verified, color: Colors.black, size: 13),
                           SizedBox(width: 4),
-                          Text('SPONSORISÉ', style: TextStyle(color: Colors.black, fontSize: 11, fontWeight: FontWeight.bold)),
+                          Text(
+                            'SPONSORISÉ',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              decoration: TextDecoration.none,
+                            ),
+                          ),
                         ],
+                      ),
+                    ),
+                  ),
+                  // Bouton fermer
+                  Positioned(
+                    top: MediaQuery.of(context).padding.top + 8,
+                    right: 12,
+                    child: GestureDetector(
+                      onTap: _closeMidrollOverlay,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white24,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.close, color: Colors.white, size: 18),
                       ),
                     ),
                   ),

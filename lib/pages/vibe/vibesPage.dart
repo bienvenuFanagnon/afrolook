@@ -17,6 +17,7 @@ import 'package:afrotok/pages/postComments.dart';
 import 'package:afrotok/pages/pub/banner_ad_widget.dart';
 
 import 'package:afrotok/pages/pub/native_ad_widget.dart';
+import 'package:afrotok/pages/pub/conditional_ad_banner.dart';
 
 import 'package:afrotok/pages/pub/rewarded_ad_widget.dart';
 
@@ -581,11 +582,13 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
     }
 
     final ads = authProvider.advertisements;
+    final skipAds = AbonnementUtils.isPremiumActive(authProvider.loginUserData?.abonnement) ||
+        AbonnementUtils.isAdmin(authProvider.loginUserData?.role);
     _feedItems.clear();
     int adIdx = 0;
     for (int i = 0; i < mixedPosts.length; i++) {
       _feedItems.add(mixedPosts[i]);
-      if ((i + 1) % 3 == 0 && i != mixedPosts.length - 1 && adIdx < ads.length) {
+      if (!skipAds && (i + 1) % 3 == 0 && i != mixedPosts.length - 1 && adIdx < ads.length) {
         _feedItems.add(ads[adIdx]);
         adIdx++;
       }
@@ -1339,7 +1342,8 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
             },
           ),
         ),
-        Positioned(bottom: 0, left: 0, right: 0, child: const MrecAdWidget(showLessAdsButton: true)),
+        if (!(AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement) || AbonnementUtils.isAdmin(authProvider.loginUserData.role)))
+          const Positioned(bottom: 0, left: 0, right: 0, child: ConditionalAdBanner()),
         if (_showRewardedAd)
           RewardedAdWidget(
             key: _rewardedAdKey,

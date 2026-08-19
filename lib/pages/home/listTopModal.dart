@@ -51,6 +51,8 @@ import '../../theme/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 
 import 'package:flutter_animate/flutter_animate.dart';
+import '../../services/utils/abonnement_utils.dart';
+import '../user/userAbonnementPage.dart';
 
 class TopFiveModal {
   static Future<void> showTopFiveModal(
@@ -681,10 +683,12 @@ class _LiveGridItem extends StatelessWidget {
                   Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
-                      image: DecorationImage(
-                        image: NetworkImage(live.hostImage ?? ''),
-                        fit: BoxFit.cover,
-                      ),
+                      image: (live.hostImage?.isNotEmpty == true)
+                          ? DecorationImage(
+                              image: NetworkImage(live.hostImage!),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
                     ),
                   ),
                   // Badge de rang
@@ -2449,44 +2453,50 @@ class AfrolookInfoModal {
 
   static Future<void> showAfrolookInfoModal(BuildContext context) async {
     final shouldShow = await _shouldShowModal();
+    if (!shouldShow) return;
 
-    if (!shouldShow) {
-      return; // Ne pas afficher si l'intervalle n'est pas écoulé
-    }
+    // Marquer immédiatement pour éviter les doubles affichages
+    await _markModalShown();
 
-    showDialog(
+    final auth = Provider.of<UserAuthProvider>(context, listen: false);
+    final abonnement = auth.loginUserData.abonnement;
+    final role = auth.loginUserData.role;
+    final isSubscribed = AbonnementUtils.isPremiumActive(abonnement) || AbonnementUtils.isAdmin(role);
+
+    // await showDialog pour bloquer les autres modals tant que celui-ci est ouvert
+    await showDialog(
       context: context,
       barrierDismissible: true,
       builder: (BuildContext context) {
         final colors = AppColors.of(context);
         return Dialog(
           backgroundColor: Colors.transparent,
-          insetPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
           child: Container(
             width: double.infinity,
-            constraints: BoxConstraints(maxWidth: 400),
+            constraints: const BoxConstraints(maxWidth: 400),
             decoration: BoxDecoration(
               color: colors.surface,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.red, width: 3),
+              border: Border.all(color: const Color(0xFFE21221), width: 3),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.red.withOpacity(0.4),
+                  color: const Color(0xFFE21221).withOpacity(0.3),
                   blurRadius: 20,
-                  spreadRadius: 5,
+                  spreadRadius: 4,
                 ),
               ],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // En-tête avec icône d'alerte
+                // En-tête
                 Container(
                   width: double.infinity,
-                  padding: EdgeInsets.all(20),
-                  decoration: BoxDecoration(
+                  padding: const EdgeInsets.all(20),
+                  decoration: const BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Colors.red, Colors.redAccent],
+                      colors: [Color(0xFFE21221), Color(0xFFFF5252)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -2498,72 +2508,54 @@ class AfrolookInfoModal {
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      // Icône d'alerte principale
                       Column(
                         children: [
                           Container(
-                            padding: EdgeInsets.all(12),
+                            padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.3),
-                                  blurRadius: 10,
-                                  spreadRadius: 2,
+                                  color: Colors.black.withOpacity(0.2),
+                                  blurRadius: 8,
+                                  spreadRadius: 1,
                                 ),
                               ],
                             ),
-                            child: Icon(
-                              Icons.notifications_active,
-                              color: Colors.red,
-                              size: 40,
-                            ),
+                            child: const Icon(Icons.rocket_launch, color: Color(0xFFE21221), size: 36),
                           ),
-                          SizedBox(height: 12),
-                          Text(
-                            "🚨 NE MANQUEZ PAS ÇA ! 🚨",
+                          const SizedBox(height: 10),
+                          const Text(
+                            "Afrolook — Votre business social",
                             style: TextStyle(
-                              fontSize: 18,
+                              fontSize: 17,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
-                              letterSpacing: 1.2,
+                              letterSpacing: 0.5,
                             ),
                             textAlign: TextAlign.center,
                           ),
-                          SizedBox(height: 4),
-                          Text(
-                            "Votre dose quotidienne d'Afrolook",
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w500,
-                            ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            "Tout ce que vous pouvez faire ici",
+                            style: TextStyle(fontSize: 13, color: Colors.white70),
                             textAlign: TextAlign.center,
                           ),
                         ],
                       ),
-                      // Bouton fermer
                       Positioned(
                         top: 0,
                         right: 0,
                         child: GestureDetector(
-                          onTap: () {
-                            Navigator.of(context).pop();
-                            _markModalShown();
-                            _showChallengeModalAfterInfo(context);
-                          },
+                          onTap: () => Navigator.of(context).pop(),
                           child: Container(
-                            padding: EdgeInsets.all(6),
+                            padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.3),
+                              color: Colors.black.withOpacity(0.25),
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(
-                              Icons.close,
-                              color: Colors.white,
-                              size: 20,
-                            ),
+                            child: const Icon(Icons.close, color: Colors.white, size: 18),
                           ),
                         ),
                       ),
@@ -2571,215 +2563,157 @@ class AfrolookInfoModal {
                   ),
                 ),
 
-                // Contenu informatif
-                Expanded(
+                // Contenu
+                Flexible(
                   child: SingleChildScrollView(
-                    padding: EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(16),
                     child: Column(
                       children: [
                         _buildInfoItem(
                           context: context,
-                          icon: Icons.live_tv,
-                          title: "📡 ACTUALITÉS EN TEMPS RÉEL",
-                          description: "Ne ratez plus jamais les annonces importantes ! Suivez en direct l'évolution de la plateforme, les nouvelles fonctionnalités et les événements exclusifs.",
+                          icon: Icons.trending_up,
+                          title: "📱 RÉSEAU SOCIAL & BUSINESS",
+                          description: "Partagez vos posts, vidéos et lives. Développez votre audience et monétisez votre contenu directement sur Afrolook.",
                           color: Colors.red,
                           emoji: "🔥",
-                        ).animate().fadeIn(duration: 300.ms, delay: 0.ms).slideX(begin: -0.05, end: 0, duration: 300.ms, curve: Curves.easeOut),
-                        SizedBox(height: 16),
+                        ).animate().fadeIn(duration: 250.ms, delay: 0.ms).slideX(begin: -0.04, end: 0, duration: 250.ms),
+                        const SizedBox(height: 12),
 
                         _buildInfoItem(
                           context: context,
-                          icon: Icons.trending_up,
-                          title: "💎 LES COULISSES AFROLOOK",
-                          description: "Découvrez les secrets de notre succès ! Notre vision révolutionnaire, nos projets ambitieux et comment nous redéfinissons le digital africain.",
+                          icon: Icons.store,
+                          title: "🛍️ AFROBUSINESS",
+                          description: "Vendez vos produits et services via AfroShop. Boostez votre visibilité avec des publicités ciblées en Afrique.",
                           color: Colors.orange,
-                          emoji: "🌟",
-                        ).animate().fadeIn(duration: 300.ms, delay: 80.ms).slideX(begin: -0.05, end: 0, duration: 300.ms, curve: Curves.easeOut),
-                        SizedBox(height: 16),
+                          emoji: "💼",
+                        ).animate().fadeIn(duration: 250.ms, delay: 60.ms).slideX(begin: -0.04, end: 0, duration: 250.ms),
+                        const SizedBox(height: 12),
 
                         _buildInfoItem(
                           context: context,
-                          icon: Icons.rocket_launch,
-                          title: "💰 OPPORTUNITÉS EXCLUSIVES",
-                          description: "Soyez parmi les premiers informés ! Investissements stratégiques, partenariats gagnants et opportunités réservées à notre communauté.",
-                          color: Colors.green,
-                          emoji: "💸",
-                        ).animate().fadeIn(duration: 300.ms, delay: 160.ms).slideX(begin: -0.05, end: 0, duration: 300.ms, curve: Curves.easeOut),
-                        SizedBox(height: 16),
+                          icon: Icons.workspace_premium,
+                          title: "⭐ PREMIUM — SANS PUBLICITÉ",
+                          description: "Profitez d'Afrolook sans aucune publicité. Publiez plusieurs photos, rejoignez les challenges librement et accédez aux groupes exclusifs.",
+                          color: const Color(0xFFFFD700),
+                          emoji: "✨",
+                        ).animate().fadeIn(duration: 250.ms, delay: 120.ms).slideX(begin: -0.04, end: 0, duration: 250.ms),
+                        const SizedBox(height: 12),
+
+                        _buildInfoItem(
+                          context: context,
+                          icon: Icons.groups,
+                          title: "👑 GOLD — GROUPES PRIVÉS",
+                          description: "Créez des groupes privés payants, générez des codes d'accès uniques et obtenez une visibilité maximale dans le carousel Afrolook.",
+                          color: const Color(0xFFFF8C00),
+                          emoji: "🏆",
+                        ).animate().fadeIn(duration: 250.ms, delay: 180.ms).slideX(begin: -0.04, end: 0, duration: 250.ms),
+                        const SizedBox(height: 12),
 
                         _buildInfoItem(
                           context: context,
                           icon: Icons.celebration,
-                          title: "🚀 PROJETS SECRETS EN PRÉPARATION",
-                          description: "L'avenir s'écrit maintenant ! Découvrez en avant-première les innovations qui vont bouleverser votre expérience digitale.",
+                          title: "🚀 NOUVEAUTÉS EN CONTINU",
+                          description: "Lives HD, challenges, cadeaux, classements… Afrolook grandit chaque semaine avec vous.",
                           color: Colors.blue,
                           emoji: "🎯",
-                        ).animate().fadeIn(duration: 300.ms, delay: 240.ms).slideX(begin: -0.05, end: 0, duration: 300.ms, curve: Curves.easeOut),
+                        ).animate().fadeIn(duration: 250.ms, delay: 240.ms).slideX(begin: -0.04, end: 0, duration: 250.ms),
                       ],
                     ),
-                  ),
-                ),
-
-                // Section d'appel à l'action urgente
-                Container(
-                  padding: EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
-                    border: Border(
-                      top: BorderSide(color: Colors.red.withOpacity(0.3)),
-                      bottom: BorderSide(color: Colors.red.withOpacity(0.3)),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.warning, color: Colors.red, size: 20),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          "⚠️ Ces informations peuvent expirer bientôt !",
-                          style: TextStyle(
-                            color: Colors.red,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
                   ),
                 ),
 
                 // Boutons d'action
                 Container(
                   width: double.infinity,
-                  padding: EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                   decoration: BoxDecoration(
                     color: colors.surfaceVariant,
-                    borderRadius: BorderRadius.only(
+                    borderRadius: const BorderRadius.only(
                       bottomLeft: Radius.circular(18),
                       bottomRight: Radius.circular(18),
                     ),
                   ),
                   child: Column(
                     children: [
-                      // Message d'incitation
-                      Container(
-                        padding: EdgeInsets.only(bottom: 12),
-                        child: Text(
-                          "🎁 Des surprises attendent les plus curieux !",
-                          style: TextStyle(
-                            color: colors.accent,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            fontStyle: FontStyle.italic,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-
-                      // Bouton principal URGENT
+                      // Bouton découvrir
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
                           onPressed: () {
                             Navigator.of(context).pop();
-                            _markModalShown();
                             _navigateToInfoPage(context);
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
+                            backgroundColor: const Color(0xFFE21221),
                             foregroundColor: Colors.white,
-                            padding: EdgeInsets.symmetric(vertical: 18, horizontal: 20),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15),
-                            ),
-                            elevation: 6,
-                            shadowColor: Colors.red.withOpacity(0.5),
+                            padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            elevation: 4,
                           ),
-                          icon: Icon(Icons.bolt, size: 24),
-                          label: Text(
-                            "🚀 DÉCOUVRIR MAINTENANT !",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
-                            ),
+                          icon: const Icon(Icons.bolt, size: 20),
+                          label: const Text(
+                            "DÉCOUVRIR AFROLOOK",
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),
-                      SizedBox(height: 12),
+                      const SizedBox(height: 10),
 
-                      // Sous-titre du bouton
-                      Text(
-                        "Rejoignez les initiés qui connaissent déjà ces informations exclusives",
-                        style: TextStyle(
-                          color: colors.textSecondary,
-                          fontSize: 12,
-                          fontStyle: FontStyle.italic,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      SizedBox(height: 12),
-
-                      // Bouton secondaire avec message incitatif
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          TextButton(
+                      // Bouton Premium — visible seulement si non abonné
+                      if (!isSubscribed)
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
                             onPressed: () {
                               Navigator.of(context).pop();
-                              _markModalShown();
-                              _showChallengeModalAfterInfo(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => AbonnementScreen()),
+                              );
                             },
-                            style: TextButton.styleFrom(
-                              foregroundColor: colors.textSecondary,
-                              padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 20),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                side: const BorderSide(color: Color(0xFFFFD700), width: 1.5),
+                              ),
+                              elevation: 0,
                             ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.schedule, size: 16),
-                                SizedBox(width: 4),
-                                Text(
-                                  "Plus tard",
-                                  style: TextStyle(fontSize: 13),
-                                ),
-                              ],
+                            icon: const Icon(Icons.workspace_premium, color: Color(0xFFFFD700), size: 18),
+                            label: const Text(
+                              "Ne plus voir de pubs → Premium",
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFFFD700),
+                              ),
                             ),
                           ),
+                        ),
+                      if (!isSubscribed) const SizedBox(height: 8),
 
-                          // Compteur social
-                          Container(
-                            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.green.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.green.withOpacity(0.3)),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.people, size: 12, color: Colors.green),
-                                SizedBox(width: 4),
-                                Text(
-                                  "2.4K ont déjà vu",
-                                  style: TextStyle(
-                                    color: Colors.green,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: TextButton.styleFrom(
+                          foregroundColor: colors.textSecondary,
+                          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+                        ),
+                        child: const Text("Plus tard", style: TextStyle(fontSize: 13)),
                       ),
                     ],
                   ),
                 ),
               ],
             ),
-          ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.05, end: 0, duration: 300.ms, curve: Curves.easeOut),
+          ).animate().fadeIn(duration: 250.ms).slideY(begin: 0.04, end: 0, duration: 250.ms, curve: Curves.easeOut),
         );
       },
     );
+
+    // Après fermeture du dialog, laisser les autres modals s'afficher
+    _showChallengeModalAfterInfo(context);
   }
 
   static Widget _buildInfoItem({

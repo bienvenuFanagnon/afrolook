@@ -2909,7 +2909,11 @@ if(actionType == 'comment'){
 
 
   Future<void> checkAppVersionAndProceed(BuildContext context, Function onSuccess) async {
-    await getAppData().then((appdata) async {
+    // Si appDefaultData est déjà chargé en mémoire, on évite l'appel réseau.
+    if (appDefaultData.id == null) {
+      await getAppData();
+    }
+    await Future.value().then((_) async {
       printVm("code app data *** : ${appDefaultData.app_version_code}");
       if (!appDefaultData.googleVerification!) {
         if (app_version_code == appDefaultData.app_version_code) {

@@ -19,8 +19,10 @@ import 'package:afrotok/pages/post_video_format_tel_details.dart';
 import 'package:afrotok/widgets/chat/post_share_sheet.dart';
 
 import 'package:afrotok/pages/pub/banner_ad_widget.dart';
+import 'package:afrotok/pages/user/userAbonnementPage.dart';
+import 'package:afrotok/services/utils/abonnement_utils.dart';
 
-import 'package:afrotok/pages/pub/native_ad_widget.dart';
+import 'package:afrotok/pages/pub/afrolook_inline_ad.dart';
 
 import 'package:afrotok/pages/pub/rewarded_ad_widget.dart';
 
@@ -680,10 +682,16 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
 
   // ==================== SUGGESTIONS ====================
   List<Post> getFilteredSuggestions() {
-    final seen = <String>{widget.initialPost.id ?? ''};
+    final seenIds = <String>{widget.initialPost.id ?? ''};
+    final seenUserIds = <String>{};
     final result = <Post>[];
     for (final p in postProvider.suggestedPosts) {
-      if (p.id != null && seen.add(p.id!)) result.add(p);
+      if (p.id == null) continue;
+      if (!seenIds.add(p.id!)) continue;
+      // 1 post max par utilisateur
+      final uid = p.user_id ?? '';
+      if (uid.isNotEmpty && !seenUserIds.add(uid)) continue;
+      result.add(p);
     }
     return result;
   }
@@ -1181,62 +1189,11 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
   }
 
   Widget _buildAdBanner({required String key}) {
-    // return SizedBox.shrink();
-
-    return Container(
-      key: ValueKey(key),
-      margin: EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.transparent),
-      ),
-      child: MrecAdWidget(
-        key: ValueKey(key),
-        // templateType: TemplateType.medium, // ou TemplateType.small
-
-        onAdLoaded: () {
-          printVm('✅ Native Ad Afrolook chargée: $key');
-          authProvider.incrementCreatorCoins(postId: widget.initialPost.id!, creatorId: widget.initialPost.user_id!, currentUserId:authProvider.loginUserData.id!);
-
-        },
-      ),
-      // child: BannerAdWidget(
-      //   onAdLoaded: () {
-      //
-      //     printVm('✅ Bannière Afrolook chargée: $key');
-      //     authProvider.incrementCreatorCoins(widget.initialPost.user_id!);
-      //   },
-      // ),
-    );
+    return AfrolookInlineAd(key: ValueKey(key));
   }
+
   Widget _buildAdNative({required String key}) {
-    // return SizedBox.shrink();
-
-    return Container(
-      key: ValueKey(key),
-      margin: EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[300]!),
-      ),
-      child: MrecAdWidget(
-        key: ValueKey(key),
-        // templateType: TemplateType.small, // ou TemplateType.small
-
-        onAdLoaded: () {
-          printVm('✅ Native Ad Afrolook chargée: $key');
-          authProvider.incrementCreatorCoins(postId: widget.initialPost.id!, creatorId: widget.initialPost.user_id!, currentUserId:authProvider.loginUserData.id!);
-
-        },
-      ),
-      // child: BannerAdWidget(
-      //   onAdLoaded: () {
-      //     printVm('✅ Bannière Afrolook chargée: $key');
-      //   },
-      // ),
-    );
+    return AfrolookInlineAd(key: ValueKey(key));
   }
 
   void _sharePost(Post post) async {
@@ -1942,11 +1899,22 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     return Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
       GestureDetector(
         onTap: (hasAccess && !_isLiking) ? _handleLike : null,
-        child: _buildStatItem(
-          isLiked ? Icons.favorite : Icons.favorite_border,
-          _currentPost.loves ?? 0,
-          'J\'aime',
-        ),
+        child: _isLiking
+            ? Column(children: [
+                const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFFD600)),
+                ),
+                const SizedBox(height: 4),
+                Text(_formatCount(_currentPost.loves ?? 0), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                const Text('J\'aime', style: TextStyle(color: Colors.grey, fontSize: 12)),
+              ])
+            : _buildStatItem(
+                isLiked ? Icons.favorite : Icons.favorite_border,
+                _currentPost.loves ?? 0,
+                'J\'aime',
+              ),
       ),
       GestureDetector(
         onTap: hasAccess ? _showCommentsModal : null,

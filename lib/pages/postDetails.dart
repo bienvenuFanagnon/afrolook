@@ -19,7 +19,9 @@ import 'package:afrotok/pages/postDetailsVideo.dart';
 import 'package:afrotok/pages/post_video_format_tel_details.dart';
 import 'package:afrotok/pages/pronostics/pronostic_detail_page.dart';
 import 'package:afrotok/pages/pub/banner_ad_widget.dart';
-import 'package:afrotok/pages/pub/native_ad_widget.dart';
+import 'package:afrotok/pages/pub/afrolook_inline_ad.dart';
+import 'package:afrotok/pages/pub/conditional_ad_banner.dart';
+import 'package:afrotok/pages/user/userAbonnementPage.dart';
 import 'package:afrotok/pages/pub/rewarded_ad_widget.dart';
 
 import 'package:afrotok/pages/userPosts/postWidgets/postMenu.dart';
@@ -195,15 +197,22 @@ class _DetailsPostState extends State<DetailsPost>
 
 
   List<Post> getFilteredSuggestions() {
-    final seen = <String>{widget.post.id ?? ''};
+    final seenIds = <String>{widget.post.id ?? ''};
+    final seenUserIds = <String>{};
     final result = <Post>[];
     for (final p in postProvider.suggestedPosts) {
-      if (p.id != null && seen.add(p.id!)) result.add(p);
+      if (p.id == null) continue;
+      if (!seenIds.add(p.id!)) continue;
+      // 1 post max par utilisateur
+      final uid = p.user_id ?? '';
+      if (uid.isNotEmpty && !seenUserIds.add(uid)) continue;
+      result.add(p);
     }
     return result;
   }
 
   // Widget d'affichage des suggestions — style YouTube
+  // Structure : pub, p0, p1, p2, pub, p3, p4, p5, ...
   Widget _buildSuggestedPosts() {
     final suggestions = getFilteredSuggestions();
     final isLoading = postProvider.isLoadingSuggestions;
@@ -218,6 +227,13 @@ class _DetailsPostState extends State<DetailsPost>
     }
 
     if (suggestions.isEmpty) return const SizedBox.shrink();
+
+    // Construire la liste mixte : pub avant chaque groupe de 3
+    final items = <dynamic>[];
+    for (int i = 0; i < suggestions.length; i++) {
+      if (i % 3 == 0) items.add('ad_$i');
+      items.add(suggestions[i]);
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -236,12 +252,17 @@ class _DetailsPostState extends State<DetailsPost>
         ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          itemCount: suggestions.length + 1,
+          itemCount: items.length,
           itemBuilder: (context, index) {
-            final int postIndex = index > 3 ? index - 1 : index;
-            if (postIndex >= suggestions.length) return const SizedBox.shrink();
-            final post = suggestions[postIndex];
-
+            final item = items[index];
+            if (item is String) {
+              // Bannière pub conditionnelle (masquée pour Premium/Gold/Admin)
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: _buildAdBannerSuggestion(key: 'ad_suggestion_$index'),
+              );
+            }
+            final post = item as Post;
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: _buildYouTubeCard(post),
@@ -252,6 +273,10 @@ class _DetailsPostState extends State<DetailsPost>
         ),
       ],
     );
+  }
+
+  Widget _buildAdBannerSuggestion({required String key}) {
+    return AfrolookInlineAd(key: ValueKey(key));
   }
 
   Widget _buildYouTubeCard(Post post) {
@@ -761,34 +786,7 @@ class _DetailsPostState extends State<DetailsPost>
     return count.toString();
   }
   Widget _buildAdMrec({required String key}) {
-    // return SizedBox.shrink();
-
-    return Container(
-      key: ValueKey(key),
-      margin: EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.transparent),
-      ),
-      child: MrecAdWidget(
-        key: ValueKey(key),
-        // templateType: TemplateType.medium, // ou TemplateType.small
-
-        onAdLoaded: () {
-          authProvider.incrementCreatorCoins(postId: widget.post.id!, creatorId: widget.post.user_id!, currentUserId:authProvider.loginUserData.id!);
-          printVm('✅ Native Ad Afrolook chargée: $key');
-        },
-      ),
-      // child: BannerAdWidget(
-      //   onAdLoaded: () {
-      //
-      //     printVm('✅ Bannière Afrolook chargée: $key');
-
-
-    //   },
-      // ),
-    );
+    return AfrolookInlineAd(key: ValueKey(key));
   }
 
   Future<void> _sendSupportNotification(String creatorId, String supporterId, String postId) async {
@@ -6288,15 +6286,34 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         ),
         GestureDetector(
           onTap: _isLiking ? null : _handleLike,
-          child: _buildStatItem(
-            icon: isIn(post.users_love_id!, authProvider.loginUserData.id!)
-                ? Icons.favorite
-                : Icons.favorite_border,
-            count: post.loves ?? 0,
-            label: 'Likes',
-            isLiked: isIn(post.users_love_id!, authProvider.loginUserData.id!),
-            isLocked: false,
-          ),
+          child: _isLiking
+              ? Column(
+                  children: [
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: _colors.danger,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      formatNumber(post.loves ?? 0),
+                      style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 12),
+                    ),
+                    Text('Likes', style: TextStyle(color: _colors.textSecondary, fontSize: 10)),
+                  ],
+                )
+              : _buildStatItem(
+                  icon: isIn(post.users_love_id!, authProvider.loginUserData.id!)
+                      ? Icons.favorite
+                      : Icons.favorite_border,
+                  count: post.loves ?? 0,
+                  label: 'Likes',
+                  isLiked: isIn(post.users_love_id!, authProvider.loginUserData.id!),
+                  isLocked: false,
+                ),
         ),
         GestureDetector(
           onTap: hasAccess

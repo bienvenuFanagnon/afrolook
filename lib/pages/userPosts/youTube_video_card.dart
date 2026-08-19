@@ -21,7 +21,7 @@ import '../../providers/userProvider.dart';
 import '../canaux/detailsCanal.dart';
 import '../component/consoleWidget.dart';
 import '../home/user_presence_widget.dart';
-import '../pub/native_ad_widget.dart';
+import '../pub/afrolook_inline_ad.dart';
 import 'dart:async';
 import 'dart:math';
 
@@ -319,11 +319,16 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   // Timer pour la visibilité
   Timer? _visibilityTimer;
 
+  // Timer "Voir plus" après 5s de lecture réelle (sauf pour les posts pub)
+  Timer? _seeMoreTimer;
+  bool _showSeeMoreCta = false;
+  bool _seeMoreTimerStarted = false;
+
   // Pour la publication
   final String appId = 'AfrolookApp';
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  bool get _shouldShowAd => (widget.index + 1) % 2 == 0;
+  bool get _shouldShowAd => (widget.index + 1) % 5 == 0;
 
   bool get _isLockedContent {
     if (_creatorCanal != null) {
@@ -361,10 +366,10 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     _loadLastComment();
     _loadSuggestions();
 
-    if (widget.post.thumbnail == null || widget.post.thumbnail!.isEmpty) {
-      _generateAndUploadThumbnail();
-    } else {
+    if (widget.post.thumbnail?.isNotEmpty == true) {
       _thumbnailUrl = widget.post.thumbnail;
+    } else {
+      _generateAndUploadThumbnail();
     }
 
     // 🔥 Préchargement Facebook-style : permettre au gestionnaire global de
@@ -822,6 +827,11 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       return;
     }
 
+    // Réinitialiser le CTA "Voir plus" à chaque nouvelle apparition
+    _seeMoreTimer?.cancel();
+    _seeMoreTimerStarted = false;
+    if (_showSeeMoreCta) setState(() => _showSeeMoreCta = false);
+
     if (_isVideoInitialized && _chewieController != null) {
       // 🔥 ÉTAPE 1: Mettre en pause les autres médias
       MediaPlaybackManager.pauseCurrentMedia();
@@ -854,6 +864,18 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
           // Toujours lancer (volume déjà appliqué : 0.0 si muet, 1.0 si son actif)
           _playVideo();
           printVm('▶️ Auto-play vidéo ${widget.post.id} (muted=$isMuted, volume: $targetVolume)');
+
+          // Timer "Voir plus" : 5s après le début de lecture (sauf posts pub)
+          if (widget.post.isAdvertisement != true && !_seeMoreTimerStarted) {
+            _seeMoreTimerStarted = true;
+            _seeMoreTimer?.cancel();
+            _seeMoreTimer = Timer(const Duration(seconds: 5), () {
+              if (mounted) {
+                _pauseVideo();
+                setState(() => _showSeeMoreCta = true);
+              }
+            });
+          }
         }
       });
 
@@ -870,6 +892,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     if (_isVideoInitialized && _chewieController != null) {
       _pauseVideo();
     }
+    _seeMoreTimer?.cancel();
+    if (_showSeeMoreCta && mounted) setState(() => _showSeeMoreCta = false);
   }
 
   // ==================== ACTIONS DU POST ====================
@@ -1831,6 +1855,43 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                   ),
                 ),
               ),
+            // --- 🎬 Overlay "Voir plus" après 5s de preview (sauf pubs) ---
+            if (_showSeeMoreCta && !isAd && !isLocked)
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: _navigateToDetails,
+                  child: Container(
+                    color: Colors.black.withOpacity(0.65),
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: colors.accent,
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.play_circle_fill, color: Colors.white, size: 20),
+                            SizedBox(width: 6),
+                            Text(
+                              'Voir la suite',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                decoration: TextDecoration.none,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                      .animate(onPlay: (c) => c.repeat(reverse: true))
+                      .scaleXY(begin: 1.0, end: 1.08, duration: 600.ms, curve: Curves.easeInOut),
+                    ),
+                  ),
+                ),
+              ),
             // --- 🎵 Bouton de contrôle du son (remplace le badge "VIDÉO") ---
             if (!isLocked)
               Positioned(
@@ -2351,6 +2412,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     _quickCommentController.dispose();
     _shuffleTimer?.cancel();
     _visibilityTimer?.cancel();
+    _seeMoreTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     MediaPlaybackManager.unregisterMedia(widget.post.id ?? '');
     _disposeVideoControllers();
@@ -2394,12 +2456,9 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                 const SizedBox(height: 12),
                 _buildPostActions(),
                 _buildCommentPreview(),
-                if (_shouldShowAd) ...[
+                if (_shouldShowAd && widget.post.isAdvertisement != true) ...[
                   const SizedBox(height: 12),
-                  MrecAdWidget(
-                    onAdLoaded: () => printVm('✅ Pub MREC affichée après le post ${widget.index}'),
-                    showLessAdsButton: false,
-                  ),
+                  const AfrolookInlineAd(),
                 ],
               ],
             ),

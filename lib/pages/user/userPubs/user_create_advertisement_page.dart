@@ -22,6 +22,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../models/model_data.dart';
 import '../../../providers/authProvider.dart';
+import '../../../theme/app_colors.dart';
 import '../../../services/ad_config_service.dart';
 import '../../paiement/depotPaiment.dart';
 import '../../paiement/newDepot.dart';
@@ -82,13 +83,11 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
   Map<int, int> get _durationPrices => AdConfigService.toMap(_durations);
   List<int> get _durationOptions => _durations.map((d) => d.weeks).toList();
 
-  // Couleurs
+  // Couleurs de marque (fixes)
   final Color _primaryColor = const Color(0xFFE21221);
   final Color _secondaryColor = const Color(0xFFFFD600);
-  final Color _backgroundColor = const Color(0xFF121212);
-  final Color _cardColor = const Color(0xFF1E1E1E);
-  final Color _textColor = Colors.white;
-  final Color _hintColor = Colors.grey[400]!;
+  // Couleurs thématiques — initialisées dans build()
+  late AppColors _c;
 
   late UserAuthProvider authProvider;
 
@@ -190,15 +189,15 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: _cardColor,
+          backgroundColor: _c.surface,
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(_primaryColor)),
               SizedBox(height: 16),
-              Text('Traitement de la vidéo...', style: TextStyle(color: _textColor)),
+              Text('Traitement de la vidéo...', style: TextStyle(color: _c.textPrimary)),
               SizedBox(height: 8),
-              Text('Initialisation et génération de la miniature', style: TextStyle(color: _hintColor, fontSize: 12)),
+              Text('Initialisation et génération de la miniature', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
             ],
           ),
         );
@@ -242,11 +241,11 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
         materialProgressColors: ChewieProgressColors(
           playedColor: _primaryColor,
           handleColor: _primaryColor,
-          backgroundColor: _hintColor.withOpacity(0.3),
-          bufferedColor: _hintColor.withOpacity(0.1),
+          backgroundColor: _c.textSecondary.withOpacity(0.3),
+          bufferedColor: _c.textSecondary.withOpacity(0.1),
         ),
         placeholder: Container(
-          color: _backgroundColor,
+          color: _c.background,
           child: Center(child: CircularProgressIndicator(color: _primaryColor)),
         ),
       );
@@ -286,12 +285,12 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: _cardColor,
+        backgroundColor: _c.surface,
         title: Text('Recommandation', style: TextStyle(color: _secondaryColor)),
         content: Text(
           'Les publicités de 15 à 30 secondes sont les plus efficaces.\n\n'
               'Votre vidéo dépasse 30 secondes, ce qui peut réduire son efficacité.',
-          style: TextStyle(color: _textColor),
+          style: TextStyle(color: _c.textPrimary),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: Text('OK', style: TextStyle(color: _primaryColor))),
@@ -408,7 +407,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
     if (!_selectAllCountries && _selectedCountries.isEmpty) { _showError('Sélectionnez au moins un pays'); return; }
 
     final int price = _durationPrices[_selectedDurationWeeks!] ?? 0;
-    final currentBalance = authProvider.loginUserData.votre_solde_principal ?? 0;
+    final currentBalance = authProvider.loginUserData.votre_solde_depot ?? 0;
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
 
     if (!isAdmin && currentBalance < price) {
@@ -419,12 +418,12 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
     setState(() => _isUploading = true);
 
     try {
-      // 1. Débiter (sauf admin)
+      // 1. Débiter sur le solde de dépôts (sauf admin)
       if (!isAdmin) {
         await FirebaseFirestore.instance.collection('Users').doc(authProvider.loginUserData.id).update({
-          'votre_solde_principal': FieldValue.increment(-price),
+          'votre_solde_depot': FieldValue.increment(-price),
         });
-        authProvider.loginUserData.votre_solde_principal = (authProvider.loginUserData.votre_solde_principal ?? 0) - price;
+        authProvider.loginUserData.votre_solde_depot = (authProvider.loginUserData.votre_solde_depot ?? 0) - price;
         await _createTransaction(price, 'Publicité ${_getDurationLabel(_selectedDurationWeeks!)}');
       }
 
@@ -566,7 +565,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: _cardColor,
+        backgroundColor: _c.surface,
         title: Text('Solde insuffisant', style: TextStyle(color: _secondaryColor)),
         content: Text('Crédits insuffisants. Veuillez recharger.'),
         actions: [
@@ -588,14 +587,14 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        backgroundColor: _cardColor,
+        backgroundColor: _c.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(children: [Icon(Icons.check_circle, color: Colors.green), SizedBox(width: 10), Text('Publicité soumise !', style: TextStyle(color: _textColor))]),
+        title: Row(children: [Icon(Icons.check_circle, color: Colors.green), SizedBox(width: 10), Text('Publicité soumise !', style: TextStyle(color: _c.textPrimary))]),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Votre publicité sera diffusée après validation par notre équipe.', style: TextStyle(color: _hintColor)),
+            Text('Votre publicité sera diffusée après validation par notre équipe.', style: TextStyle(color: _c.textSecondary)),
             SizedBox(height: 16),
             Container(
               padding: EdgeInsets.all(12),
@@ -604,7 +603,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
                 children: [
                   Icon(Icons.contact_support, color: _secondaryColor),
                   SizedBox(width: 12),
-                  Expanded(child: Text('Pour accélérer la validation, contactez notre service client.', style: TextStyle(color: _textColor, fontSize: 12))),
+                  Expanded(child: Text('Pour accélérer la validation, contactez notre service client.', style: TextStyle(color: _c.textPrimary, fontSize: 12))),
                 ],
               ),
             ),
@@ -645,14 +644,18 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
   // ========== BUILD ==========
   @override
   Widget build(BuildContext context) {
+    _c = AppColors.of(context);
     return Scaffold(
-      backgroundColor: _backgroundColor,
+      backgroundColor: _c.background,
       appBar: AppBar(
         title: Text(
           widget.existingPost != null ? 'Booster ce post' : 'Créer une publicité',
           style: TextStyle(color: _secondaryColor),
         ),
-        backgroundColor: _cardColor,
+        backgroundColor: _c.surface,
+        foregroundColor: _c.textPrimary,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
         leading: IconButton(icon: Icon(Icons.arrow_back, color: _secondaryColor), onPressed: () => Navigator.pop(context)),
       ),
       body: Stack(
@@ -664,7 +667,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
               children: [
                 CircularProgressIndicator(value: _uploadProgress, color: _primaryColor),
                 SizedBox(height: 16),
-                Text('Publication en cours...', style: TextStyle(color: _textColor)),
+                Text('Publication en cours...', style: TextStyle(color: _c.textPrimary)),
               ],
             ),
           )
@@ -716,7 +719,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
       preview = ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: Image.network(images.first, height: 160, width: double.infinity, fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(height: 80, color: _cardColor, child: Icon(Icons.image, color: _hintColor))),
+            errorBuilder: (_, __, ___) => Container(height: 80, color: _c.surface, child: Icon(Icons.image, color: _c.textSecondary))),
       );
     } else if (dataType == PostDataType.VIDEO.name) {
       final thumb = (thumbnail?.isNotEmpty == true) ? thumbnail! : (images.isNotEmpty ? images.first : null);
@@ -725,7 +728,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
         child: Stack(children: [
           thumb != null
               ? Image.network(thumb, height: 160, width: double.infinity, fit: BoxFit.cover)
-              : Container(height: 160, color: _cardColor),
+              : Container(height: 160, color: _c.surface),
           const Positioned.fill(child: Center(child: Icon(Icons.play_circle_outline, color: Colors.white, size: 48))),
         ]),
       );
@@ -742,15 +745,15 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
       preview = Container(
         height: 60,
         padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: _cardColor, borderRadius: BorderRadius.circular(12)),
-        child: Text(post.description ?? '', style: TextStyle(color: _textColor, fontSize: 13), maxLines: 3, overflow: TextOverflow.ellipsis),
+        decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(12)),
+        child: Text(post.description ?? '', style: TextStyle(color: _c.textPrimary, fontSize: 13), maxLines: 3, overflow: TextOverflow.ellipsis),
       );
     }
 
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: _cardColor, borderRadius: BorderRadius.circular(16),
+        color: _c.surface, borderRadius: BorderRadius.circular(16),
         border: Border.all(color: _primaryColor.withOpacity(0.5)),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -763,7 +766,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
         preview,
         if ((post.description ?? '').isNotEmpty) ...[
           const SizedBox(height: 8),
-          Text(post.description!, style: TextStyle(color: _hintColor, fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
+          Text(post.description!, style: TextStyle(color: _c.textSecondary, fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
         ],
       ]),
     );
@@ -779,7 +782,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
       ),
       child: Column(
         children: [
-          Row(children: [Icon(Icons.public, color: _secondaryColor), SizedBox(width: 8), Expanded(child: Text('Vue par +10 000 utilisateurs en Afrique !', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)))]),
+          Row(children: [Icon(Icons.public, color: _secondaryColor), SizedBox(width: 8), Expanded(child: Text('+1 000 000 utilisateurs par pays près de chez vous', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)))]),
           SizedBox(height: 8),
           Text('Choisissez vos pays cibles. Plus vous ciblez large, plus vous touchez de personnes.', style: TextStyle(color: Colors.white70, fontSize: 12)),
         ],
@@ -789,13 +792,13 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
 
   Widget _buildAdTypeCard() {
     return Card(
-      color: _cardColor,
+      color: _c.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: EdgeInsets.all(16),
         child: Column(
           children: [
-            Text('Type de publicité', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
+            Text('Type de publicité', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
             SizedBox(height: 12),
             Row(
               children: [
@@ -817,27 +820,27 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
       selected: isSelected,
       onSelected: (selected) => setState(() => _selectedAdType = selected ? value : null),
       selectedColor: _primaryColor,
-      backgroundColor: Colors.grey[800],
-      labelStyle: TextStyle(color: isSelected ? Colors.white : _hintColor),
+      backgroundColor: _c.surfaceVariant,
+      labelStyle: TextStyle(color: isSelected ? Colors.white : _c.textSecondary),
     );
   }
 
   Widget _buildDescriptionCard() {
     return Card(
-      color: _cardColor,
+      color: _c.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: EdgeInsets.all(16),
         child: TextField(
           controller: _descriptionController,
           maxLines: 3,
-          style: TextStyle(color: _textColor),
+          style: TextStyle(color: _c.textPrimary),
           decoration: InputDecoration(
             hintText: 'Description de votre publicité (obligatoire)',
-            hintStyle: TextStyle(color: _hintColor),
+            hintStyle: TextStyle(color: _c.textSecondary),
             border: InputBorder.none,
             filled: true,
-            fillColor: _backgroundColor,
+            fillColor: _c.background,
           ),
         ),
       ),
@@ -846,13 +849,13 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
 
   Widget _buildDurationCard() {
     return Card(
-      color: _cardColor,
+      color: _c.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: EdgeInsets.all(16),
         child: Column(
           children: [
-            Text('Durée de la campagne', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
+            Text('Durée de la campagne', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
             SizedBox(height: 12),
             Wrap(
               spacing: 8,
@@ -869,8 +872,8 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
                   selected: isSelected,
                   onSelected: (selected) => setState(() => _selectedDurationWeeks = selected ? weeks : null),
                   selectedColor: _primaryColor,
-                  backgroundColor: Colors.grey[800],
-                  labelStyle: TextStyle(color: isSelected ? Colors.white : _hintColor),
+                  backgroundColor: _c.surfaceVariant,
+                  labelStyle: TextStyle(color: isSelected ? Colors.white : _c.textSecondary),
                 );
               }).toList(),
             ),
@@ -882,13 +885,13 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
 
   Widget _buildActionCard() {
     return Card(
-      color: _cardColor,
+      color: _c.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: EdgeInsets.all(16),
         child: Column(
           children: [
-            Text('Action du bouton', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
+            Text('Action du bouton', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
             SizedBox(height: 12),
             Wrap(spacing: 8, runSpacing: 8, children: [
               _buildActionChip('Télécharger', 'download', Icons.download),
@@ -903,14 +906,14 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
                   // controller: _whatsappController,
                   decoration: InputDecoration(
                     labelText: 'Numéro WhatsApp',
-                    labelStyle: TextStyle(color: _hintColor),
-                    border: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey[700]!)),
-                    enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey[700]!)),
+                    labelStyle: TextStyle(color: _c.textSecondary),
+                    border: OutlineInputBorder(borderSide: BorderSide(color: _c.border)),
+                    enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: _c.border)),
                     focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: _primaryColor)),
                     filled: true,
-                    fillColor: _backgroundColor,
+                    fillColor: _c.background,
                   ),
-                  style: TextStyle(color: _textColor),
+                  style: TextStyle(color: _c.textPrimary),
                   initialCountryCode: 'TG',
                   onChanged: (value) {
                     _whatsappController.text = value.completeNumber;
@@ -923,16 +926,16 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
                 padding: EdgeInsets.only(top: 16),
                 child: TextField(
                   controller: _actionUrlController,
-                  style: TextStyle(color: _textColor),
+                  style: TextStyle(color: _c.textPrimary),
                   decoration: InputDecoration(
                     hintText: 'https://...',
-                    hintStyle: TextStyle(color: _hintColor),
+                    hintStyle: TextStyle(color: _c.textSecondary),
                     prefixIcon: Icon(Icons.link, color: _primaryColor),
-                    border: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey[700]!)),
-                    enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey[700]!)),
+                    border: OutlineInputBorder(borderSide: BorderSide(color: _c.border)),
+                    enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: _c.border)),
                     focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: _primaryColor)),
                     filled: true,
-                    fillColor: _backgroundColor,
+                    fillColor: _c.background,
                   ),
                 ),
               ),
@@ -949,21 +952,21 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
       selected: isSelected,
       onSelected: (selected) => setState(() => _selectedActionType = selected ? value : null),
       selectedColor: _primaryColor,
-      backgroundColor: Colors.grey[800],
-      labelStyle: TextStyle(color: isSelected ? Colors.white : _hintColor),
+      backgroundColor: _c.surfaceVariant,
+      labelStyle: TextStyle(color: isSelected ? Colors.white : _c.textSecondary),
     );
   }
 
   Widget _buildMediaCard() {
     return Card(
-      color: _cardColor,
+      color: _c.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: EdgeInsets.all(16),
         child: Column(
           children: [
             if (_selectedAdType == 'image') ...[
-              Text('Images (max $maxImagesForDuration)', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
+              Text('Images (max $maxImagesForDuration)', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
               SizedBox(height: 8),
               _selectedImages.isEmpty
                   ? ElevatedButton.icon(onPressed: _pickImages, icon: Icon(Icons.add_photo_alternate), label: Text('Ajouter des images'))
@@ -992,7 +995,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
                 ],
               ),
             ] else if (_selectedAdType == 'video') ...[
-              Text('Vidéo (max 4 minutes, recommandé 15-30s)', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
+              Text('Vidéo (max 4 minutes, recommandé 15-30s)', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
               SizedBox(height: 8),
               if (_videoFile == null && _videoBytes == null)
                 ElevatedButton.icon(onPressed: _pickVideo, icon: Icon(Icons.video_library), label: Text('Choisir une vidéo'))
@@ -1036,7 +1039,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
                           height: 100,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.grey[700]!),
+                            border: Border.all(color: _c.border),
                             image: DecorationImage(image: FileImage(File(_localThumbnailPath!)), fit: BoxFit.cover),
                           ),
                         ),
@@ -1081,7 +1084,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
       padding: EdgeInsets.all(16),
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: _c.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))],
         border: Border.all(color: _selectedCountries.isEmpty && !_selectAllCountries ? Colors.orange : Colors.transparent, width: 1),
@@ -1100,8 +1103,8 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Visibilité de la publicité', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
-                  Text(displayMessage, style: TextStyle(color: _selectedCountries.isEmpty && !_selectAllCountries ? Colors.orange : _hintColor, fontSize: 14)),
+                  Text('Visibilité de la publicité', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
+                  Text(displayMessage, style: TextStyle(color: _selectedCountries.isEmpty && !_selectAllCountries ? Colors.orange : _c.textSecondary, fontSize: 14)),
                 ],
               ),
             ],
@@ -1140,7 +1143,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
     return Container(
       height: MediaQuery.of(context).size.height * 0.8,
       decoration: BoxDecoration(
-        color: _backgroundColor,
+        color: _c.background,
         borderRadius: BorderRadius.only(topLeft: Radius.circular(25), topRight: Radius.circular(25)),
       ),
       child: Column(
@@ -1148,7 +1151,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
           Container(
             padding: EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: _cardColor,
+              color: _c.surface,
               borderRadius: BorderRadius.only(topLeft: Radius.circular(25), topRight: Radius.circular(25)),
             ),
             child: Column(
@@ -1156,9 +1159,9 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Sélection des pays', style: TextStyle(color: _textColor, fontSize: 20, fontWeight: FontWeight.bold)),
+                    Text('Sélection des pays', style: TextStyle(color: _c.textPrimary, fontSize: 20, fontWeight: FontWeight.bold)),
                     IconButton(
-                      icon: Icon(Icons.close, color: _textColor),
+                      icon: Icon(Icons.close, color: _c.textPrimary),
                       onPressed: () => setState(() => _showCountrySelection = false),
                     ),
                   ],
@@ -1181,24 +1184,24 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
                     SizedBox(width: 10),
                     Text(
                       '${_selectedCountries.length} pays sélectionné(s)',
-                      style: TextStyle(color: _hintColor, fontSize: 14),
+                      style: TextStyle(color: _c.textSecondary, fontSize: 14),
                     ),
                   ],
                 ),
                 SizedBox(height: 15),
                 Container(
                   decoration: BoxDecoration(
-                    color: _cardColor,
+                    color: _c.surface,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[700]!),
+                    border: Border.all(color: _c.border),
                   ),
                   child: TextField(
                     controller: _countrySearchController,
                     focusNode: _countrySearchFocus,
-                    style: TextStyle(color: _textColor),
+                    style: TextStyle(color: _c.textPrimary),
                     decoration: InputDecoration(
                       hintText: 'Rechercher un pays...',
-                      hintStyle: TextStyle(color: _hintColor),
+                      hintStyle: TextStyle(color: _c.textSecondary),
                       prefixIcon: Icon(Icons.search, color: _primaryColor),
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.symmetric(horizontal: 16),
@@ -1209,21 +1212,21 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
             ),
           ),
           Material(
-            color: _cardColor,
+            color: _c.surface,
             child: ListTile(
               onTap: _toggleSelectAllCountries,
               leading: Container(
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: _selectAllCountries ? _secondaryColor : Colors.grey[800],
+                  color: _selectAllCountries ? _secondaryColor : _c.surfaceVariant,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(Icons.public, color: _selectAllCountries ? Colors.white : _hintColor),
+                child: Icon(Icons.public, color: _selectAllCountries ? Colors.white : _c.textSecondary),
               ),
               title: Row(
                 children: [
-                  Text('Tous les pays africains', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
+                  Text('Tous les pays africains', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
                   SizedBox(width: 8),
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -1232,13 +1235,13 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
                   ),
                 ],
               ),
-              subtitle: Text('Votre publicité sera visible dans toute l\'Afrique', style: TextStyle(color: _hintColor)),
+              subtitle: Text('Votre publicité sera visible dans toute l\'Afrique', style: TextStyle(color: _c.textSecondary)),
               trailing: _selectAllCountries
                   ? Container(padding: EdgeInsets.all(8), decoration: BoxDecoration(color: Colors.green, shape: BoxShape.circle), child: Icon(Icons.check, color: Colors.white, size: 20))
                   : null,
             ),
           ),
-          Divider(color: Colors.grey[800], height: 1),
+          Divider(color: _c.surfaceVariant, height: 1),
           Expanded(
             child: ListView.builder(
               padding: EdgeInsets.zero,
@@ -1247,20 +1250,20 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
                 final country = _filteredCountries[index];
                 final isSelected = _selectedCountries.contains(country);
                 return Material(
-                  color: isSelected ? _primaryColor.withOpacity(0.1) : _cardColor,
+                  color: isSelected ? _primaryColor.withOpacity(0.1) : _c.surface,
                   child: ListTile(
                     onTap: () => _toggleCountrySelection(country),
                     leading: Container(
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: isSelected ? _primaryColor : Colors.grey[800],
+                        color: isSelected ? _primaryColor : _c.surfaceVariant,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Center(child: Text(country.flag, style: TextStyle(fontSize: 20))),
                     ),
-                    title: Text(country.name, style: TextStyle(color: isSelected ? _textColor : _textColor, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
-                    subtitle: Text('Code: ${country.code}', style: TextStyle(color: _hintColor)),
+                    title: Text(country.name, style: TextStyle(color: isSelected ? _c.textPrimary : _c.textPrimary, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+                    subtitle: Text('Code: ${country.code}', style: TextStyle(color: _c.textSecondary)),
                     trailing: isSelected
                         ? Container(padding: EdgeInsets.all(8), decoration: BoxDecoration(color: _primaryColor, shape: BoxShape.circle), child: Icon(Icons.check, color: Colors.white, size: 16))
                         : null,
@@ -1272,8 +1275,8 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
           Container(
             padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: _cardColor,
-              border: Border(top: BorderSide(color: Colors.grey[800]!)),
+              color: _c.surface,
+              border: Border(top: BorderSide(color: _c.surfaceVariant!)),
             ),
             child: Row(
               children: [
@@ -1286,8 +1289,8 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
                       });
                     },
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: _hintColor,
-                      side: BorderSide(color: Colors.grey[700]!),
+                      foregroundColor: _c.textSecondary,
+                      side: BorderSide(color: _c.border),
                       padding: EdgeInsets.symmetric(vertical: 15),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),

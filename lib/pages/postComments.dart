@@ -25,6 +25,7 @@ import 'dart:ui' as ui;
 import '../services/comment_suggestion_service.dart';
 
 import 'coins/post_gifts_list.dart';
+import 'pub/conditional_ad_banner.dart';
 
 class PostComments extends StatefulWidget {
   final Post post;
@@ -1696,9 +1697,17 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                       ? _buildEmptyState()
                       : ListView.builder(
                           padding: const EdgeInsets.only(top: 8, bottom: 16),
-                          itemCount: comments.length + (_hasMoreComments ? 1 : 0),
+                          itemCount: comments.length + 1 + (_hasMoreComments ? 1 : 0),
                           itemBuilder: (_, index) {
-                            if (index == comments.length) {
+                            // Bannière pub en première position
+                            if (index == 0) {
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                child: const ConditionalAdBanner(),
+                              );
+                            }
+                            final commentIndex = index - 1;
+                            if (commentIndex == comments.length) {
                               return _isLoadingMore
                                   ? Padding(
                                       padding: const EdgeInsets.all(16),
@@ -1708,7 +1717,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                                     )
                                   : const SizedBox.shrink();
                             }
-                            return _buildCommentItem(comments[index]);
+                            return _buildCommentItem(comments[commentIndex]);
                           },
                         ),
             ),
