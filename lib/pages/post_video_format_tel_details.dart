@@ -20,6 +20,7 @@ import 'package:afrotok/pages/postDetails.dart';
 import 'package:afrotok/widgets/chat/post_share_sheet.dart';
 
 import 'package:afrotok/pages/postDetailsVideo.dart';
+import 'package:afrotok/pages/user/userPubs/user_create_advertisement_page.dart';
 
 import 'package:afrotok/pages/pub/banner_ad_widget.dart';
 
@@ -185,6 +186,13 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
   bool _showRewardedAd = false;
   Timer? _suggestionModalTimer;
   bool _hasSeenSuggestionsModal = false;
+
+  // Pub midroll — affichée 5s avant la fin (vidéo initiale + toutes les 3 vidéos)
+  bool _showMidrollAd = false;
+  Timer? _midrollTimer;
+  int _videoPlayCount = 0;
+  bool _midrollShownForCurrentVideo = false;
+  VoidCallback? _videoPositionListener;
 
   // bool get _isLookChallenge => widget.initialPost!.type == 'CHALLENGEPARTICIPATION';
   bool get _isLookChallenge => widget.initialPost != null && widget.initialPost!.type == 'CHALLENGEPARTICIPATION';
@@ -497,6 +505,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
     _preloadedControllers.clear();
     _suggestionModalTimer?.cancel();
     _scrollHintTimer?.cancel();
+    _midrollTimer?.cancel();
+    _removeMidrollListener();
     _pageController.dispose();
     _disposeCurrentVideo();
     _postSubscriptions.forEach((key, subscription) => subscription.cancel());
@@ -546,7 +556,52 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
     );
   }
 
+  // ── Midroll ad ──────────────────────────────────────────────────────────────
+
+  void _attachMidrollListener() {
+    if (_currentVideoController == null) return;
+    _removeMidrollListener();
+    _midrollShownForCurrentVideo = false;
+    final listener = () {
+      if (_midrollShownForCurrentVideo || !mounted) return;
+      final vpc = _currentVideoController;
+      if (vpc == null) return;
+      final value = vpc.value;
+      if (!value.isPlaying) return;
+      final duration = value.duration;
+      final position = value.position;
+      if (duration.inSeconds < 8) return;
+      final remaining = duration - position;
+      if (remaining.inSeconds <= 5 && remaining.inSeconds > 0 && position.inSeconds > 3) {
+        _midrollShownForCurrentVideo = true;
+        _showMidrollOverlay();
+      }
+    };
+    _videoPositionListener = listener;
+    _currentVideoController!.addListener(listener);
+  }
+
+  void _removeMidrollListener() {
+    if (_videoPositionListener != null && _currentVideoController != null) {
+      _currentVideoController!.removeListener(_videoPositionListener!);
+    }
+    _videoPositionListener = null;
+  }
+
+  void _showMidrollOverlay() {
+    if (!mounted) return;
+    setState(() => _showMidrollAd = true);
+    _midrollTimer?.cancel();
+    _midrollTimer = Timer(const Duration(seconds: 5), () {
+      if (!mounted) return;
+      setState(() => _showMidrollAd = false);
+    });
+  }
+
+  // ────────────────────────────────────────────────────────────────────────────
+
   void _disposeCurrentVideo() {
+    _removeMidrollListener();
     _chewieController?.dispose();
     _currentVideoController?.dispose();
     setState(() {
@@ -663,6 +718,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
       );
 
       setState(() => _isVideoInitialized = true);
+      _videoPlayCount++;
+      if ((_videoPlayCount - 1) % 3 == 0) _attachMidrollListener();
       await _recordPostView(post);
       _startSuggestionModalTimer();
       return;
@@ -702,6 +759,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
       );
 
       setState(() => _isVideoInitialized = true);
+      _videoPlayCount++;
+      if ((_videoPlayCount - 1) % 3 == 0) _attachMidrollListener();
       await _recordPostView(post);
       _startSuggestionModalTimer();
     } catch (e) {
@@ -1971,6 +2030,24 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
                   await _deletePost(post, context);
                 },
               ).animate().fadeIn(duration: 200.ms, delay: 80.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
+
+            // Option "Booster ce post" — créateur + admin uniquement
+            if (post.user_id == authProvider.loginUserData.id ||
+                authProvider.loginUserData.role == UserRole.ADM.name)
+              ListTile(
+                leading: Icon(Icons.rocket_launch, color: colors.accent),
+                title: Text('Booster ce post', style: TextStyle(color: colors.textPrimary)),
+                subtitle: Text('Transformer en publicité', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => UserCreateAdvertisementPage(existingPost: post),
+                    ),
+                  );
+                },
+              ).animate().fadeIn(duration: 200.ms, delay: 100.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
 
             Divider(color: colors.divider),
 
@@ -3479,6 +3556,57 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
             onUserEarnedReward: (amount, name) async => await _onSupportAdRewarded(_videoPosts[_currentPage]),
             onAdDismissed: () => setState(() { _showRewardedAd = false; _isSupporting = false; }),
             child: const SizedBox.shrink(),
+          ),
+
+        // Pub midroll — overlay 5s avant la fin de la vidéo
+        if (_showMidrollAd)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withOpacity(0.88),
+              child: Stack(
+                children: [
+                  Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Publicité',
+                          style: TextStyle(color: Colors.white54, fontSize: 12, letterSpacing: 1),
+                        ),
+                        const SizedBox(height: 12),
+                        const MrecAdWidget(showLessAdsButton: false),
+                        const SizedBox(height: 16),
+                        Text(
+                          'La vidéo reprend dans quelques secondes…',
+                          style: const TextStyle(color: Colors.white38, fontSize: 11),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Badge SPONSORISÉ
+                  Positioned(
+                    top: MediaQuery.of(context).padding.top + 8,
+                    left: 16,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFD600),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.verified, color: Colors.black, size: 13),
+                          SizedBox(width: 4),
+                          Text('SPONSORISÉ', style: TextStyle(color: Colors.black, fontSize: 11, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
       ],
     );

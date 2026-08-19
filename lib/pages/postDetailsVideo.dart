@@ -1471,6 +1471,14 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
 
     if (suggestions.isEmpty) return const SizedBox.shrink();
 
+    // Construire la liste mixte : pub avant chaque groupe de 3 posts
+    // Structure : [pub, p0, p1, p2, pub, p3, p4, p5, pub, ...]
+    final items = <dynamic>[];
+    for (int i = 0; i < suggestions.length; i++) {
+      if (i % 3 == 0) items.add('ad_$i');
+      items.add(suggestions[i]);
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1488,23 +1496,16 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
         ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          itemCount: suggestions.length + 1, // +1 pour la pub
+          itemCount: items.length,
           itemBuilder: (context, index) {
-            if (index == 3) {
-              return Column(
-                children: [
-                  Divider(color: colors.border),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: _buildAdBanner(key: 'ad_suggestion_unique'),
-                  ),
-                  Divider(color: colors.border),
-                ],
+            final item = items[index];
+            if (item is String) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: _buildAdBanner(key: 'ad_suggestion_$index'),
               );
             }
-            final int postIndex = index > 3 ? index - 1 : index;
-            if (postIndex >= suggestions.length) return const SizedBox.shrink();
-            final post = suggestions[postIndex];
+            final post = item as Post;
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: _buildYouTubeCard(post),

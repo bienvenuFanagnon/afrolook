@@ -157,6 +157,12 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   // Variables pour la thumbnail vidéo
   String? _videoThumbnailPath;
   bool _isGeneratingThumbnail = false;
+
+  // Preview vidéo 5 secondes dans le feed
+  bool _isPreviewPlaying = false;
+  bool _showPreviewCta = false;
+  VideoPlayerController? _previewController;
+  Timer? _previewTimer;
   bool get _shouldShowAd {
     // Affiche la pub pour les indices 2, 5, 8, 11... (1-indexé)
     // Exemple : index 0 -> 1er post -> pas de pub
@@ -612,8 +618,43 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     _suggestionSub?.cancel();
     _shuffleTimer?.cancel();
     _quickCommentController.dispose();
+    _previewTimer?.cancel();
+    _previewController?.dispose();
     MediaPlaybackManager.unregisterMedia(widget.post.id ?? '');
     super.dispose();
+  }
+
+  Future<void> _startVideoPreview() async {
+    if (_isPreviewPlaying) return;
+    final url = widget.post.url_media;
+    if (url == null || url.isEmpty) {
+      Navigator.push(context, MaterialPageRoute(
+        builder: (c) => VideoYoutubePageDetails(initialPost: widget.post),
+      ));
+      return;
+    }
+    setState(() { _isPreviewPlaying = true; _showPreviewCta = false; });
+    try {
+      final ctrl = VideoPlayerController.networkUrl(Uri.parse(url));
+      _previewController = ctrl;
+      await ctrl.initialize();
+      if (!mounted) return;
+      await ctrl.setVolume(0);
+      await ctrl.play();
+      if (!mounted) return;
+      setState(() {});
+      _previewTimer = Timer(const Duration(seconds: 5), () {
+        if (!mounted) return;
+        _previewController?.pause();
+        setState(() => _showPreviewCta = true);
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() { _isPreviewPlaying = false; _showPreviewCta = false; });
+      Navigator.push(context, MaterialPageRoute(
+        builder: (c) => VideoYoutubePageDetails(initialPost: widget.post),
+      ));
+    }
   }
 
   void _checkIfFavorite() {
@@ -1638,15 +1679,14 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _isExpanded = !_isExpanded;
-                  });
-                },
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => DetailsPost(post: widget.post)),
+                ),
                 child: Padding(
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
-                    _isExpanded ? "Voir moins" : "Voir plus",
+                    "Voir plus",
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -2049,46 +2089,53 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
   Widget _buildVideoContent(double h, bool isLocked) {
     final colors = AppColors.of(context);
+    final previewReady = _isPreviewPlaying &&
+        _previewController != null &&
+        _previewController!.value.isInitialized;
+
     return Stack(
       children: [
-        // Thumbnail vidéo ou fallback
+        // Thumbnail, preview en cours, ou fallback
         ClipRRect(
           borderRadius: BorderRadius.circular(16),
           child: _isGeneratingThumbnail
-              ? Center(
-            child: CircularProgressIndicator(color: colors.info),
-          )
-              : (_videoThumbnailPath != null &&
-              File(_videoThumbnailPath!).existsSync())
-              ? GestureDetector(
-            onTap: () {
-              if(widget.post.dataType==PostDataType.VIDEO.name){
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => VideoYoutubePageDetails(initialPost: widget.post),
-                  ),
-                );
-              }else {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => DetailsPost(post: widget.post),
-                  ),
-                );
-              }
-            },
-            child: Opacity(
-              opacity: isLocked ? 0.6 : 1.0, // réduit la visibilité si verrouillé
-              child: Image.file(
-                File(_videoThumbnailPath!),
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: h * 0.55,
-              ),
-            ),
-          )
-              : _buildFallbackThumbnail(),
+              ? Center(child: CircularProgressIndicator(color: colors.info))
+              : previewReady
+                  ? SizedBox(
+                      width: double.infinity,
+                      height: h * 0.55,
+                      child: FittedBox(
+                        fit: BoxFit.cover,
+                        child: SizedBox(
+                          width: _previewController!.value.size.width,
+                          height: _previewController!.value.size.height,
+                          child: VideoPlayer(_previewController!),
+                        ),
+                      ),
+                    )
+                  : (_videoThumbnailPath != null && File(_videoThumbnailPath!).existsSync())
+                      ? GestureDetector(
+                          onTap: () {
+                            if (isLocked) return;
+                            if (widget.post.dataType == PostDataType.VIDEO.name) {
+                              _startVideoPreview();
+                            } else {
+                              Navigator.push(context, MaterialPageRoute(
+                                builder: (context) => DetailsPost(post: widget.post),
+                              ));
+                            }
+                          },
+                          child: Opacity(
+                            opacity: isLocked ? 0.6 : 1.0,
+                            child: Image.file(
+                              File(_videoThumbnailPath!),
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: h * 0.55,
+                            ),
+                          ),
+                        )
+                      : _buildFallbackThumbnail(),
         ),
 
         // Overlay verrouillage
@@ -2104,40 +2151,27 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.lock, color: colors.accent, size: 50),
-                    SizedBox(height: 8),
-                    Text(
-                      'Vidéo verrouillée',
-                      style: TextStyle(
-                        color: colors.accent,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Abonnez-vous pour voir cette vidéo',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12,
-                      ),
-                    ),
+                    const SizedBox(height: 8),
+                    Text('Vidéo verrouillée', style: TextStyle(color: colors.accent, fontSize: 16, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    const Text('Abonnez-vous pour voir cette vidéo', style: TextStyle(color: Colors.white70, fontSize: 12)),
                   ],
                 ),
               ),
             ),
           ),
 
-        // Overlay play si déverrouillé
-        if (!isLocked)
+        // Overlay play (masqué pendant la preview)
+        if (!isLocked && !_isPreviewPlaying)
           Positioned.fill(
             child: Center(
               child: Container(
-                padding: EdgeInsets.all(20),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.4),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.play_arrow, color: Colors.white, size: 40),
+                child: const Icon(Icons.play_arrow, color: Colors.white, size: 40),
               ),
             ),
           ),
@@ -2147,28 +2181,54 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           top: 8,
           left: 8,
           child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.7),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Row(
+            child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.videocam, color: Colors.white, size: 12),
                 SizedBox(width: 4),
-                Text(
-                  'Vidéo',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                Text('Vidéo', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w500)),
               ],
             ),
           ),
         ),
+
+        // CTA "Voir la suite" après 5 secondes de preview
+        if (_showPreviewCta)
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                color: Colors.black.withOpacity(0.75),
+                child: Center(
+                  child: GestureDetector(
+                    onTap: () => Navigator.push(context, MaterialPageRoute(
+                      builder: (context) => VideoYoutubePageDetails(initialPost: widget.post),
+                    )),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: colors.accent,
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.play_arrow, color: Colors.white, size: 24),
+                          SizedBox(width: 8),
+                          Text('Voir la suite', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }

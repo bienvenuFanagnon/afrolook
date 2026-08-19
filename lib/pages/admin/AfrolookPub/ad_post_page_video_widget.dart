@@ -68,6 +68,12 @@ class _AdPostWidgetState extends State<AdPostWidget> {
   bool _isDescriptionExpanded = false;
   bool _hasRecordedView = false;
   Timer? _visibilityTimer;
+
+  // Stats & interactions (like chronique)
+  bool _isLiked = false;
+  int _likesCount = 0;
+  bool _isLiking = false;
+
   @override
   void initState() {
     super.initState();
@@ -76,6 +82,11 @@ class _AdPostWidgetState extends State<AdPostWidget> {
     isVideo = post.dataType == PostDataType.VIDEO.name ||
         (post.url_media?.contains('.mp4') ?? false) ||
         (post.url_media?.contains('.mov') ?? false);
+    _likesCount = post.loves ?? 0;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      _isLiked = (post.usersLoveId ?? []).contains(uid);
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _startVisibilityTimer();
     });
@@ -370,8 +381,83 @@ class _AdPostWidgetState extends State<AdPostWidget> {
     );
   }
 
+  String _formatCount(int count) {
+    if (count < 1000) return '$count';
+    if (count < 1000000) return '${(count / 1000).toStringAsFixed(1)}K';
+    return '${(count / 1000000).toStringAsFixed(1)}M';
+  }
+
+  Future<void> _handleLike() async {
+    if (_isLiking || post.id == null) return;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    setState(() {
+      _isLiking = true;
+      _isLiked = !_isLiked;
+      _likesCount += _isLiked ? 1 : -1;
+    });
+    try {
+      await FirebaseFirestore.instance.collection('Posts').doc(post.id).update({
+        'loves': FieldValue.increment(_isLiked ? 1 : -1),
+        'users_love_id': _isLiked
+            ? FieldValue.arrayUnion([uid])
+            : FieldValue.arrayRemove([uid]),
+      });
+    } catch (_) {
+      if (mounted) setState(() { _isLiked = !_isLiked; _likesCount += _isLiked ? 1 : -1; });
+    } finally {
+      if (mounted) setState(() => _isLiking = false);
+    }
+  }
+
+  Widget _buildActionsOverlay() {
+    final commentCount = post.comments ?? 0;
+    return Positioned(
+      right: 12,
+      bottom: 160,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            onTap: _handleLike,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(_isLiked ? Icons.favorite : Icons.favorite_border,
+                    color: _isLiked ? Colors.red : Colors.white, size: 30),
+                const SizedBox(height: 3),
+                Text(_formatCount(_likesCount),
+                    style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.chat_bubble_outline, color: Colors.white, size: 28),
+              const SizedBox(height: 3),
+              Text(_formatCount(commentCount),
+                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.remove_red_eye, color: Colors.white70, size: 24),
+              const SizedBox(height: 3),
+              Text(_formatCount(ad.views ?? 0),
+                  style: const TextStyle(color: Colors.white70, fontSize: 11)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   void _handleActionClick() async {
-    await _recordAdClick();   // <-- AJOUT
+    await _recordAdClick();
     if (ad.actionUrl != null && ad.actionUrl!.isNotEmpty) {
       final url = Uri.parse(ad.actionUrl!);
       if (await canLaunchUrl(url)) await launchUrl(url, mode: LaunchMode.externalApplication);
@@ -449,19 +535,29 @@ class _AdPostWidgetState extends State<AdPostWidget> {
             ),
           ),
 
-          // Badge SPONSORISÉ
+          // Badge SPONSORISÉ (haut gauche, style chronique)
           Positioned(
-            top: 50,
-            right: 10,
+            top: 56,
+            left: 16,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(color: Colors.yellow, borderRadius: BorderRadius.circular(12)),
-              child: const Text(
-                'SPONSORISÉ',
-                style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFD600),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.verified, color: Colors.black, size: 13),
+                  SizedBox(width: 4),
+                  Text('SPONSORISÉ', style: TextStyle(color: Colors.black, fontSize: 11, fontWeight: FontWeight.bold)),
+                ],
               ),
             ),
           ),
+
+          // Overlay stats (like / commentaires / vues) — style chronique
+          _buildActionsOverlay(),
 
           // Barre de progression (en haut)
           Positioned(
