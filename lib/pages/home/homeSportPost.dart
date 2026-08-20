@@ -2536,8 +2536,8 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       );
 
       final postNumber = i + 1;
-      if (postNumber % 5 == 0) {
-        final slotN = postNumber ~/ 5 - 1;
+      if (postNumber % 3 == 0) {
+        final slotN = postNumber ~/ 3 - 1;
         contentWidgets.add(_buildAdAdvertisement(key: 'ad_slot_$slotN'));
         final i1 = (slotN * 2) % _kPoolOrder.length;
         final i2 = (slotN * 2 + 1) % _kPoolOrder.length;
@@ -2642,8 +2642,8 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       );
 
       final postNumber = i + 1;
-      if (postNumber % 5 == 0) {
-        final slotN = postNumber ~/ 5 - 1;
+      if (postNumber % 3 == 0) {
+        final slotN = postNumber ~/ 3 - 1;
         contentWidgets.add(_buildAdAdvertisement(key: 'ad2_slot_$slotN'));
         final i1 = (slotN * 2) % _kPoolOrder.length;
         final i2 = (slotN * 2 + 1) % _kPoolOrder.length;

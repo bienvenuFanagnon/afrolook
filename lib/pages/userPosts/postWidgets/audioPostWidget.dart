@@ -563,7 +563,7 @@ class _AudioPostCardState extends State<AudioPostCard> {
                             Icon(Icons.headphones, color: Colors.white, size: 16),
                             SizedBox(width: 6),
                             Text(
-                              'Voir plus',
+                              'Lire la suite',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,

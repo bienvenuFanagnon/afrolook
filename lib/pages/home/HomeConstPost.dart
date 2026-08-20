@@ -3018,12 +3018,15 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     for (int i = 0; i < finalPosts.length; i++) {
       final post = finalPosts[i];
 
+      final _isVideoPost = post.type == PostType.POST.name && post.dataType == PostDataType.VIDEO.name;
       contentWidgets.add(
         RepaintBoundary(
-          child: GestureDetector(
-            onTap: () => _navigateToPostDetails(post),
-            child: _buildPostWidget(post, width, height, i),
-          ),
+          child: _isVideoPost
+              ? _buildPostWidget(post, width, height, i)
+              : GestureDetector(
+                  onTap: () => _navigateToPostDetails(post),
+                  child: _buildPostWidget(post, width, height, i),
+                ),
         ),
       );
 
@@ -3038,10 +3041,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         contentWidgets.add(_buildProfilesSection());
       }
 
-      // Slot rotatif : pub + 2 widgets du pool, tous les 5 posts
+      // Slot rotatif : pub + 2 widgets du pool, tous les 3 posts
       final postNumber = i + 1; // 1-based
-      if (postNumber % 5 == 0) {
-        final slotN = postNumber ~/ 5 - 1; // slot 0 au post 5, slot 1 au post 10…
+      if (postNumber % 3 == 0) {
+        final slotN = postNumber ~/ 3 - 1; // slot 0 au post 3, slot 1 au post 6…
         contentWidgets.add(_buildAdAdvertisement(key: 'ad_slot_$slotN'));
         final i1 = (slotN * 2) % _kPoolOrder.length;
         final i2 = (slotN * 2 + 1) % _kPoolOrder.length;

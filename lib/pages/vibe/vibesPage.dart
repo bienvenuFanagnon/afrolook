@@ -581,7 +581,9 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
       mixedPosts.add(oldPost);
     }
 
-    final ads = authProvider.advertisements;
+    final ads = authProvider.advertisements
+        .where((a) => a['isEntityBoost'] != true && a['post'] != null)
+        .toList();
     final skipAds = AbonnementUtils.isPremiumActive(authProvider.loginUserData?.abonnement) ||
         AbonnementUtils.isAdmin(authProvider.loginUserData?.role);
     _feedItems.clear();

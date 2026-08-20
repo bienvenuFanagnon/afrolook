@@ -9,8 +9,10 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/model_data.dart';
 import '../../providers/postProvider.dart';
+import '../../theme/app_colors.dart';
 import '../component/consoleWidget.dart';
 import '../component/showUserDetails.dart';
+import '../pub/afrolook_inline_ad.dart';
 import 'newUserService.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -417,17 +419,18 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<UserAuthProvider>(context);
     final postProvider = Provider.of<PostProvider>(context);
+    final colors = AppColors.of(context);
 
     // Afficher un loader pendant l'initialisation
     if (_isInitialLoad) {
       return Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: colors.background,
         appBar: AppBar(
-          backgroundColor: Colors.black,
+          backgroundColor: colors.background,
           title: Text(
             'Services & Jobs 🛠️',
             style: TextStyle(
-              color: Colors.yellow,
+              color: colors.accent,
               fontWeight: FontWeight.bold,
               fontSize: 18,
             ),
@@ -444,12 +447,12 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
               SizedBox(height: 16),
               Text(
                 'Chargement des services...',
-                style: TextStyle(color: Colors.yellow),
+                style: TextStyle(color: colors.accent),
               ),
               SizedBox(height: 8),
               Text(
                 'Recherche dans votre pays',
-                style: TextStyle(color: Colors.grey, fontSize: 12),
+                style: TextStyle(color: colors.textSecondary, fontSize: 12),
               ),
             ],
           ),
@@ -458,20 +461,20 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colors.background,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: colors.background,
         title: Text(
           'Services & Jobs 🛠️',
           style: TextStyle(
-            color: Colors.yellow,
+            color: colors.accent,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.filter_list, color: Colors.yellow),
+            icon: Icon(Icons.filter_list, color: colors.accent),
             onPressed: () {
               setState(() {
                 _showFilters = !_showFilters;
@@ -479,7 +482,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
             },
           ),
           IconButton(
-            icon: Icon(Icons.add, color: Colors.yellow),
+            icon: Icon(Icons.add, color: colors.accent),
             onPressed: () {
               Navigator.push(
                 context,
@@ -497,15 +500,16 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
             padding: EdgeInsets.all(12),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.grey[900],
+                color: colors.surface,
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: colors.border),
               ),
               child: TextField(
                 controller: _searchController,
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: colors.textPrimary),
                 decoration: InputDecoration(
                   hintText: '🔍 Rechercher services, villes, métiers...',
-                  hintStyle: TextStyle(color: Colors.grey),
+                  hintStyle: TextStyle(color: colors.textSecondary),
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   suffixIcon: IconButton(
@@ -518,8 +522,14 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
             ),
           ),
 
+          // Pub Afrolook
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8),
+            child: AfrolookInlineAd(),
+          ),
+
           // Filtres
-          if (_showFilters) _buildFiltersSection(postProvider),
+          if (_showFilters) _buildFiltersSection(postProvider, colors),
 
           // Indication du filtre actif
           if (postProvider.selectedCountry != null && !_showFilters)
@@ -533,7 +543,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
                   Expanded(
                     child: Text(
                       'Filtre actif: ${postProvider.selectedCountry}',
-                      style: TextStyle(color: Colors.yellow, fontSize: 12),
+                      style: TextStyle(color: colors.supportAccent, fontSize: 12),
                     ),
                   ),
                   GestureDetector(
@@ -547,28 +557,28 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
           // Indicateur de chargement global
           if (_isLoadingServices)
             LinearProgressIndicator(
-              backgroundColor: Colors.grey[900],
+              backgroundColor: colors.surface,
               valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
             ),
 
           // Contenu principal
           Expanded(
             child: _isLoadingServices && postProvider.userServices.isEmpty
-                ? _buildFullPageLoader()
+                ? _buildFullPageLoader(colors)
                 : postProvider.userServices.isEmpty && !_isLoadingServices
-                ? _buildEmptyState()
-                : _buildServicesGrid(authProvider, postProvider),
+                ? _buildEmptyState(colors)
+                : _buildServicesGrid(authProvider, postProvider, colors),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFiltersSection(PostProvider postProvider) {
+  Widget _buildFiltersSection(PostProvider postProvider, AppColors colors) {
     return Container(
       padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey[900],
+        color: colors.surface,
         border: Border(bottom: BorderSide(color: Colors.green)),
       ),
       child: Column(
@@ -614,8 +624,8 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
                 child: OutlinedButton(
                   onPressed: _clearFilters,
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.yellow,
-                    side: BorderSide(color: Colors.yellow),
+                    foregroundColor: colors.supportAccent,
+                    side: BorderSide(color: colors.supportAccent),
                   ),
                   child: Text('EFFACER'),
                 ),
@@ -626,7 +636,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
                   onPressed: () => setState(() { _showFilters = false; }),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
-                    foregroundColor: Colors.black,
+                    foregroundColor: Colors.white,
                   ),
                   child: Text('APPLIQUER'),
                 ),
@@ -644,17 +654,18 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
     required String? value,
     required Function(String?) onChanged,
   }) {
+    final colors = AppColors.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: TextStyle(color: Colors.yellow, fontSize: 12),
+          style: TextStyle(color: colors.supportAccent, fontSize: 12),
         ),
         SizedBox(height: 4),
         Container(
           decoration: BoxDecoration(
-            color: Colors.black,
+            color: colors.background,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.green),
           ),
@@ -665,20 +676,20 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
               border: InputBorder.none,
               contentPadding: EdgeInsets.symmetric(horizontal: 8),
             ),
-            dropdownColor: Colors.grey[900],
-            style: TextStyle(color: Colors.white, fontSize: 12),
-            icon: Icon(Icons.arrow_drop_down, color: Colors.yellow, size: 16),
+            dropdownColor: colors.surface,
+            style: TextStyle(color: colors.textPrimary, fontSize: 12),
+            icon: Icon(Icons.arrow_drop_down, color: colors.supportAccent, size: 16),
             items: [
               DropdownMenuItem<String>(
                 value: null,
-                child: Text('Tous', style: TextStyle(color: Colors.grey)),
+                child: Text('Tous', style: TextStyle(color: colors.textSecondary)),
               ),
               ...items.map((item) {
                 return DropdownMenuItem<String>(
                   value: item,
                   child: Text(
                     item,
-                    style: TextStyle(color: Colors.white, fontSize: 12),
+                    style: TextStyle(color: colors.textPrimary, fontSize: 12),
                     overflow: TextOverflow.ellipsis,
                   ),
                 );
@@ -691,7 +702,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
     );
   }
 
-  Widget _buildFullPageLoader() {
+  Widget _buildFullPageLoader(AppColors colors) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -702,14 +713,14 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
           SizedBox(height: 16),
           Text(
             'Chargement des services...',
-            style: TextStyle(color: Colors.yellow),
+            style: TextStyle(color: colors.accent),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(AppColors colors) {
     final postProvider = Provider.of<PostProvider>(context);
     final authProvider = Provider.of<UserAuthProvider>(context);
     final userCountry = authProvider.loginUserData?.countryData?['countryCode'] ?? 'TG';
@@ -727,7 +738,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
               postProvider.selectedCountry != null
                   ? 'Aucun service trouvé pour ${postProvider.selectedCountry}'
                   : 'Aucun service trouvé',
-              style: TextStyle(color: Colors.yellow, fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(color: colors.supportAccent, fontSize: 16, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 8),
@@ -735,7 +746,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
               postProvider.selectedCountry != null && postProvider.selectedCountry == userCountryName
                   ? 'Aucun service disponible dans votre pays pour le moment.\nAffichage de tous les services...'
                   : 'Essayez de modifier vos filtres ou créez votre propre service',
-              style: TextStyle(color: Colors.grey),
+              style: TextStyle(color: colors.textSecondary),
               textAlign: TextAlign.center,
             ),
             if (postProvider.selectedCountry != null) ...[
@@ -744,7 +755,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
                 onPressed: _clearFilters,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
-                  foregroundColor: Colors.black,
+                  foregroundColor: Colors.white,
                 ),
                 child: Text('VOIR TOUS LES SERVICES'),
               ),
@@ -758,8 +769,8 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.yellow,
-                foregroundColor: Colors.black,
+                backgroundColor: colors.accent,
+                foregroundColor: colors.onAccent,
               ),
               child: Text('CRÉER UN SERVICE'),
             ),
@@ -769,14 +780,14 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
     );
   }
 
-  Widget _buildServicesGrid(UserAuthProvider authProvider, PostProvider postProvider) {
+  Widget _buildServicesGrid(UserAuthProvider authProvider, PostProvider postProvider, AppColors colors) {
     return Column(
       children: [
         // Compteur de résultats avec indication du filtre
         if (postProvider.userServices.isNotEmpty)
           Container(
             padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            color: Colors.grey[900],
+            color: colors.surface,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -791,7 +802,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
                     onTap: _clearFilters,
                     child: Text(
                       'Effacer les filtres',
-                      style: TextStyle(color: Colors.yellow, fontSize: 12),
+                      style: TextStyle(color: colors.supportAccent, fontSize: 12),
                     ),
                   ),
               ],
@@ -802,7 +813,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
         Expanded(
           child: RefreshIndicator(
             backgroundColor: Colors.green,
-            color: Colors.yellow,
+            color: colors.accent,
             onRefresh: () async {
               setState(() {
                 _isLoadingServices = true;
@@ -890,6 +901,7 @@ class ServiceGridCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     final hasValidImage = service.imageCourverture != null &&
         service.imageCourverture!.isNotEmpty &&
         service.imageCourverture!.startsWith('http');
@@ -901,7 +913,7 @@ class ServiceGridCard extends StatelessWidget {
     return Container(
       margin: EdgeInsets.all(4),
       child: Card(
-        color: Colors.grey[900],
+        color: colors.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
@@ -978,7 +990,7 @@ class ServiceGridCard extends StatelessWidget {
                       child: Text(
                         service.titre ?? 'Service',
                         style: TextStyle(
-                          color: Colors.yellow,
+                          color: colors.accent,
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                           height: 1.1,
@@ -1086,13 +1098,13 @@ class ServiceGridCard extends StatelessWidget {
                         margin: EdgeInsets.only(bottom: 2),
                         padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: Colors.yellow.withOpacity(0.9),
+                          color: colors.accent,
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           service.category!,
                           style: TextStyle(
-                            color: Colors.black,
+                            color: colors.onAccent,
                             fontSize: 7,
                             fontWeight: FontWeight.bold,
                           ),
@@ -1138,57 +1150,63 @@ class ServiceGridCard extends StatelessWidget {
   }
 
   Widget _buildImagePlaceholder() {
-    return Container(
-      color: Colors.grey[800],
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.work_outline, color: Colors.green, size: 30),
-            SizedBox(height: 4),
-            Text(
-              'SERVICE',
-              style: TextStyle(
-                color: Colors.green,
-                fontSize: 8,
-                fontWeight: FontWeight.bold,
+    return Builder(builder: (context) {
+      final colors = AppColors.of(context);
+      return Container(
+        color: colors.surfaceVariant,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.work_outline, color: Colors.green, size: 30),
+              SizedBox(height: 4),
+              Text(
+                'SERVICE',
+                style: TextStyle(
+                  color: Colors.green,
+                  fontSize: 8,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 
   Widget _buildCompactStat(IconData icon, int count, String label) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: Colors.green, size: 8),
-            SizedBox(width: 2),
-            Text(
-              _formatCount(count),
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 8,
-                fontWeight: FontWeight.w600,
+    return Builder(builder: (context) {
+      final colors = AppColors.of(context);
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: Colors.green, size: 8),
+              SizedBox(width: 2),
+              Text(
+                _formatCount(count),
+                style: TextStyle(
+                  color: colors.textPrimary,
+                  fontSize: 8,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-          ],
-        ),
-        SizedBox(height: 1),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.grey[400],
-            fontSize: 6,
+            ],
           ),
-        ),
-      ],
-    );
+          SizedBox(height: 1),
+          Text(
+            label,
+            style: TextStyle(
+              color: colors.textSecondary,
+              fontSize: 6,
+            ),
+          ),
+        ],
+      );
+    });
   }
 
   String _formatCount(int count) {
