@@ -3041,15 +3041,19 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         contentWidgets.add(_buildProfilesSection());
       }
 
-      // Slot rotatif : pub + 2 widgets du pool, tous les 3 posts
+      // Slot rotatif tous les 3 posts : slots pairs = pub, slots impairs = bannières
+      // (jamais pub + bannière ensemble pour éviter l'empilement)
       final postNumber = i + 1; // 1-based
       if (postNumber % 3 == 0) {
         final slotN = postNumber ~/ 3 - 1; // slot 0 au post 3, slot 1 au post 6…
-        contentWidgets.add(_buildAdAdvertisement(key: 'ad_slot_$slotN'));
-        final i1 = (slotN * 2) % _kPoolOrder.length;
-        final i2 = (slotN * 2 + 1) % _kPoolOrder.length;
-        contentWidgets.add(_buildPoolWidget(_kPoolOrder[i1]));
-        contentWidgets.add(_buildPoolWidget(_kPoolOrder[i2]));
+        if (slotN % 2 == 0) {
+          contentWidgets.add(_buildAdAdvertisement(key: 'ad_slot_$slotN'));
+        } else {
+          final i1 = (slotN * 2) % _kPoolOrder.length;
+          final i2 = (slotN * 2 + 1) % _kPoolOrder.length;
+          contentWidgets.add(_buildPoolWidget(_kPoolOrder[i1]));
+          contentWidgets.add(_buildPoolWidget(_kPoolOrder[i2]));
+        }
       }
     }
 
