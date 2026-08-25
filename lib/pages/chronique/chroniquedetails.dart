@@ -381,17 +381,21 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
     if (_allChroniques.isEmpty) return;
     final currentChronique = _allChroniques[_currentPage];
 
+    // Réinitialiser le flag AVANT de disposer pour éviter que le widget tente
+    // de rendre un VideoPlayer avec un controller déjà libéré.
+    setState(() => _isVideoInitialized = false);
+    _videoController?.dispose();
+    _videoController = null;
+
     if (currentChronique.type == ChroniqueType.VIDEO && currentChronique.mediaUrl != null) {
-      _videoController?.dispose();
-      _videoController = await MediaCacheService.videoController(currentChronique.mediaUrl!);
+      final ctrl = await MediaCacheService.videoController(currentChronique.mediaUrl!);
+      if (!mounted) { ctrl.dispose(); return; }
+      _videoController = ctrl;
       await _videoController!.initialize();
+      if (!mounted) return;
       _videoController!.play();
       _videoController!.setLooping(true);
       setState(() => _isVideoInitialized = true);
-    } else {
-      _videoController?.dispose();
-      _videoController = null;
-      _isVideoInitialized = false;
     }
 
     _markAsViewed(currentChronique);
