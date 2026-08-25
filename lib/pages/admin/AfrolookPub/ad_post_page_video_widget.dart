@@ -22,7 +22,10 @@ import 'package:chewie/chewie.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/providers/authProvider.dart';
+import 'package:afrotok/services/utils/abonnement_utils.dart';
 
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:linkify/linkify.dart'; // ajoutez cette dépendance
@@ -412,6 +415,10 @@ class _AdPostWidgetState extends State<AdPostWidget> {
 
   Widget _buildActionsOverlay() {
     final commentCount = post.comments ?? 0;
+    final authProv = Provider.of<UserAuthProvider>(context, listen: false);
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final showClicks = uid != null &&
+        (uid == ad.ownerId || AbonnementUtils.isAdmin(authProv.loginUserData?.role));
     return Positioned(
       left: 16,
       right: 16,
@@ -451,14 +458,16 @@ class _AdPostWidgetState extends State<AdPostWidget> {
                     style: const TextStyle(color: Colors.white70, fontSize: 12,
                         shadows: [Shadow(color: Colors.black54, blurRadius: 4)])),
               ]),
-              const SizedBox(width: 16),
-              Row(mainAxisSize: MainAxisSize.min, children: [
-                const Icon(Icons.touch_app_outlined, color: Colors.white60, size: 18),
-                const SizedBox(width: 4),
-                Text(_formatCount(ad.clicks ?? 0),
-                    style: const TextStyle(color: Colors.white60, fontSize: 12,
-                        shadows: [Shadow(color: Colors.black54, blurRadius: 4)])),
-              ]),
+              if (showClicks) ...[
+                const SizedBox(width: 16),
+                Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(Icons.touch_app_outlined, color: Colors.white60, size: 18),
+                  const SizedBox(width: 4),
+                  Text(_formatCount(ad.clicks ?? 0),
+                      style: const TextStyle(color: Colors.white60, fontSize: 12,
+                          shadows: [Shadow(color: Colors.black54, blurRadius: 4)])),
+                ]),
+              ],
             ],
           ),
         ],

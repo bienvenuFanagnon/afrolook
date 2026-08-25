@@ -42,6 +42,7 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
   Timer? _rotationTimer;
   VideoPlayerController? _adVideoController;
   bool _adVideoInitialized = false;
+  bool _isCtaLoading = false;
 
   late AnimationController _bounceCtrl;
   late Animation<double> _bounceOffset;
@@ -396,6 +397,12 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
     }
   }
 
+  bool _isAdminOrOwner(Advertisement ad, UserAuthProvider auth) {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return false;
+    return uid == ad.ownerId || AbonnementUtils.isAdmin(auth.loginUserData?.role);
+  }
+
   // ── Dispatcher entité ──────────────────────────────────────────────
   Widget _buildEntityBoostBanner(BuildContext context, Advertisement ad, String adDescription) {
     if (ad.ownerName?.isEmpty != false) return const SizedBox.shrink();
@@ -410,6 +417,8 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
   // ── Bannière horizontale compacte (pages détails image + vidéo) ─────
   Widget _buildEntityBoostBannerHorizontal(BuildContext context, Advertisement ad, String adDescription) {
     final colors = AppColors.of(context);
+    final auth = Provider.of<UserAuthProvider>(context, listen: false);
+    final showClicks = _isAdminOrOwner(ad, auth);
     final typeLabel = ad.ownerType == 'canal' ? 'Canal' : ad.ownerType == 'group' ? 'Groupe' : 'Créateur';
     final ctaLabel  = ad.ownerType == 'canal' ? "S'abonner" : ad.ownerType == 'group' ? 'Rejoindre' : 'Suivre';
     final ctaIcon   = ad.ownerType == 'canal' ? Icons.notifications_none : ad.ownerType == 'group' ? Icons.login : Icons.person_add;
@@ -418,9 +427,11 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
       mainAxisSize: MainAxisSize.min,
       children: [
         GestureDetector(
-          onTap: () async {
+          onTap: _isCtaLoading ? null : () async {
+            setState(() => _isCtaLoading = true);
             await _recordClick(ad);
-            if (context.mounted) _navigateToAdOwner(context, ad);
+            if (context.mounted) await _navigateToAdOwner(context, ad);
+            if (mounted) setState(() => _isCtaLoading = false);
           },
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -478,7 +489,7 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
                           Icon(Icons.remove_red_eye_outlined, size: 10, color: colors.textSecondary),
                           const SizedBox(width: 2),
                           Text('${ad.views}', style: TextStyle(fontSize: 9, color: colors.textSecondary, decoration: TextDecoration.none)),
-                          if ((ad.clicks ?? 0) > 0) ...[
+                          if (showClicks && (ad.clicks ?? 0) > 0) ...[
                             const SizedBox(width: 8),
                             Icon(Icons.touch_app_outlined, size: 10, color: colors.textSecondary),
                             const SizedBox(width: 2),
@@ -491,9 +502,11 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
                 const SizedBox(width: 8),
                 // CTA
                 GestureDetector(
-                  onTap: () async {
+                  onTap: _isCtaLoading ? null : () async {
+                    setState(() => _isCtaLoading = true);
                     await _recordClick(ad);
-                    if (context.mounted) _navigateToAdOwner(context, ad);
+                    if (context.mounted) await _navigateToAdOwner(context, ad);
+                    if (mounted) setState(() => _isCtaLoading = false);
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
@@ -501,16 +514,21 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
                       color: const Color(0xFFFFD700),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(ctaIcon, size: 13, color: const Color(0xFF5a3d00)),
-                        const SizedBox(width: 4),
-                        Text(ctaLabel,
-                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800,
-                            color: Color(0xFF5a3d00), decoration: TextDecoration.none)),
-                      ],
-                    ),
+                    child: _isCtaLoading
+                        ? const SizedBox(
+                            height: 18, width: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2.5,
+                              valueColor: AlwaysStoppedAnimation(Color(0xFF5a3d00))))
+                        : Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(ctaIcon, size: 13, color: const Color(0xFF5a3d00)),
+                              const SizedBox(width: 4),
+                              Text(ctaLabel,
+                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800,
+                                  color: Color(0xFF5a3d00), decoration: TextDecoration.none)),
+                            ],
+                          ),
                   ),
                 ),
               ],
@@ -747,6 +765,8 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
     required List<dynamic> posts,
     required String adDescription,
   }) {
+    final auth = Provider.of<UserAuthProvider>(context, listen: false);
+    final showClicks = _isAdminOrOwner(ad, auth);
     final followers = ad.ownerFollowers ?? 0;
     final followersLabel = typeLabel == 'Groupe' ? 'membres' : 'abonnés';
 
@@ -770,9 +790,11 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
         );
       },
       child: GestureDetector(
-        onTap: () async {
+        onTap: _isCtaLoading ? null : () async {
+          setState(() => _isCtaLoading = true);
           await _recordClick(ad);
-          if (context.mounted) _navigateToAdOwner(context, ad);
+          if (context.mounted) await _navigateToAdOwner(context, ad);
+          if (mounted) setState(() => _isCtaLoading = false);
         },
         child: Container(
           width: double.infinity,
@@ -781,18 +803,24 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
             color: const Color(0xFFFFD700),
             borderRadius: BorderRadius.circular(30),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(ctaIcon, size: 16, color: const Color(0xFF5a3d00)),
-              const SizedBox(width: 6),
-              Text(ctaLabel,
-                style: const TextStyle(
-                  fontSize: 14, fontWeight: FontWeight.w800,
-                  color: Color(0xFF5a3d00), decoration: TextDecoration.none,
-                )),
-            ],
-          ),
+          child: _isCtaLoading
+              ? const Center(
+                  child: SizedBox(
+                    height: 20, width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2.5,
+                      valueColor: AlwaysStoppedAnimation(Color(0xFF5a3d00)))))
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(ctaIcon, size: 16, color: const Color(0xFF5a3d00)),
+                    const SizedBox(width: 6),
+                    Text(ctaLabel,
+                      style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w800,
+                        color: Color(0xFF5a3d00), decoration: TextDecoration.none,
+                      )),
+                  ],
+                ),
         ),
       ),
     );
@@ -801,7 +829,11 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
       mainAxisSize: MainAxisSize.min,
       children: [
         GestureDetector(
-          onTap: () => _navigateToAdOwner(context, ad),
+          onTap: _isCtaLoading ? null : () async {
+            setState(() => _isCtaLoading = true);
+            await _navigateToAdOwner(context, ad);
+            if (mounted) setState(() => _isCtaLoading = false);
+          },
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
@@ -906,8 +938,8 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
                   ),
                 ],
 
-                // Stats pub (vues + clics)
-                if ((ad.views ?? 0) > 0 || (ad.clicks ?? 0) > 0)
+                // Stats pub (vues toujours, clics uniquement admin/propriétaire)
+                if ((ad.views ?? 0) > 0 || (showClicks && (ad.clicks ?? 0) > 0))
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
                     child: Row(
@@ -918,12 +950,14 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
                         Text('${ad.views ?? 0}',
                             style: TextStyle(fontSize: 10, color: colors.textSecondary,
                                 decoration: TextDecoration.none)),
-                        const SizedBox(width: 10),
-                        Icon(Icons.touch_app_outlined, size: 11, color: colors.textSecondary),
-                        const SizedBox(width: 3),
-                        Text('${ad.clicks ?? 0}',
-                            style: TextStyle(fontSize: 10, color: colors.textSecondary,
-                                decoration: TextDecoration.none)),
+                        if (showClicks && (ad.clicks ?? 0) > 0) ...[
+                          const SizedBox(width: 10),
+                          Icon(Icons.touch_app_outlined, size: 11, color: colors.textSecondary),
+                          const SizedBox(width: 3),
+                          Text('${ad.clicks ?? 0}',
+                              style: TextStyle(fontSize: 10, color: colors.textSecondary,
+                                  decoration: TextDecoration.none)),
+                        ],
                       ],
                     ),
                   ),
@@ -1034,7 +1068,12 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
               ),
               const SizedBox(width: 6),
               GestureDetector(
-                onTap: () => _navigateToAdOwner(context, ad),
+                onTap: _isCtaLoading ? null : () async {
+                  setState(() => _isCtaLoading = true);
+                  await _recordClick(ad);
+                  if (context.mounted) await _navigateToAdOwner(context, ad);
+                  if (mounted) setState(() => _isCtaLoading = false);
+                },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
                   decoration: BoxDecoration(
@@ -1042,15 +1081,20 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.5)),
                   ),
-                  child: Text(
-                    label,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFFFFD700),
-                      decoration: TextDecoration.none,
-                    ),
-                  ),
+                  child: _isCtaLoading
+                      ? const SizedBox(
+                          height: 14, width: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation(Color(0xFFFFD700))))
+                      : Text(
+                          label,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFFFFD700),
+                            decoration: TextDecoration.none,
+                          ),
+                        ),
                 ),
               ),
             ],

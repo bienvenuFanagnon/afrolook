@@ -575,6 +575,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
     if (_currentVideoController == null) return;
     _removeMidrollListener();
     _midrollShownForCurrentVideo = false;
+    // Pré-charger la pub dès le début de la vidéo — elle sera prête au moment du trigger
+    _prepareMidrollAd();
     final listener = () {
       if (_midrollShownForCurrentVideo || !mounted) return;
       final vpc = _currentVideoController;
@@ -599,33 +601,29 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
       _currentVideoController!.removeListener(_videoPositionListener!);
     }
     _videoPositionListener = null;
+    // Libérer la pub pré-chargée si elle n'est pas en cours d'affichage
+    if (!_showMidrollAd) {
+      _midrollVideoController?.dispose();
+      _midrollVideoController = null;
+      _midrollVideoInitialized = false;
+      _midrollAdData = null;
+    }
   }
 
-  Future<void> _showMidrollOverlay() async {
+  /// Pré-charge la pub midroll dès que la vidéo démarre.
+  /// Quand le trigger se déclenche (15s avant fin), la pub est déjà prête.
+  Future<void> _prepareMidrollAd() async {
     if (!mounted) return;
-    _currentVideoController?.pause();
-    // Choisir une pub aléatoire
-    final ads = authProvider.advertisements;
-    Map<String, dynamic>? picked;
-    if (ads.isNotEmpty) {
-      final idx = Random().nextInt(ads.length);
-      picked = ads[idx];
-      _midrollAdData = picked;
-    }
-    _midrollCountdown = 5;
-    setState(() { _showMidrollAd = true; _midrollVideoInitialized = false; });
-    _midrollTimer?.cancel();
-    _midrollTimer = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (!mounted) { t.cancel(); return; }
-      setState(() {
-        if (_midrollCountdown > 0) _midrollCountdown--;
-      });
-      if (_midrollCountdown <= 0) t.cancel();
-    });
+    final ads = authProvider.advertisements
+        .where((a) => a['post'] != null)
+        .toList();
+    if (ads.isEmpty) return;
+    final picked = ads[Random().nextInt(ads.length)];
+    _midrollAdData = picked;
 
-    // Init vidéo pub si c'est une vidéo (seulement pour boost post, pas entité)
-    final isEntityBoost = picked?['isEntityBoost'] == true;
-    if (picked != null && !isEntityBoost) {
+    // Pré-initialiser le contrôleur vidéo de la pub (sans le jouer)
+    final isEntityBoost = picked['isEntityBoost'] == true;
+    if (!isEntityBoost) {
       try {
         final post = Post.fromJson(picked['post'] as Map<String, dynamic>);
         final isVideo = post.dataType == PostDataType.VIDEO.name ||
@@ -639,14 +637,35 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
           await ctrl.initialize();
           await ctrl.setVolume(0);
           ctrl.setLooping(true);
-          ctrl.play();
+          // Pas de play() ici — on attend le moment du trigger
           if (mounted) setState(() => _midrollVideoInitialized = true);
         }
       } catch (_) {
         _midrollVideoController?.dispose();
         _midrollVideoController = null;
+        _midrollVideoInitialized = false;
       }
     }
+  }
+
+  /// Déclenché par le listener quand la vidéo approche de la fin.
+  /// La pub est déjà prête grâce à [_prepareMidrollAd].
+  Future<void> _showMidrollOverlay() async {
+    if (!mounted) return;
+    if (_midrollAdData == null) return; // Pas de pub pré-chargée, on ne coupe pas la vidéo
+    _currentVideoController?.pause();
+    // Lancer la lecture de la pub vidéo pré-chargée
+    _midrollVideoController?.play();
+    _midrollCountdown = 5;
+    setState(() { _showMidrollAd = true; });
+    _midrollTimer?.cancel();
+    _midrollTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) { t.cancel(); return; }
+      setState(() {
+        if (_midrollCountdown > 0) _midrollCountdown--;
+      });
+      if (_midrollCountdown <= 0) t.cancel();
+    });
   }
 
   void _closeMidrollOverlay() {
@@ -659,6 +678,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
       _midrollVideoInitialized = false;
       _midrollCountdown = 5;
     });
+    _midrollAdData = null;
     _currentVideoController?.play();
   }
 
@@ -1104,22 +1124,30 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
                                       ),
                                   ],
 
-                                  // Stats pub (vues + clics)
+                                  // Stats pub (vues toujours, clics uniquement admin/propriétaire)
                                   if (ad != null && (ad!.views ?? 0) > 0) ...[
-                                    const SizedBox(height: 10),
-                                    Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                                      const Icon(Icons.remove_red_eye_outlined, size: 13, color: Colors.white54),
-                                      const SizedBox(width: 4),
-                                      Text('${ad!.views} vues',
-                                        style: const TextStyle(color: Colors.white54, fontSize: 11, decoration: TextDecoration.none)),
-                                      if ((ad!.clicks ?? 0) > 0) ...[
-                                        const SizedBox(width: 12),
-                                        const Icon(Icons.touch_app_outlined, size: 13, color: Colors.white54),
-                                        const SizedBox(width: 4),
-                                        Text('${ad!.clicks} clics',
-                                          style: const TextStyle(color: Colors.white54, fontSize: 11, decoration: TextDecoration.none)),
-                                      ],
-                                    ]),
+                                    Builder(builder: (ctx) {
+                                      final uid = authProvider.loginUserData?.id;
+                                      final showClicks = uid != null &&
+                                          (uid == ad!.ownerId ||
+                                              AbonnementUtils.isAdmin(authProvider.loginUserData?.role));
+                                      return Column(mainAxisSize: MainAxisSize.min, children: [
+                                        const SizedBox(height: 10),
+                                        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                                          const Icon(Icons.remove_red_eye_outlined, size: 13, color: Colors.white54),
+                                          const SizedBox(width: 4),
+                                          Text('${ad!.views} vues',
+                                            style: const TextStyle(color: Colors.white54, fontSize: 11, decoration: TextDecoration.none)),
+                                          if (showClicks && (ad!.clicks ?? 0) > 0) ...[
+                                            const SizedBox(width: 12),
+                                            const Icon(Icons.touch_app_outlined, size: 13, color: Colors.white54),
+                                            const SizedBox(width: 4),
+                                            Text('${ad!.clicks} clics',
+                                              style: const TextStyle(color: Colors.white54, fontSize: 11, decoration: TextDecoration.none)),
+                                          ],
+                                        ]),
+                                      ]);
+                                    }),
                                   ],
                                   const SizedBox(height: 12),
 
@@ -1335,6 +1363,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
         _chewieController!.dispose();
         _chewieController = null;
       }
+
+      // Retirer le listener midroll de l'ancien contrôleur avant tout dispose
+      _removeMidrollListener();
 
       // Si l'ancien contrôleur vidéo n'était pas géré par le cache de préchargement
       // (ex: chargement de secours), il faut le disposer pour éviter une fuite mémoire/réseau.
@@ -1613,7 +1644,10 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
 
     // insertion ads + promo AfroShop (toutes les 7 vidéos)
     // Les pubs (AdPostWidget) sont masquées pour les utilisateurs Premium/Gold/Admin
-    final ads = authProvider.advertisements;
+    // Entity boosts exclus : AdPostWidget.initState() appelle Post.fromJson(post) qui crashe si post==null
+    final ads = authProvider.advertisements
+        .where((a) => a['isEntityBoost'] != true && a['post'] != null)
+        .toList();
     final skipAds = _isUserPremium();
     _feedItems.clear();
 
@@ -1660,7 +1694,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
   }
   void _rebuildFeedItems2() {
     _feedItems.clear();
-    final ads = authProvider.advertisements;
+    final ads = authProvider.advertisements
+        .where((a) => a['isEntityBoost'] != true && a['post'] != null)
+        .toList();
     final skipAds = _isUserPremium();
     if (_videoPosts.isEmpty) return;
 
@@ -4173,6 +4209,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
             ),
             onPageChanged: (index) async {
               if (!mounted) return;
+              // Fermer le midroll si l'utilisateur swipe pendant qu'une pub est affichée
+              if (_showMidrollAd) _closeMidrollOverlay();
               setState(() {
                 _currentPage = index;
                 _showOverlay = true; // rétablir les overlays à chaque changement de vidéo
