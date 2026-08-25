@@ -9,10 +9,9 @@ import '../../../theme/app_colors.dart';
 class WeeklyTopCommentatorsWidget extends StatefulWidget {
   const WeeklyTopCommentatorsWidget({Key? key}) : super(key: key);
 
-  static bool get shouldShow {
-    final day = DateTime.now().weekday; // 1=lun, 2=mar, 3=mer
-    return day >= 1 && day <= 3;
-  }
+  /// Affiché du lundi au dimanche : les résultats sont publiés chaque lundi
+  /// et restent valables toute la semaine.
+  static bool get shouldShow => true;
 
   // ── Cache statique partagé entre instances ─────────────────────────────────
   static Future<List<WeeklyCommentatorRanking>>? _sharedFuture;
