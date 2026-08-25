@@ -56,6 +56,7 @@ import '../../widgets/feed/sections/feed_filter_bar.dart';
 import '../../widgets/feed/sections/feed_ad_widgets.dart';
 import '../../services/feed/feed_repository.dart';
 import '../../widgets/feed/weekly_top_creators_widget.dart';
+import '../../widgets/feed/sections/weekly_top_commentators_widget.dart';
 import '../../widgets/flame_streak_banner.dart';
 import '../dating/widgets/top_dating_profiles_widget.dart';
 
@@ -559,8 +560,9 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   }
 
   void _initializeData() async {
-    // Précharger les top créateurs en parallèle
+    // Précharger les top créateurs et top commentateurs en parallèle
     WeeklyTopCreatorsWidget.preload();
+    WeeklyTopCommentatorsWidget.preload();
 
     // 1. Détecter le pays de l'utilisateur
     _selectedCountryCode = authProvider.loginUserData.countryData?['countryCode']?.toUpperCase();
@@ -2094,7 +2096,13 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
 
   Widget _buildPoolWidget(String name) {
     switch (name) {
-      case 'WeeklyTopCreators': return const WeeklyTopCreatorsWidget();
+      case 'WeeklyTopCreators': return const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            WeeklyTopCreatorsWidget(),
+            WeeklyTopCommentatorsWidget(),
+          ],
+        );
       case 'BoostedContent':   return const BoostedContentStripWidget();
       case 'Articles':         return _buildArticlesSection();
       case 'ShopPromo':        return ShopPromoFeedWidget(articles: _articles);

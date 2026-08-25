@@ -66,6 +66,7 @@ import '../user/following_unseen_feed_page.dart';
 import 'home_boot_cache.dart';
 import '../../widgets/feed/weekly_top_creators_widget.dart';
 import '../../widgets/feed/sections/weekly_top_posts_section_widget.dart';
+import '../../widgets/feed/sections/weekly_top_commentators_widget.dart';
 import '../../widgets/flame_streak_banner.dart';
 
 
@@ -696,9 +697,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     );
   }
   void _initializeData() async {
-    // Précharger les top créateurs et top posts en parallèle
+    // Précharger les top créateurs, top posts et top commentateurs en parallèle
     WeeklyTopCreatorsWidget.preload();
     WeeklyTopPostsSectionWidget.preload();
+    WeeklyTopCommentatorsWidget.preload();
 
     // 1. Détecter le pays de l'utilisateur
     _selectedCountryCode = authProvider.loginUserData.countryData?['countryCode']?.toUpperCase();
@@ -2565,6 +2567,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           mainAxisSize: MainAxisSize.min,
           children: [
             WeeklyTopCreatorsWidget(),
+            WeeklyTopCommentatorsWidget(),
             WeeklyTopPostsSectionWidget(),
           ],
         );
