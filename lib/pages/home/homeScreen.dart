@@ -9,6 +9,8 @@ import 'package:afrotok/pages/canaux/listCanal.dart';
 import 'package:afrotok/pages/canaux/detailsCanal.dart';
 import 'package:afrotok/pages/challengeMonth/challenge_month_page.dart';
 import 'package:afrotok/pages/weekly_top/weekly_top_posts_page.dart';
+import 'package:afrotok/pages/weekly_top/weekly_top_commentators_page.dart';
+import 'package:afrotok/pages/regles_confidentialite_page.dart';
 import 'package:afrotok/pages/chat/chatXilo.dart';
 import 'package:afrotok/pages/chronique/mychroniquepage.dart';
 import 'package:afrotok/pages/classements/userClassement.dart';
@@ -745,6 +747,23 @@ class _MyHomePageState extends State<MyHomePage>
                           ));
                         },
                       ),
+                      // Top Commentateurs de la semaine
+                      ListTile(
+                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                        leading: const Text('💬', style: TextStyle(fontSize: 20)),
+                        title: TextCustomerMenu(
+                          titre: 'Top Commentateurs de la semaine',
+                          fontSize: SizeText.homeProfileTextSize,
+                          couleur: colors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (context) => const WeeklyTopCommentatorsPage(),
+                          ));
+                        },
+                      ),
                     ],
                   ),
 
@@ -983,6 +1002,23 @@ class _MyHomePageState extends State<MyHomePage>
                         onTap: () {
                           Navigator.pop(context);
                           Navigator.pushNamed(context, '/app_info');
+                        },
+                      ),
+                      // Règles & Confidentialité
+                      ListTile(
+                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                        leading: Icon(Icons.gavel, size: 24, color: colors.primary),
+                        title: TextCustomerMenu(
+                          titre: 'Règles & Confidentialité',
+                          fontSize: SizeText.homeProfileTextSize,
+                          couleur: colors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (_) => const ReglesConfidentialitePage(),
+                          ));
                         },
                       ),
                       // Contacts

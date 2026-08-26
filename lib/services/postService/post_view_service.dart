@@ -28,6 +28,9 @@ class PostViewService {
   /// N'incrémente le compteur de l'auteur QUE si :
   ///   - le post est de type PostType.POST (pas PUB, CHALLENGE, SERVICE, etc.)
   ///   - l'auteur est connu et différent du viewer (pas ses propres vues)
+  ///
+  /// Sécurité : seules les vues d'abonnés comptent pour la monétisation.
+  /// Le compteur de vues du post (uniqueViewsCount) reste incrémenté pour tous.
   static Future<void> recordAuthorView(Post post, String viewerUserId) async {
     if (post.type != PostType.POST.name) return;
     if (post.isAdvertisement == true) return;
@@ -37,18 +40,33 @@ class PostViewService {
     final postId = post.id;
     if (postId == null || postId.isEmpty) return;
 
+    // Vérifier si le viewer est abonné à l'auteur
+    bool isSubscriber = false;
+    try {
+      final viewerDoc = await _firestore.collection('Users').doc(viewerUserId).get();
+      final followingIds =
+          (viewerDoc.data()?['followingIds'] as List<dynamic>?)?.cast<String>() ?? [];
+      isSubscriber = followingIds.contains(authorId);
+    } catch (e) {
+      printVm('PostViewService: subscriber check error: $e');
+    }
+
     final month = _currentMonth();
     try {
-      await _firestore.collection('Users').doc(authorId).update({
-        'totalPostUniqueViews': FieldValue.increment(1),
-        'postViewsMonthly.$month': FieldValue.increment(1),
-        'postViewsMonthlyPostIds.$month': FieldValue.arrayUnion([postId]),
-        'postViewsPerPost.$postId': FieldValue.increment(1),
-      });
-      // Met à jour le compteur du post pour l'affichage dans les gains
+      // Compteur de vues du post : toujours incrémenté (affichage public)
       _firestore.collection('Posts').doc(postId).update({
         'uniqueViewsCount': FieldValue.increment(1),
       }).catchError((e) => printVm('PostViewService post update error: $e'));
+
+      // Compteurs de monétisation : uniquement pour les abonnés
+      if (isSubscriber) {
+        await _firestore.collection('Users').doc(authorId).update({
+          'totalPostUniqueViews': FieldValue.increment(1),
+          'postViewsMonthly.$month': FieldValue.increment(1),
+          'postViewsMonthlyPostIds.$month': FieldValue.arrayUnion([postId]),
+          'postViewsPerPost.$postId': FieldValue.increment(1),
+        });
+      }
     } catch (e) {
       printVm('PostViewService.recordAuthorView error: $e');
     }
