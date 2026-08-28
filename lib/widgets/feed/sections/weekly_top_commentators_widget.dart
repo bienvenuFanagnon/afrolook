@@ -52,210 +52,210 @@ class _WeeklyTopCommentatorsWidgetState
     if (!WeeklyTopCommentatorsWidget.shouldShow) return const SizedBox.shrink();
     final colors = AppColors.of(context);
 
-    return FutureBuilder<List<WeeklyCommentatorRanking>>(
-      future: _future,
-      builder: (context, snap) {
-        if (snap.connectionState == ConnectionState.waiting) {
-          return _buildSkeleton(colors);
-        }
-        final rankings = (snap.data ?? []).take(5).toList();
-        if (rankings.isEmpty) return _buildEmptyPlaceholder(colors);
-
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: colors.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-                color: const Color(0xFF5B9CFA).withOpacity(0.35)),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF5B9CFA).withOpacity(0.07),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+    // Le container et la section "Mon niveau" sont toujours affichés.
+    // Seul le classement (carousel + barème) dépend des données.
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF5B9CFA).withOpacity(0.35)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF5B9CFA).withOpacity(0.07),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── En-tête ──────────────────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 12, 6),
-                child: Row(
-                  children: [
-                    const Text('💬', style: TextStyle(fontSize: 18)),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Top Commentateurs de la semaine',
-                            style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: colors.textPrimary),
-                          ),
-                          Text(
-                            'Classement · ${WeeklyRewardsService.getLastWeekId()}',
-                            style: TextStyle(
-                                fontSize: 10, color: colors.textSecondary),
-                          ),
-                        ],
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── En-tête ────────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 12, 6),
+            child: Row(
+              children: [
+                const Text('💬', style: TextStyle(fontSize: 18)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Top Commentateurs de la semaine',
+                        style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: colors.textPrimary),
                       ),
-                    ),
-                    GestureDetector(
-                      onTap: () => Navigator.push(context,
-                          MaterialPageRoute(builder: (_) => const WeeklyTopCommentatorsPage())),
-                      child: Text('Tout voir',
-                          style: TextStyle(
-                              fontSize: 11,
-                              color: const Color(0xFF5B9CFA),
-                              fontWeight: FontWeight.w600)),
-                    ),
-                  ],
+                      Text(
+                        'Classement · ${WeeklyRewardsService.getLastWeekId()}',
+                        style: TextStyle(
+                            fontSize: 10, color: colors.textSecondary),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-
-              // ── Barème récompenses ────────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
-                child: Row(
-                  children: [
-                    _rewardChip('🥇', '500'),
-                    const SizedBox(width: 6),
-                    _rewardChip('🥈', '300'),
-                    const SizedBox(width: 6),
-                    _rewardChip('🥉', '200'),
-                    const SizedBox(width: 6),
-                    _rewardChip('4e', '100'),
-                    const SizedBox(width: 6),
-                    _rewardChip('5e', '50'),
-                  ],
+                GestureDetector(
+                  onTap: () => Navigator.push(context,
+                      MaterialPageRoute(
+                          builder: (_) => const WeeklyTopCommentatorsPage())),
+                  child: Text('Tout voir',
+                      style: TextStyle(
+                          fontSize: 11,
+                          color: const Color(0xFF5B9CFA),
+                          fontWeight: FontWeight.w600)),
                 ),
-              ),
+              ],
+            ),
+          ),
 
-              // ── Carrousel horizontal ──────────────────────────────────────
-              SizedBox(
-                height: 108,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  primary: false,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  itemCount: rankings.length,
-                  itemBuilder: (context, i) =>
-                      _CommentatorCard(ranking: rankings[i]),
-                ),
-              ),
-
-              // ── Position & niveau de l'utilisateur courant ───────────────
-              Consumer2<UserAuthProvider, StreakProvider>(
-                builder: (ctx, auth, streakProv, _) {
-                  final me = auth.loginUserData;
-                  final myRanking = rankings.firstWhere(
-                    (r) => r.userId == me.id,
-                    orElse: () => WeeklyCommentatorRanking(
-                      rank: -1, userId: '', commentCount: 0,
-                      rewardedCoins: 0, paid: false,
+          // ── Classement (conditionnel) ───────────────────────────────────
+          FutureBuilder<List<WeeklyCommentatorRanking>>(
+            future: _future,
+            builder: (context, snap) {
+              if (snap.connectionState == ConnectionState.waiting) {
+                return _buildRankingSkeleton(colors);
+              }
+              final rankings = (snap.data ?? []).take(5).toList();
+              if (rankings.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+                  child: Text(
+                    'Aucun classement disponible cette semaine.',
+                    style: TextStyle(fontSize: 11, color: colors.textSecondary),
+                  ),
+                );
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Barème récompenses
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+                    child: Row(
+                      children: [
+                        _rewardChip('🥇', '500'),
+                        const SizedBox(width: 6),
+                        _rewardChip('🥈', '300'),
+                        const SizedBox(width: 6),
+                        _rewardChip('🥉', '200'),
+                        const SizedBox(width: 6),
+                        _rewardChip('4e', '100'),
+                        const SizedBox(width: 6),
+                        _rewardChip('5e', '50'),
+                      ],
                     ),
-                  );
-                  final streak = me.commentStreak;
-                  final lvl = commentLevelForStreak(streak);
-                  return GestureDetector(
-                    onTap: () => showCommentStreakModal(ctx, streakProv),
-                    child: Container(
-                      margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                  ),
+                  // Carrousel horizontal
+                  SizedBox(
+                    height: 108,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      primary: false,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: lvl.color.withOpacity(0.07),
-                        borderRadius: BorderRadius.circular(10),
-                        border:
-                            Border.all(color: lvl.color.withOpacity(0.3)),
-                      ),
-                      child: Row(
-                        children: [
-                          // Avatar
-                          CircleAvatar(
-                            radius: 16,
-                            backgroundImage:
-                                (me.imageUrl?.isNotEmpty == true)
-                                    ? CachedNetworkImageProvider(me.imageUrl!)
-                                    : null,
-                            backgroundColor: colors.shimmerBase,
-                            child: (me.imageUrl?.isEmpty ?? true)
-                                ? Icon(Icons.person,
-                                    size: 14, color: colors.textSecondary)
-                                : null,
-                          ),
-                          const SizedBox(width: 8),
-                          // Infos
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(children: [
-                                  Text(lvl.emoji,
-                                      style:
-                                          const TextStyle(fontSize: 12)),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    lvl.label,
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: lvl.color,
-                                    ),
-                                  ),
-                                ]),
-                                Text(
-                                  myRanking.rank > 0
-                                      ? '#${myRanking.rank} · ${myRanking.commentCount} 💬 cette semaine'
-                                      : 'Non classé · Commente pour figurer ici !',
-                                  style: TextStyle(
-                                    fontSize: 9,
-                                    color: colors.textSecondary,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                          ),
-                          // Streak + chevron
-                          if (streak > 0)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 7, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: lvl.color.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                    color: lvl.color.withOpacity(0.4)),
-                              ),
-                              child: Text(
-                                '🔥 $streak j',
-                                style: TextStyle(
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.bold,
-                                    color: lvl.color),
-                              ),
-                            ),
-                          const SizedBox(width: 4),
-                          Icon(Icons.chevron_right,
-                              size: 16, color: colors.textSecondary),
-                        ],
-                      ),
+                          horizontal: 10, vertical: 4),
+                      itemCount: rankings.length,
+                      itemBuilder: (context, i) =>
+                          _CommentatorCard(ranking: rankings[i]),
                     ),
-                  );
-                },
-              ),
-            ],
+                  ),
+                ],
+              );
+            },
           ),
-        );
-      },
+
+          // ── Mon niveau — toujours visible, tap → modal flamme ──────────
+          Consumer2<UserAuthProvider, StreakProvider>(
+            builder: (ctx, auth, streakProv, _) {
+              final me = auth.loginUserData;
+              final streak = me.commentStreak;
+              final lvl = commentLevelForStreak(streak);
+              return GestureDetector(
+                onTap: () => showCommentStreakModal(ctx, streakProv),
+                child: Container(
+                  margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: lvl.color.withOpacity(0.07),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: lvl.color.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      // Avatar
+                      CircleAvatar(
+                        radius: 16,
+                        backgroundImage: (me.imageUrl?.isNotEmpty == true)
+                            ? CachedNetworkImageProvider(me.imageUrl!)
+                            : null,
+                        backgroundColor: colors.shimmerBase,
+                        child: (me.imageUrl?.isEmpty ?? true)
+                            ? Icon(Icons.person,
+                                size: 14, color: colors.textSecondary)
+                            : null,
+                      ),
+                      const SizedBox(width: 8),
+                      // Niveau + pseudo
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(children: [
+                              Text(lvl.emoji,
+                                  style: const TextStyle(fontSize: 13)),
+                              const SizedBox(width: 4),
+                              Text(
+                                lvl.label,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: lvl.color,
+                                ),
+                              ),
+                            ]),
+                            Text(
+                              'Mon niveau · Appuie pour voir les détails',
+                              style: TextStyle(
+                                  fontSize: 9, color: colors.textSecondary),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Badge streak
+                      if (streak > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 7, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: lvl.color.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                                color: lvl.color.withOpacity(0.4)),
+                          ),
+                          child: Text(
+                            '🔥 $streak j',
+                            style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: lvl.color),
+                          ),
+                        ),
+                      const SizedBox(width: 4),
+                      Icon(Icons.chevron_right,
+                          size: 16, color: colors.textSecondary),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 
@@ -276,53 +276,11 @@ class _WeeklyTopCommentatorsWidgetState
     );
   }
 
-  Widget _buildEmptyPlaceholder(AppColors colors) {
-    return GestureDetector(
-      onTap: () => Navigator.push(context,
-          MaterialPageRoute(builder: (_) => const WeeklyTopCommentatorsPage())),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: colors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFF5B9CFA).withOpacity(0.3)),
-        ),
-        child: Row(
-          children: [
-            const Text('💬', style: TextStyle(fontSize: 28)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Top Commentateurs de la semaine',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: colors.textPrimary)),
-                  const SizedBox(height: 3),
-                  Text('Le classement sera disponible lundi prochain.\nCommente des posts pour figurer ici !',
-                      style: TextStyle(fontSize: 11, color: colors.textSecondary, height: 1.4)),
-                ],
-              ),
-            ),
-            Icon(Icons.chevron_right, color: colors.textSecondary, size: 20),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSkeleton(AppColors colors) {
+  Widget _buildRankingSkeleton(AppColors colors) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      height: 160,
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colors.border),
-      ),
-      child: Center(
-          child: CircularProgressIndicator(
-              color: colors.info, strokeWidth: 2)),
+      height: 100,
+      alignment: Alignment.center,
+      child: CircularProgressIndicator(color: colors.info, strokeWidth: 2),
     );
   }
 }
