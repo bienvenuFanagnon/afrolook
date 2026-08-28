@@ -44,10 +44,8 @@ import '../postDetailsVideo.dart';
 
 import '../../services/utils/abonnement_utils.dart';
 import '../../services/postService/feed_interaction_service.dart';
-import '../../services/comment_suggestion_service.dart';
 import '../../services/streak_service.dart';
 import '../../providers/streakProvider.dart';
-import '../../widgets/marquee_comment_chips.dart';
 import '../../widgets/user_badge_widget.dart';
 import '../../theme/app_colors.dart';
 import '../../providers/locale_provider.dart';
@@ -244,6 +242,7 @@ class YouTubeVideoCard extends StatefulWidget {
   // Session 13 : pays du filtre actif (HomeConstPost._selectedCountryCode), utilisé pour
   // afficher en priorité ce pays dans le badge pays du post (s'il y figure).
   final String? currentFilterCountry;
+  final bool suppressInlineAd;
 
   const YouTubeVideoCard({
     Key? key,
@@ -252,6 +251,7 @@ class YouTubeVideoCard extends StatefulWidget {
     this.index = 0,
     this.onNeighborhoodPreload,
     this.currentFilterCountry,
+    this.suppressInlineAd = false,
   }) : super(key: key);
 
 
@@ -302,14 +302,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   int _localInteractionsCount = 0;
   List<PostComment> _preloadedComments = [];
   bool _isLoadingComment = false;
-  List<String> _previewSuggestions = [];
-  bool _suggestionsFromAi = false;
-  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _suggestionSub;
   final TextEditingController _quickCommentController = TextEditingController();
   bool _isSendingQuickComment = false;
-
-  bool _isSuggestionsLoading = false;
-  Timer? _shuffleTimer;
 
   // Interaction vidéo (une seule fois par jour)
   bool _hasRecordedInteraction = false;
@@ -368,7 +362,6 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     _checkIfFavorite();
     _checkInteractionRecordedToday();
     _loadLastComment();
-    _loadSuggestions();
 
     if (widget.post.thumbnail?.isNotEmpty == true) {
       _thumbnailUrl = widget.post.thumbnail;
@@ -2011,61 +2004,6 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     );
   }
 
-  Future<void> _loadSuggestions() async {
-    if (!mounted) return;
-    final postId = widget.post.id;
-    if (postId == null) return;
-    final description = widget.post.description ?? '';
-    setState(() => _isSuggestionsLoading = true);
-    try {
-      final aiSuggestions = widget.post.commentSuggestions;
-      if (aiSuggestions != null && aiSuggestions.isNotEmpty) {
-        if (!mounted) return;
-        setState(() {
-          _previewSuggestions = List<String>.from(aiSuggestions)..shuffle();
-          _isSuggestionsLoading = false;
-          _suggestionsFromAi = true;
-        });
-        return;
-      }
-      final suggestions = CommentSuggestionService.getSuggestions(
-        postId,
-        description,
-        postType: widget.post.typeTabbar,
-      );
-      if (!mounted) return;
-      setState(() { _previewSuggestions = suggestions; _isSuggestionsLoading = false; });
-      _listenForAiSuggestions(postId);
-      _shuffleTimer?.cancel();
-      _shuffleTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-        if (!mounted) return;
-        setState(() { _previewSuggestions = List.of(_previewSuggestions)..shuffle(); });
-      });
-    } catch (_) {
-      if (mounted) setState(() => _isSuggestionsLoading = false);
-    }
-  }
-
-  void _listenForAiSuggestions(String postId) {
-    _suggestionSub?.cancel();
-    _suggestionSub = FirebaseFirestore.instance
-        .collection('Posts')
-        .doc(postId)
-        .snapshots()
-        .listen((snap) {
-      if (!mounted) return;
-      final raw = snap.data()?['commentSuggestions'];
-      if (raw is List && raw.isNotEmpty) {
-        setState(() {
-          _previewSuggestions = List<String>.from(raw)..shuffle();
-          _suggestionsFromAi = true;
-        });
-        _suggestionSub?.cancel();
-        _suggestionSub = null;
-      }
-    });
-  }
-
   Future<void> _loadLastComment() async {
     final postId = widget.post.id;
     if (postId == null || _isLoadingComment) return;
@@ -2227,7 +2165,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
           if (_preloadedComments.isNotEmpty)
             SizedBox(
               height: 30,
-              child: AutoScrollRow(
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
                 itemCount: _preloadedComments.length,
                 itemBuilder: (_, i) {
                   final text = _preloadedComments[i].message?.trim() ?? '';
@@ -2263,50 +2202,6 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                 },
               ),
             ),
-          // Suggestions — statiques, se mélangent toutes les 10 s, cliquables
-          SizedBox(
-            height: 26,
-            child: _isSuggestionsLoading
-                ? Row(children: List.generate(3, (_) => Container(
-                    margin: const EdgeInsets.only(right: 6), width: 70,
-                    decoration: BoxDecoration(color: colors.shimmerBase, borderRadius: BorderRadius.circular(13)))))
-                : ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _previewSuggestions.length + 1,
-                    itemBuilder: (_, i) {
-                      if (i == 0) {
-                        return Container(
-                          margin: const EdgeInsets.only(right: 6),
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: _suggestionsFromAi ? const Color(0xFF6C3EDB).withOpacity(0.12) : colors.surfaceVariant,
-                            borderRadius: BorderRadius.circular(13),
-                            border: Border.all(color: _suggestionsFromAi ? const Color(0xFF6C3EDB).withOpacity(0.35) : colors.border.withOpacity(0.4)),
-                          ),
-                          child: Row(mainAxisSize: MainAxisSize.min, children: [
-                            Text(_suggestionsFromAi ? '✨' : '💡', style: const TextStyle(fontSize: 10)),
-                            const SizedBox(width: 3),
-                            Text(_suggestionsFromAi ? 'IA' : 'local', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: _suggestionsFromAi ? const Color(0xFF6C3EDB) : colors.textSecondary)),
-                          ]),
-                        );
-                      }
-                      final text = _previewSuggestions[i - 1];
-                      return GestureDetector(
-                        onTap: () => _sendQuickComment(text),
-                        child: Container(
-                          margin: const EdgeInsets.only(right: 6),
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          decoration: BoxDecoration(
-                            color: colors.surfaceVariant,
-                            borderRadius: BorderRadius.circular(13),
-                            border: Border.all(color: colors.border.withOpacity(0.6)),
-                          ),
-                          child: Center(child: Text(text, style: TextStyle(fontSize: 11, color: colors.textSecondary))),
-                        ),
-                      );
-                    },
-                  ),
-          ),
           const SizedBox(height: 5),
 
           // Vrai champ de saisie
@@ -2449,9 +2344,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
 
   @override
   void dispose() {
-    _suggestionSub?.cancel();
     _quickCommentController.dispose();
-    _shuffleTimer?.cancel();
     _visibilityTimer?.cancel();
     _seeMoreTimer?.cancel();
     _canalLockTimer?.cancel();
@@ -2499,7 +2392,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                 const SizedBox(height: 12),
                 _buildPostActions(),
                 _buildCommentPreview(),
-                if (_shouldShowAd && widget.post.isAdvertisement != true) ...[
+                if (!widget.suppressInlineAd && _shouldShowAd && widget.post.isAdvertisement != true) ...[
                   const SizedBox(height: 12),
                   const AfrolookInlineAd(),
                 ],

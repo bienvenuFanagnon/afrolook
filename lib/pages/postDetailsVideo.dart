@@ -97,7 +97,6 @@ import 'coins/post_gifts_list.dart';
 import 'home/homeWidget.dart';
 
 import '../services/postService/post_view_service.dart';
-import '../services/comment_suggestion_service.dart';
 
 // Couleurs Afrolook (accent, non remplacées par AppColors)
 const _afroGreen = Color(0xFF2ECC71);
@@ -190,11 +189,6 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
   // Nouveau système de like + commentaire rapide
   bool _isLiking = false;
   List<PostComment> _preloadedComments = [];
-  List<String> _previewSuggestions = [];
-  bool _isSuggestionsLoading = false;
-  bool _suggestionsFromAi = false;
-  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _suggestionSub;
-  Timer? _shuffleTimer;
   final TextEditingController _quickCommentController = TextEditingController();
   bool _isSendingQuickComment = false;
 
@@ -240,7 +234,6 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       _loadAdvertisement();
     }
     _loadLastComment();
-    _loadCommentSuggestions();
   }
 
   void _startSuggestionModalTimer() {
@@ -773,9 +766,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
 
   @override
   void dispose() {
-    _suggestionSub?.cancel();
     _postSubscription?.cancel();
-    _shuffleTimer?.cancel();
     _midrollTimer?.cancel();
     _midrollVideoController?.dispose();
     _midrollVideoController = null;
@@ -2173,61 +2164,6 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     if (count >= 1000000) return '${(count / 1000000).toStringAsFixed(1)}M';
     if (count >= 1000) return '${(count / 1000).toStringAsFixed(1)}K';
     return count.toString();
-  }
-
-  Future<void> _loadCommentSuggestions() async {
-    if (!mounted) return;
-    final postId = _currentPost.id;
-    if (postId == null) return;
-    final description = _currentPost.description ?? '';
-    setState(() => _isSuggestionsLoading = true);
-    try {
-      final aiSuggestions = _currentPost.commentSuggestions;
-      if (aiSuggestions != null && aiSuggestions.isNotEmpty) {
-        if (!mounted) return;
-        setState(() {
-          _previewSuggestions = List<String>.from(aiSuggestions)..shuffle();
-          _isSuggestionsLoading = false;
-          _suggestionsFromAi = true;
-        });
-        return;
-      }
-      final suggestions = CommentSuggestionService.getSuggestions(
-        postId,
-        description,
-        postType: _currentPost.typeTabbar,
-      );
-      if (!mounted) return;
-      setState(() { _previewSuggestions = suggestions; _isSuggestionsLoading = false; });
-      _listenForAiSuggestions(postId);
-      _shuffleTimer?.cancel();
-      _shuffleTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-        if (!mounted) return;
-        setState(() { _previewSuggestions = List.of(_previewSuggestions)..shuffle(); });
-      });
-    } catch (_) {
-      if (mounted) setState(() => _isSuggestionsLoading = false);
-    }
-  }
-
-  void _listenForAiSuggestions(String postId) {
-    _suggestionSub?.cancel();
-    _suggestionSub = _firestore
-        .collection('Posts')
-        .doc(postId)
-        .snapshots()
-        .listen((snap) {
-      if (!mounted) return;
-      final raw = snap.data()?['commentSuggestions'];
-      if (raw is List && raw.isNotEmpty) {
-        setState(() {
-          _previewSuggestions = List<String>.from(raw)..shuffle();
-          _suggestionsFromAi = true;
-        });
-        _suggestionSub?.cancel();
-        _suggestionSub = null;
-      }
-    });
   }
 
   Future<void> _loadLastComment() async {

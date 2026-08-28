@@ -131,10 +131,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   Timer? _backgroundLoadTimer;
   bool _useBackgroundLoading = true;
 
-  // === Pool de widgets rotatifs (1 apparition max par widget dans le fil) ===
+  // === Pool de widgets rotatifs (1 widget par slot, intervalle 4 posts) ===
   static const List<String> _kPoolOrder = [
-    'WeeklyTopCreators', 'BoostedContent', 'Articles', 'ShopPromo', 'Canaux',
-    'TopDating', 'VIPContent', 'Profiles',
+    'BoostedContent', 'WeeklyTopCreators', 'Canaux', 'VIPContent', 'Articles',
   ];
 
   // Filtrage par pays
@@ -2561,26 +2560,51 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     );
   }
 
-  Widget _buildPoolWidget(String name) {
+  /// Construit un slot de découverte : affiche le widget pool [name] s'il a du
+  /// contenu, sinon bascule sur [FeedUnifiedAdSlot] (pub) en fallback.
+  /// Articles et Canaux : vérification synchrone via l'état local.
+  /// Autres widgets async : vérification post-frame via FeedPoolOrAd.
+  Widget _buildPoolOrAd(String name, String adKey) {
     switch (name) {
-      case 'WeeklyTopCreators': return const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            WeeklyTopCreatorsWidget(),
-            WeeklyTopCommentatorsWidget(),
-            WeeklyTopPostsSectionWidget(),
-          ],
+      case 'Articles':
+        if (_articles.isEmpty) return _buildUnifiedAdSlot(key: adKey);
+        return FeedPoolOrAd(
+          key: ValueKey('pool_$adKey'),
+          adKey: adKey,
+          poolChild: _buildArticlesSection(),
         );
-      case 'BoostedContent':   return const BoostedContentStripWidget();
-      case 'Articles':         return _buildArticlesSection();
-      case 'ShopPromo':        return ShopPromoFeedWidget(articles: _articles);
-      case 'Canaux':           return _buildCanauxSection();
-      case 'TopDating':        return const TopDatingProfilesWidget();
-      case 'VIPContent':       return const RecentVIPContentWidget();
-      case 'Profiles':         return _buildProfilesSection();
-      default:                 return const SizedBox.shrink();
+      case 'Canaux':
+        if (_canaux.isEmpty) return _buildUnifiedAdSlot(key: adKey);
+        return FeedPoolOrAd(
+          key: ValueKey('pool_$adKey'),
+          adKey: adKey,
+          poolChild: _buildCanauxSection(),
+        );
+      case 'WeeklyTopCreators':
+        return FeedPoolOrAd(
+          key: ValueKey('pool_$adKey'),
+          adKey: adKey,
+          poolChild: const WeeklyTopCreatorsWidget(),
+        );
+      case 'BoostedContent':
+        return FeedPoolOrAd(
+          key: ValueKey('pool_$adKey'),
+          adKey: adKey,
+          poolChild: const BoostedContentStripWidget(),
+        );
+      case 'VIPContent':
+        return FeedPoolOrAd(
+          key: ValueKey('pool_$adKey'),
+          adKey: adKey,
+          poolChild: const RecentVIPContentWidget(),
+        );
+      default:
+        return _buildUnifiedAdSlot(key: adKey);
     }
   }
+
+  Widget _buildUnifiedAdSlot({required String key}) =>
+      FeedUnifiedAdSlot(adKey: key);
 
   Widget _buildPostWidget(Post post, double width, double height, int index) {
     final isDiscovery = post.id != null &&
@@ -2612,6 +2636,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                   key: ValueKey('ytcard_${post.id}'),
                   post: post,
                   index: index,
+                  suppressInlineAd: true,
                   onNeighborhoodPreload: _preloadVideoNeighborhood,
                   currentFilterCountry: _currentFilter == 'ALL' || _currentFilter == 'MIXED' ? null : _selectedCountryCode,
                   onTap: () {
@@ -2631,6 +2656,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                   height: height * 0.6,
                   width: width,
                   isDegrade: true,
+                  suppressInlineAd: true,
                   currentFilterCountry: _currentFilter == 'ALL' || _currentFilter == 'MIXED' ? null : _selectedCountryCode,
                 ),
               ],
@@ -3002,21 +3028,21 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     contentWidgets.add(_buildFilterChips());
     contentWidgets.add(const SizedBox(height: 8));
 
-    // Sections toujours présentes dès le premier build (skeleton si en cours de
-    // chargement) → aucun décalage de layout quand les données arrivent.
     contentWidgets.add(_buildChroniquesSection());
-    contentWidgets.add(const FlameStreakBanner());
-    contentWidgets.add(_buildAdMrec(key: 'ad_native_user'));
 
-    // Carousel pronostics avant le premier post
-    if (finalPosts.isNotEmpty) {
-      contentWidgets.add(const PronosticsCarouselWidget());
-    } else {
-      // Pas de posts : afficher la section créateurs en haut quand même
-      contentWidgets.add(_buildProfilesSection());
+    // Lun & Jeu : promo AfroShop avant les posts
+    final _weekday = DateTime.now().weekday;
+    if ((_weekday == DateTime.monday || _weekday == DateTime.thursday) &&
+        _articles.isNotEmpty) {
+      contentWidgets.add(
+        ShopPromoFeedWidget(articles: _articles, isFirstPosition: true),
+      );
     }
 
-    final _weekday = DateTime.now().weekday;
+    // Pas de posts : créateurs en haut
+    if (finalPosts.isEmpty) {
+      contentWidgets.add(_buildProfilesSection());
+    }
 
     for (int i = 0; i < finalPosts.length; i++) {
       final post = finalPosts[i];
@@ -3033,30 +3059,28 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         ),
       );
 
-      // Après le 1er post : AfroShop promo (lun/jeu) puis créateurs actifs
+      // Après le 1er post : section créateurs actifs
       if (i == 0) {
-        if ((_weekday == DateTime.monday || _weekday == DateTime.thursday) &&
-            _articles.isNotEmpty) {
-          contentWidgets.add(
-            ShopPromoFeedWidget(articles: _articles, isFirstPosition: true),
-          );
-        }
         contentWidgets.add(_buildProfilesSection());
       }
 
-      // Slot rotatif tous les 3 posts : slots pairs = pub, slots impairs = bannières
-      // (jamais pub + bannière ensemble pour éviter l'empilement)
-      final postNumber = i + 1; // 1-based
-      if (postNumber % 3 == 0) {
-        final slotN = postNumber ~/ 3 - 1; // slot 0 au post 3, slot 1 au post 6…
-        if (slotN % 2 == 0) {
-          contentWidgets.add(_buildAdAdvertisement(key: 'ad_slot_$slotN'));
-        } else {
-          final i1 = (slotN * 2) % _kPoolOrder.length;
-          final i2 = (slotN * 2 + 1) % _kPoolOrder.length;
-          contentWidgets.add(_buildPoolWidget(_kPoolOrder[i1]));
-          contentWidgets.add(_buildPoolWidget(_kPoolOrder[i2]));
-        }
+      // Après le 2ème post : classement hebdo commentateurs (visible toute la semaine)
+      if (i == 1) {
+        contentWidgets.add(const WeeklyTopCommentatorsWidget());
+      }
+
+      // Pub toutes les 4 posts — toujours affichée
+      final postNumber = i + 1;
+      if (postNumber % 4 == 0) {
+        final slotN = postNumber ~/ 4 - 1;
+        contentWidgets.add(_buildUnifiedAdSlot(key: 'ad_slot_$slotN'));
+      }
+      // Slot découverte toutes les 6 posts (compteur indépendant des ads)
+      // Si le widget pool n'a pas de contenu, FeedPoolOrAd bascule sur une pub.
+      if (postNumber % 6 == 0) {
+        final poolCount = postNumber ~/ 6 - 1;
+        final poolIdx = poolCount % _kPoolOrder.length;
+        contentWidgets.add(_buildPoolOrAd(_kPoolOrder[poolIdx], 'pool_slot_$poolCount'));
       }
     }
 

@@ -36,6 +36,30 @@ int _levelFromStreak(int streak) {
 int _computeScore(int streak, int bestStreak) =>
     (streak * 10) + (bestStreak * 5);
 
+/// Retourne le niveau (emoji, label, couleur) pour un streak donné.
+/// Utilisable depuis d'autres widgets pour rester cohérent.
+({String emoji, String label, Color color}) commentLevelForStreak(int streak) {
+  final lvl = _levelFromStreak(streak).clamp(0, 5);
+  return (
+    emoji: _kLevels[lvl].emoji,
+    label: _kLevels[lvl].label,
+    color: _kLevels[lvl].color,
+  );
+}
+
+/// Ouvre le modal complet de série commentaires (niveaux, règles, classement).
+void showCommentStreakModal(BuildContext context, StreakProvider streak) {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (_) => ChangeNotifierProvider.value(
+      value: streak,
+      child: const _FlameStreakModal(),
+    ),
+  );
+}
+
 // Modèle léger pour les avatars de la bannière
 class _BannerUser {
   final String id;

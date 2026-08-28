@@ -51,6 +51,7 @@ import 'auth/authTest/Screens/updateUserData.dart';
 
 import 'home/homeScreen.dart';
 import 'home/home_boot_cache.dart';
+import 'suspension_screen.dart';
 
 class DestinationData {
   final String type;
@@ -311,6 +312,14 @@ class _SplashChargementState extends State<SplashChargement> {
       await HomeBootCache.preload(userId);
     }
     if (!mounted) return;
+    final user = authProvider.loginUserData;
+    if (user.isSuspended) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => SuspensionScreen(user: user)),
+      );
+      return;
+    }
     printVm("🚀 [SPLASH] Navigation vers Home avec destination ${_destinationToSend?.type}");
     Navigator.pushReplacement(
       context,

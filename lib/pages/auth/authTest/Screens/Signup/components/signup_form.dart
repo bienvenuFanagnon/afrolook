@@ -18,6 +18,7 @@ import '../../Login/loginPageUser.dart';
 import '../signup_up_form_step_2.dart';
 import '../../../../../../theme/app_colors.dart';
 import '../../../../../../l10n/app_localizations.dart';
+import '../../../../../regles_confidentialite_page.dart';
 
 // Couleurs de base
 const Color primaryGreen = Color(0xFF25D366);
@@ -40,6 +41,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
   bool onTap = false;
+  bool _acceptedTerms = false;
   bool is_open = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -316,14 +318,58 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         return null;
                       },
                     ),
-                    SizedBox(height: 30),
+                    SizedBox(height: 16),
+
+                    // Acceptation des conditions
+                    InkWell(
+                      onTap: () => setState(() => _acceptedTerms = !_acceptedTerms),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: Checkbox(
+                                value: _acceptedTerms,
+                                onChanged: (v) => setState(() => _acceptedTerms = v ?? false),
+                                activeColor: primaryGreen,
+                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Wrap(
+                                children: [
+                                  Text(
+                                    'En créant ce compte vous acceptez nos ',
+                                    style: TextStyle(fontSize: 12, color: AppColors.of(context).textSecondary),
+                                  ),
+                                  GestureDetector(
+                                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReglesConfidentialitePage())),
+                                    child: const Text(
+                                      'Règles & Confidentialité',
+                                      style: TextStyle(fontSize: 12, color: primaryGreen, fontWeight: FontWeight.w700, decoration: TextDecoration.underline),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    SizedBox(height: 14),
 
                     // Bouton suivant
                     Container(
                       width: double.infinity,
                       height: 50,
                       child: ElevatedButton(
-                        onPressed: onTap ? null : () async {
+                        onPressed: (onTap || !_acceptedTerms) ? null : () async {
                           if (!_formKey.currentState!.validate()) return;
                           setState(() => onTap = true);
                           try {
@@ -338,6 +384,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               authProvider.registerUser.genre = selectedGenre;
                               authProvider.registerUser.password = motDePasseController.text;
                               authProvider.registerUser.email = emailController.text;
+                              authProvider.registerUser.acceptedTermsAt = DateTime.now().millisecondsSinceEpoch;
+                              authProvider.registerUser.acceptedCommunityRulesAt = DateTime.now().millisecondsSinceEpoch;
 
                               if (!mounted) return;
                               Navigator.pop(context);

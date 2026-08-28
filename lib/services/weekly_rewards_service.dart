@@ -190,7 +190,19 @@ class WeeklyRewardsService {
 
   // ── Top Commentateurs ───────────────────────────────────────────────────────
 
-  /// Retourne le top 5 commentateurs de la semaine.
+  /// Retourne la semaine la plus récente qui a des données dans WeeklyTopCommentators.
+  /// Retourne null si aucune donnée n'existe.
+  Future<String?> getLatestCommentatorsWeekId() async {
+    final snap = await _db
+        .collection('WeeklyTopCommentators')
+        .orderBy('computedAt', descending: true)
+        .limit(1)
+        .get();
+    if (snap.docs.isEmpty) return null;
+    return snap.docs.first.data()['weekId'] as String?;
+  }
+
+  /// Retourne le classement complet des commentateurs pour la semaine donnée.
   Future<List<WeeklyCommentatorRanking>> getWeeklyTopCommentators({String? weekId}) async {
     final wid = weekId ?? getCurrentWeekId();
 

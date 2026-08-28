@@ -1,6 +1,8 @@
 import { onSchedule } from "firebase-functions/v2/scheduler";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { FieldValue } from "firebase-admin/firestore";
 import { db } from "../shared/firebase";
+import { sendToOneSignal } from "../shared/notification_utils";
 
 // ─── Constantes ──────────────────────────────────────────────────────────────
 
@@ -78,173 +80,327 @@ async function rewardUser(params: {
 }): Promise<void> {
   const { userId, coins, rank, weekId, subType, postId } = params;
   const userRef = db.collection("Users").doc(userId);
-  const txRef = db.collection("Transactions").doc();
+  const txSoldeRef = db.collection("TransactionSoldes").doc();
+  const now = Date.now();
+
+  const rankLabel = rank === 1 ? "🥇 1er" : rank === 2 ? "🥈 2e" : rank === 3 ? "🥉 3e" : `${rank}e`;
+  const subLabel = subType === "top_commentator" ? "commentateur" : "créateur";
+  const description = `Récompense ${rankLabel} meilleur ${subLabel} — semaine ${weekId}`;
 
   await db.runTransaction(async (tx) => {
     tx.update(userRef, { giftCoins: FieldValue.increment(coins) });
-    tx.set(txRef, {
-      type: "weekly_reward",
-      subType,
+    tx.set(txSoldeRef, {
+      id: txSoldeRef.id,
+      user_id: userId,
+      type: "GAIN_PIECES",
+      statut: "VALIDER",
+      description,
+      montant: coins,
+      frais: 0,
+      montant_total: coins,
+      methode_paiement: "classement_semaine",
+      createdAt: now,
+      updatedAt: now,
       weekId,
-      receiverId: userId,
-      coinsAmount: coins,
       rank,
+      subType,
       ...(postId ? { postId } : {}),
-      createdAt: FieldValue.serverTimestamp(),
     });
   });
+}
+
+/** Envoie une notification push + in-app au gagnant d'une récompense hebdo. */
+async function sendWeeklyRewardNotification(params: {
+  userId: string;
+  coins: number;
+  rank: number;
+  weekId: string;
+  subType: "top_commentator" | "top_post";
+}): Promise<void> {
+  const { userId, coins, rank, weekId, subType } = params;
+
+  try {
+    const appConfigDoc = await db.collection("AppData").doc("XgkSxKc10vWsJJ2uBraT").get();
+    const appConfig = appConfigDoc.data();
+    if (!appConfig?.one_signal_app_id || !appConfig?.one_signal_api_key) {
+      console.warn("[weeklyReward] Clés OneSignal manquantes — push ignoré");
+      return;
+    }
+
+    const userDoc = await db.collection("Users").doc(userId).get();
+    const userData = userDoc.data();
+    if (!userData) return;
+
+    const rankEmoji = rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `${rank}e`;
+    const subLabel = subType === "top_commentator" ? "commentateur" : "créateur";
+    const nowMicros = Date.now() * 1000;
+    const pushMessage = `${rankEmoji} Tu es ${rank}${rank === 1 ? "er" : "e"} meilleur ${subLabel} de la semaine ${weekId} ! Tu remportes +${coins} 🪙`;
+
+    // Notification in-app (Firestore)
+    const notifRef = db.collection("Notifications").doc();
+    await notifRef.set({
+      id: notifRef.id,
+      titre: `${rankEmoji} Récompense hebdomadaire`,
+      description: pushMessage,
+      type: "WEEKLY_REWARD",
+      user_id: "afrolook_system",
+      receiver_id: userId,
+      post_id: "",
+      post_data_type: "",
+      is_open: false,
+      users_id_view: [],
+      created_at: nowMicros,
+      updated_at: nowMicros,
+      createdAt: nowMicros,
+      updatedAt: nowMicros,
+      status: "VALIDE",
+      canal_id: null,
+      weekId,
+      rank,
+      coins,
+      subType,
+    });
+
+    // Notification push OneSignal
+    const oneSignalId: string = userData.oneIgnalUserid ?? "";
+    if (oneSignalId && oneSignalId.length > 5) {
+      await sendToOneSignal(
+        [oneSignalId],
+        pushMessage,
+        "Afrolook",
+        appConfig.app_logo ?? "",
+        appConfig.one_signal_app_id,
+        appConfig.one_signal_api_key,
+        {
+          type_notif: "WEEKLY_REWARD",
+          rank,
+          coins,
+          weekId,
+          subType,
+        }
+      );
+    }
+  } catch (err) {
+    console.error(`[weeklyReward] Erreur notification user ${userId}:`, err);
+  }
 }
 
 // ─── 1. TOP COMMENTATEURS ────────────────────────────────────────────────────
 
 /**
- * Chaque lundi à 00:05 UTC : calcule les 5 meilleurs commentateurs de la
- * semaine écoulée et leur envoie des pièces.
- *
- * Règles anti-spam :
- * - Collection : PostComments (created_at en microsecondes, champs snake_case)
- * - Message réel : longueur >= MIN_COMMENT_LENGTH
- * - Compte >= MIN_ACCOUNT_AGE_DAYS jours
- * - 1 seul commentaire par post par user (on décompte les posts distincts)
+ * Logique principale : calcule les 5 meilleurs commentateurs de la semaine
+ * identifiée par weekId et leur envoie des pièces + notifications.
+ * Si force=true, supprime le verrou avant d'acquérir un nouveau (utile pour admin).
  */
-export const weeklyTopCommentatorsReward = onSchedule(
-  {
-    schedule: "5 0 * * MON",
-    timeZone: "UTC",
-    memory: "512MiB",
-    cpu: 1,
-    timeoutSeconds: 300,
-  },
-  async () => {
-    // La fonction tourne le lundi matin → on récompense la semaine qui vient de se terminer
-    const weekId = getLastWeekId();
-    console.log(`[weeklyCommentators] Semaine récompensée : ${weekId}`);
+/**
+ * @param rankingOnly — si true : recalcule et stocke tous les scores SANS créditer de pièces ni notifier.
+ *                      Utilisé pour mettre à jour le classement complet après coup.
+ */
+async function runCommentatorsReward(
+  weekId: string,
+  force = false,
+  rankingOnly = false,
+): Promise<{ rankings: object[]; note?: string }> {
+  if (force) {
+    const lockId = `${weekId}_commentators`;
+    try { await db.collection("WeeklyRewardLocks").doc(lockId).delete(); } catch (_) {}
+  }
 
-    const locked = await acquireLock(weekId, "commentators");
-    if (!locked) {
-      console.log(`[weeklyCommentators] Déjà traité pour ${weekId}. Abandon.`);
-      return;
+  const locked = await acquireLock(weekId, "commentators");
+  if (!locked) {
+    console.log(`[weeklyCommentators] Déjà traité pour ${weekId}.`);
+    return { rankings: [], note: "already_processed" };
+  }
+
+  const lastWeekStartMicros = getLastWeekStartMicros();
+  const thisWeekStartMicros = getWeekStartMicros();
+  const minAccountDate = new Date(Date.now() - MIN_ACCOUNT_AGE_DAYS * 86400000);
+
+  // scoreMap : userId -> Set<post_id>
+  const scoreMap = new Map<string, Set<string>>();
+  let lastDoc: FirebaseFirestore.QueryDocumentSnapshot | null = null;
+  let fetched = 0;
+
+  while (true) {
+    let query = db
+      .collection("PostComments")
+      .where("created_at", ">=", lastWeekStartMicros)
+      .where("created_at", "<", thisWeekStartMicros)
+      .orderBy("created_at", "asc")
+      .limit(500);
+
+    if (lastDoc) query = query.startAfter(lastDoc);
+
+    const snap = await query.get();
+    if (snap.empty) break;
+
+    for (const doc of snap.docs) {
+      const data = doc.data();
+      const userId: string = data.user_id ?? "";
+      const postId: string = data.post_id ?? "";
+      const message: string = data.message ?? "";
+      if (!userId || !postId) continue;
+      if (message.trim().length < MIN_COMMENT_LENGTH) continue;
+      if (!scoreMap.has(userId)) scoreMap.set(userId, new Set());
+      scoreMap.get(userId)!.add(postId);
     }
 
-    const lastWeekStartMicros = getLastWeekStartMicros(); // lundi précédent 00:00
-    const thisWeekStartMicros = getWeekStartMicros();      // lundi actuel 00:00 (fin de la période)
-    const minAccountDate = new Date(Date.now() - MIN_ACCOUNT_AGE_DAYS * 86400000);
+    fetched += snap.size;
+    lastDoc = snap.docs[snap.docs.length - 1];
+    if (snap.size < 500) break;
+  }
 
-    // ── Charger tous les commentaires de la semaine écoulée ──
-    // scoreMap : userId -> Set<post_id>  (1 post = 1 point max)
-    const scoreMap = new Map<string, Set<string>>();
+  console.log(`[weeklyCommentators] ${fetched} commentaires analysés, ${scoreMap.size} utilisateurs.`);
 
-    let lastDoc: FirebaseFirestore.QueryDocumentSnapshot | null = null;
-    let fetched = 0;
+  if (scoreMap.size === 0) {
+    await db.collection("WeeklyTopCommentators").doc(weekId).set({
+      weekId, computedAt: FieldValue.serverTimestamp(), rankings: [], note: "no_eligible_comments",
+    });
+    return { rankings: [], note: "no_eligible_comments" };
+  }
 
-    while (true) {
-      let query = db
-        .collection("PostComments")
-        .where("created_at", ">=", lastWeekStartMicros)
-        .where("created_at", "<", thisWeekStartMicros)
-        .orderBy("created_at", "asc")
-        .limit(500);
+  const userIds = Array.from(scoreMap.keys());
+  const eligibleScores: Array<{ userId: string; count: number }> = [];
 
-      if (lastDoc) query = query.startAfter(lastDoc);
-
-      const snap = await query.get();
-      if (snap.empty) break;
-
-      for (const doc of snap.docs) {
-        const data = doc.data();
-
-        // Filtres de base (champs snake_case, message non vide)
-        const userId: string = data.user_id ?? "";
-        const postId: string = data.post_id ?? "";
-        const message: string = data.message ?? "";
-
-        if (!userId || !postId) continue;
-        if (message.trim().length < MIN_COMMENT_LENGTH) continue;
-
-        // 1 commentaire par post max par user
-        if (!scoreMap.has(userId)) scoreMap.set(userId, new Set());
-        scoreMap.get(userId)!.add(postId);
-      }
-
-      fetched += snap.size;
-      lastDoc = snap.docs[snap.docs.length - 1];
-      if (snap.size < 500) break;
+  for (let i = 0; i < userIds.length; i += 30) {
+    const chunk = userIds.slice(i, i + 30);
+    const usersSnap = await db.collection("Users").where("__name__", "in", chunk).select("createdAt", "id").get();
+    for (const userDoc of usersSnap.docs) {
+      const createdAt: number = userDoc.data().createdAt ?? 0;
+      const accountDate = new Date(createdAt / 1000);
+      if (accountDate > minAccountDate) continue;
+      const count = scoreMap.get(userDoc.id)?.size ?? 0;
+      if (count > 0) eligibleScores.push({ userId: userDoc.id, count });
     }
+  }
 
-    console.log(`[weeklyCommentators] ${fetched} commentaires analysés, ${scoreMap.size} utilisateurs.`);
+  eligibleScores.sort((a, b) => b.count - a.count);
+  const top5 = eligibleScores.slice(0, 5);
 
-    if (scoreMap.size === 0) {
-      console.log("[weeklyCommentators] Aucun commentaire éligible. Pas de récompense.");
-      await db.collection("WeeklyTopCommentators").doc(weekId).set({
-        weekId,
-        computedAt: FieldValue.serverTimestamp(),
-        rankings: [],
-        note: "no_eligible_comments",
+  if (top5.length === 0) {
+    await db.collection("WeeklyTopCommentators").doc(weekId).set({
+      weekId, computedAt: FieldValue.serverTimestamp(), rankings: [], note: "no_eligible_users",
+    });
+    return { rankings: [], note: "no_eligible_users" };
+  }
+
+  const rankings: object[] = [];
+
+  if (rankingOnly) {
+    // Mode "classement uniquement" : récupérer qui a déjà été payé depuis le doc existant
+    const existingDoc = await db.collection("WeeklyTopCommentators").doc(weekId).get();
+    const existingRankings: Array<{ userId: string; paid: boolean; rewardedCoins: number }> =
+      (existingDoc.data()?.rankings ?? []) as Array<{ userId: string; paid: boolean; rewardedCoins: number }>;
+    const paidMap = new Map(existingRankings.map((r) => [r.userId, { paid: r.paid, coins: r.rewardedCoins }]));
+
+    for (let i = 0; i < eligibleScores.length; i++) {
+      const { userId, count } = eligibleScores[i];
+      const rank = i + 1;
+      const existing = paidMap.get(userId);
+      const coins = rank <= 5 ? (COMMENTATOR_REWARDS[rank - 1] ?? 0) : 0;
+      rankings.push({
+        rank,
+        userId,
+        commentCount: count,
+        rewardedCoins: existing?.coins ?? coins,
+        paid: existing?.paid ?? false,
       });
-      return;
     }
-
-    // ── Vérifier l'ancienneté des comptes ──
-    const userIds = Array.from(scoreMap.keys());
-    const eligibleScores: Array<{ userId: string; count: number }> = [];
-
-    for (let i = 0; i < userIds.length; i += 30) {
-      const chunk = userIds.slice(i, i + 30);
-      const usersSnap = await db
-        .collection("Users")
-        .where("__name__", "in", chunk)
-        .select("createdAt", "id")
-        .get();
-
-      for (const userDoc of usersSnap.docs) {
-        const createdAt: number = userDoc.data().createdAt ?? 0;
-        // createdAt Users est en microsecondes aussi → convertir en ms pour comparer
-        const accountDate = new Date(createdAt / 1000);
-        if (accountDate > minAccountDate) continue; // compte trop récent
-
-        const count = scoreMap.get(userDoc.id)?.size ?? 0;
-        if (count > 0) eligibleScores.push({ userId: userDoc.id, count });
-      }
-    }
-
-    eligibleScores.sort((a, b) => b.count - a.count);
-    const top5 = eligibleScores.slice(0, 5);
-
-    if (top5.length === 0) {
-      console.log("[weeklyCommentators] Aucun gagnant éligible.");
-      await db.collection("WeeklyTopCommentators").doc(weekId).set({
-        weekId,
-        computedAt: FieldValue.serverTimestamp(),
-        rankings: [],
-        note: "no_eligible_users",
-      });
-      return;
-    }
-
-    // ── Paiements ──
-    const rankings: object[] = [];
+    console.log(`[weeklyCommentators] Mode classement uniquement — ${rankings.length} entrées.`);
+  } else {
+    // Mode normal : récompenser le top 5
     for (let i = 0; i < top5.length; i++) {
       const { userId, count } = top5[i];
       const coins = COMMENTATOR_REWARDS[i] ?? 0;
       const rank = i + 1;
-
       try {
         await rewardUser({ userId, coins, rank, weekId, subType: "top_commentator" });
+        await sendWeeklyRewardNotification({ userId, coins, rank, weekId, subType: "top_commentator" });
         rankings.push({ rank, userId, commentCount: count, rewardedCoins: coins, paid: true });
         console.log(`[weeklyCommentators] Rang ${rank} — user ${userId} — ${coins} pièces`);
       } catch (err) {
-        console.error(`[weeklyCommentators] Erreur paiement rang ${rank} :`, err);
+        console.error(`[weeklyCommentators] Erreur rang ${rank}:`, err);
         rankings.push({ rank, userId, commentCount: count, rewardedCoins: coins, paid: false, error: String(err) });
       }
     }
 
-    await db.collection("WeeklyTopCommentators").doc(weekId).set({
-      weekId,
-      computedAt: FieldValue.serverTimestamp(),
-      rankings,
-    });
+    // Ajouter les autres utilisateurs éligibles (sans récompense)
+    for (let i = 5; i < eligibleScores.length; i++) {
+      const { userId, count } = eligibleScores[i];
+      rankings.push({ rank: i + 1, userId, commentCount: count, rewardedCoins: 0, paid: false });
+    }
+  }
 
-    console.log(`[weeklyCommentators] Terminé. ${rankings.length} gagnant(s).`);
+  await db.collection("WeeklyTopCommentators").doc(weekId).set({
+    weekId, computedAt: FieldValue.serverTimestamp(), rankings, totalEligible: eligibleScores.length,
+  });
+
+  console.log(`[weeklyCommentators] Terminé. ${rankings.length} gagnant(s).`);
+  return { rankings };
+}
+
+/**
+ * Chaque lundi à 00:05 UTC : calcule les 5 meilleurs commentateurs de la
+ * semaine écoulée et leur envoie des pièces.
+ */
+export const weeklyTopCommentatorsReward = onSchedule(
+  { schedule: "5 0 * * MON", timeZone: "UTC", memory: "512MiB", cpu: 1, timeoutSeconds: 300 },
+  async () => {
+    const weekId = getLastWeekId();
+    console.log(`[weeklyCommentators] Semaine récompensée : ${weekId}`);
+    await runCommentatorsReward(weekId, false);
+  }
+);
+
+/**
+ * Callable admin : force le recalcul du classement commentateurs pour la semaine précédente.
+ * - Si "confirm: true" n'est pas dans les données → vérifie juste le statut (déjà fait ou non).
+ * - Si "confirm: true" → supprime le verrou et relance.
+ */
+export const forceWeeklyCommentatorsReward = onCall(
+  { memory: "512MiB", cpu: 1, timeoutSeconds: 300, region: "us-central1" },
+  async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Non authentifié");
+
+    const callerDoc = await db.collection("Users").doc(request.auth.uid).get();
+    const role = callerDoc.data()?.role ?? "";
+    if (role !== "ADM" && role !== "admin") throw new HttpsError("permission-denied", "Accès réservé aux admins");
+
+    const weekId = getLastWeekId();
+    const confirmed: boolean = request.data?.confirm === true;
+
+    // Vérifier si le classement a déjà été calculé
+    const lockId = `${weekId}_commentators`;
+    const lockSnap = await db.collection("WeeklyRewardLocks").doc(lockId).get();
+    const alreadyDone = lockSnap.exists;
+
+    if (alreadyDone && !confirmed) {
+      // Retourner le statut existant sans relancer
+      const existingDoc = await db.collection("WeeklyTopCommentators").doc(weekId).get();
+      const existingData = existingDoc.data() ?? {};
+      const existingRankings = existingData.rankings ?? [];
+      const processedAt = lockSnap.data()?.processedAt?.toMillis?.() ?? null;
+      return {
+        weekId,
+        alreadyProcessed: true,
+        rankings: existingRankings,
+        rankingsCount: existingRankings.length,
+        processedAt,
+        note: "already_processed",
+      };
+    }
+
+    // rankingOnly = true → recalcule sans re-créditer les pièces
+    const rankingOnly: boolean = request.data?.rankingOnly === true;
+    console.log(`[forceCommentators] Déclenchement admin — semaine ${weekId} — rankingOnly=${rankingOnly}`);
+    const result = await runCommentatorsReward(weekId, true, rankingOnly);
+    return {
+      weekId,
+      alreadyProcessed: false,
+      rankings: result.rankings,
+      rankingsCount: (result.rankings as object[]).length,
+      note: result.note,
+    };
   }
 );
 
@@ -404,6 +560,13 @@ export const weeklyTopPostsReward = onSchedule(
           weekId,
           subType: "top_post",
           postId: p.postId,
+        });
+        await sendWeeklyRewardNotification({
+          userId: p.authorId,
+          coins,
+          rank: i + 1,
+          weekId,
+          subType: "top_post",
         });
         rankingsAll[i].paid = true;
         console.log(`[weeklyPosts] Rang ${i + 1} — post ${p.postId} — auteur ${p.authorId} — ${coins} pièces`);

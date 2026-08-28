@@ -135,38 +135,47 @@ class _RemunerationAdminPageState extends State<RemunerationAdminPage> with Sing
   }
 
   Future<void> _chargerDernieresTransactions() async {
+    // Charger tous les types de transactions (pas seulement ENCAISSEMENT_POST)
     QuerySnapshot snapshot = await _firestore
         .collection('TransactionSoldes')
-        .where('type', isEqualTo: 'ENCAISSEMENT_POST')
-        .where('statut', isEqualTo: 'VALIDER')
         .orderBy('createdAt', descending: true)
-        .limit(20)
+        .limit(200)
         .get();
 
     List<Map<String, dynamic>> transactions = [];
+    // Résoudre les pseudos en batch pour éviter N requêtes
+    final userIds = snapshot.docs.map((d) => (d.data() as Map<String, dynamic>)['user_id'] as String? ?? '').toSet();
+    final Map<String, Map<String, dynamic>> userCache = {};
+    for (final chunk in _chunked(userIds.where((id) => id.isNotEmpty).toList(), 30)) {
+      try {
+        final usersSnap = await _firestore.collection('Users').where('__name__', whereIn: chunk).get();
+        for (final u in usersSnap.docs) {
+          userCache[u.id] = u.data() as Map<String, dynamic>;
+        }
+      } catch (_) {}
+    }
 
     for (var doc in snapshot.docs) {
       var data = doc.data() as Map<String, dynamic>;
       data['id'] = doc.id;
-
-      // Récupérer les infos utilisateur
-      String userId = data['user_id'] ?? '';
-      DocumentSnapshot userDoc = await _firestore.collection('Users').doc(userId).get();
-
-      if (userDoc.exists) {
-        var userData = userDoc.data() as Map<String, dynamic>;
-        data['user_pseudo'] = userData['pseudo'] ?? 'Inconnu';
-        data['user_email'] = userData['email'] ?? '';
-      } else {
-        data['user_pseudo'] = 'Utilisateur inconnu';
-      }
-
+      final userId = data['user_id'] as String? ?? '';
+      final userData = userCache[userId];
+      data['user_pseudo'] = userData?['pseudo'] ?? 'Utilisateur inconnu';
+      data['user_email'] = userData?['email'] ?? '';
       transactions.add(data);
     }
 
     setState(() {
       _dernieresTransactions = transactions;
     });
+  }
+
+  List<List<T>> _chunked<T>(List<T> list, int size) {
+    final result = <List<T>>[];
+    for (var i = 0; i < list.length; i += size) {
+      result.add(list.sublist(i, i + size > list.length ? list.length : i + size));
+    }
+    return result;
   }
 
   Future<void> _chargerTopUtilisateurs() async {
@@ -661,73 +670,171 @@ class _RemunerationAdminPageState extends State<RemunerationAdminPage> with Sing
   // ============================================
   // TRANSACTIONS
   // ============================================
+  // ── Définition des groupes admin ──────────────────────────────────────────
+  static const _adminGroups = {
+    'Encaissements': ['ENCAISSEMENT_POST', 'GAIN', 'GAIN_PIECES'],
+    'Dépôts':        ['DEPOT', 'DEPOTADMIN'],
+    'Retraits':      ['RETRAIT', 'RETRAITADMIN'],
+    'Dépenses':      ['DEPENSE', 'ACHAT_PIECES', 'CADEAU_PIECES', 'LIKE_PIECES'],
+    'Conversions':   ['CONVERSION_PIECES'],
+    'Autres':        <String>[],
+  };
+  static const _adminGroupColors = {
+    'Encaissements': Color(0xFF4CAF50),
+    'Dépôts':        Color(0xFF2196F3),
+    'Retraits':      Color(0xFFFF9800),
+    'Dépenses':      Color(0xFFF44336),
+    'Conversions':   Color(0xFF9C27B0),
+    'Autres':        Color(0xFF607D8B),
+  };
+  static const _adminGroupIcons = {
+    'Encaissements': Icons.trending_up,
+    'Dépôts':        Icons.account_balance_wallet,
+    'Retraits':      Icons.arrow_upward,
+    'Dépenses':      Icons.shopping_cart,
+    'Conversions':   Icons.swap_horiz,
+    'Autres':        Icons.help_outline,
+  };
+
+  final Map<String, bool> _txGroupExpanded = {};
+  final Map<String, int> _txGroupVisible = {};
+
+  String _adminGroupFor(String? type) {
+    for (final e in _adminGroups.entries) {
+      if (e.value.contains(type?.toUpperCase())) return e.key;
+    }
+    return 'Autres';
+  }
+
   Widget _buildTransactionsTab() {
+    // Trier les groupes par transaction la plus récente
+    int latestOf(String g) => _dernieresTransactions
+        .where((tx) => _adminGroupFor(tx['type'] as String?) == g)
+        .fold<int>(0, (m, tx) {
+          final ts = (tx['createdAt'] as num?)?.toInt() ?? 0;
+          return ts > m ? ts : m;
+        });
+
+    final sortedGroups = _adminGroups.keys.toList()
+      ..sort((a, b) => latestOf(b).compareTo(latestOf(a)));
+
     return RefreshIndicator(
       onRefresh: _chargerDernieresTransactions,
-      color: Color(0xFFFFD700),
+      color: const Color(0xFFFFD700),
       backgroundColor: Colors.black,
-      child: CenteredContent(child: ListView.builder(
-        padding: EdgeInsets.all(16),
-        itemCount: _dernieresTransactions.length,
-        itemBuilder: (context, index) {
-          var tx = _dernieresTransactions[index];
-          return Container(
-            margin: EdgeInsets.only(bottom: 10),
-            decoration: BoxDecoration(
-              color: Color(0xFF1A1A1A),
-              borderRadius: BorderRadius.circular(15),
-              border: Border.all(color: Colors.green.withOpacity(0.2)),
-            ),
-            child: ExpansionTile(
-              leading: Container(
-                width: 45,
-                height: 45,
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(child: Icon(Icons.payments, color: Colors.green, size: 22)),
-              ),
-              title: Text(
-                tx['user_pseudo'] ?? 'Inconnu',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
-              subtitle: Text(
-                _formatDate(tx['createdAt'] ?? 0),
-                style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
-              ),
-              trailing: Container(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.green.withOpacity(0.3)),
-                ),
-                child: Text(
-                  '+${_formatMontant((tx['montant'] as num).toDouble())}',
-                  style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12),
-                ),
-              ),
+      child: CenteredContent(
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: sortedGroups.map((group) {
+            final items = _dernieresTransactions
+                .where((tx) => _adminGroupFor(tx['type'] as String?) == group)
+                .toList()
+              ..sort((a, b) {
+                final ta = (a['createdAt'] as num?)?.toInt() ?? 0;
+                final tb = (b['createdAt'] as num?)?.toInt() ?? 0;
+                return tb.compareTo(ta);
+              });
+            if (items.isEmpty) return const SizedBox.shrink();
+
+            final groupColor = _adminGroupColors[group] ?? Colors.grey;
+            final isOpen = _txGroupExpanded[group] ?? true;
+            final visible = _txGroupVisible[group] ?? 5;
+
+            return Column(
               children: [
-                Container(
-                  padding: EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      _buildDetailRow('ID Transaction', tx['id']),
-                      _buildDetailRow('Utilisateur ID', tx['user_id']),
-                      _buildDetailRow('Description', tx['description'] ?? 'Encaissement'),
-                      _buildDetailRow('Méthode', tx['methode_paiement'] ?? 'solde_principal'),
-                      _buildDetailRow('Statut', tx['statut']),
-                      if (tx['user_email'] != null && tx['user_email'].isNotEmpty)
-                        _buildDetailRow('Email', tx['user_email']),
-                    ],
+                // ── En-tête groupe ──
+                GestureDetector(
+                  onTap: () => setState(() => _txGroupExpanded[group] = !isOpen),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: groupColor.withOpacity(0.10),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: groupColor.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(_adminGroupIcons[group], color: groupColor, size: 20),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(group,
+                              style: TextStyle(color: groupColor, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 0.5)),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: groupColor.withOpacity(0.18),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text('${items.length}',
+                              style: TextStyle(color: groupColor, fontWeight: FontWeight.w800, fontSize: 12)),
+                        ),
+                        const SizedBox(width: 6),
+                        Icon(isOpen ? Icons.expand_less : Icons.expand_more, color: groupColor, size: 20),
+                      ],
+                    ),
                   ),
                 ),
+                // ── Items ──
+                if (isOpen) ...[
+                  ...items.take(visible).map((tx) => _buildTxCard(tx, groupColor)),
+                  if (visible < items.length)
+                    TextButton.icon(
+                      onPressed: () => setState(() => _txGroupVisible[group] = visible + 10),
+                      icon: Icon(Icons.expand_more, color: groupColor, size: 16),
+                      label: Text('Voir plus (${items.length - visible})',
+                          style: TextStyle(color: groupColor, fontSize: 12)),
+                    ),
+                  const SizedBox(height: 8),
+                ],
               ],
-            ),
-          );
-        },
-      )),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTxCard(Map<String, dynamic> tx, Color groupColor) {
+    final montant = (tx['montant'] as num?)?.toDouble() ?? 0;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: groupColor.withOpacity(0.15)),
+      ),
+      child: ExpansionTile(
+        leading: Container(
+          width: 40, height: 40,
+          decoration: BoxDecoration(color: groupColor.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+          child: Icon(_adminGroupIcons[_adminGroupFor(tx['type'] as String?)] ?? Icons.receipt, color: groupColor, size: 20),
+        ),
+        title: Text(tx['user_pseudo'] ?? 'Inconnu',
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+        subtitle: Text(_formatDate(tx['createdAt'] as int? ?? 0),
+            style: TextStyle(color: Colors.grey.shade500, fontSize: 11)),
+        trailing: Text(
+          '${montant >= 0 ? '+' : ''}${_formatMontant(montant)}',
+          style: TextStyle(color: groupColor, fontWeight: FontWeight.bold, fontSize: 12),
+        ),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(children: [
+              _buildDetailRow('Type', tx['type'] ?? ''),
+              _buildDetailRow('ID', tx['id'] ?? ''),
+              _buildDetailRow('User ID', tx['user_id'] ?? ''),
+              _buildDetailRow('Description', tx['description'] ?? '-'),
+              _buildDetailRow('Méthode', tx['methode_paiement'] ?? '-'),
+              _buildDetailRow('Statut', tx['statut'] ?? '-'),
+              if ((tx['user_email'] as String?)?.isNotEmpty == true)
+                _buildDetailRow('Email', tx['user_email']),
+            ]),
+          ),
+        ],
+      ),
     );
   }
 

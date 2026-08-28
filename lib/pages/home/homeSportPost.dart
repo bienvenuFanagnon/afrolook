@@ -29,7 +29,7 @@ import 'package:shimmer/shimmer.dart';
 import '../listeUserLikepage.dart';
 import '../postDetailsVideo.dart';
 import '../pronostics/pronostics_carousel_widget.dart';
-import '../pub/rewarded_interstitial_ad_widget.dart';
+
 import '../user/userAbonnementPage.dart';
 import '../userPosts/postWidgets/postWidgetPage.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -57,7 +57,8 @@ import '../../widgets/feed/sections/feed_ad_widgets.dart';
 import '../../services/feed/feed_repository.dart';
 import '../../widgets/feed/weekly_top_creators_widget.dart';
 import '../../widgets/feed/sections/weekly_top_commentators_widget.dart';
-import '../../widgets/flame_streak_banner.dart';
+import '../../widgets/feed/sections/weekly_top_posts_section_widget.dart';
+
 import '../dating/widgets/top_dating_profiles_widget.dart';
 
 
@@ -118,10 +119,9 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   final int _backgroundLoadLimit = 8;
   final int _manualLoadLimit = 8;
 
-  // === Pool de widgets rotatifs ===
+  // === Pool de widgets rotatifs (1 widget par slot, intervalle 4 posts) ===
   static const List<String> _kPoolOrder = [
-    'WeeklyTopCreators', 'BoostedContent', 'Articles', 'ShopPromo', 'Canaux',
-    'TopDating', 'VIPContent', 'Profiles',
+    'BoostedContent', 'WeeklyTopCreators', 'Canaux', 'VIPContent', 'Articles',
   ];
   final int _maxBackgroundPosts = 20;
   final int _maxTotalPosts = 1000;
@@ -197,7 +197,6 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   }
   late SharedPreferences _prefs;
   final String _lastViewDatePrefix = 'last_view_date_';
-  final GlobalKey<InterstitialAdWidgetState> _interstitialAdKey = GlobalKey();
 
   // 🔥 NOUVELLE MÉTHODE
   Future<void> _initSharedPreferences() async {
@@ -531,9 +530,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     );
   }
   void _showInterstitialAd() {
-    _interstitialAdKey.currentState?.showAd();
-    // Optional: show a thank‑you snackbar after ad dismisses
-    // We'll do that inside the widget's callback in the build method.
+    // interstitiel supprimé du feed
   }
 
   void _setupScrollController() {
@@ -2094,25 +2091,47 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     );
   }
 
-  Widget _buildPoolWidget(String name) {
+  Widget _buildPoolOrAd(String name, String adKey) {
     switch (name) {
-      case 'WeeklyTopCreators': return const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            WeeklyTopCreatorsWidget(),
-            WeeklyTopCommentatorsWidget(),
-          ],
+      case 'Articles':
+        if (_articles.isEmpty) return _buildUnifiedAdSlot(key: adKey);
+        return FeedPoolOrAd(
+          key: ValueKey('pool_$adKey'),
+          adKey: adKey,
+          poolChild: _buildArticlesSection(),
         );
-      case 'BoostedContent':   return const BoostedContentStripWidget();
-      case 'Articles':         return _buildArticlesSection();
-      case 'ShopPromo':        return ShopPromoFeedWidget(articles: _articles);
-      case 'Canaux':           return _buildCanauxSection();
-      case 'TopDating':        return const TopDatingProfilesWidget();
-      case 'VIPContent':       return const RecentVIPContentWidget();
-      case 'Profiles':         return _buildCreatorsSection();
-      default:                 return const SizedBox.shrink();
+      case 'Canaux':
+        if (_canaux.isEmpty) return _buildUnifiedAdSlot(key: adKey);
+        return FeedPoolOrAd(
+          key: ValueKey('pool_$adKey'),
+          adKey: adKey,
+          poolChild: _buildCanauxSection(),
+        );
+      case 'WeeklyTopCreators':
+        return FeedPoolOrAd(
+          key: ValueKey('pool_$adKey'),
+          adKey: adKey,
+          poolChild: const WeeklyTopCreatorsWidget(),
+        );
+      case 'BoostedContent':
+        return FeedPoolOrAd(
+          key: ValueKey('pool_$adKey'),
+          adKey: adKey,
+          poolChild: const BoostedContentStripWidget(),
+        );
+      case 'VIPContent':
+        return FeedPoolOrAd(
+          key: ValueKey('pool_$adKey'),
+          adKey: adKey,
+          poolChild: const RecentVIPContentWidget(),
+        );
+      default:
+        return _buildUnifiedAdSlot(key: adKey);
     }
   }
+
+  Widget _buildUnifiedAdSlot({required String key}) =>
+      FeedUnifiedAdSlot(adKey: key);
 
   Widget _buildPostWidget(Post post, double width, double height, int index) {
     return VisibilityDetector(
@@ -2136,6 +2155,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
               key: ValueKey('ytcard_${post.id}'),
               post: post,
               index: index,
+              suppressInlineAd: true,
               onNeighborhoodPreload: _preloadVideoNeighborhood,
               currentFilterCountry: _currentFilter == 'ALL' || _currentFilter == 'MIXED' ? null : _selectedCountryCode,
               onTap: () {
@@ -2155,6 +2175,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
               height: height * 0.6,
               width: width,
               isDegrade: true,
+              suppressInlineAd: true,
               currentFilterCountry: _currentFilter == 'ALL' || _currentFilter == 'MIXED' ? null : _selectedCountryCode,
             ),
 
@@ -2509,20 +2530,12 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
 
     final chroniquesSection = _buildChroniquesSection();
     if (chroniquesSection is! SizedBox) contentWidgets.add(chroniquesSection);
-    contentWidgets.add(const FlameStreakBanner());
-
-    final profilesSection = _buildCreatorsSection();
-    if (profilesSection is! SizedBox) {
-      contentWidgets.add(profilesSection);
-      // contentWidgets.add(_buildAdMrec(key: 'ad_native_user'));
-      contentWidgets.add(const SizedBox(height: 8));
-    }
 
     if (finalPosts.isNotEmpty) {
       contentWidgets.add(const PronosticsCarouselWidget());
     }
 
-    // AfroShop promo en première position — lundi (1) et jeudi (4)
+    // AfroShop promo — lundi (1) et jeudi (4)
     final _sportWeekday = DateTime.now().weekday;
     if ((_sportWeekday == DateTime.monday || _sportWeekday == DateTime.thursday) &&
         _articles.isNotEmpty) {
@@ -2543,130 +2556,25 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         ),
       );
 
+      // Après le 2ème post : classement hebdo commentateurs (visible toute la semaine)
+      if (i == 1) {
+        contentWidgets.add(const WeeklyTopCommentatorsWidget());
+      }
+
+      // Pub toutes les 4 posts — toujours affichée
       final postNumber = i + 1;
-      if (postNumber % 3 == 0) {
-        final slotN = postNumber ~/ 3 - 1;
-        if (slotN % 2 == 0) {
-          contentWidgets.add(_buildAdAdvertisement(key: 'ad_slot_$slotN'));
-        } else {
-          final i1 = (slotN * 2) % _kPoolOrder.length;
-          final i2 = (slotN * 2 + 1) % _kPoolOrder.length;
-          contentWidgets.add(_buildPoolWidget(_kPoolOrder[i1]));
-          contentWidgets.add(_buildPoolWidget(_kPoolOrder[i2]));
-        }
+      if (postNumber % 4 == 0) {
+        final slotN = postNumber ~/ 4 - 1;
+        contentWidgets.add(_buildUnifiedAdSlot(key: 'ad_slot_$slotN'));
+      }
+      // Slot découverte toutes les 6 posts — fallback pub si le widget est vide
+      if (postNumber % 6 == 0) {
+        final poolCount = postNumber ~/ 6 - 1;
+        final poolIdx = poolCount % _kPoolOrder.length;
+        contentWidgets.add(_buildPoolOrAd(_kPoolOrder[poolIdx], 'pool_slot_$poolCount'));
       }
     }
 
-    if (_isLoadingMorePosts) {
-      contentWidgets.add(_buildShimmerPost());
-      contentWidgets.add(_buildShimmerPost());
-      contentWidgets.add(_buildShimmerPost());
-    } else if (!_hasMorePosts) {
-      contentWidgets.add(
-        Container(
-          padding: const EdgeInsets.symmetric(vertical: 30),
-          child: Center(
-            child: Column(
-              children: [
-                const Icon(Icons.flag, color: Colors.green, size: 36),
-                const SizedBox(height: 10),
-                Text(
-                  _getEndMessage(),
-                  style: const TextStyle(color: Colors.grey, fontSize: 14),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 5),
-                const Text(
-                  'Revenez plus tard pour de nouveaux contenus',
-                  style: TextStyle(color: Colors.grey, fontSize: 11),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    return CustomScrollView(
-      controller: _scrollController,
-      slivers: [
-        SliverList(
-          delegate: SliverChildBuilderDelegate(
-                (context, index) => contentWidgets[index],
-            childCount: contentWidgets.length,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildContent2() {
-    double height = MediaQuery.of(context).size.height;
-    double width = MediaQuery.of(context).size.width;
-
-    if (_isLoadingPosts && _posts.isEmpty) {
-      return _buildLoadingShimmer(width, height);
-    }
-
-    if (_hasErrorPosts && _posts.isEmpty) {
-      return _buildErrorWidget();
-    }
-
-    if (_posts.isEmpty) {
-      return _buildEmptyWidget();
-    }
-
-    List<Widget> contentWidgets = [];
-
-    // 1. Filtres
-    contentWidgets.add(_buildFilterChips());
-    contentWidgets.add(SizedBox(height: 8));
-
-    // 2. Chroniques (si chargées)
-    final chroniquesSection = _buildChroniquesSection();
-    if (chroniquesSection is! SizedBox) {
-      contentWidgets.add(chroniquesSection);
-    }
-
-    // 3. Profils utilisateurs (si chargés)
-    final profilesSection = _buildCreatorsSection();
-    if (profilesSection is! SizedBox) {
-      contentWidgets.add(profilesSection);
-      contentWidgets.add(SizedBox(height: 16));
-    }
-
-    // 4. Carousel + posts avec slots rotatifs
-    if (_posts.isNotEmpty) {
-      contentWidgets.add(const PronosticsCarouselWidget());
-    }
-
-    for (int i = 0; i < _posts.length; i++) {
-      final post = _posts[i];
-
-      contentWidgets.add(
-        RepaintBoundary(
-          child: GestureDetector(
-            onTap: () => _navigateToPostDetails(post),
-            child: _buildPostWidget(post, width, height, i),
-          ),
-        ),
-      );
-
-      final postNumber = i + 1;
-      if (postNumber % 3 == 0) {
-        final slotN = postNumber ~/ 3 - 1;
-        if (slotN % 2 == 0) {
-          contentWidgets.add(_buildAdAdvertisement(key: 'ad2_slot_$slotN'));
-        } else {
-          final i1 = (slotN * 2) % _kPoolOrder.length;
-          final i2 = (slotN * 2 + 1) % _kPoolOrder.length;
-          contentWidgets.add(_buildPoolWidget(_kPoolOrder[i1]));
-          contentWidgets.add(_buildPoolWidget(_kPoolOrder[i2]));
-        }
-      }
-    }
-
-    // 5. Indicateurs de chargement/fin
     if (_isLoadingMorePosts) {
       contentWidgets.add(_buildShimmerPost());
       contentWidgets.add(_buildShimmerPost());
@@ -3412,22 +3320,6 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                 child: AppLayout.isWide(context)
                     ? CenteredContent(child: _buildContent())
                     : _buildContent(),
-              ),
-              InterstitialAdWidget(
-                key: _interstitialAdKey,
-                onAdDismissed: () {
-                  // Show a thank‑you message after the ad is dismissed
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        AppLocalizations.of(context).supportThankYouAd,
-                        style: TextStyle(color: Colors.green),
-                      ),
-                      backgroundColor: colors.surface,
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
               ),
 
             ],

@@ -13,6 +13,12 @@ service cloud.firestore {
       return request.auth.uid;
     }
 
+    // Vérifie que l'utilisateur connecté a le rôle ADM
+    function isAdmin() {
+      return isAuth()
+          && get(/databases/$(database)/documents/Users/$(uid())).data.role == 'ADM';
+    }
+
     // Vérifie que l'utilisateur est participant du chat (sender ou receiver)
     function isChatParticipant(chatId) {
       let chat = get(/databases/$(database)/documents/Chats/$(chatId)).data;
@@ -161,9 +167,21 @@ service cloud.firestore {
       allow create: if isAuth()
           && request.resource.data.ownerId == uid();
       allow update: if isAuth()
-          && resource.data.ownerId == uid();
+          && (resource.data.ownerId == uid() || isAdmin());
       allow delete: if isAuth()
-          && resource.data.ownerId == uid();
+          && (resource.data.ownerId == uid() || isAdmin());
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // COMMENTAIRES CONTENUS PAYANTS — auteur peut modifier/supprimer, admin peut supprimer
+    // ─────────────────────────────────────────────────────────────
+    match /ContentComments/{commentId} {
+      allow read: if isAuth();
+      allow create: if isAuth();
+      allow update: if isAuth()
+          && resource.data.userId == uid();
+      allow delete: if isAuth()
+          && (resource.data.userId == uid() || isAdmin());
     }
 
     // ─────────────────────────────────────────────────────────────

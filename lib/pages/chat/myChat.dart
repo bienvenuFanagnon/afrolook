@@ -128,6 +128,9 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   late UserAuthProvider _authProvider;
   late UserProvider _userProvider;
 
+  /// ID stable du chat utilisé pour toutes les requêtes (docId ou id en fallback).
+  String get _chatId => widget.chat.docId ?? widget.chat.id ?? '';
+
   // Streams et données
   Stream<List<Message>>? _messagesStream;
   List<Message> _messages = [];
@@ -266,7 +269,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   /// Affiche immédiatement les derniers messages mis en cache localement
   /// (style WhatsApp : pas d'écran vide pendant la reconnexion à Firestore).
   Future<void> _loadCachedMessages() async {
-    final cached = await ChatCacheService.loadMessages(widget.chat.docId!);
+    final cached = await ChatCacheService.loadMessages(_chatId);
     if (cached.isEmpty || !mounted) return;
 
     setState(() {
@@ -302,7 +305,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       final oldest = _messages.first;
       final snapshot = await _firestore
           .collection('Messages')
-          .where('chat_id', isEqualTo: widget.chat.docId!)
+          .where('chat_id', isEqualTo: _chatId)
           .where('is_valide', isEqualTo: true)
           .orderBy('createdAt', descending: false)
           .where('createdAt', isLessThan: oldest.createdAt)
@@ -389,7 +392,13 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     } else {
       widget.chat.my_msg_not_read = 0;
     }
-    _firestore.collection('Chats').doc(widget.chat.id).update(widget.chat.toJson());
+    if (widget.chat.id != null) {
+      _firestore
+          .collection('Chats')
+          .doc(widget.chat.id)
+          .set(widget.chat.toJson(), SetOptions(merge: true))
+          .catchError((_) {});
+    }
     _loadEphemeralSettings();
   }
 
@@ -491,9 +500,9 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
                     } else {
                       _ephemeralTimer?.cancel();
                     }
-                    await _firestore.collection('Chats').doc(widget.chat.id).update({
+                    await _firestore.collection('Chats').doc(widget.chat.id).set({
                       'ephemeral_duration': newDuration,
-                    });
+                    }, SetOptions(merge: true));
                   },
                 );
               }),
@@ -513,7 +522,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       final otherId = widget.chat.senderId == myId
           ? widget.chat.receiverId!
           : widget.chat.senderId!;
-      _chatKey = await EncryptionService.getChatKey(widget.chat.docId!, myId, otherId);
+      _chatKey = await EncryptionService.getChatKey(_chatId, myId, otherId);
     } catch (_) {}
   }
 
@@ -536,9 +545,14 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     // de retélécharger tout l'historique de la conversation à chaque
     // ouverture/écriture. Les messages plus anciens sont chargés via
     // pagination (`_loadMoreMessages`) quand l'utilisateur remonte.
+    final chatId = widget.chat.docId ?? widget.chat.id;
+    if (chatId == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
     _messagesStream = _firestore
         .collection('Messages')
-        .where('chat_id', isEqualTo: widget.chat.docId!)
+        .where('chat_id', isEqualTo: chatId)
         .where('is_valide', isEqualTo: true)
         .orderBy('createdAt', descending: false)
         .limitToLast(_pageSize)
@@ -647,7 +661,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     try {
       final myId = _authProvider.loginUserData.id!;
       final field = widget.chat.senderId == myId ? 'send_sending' : 'receiver_sending';
-      await _firestore.collection('Chats').doc(widget.chat.id).update({field: type});
+      await _firestore.collection('Chats').doc(widget.chat.id).set({field: type}, SetOptions(merge: true));
     } catch (_) {}
   }
 
@@ -664,7 +678,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     try {
       final myId = _authProvider.loginUserData.id!;
       final field = widget.chat.senderId == myId ? 'send_sending' : 'receiver_sending';
-      await _firestore.collection('Chats').doc(widget.chat.id).update({field: 'NOTSENDING'});
+      await _firestore.collection('Chats').doc(widget.chat.id).set({field: 'NOTSENDING'}, SetOptions(merge: true));
     } catch (_) {}
   }
 
@@ -703,10 +717,10 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         final diff = last != null ? today.difference(last).inDays : 999;
         newStreak = diff == 1 ? currentStreak + 1 : 1;
       }
-      await _firestore.collection('Chats').doc(widget.chat.id).update({
+      await _firestore.collection('Chats').doc(widget.chat.id).set({
         'streak': newStreak,
         'lastStreakDate': todayStr,
-      });
+      }, SetOptions(merge: true));
     } catch (_) {}
   }
 
@@ -725,11 +739,11 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     final myId = _authProvider.loginUserData.id;
     if (myId == null) return;
     try {
-      await _firestore.collection('Chats').doc(widget.chat.id).update({
+      await _firestore.collection('Chats').doc(widget.chat.id).set({
         'activeViewers': active
             ? FieldValue.arrayUnion([myId])
             : FieldValue.arrayRemove([myId]),
-      });
+      }, SetOptions(merge: true));
     } catch (_) {}
   }
 
@@ -854,7 +868,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         sendBy: _authProvider.loginUserData.id!,
         replyMessage: reply,
         messageType: MessageType.image.name,
-        chat_id: widget.chat.docId!,
+        chat_id: _chatId,
         create_at_time_spam: DateTime.now().millisecondsSinceEpoch,
         message_state: MessageState.NONLU.name,
         receiverBy: widget.chat.senderId == _authProvider.loginUserData.id!
@@ -899,7 +913,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         sendBy: _authProvider.loginUserData.id!,
         replyMessage: reply,
         messageType: MessageType.video.name,
-        chat_id: widget.chat.docId!,
+        chat_id: _chatId,
         create_at_time_spam: DateTime.now().millisecondsSinceEpoch,
         message_state: MessageState.NONLU.name,
         receiverBy: widget.chat.senderId == _authProvider.loginUserData.id!
@@ -1018,7 +1032,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         sendBy: _authProvider.loginUserData.id!,
         replyMessage: reply,
         messageType: MessageType.image.name,
-        chat_id: widget.chat.docId!,
+        chat_id: _chatId,
         create_at_time_spam: DateTime.now().millisecondsSinceEpoch,
         message_state: MessageState.NONLU.name,
         receiverBy: widget.chat.senderId == _authProvider.loginUserData.id!
@@ -1203,7 +1217,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         sendBy: _authProvider.loginUserData.id!,
         replyMessage: reply,
         messageType: MessageType.image.name,
-        chat_id: widget.chat.docId!,
+        chat_id: _chatId,
         create_at_time_spam: DateTime.now().millisecondsSinceEpoch,
         message_state: MessageState.NONLU.name,
         receiverBy: widget.chat.senderId == _authProvider.loginUserData.id!
@@ -1278,7 +1292,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         sendBy: _authProvider.loginUserData.id!,
         replyMessage: reply,
         messageType: MessageType.voice.name,
-        chat_id: widget.chat.docId!,
+        chat_id: _chatId,
         create_at_time_spam: DateTime.now().millisecondsSinceEpoch,
         message_state: MessageState.NONLU.name,
         receiverBy: widget.chat.senderId == _authProvider.loginUserData.id!
@@ -1326,7 +1340,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         sendBy: _authProvider.loginUserData.id!,
         replyMessage: reply,
         messageType: MessageType.text.name,
-        chat_id: widget.chat.docId!,
+        chat_id: _chatId,
         create_at_time_spam: DateTime.now().millisecondsSinceEpoch,
         message_state: MessageState.NONLU.name,
         receiverBy: widget.chat.senderId == _authProvider.loginUserData.id!
@@ -1430,7 +1444,12 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       widget.chat.receiver_sending = IsSendMessage.NOTSENDING.name;
     }
 
-    await _firestore.collection('Chats').doc(widget.chat.id).update(widget.chat.toJson());
+    if (widget.chat.id != null) {
+      await _firestore
+          .collection('Chats')
+          .doc(widget.chat.id)
+          .set(widget.chat.toJson(), SetOptions(merge: true));
+    }
 
     // Scroll vers le bas après l'envoi
     _scrollToBottom();
@@ -2241,7 +2260,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       await _firestore.collection('Reports').doc(reportId).set({
         'reportedBy': myId,
         'messageId': msgId,
-        'chatId': widget.chat.docId!,
+        'chatId': _chatId,
         'reason': reason,
         'reportedUserId': message.sendBy,
         'createdAt': DateTime.now().millisecondsSinceEpoch,
@@ -2306,7 +2325,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       await _firestore.collection('BlockedUsers').doc(docId).set({
         'blockedBy': myId,
         'blockedUser': _otherId,
-        'chatId': widget.chat.docId!,
+        'chatId': _chatId,
         'createdAt': DateTime.now().millisecondsSinceEpoch,
       });
 
@@ -2394,7 +2413,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
                       context,
                       MaterialPageRoute(
                         builder: (_) => ChatMediaGalleryPage(
-                          chatId: widget.chat.docId!,
+                          chatId: _chatId,
                           chatTitle: widget.title,
                         ),
                       ),
@@ -3522,7 +3541,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
 
                       _messages = messages;
 
-                      ChatCacheService.saveMessages(widget.chat.docId!, messages);
+                      ChatCacheService.saveMessages(_chatId, messages);
                       _scheduleReadReceipts(messages);
 
                       return _buildMessageList(messages);

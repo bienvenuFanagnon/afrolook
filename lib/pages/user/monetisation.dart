@@ -517,41 +517,151 @@ class _MonetisationPageState extends State<MonetisationPage> {
       stream: postProvider.getTransactionsSoldes(userId),
       builder: (context, snapshotTx) {
         if (snapshotTx.connectionState == ConnectionState.waiting) {
-          return Center(
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(colors.primary),
-            ),
-          );
+          return Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(colors.primary)));
         }
         if (snapshotTx.hasError) {
-          return Center(
-            child: Text(t.commonLoadingError, style: TextStyle(color: colors.danger)),
-          );
+          return Center(child: Text(t.commonLoadingError, style: TextStyle(color: colors.danger)));
         }
-
         final transactions = snapshotTx.data ?? [];
         if (transactions.isEmpty) {
           return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.receipt_long, size: 48, color: colors.textSecondary),
-                const SizedBox(height: 16),
-                Text(t.monetNoTx, style: TextStyle(color: colors.textSecondary)),
-              ],
-            ),
+            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Icon(Icons.receipt_long, size: 48, color: colors.textSecondary),
+              const SizedBox(height: 16),
+              Text(t.monetNoTx, style: TextStyle(color: colors.textSecondary)),
+            ]),
           );
         }
-
-        return ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: transactions.length,
-          itemBuilder: (context, index) {
-            return TransactionWidget(transaction: transactions[index]);
-          },
-        );
+        return _TxGroupedList(transactions: transactions, colors: colors);
       },
+    );
+  }
+}
+
+// ── Groupes de transactions ────────────────────────────────────────────────────
+
+class _TxGroupedList extends StatefulWidget {
+  final List<TransactionSolde> transactions;
+  final AppColors colors;
+  const _TxGroupedList({required this.transactions, required this.colors});
+  @override
+  State<_TxGroupedList> createState() => _TxGroupedListState();
+}
+
+class _TxGroupedListState extends State<_TxGroupedList> {
+  static const _groups = {
+    'Gains':       ['DEPOT', 'DEPOTADMIN', 'GAIN', 'GAIN_PIECES', 'CADEAU_PIECES_RECU'],
+    'Dépenses':    ['DEPENSE', 'ACHAT_PIECES', 'CADEAU_PIECES', 'LIKE_PIECES'],
+    'Retraits':    ['RETRAIT', 'RETRAITADMIN'],
+    'Conversions': ['CONVERSION_PIECES'],
+  };
+  static const _groupIcons = {
+    'Gains':       Icons.trending_up,
+    'Dépenses':    Icons.shopping_cart_outlined,
+    'Retraits':    Icons.arrow_upward,
+    'Conversions': Icons.swap_horiz,
+  };
+  static const _groupColors = {
+    'Gains':       Color(0xFF0F6E56),
+    'Dépenses':    Color(0xFFE53935),
+    'Retraits':    Color(0xFFFF9800),
+    'Conversions': Color(0xFF5B9CFA),
+  };
+
+  final Map<String, bool> _expanded = {
+    'Gains': false, 'Dépenses': false, 'Retraits': false, 'Conversions': false,
+  };
+  final Map<String, int> _visible = {};
+
+  String _groupFor(String? type) {
+    for (final e in _groups.entries) {
+      if (e.value.contains(type?.toUpperCase())) return e.key;
+    }
+    return 'Gains';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Ouvrir automatiquement le groupe avec la transaction la plus récente
+    final sorted = _sortedGroups();
+    if (sorted.isNotEmpty) _expanded[sorted.first] = true;
+  }
+
+  List<String> _sortedGroups() {
+    int latestOf(String g) => widget.transactions
+        .where((tx) => _groupFor(tx.type) == g)
+        .fold<int>(0, (m, tx) => (tx.createdAt ?? 0) > m ? (tx.createdAt ?? 0) : m);
+    return _groups.keys.toList()..sort((a, b) => latestOf(b).compareTo(latestOf(a)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sortedGroups = _sortedGroups();
+    return ListView(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      children: sortedGroups.map((group) {
+        final items = widget.transactions
+            .where((tx) => _groupFor(tx.type) == group)
+            .toList()
+          ..sort((a, b) => (b.createdAt ?? 0).compareTo(a.createdAt ?? 0));
+        if (items.isEmpty) return const SizedBox.shrink();
+        final isOpen = _expanded[group] ?? false;
+        final groupColor = _groupColors[group] ?? widget.colors.primary;
+        final visible = _visible[group] ?? 2;
+        return Column(
+          children: [
+            InkWell(
+              onTap: () => setState(() => _expanded[group] = !isOpen),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                color: widget.colors.surface,
+                child: Row(
+                  children: [
+                    Container(
+                      width: 32, height: 32,
+                      decoration: BoxDecoration(
+                        color: groupColor.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(_groupIcons[group], color: groupColor, size: 16),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(group,
+                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: widget.colors.textPrimary)),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: groupColor.withOpacity(0.10),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text('${items.length}',
+                          style: TextStyle(color: groupColor, fontWeight: FontWeight.w700, fontSize: 12)),
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(isOpen ? Icons.expand_less : Icons.expand_more,
+                        color: widget.colors.textSecondary, size: 20),
+                  ],
+                ),
+              ),
+            ),
+            if (isOpen) ...[
+              ...items.take(visible).map((tx) => TransactionWidget(transaction: tx)),
+              if (visible < items.length)
+                TextButton.icon(
+                  onPressed: () => setState(() => _visible[group] = visible + 5),
+                  icon: Icon(Icons.expand_more, size: 16, color: groupColor),
+                  label: Text('Voir plus (${items.length - visible})',
+                      style: TextStyle(color: groupColor, fontSize: 12)),
+                ),
+            ],
+            Divider(height: 1, color: widget.colors.border.withOpacity(0.3)),
+          ],
+        );
+      }).toList(),
     );
   }
 }

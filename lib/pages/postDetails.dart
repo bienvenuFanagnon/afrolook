@@ -65,7 +65,6 @@ import '../services/linkService.dart';
 import '../services/postService/feed_interaction_service.dart';
 import '../services/streak_service.dart';
 import '../services/postService/post_view_service.dart';
-import '../services/comment_suggestion_service.dart';
 import '../services/utils/abonnement_utils.dart';
 import '../widgets/user_badge_widget.dart';
 import 'UserServices/deviceService.dart';
@@ -122,11 +121,6 @@ class _DetailsPostState extends State<DetailsPost>
   // Nouveau système de like + commentaire rapide
   bool _isLiking = false;
   List<PostComment> _preloadedComments = [];
-  List<String> _previewSuggestions = [];
-  bool _isSuggestionsLoading = false;
-  bool _suggestionsFromAi = false;
-  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _suggestionSub;
-  Timer? _shuffleTimer;
   final TextEditingController _quickCommentController = TextEditingController();
   bool _isSendingQuickComment = false;
   Challenge? _challenge;
@@ -2038,7 +2032,6 @@ class _DetailsPostState extends State<DetailsPost>
     _incrementViews();
 
     _loadLastComment();
-    _loadSuggestions();
   }
 
   // 🔥 DÉMARRER LE CAROUSEL AUTO
@@ -2083,9 +2076,7 @@ class _DetailsPostState extends State<DetailsPost>
   }
   @override
   void dispose() {
-    _suggestionSub?.cancel();
     _suggestionModalTimer?.cancel();
-    _shuffleTimer?.cancel();
 
     _animationController.dispose();
     for (var player in _activePlayers.values) {
@@ -5952,61 +5943,6 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         ),
       ),
     );
-  }
-
-  Future<void> _loadSuggestions() async {
-    if (!mounted) return;
-    final postId = widget.post.id;
-    if (postId == null) return;
-    final description = widget.post.description ?? '';
-    setState(() => _isSuggestionsLoading = true);
-    try {
-      final aiSuggestions = widget.post.commentSuggestions;
-      if (aiSuggestions != null && aiSuggestions.isNotEmpty) {
-        if (!mounted) return;
-        setState(() {
-          _previewSuggestions = List<String>.from(aiSuggestions)..shuffle();
-          _isSuggestionsLoading = false;
-          _suggestionsFromAi = true;
-        });
-        return;
-      }
-      final suggestions = CommentSuggestionService.getSuggestions(
-        postId,
-        description,
-        postType: widget.post.typeTabbar,
-      );
-      if (!mounted) return;
-      setState(() { _previewSuggestions = suggestions; _isSuggestionsLoading = false; });
-      _listenForAiSuggestions(postId);
-      _shuffleTimer?.cancel();
-      _shuffleTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-        if (!mounted) return;
-        setState(() { _previewSuggestions = List.of(_previewSuggestions)..shuffle(); });
-      });
-    } catch (_) {
-      if (mounted) setState(() => _isSuggestionsLoading = false);
-    }
-  }
-
-  void _listenForAiSuggestions(String postId) {
-    _suggestionSub?.cancel();
-    _suggestionSub = FirebaseFirestore.instance
-        .collection('Posts')
-        .doc(postId)
-        .snapshots()
-        .listen((snap) {
-      if (!mounted) return;
-      final raw = snap.data()?['commentSuggestions'];
-      if (raw is List && raw.isNotEmpty) {
-        setState(() {
-          _previewSuggestions = List<String>.from(raw)..shuffle();
-          _suggestionsFromAi = true;
-        });
-        _suggestionSub?.cancel();
-        _suggestionSub = null;
-      }
-    });
   }
 
   Future<void> _loadLastComment() async {

@@ -528,6 +528,58 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
     return authProvider.loginUserData.role == 'ADM';
   }
 
+  Future<void> _deleteContent() async {
+    final contentId = _content.id;
+    if (contentId == null) return;
+    final colors = AppColors.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: colors.surface,
+        title: Text(
+          'Supprimer ce contenu ?',
+          style: TextStyle(color: colors.textPrimary),
+        ),
+        content: Text(
+          'Cette action est irréversible. Le contenu sera supprimé définitivement.',
+          style: TextStyle(color: colors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Annuler', style: TextStyle(color: colors.textSecondary)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Supprimer', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await FirebaseFirestore.instance
+          .collection('ContentPaies')
+          .doc(contentId)
+          .delete();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Contenu supprimé'),
+          backgroundColor: Colors.green,
+        ));
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Erreur: $e'),
+          backgroundColor: Colors.red,
+        ));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1612,12 +1664,16 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
                 },
               ),
             ],
-            ListTile(
-              leading: const Icon(Icons.delete_outline, color: Colors.red),
-              title: const Text('Supprimer',
-                  style: TextStyle(color: Colors.red)),
-              onTap: () => Navigator.pop(context),
-            ),
+            if (_isOwner || _isAdmin)
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: Colors.red),
+                title: const Text('Supprimer',
+                    style: TextStyle(color: Colors.red)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _deleteContent();
+                },
+              ),
           ],
         ),
       ),

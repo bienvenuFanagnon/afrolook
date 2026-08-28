@@ -9,6 +9,7 @@ import 'package:afrotok/providers/authProvider.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -109,6 +110,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
   // ÉTAT INTERFACE
   bool _showUI = true;
+  bool _isLandscapeMode = false;
   bool _showGiftPanel = false;
   bool _isParticipant = false;
   bool _isFollowing = false;
@@ -239,6 +241,15 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     }
 
     _setupTypingListener();
+
+    // Autoriser la rotation paysage uniquement pour les spectateurs
+    if (!widget.isHost) {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+    }
   }
 
 
@@ -1752,6 +1763,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   // ==================== WIDGETS PRINCIPAUX ====================
   @override
   Widget build(BuildContext context) {
+    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
     return Scaffold(
       backgroundColor: Colors.black,
       body: GestureDetector(
@@ -1762,21 +1774,48 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
             // VIDÉO PRINCIPALE
             _buildVideoSection(),
 
-            // OVERLAY TEMPS ESSAI
-            if (widget.postLive.isPaidLive && _showTrialOverlay && !_shouldSkipTrial())
+            // OVERLAY TEMPS ESSAI (portrait uniquement)
+            if (!isLandscape && widget.postLive.isPaidLive && _showTrialOverlay && !_shouldSkipTrial())
               _buildTrialOverlay(),
 
-            // BOUTON TOGGLE UI (positionné pour être visible)
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 10,
-              left: 16,
-              child: _buildToggleUIButton(),
-            ),
+            // BOUTON TOGGLE UI (portrait uniquement)
+            if (!isLandscape)
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 10,
+                left: 16,
+                child: _buildToggleUIButton(),
+              ),
 
-            // INTERFACE UTILISATEUR
-            if (_showUI) ..._buildUIOverlay(),
+            // BOUTON PAYSAGE — spectateurs uniquement, portrait uniquement
+            // Positionné en dessous du badge "LIVE Afrolook" (right:16) pour éviter la superposition
+            if (!isLandscape && !widget.isHost && !_isParticipant)
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 56,
+                right: 16,
+                child: GestureDetector(
+                  onTap: () => SystemChrome.setPreferredOrientations([
+                    DeviceOrientation.landscapeLeft,
+                    DeviceOrientation.landscapeRight,
+                  ]),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.55),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white.withOpacity(0.2)),
+                    ),
+                    child: const Icon(Icons.screen_rotation_rounded, color: Colors.white, size: 18),
+                  ),
+                ),
+              ),
 
-            // EFFETS ANIMÉS (au-dessus de tout)
+            // INTERFACE UTILISATEUR COMPLÈTE (portrait uniquement)
+            if (_showUI && !isLandscape) ..._buildUIOverlay(),
+
+            // CONTRÔLES MINIMAUX EN PAYSAGE (spectateurs uniquement)
+            if (isLandscape && !widget.isHost) _buildLandscapeControls(context),
+
+            // EFFETS ANIMÉS (toujours visibles)
             ..._buildTikTokLikeEffects(),
             ..._buildGiftEffects(),
 
@@ -1785,6 +1824,81 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           ],
         ),
       ),
+    );
+  }
+
+  /// Contrôles minimaux affichés en mode paysage pour les spectateurs.
+  Widget _buildLandscapeControls(BuildContext context) {
+    final top = MediaQuery.of(context).padding.top;
+    return Stack(
+      children: [
+        // Bouton retour portrait — coin supérieur droit
+        Positioned(
+          top: top + 8,
+          right: 12,
+          child: GestureDetector(
+            onTap: () {
+              // Retour portrait en autorisant à nouveau la rotation ensuite
+              SystemChrome.setPreferredOrientations([
+                DeviceOrientation.portraitUp,
+                DeviceOrientation.landscapeLeft,
+                DeviceOrientation.landscapeRight,
+              ]);
+            },
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.55),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white.withOpacity(0.2)),
+              ),
+              child: const Icon(Icons.screen_rotation_rounded, color: Colors.white, size: 18),
+            ),
+          ),
+        ),
+        // Compteur vues + likes — coin supérieur gauche
+        Positioned(
+          top: top + 8,
+          left: 12,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.55),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withOpacity(0.12)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.remove_red_eye_outlined, color: Colors.white70, size: 14),
+                const SizedBox(width: 4),
+                Text('$_viewerCount', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                const SizedBox(width: 12),
+                const Icon(Icons.favorite_rounded, color: Colors.pinkAccent, size: 14),
+                const SizedBox(width: 4),
+                Text('$_likeCount', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+        ),
+        // Bouton like — coin inférieur droit
+        Positioned(
+          bottom: 20,
+          right: 20,
+          child: GestureDetector(
+            onTap: _sendLike,
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.55),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.pinkAccent.withOpacity(0.4)),
+              ),
+              child: const Icon(Icons.favorite_rounded, color: Colors.pinkAccent, size: 22),
+            ),
+          ),
+        ),
+      ],
     );
   }
   // @override
@@ -2790,6 +2904,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     _engine.release();
     _commentController.dispose();
     _pinnedTextController.dispose();
+    // Restaurer portrait au départ du live
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     super.dispose();
   }
 }

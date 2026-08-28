@@ -22,7 +22,6 @@ import '../l10n/app_localizations.dart';
 import 'dart:async';
 import 'dart:math';
 import 'dart:ui' as ui;
-import '../services/comment_suggestion_service.dart';
 
 import 'coins/post_gifts_list.dart';
 import 'pub/conditional_ad_banner.dart';
@@ -85,9 +84,6 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
   bool _hasMoreUsers = true;
 
   bool _showEmojiPicker = false;
-  List<String> _shuffledSuggestions = [];
-  bool _suggestionsFromAi = false;
-  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _suggestionSub;
 
   @override
   void initState() {
@@ -95,21 +91,6 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     userProvider = Provider.of<UserProvider>(context, listen: false);
     postProvider = Provider.of<PostProvider>(context, listen: false);
-
-    final aiSuggestions = widget.post.commentSuggestions;
-    if (aiSuggestions != null && aiSuggestions.isNotEmpty) {
-      _shuffledSuggestions = List<String>.from(aiSuggestions)..shuffle();
-      _suggestionsFromAi = true;
-    } else {
-      // Fallback local immédiat pendant que l'IA génère (ou si pas de clé configurée)
-      _shuffledSuggestions = CommentSuggestionService.getSuggestions(
-        widget.post.id ?? '',
-        widget.post.description ?? '',
-        postType: widget.post.typeTabbar,
-      );
-      // Listener Firestore : mise à jour en temps réel quand l'IA génère les suggestions
-      _listenForAiSuggestions();
-    }
 
     if (widget.initialComments.isNotEmpty) {
       comments = List.from(widget.initialComments);
@@ -136,35 +117,10 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
 
   @override
   void dispose() {
-    _suggestionSub?.cancel();
     _textController.removeListener(_onTextChanged);
     _textController.dispose();
     _focusNode.dispose();
     super.dispose();
-  }
-
-  void _listenForAiSuggestions() {
-    final postId = widget.post.id;
-    if (postId == null || postId.isEmpty) return;
-    _suggestionSub = FirebaseFirestore.instance
-        .collection('Posts')
-        .doc(postId)
-        .snapshots()
-        .listen((snap) {
-      if (!mounted) return;
-      final data = snap.data();
-      if (data == null) return;
-      final raw = data['commentSuggestions'];
-      if (raw is List && raw.isNotEmpty) {
-        final updated = List<String>.from(raw)..shuffle();
-        setState(() {
-          _shuffledSuggestions = updated;
-          _suggestionsFromAi = true;
-        });
-        _suggestionSub?.cancel();
-        _suggestionSub = null;
-      }
-    });
   }
 
   void _onTextChanged() {
@@ -1019,81 +975,6 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     );
   }
 
-  // ─── SUGGESTIONS ────────────────────────────────────────────────────────────
-
-  Widget _buildCommentSuggestions() {
-    return SizedBox(
-      height: 34,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        itemCount: _shuffledSuggestions.length + 1,
-        itemBuilder: (_, i) {
-          // Premier item : badge source (IA ou local)
-          if (i == 0) {
-            return Container(
-              margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-              decoration: BoxDecoration(
-                color: _suggestionsFromAi
-                    ? const Color(0xFF6C3EDB).withOpacity(0.12)
-                    : _colors.surfaceVariant,
-                borderRadius: BorderRadius.circular(17),
-                border: Border.all(
-                  color: _suggestionsFromAi
-                      ? const Color(0xFF6C3EDB).withOpacity(0.35)
-                      : _colors.border.withOpacity(0.4),
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    _suggestionsFromAi ? '✨' : '💡',
-                    style: const TextStyle(fontSize: 11),
-                  ),
-                  const SizedBox(width: 3),
-                  Text(
-                    _suggestionsFromAi ? 'IA' : 'local',
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w600,
-                      color: _suggestionsFromAi
-                          ? const Color(0xFF6C3EDB)
-                          : _colors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          final text = _shuffledSuggestions[i - 1];
-          return GestureDetector(
-            onTap: () {
-              if (_showEmojiPicker) setState(() => _showEmojiPicker = false);
-              _textController.text = text;
-              _sendComment();
-            },
-            child: Container(
-              margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-              decoration: BoxDecoration(
-                color: _colors.surfaceVariant,
-                borderRadius: BorderRadius.circular(17),
-                border: Border.all(color: _colors.border.withOpacity(0.5)),
-              ),
-              child: Text(
-                text,
-                style: TextStyle(fontSize: 12, color: _colors.textPrimary),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
   // ─── INPUT BAR ───────────────────────────────────────────────────────────────
 
   Widget _buildCommentInput() {
@@ -1130,13 +1011,6 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: _buildUserSuggestions(),
-            ),
-
-          // Suggestions de commentaires rapides
-          if (!showUserSuggestions)
-            Padding(
-              padding: const EdgeInsets.only(top: 6, bottom: 2),
-              child: _buildCommentSuggestions(),
             ),
 
           // Barre de saisie

@@ -822,8 +822,8 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                   const SizedBox(height: 8),
                 ],
 
-                // Boost groupe — visible pour le propriétaire uniquement
-                if (_myRole == 'owner') ...[
+                // Boost groupe — visible pour le propriétaire et les admins du groupe
+                if (_myRole == 'owner' || _myRole == 'admin') ...[
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
                     child: SizedBox(

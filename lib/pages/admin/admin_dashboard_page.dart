@@ -1,5 +1,6 @@
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -16,6 +17,7 @@ import 'remuneration_admin_page.dart';
 import '../challenge/challengeDashbord.dart';
 import '../contenuPayant/admin_content_page.dart';
 import '../pronostics/admin_pronostics_page.dart';
+import '../weekly_top/weekly_top_commentators_page.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
@@ -26,6 +28,8 @@ class AdminDashboardPage extends StatefulWidget {
 
 class _AdminDashboardPageState extends State<AdminDashboardPage> {
   final _db = FirebaseFirestore.instance;
+  bool _forcingReward = false;
+  bool _rankingOnlyMode = false;
 
   // Stats chargées une fois
   int _totalUsers = 0;
@@ -189,6 +193,31 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   ),
                   const SizedBox(height: 20),
 
+                  // ── Actions rapides ────────────────────────────────────────
+                  _SectionLabel('Actions rapides', colors),
+                  const SizedBox(height: 10),
+                  _AdminActionCard(
+                    icon: Icons.emoji_events_rounded,
+                    iconBg: const Color(0xFFFFF8E1),
+                    iconColor: const Color(0xFFFFD700),
+                    label: 'Forcer le classement commentateurs',
+                    desc: 'Recalcule et récompense le Top 5 de la semaine précédente',
+                    loading: _forcingReward,
+                    onTap: _forceWeeklyCommentatorsReward,
+                    colors: colors,
+                    trailing: TextButton.icon(
+                      onPressed: () => _push(const WeeklyTopCommentatorsPage()),
+                      icon: const Icon(Icons.leaderboard_rounded, size: 16),
+                      label: const Text('Voir le classement'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFFFFD700),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
                   // ── Activité récente ───────────────────────────────────────
                   if (_recentEvents.isNotEmpty) ...[
                     _SectionLabel('Activité récente', colors),
@@ -204,6 +233,126 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   void _push(Widget page) {
     Navigator.push(context, MaterialPageRoute(builder: (_) => page))
         .then((_) => _loadStats());
+  }
+
+  Future<void> _forceWeeklyCommentatorsReward() async {
+    if (_forcingReward) return;
+
+    setState(() => _forcingReward = true);
+    try {
+      final callable = FirebaseFunctions.instance.httpsCallable(
+        'forceWeeklyCommentatorsReward',
+        options: HttpsCallableOptions(timeout: const Duration(seconds: 10)),
+      );
+
+      // Première vérification : déjà traité ?
+      final checkResult = await callable.call({'confirm': false});
+      final checkData = checkResult.data as Map<String, dynamic>? ?? {};
+      if (!mounted) return;
+
+      final alreadyProcessed = checkData['alreadyProcessed'] == true;
+
+      if (alreadyProcessed) {
+        final existingCount = checkData['rankingsCount'] as int? ?? 0;
+        final processedAtMs = checkData['processedAt'] as int?;
+        final processedAt = processedAtMs != null
+            ? DateTime.fromMillisecondsSinceEpoch(processedAtMs)
+            : null;
+        final dateStr = processedAt != null
+            ? '${processedAt.day.toString().padLeft(2, '0')}/${processedAt.month.toString().padLeft(2, '0')} à ${processedAt.hour.toString().padLeft(2, '0')}h${processedAt.minute.toString().padLeft(2, '0')}'
+            : 'date inconnue';
+
+        setState(() => _forcingReward = false);
+
+        // Dialog de confirmation avec choix du mode
+        final choice = await showDialog<String>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: Colors.grey[900],
+            title: Row(children: [
+              const Icon(Icons.warning_amber_rounded, color: Color(0xFFFFD700)),
+              const SizedBox(width: 8),
+              const Text('Déjà calculé', style: TextStyle(color: Colors.white, fontSize: 16)),
+            ]),
+            content: Text(
+              'Ce classement a déjà été exécuté le $dateStr.\n$existingCount gagnant(s) récompensé(s).\n\nQue veux-tu faire ?',
+              style: const TextStyle(color: Colors.white70),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, null), child: const Text('Annuler')),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, 'rankingOnly'),
+                child: const Text('Mettre à jour le classement\n(sans re-récompenser)', style: TextStyle(color: Color(0xFF5B9CFA), fontSize: 12)),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, 'full'),
+                child: const Text('Relancer complet\n(re-crédite les pièces ⚠️)', style: TextStyle(color: Color(0xFFE53935), fontSize: 12)),
+              ),
+            ],
+          ),
+        );
+        if (choice == null || !mounted) return;
+        _rankingOnlyMode = choice == 'rankingOnly';
+        setState(() => _forcingReward = true);
+      } else {
+        // Première exécution : confirmation simple
+        setState(() => _forcingReward = false);
+        final confirm = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: Colors.grey[900],
+            title: const Text('Lancer le classement commentateurs', style: TextStyle(color: Colors.white)),
+            content: const Text(
+                'Cela va calculer le Top Commentateurs de la semaine précédente et envoyer les récompenses + notifications.',
+                style: TextStyle(color: Colors.white70)),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Confirmer', style: TextStyle(color: Color(0xFF5B9CFA))),
+              ),
+            ],
+          ),
+        );
+        if (confirm != true || !mounted) return;
+        setState(() => _forcingReward = true);
+      }
+
+      // Lancement réel avec confirm: true
+      final runResult = await callable.call({'confirm': true, 'rankingOnly': _rankingOnlyMode});
+      final runData = runResult.data as Map<String, dynamic>? ?? {};
+      if (!mounted) return;
+
+      final count = runData['rankingsCount'] as int? ?? 0;
+      final note = runData['note'] as String? ?? '';
+
+      String msg;
+      Color bg;
+      if (count > 0) {
+        msg = '✅ Terminé — $count gagnant(s) récompensé(s).';
+        bg = const Color(0xFF0F6E56);
+      } else if (note == 'no_eligible_comments') {
+        msg = '⚠️ Aucun commentaire éligible trouvé (min. 10 caractères) pour la semaine.';
+        bg = const Color(0xFFE65100);
+      } else if (note == 'no_eligible_users') {
+        msg = '⚠️ Commentaires trouvés mais aucun utilisateur éligible (compte < 7 jours).';
+        bg = const Color(0xFFE65100);
+      } else {
+        msg = '⚠️ Terminé — 0 gagnant. Note : $note';
+        bg = const Color(0xFFE65100);
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg), backgroundColor: bg, duration: const Duration(seconds: 6)),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur : $e'), backgroundColor: const Color(0xFFE53935)),
+      );
+    } finally {
+      if (mounted) setState(() => _forcingReward = false);
+    }
   }
 }
 
@@ -880,6 +1029,98 @@ class _RecentEvent {
   final int timestamp;
   const _RecentEvent(
       {required this.pseudo, required this.status, required this.timestamp});
+}
+
+// ── Action rapide ─────────────────────────────────────────────────────────────
+
+class _AdminActionCard extends StatelessWidget {
+  final IconData icon;
+  final Color iconBg, iconColor;
+  final String label, desc;
+  final bool loading;
+  final VoidCallback onTap;
+  final AppColors colors;
+  final Widget? trailing;
+
+  const _AdminActionCard({
+    required this.icon,
+    required this.iconBg,
+    required this.iconColor,
+    required this.label,
+    required this.desc,
+    required this.loading,
+    required this.onTap,
+    required this.colors,
+    this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.border.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44, height: 44,
+                decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(12)),
+                child: Icon(icon, color: iconColor, size: 22),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(label,
+                        style: TextStyle(
+                            color: colors.textPrimary,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13)),
+                    const SizedBox(height: 3),
+                    Text(desc,
+                        style: TextStyle(
+                            color: colors.textSecondary, fontSize: 11, height: 1.3)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              GestureDetector(
+                onTap: loading ? null : onTap,
+                child: loading
+                    ? const SizedBox(
+                        width: 20, height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF5B9CFA)))
+                    : Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF5B9CFA).withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFF5B9CFA).withOpacity(0.3)),
+                        ),
+                        child: const Text('Lancer',
+                            style: TextStyle(
+                                color: Color(0xFF5B9CFA),
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12)),
+                      ),
+              ),
+            ],
+          ),
+          if (trailing != null) ...[
+            const SizedBox(height: 6),
+            trailing!,
+          ],
+        ],
+      ),
+    );
+  }
 }
 
 // ── Utilitaires ───────────────────────────────────────────────────────────────

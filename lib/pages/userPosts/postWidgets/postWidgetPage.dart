@@ -1,6 +1,5 @@
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'package:afrotok/pages/user/userPubs/user_create_advertisement_page.dart';
-import '../../../widgets/marquee_comment_chips.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -64,7 +63,6 @@ import '../youTube_video_card.dart';
 import 'audioPostWidget.dart';
 import '../../../services/postService/post_view_service.dart';
 import '../../../services/postService/feed_interaction_service.dart';
-import '../../../services/comment_suggestion_service.dart';
 import '../../../services/streak_service.dart';
 import '../../../providers/streakProvider.dart';
 
@@ -90,6 +88,7 @@ class HomePostUsersWidget extends StatefulWidget {
   // afficher en priorité ce pays dans le badge pays du post (s'il y figure).
   final String? currentFilterCountry;
   final bool isAdContext;
+  final bool suppressInlineAd;
 
   HomePostUsersWidget({
     required this.post,
@@ -108,6 +107,7 @@ class HomePostUsersWidget extends StatefulWidget {
     this.index=0,
     this.currentFilterCountry,
     this.isAdContext = false,
+    this.suppressInlineAd = false,
   }) : super(key: key);
 
   @override
@@ -150,11 +150,6 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   int _localCommentsCount = 0;
   List<PostComment> _preloadedComments = [];
   bool _isLoadingComment = false;
-  List<String> _previewSuggestions = [];
-  bool _isSuggestionsLoading = false;
-  bool _suggestionsFromAi = false;
-  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _suggestionSub;
-  Timer? _shuffleTimer;
   final TextEditingController _quickCommentController = TextEditingController();
   bool _isSendingQuickComment = false;
 
@@ -309,7 +304,6 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     _checkIfFavorite();
     _loadSupportModalSeen();
     _loadLastComment();
-    _loadSuggestions();
   }
 
 
@@ -364,65 +358,6 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     });
   }
 
-  Future<void> _loadSuggestions() async {
-    if (!mounted) return;
-    final postId = widget.post.id;
-    if (postId == null) return;
-    final description = widget.post.description ?? '';
-
-    setState(() => _isSuggestionsLoading = true);
-    try {
-      final aiSuggestions = widget.post.commentSuggestions;
-      if (aiSuggestions != null && aiSuggestions.isNotEmpty) {
-        if (!mounted) return;
-        setState(() {
-          _previewSuggestions = List<String>.from(aiSuggestions)..shuffle();
-          _isSuggestionsLoading = false;
-          _suggestionsFromAi = true;
-        });
-        return;
-      }
-      final suggestions = CommentSuggestionService.getSuggestions(
-        postId,
-        description,
-        postType: widget.post.typeTabbar,
-      );
-      if (!mounted) return;
-      setState(() {
-        _previewSuggestions = suggestions;
-        _isSuggestionsLoading = false;
-      });
-      _listenForAiSuggestions(postId);
-      _shuffleTimer?.cancel();
-      _shuffleTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-        if (!mounted) return;
-        setState(() { _previewSuggestions = List.of(_previewSuggestions)..shuffle(); });
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _isSuggestionsLoading = false);
-    }
-  }
-
-  void _listenForAiSuggestions(String postId) {
-    _suggestionSub?.cancel();
-    _suggestionSub = FirebaseFirestore.instance
-        .collection('Posts')
-        .doc(postId)
-        .snapshots()
-        .listen((snap) {
-      if (!mounted) return;
-      final raw = snap.data()?['commentSuggestions'];
-      if (raw is List && raw.isNotEmpty) {
-        setState(() {
-          _previewSuggestions = List<String>.from(raw)..shuffle();
-          _suggestionsFromAi = true;
-        });
-        _suggestionSub?.cancel();
-        _suggestionSub = null;
-      }
-    });
-  }
 
   Future<void> _markSupportModalSeen() async {
     final prefs = await SharedPreferences.getInstance();
@@ -618,8 +553,6 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
   @override
   void dispose() {
-    _suggestionSub?.cancel();
-    _shuffleTimer?.cancel();
     _quickCommentController.dispose();
     _previewTimer?.cancel();
     _previewController?.dispose();
@@ -1015,7 +948,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   ),
                 ],
                 // 🆕 AFFICHAGE DE LA PUB APRÈS LE POST SI CONDITION REMPLIE
-                if (!widget.isAdContext && _shouldShowAd && widget.post.isAdvertisement != true) ...[
+                if (!widget.isAdContext && !widget.suppressInlineAd && _shouldShowAd && widget.post.isAdvertisement != true) ...[
                   const SizedBox(height: 12),
                   const AfrolookInlineAd(),
                   const SizedBox(height: 8),
@@ -1644,10 +1577,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         GestureDetector(
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => DetailsPost(post: widget.post)),
-          ),
+          onTap: _openDetailsPage,
           child: HashTagText(
             text: displayedText,
             decoratedStyle: TextStyle(fontSize: 15, color: colors.info, fontWeight: FontWeight.w400, height: 1.4),
@@ -1657,10 +1587,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         ),
         if (isLong)
           GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => DetailsPost(post: widget.post)),
-            ),
+            onTap: _openDetailsPage,
             child: Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text('Voir plus',
@@ -1709,8 +1636,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
             Positioned(
               bottom: 0, left: 0, right: 0,
               child: GestureDetector(
-                onTap: () => Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => DetailsPost(post: widget.post))),
+                onTap: _openDetailsPage,
                 child: Container(
                   padding: const EdgeInsets.fromLTRB(12, 40, 12, 10),
                   decoration: BoxDecoration(
@@ -1844,12 +1770,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     final imageUrl = _optimizeUrl(url);
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => DetailsPost(post: widget.post),
-          ),
-        );
+        _openDetailsPage();
       },
       child: CachedNetworkImage(
         imageUrl: imageUrl,
@@ -1870,14 +1791,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   Widget _buildTwoImages(List<String> images, double height) {
     final colors = AppColors.of(context);
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => DetailsPost(post: widget.post),
-          ),
-        );
-      },
+      onTap: _openDetailsPage,
       child: Row(
         children: [
           // Première image - moitié gauche
@@ -1925,14 +1839,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   Widget _buildThreeImages(List<String> images, double height) {
     final colors = AppColors.of(context);
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => DetailsPost(post: widget.post),
-          ),
-        );
-      },
+      onTap: _openDetailsPage,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2017,14 +1924,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     final itemWidth = (screenWidth / 2).toInt();
 
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => DetailsPost(post: widget.post),
-          ),
-        );
-      },
+      onTap: _openDetailsPage,
       child: Container(
         height: height,
         child: GridView.builder(
@@ -2115,9 +2015,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                             if (widget.post.dataType == PostDataType.VIDEO.name) {
                               _startVideoPreview();
                             } else {
-                              Navigator.push(context, MaterialPageRoute(
-                                builder: (context) => DetailsPost(post: widget.post),
-                              ));
+                              _openDetailsPage();
                             }
                           },
                           child: Opacity(
@@ -2655,7 +2553,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           if (_preloadedComments.isNotEmpty)
             SizedBox(
               height: 30,
-              child: AutoScrollRow(
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
                 itemCount: _preloadedComments.length,
                 itemBuilder: (_, i) {
                   final text = _preloadedComments[i].message?.trim() ?? '';
@@ -2691,61 +2590,6 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                 },
               ),
             ),
-          const SizedBox(height: 4),
-
-          // Suggestions — statiques, se mélangent toutes les 10 s, cliquables
-          SizedBox(
-            height: 26,
-            child: _isSuggestionsLoading
-                ? Row(
-                    children: List.generate(3, (_) => Container(
-                      margin: const EdgeInsets.only(right: 6),
-                      width: 70,
-                      decoration: BoxDecoration(
-                        color: colors.shimmerBase,
-                        borderRadius: BorderRadius.circular(13),
-                      ),
-                    )),
-                  )
-                : ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _previewSuggestions.length + 1,
-                    itemBuilder: (_, i) {
-                      if (i == 0) {
-                        return Container(
-                          margin: const EdgeInsets.only(right: 6),
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: _suggestionsFromAi ? const Color(0xFF6C3EDB).withOpacity(0.12) : colors.surfaceVariant,
-                            borderRadius: BorderRadius.circular(13),
-                            border: Border.all(color: _suggestionsFromAi ? const Color(0xFF6C3EDB).withOpacity(0.35) : colors.border.withOpacity(0.4)),
-                          ),
-                          child: Row(mainAxisSize: MainAxisSize.min, children: [
-                            Text(_suggestionsFromAi ? '✨' : '💡', style: const TextStyle(fontSize: 10)),
-                            const SizedBox(width: 3),
-                            Text(_suggestionsFromAi ? 'IA' : 'local', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: _suggestionsFromAi ? const Color(0xFF6C3EDB) : colors.textSecondary)),
-                          ]),
-                        );
-                      }
-                      final text = _previewSuggestions[i - 1];
-                      return GestureDetector(
-                        onTap: () => _sendQuickComment(text),
-                        child: Container(
-                          margin: const EdgeInsets.only(right: 6),
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          decoration: BoxDecoration(
-                            color: colors.surfaceVariant,
-                            borderRadius: BorderRadius.circular(13),
-                            border: Border.all(color: colors.border.withOpacity(0.6)),
-                          ),
-                          child: Center(
-                            child: Text(text, style: TextStyle(fontSize: 11, color: colors.textSecondary)),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-          ),
           const SizedBox(height: 5),
 
           // Vrai champ de saisie
@@ -3469,13 +3313,31 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     }).catchError((_) {});
   }
 
-  void _handleRepost() {
+  Future<void> _refreshPostStats() async {
+    if (widget.post.id == null || !mounted) return;
+    try {
+      final doc = await FirebaseFirestore.instance.collection('Posts').doc(widget.post.id).get();
+      if (doc.exists && mounted) {
+        final fresh = Post.fromJson(doc.data()!);
+        setState(() {
+          widget.post.users_like_id = fresh.users_like_id;
+          widget.post.users_love_id = fresh.users_love_id;
+          widget.post.users_comments_id = fresh.users_comments_id;
+          widget.post.vues = fresh.vues;
+        });
+      }
+    } catch (_) {}
+  }
+
+  void _openDetailsPage() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => DetailsPost(post: widget.post),
-      ),
-    );
+      MaterialPageRoute(builder: (_) => DetailsPost(post: widget.post)),
+    ).then((_) => _refreshPostStats());
+  }
+
+  void _handleRepost() {
+    _openDetailsPage();
   }
 
   void _handleGift2() {

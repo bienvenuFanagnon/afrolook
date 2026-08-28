@@ -28,9 +28,22 @@ class _ContentCommentsSectionState extends State<ContentCommentsSection> {
     super.dispose();
   }
 
+  bool get _isAdmin =>
+      Provider.of<UserAuthProvider>(context, listen: false)
+          .loginUserData
+          .role ==
+      'ADM';
+
+  String get _currentUserId =>
+      Provider.of<UserAuthProvider>(context, listen: false)
+          .loginUserData
+          .id ??
+      '';
+
   Future<void> _send() async {
     final text = _controller.text.trim();
-    if (text.isEmpty || text.length > _maxChars) return;
+    if (text.isEmpty) return;
+    if (!_isAdmin && text.length > _maxChars) return;
     final authProvider =
         Provider.of<UserAuthProvider>(context, listen: false);
     final user = authProvider.loginUserData;
@@ -38,9 +51,7 @@ class _ContentCommentsSectionState extends State<ContentCommentsSection> {
 
     setState(() => _sending = true);
     try {
-      await FirebaseFirestore.instance
-          .collection('ContentComments')
-          .add({
+      await FirebaseFirestore.instance.collection('ContentComments').add({
         'contentId': widget.contentId,
         'userId': user.id ?? '',
         'pseudo': user.pseudo ?? 'Utilisateur',
@@ -58,6 +69,59 @@ class _ContentCommentsSectionState extends State<ContentCommentsSection> {
     } catch (_) {
     } finally {
       if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  Future<void> _deleteComment(String docId) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('ContentComments')
+          .doc(docId)
+          .delete();
+      await FirebaseFirestore.instance
+          .collection('ContentPaies')
+          .doc(widget.contentId)
+          .update({'comments': FieldValue.increment(-1)});
+    } catch (_) {}
+  }
+
+  Future<void> _editComment(String docId, String current) async {
+    final colors = AppColors.of(context);
+    final ctrl = TextEditingController(text: current);
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: colors.surface,
+        title: Text('Modifier le commentaire',
+            style: TextStyle(color: colors.textPrimary, fontSize: 14)),
+        content: TextField(
+          controller: ctrl,
+          maxLines: 3,
+          maxLength: _isAdmin ? null : _maxChars,
+          style: TextStyle(color: colors.textPrimary, fontSize: 13),
+          decoration: InputDecoration(
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Annuler', style: TextStyle(color: colors.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+            style: ElevatedButton.styleFrom(backgroundColor: colors.primary),
+            child: const Text('Enregistrer', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (result != null && result.isNotEmpty) {
+      await FirebaseFirestore.instance
+          .collection('ContentComments')
+          .doc(docId)
+          .update({'text': result, 'editedAt': DateTime.now().millisecondsSinceEpoch});
     }
   }
 
@@ -85,6 +149,8 @@ class _ContentCommentsSectionState extends State<ContentCommentsSection> {
             sending: _sending,
             onSend: _send,
             colors: colors,
+            isAdmin: _isAdmin,
+            maxChars: _maxChars,
           ),
         ),
         const SizedBox(height: 10),
@@ -110,7 +176,19 @@ class _ContentCommentsSectionState extends State<ContentCommentsSection> {
             return Column(
               children: snap.data!.docs.map((d) {
                 final data = d.data() as Map<String, dynamic>;
-                return _CommentItem(data: data, colors: colors);
+                final docId = d.id;
+                final commentUserId = data['userId'] as String? ?? '';
+                final canEdit = commentUserId == _currentUserId;
+                final canDelete = canEdit || _isAdmin;
+                return _CommentItem(
+                  data: data,
+                  docId: docId,
+                  colors: colors,
+                  canEdit: canEdit,
+                  canDelete: canDelete,
+                  onDelete: () => _deleteComment(docId),
+                  onEdit: () => _editComment(docId, data['text'] as String? ?? ''),
+                );
               }).toList(),
             );
           },
@@ -125,12 +203,16 @@ class _CommentInput extends StatefulWidget {
   final bool sending;
   final VoidCallback onSend;
   final AppColors colors;
+  final bool isAdmin;
+  final int maxChars;
 
   const _CommentInput({
     required this.controller,
     required this.sending,
     required this.onSend,
     required this.colors,
+    required this.isAdmin,
+    required this.maxChars,
   });
 
   @override
@@ -152,7 +234,7 @@ class _CommentInputState extends State<_CommentInput> {
         children: [
           TextField(
             controller: widget.controller,
-            maxLength: 100,
+            maxLength: widget.isAdmin ? null : widget.maxChars,
             maxLines: 2,
             minLines: 1,
             buildCounter: (_, {required currentLength, required isFocused, maxLength}) =>
@@ -161,7 +243,9 @@ class _CommentInputState extends State<_CommentInput> {
             style: TextStyle(
                 fontSize: 13, color: widget.colors.textPrimary),
             decoration: InputDecoration(
-              hintText: 'Votre avis... (100 car. max)',
+              hintText: widget.isAdmin
+                  ? 'Votre commentaire...'
+                  : 'Votre avis... (${widget.maxChars} car. max)',
               hintStyle: TextStyle(
                   fontSize: 12, color: widget.colors.textSecondary),
               border: InputBorder.none,
@@ -172,15 +256,16 @@ class _CommentInputState extends State<_CommentInput> {
             padding: const EdgeInsets.fromLTRB(12, 0, 8, 8),
             child: Row(
               children: [
-                Text(
-                  '$_count/100',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: _count > 90
-                        ? Colors.red
-                        : widget.colors.textSecondary,
+                if (!widget.isAdmin)
+                  Text(
+                    '$_count/${widget.maxChars}',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: _count > widget.maxChars - 10
+                          ? Colors.red
+                          : widget.colors.textSecondary,
+                    ),
                   ),
-                ),
                 const Spacer(),
                 TextButton(
                   onPressed: widget.sending ? null : widget.onSend,
@@ -217,9 +302,22 @@ class _CommentInputState extends State<_CommentInput> {
 
 class _CommentItem extends StatelessWidget {
   final Map<String, dynamic> data;
+  final String docId;
   final AppColors colors;
+  final bool canEdit;
+  final bool canDelete;
+  final VoidCallback onDelete;
+  final VoidCallback onEdit;
 
-  const _CommentItem({required this.data, required this.colors});
+  const _CommentItem({
+    required this.data,
+    required this.docId,
+    required this.colors,
+    required this.canEdit,
+    required this.canDelete,
+    required this.onDelete,
+    required this.onEdit,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -227,6 +325,7 @@ class _CommentItem extends StatelessWidget {
     final pseudo = data['pseudo'] as String? ?? 'Utilisateur';
     final text = data['text'] as String? ?? '';
     final ts = data['createdAt'] as int? ?? 0;
+    final edited = data['editedAt'] != null;
     final date = _relativeTime(ts);
 
     return Padding(
@@ -265,10 +364,44 @@ class _CommentItem extends StatelessWidget {
                               fontWeight: FontWeight.w700,
                               color: colors.textPrimary)),
                       const Spacer(),
-                      Text(date,
-                          style: TextStyle(
-                              fontSize: 9,
-                              color: colors.textSecondary)),
+                      Text(
+                        edited ? '$date · modifié' : date,
+                        style: TextStyle(
+                            fontSize: 9,
+                            color: colors.textSecondary),
+                      ),
+                      if (canEdit || canDelete) ...[
+                        const SizedBox(width: 4),
+                        PopupMenuButton<String>(
+                          icon: Icon(Icons.more_vert,
+                              size: 14, color: colors.textSecondary),
+                          padding: EdgeInsets.zero,
+                          onSelected: (v) {
+                            if (v == 'edit') onEdit();
+                            if (v == 'delete') onDelete();
+                          },
+                          itemBuilder: (_) => [
+                            if (canEdit)
+                              PopupMenuItem(
+                                value: 'edit',
+                                child: Row(children: [
+                                  Icon(Icons.edit, size: 16, color: colors.textPrimary),
+                                  const SizedBox(width: 8),
+                                  Text('Modifier', style: TextStyle(color: colors.textPrimary, fontSize: 13)),
+                                ]),
+                              ),
+                            if (canDelete)
+                              PopupMenuItem(
+                                value: 'delete',
+                                child: Row(children: [
+                                  const Icon(Icons.delete, size: 16, color: Colors.red),
+                                  const SizedBox(width: 8),
+                                  const Text('Supprimer', style: TextStyle(color: Colors.red, fontSize: 13)),
+                                ]),
+                              ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 3),

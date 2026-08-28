@@ -174,31 +174,37 @@ class _MesNotificationState extends State<MesNotification> {
 
   // ── Groupes accordion ──
   static const Map<String, List<String>> _groupTypes = {
-    'Activité':            ['FAVORITE', 'COMMENT', 'COMMENTAIRE', 'POST'],
-    'Nouveaux abonnés':    ['ABONNER', 'INVITATION', 'ACCEPTINVITATION'],
-    'Messages':            ['MESSAGE'],
-    'Nouveaux contenus':   ['NEWPOST', 'ARTICLE', 'CHRONIQUE', 'CHALLENGE', 'LIVE', 'SERVICE'],
-    'Gains & Parrainages': ['GAIN', 'PARRAINAGE'],
-    'Afrolook':            ['SUPPORT', 'MARKETING', 'COMPTE_OFFICIEL', 'USER'],
+    'Activité':                   ['FAVORITE', 'COMMENT', 'COMMENTAIRE', 'POST'],
+    'Nouveaux abonnés':           ['ABONNER', 'INVITATION', 'ACCEPTINVITATION'],
+    'Messages':                   ['MESSAGE'],
+    'Nouveaux contenus':          ['NEWPOST', 'ARTICLE', 'CHRONIQUE', 'CHALLENGE', 'LIVE', 'SERVICE'],
+    'Récompenses hebdomadaires':  ['WEEKLY_REWARD'],
+    'Gains & Parrainages':        ['GAIN', 'PARRAINAGE'],
+    'Afrolook':                   ['SUPPORT', 'MARKETING', 'COMPTE_OFFICIEL', 'USER'],
   };
 
   static const Map<String, IconData> _groupIcons = {
-    'Activité':            Icons.favorite_border,
-    'Nouveaux abonnés':    Icons.person_add_alt_1_outlined,
-    'Messages':            Icons.chat_bubble_outline,
-    'Nouveaux contenus':   Icons.play_circle_outline,
-    'Gains & Parrainages': Icons.monetization_on_outlined,
-    'Afrolook':            Icons.verified_outlined,
+    'Activité':                   Icons.favorite_border,
+    'Nouveaux abonnés':           Icons.person_add_alt_1_outlined,
+    'Messages':                   Icons.chat_bubble_outline,
+    'Nouveaux contenus':          Icons.play_circle_outline,
+    'Récompenses hebdomadaires':  Icons.emoji_events_outlined,
+    'Gains & Parrainages':        Icons.monetization_on_outlined,
+    'Afrolook':                   Icons.verified_outlined,
   };
 
   final Map<String, bool> _groupExpanded = {
-    'Activité':            false,
-    'Nouveaux abonnés':    false,
-    'Messages':            false,
-    'Nouveaux contenus':   false,
-    'Gains & Parrainages': false,
-    'Afrolook':            false,
+    'Activité':                   false,
+    'Nouveaux abonnés':           false,
+    'Messages':                   false,
+    'Nouveaux contenus':          false,
+    'Récompenses hebdomadaires':  false,
+    'Gains & Parrainages':        false,
+    'Afrolook':                   false,
   };
+
+  // Nombre de notifications visibles par groupe (2 au départ, +5 à chaque "Voir plus")
+  final Map<String, int> _groupVisibleCount = {};
 
   String _groupForType(String? type) {
     if (type == null) return 'Afrolook';
@@ -1350,7 +1356,17 @@ class _MesNotificationState extends State<MesNotification> {
                   Expanded(
                     child: ListView(
                       children: [
-                        ..._groupTypes.keys.map((group) {
+                        ...() {
+                          // Trier les groupes par notification la plus récente
+                          final groups = _groupTypes.keys.toList()
+                            ..sort((a, b) {
+                              int latestOf(String g) => _notifications
+                                  .where((n) => _groupForType(n.type) == g)
+                                  .fold<int>(0, (m, n) => (n.createdAt ?? 0) > m ? (n.createdAt ?? 0) : m);
+                              return latestOf(b).compareTo(latestOf(a));
+                            });
+                          return groups;
+                        }().map((group) {
                           final items = _notifications
                               .where((n) => _groupForType(n.type) == group)
                               .toList();
@@ -1391,9 +1407,48 @@ class _MesNotificationState extends State<MesNotification> {
                                   ),
                                 ),
                               ),
-                              // ── Items du groupe ──
-                              if (isOpen)
-                                ...items.map((n) => _buildNotificationItem(n)),
+                              // ── Items du groupe (2 au départ, +5 à chaque "Voir plus") ──
+                              if (isOpen) ...[
+                                ...() {
+                                  final visible = _groupVisibleCount[group] ?? 2;
+                                  return items.take(visible).map((n) => _buildNotificationItem(n));
+                                }(),
+                                // Bouton "Voir plus" si des items restent à afficher
+                                Builder(builder: (ctx) {
+                                  final visible = _groupVisibleCount[group] ?? 2;
+                                  final remaining = items.length - visible;
+                                  if (remaining <= 0 && !_hasMore) return const SizedBox.shrink();
+                                  if (remaining <= 0 && _hasMore) {
+                                    // On a tout affiché localement mais Firestore a peut-être plus
+                                    return _isLoadingMore
+                                        ? const Padding(
+                                            padding: EdgeInsets.symmetric(vertical: 8),
+                                            child: Center(child: SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))),
+                                          )
+                                        : Padding(
+                                            padding: const EdgeInsets.symmetric(vertical: 4),
+                                            child: TextButton.icon(
+                                              onPressed: () async {
+                                                await _loadMoreNotifications();
+                                                if (mounted) setState(() => _groupVisibleCount[group] = visible + 5);
+                                              },
+                                              icon: const Icon(Icons.expand_more, size: 16),
+                                              label: const Text('Voir plus'),
+                                              style: TextButton.styleFrom(foregroundColor: _colors.textSecondary),
+                                            ),
+                                          );
+                                  }
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 4),
+                                    child: TextButton.icon(
+                                      onPressed: () => setState(() => _groupVisibleCount[group] = visible + 5),
+                                      icon: const Icon(Icons.expand_more, size: 16),
+                                      label: Text('Voir plus ($remaining)'),
+                                      style: TextButton.styleFrom(foregroundColor: _colors.textSecondary),
+                                    ),
+                                  );
+                                }),
+                              ],
                               const Divider(height: 1),
                             ],
                           );

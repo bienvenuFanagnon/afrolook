@@ -89,8 +89,6 @@ import '../services/feed/feed_repository.dart';
 import '../services/postService/feed_interaction_service.dart';
 import '../services/streak_service.dart';
 import '../providers/streakProvider.dart';
-import '../services/comment_suggestion_service.dart';
-import '../widgets/marquee_comment_chips.dart';
 
 import 'userPosts/postWidgets/translatable_description.dart';
 
@@ -198,6 +196,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
   bool _midrollVideoInitialized = false;
   int _midrollCountdown = 5;
   VoidCallback? _videoPositionListener;
+  bool _isMidrollCtaLoading = false;
 
   // bool get _isLookChallenge => widget.initialPost!.type == 'CHALLENGEPARTICIPATION';
   bool get _isLookChallenge => widget.initialPost != null && widget.initialPost!.type == 'CHALLENGEPARTICIPATION';
@@ -228,21 +227,15 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
   final Map<String, bool> _likedPosts = {};
   final Map<String, int> _lovesCount = {};
   List<PostComment> _preloadedComments = [];
-  List<String> _previewSuggestions = [];
-  bool _suggestionsFromAi = false;
-  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _suggestionSub;
   final TextEditingController _quickCommentController = TextEditingController();
   bool _isSendingQuickComment = false;
 
   // Overlay toggle + live comments (style TikTok Live)
   bool _showOverlay = true;
   Timer? _liveCommentTimer;
-  Timer? _shuffleTimer;
   final GlobalKey<AnimatedListState> _liveListKey = GlobalKey<AnimatedListState>();
   final List<PostComment> _visibleComments = [];
   int _commentCycleIdx = 0;
-
-  bool _isSuggestionsLoading = false;
 
 // Cache et gestion des anciennes vidéos
   List<Post> _oldVideosCache = [];
@@ -287,7 +280,6 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
       _lazyLoadPostRelations(widget.initialPost!);
     }
 
-    _loadSuggestions(widget.initialPost);
     _initializeFeed();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _showFirstScrollModalIfNeeded();
@@ -421,6 +413,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
     if (userId == null) return;
 
     final postDoc = await _firestore.collection('Posts').doc(widget.initialPost!.id).get();
+    if (!mounted) return;
     if (postDoc.exists) {
       final data = postDoc.data();
       final usersFavorite = List<String>.from(data?['users_favorite_id'] ?? []);
@@ -497,11 +490,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
 
   @override
   void dispose() {
-    _suggestionSub?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _likeAnimationTimer?.cancel();
     _liveCommentTimer?.cancel();
-    _shuffleTimer?.cancel();
     _quickCommentController.dispose();
 
     // Nettoyer tous les
@@ -567,9 +558,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
 
   // ── Midroll ad ──────────────────────────────────────────────────────────────
 
-  bool _isUserPremium() =>
-      AbonnementUtils.isPremiumActive(authProvider.loginUserData?.abonnement) ||
-      AbonnementUtils.isAdmin(authProvider.loginUserData?.role);
+  bool _isUserPremium() => false;
 
   void _attachMidrollListener() {
     if (_currentVideoController == null) return;
@@ -614,8 +603,10 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
   /// Quand le trigger se déclenche (15s avant fin), la pub est déjà prête.
   Future<void> _prepareMidrollAd() async {
     if (!mounted) return;
+    // Inclure les entity boosts (pas de post mais gérés par _buildMidrollCard)
+    // et les pubs post normales — exclure uniquement celles sans post ET sans entity boost
     final ads = authProvider.advertisements
-        .where((a) => a['post'] != null)
+        .where((a) => a['isEntityBoost'] == true || a['post'] != null)
         .toList();
     if (ads.isEmpty) return;
     final picked = ads[Random().nextInt(ads.length)];
@@ -677,6 +668,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
       _showMidrollAd = false;
       _midrollVideoInitialized = false;
       _midrollCountdown = 5;
+      _isMidrollCtaLoading = false;
     });
     _midrollAdData = null;
     _currentVideoController?.play();
@@ -1014,12 +1006,14 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
                                           const SizedBox(width: 8),
                                           // Bouton suivre / rejoindre
                                           GestureDetector(
-                                            onTap: () {
+                                            onTap: _isMidrollCtaLoading ? null : () async {
                                               final ownerId = ad!.ownerId;
                                               final ownerType = ad!.ownerType;
                                               if (ownerId == null) return;
+                                              setState(() => _isMidrollCtaLoading = true);
                                               _closeMidrollOverlay();
-                                              _navigateToAdOwner(context, ownerId, ownerType);
+                                              await _navigateToAdOwner(context, ownerId, ownerType);
+                                              if (mounted) setState(() => _isMidrollCtaLoading = false);
                                             },
                                             child: Container(
                                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -1027,15 +1021,22 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
                                                 color: const Color(0xFFFFD700),
                                                 borderRadius: BorderRadius.circular(20),
                                               ),
-                                              child: Text(
-                                                _ownerCtaLabel(ad!.ownerType),
-                                                style: const TextStyle(
-                                                  color: Colors.black,
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.w800,
-                                                  decoration: TextDecoration.none,
-                                                ),
-                                              ),
+                                              child: _isMidrollCtaLoading
+                                                  ? const SizedBox(
+                                                      height: 14, width: 14,
+                                                      child: CircularProgressIndicator(
+                                                        strokeWidth: 2,
+                                                        valueColor: AlwaysStoppedAnimation(Colors.black),
+                                                      ))
+                                                  : Text(
+                                                      _ownerCtaLabel(ad!.ownerType),
+                                                      style: const TextStyle(
+                                                        color: Colors.black,
+                                                        fontSize: 11,
+                                                        fontWeight: FontWeight.w800,
+                                                        decoration: TextDecoration.none,
+                                                      ),
+                                                    ),
                                             ),
                                           ),
                                         ],
@@ -1089,12 +1090,14 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
                                             const SizedBox(height: 12),
                                             // CTA pleine largeur "Suivre ce créateur"
                                             GestureDetector(
-                                              onTap: () {
+                                              onTap: _isMidrollCtaLoading ? null : () async {
                                                 final ownerId = ad!.ownerId;
                                                 final ownerType = ad!.ownerType;
                                                 if (ownerId == null) return;
+                                                setState(() => _isMidrollCtaLoading = true);
                                                 _closeMidrollOverlay();
-                                                _navigateToAdOwner(context, ownerId, ownerType);
+                                                await _navigateToAdOwner(context, ownerId, ownerType);
+                                                if (mounted) setState(() => _isMidrollCtaLoading = false);
                                               },
                                               child: Container(
                                                 width: double.infinity,
@@ -1103,20 +1106,28 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
                                                   color: const Color(0xFFFFD700),
                                                   borderRadius: BorderRadius.circular(10),
                                                 ),
-                                                child: Text(
-                                                  _ownerCtaLabel(ad!.ownerType) == 'Suivre'
-                                                      ? 'Suivre ce créateur'
-                                                      : _ownerCtaLabel(ad!.ownerType) == "S'abonner"
-                                                          ? 'S\'abonner à ce canal'
-                                                          : 'Rejoindre ${ad!.ownerName ?? ''}',
-                                                  textAlign: TextAlign.center,
-                                                  style: const TextStyle(
-                                                    color: Colors.black,
-                                                    fontSize: 13,
-                                                    fontWeight: FontWeight.w800,
-                                                    decoration: TextDecoration.none,
-                                                  ),
-                                                ),
+                                                child: _isMidrollCtaLoading
+                                                    ? const Center(
+                                                        child: SizedBox(
+                                                          height: 18, width: 18,
+                                                          child: CircularProgressIndicator(
+                                                            strokeWidth: 2.5,
+                                                            valueColor: AlwaysStoppedAnimation(Colors.black),
+                                                          )))
+                                                    : Text(
+                                                        _ownerCtaLabel(ad!.ownerType) == 'Suivre'
+                                                            ? 'Suivre ce créateur'
+                                                            : _ownerCtaLabel(ad!.ownerType) == "S'abonner"
+                                                                ? 'S\'abonner à ce canal'
+                                                                : 'Rejoindre ${ad!.ownerName ?? ''}',
+                                                        textAlign: TextAlign.center,
+                                                        style: const TextStyle(
+                                                          color: Colors.black,
+                                                          fontSize: 13,
+                                                          fontWeight: FontWeight.w800,
+                                                          decoration: TextDecoration.none,
+                                                        ),
+                                                      ),
                                               ),
                                             ),
                                           ],
@@ -1155,7 +1166,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
                                   SizedBox(
                                     width: double.infinity,
                                     child: GestureDetector(
-                                      onTap: () {
+                                      onTap: _isMidrollCtaLoading ? null : () async {
                                         if (ad == null) return;
                                         _closeMidrollOverlay();
                                         if (post != null) {
@@ -1170,7 +1181,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
                                             ));
                                           }
                                         } else if (ad!.ownerId != null) {
-                                          _navigateToAdOwner(context, ad!.ownerId!, ad!.ownerType);
+                                          setState(() => _isMidrollCtaLoading = true);
+                                          await _navigateToAdOwner(context, ad!.ownerId!, ad!.ownerType);
+                                          if (mounted) setState(() => _isMidrollCtaLoading = false);
                                         }
                                       },
                                       child: Container(
@@ -1181,22 +1194,30 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
                                           ),
                                           borderRadius: BorderRadius.circular(30),
                                         ),
-                                        child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            const Icon(Icons.open_in_new, color: Colors.white, size: 16),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              btnText,
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.bold,
-                                                decoration: TextDecoration.none,
+                                        child: _isMidrollCtaLoading
+                                            ? const Center(
+                                                child: SizedBox(
+                                                  height: 20, width: 20,
+                                                  child: CircularProgressIndicator(
+                                                    strokeWidth: 2.5,
+                                                    valueColor: AlwaysStoppedAnimation(Colors.white),
+                                                  )))
+                                            : Row(
+                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                children: [
+                                                  const Icon(Icons.open_in_new, color: Colors.white, size: 16),
+                                                  const SizedBox(width: 8),
+                                                  Text(
+                                                    btnText,
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 14,
+                                                      fontWeight: FontWeight.bold,
+                                                      decoration: TextDecoration.none,
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
-                                            ),
-                                          ],
-                                        ),
                                       ),
                                     ),
                                   ),
@@ -1287,9 +1308,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
     _removeMidrollListener();
     _chewieController?.dispose();
     _currentVideoController?.dispose();
-    setState(() {
-      _isVideoInitialized = false;
-    });
+    if (mounted) setState(() => _isVideoInitialized = false);
   }
   // ==================== MÉTHODES DE PRÉCHARGEMENT ====================
 
@@ -3234,61 +3253,6 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
     } catch (_) {}
   }
 
-  Future<void> _loadSuggestions(Post? post) async {
-    if (!mounted || post == null) return;
-    final postId = post.id;
-    if (postId == null) return;
-    final description = post.description ?? '';
-    setState(() => _isSuggestionsLoading = true);
-    try {
-      final aiSuggestions = post.commentSuggestions;
-      if (aiSuggestions != null && aiSuggestions.isNotEmpty) {
-        if (!mounted) return;
-        setState(() {
-          _previewSuggestions = List<String>.from(aiSuggestions)..shuffle();
-          _isSuggestionsLoading = false;
-          _suggestionsFromAi = true;
-        });
-        return;
-      }
-      final suggestions = CommentSuggestionService.getSuggestions(
-        postId,
-        description,
-        postType: post.typeTabbar,
-      );
-      if (!mounted) return;
-      setState(() { _previewSuggestions = suggestions; _isSuggestionsLoading = false; });
-      _listenForAiSuggestions(postId);
-      _shuffleTimer?.cancel();
-      _shuffleTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-        if (!mounted) return;
-        setState(() { _previewSuggestions = List.of(_previewSuggestions)..shuffle(); });
-      });
-    } catch (_) {
-      if (mounted) setState(() => _isSuggestionsLoading = false);
-    }
-  }
-
-  void _listenForAiSuggestions(String postId) {
-    _suggestionSub?.cancel();
-    _suggestionSub = FirebaseFirestore.instance
-        .collection('Posts')
-        .doc(postId)
-        .snapshots()
-        .listen((snap) {
-      if (!mounted) return;
-      final raw = snap.data()?['commentSuggestions'];
-      if (raw is List && raw.isNotEmpty) {
-        setState(() {
-          _previewSuggestions = List<String>.from(raw)..shuffle();
-          _suggestionsFromAi = true;
-        });
-        _suggestionSub?.cancel();
-        _suggestionSub = null;
-      }
-    });
-  }
-
   Future<void> _sendQuickComment(String text, Post post) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty || _isSendingQuickComment) return;
@@ -3415,50 +3379,6 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
                 ),
               ),
             ),
-          // Suggestions — statiques, se mélangent toutes les 10 s, cliquables
-          SizedBox(
-            height: 26,
-            child: _isSuggestionsLoading
-                ? Row(children: List.generate(3, (_) => Container(
-                    margin: const EdgeInsets.only(right: 6), width: 70,
-                    decoration: BoxDecoration(color: Colors.white12, borderRadius: BorderRadius.circular(13)))))
-                : ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _previewSuggestions.length + 1,
-                    itemBuilder: (_, i) {
-                      if (i == 0) {
-                        return Container(
-                          margin: const EdgeInsets.only(right: 6),
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: _suggestionsFromAi ? const Color(0xFF6C3EDB).withOpacity(0.12) : Colors.white12,
-                            borderRadius: BorderRadius.circular(13),
-                            border: Border.all(color: _suggestionsFromAi ? const Color(0xFF6C3EDB).withOpacity(0.5) : Colors.white24),
-                          ),
-                          child: Row(mainAxisSize: MainAxisSize.min, children: [
-                            Text(_suggestionsFromAi ? '✨' : '💡', style: const TextStyle(fontSize: 10)),
-                            const SizedBox(width: 3),
-                            Text(_suggestionsFromAi ? 'IA' : 'local', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: _suggestionsFromAi ? const Color(0xFFB39DDB) : Colors.white70)),
-                          ]),
-                        );
-                      }
-                      final text = _previewSuggestions[i - 1];
-                      return GestureDetector(
-                        onTap: () => _sendQuickComment(text, post),
-                        child: Container(
-                          margin: const EdgeInsets.only(right: 6),
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          decoration: BoxDecoration(
-                            color: Colors.black54,
-                            borderRadius: BorderRadius.circular(13),
-                            border: Border.all(color: Colors.white24),
-                          ),
-                          child: Center(child: Text(text, style: const TextStyle(fontSize: 11, color: Colors.white70))),
-                        ),
-                      );
-                    },
-                  ),
-          ),
           const SizedBox(height: 5),
           Container(
             height: 34,
@@ -3948,8 +3868,6 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
     _visibleComments.clear();
     _commentCycleIdx = 0;
     if (mounted) setState(() { _preloadedComments = []; });
-
-    _loadSuggestions(post);
 
     await _loadLastCommentForPost(post);
     if (!mounted || _preloadedComments.isEmpty) return;

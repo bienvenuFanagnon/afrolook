@@ -668,6 +668,8 @@ class ChatService {
         Chat existingChat = Chat.fromJson(existingChats.docs.first.data());
         existingChat.chatFriend = chat.chatFriend;
         existingChat.receiver = chat.receiver;
+        existingChat.id ??= existingChats.docs.first.id;
+        existingChat.docId ??= docId1;
         return existingChat;
       } else {
         printVm('➕ [CREATE_CHAT] Création nouveau chat');
@@ -720,6 +722,8 @@ class ChatService {
       Chat existingChat = Chat.fromJson(existingChats.docs.first.data());
       existingChat.chatFriend = chat.chatFriend;
       existingChat.receiver = chat.receiver;
+      existingChat.id ??= existingChats.docs.first.id;
+      existingChat.docId ??= docId1;
       return existingChat;
     }
 

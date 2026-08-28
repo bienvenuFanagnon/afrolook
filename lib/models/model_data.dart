@@ -967,6 +967,19 @@ class UserData {
   // Centres d'intérêt (codes de UserInterests.all)
   List<String>? interests = [];
 
+  // ── Suspension de compte ─────────────────────────────────────────────────
+  int? suspendedUntil;         // timestamp ms, null = non suspendu
+  bool? suspendedPermanently;  // true = suspension définitive
+  String? suspensionReason;    // raison affichée à l'utilisateur
+
+  bool get isSuspended {
+    if (suspendedPermanently == true) return true;
+    if (suspendedUntil != null) {
+      return DateTime.now().millisecondsSinceEpoch < suspendedUntil!;
+    }
+    return false;
+  }
+
   // ── Compte officiel ───────────────────────────────────────────────────────
   String? officialAccountType;             // OfficialAccountCategory.id (null = non officiel)
   String? officialAccountStatus;           // 'approved' | 'suspended' | 'rejected'
@@ -1298,6 +1311,10 @@ class UserData {
           .map((e) => MapEntry(e.key, (e.value as num).toInt())),
     );
 
+    suspendedUntil = parseTimestamp(json['suspendedUntil']);
+    suspendedPermanently = json['suspendedPermanently'] as bool?;
+    suspensionReason = json['suspensionReason'] as String?;
+
     officialAccountType = json['officialAccountType'] as String?;
     officialAccountStatus = json['officialAccountStatus'] as String?;
     officialBadge = json['officialBadge'] as bool? ?? false;
@@ -1372,6 +1389,10 @@ class UserData {
     data['createdAt'] = createdAt;
     data['updatedAt'] = updatedAt;
     data['role'] = role;
+
+    data['suspendedUntil'] = suspendedUntil;
+    data['suspendedPermanently'] = suspendedPermanently;
+    data['suspensionReason'] = suspensionReason;
 
     // Flamme Streak (synchronisé avec Firestore)
     data['commentStreak'] = commentStreak;

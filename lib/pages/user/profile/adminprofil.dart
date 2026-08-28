@@ -1066,6 +1066,39 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
   final TextEditingController _emailController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
+  // Groupes accordion (mode TOUS)
+  static const _txGroups = {
+    'Gains':       ['DEPOT', 'DEPOTADMIN', 'GAIN', 'GAIN_PIECES', 'CADEAU_PIECES_RECU'],
+    'Dépenses':    ['DEPENSE', 'ACHAT_PIECES', 'CADEAU_PIECES', 'LIKE_PIECES'],
+    'Retraits':    ['RETRAIT', 'RETRAITADMIN'],
+    'Conversions': ['CONVERSION_PIECES'],
+    'Autres':      <String>[],
+  };
+  static const _txGroupColors = {
+    'Gains':       Color(0xFF4CAF50),
+    'Dépenses':    Color(0xFFF44336),
+    'Retraits':    Color(0xFFFF9800),
+    'Conversions': Color(0xFF9C27B0),
+    'Autres':      Color(0xFF607D8B),
+  };
+  static const _txGroupIcons = {
+    'Gains':       Icons.trending_up,
+    'Dépenses':    Icons.shopping_cart,
+    'Retraits':    Icons.arrow_upward,
+    'Conversions': Icons.swap_horiz,
+    'Autres':      Icons.help_outline,
+  };
+  final Map<String, bool> _txGroupExpanded = {};
+  final Map<String, int> _txGroupCounts = {};   // vrais totaux Firestore
+  final Map<String, int> _txGroupShownCount = {}; // items affichés par groupe (2 par défaut)
+
+  String _txGroupFor(String? type) {
+    for (final e in _txGroups.entries) {
+      if (e.value.contains(type?.toUpperCase())) return e.key;
+    }
+    return 'Autres';
+  }
+
   // Pagination Firestore
   final int _pageSize = 10;
   List<QueryDocumentSnapshot> _allDocs = [];
@@ -1084,6 +1117,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
     super.initState();
     _scrollController.addListener(_scrollListener);
     _loadFirstPage();
+    _loadGroupCounts();
   }
 
   @override
@@ -1119,6 +1153,38 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
     return query;
   }
 
+  /// Comptes réels Firestore par groupe (count aggregation)
+  Future<void> _loadGroupCounts() async {
+    try {
+      final col = FirebaseFirestore.instance.collection("TransactionSoldes");
+      Query base = col;
+      if (_selectedUserId != null && _selectedUserId!.isNotEmpty) {
+        base = base.where("user_id", isEqualTo: _selectedUserId);
+      }
+
+      int knownTotal = 0;
+      final Map<String, int> counts = {};
+
+      for (final entry in _txGroups.entries) {
+        if (entry.key == 'Autres') continue;
+        final types = entry.value;
+        if (types.isEmpty) { counts[entry.key] = 0; continue; }
+        final snap = await base.where("type", whereIn: types).count().get();
+        final c = snap.count ?? 0;
+        counts[entry.key] = c;
+        knownTotal += c;
+      }
+
+      // Autres = total - groupes connus
+      final totalSnap = await base.count().get();
+      counts['Autres'] = ((totalSnap.count ?? 0) - knownTotal).clamp(0, 999999);
+
+      if (mounted) setState(() => _txGroupCounts.addAll(counts));
+    } catch (e) {
+      printVm("❌ Erreur count groupes: $e");
+    }
+  }
+
   /// Charger la première page
   Future<void> _loadFirstPage() async {
     if (_isLoading) return;
@@ -1130,6 +1196,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
       _allDocs = [];
       _lastDocument = null;
       _hasMore = true;
+      _txGroupShownCount.clear();
     });
 
     printVm("🚀 Chargement de la première page...");
@@ -1258,6 +1325,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
     _isLoadingMore = false;
 
     await _loadFirstPage();
+    _loadGroupCounts();
 
     setState(() {
       _isFiltering = false;
@@ -1572,58 +1640,183 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
   }
 
   Widget _buildTransactionList() {
-    // État de chargement initial
     if (_isInitialLoad && _isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
-        ),
-      );
+      return const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFD700))));
     }
 
-    // Aucune transaction
     if (_transactions.isEmpty && !_isLoading && !_isLoadingMore) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.search_off, color: Colors.grey, size: 60),
-            const SizedBox(height: 16),
-            Text(
-              "Aucune transaction",
-              style: TextStyle(color: Colors.grey, fontSize: 16),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _selectedUserId != null
-                  ? "Cet utilisateur n'a aucune transaction"
-                  : "Aucune transaction trouvée",
-              style: TextStyle(color: Colors.grey, fontSize: 12),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _resetFilters,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.yellow[700],
-                foregroundColor: Colors.black,
-              ),
-              child: const Text("Réinitialiser les filtres"),
-            ),
-          ],
-        ),
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Icon(Icons.search_off, color: Colors.grey, size: 60),
+          const SizedBox(height: 16),
+          Text("Aucune transaction", style: TextStyle(color: Colors.grey, fontSize: 16)),
+          const SizedBox(height: 8),
+          Text(
+            _selectedUserId != null ? "Cet utilisateur n'a aucune transaction" : "Aucune transaction trouvée",
+            style: TextStyle(color: Colors.grey, fontSize: 12),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _resetFilters,
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.yellow[700], foregroundColor: Colors.black),
+            child: const Text("Réinitialiser les filtres"),
+          ),
+        ]),
       );
     }
 
+    // Mode groupé uniquement quand aucun filtre de type n'est actif
+    if (_selectedType == "TOUS") {
+      return _buildGroupedList();
+    }
+
+    // Mode liste plate (filtre de type actif)
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.all(12),
       itemCount: _transactions.length + (_hasMore && !_isFiltering ? 1 : 0),
       itemBuilder: (context, index) {
-        if (index == _transactions.length) {
-          return _buildLoadingMoreIndicator();
-        }
+        if (index == _transactions.length) return _buildLoadingMoreIndicator();
         return _buildTransactionCard(_transactions[index]);
       },
+    );
+  }
+
+  static const _coinTypes = {
+    'GAIN_PIECES', 'CADEAU_PIECES', 'CADEAU_PIECES_RECU', 'LIKE_PIECES',
+  };
+
+  Widget _buildGroupedList() {
+    // Trier les groupes par transaction la plus récente
+    int latestOf(String g) => _transactions
+        .where((tx) => _txGroupFor(tx.type) == g)
+        .fold<int>(0, (m, tx) => (tx.createdAt ?? 0) > m ? (tx.createdAt ?? 0) : m);
+
+    final sortedGroups = _txGroups.keys.toList()
+      ..sort((a, b) => latestOf(b).compareTo(latestOf(a)));
+
+    return ListView(
+      controller: _scrollController,
+      padding: const EdgeInsets.all(12),
+      children: [
+        ...sortedGroups.map((group) {
+          final allLoaded = _transactions
+              .where((tx) => _txGroupFor(tx.type) == group)
+              .toList();
+
+          // Compte réel Firestore (si disponible), sinon fallback sur chargé
+          final realCount = _txGroupCounts[group] ?? allLoaded.length;
+          if (realCount == 0 && allLoaded.isEmpty) return const SizedBox.shrink();
+
+          final isOpen = _txGroupExpanded[group] ?? false;
+          final groupColor = _txGroupColors[group] ?? Colors.grey;
+          final shown = _txGroupShownCount[group] ?? 2;
+          final visibleItems = allLoaded.take(shown).toList();
+          final hasMoreLoaded = allLoaded.length > shown;
+          final hasMoreInFirestore = realCount > allLoaded.length;
+
+          // Calcul des totaux (sur items chargés)
+          double totalFcfa = 0;
+          int totalCoins = 0;
+          for (final tx in allLoaded) {
+            final t = tx.type?.toUpperCase() ?? '';
+            if (_coinTypes.contains(t)) {
+              totalCoins += (tx.montant?.toInt() ?? 0);
+            } else {
+              totalFcfa += (tx.montant ?? 0);
+            }
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── En-tête groupe ──
+              GestureDetector(
+                onTap: () => setState(() => _txGroupExpanded[group] = !isOpen),
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: groupColor.withOpacity(0.10),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: groupColor.withOpacity(0.35)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(_txGroupIcons[group], color: groupColor, size: 20),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(group,
+                                style: TextStyle(color: groupColor, fontWeight: FontWeight.bold,
+                                    fontSize: 14, letterSpacing: 0.5)),
+                          ),
+                          // Vrai total Firestore
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: groupColor.withOpacity(0.18),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: _txGroupCounts.containsKey(group)
+                                ? Text('$realCount',
+                                    style: TextStyle(color: groupColor, fontWeight: FontWeight.w800, fontSize: 12))
+                                : SizedBox(
+                                    width: 12, height: 12,
+                                    child: CircularProgressIndicator(strokeWidth: 1.5, color: groupColor)),
+                          ),
+                          const SizedBox(width: 6),
+                          Icon(isOpen ? Icons.expand_less : Icons.expand_more, color: groupColor, size: 20),
+                        ],
+                      ),
+                      // ── Stats totaux ──
+                      if (allLoaded.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          children: [
+                            if (totalFcfa > 0)
+                              _StatChip(label: 'Total FCFA', value: '${totalFcfa.toStringAsFixed(2)} FCFA', color: groupColor),
+                            if (totalCoins > 0)
+                              _StatChip(label: 'Total pièces', value: '$totalCoins 🪙', color: groupColor),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              // ── Items (2 par défaut, +5 à chaque "Voir plus") ──
+              if (isOpen) ...[
+                ...visibleItems.map((tx) => _buildTransactionCard(tx)),
+                if (hasMoreLoaded || hasMoreInFirestore)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: TextButton(
+                      onPressed: () => setState(() =>
+                          _txGroupShownCount[group] = shown + 5),
+                      style: TextButton.styleFrom(
+                        foregroundColor: groupColor,
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text(
+                        '+ Voir plus (${allLoaded.length - shown > 0 ? allLoaded.length - shown : "..."} restants)',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ),
+              ],
+              const SizedBox(height: 4),
+            ],
+          );
+        }),
+        // Indicateur de chargement de la prochaine page Firestore
+        if (_hasMore && !_isFiltering) _buildLoadingMoreIndicator(),
+      ],
     );
   }
 
@@ -1945,6 +2138,40 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
   String _formatDetailedDate(int timestamp) {
     final date = DateTime.fromMillisecondsSinceEpoch(timestamp);
     return DateFormat('dd/MM/yyyy à HH:mm:ss').format(date);
+  }
+}
+
+class _StatChip extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+
+  const _StatChip({required this.label, required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.14),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: RichText(
+        text: TextSpan(
+          children: [
+            TextSpan(
+              text: '$label: ',
+              style: TextStyle(color: color.withOpacity(0.75), fontSize: 11),
+            ),
+            TextSpan(
+              text: value,
+              style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 11),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

@@ -21,10 +21,14 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../../providers/userProvider.dart';
 import '../../../services/linkService.dart';
+import '../../../services/chat_service.dart';
 import '../../home/user_presence_widget.dart';
 import '../../widgetGlobal.dart';
 import '../../../widgets/interests_selector_widget.dart';
 import '../userPubs/user_profile_boost_page.dart';
+import '../../suspension_screen.dart';
+import '../../chat/myChat.dart';
+import 'package:page_transition/page_transition.dart';
 
 class OtherUserPage extends StatefulWidget {
   final UserData otherUser;
@@ -63,6 +67,8 @@ class _OtherUserPageState extends State<OtherUserPage> {
 
   int _profileLikes = 0;
   bool _isSendingReminder = false;
+  bool _isOpeningChat = false;
+  final ChatService _chatService = ChatService();
 
   // ── Sélection multiple ─────────────────────────────────────
   bool _isSelectionMode = false;
@@ -388,6 +394,239 @@ class _OtherUserPageState extends State<OtherUserPage> {
     return widget.otherUser.userAbonnesIds?.contains(currentUserId) ?? false;
   }
 
+  Future<void> _openDirectChat() async {
+    if (_isOpeningChat) return;
+    setState(() => _isOpeningChat = true);
+    try {
+      final tempChat = Chat(
+        id: 'temp_${widget.otherUser.id}',
+        senderId: authProvider.loginUserData.id,
+        receiverId: widget.otherUser.id,
+        chatFriend: widget.otherUser,
+        receiver: widget.otherUser,
+        type: ChatType.USER.name,
+      );
+      final resultChat = await _chatService.createOrGetChat(
+        chat: tempChat,
+        currentUserId: authProvider.loginUserData.id!,
+      );
+      if (!mounted) return;
+      Navigator.push(context, PageTransition(
+        type: PageTransitionType.fade,
+        child: MyChat(title: 'Message', chat: resultChat),
+      ));
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _isOpeningChat = false);
+    }
+  }
+
+  void _showSuspendDialog() {
+    final colors = AppColors.of(context);
+    final reasonCtrl = TextEditingController();
+    int? durationDays;
+    bool isPermanent = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => AlertDialog(
+          backgroundColor: colors.surface,
+          title: Row(children: [
+            const Icon(Icons.block, color: Colors.red, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'Suspendre @${widget.otherUser.pseudo}',
+              style: TextStyle(color: colors.textPrimary, fontSize: 15),
+            ),
+          ]),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Type de suspension
+                Text('Type :', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => setS(() { isPermanent = false; durationDays = null; }),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            color: !isPermanent ? Colors.orange.withOpacity(0.15) : colors.surfaceVariant,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: !isPermanent ? Colors.orange : colors.divider),
+                          ),
+                          child: Column(children: [
+                            Icon(Icons.timer, color: !isPermanent ? Colors.orange : colors.textSecondary, size: 20),
+                            const SizedBox(height: 4),
+                            Text('Temporaire', style: TextStyle(fontSize: 11, color: !isPermanent ? Colors.orange : colors.textSecondary)),
+                          ]),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => setS(() => isPermanent = true),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            color: isPermanent ? Colors.red.withOpacity(0.15) : colors.surfaceVariant,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: isPermanent ? Colors.red : colors.divider),
+                          ),
+                          child: Column(children: [
+                            Icon(Icons.block, color: isPermanent ? Colors.red : colors.textSecondary, size: 20),
+                            const SizedBox(height: 4),
+                            Text('Définitive', style: TextStyle(fontSize: 11, color: isPermanent ? Colors.red : colors.textSecondary)),
+                          ]),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                // Durée (si temporaire)
+                if (!isPermanent) ...[
+                  Text('Durée :', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [1, 3, 7, 14, 30].map((d) => GestureDetector(
+                      onTap: () => setS(() => durationDays = d),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: durationDays == d ? Colors.orange.withOpacity(0.2) : colors.surfaceVariant,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: durationDays == d ? Colors.orange : colors.divider),
+                        ),
+                        child: Text('${d}j', style: TextStyle(fontSize: 12, color: durationDays == d ? Colors.orange : colors.textSecondary, fontWeight: FontWeight.w600)),
+                      ),
+                    )).toList(),
+                  ),
+                  const SizedBox(height: 14),
+                ],
+                // Raison
+                Text('Raison (visible par l\'utilisateur) :', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: reasonCtrl,
+                  maxLines: 3,
+                  style: TextStyle(color: colors.textPrimary, fontSize: 13),
+                  decoration: InputDecoration(
+                    hintText: 'Ex: Violation des règles de la communauté...',
+                    hintStyle: TextStyle(color: colors.textSecondary, fontSize: 12),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    contentPadding: const EdgeInsets.all(10),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Annuler', style: TextStyle(color: colors.textSecondary)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              onPressed: () async {
+                if (reasonCtrl.text.trim().isEmpty) return;
+                if (!isPermanent && durationDays == null) return;
+                Navigator.pop(ctx);
+                await _applySuspension(
+                  isPermanent: isPermanent,
+                  durationDays: durationDays,
+                  reason: reasonCtrl.text.trim(),
+                );
+              },
+              child: const Text('Suspendre', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _applySuspension({
+    required bool isPermanent,
+    int? durationDays,
+    required String reason,
+  }) async {
+    try {
+      final data = <String, dynamic>{
+        'suspensionReason': reason,
+        'suspendedPermanently': isPermanent,
+      };
+      if (isPermanent) {
+        data['suspendedUntil'] = null;
+      } else {
+        final until = DateTime.now().add(Duration(days: durationDays!));
+        data['suspendedUntil'] = until.millisecondsSinceEpoch;
+        data['suspendedPermanently'] = false;
+      }
+      await _firestore.collection('Users').doc(widget.otherUser.id).update(data);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Compte suspendu'),
+          backgroundColor: Colors.red,
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Erreur: $e'),
+          backgroundColor: Colors.red,
+        ));
+      }
+    }
+  }
+
+  void _showLiftSuspensionDialog() {
+    final colors = AppColors.of(context);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: colors.surface,
+        title: Text('Lever la suspension', style: TextStyle(color: colors.textPrimary)),
+        content: Text(
+          'Êtes-vous sûr de vouloir lever la suspension du compte @${widget.otherUser.pseudo} ?',
+          style: TextStyle(color: colors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Annuler', style: TextStyle(color: colors.textSecondary)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await _firestore.collection('Users').doc(widget.otherUser.id).update({
+                'suspendedUntil': null,
+                'suspendedPermanently': false,
+                'suspensionReason': null,
+              });
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content: Text('Suspension levée'),
+                  backgroundColor: Colors.green,
+                ));
+              }
+            },
+            child: const Text('Lever', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildFollowButton() {
     final isOwnProfile = authProvider.loginUserData.id == widget.otherUser.id;
     if (isOwnProfile) return const SizedBox();
@@ -444,23 +683,69 @@ class _OtherUserPageState extends State<OtherUserPage> {
           .scale(begin: const Offset(1.0, 1.0), end: const Offset(1.02, 1.02), duration: 900.ms, curve: Curves.easeInOut);
     }
 
-    return Row(
+    final isSuspended = widget.otherUser.suspendedPermanently == true ||
+        (widget.otherUser.suspendedUntil != null &&
+            DateTime.now().millisecondsSinceEpoch < widget.otherUser.suspendedUntil!);
+
+    return Column(
       children: [
-        Expanded(flex: isAdmin ? 3 : 1, child: followBtn),
+        Row(
+          children: [
+            Expanded(flex: isAdmin ? 2 : 1, child: followBtn),
+            if (isAdmin) ...[
+              const SizedBox(width: 8),
+              // Message direct admin
+              Container(
+                decoration: BoxDecoration(
+                  color: colors.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: colors.primary, width: 1),
+                ),
+                child: IconButton(
+                  icon: _isOpeningChat
+                      ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: colors.primary, strokeWidth: 2))
+                      : Icon(Icons.chat_bubble_outline, color: colors.primary, size: 22),
+                  onPressed: _isOpeningChat ? null : _openDirectChat,
+                  tooltip: 'Message direct',
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Email rappel
+              Container(
+                decoration: BoxDecoration(
+                  color: colors.warning.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: colors.warning, width: 1),
+                ),
+                child: IconButton(
+                  icon: _isSendingReminder
+                      ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: colors.warning, strokeWidth: 2))
+                      : Icon(Icons.email, color: colors.warning, size: 22),
+                  onPressed: _isSendingReminder ? null : _showConfirmReminderDialog,
+                  tooltip: t.otherUserSendReminder,
+                ),
+              ),
+            ],
+          ],
+        ),
         if (isAdmin) ...[
-          const SizedBox(width: 8),
-          Container(
-            decoration: BoxDecoration(
-              color: colors.warning.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: colors.warning, width: 1),
-            ),
-            child: IconButton(
-              icon: _isSendingReminder
-                  ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: colors.warning, strokeWidth: 2))
-                  : Icon(Icons.email, color: colors.warning, size: 24),
-              onPressed: _isSendingReminder ? null : _showConfirmReminderDialog,
-              tooltip: t.otherUserSendReminder,
+          const SizedBox(height: 8),
+          // Bouton suspension
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: isSuspended ? Colors.green : Colors.red,
+                side: BorderSide(color: isSuspended ? Colors.green : Colors.red),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: isSuspended ? _showLiftSuspensionDialog : _showSuspendDialog,
+              icon: Icon(isSuspended ? Icons.lock_open : Icons.block, size: 16),
+              label: Text(
+                isSuspended ? 'Lever la suspension' : 'Suspendre ce compte',
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              ),
             ),
           ),
         ],
@@ -831,10 +1116,10 @@ class _OtherUserPageState extends State<OtherUserPage> {
           backgroundColor: Colors.green,
         ));
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Erreur lors de la suppression'),
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Erreur: $e'),
           backgroundColor: Colors.red,
         ));
       }
