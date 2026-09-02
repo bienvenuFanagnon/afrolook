@@ -349,42 +349,62 @@ class _CanalDetailsState extends State<CanalDetails> {
     controller.dispose();
     if (count == null || !mounted) return;
 
-    // Dialogue de progression
+    // Capturer navigator + messenger AVANT tout await pour éviter l'erreur
+    // "_dependents.isEmpty" causée par l'utilisation de context après async gap
+    final nav = Navigator.of(context, rootNavigator: true);
+    final messenger = ScaffoldMessenger.of(context);
+
     bool _dialogOpen = true;
     final progressNotifier = ValueNotifier<String>('Initialisation…');
-    showDialog(
-      context: context,
+    nav.push(PageRouteBuilder(
+      opaque: false,
       barrierDismissible: false,
-      builder: (ctx) => PopScope(
+      barrierColor: Colors.black54,
+      pageBuilder: (ctx, _, __) => PopScope(
         canPop: false,
-        child: AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          backgroundColor: AppColors.of(ctx).surface,
-          content: ValueListenableBuilder<String>(
-            valueListenable: progressNotifier,
-            builder: (_, msg, __) => Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CircularProgressIndicator(),
-                const SizedBox(height: 16),
-                Text(msg, textAlign: TextAlign.center,
-                    style: TextStyle(color: AppColors.of(ctx).textPrimary)),
-              ],
+        child: Center(
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 40),
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: _colors.surface,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: ValueListenableBuilder<String>(
+                valueListenable: progressNotifier,
+                builder: (_, msg, __) => Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text(msg, textAlign: TextAlign.center,
+                        style: TextStyle(color: _colors.textPrimary, fontSize: 14)),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
       ),
-    ).then((_) => _dialogOpen = false);
+    ));
+
+    void closeDialog() {
+      if (_dialogOpen) {
+        _dialogOpen = false;
+        nav.pop();
+      }
+    }
 
     try {
       final existing = Set<String>.from(widget.canal.usersSuiviId ?? []);
       existing.add(authProvider.loginUserData.id ?? '');
 
       final toAdd = <String>[];
-      const int pageSize = 500; // taille de chaque page Firestore
+      const int pageSize = 500;
       DocumentSnapshot? lastDoc;
 
-      // Paginer la collection Users par tranches jusqu'à avoir count IDs valides
       outer:
       while (toAdd.length < count) {
         progressNotifier.value = 'Recherche des utilisateurs actifs… (${toAdd.length}/$count)';
@@ -396,7 +416,7 @@ class _CanalDetailsState extends State<CanalDetails> {
         if (lastDoc != null) query = query.startAfterDocument(lastDoc);
 
         final snap = await query.get();
-        if (snap.docs.isEmpty) break; // plus d'utilisateurs disponibles
+        if (snap.docs.isEmpty) break;
 
         for (final doc in snap.docs) {
           if (!existing.contains(doc.id)) {
@@ -405,20 +425,15 @@ class _CanalDetailsState extends State<CanalDetails> {
           }
         }
         lastDoc = snap.docs.last;
-        if (snap.docs.length < pageSize) break; // dernière page
+        if (snap.docs.length < pageSize) break;
       }
 
       if (toAdd.isEmpty) {
-        if (_dialogOpen && mounted) Navigator.of(context, rootNavigator: true).pop();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Aucun nouvel utilisateur actif à ajouter.')),
-          );
-        }
+        closeDialog();
+        messenger.showSnackBar(const SnackBar(content: Text('Aucun nouvel utilisateur actif à ajouter.')));
         return;
       }
 
-      // Écrire par lots de 500 (limite sécuritaire arrayUnion / document size)
       const int batchSize = 500;
       int written = 0;
       for (int i = 0; i < toAdd.length; i += batchSize) {
@@ -431,26 +446,20 @@ class _CanalDetailsState extends State<CanalDetails> {
         written += chunk.length;
       }
 
-      if (_dialogOpen && mounted) Navigator.of(context, rootNavigator: true).pop();
-
+      closeDialog();
       if (mounted) {
         setState(() {
           widget.canal.usersSuiviId ??= [];
           widget.canal.usersSuiviId!.addAll(toAdd);
           widget.canal.suivi = (widget.canal.suivi ?? 0) + toAdd.length;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${toAdd.length} abonné(s) ajouté(s) avec succès ✅')),
-        );
       }
+      messenger.showSnackBar(SnackBar(content: Text('${toAdd.length} abonné(s) ajouté(s) avec succès ✅')));
     } catch (e) {
-      if (_dialogOpen && mounted) Navigator.of(context, rootNavigator: true).pop();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur : $e')),
-        );
-      }
+      closeDialog();
+      messenger.showSnackBar(SnackBar(content: Text('Erreur : $e')));
     }
+    progressNotifier.dispose();
   }
 
   Future<void> _deleteCanal() async {
@@ -1249,7 +1258,15 @@ class _CanalDetailsState extends State<CanalDetails> {
                         child: Row(children: [
                           Icon(Icons.group_add, size: 18, color: _colors.primary),
                           const SizedBox(width: 10),
-                          Text('Remplir les abonnés', style: TextStyle(color: _colors.textPrimary)),
+                          Expanded(child: Text('Remplir les abonnés', style: TextStyle(color: _colors.textPrimary))),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: _colors.primary.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text('Admin', style: TextStyle(color: _colors.primary, fontSize: 10, fontWeight: FontWeight.w700)),
+                          ),
                         ]),
                       ),
                       PopupMenuItem(
