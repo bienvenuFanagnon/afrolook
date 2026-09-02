@@ -316,7 +316,7 @@ class _CanalDetailsState extends State<CanalDetails> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Nombre d\'utilisateurs actifs à ajouter comme abonnés :',
+                'Nombre d\'utilisateurs actifs à ajouter (ex : 1000, 10 000…) :',
                 style: TextStyle(color: colors.textSecondary, fontSize: 14),
               ),
               const SizedBox(height: 12),
@@ -325,7 +325,7 @@ class _CanalDetailsState extends State<CanalDetails> {
                 keyboardType: TextInputType.number,
                 autofocus: true,
                 decoration: InputDecoration(
-                  hintText: 'Ex : 50',
+                  hintText: 'Ex : 500',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 ),
@@ -349,24 +349,67 @@ class _CanalDetailsState extends State<CanalDetails> {
     controller.dispose();
     if (count == null || !mounted) return;
 
-    // Récupérer les N utilisateurs les plus actifs (triés par nombre d'abonnés)
+    // Dialogue de progression
+    bool _dialogOpen = true;
+    final progressNotifier = ValueNotifier<String>('Initialisation…');
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: AppColors.of(ctx).surface,
+          content: ValueListenableBuilder<String>(
+            valueListenable: progressNotifier,
+            builder: (_, msg, __) => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                Text(msg, textAlign: TextAlign.center,
+                    style: TextStyle(color: AppColors.of(ctx).textPrimary)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ).then((_) => _dialogOpen = false);
+
     try {
       final existing = Set<String>.from(widget.canal.usersSuiviId ?? []);
-      existing.add(authProvider.loginUserData.id ?? ''); // exclure le propriétaire lui-même
-
-      final snap = await firestore
-          .collection('Users')
-          .orderBy('abonnes', descending: true)
-          .limit(count + existing.length)
-          .get();
+      existing.add(authProvider.loginUserData.id ?? '');
 
       final toAdd = <String>[];
-      for (final doc in snap.docs) {
-        if (toAdd.length >= count) break;
-        if (!existing.contains(doc.id)) toAdd.add(doc.id);
+      const int pageSize = 500; // taille de chaque page Firestore
+      DocumentSnapshot? lastDoc;
+
+      // Paginer la collection Users par tranches jusqu'à avoir count IDs valides
+      outer:
+      while (toAdd.length < count) {
+        progressNotifier.value = 'Recherche des utilisateurs actifs… (${toAdd.length}/$count)';
+
+        var query = firestore
+            .collection('Users')
+            .orderBy('abonnes', descending: true)
+            .limit(pageSize);
+        if (lastDoc != null) query = query.startAfterDocument(lastDoc);
+
+        final snap = await query.get();
+        if (snap.docs.isEmpty) break; // plus d'utilisateurs disponibles
+
+        for (final doc in snap.docs) {
+          if (!existing.contains(doc.id)) {
+            toAdd.add(doc.id);
+            if (toAdd.length >= count) break outer;
+          }
+        }
+        lastDoc = snap.docs.last;
+        if (snap.docs.length < pageSize) break; // dernière page
       }
 
       if (toAdd.isEmpty) {
+        if (_dialogOpen && mounted) Navigator.of(context, rootNavigator: true).pop();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Aucun nouvel utilisateur actif à ajouter.')),
@@ -375,10 +418,20 @@ class _CanalDetailsState extends State<CanalDetails> {
         return;
       }
 
-      await firestore.collection('Canaux').doc(widget.canal.id).update({
-        'usersSuiviId': FieldValue.arrayUnion(toAdd),
-        'suivi': FieldValue.increment(toAdd.length),
-      });
+      // Écrire par lots de 500 (limite sécuritaire arrayUnion / document size)
+      const int batchSize = 500;
+      int written = 0;
+      for (int i = 0; i < toAdd.length; i += batchSize) {
+        final chunk = toAdd.sublist(i, (i + batchSize).clamp(0, toAdd.length));
+        progressNotifier.value = 'Écriture… ($written/${toAdd.length})';
+        await firestore.collection('Canaux').doc(widget.canal.id).update({
+          'usersSuiviId': FieldValue.arrayUnion(chunk),
+          'suivi': FieldValue.increment(chunk.length),
+        });
+        written += chunk.length;
+      }
+
+      if (_dialogOpen && mounted) Navigator.of(context, rootNavigator: true).pop();
 
       if (mounted) {
         setState(() {
@@ -391,6 +444,7 @@ class _CanalDetailsState extends State<CanalDetails> {
         );
       }
     } catch (e) {
+      if (_dialogOpen && mounted) Navigator.of(context, rootNavigator: true).pop();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Erreur : $e')),
