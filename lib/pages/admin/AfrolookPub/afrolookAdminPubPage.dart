@@ -3,6 +3,7 @@ import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/canaux/detailsCanal.dart';
 import 'package:afrotok/pages/chat/group/group_info_page.dart';
+import 'package:afrotok/pages/chat/group/group_chat_page.dart';
 import 'package:afrotok/pages/postDetails.dart';
 import 'package:afrotok/pages/postDetailsVideo.dart';
 import 'package:afrotok/pages/user/otherUser/otherUser.dart';
@@ -696,9 +697,10 @@ class _AdvertisementManagementPageState
           Navigator.push(
               context,
               MaterialPageRoute(
-                  builder: (_) => GroupInfoPage(
+                  builder: (_) => GroupChatPage(
                       groupId: id,
-                      groupName: ad.ownerName ?? 'Groupe')));
+                      groupName: ad.ownerName ?? 'Groupe',
+                      groupImageUrl: ad.ownerAvatar ?? '')));
           break;
         case 'user':
           if (id == null || id.isEmpty) return;

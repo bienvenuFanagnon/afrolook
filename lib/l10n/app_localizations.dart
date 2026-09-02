@@ -55,6 +55,7 @@ class AppLocalizations {
 
   // ── Onglets de la page d'accueil ──────────────────────────────────────────
   String get tabHome => _t({'fr': '🏠 Accueil', 'en': '🏠 Home', 'es': '🏠 Inicio', 'de': '🏠 Start', 'ar': '🏠 الرئيسية', 'pt': '🏠 Início', 'zh': '🏠 首页', 'sw': '🏠 Nyumbani'});
+  String get tabRecent => _t({'fr': '🕐 Récent', 'en': '🕐 Recent', 'es': '🕐 Reciente', 'de': '🕐 Aktuell', 'ar': '🕐 الأحدث', 'pt': '🕐 Recente', 'zh': '🕐 最新', 'sw': '🕐 Hivi Karibuni'});
   String get tabSport => '⚽ Sport';
   String get tabVibe => _t({'fr': '📱 Vibe vidéos', 'en': '📱 Vibe videos', 'es': '📱 Vibe vídeos', 'de': '📱 Vibe-Videos', 'ar': '📱 فيديوهات Vibe', 'pt': '📱 Vibe vídeos', 'zh': '📱 Vibe视频', 'sw': '📱 Video za Vibe'});
   String get tabEvents => _t({'fr': '📅 Événements', 'en': '📅 Events', 'es': '📅 Eventos', 'de': '📅 Veranstaltungen', 'ar': '📅 الفعاليات', 'pt': '📅 Eventos', 'zh': '📅 活动', 'sw': '📅 Matukio'});

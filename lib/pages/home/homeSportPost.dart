@@ -197,6 +197,8 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   }
   late SharedPreferences _prefs;
   final String _lastViewDatePrefix = 'last_view_date_';
+  static const String _kLastSessionTsKey = 'last_session_timestamp';
+  bool _sessionTimestampSaved = false;
 
   // 🔥 NOUVELLE MÉTHODE
   Future<void> _initSharedPreferences() async {
@@ -1748,6 +1750,23 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
           break;
       }
 
+      // ── Posts non vus en priorité (cursor de session) ───────────────────────
+      {
+        final prefs = await SharedPreferences.getInstance();
+        final lastSessionMs = prefs.getInt(_kLastSessionTsKey) ?? 0;
+        if (lastSessionMs > 0 && newPosts.isNotEmpty) {
+          final unseen = newPosts.where((p) => p.isNewForUser(lastSessionMs)).toList();
+          if (unseen.isNotEmpty && unseen.length < newPosts.length) {
+            final seen = newPosts.where((p) => !p.isNewForUser(lastSessionMs)).toList();
+            newPosts = [...unseen, ...seen];
+          }
+        }
+        if (!_sessionTimestampSaved) {
+          _sessionTimestampSaved = true;
+          prefs.setInt(_kLastSessionTsKey, DateTime.now().millisecondsSinceEpoch);
+        }
+      }
+
       setState(() {
         _posts = newPosts;
         _loadedPostIds.addAll(loadedIds);
@@ -2535,14 +2554,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       contentWidgets.add(const PronosticsCarouselWidget());
     }
 
-    // AfroShop promo — lundi (1) et jeudi (4)
-    final _sportWeekday = DateTime.now().weekday;
-    if ((_sportWeekday == DateTime.monday || _sportWeekday == DateTime.thursday) &&
-        _articles.isNotEmpty) {
-      contentWidgets.add(
-        ShopPromoFeedWidget(articles: _articles, isFirstPosition: true),
-      );
-    }
+    final bool _showShopPromo = _articles.isNotEmpty;
 
     for (int i = 0; i < finalPosts.length; i++) {
       final post = finalPosts[i];
@@ -2556,9 +2568,12 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         ),
       );
 
-      // Après le 2ème post : classement hebdo commentateurs (visible toute la semaine)
+      // Après le 2ème post : classement hebdo commentateurs + promo AfroShop (lun/jeu)
       if (i == 1) {
         contentWidgets.add(const WeeklyTopCommentatorsWidget());
+        if (_showShopPromo) {
+          contentWidgets.add(ShopPromoFeedWidget(articles: _articles, isFirstPosition: false));
+        }
       }
 
       // Pub toutes les 4 posts — toujours affichée

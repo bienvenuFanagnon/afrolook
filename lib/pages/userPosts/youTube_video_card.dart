@@ -2028,6 +2028,22 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     if (mounted) setState(() => _isLoadingComment = false);
   }
 
+  void _autoLikeIfNeeded(String userId) {
+    final postId = widget.post.id;
+    if (postId == null) return;
+    final alreadyLiked = widget.post.users_love_id?.contains(userId) ?? false;
+    if (alreadyLiked) return;
+    FirebaseFirestore.instance.collection('Posts').doc(postId).update({
+      'loves': FieldValue.increment(1),
+      'users_love_id': FieldValue.arrayUnion([userId]),
+    }).catchError((_) {});
+    if (mounted) setState(() {
+      widget.post.users_love_id ??= [];
+      widget.post.users_love_id!.add(userId);
+      widget.post.loves = (widget.post.loves ?? 0) + 1;
+    });
+  }
+
   Future<void> _sendQuickComment(String text) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty || _isSendingQuickComment) return;
@@ -2083,6 +2099,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                   : ''),
           postDataType: widget.post.dataType,
         );
+        _autoLikeIfNeeded(userId);
         FeedInteractionService.onPostCommented(widget.post, userId);
         try {
           final result = await StreakService.onCommentSent(

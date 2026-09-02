@@ -725,6 +725,94 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
     );
   }
 
+  Future<void> _deleteGroup() async {
+    final isAppAdmin = _auth.loginUserData.role == 'ADM' || _auth.loginUserData.role == 'admin';
+    final isOwner = _myRole == 'owner';
+    if (!isOwner && !isAppAdmin) return;
+
+    // Étape 1 : avertissement
+    final step1 = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(children: [
+          const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 22),
+          const SizedBox(width: 8),
+          const Text('Supprimer le groupe', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+        ]),
+        content: const Text(
+          'Cette action est irréversible.\nTous les messages et membres seront supprimés définitivement.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Continuer', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    ) ?? false;
+    if (!step1 || !mounted) return;
+
+    // Étape 2 : confirmation finale
+    final groupName = _groupData['name'] as String? ?? widget.groupName;
+    final step2 = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Dernière confirmation', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+        content: Text('Supprimer définitivement le groupe\n"$groupName" ?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Non, annuler')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Oui, supprimer', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    ) ?? false;
+    if (!step2 || !mounted) return;
+
+    try {
+      final db = FirebaseFirestore.instance;
+      final gid = widget.groupId;
+
+      await _deleteBatchQuery(db.collection('GroupMessages').where('group_id', isEqualTo: gid));
+      await _deleteBatchQuery(db.collection('GroupChats').doc(gid).collection('members'));
+      await db.collection('GroupKeys').doc(gid).delete();
+      await db.collection('GroupChats').doc(gid).delete();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Groupe supprimé avec succès'), backgroundColor: Colors.green),
+        );
+        Navigator.of(context).popUntil((r) => r.isFirst);
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Erreur lors de la suppression'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteBatchQuery(Query<Map<String, dynamic>> query) async {
+    const batchSize = 400;
+    while (true) {
+      final snap = await query.limit(batchSize).get();
+      if (snap.docs.isEmpty) break;
+      final batch = FirebaseFirestore.instance.batch();
+      for (final doc in snap.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+      if (snap.docs.length < batchSize) break;
+    }
+  }
+
   Future<bool> _showConfirmDialog(String title, String message) async {
     return await showDialog<bool>(
       context: context,
@@ -984,6 +1072,32 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                       ),
                     ),
                   ),
+
+                // Supprimer le groupe (owner ou admin plateforme)
+                if (_myRole == 'owner' ||
+                    _auth.loginUserData.role == 'ADM' ||
+                    _auth.loginUserData.role == 'admin') ...[
+                  if (_myRole != 'owner') const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _deleteGroup,
+                        icon: const Icon(Icons.delete_forever_rounded, color: Colors.white),
+                        label: const Text(
+                          'Supprimer le groupe',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 24),
                 ],
               ),

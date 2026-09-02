@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../pages/weekly_top/weekly_top_commentators_page.dart';
-import '../../../providers/authProvider.dart';
-import '../../../providers/streakProvider.dart';
 import '../../../services/weekly_rewards_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../flame_streak_banner.dart';
@@ -166,94 +164,7 @@ class _WeeklyTopCommentatorsWidgetState
             },
           ),
 
-          // ── Mon niveau — toujours visible, tap → modal flamme ──────────
-          Consumer2<UserAuthProvider, StreakProvider>(
-            builder: (ctx, auth, streakProv, _) {
-              final me = auth.loginUserData;
-              final streak = me.commentStreak;
-              final lvl = commentLevelForStreak(streak);
-              return GestureDetector(
-                onTap: () => showCommentStreakModal(ctx, streakProv),
-                child: Container(
-                  margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: lvl.color.withOpacity(0.07),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: lvl.color.withOpacity(0.3)),
-                  ),
-                  child: Row(
-                    children: [
-                      // Avatar
-                      CircleAvatar(
-                        radius: 16,
-                        backgroundImage: (me.imageUrl?.isNotEmpty == true)
-                            ? CachedNetworkImageProvider(me.imageUrl!)
-                            : null,
-                        backgroundColor: colors.shimmerBase,
-                        child: (me.imageUrl?.isEmpty ?? true)
-                            ? Icon(Icons.person,
-                                size: 14, color: colors.textSecondary)
-                            : null,
-                      ),
-                      const SizedBox(width: 8),
-                      // Niveau + pseudo
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(children: [
-                              Text(lvl.emoji,
-                                  style: const TextStyle(fontSize: 13)),
-                              const SizedBox(width: 4),
-                              Text(
-                                lvl.label,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  color: lvl.color,
-                                ),
-                              ),
-                            ]),
-                            Text(
-                              'Mon niveau · Appuie pour voir les détails',
-                              style: TextStyle(
-                                  fontSize: 9, color: colors.textSecondary),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                      // Badge streak
-                      if (streak > 0)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 7, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: lvl.color.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                                color: lvl.color.withOpacity(0.4)),
-                          ),
-                          child: Text(
-                            '🔥 $streak j',
-                            style: TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                                color: lvl.color),
-                          ),
-                        ),
-                      const SizedBox(width: 4),
-                      Icon(Icons.chevron_right,
-                          size: 16, color: colors.textSecondary),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
+          const SizedBox(height: 8),
         ],
       ),
     );

@@ -10,7 +10,7 @@ class _VideoCacheManager extends CacheManager {
   _VideoCacheManager._()
       : super(Config(_key,
             stalePeriod: const Duration(days: 7),
-            maxNrOfCacheObjects: 300));
+            maxNrOfCacheObjects: 30));
 }
 
 // ─── Cache audio : 500 fichiers max, expiration 14 jours ─────────────────────

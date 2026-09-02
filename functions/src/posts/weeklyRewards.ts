@@ -8,12 +8,81 @@ import { sendToOneSignal } from "../shared/notification_utils";
 
 const COMMENTATOR_REWARDS = [500, 300, 200, 100, 50]; // rangs 1-5
 const POST_REWARDS = [1000, 500, 300]; // rangs 1-3
-const MIN_COMMENT_LENGTH = 10;
+const MIN_COMMENT_LENGTH = 10;  // minimum absolu pour être analysé
+const MIN_WORD_COUNT = 2;
 const MIN_ACCOUNT_AGE_DAYS = 7;
 const MIN_POST_SCORE = 10;
 const TOP_POSTS_STORED = 20; // stocke top 20, récompense top 3
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/** Normalise un message pour comparer les copie-collés : minuscules + espaces unifiés. */
+function normalizeMessage(msg: string): string {
+  return msg.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+/**
+ * Calcule le score de qualité d'un commentaire (0 = inéligible).
+ *
+ * Score = poids_longueur × multiplicateur_diversité × bonus_instructif
+ *
+ * Poids longueur :
+ *   10-19 car → 0.5   (pris en compte mais peu valorisé)
+ *   20-49 car → 1.0
+ *   50-99 car → 1.5
+ *   100+  car → 2.0
+ *
+ * Multiplicateur diversité (mots uniques / total mots) :
+ *   ratio ≥ 0.8 ET ≥ 4 mots uniques → ×1.3  (très varié)
+ *   ratio ≥ 0.6                      → ×1.0
+ *   ratio < 0.6                      → ×0.7  (mots répétés)
+ *
+ * Bonus instructif (heuristiques NLP légères) :
+ *   +0.15 si contient ? ou ! (commentaire engagé)
+ *   +0.15 si au moins 1 mot ≥ 6 lettres (vocabulaire riche)
+ *   ×0.5  si >50% emojis (commentaire quasi-uniquement emoji)
+ */
+function scoreComment(message: string): number {
+  const trimmed = message.trim();
+  const len = trimmed.length;
+
+  // Exclusion absolue
+  if (len < MIN_COMMENT_LENGTH) return 0;
+
+  const words = trimmed.split(/\s+/).filter((w) => w.length > 0);
+  if (words.length < MIN_WORD_COUNT) return 0;
+
+  // ── Poids longueur ──
+  let weight: number;
+  if (len < 20) weight = 0.5;
+  else if (len < 50) weight = 1.0;
+  else if (len < 100) weight = 1.5;
+  else weight = 2.0;
+
+  // ── Multiplicateur diversité de mots ──
+  const uniqueWords = new Set(words.map((w) => w.toLowerCase()));
+  const diversityRatio = uniqueWords.size / words.length;
+  let diversityMult: number;
+  if (diversityRatio >= 0.8 && uniqueWords.size >= 4) diversityMult = 1.3;
+  else if (diversityRatio >= 0.6) diversityMult = 1.0;
+  else diversityMult = 0.7;
+
+  // ── Bonus instructif ──
+  let bonus = 0;
+  if (/[?!]/.test(trimmed)) bonus += 0.15;
+  if (words.some((w) => w.replace(/[^a-zA-ZÀ-ÿ]/g, "").length >= 6)) bonus += 0.15;
+
+  // ── Pénalité emoji dominant ──
+  // Compter les caractères emoji (codepoints > U+1F000 ou blocs emoji standard)
+  const emojiCount = [...trimmed].filter((c) => {
+    const cp = c.codePointAt(0) ?? 0;
+    return cp > 0x1F000 || (cp >= 0x2600 && cp <= 0x27BF);
+  }).length;
+  const emojiRatio = emojiCount / [...trimmed].length;
+  const emojiPenalty = emojiRatio > 0.5 ? 0.5 : 1.0;
+
+  return weight * diversityMult * (1 + bonus) * emojiPenalty;
+}
 
 function _isoWeekId(d: Date): string {
   const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
@@ -216,8 +285,12 @@ async function runCommentatorsReward(
   const thisWeekStartMicros = getWeekStartMicros();
   const minAccountDate = new Date(Date.now() - MIN_ACCOUNT_AGE_DAYS * 86400000);
 
-  // scoreMap : userId -> Set<post_id>
-  const scoreMap = new Map<string, Set<string>>();
+  // scoreMap : userId → score pondéré total (float)
+  // usedMessagesMap : userId → Set<message normalisé> (anti copie-collé global)
+  // postCommentsMap : userId → Set<postId> (anti spam même post)
+  const scoreMap = new Map<string, number>();
+  const usedMessagesMap = new Map<string, Set<string>>();
+  const postCommentsMap = new Map<string, Set<string>>(); // userId → Set<postId déjà commenté avec ce texte>
   let lastDoc: FirebaseFirestore.QueryDocumentSnapshot | null = null;
   let fetched = 0;
 
@@ -240,9 +313,26 @@ async function runCommentatorsReward(
       const postId: string = data.post_id ?? "";
       const message: string = data.message ?? "";
       if (!userId || !postId) continue;
-      if (message.trim().length < MIN_COMMENT_LENGTH) continue;
-      if (!scoreMap.has(userId)) scoreMap.set(userId, new Set());
-      scoreMap.get(userId)!.add(postId);
+
+      // ── Score de qualité (0 = inéligible) ──
+      const quality = scoreComment(message);
+      if (quality === 0) continue;
+
+      // ── Anti copie-collé global : même texte déjà utilisé cette semaine par cet user ──
+      const normalized = normalizeMessage(message);
+      if (!usedMessagesMap.has(userId)) usedMessagesMap.set(userId, new Set());
+      const userMessages = usedMessagesMap.get(userId)!;
+      if (userMessages.has(normalized)) continue;
+      userMessages.add(normalized);
+
+      // ── Anti spam même post : ne compter qu'une fois par post ──
+      if (!postCommentsMap.has(userId)) postCommentsMap.set(userId, new Set());
+      const userPosts = postCommentsMap.get(userId)!;
+      if (userPosts.has(postId)) continue;
+      userPosts.add(postId);
+
+      // ── Accumuler le score ──
+      scoreMap.set(userId, (scoreMap.get(userId) ?? 0) + quality);
     }
 
     fetched += snap.size;
@@ -250,7 +340,7 @@ async function runCommentatorsReward(
     if (snap.size < 500) break;
   }
 
-  console.log(`[weeklyCommentators] ${fetched} commentaires analysés, ${scoreMap.size} utilisateurs.`);
+  console.log(`[weeklyCommentators] ${fetched} commentaires analysés, ${scoreMap.size} utilisateurs avec score > 0.`);
 
   if (scoreMap.size === 0) {
     await db.collection("WeeklyTopCommentators").doc(weekId).set({
@@ -260,7 +350,7 @@ async function runCommentatorsReward(
   }
 
   const userIds = Array.from(scoreMap.keys());
-  const eligibleScores: Array<{ userId: string; count: number }> = [];
+  const eligibleScores: Array<{ userId: string; score: number }> = [];
 
   for (let i = 0; i < userIds.length; i += 30) {
     const chunk = userIds.slice(i, i + 30);
@@ -269,12 +359,12 @@ async function runCommentatorsReward(
       const createdAt: number = userDoc.data().createdAt ?? 0;
       const accountDate = new Date(createdAt / 1000);
       if (accountDate > minAccountDate) continue;
-      const count = scoreMap.get(userDoc.id)?.size ?? 0;
-      if (count > 0) eligibleScores.push({ userId: userDoc.id, count });
+      const score = scoreMap.get(userDoc.id) ?? 0;
+      if (score > 0) eligibleScores.push({ userId: userDoc.id, score });
     }
   }
 
-  eligibleScores.sort((a, b) => b.count - a.count);
+  eligibleScores.sort((a, b) => b.score - a.score);
   const top5 = eligibleScores.slice(0, 5);
 
   if (top5.length === 0) {
@@ -294,14 +384,14 @@ async function runCommentatorsReward(
     const paidMap = new Map(existingRankings.map((r) => [r.userId, { paid: r.paid, coins: r.rewardedCoins }]));
 
     for (let i = 0; i < eligibleScores.length; i++) {
-      const { userId, count } = eligibleScores[i];
+      const { userId, score } = eligibleScores[i];
       const rank = i + 1;
       const existing = paidMap.get(userId);
       const coins = rank <= 5 ? (COMMENTATOR_REWARDS[rank - 1] ?? 0) : 0;
       rankings.push({
         rank,
         userId,
-        commentCount: count,
+        qualityScore: Math.round(score * 100) / 100,
         rewardedCoins: existing?.coins ?? coins,
         paid: existing?.paid ?? false,
       });
@@ -310,24 +400,24 @@ async function runCommentatorsReward(
   } else {
     // Mode normal : récompenser le top 5
     for (let i = 0; i < top5.length; i++) {
-      const { userId, count } = top5[i];
+      const { userId, score } = top5[i];
       const coins = COMMENTATOR_REWARDS[i] ?? 0;
       const rank = i + 1;
       try {
         await rewardUser({ userId, coins, rank, weekId, subType: "top_commentator" });
         await sendWeeklyRewardNotification({ userId, coins, rank, weekId, subType: "top_commentator" });
-        rankings.push({ rank, userId, commentCount: count, rewardedCoins: coins, paid: true });
-        console.log(`[weeklyCommentators] Rang ${rank} — user ${userId} — ${coins} pièces`);
+        rankings.push({ rank, userId, qualityScore: Math.round(score * 100) / 100, rewardedCoins: coins, paid: true });
+        console.log(`[weeklyCommentators] Rang ${rank} — user ${userId} — score ${score.toFixed(2)} — ${coins} pièces`);
       } catch (err) {
         console.error(`[weeklyCommentators] Erreur rang ${rank}:`, err);
-        rankings.push({ rank, userId, commentCount: count, rewardedCoins: coins, paid: false, error: String(err) });
+        rankings.push({ rank, userId, qualityScore: Math.round(score * 100) / 100, rewardedCoins: coins, paid: false, error: String(err) });
       }
     }
 
     // Ajouter les autres utilisateurs éligibles (sans récompense)
     for (let i = 5; i < eligibleScores.length; i++) {
-      const { userId, count } = eligibleScores[i];
-      rankings.push({ rank: i + 1, userId, commentCount: count, rewardedCoins: 0, paid: false });
+      const { userId, score } = eligibleScores[i];
+      rankings.push({ rank: i + 1, userId, qualityScore: Math.round(score * 100) / 100, rewardedCoins: 0, paid: false });
     }
   }
 

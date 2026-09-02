@@ -1,4 +1,5 @@
 ﻿import 'dart:async';
+import 'dart:typed_data';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'dart:io';
@@ -117,9 +118,17 @@ class _AudioPostCardState extends State<AudioPostCard> {
       }
 
       final optimizedUrl = _optimizeUrl(_audioUrl);
-      final storageRef = FirebaseStorage.instance.refFromURL(optimizedUrl);
-      const maxSize = 10 * 1024 * 1024; // 10 MB
-      final data = await storageRef.getData(maxSize);
+      // refFromURL n'accepte que les URLs Firebase Storage (gs:// ou firebasestorage.googleapis.com)
+      final isFirebaseUrl = optimizedUrl.startsWith('gs://') ||
+          optimizedUrl.contains('firebasestorage.googleapis.com');
+
+      Uint8List? data;
+      if (isFirebaseUrl) {
+        final storageRef = FirebaseStorage.instance.refFromURL(optimizedUrl);
+        const maxSize = 10 * 1024 * 1024; // 10 MB
+        data = await storageRef.getData(maxSize);
+      }
+      // Si CDN ou autre URL non-Firebase, on ne précharge pas via Storage (la lecture réseau suffira)
 
       if (data != null) {
         await file.writeAsBytes(data);
@@ -169,13 +178,39 @@ class _AudioPostCardState extends State<AudioPostCard> {
     await player.setVolume(isMuted ? 0.0 : 1.0);
 
     if (_position == Duration.zero) {
-      if (_cachedAudioFile != null) {
-        await player.play(DeviceFileSource(_cachedAudioFile!.path));
-      } else {
-        await player.play(UrlSource(_audioUrl));
+      try {
+        if (_cachedAudioFile != null) {
+          await player.play(DeviceFileSource(_cachedAudioFile!.path));
+        } else {
+          // Le cache n'est pas encore prêt : tenter de télécharger maintenant.
+          // Sur Android, UrlSource sur les URLs Firebase Storage échoue fréquemment
+          // (MEDIA_ERROR_SYSTEM). DeviceFileSource est beaucoup plus fiable.
+          final file = await _precacheAudio();
+          if (file != null) {
+            await player.play(DeviceFileSource(file.path));
+          } else {
+            await player.play(UrlSource(_audioUrl));
+          }
+        }
+      } catch (e) {
+        printVm('❌ Erreur lecture audio $_postId: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Impossible de lire cet audio. Vérifiez votre connexion.'),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+        return;
       }
     } else {
-      await player.resume();
+      try {
+        await player.resume();
+      } catch (e) {
+        printVm('❌ Erreur reprise audio $_postId: $e');
+        return;
+      }
     }
 
     if (mounted) setState(() => _isPlaying = true);

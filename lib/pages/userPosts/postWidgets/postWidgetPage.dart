@@ -2473,6 +2473,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   : ''),
           postDataType: widget.post.dataType,
         );
+        _autoLikeIfNeeded(userId);
         FeedInteractionService.onPostCommented(widget.post, userId);
         try {
           final result = await StreakService.onCommentSent(
@@ -2527,6 +2528,25 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     } finally {
       if (mounted) setState(() => _isSendingQuickComment = false);
     }
+  }
+
+  void _autoLikeIfNeeded(String userId) {
+    final postId = widget.post.id;
+    if (postId == null) return;
+    final alreadyLiked = _isLikedLocally;
+    if (alreadyLiked) return;
+    // Like silencieux sans notification ni paiement
+    FirebaseFirestore.instance.collection('Posts').doc(postId).update({
+      'loves': FieldValue.increment(1),
+      'users_love_id': FieldValue.arrayUnion([userId]),
+    }).catchError((_) {});
+    if (mounted) setState(() {
+      _isLikedLocally = true;
+      _localLovesCount++;
+      widget.post.loves = _localLovesCount;
+      widget.post.users_love_id ??= [];
+      widget.post.users_love_id!.add(userId);
+    });
   }
 
   String _capitalizeComment(String text) {
@@ -2890,23 +2910,9 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                 Icons.delete,
                 "Supprimer",
                 colors.danger,
-                    () async {
-                  if (authProvider.loginUserData.role == UserRole.ADM.name) {
-                    await _deletePost(post);
-                  } else {
-                    post.status = PostStatus.SUPPRIMER.name;
-                    await _deletePost(post);
-                  }
+                () {
                   Navigator.pop(context);
-
-                  final snackBar = SnackBar(
-                    content: Text(
-                      'Post supprimé !',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: AppColors.of(context).primary),
-                    ),
-                  );
-                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                  _confirmAndDeletePost(post);
                 },
               ),
 
@@ -3001,6 +3007,11 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       } else {
         widget.post.users_love_id!.add(userId);
       }
+    });
+
+    // Réinitialise l'indicateur de chargement immédiatement — l'UI est déjà à jour
+    Future.microtask(() {
+      if (mounted) setState(() => _isLiking = false);
     });
 
     if (alreadyLiked) {
@@ -3460,6 +3471,79 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     }
   }
   // Méthode pour supprimer un post
+  Future<void> _confirmAndDeletePost(Post post) async {
+    if (!mounted) return;
+    final colors = AppColors.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: colors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(children: [
+          Icon(Icons.delete_forever_rounded, color: colors.danger, size: 24),
+          const SizedBox(width: 10),
+          Text('Supprimer ce post', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
+        ]),
+        content: Text(
+          'Ce post sera supprimé définitivement. Cette action est irréversible.',
+          style: TextStyle(color: colors.textSecondary, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Annuler', style: TextStyle(color: colors.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colors.danger,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Supprimer', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Center(child: CircularProgressIndicator(color: colors.primary)),
+    );
+
+    try {
+      if (authProvider.loginUserData.role != UserRole.ADM.name) {
+        post.status = PostStatus.SUPPRIMER.name;
+      }
+      await _deletePost(post);
+      if (!mounted) return;
+      Navigator.pop(context); // loader
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: const Row(children: [
+          Icon(Icons.check_circle, color: Colors.white),
+          SizedBox(width: 10),
+          Text('Post supprimé avec succès'),
+        ]),
+        backgroundColor: Colors.green.shade700,
+        duration: const Duration(seconds: 3),
+      ));
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context); // loader
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: const Row(children: [
+          Icon(Icons.error_outline, color: Colors.white),
+          SizedBox(width: 10),
+          Text('Échec de la suppression. Réessaie.'),
+        ]),
+        backgroundColor: colors.danger,
+        duration: const Duration(seconds: 4),
+      ));
+    }
+  }
+
   Future<void> _deletePost(Post post) async {
     final firestore = FirebaseFirestore.instance;
     final appDefaultRef = firestore.collection('AppData').doc(appId);

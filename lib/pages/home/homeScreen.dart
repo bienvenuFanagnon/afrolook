@@ -1021,6 +1021,18 @@ class _MyHomePageState extends State<MyHomePage>
                           ));
                         },
                       ),
+                      // Vider le cache des posts
+                      ListTile(
+                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                        leading: Icon(Icons.cleaning_services_outlined, size: 24, color: colors.primary),
+                        title: TextCustomerMenu(
+                          titre: 'Vider le cache des posts',
+                          fontSize: SizeText.homeProfileTextSize,
+                          couleur: colors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        onTap: () => _clearCacheAndRefresh(context),
+                      ),
                       // Contacts
                       ListTile(
                         contentPadding: const EdgeInsets.only(left: 32, right: 16),
@@ -1442,7 +1454,8 @@ class _MyHomePageState extends State<MyHomePage>
     _tabController!.addListener(() {
       if (_tabController!.indexIsChanging) return;
 
-      if (_tabController!.index == 1) {
+      // index 1 → Récent (rendu inline, pas de push)
+      if (_tabController!.index == 2) {
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -1459,18 +1472,6 @@ class _MyHomePageState extends State<MyHomePage>
           MaterialPageRoute(
             builder: (context) =>
                 DashboardContentScreen(),
-          ),
-        ).then((_) {
-          _tabController!.animateTo(0);
-        });
-      }
-      if (_tabController!.index == 2) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) =>
-                PostDetailsVideoFormatTel(isIn: true,),
-            // VibesVideoPage(isIn: true,),
           ),
         ).then((_) {
           _tabController!.animateTo(0);
@@ -1789,6 +1790,7 @@ class _MyHomePageState extends State<MyHomePage>
   // permettent de déclencher le filtre pays et le rafraîchissement de leur
   // AppBar "Découvrir" (supprimée) depuis la barre supérieure combinée.
   final GlobalKey<State<HomeConstPostPage>> _looksRecentKey = GlobalKey();
+  final GlobalKey<State<HomeConstPostPage>> _recentFeedKey = GlobalKey();
   final GlobalKey<State<HomeConstPostPage>> _looksPopularKey = GlobalKey();
 
   @override
@@ -1830,15 +1832,18 @@ class _MyHomePageState extends State<MyHomePage>
                       child: Icon(Icons.menu, color: colors.textPrimary, size: 22),
                     ),
                   ),
-                  Text(
-                    'Afrolook',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w900,
-                      color: colors.primary,
-                      letterSpacing: 1.0,
-                    ),
-                  ).animate().fadeIn(duration: 400.ms).slideX(begin: -0.1, end: 0, duration: 400.ms, curve: Curves.easeOut),
+                  GestureDetector(
+                    onTap: _onLogoTap,
+                    child: Text(
+                      'Afrolook',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        color: colors.primary,
+                        letterSpacing: 1.0,
+                      ),
+                    ).animate().fadeIn(duration: 400.ms).slideX(begin: -0.1, end: 0, duration: 400.ms, curve: Curves.easeOut),
+                  ),
                   const Spacer(),
                   // Notifications
                   GestureDetector(
@@ -2090,8 +2095,8 @@ class _MyHomePageState extends State<MyHomePage>
                       tabAlignment: TabAlignment.start,
                       tabs: [
                         Tab(text: l10n.tabHome),
+                        Tab(text: l10n.tabRecent),
                         Tab(text: l10n.tabSport),
-                        Tab(text: l10n.tabVibe),
                         Tab(text: l10n.tabEvents),
                         Tab(text: l10n.tabVip),
                         Tab(text: l10n.tabChallenges),
@@ -2324,6 +2329,8 @@ class _MyHomePageState extends State<MyHomePage>
     switch (_tabController?.index ?? 0) {
       case 0:
         return _looksRecentKey;
+      case 1:
+        return _recentFeedKey;
       case 3:
         return _discoverKey;
       case 7:
@@ -2396,6 +2403,35 @@ class _MyHomePageState extends State<MyHomePage>
     }
   }
 
+  Future<void> _clearCacheAndRefresh(BuildContext drawerCtx) async {
+    Navigator.pop(drawerCtx);
+    final prefs = await SharedPreferences.getInstance();
+    final keys = prefs.getKeys().where((k) => k.startsWith('feed_cache_')).toList();
+    for (final k in keys) {
+      await prefs.remove(k);
+    }
+    // Relance le feed depuis le réseau
+    final state = _activeFeedKey?.currentState;
+    if (state != null) {
+      (state as dynamic).refreshFeed();
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cache vidé — rechargement des posts en cours…'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  void _onLogoTap() {
+    final state = _activeFeedKey?.currentState;
+    if (state != null) {
+      (state as dynamic).scrollToTop();
+    }
+  }
+
   // ── Widget helper : icône de navigation avec label et badge (barre nav principale) ──
   Widget _navItemWithLabel({
     required IconData icon,
@@ -2433,7 +2469,7 @@ class _MyHomePageState extends State<MyHomePage>
   /// Enfants du TabBarView — partagés par le layout mobile et wide.
   List<Widget> get _tabViewChildren => [
     LooksPage(type: TabBarType.LOOKS.name, sortType: 'recent', feedKey: _looksRecentKey),
-    const SizedBox.shrink(),
+    HomeConstPostPage(key: _recentFeedKey, type: '', sortType: 'recent'),
     const SizedBox.shrink(),
     HomeConstPostTypePage(key: _discoverKey, type: TabBarType.EVENEMENT.name, sortType: 'recent'),
     const SizedBox.shrink(),
@@ -2927,8 +2963,8 @@ class _MyHomePageState extends State<MyHomePage>
         tabAlignment: TabAlignment.start,
         tabs: [
           Tab(text: l10n.tabHome),
+          Tab(text: l10n.tabRecent),
           Tab(text: l10n.tabSport),
-          Tab(text: l10n.tabVibe),
           Tab(text: l10n.tabEvents),
           Tab(text: l10n.tabVip),
           Tab(text: l10n.tabChallenges),

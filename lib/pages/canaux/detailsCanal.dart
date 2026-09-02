@@ -34,6 +34,7 @@ import '../userPosts/postWidgets/postWidgetPage.dart';
 
 import 'canal_manage_admins.dart';
 import '../user/userPubs/user_profile_boost_page.dart';
+import '../user/profile/retraitAdmin/userAllDetails.dart';
 
 class CanalDetails extends StatefulWidget {
   final Canal canal;
@@ -69,6 +70,7 @@ class _CanalDetailsState extends State<CanalDetails> {
   bool _isProcessingSubscription = false;
   bool _isProcessingUnfollow = false;
   bool _monthlySubscriptionExpired = false;
+  bool _descriptionExpanded = false;
 
   @override
   void initState() {
@@ -291,6 +293,119 @@ class _CanalDetailsState extends State<CanalDetails> {
       setState(() {
         _isProcessingUnfollow = false;
       });
+    }
+  }
+
+  Future<void> _deleteCanal() async {
+    final myId = authProvider.loginUserData.id!;
+    final isAppAdmin = authProvider.loginUserData.role == 'ADM' || authProvider.loginUserData.role == 'admin';
+    final isOwner = myId == widget.canal.userId;
+    if (!isOwner && !isAppAdmin) return;
+
+    // Étape 1 : avertissement
+    final step1 = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final colors = AppColors.of(ctx);
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: colors.surface,
+          title: Row(children: [
+            const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 22),
+            const SizedBox(width: 8),
+            Text('Supprimer le canal', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: colors.textPrimary)),
+          ]),
+          content: Text(
+            'Cette action est irréversible.\nTous les posts et abonnés seront supprimés définitivement.',
+            style: TextStyle(color: colors.textSecondary),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Continuer', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    ) ?? false;
+    if (!step1 || !mounted) return;
+
+    // Étape 2 : confirmation finale
+    final canalName = widget.canal.titre ?? 'ce canal';
+    final step2 = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final colors = AppColors.of(ctx);
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: colors.surface,
+          title: Text('Dernière confirmation', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: colors.textPrimary)),
+          content: Text('Supprimer définitivement le canal\n"$canalName" ?', style: TextStyle(color: colors.textSecondary)),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Non, annuler')),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Oui, supprimer', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+            ),
+          ],
+        );
+      },
+    ) ?? false;
+    if (!step2 || !mounted) return;
+
+    try {
+      final canalId = widget.canal.id!;
+
+      // Supprimer tous les posts du canal
+      await _deleteBatchQuery(
+        firestore.collection('Posts').where('canal_id', isEqualTo: canalId),
+      );
+
+      // Supprimer l'entrée CanalNames
+      final namesSnap = await firestore
+          .collection('CanalNames')
+          .where('name', isEqualTo: widget.canal.titre)
+          .limit(1)
+          .get();
+      for (final doc in namesSnap.docs) {
+        await doc.reference.delete();
+      }
+
+      // Supprimer le document canal
+      await firestore.collection('Canaux').doc(canalId).delete();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Canal supprimé avec succès'), backgroundColor: Colors.green),
+        );
+        Navigator.of(context).popUntil((r) => r.isFirst);
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Erreur lors de la suppression'),
+            backgroundColor: _colors.danger,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteBatchQuery(Query<Map<String, dynamic>> query) async {
+    const batchSize = 400;
+    while (true) {
+      final snap = await query.limit(batchSize).get();
+      if (snap.docs.isEmpty) break;
+      final batch = firestore.batch();
+      for (final doc in snap.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+      if (snap.docs.length < batchSize) break;
     }
   }
 
@@ -881,14 +996,13 @@ class _CanalDetailsState extends State<CanalDetails> {
 
             SizedBox(height: 16),
 
-            // Dans _buildInfoSection() de CanalDetails :
-
-// Boutons d'action
+            // Ligne principale : Follow/Unfollow + menu 3-points
             Row(
               children: [
+                // Bouton Follow/Unfollow (non-propriétaire uniquement)
                 if (!isOwner)
                   Expanded(
-                    child: Container(
+                    child: SizedBox(
                       height: 45,
                       child: ElevatedButton(
                         onPressed: (_isProcessingSubscription || _isProcessingUnfollow) ? null : _handleFollowAction,
@@ -905,182 +1019,130 @@ class _CanalDetailsState extends State<CanalDetails> {
                         ),
                         child: (_isProcessingSubscription || _isProcessingUnfollow)
                             ? SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: isFollowing ? _colors.onPrimary : (isPrivate ? _colors.onAccent : _colors.onPrimary),
-                          ),
-                        )
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: isFollowing ? _colors.onPrimary : (isPrivate ? _colors.onAccent : _colors.onPrimary),
+                                ),
+                              )
                             : Text(
-                          isFollowing
-                              ? AppLocalizations.of(context).canalUnsubscribeBtn
-                              : (isPrivate ? AppLocalizations.of(context).canalSubscribeBtn : AppLocalizations.of(context).canalFollowBtn),
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                                isFollowing
+                                    ? AppLocalizations.of(context).canalUnsubscribeBtn
+                                    : (isPrivate ? AppLocalizations.of(context).canalSubscribeBtn : AppLocalizations.of(context).canalFollowBtn),
+                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                              ),
                       ),
                     ),
                   ),
 
-                if (isOwner) ...[
-                  Expanded(
-                    child: Container(
-                      height: 45,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => EditCanal(canal: widget.canal)),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _colors.primary,
-                          foregroundColor: _colors.onPrimary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(25),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.edit, size: 18),
-                            SizedBox(width: 6),
-                            Text('MODIFIER', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                          ],
-                        ),
+                if (!isOwner) const SizedBox(width: 8),
+
+                // Menu 3-points — propriétaire
+                if (isOwner)
+                  PopupMenuButton<String>(
+                    icon: Icon(Icons.more_vert, color: _colors.textPrimary),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    onSelected: (value) {
+                      switch (value) {
+                        case 'modifier':
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => EditCanal(canal: widget.canal)));
+                          break;
+                        case 'admins':
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => CanalManageAdminsPage(canal: widget.canal)));
+                          break;
+                        case 'booster':
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => UserProfileBoostPage(canal: widget.canal)));
+                          break;
+                        case 'supprimer':
+                          _deleteCanal();
+                          break;
+                      }
+                    },
+                    itemBuilder: (_) => [
+                      PopupMenuItem(
+                        value: 'modifier',
+                        child: Row(children: [
+                          Icon(Icons.edit, size: 18, color: _colors.textPrimary),
+                          const SizedBox(width: 10),
+                          Text('Modifier', style: TextStyle(color: _colors.textPrimary)),
+                        ]),
                       ),
-                    ),
+                      PopupMenuItem(
+                        value: 'admins',
+                        child: Row(children: [
+                          Icon(Icons.admin_panel_settings, size: 18, color: _colors.textPrimary),
+                          const SizedBox(width: 10),
+                          Text(AppLocalizations.of(context).canalManageAdmins, style: TextStyle(color: _colors.textPrimary)),
+                        ]),
+                      ),
+                      PopupMenuItem(
+                        value: 'booster',
+                        child: Row(children: [
+                          const Icon(Icons.rocket_launch_outlined, size: 18, color: Color(0xFFFFD700)),
+                          const SizedBox(width: 10),
+                          Text('Booster ce canal', style: TextStyle(color: _colors.textPrimary)),
+                        ]),
+                      ),
+                      PopupMenuItem(
+                        value: 'supprimer',
+                        child: Row(children: [
+                          const Icon(Icons.delete_forever_rounded, size: 18, color: Colors.red),
+                          const SizedBox(width: 10),
+                          const Text('Supprimer le canal', style: TextStyle(color: Colors.red)),
+                        ]),
+                      ),
+                    ],
                   ),
-                  SizedBox(width: 12),
-                ],
+
+                // Menu 3-points — admin plateforme (non-propriétaire)
+                if (!isOwner &&
+                    (authProvider.loginUserData.role == 'ADM' ||
+                        authProvider.loginUserData.role == 'admin'))
+                  PopupMenuButton<String>(
+                    icon: Icon(Icons.more_vert, color: _colors.textPrimary),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    onSelected: (value) {
+                      if (value == 'supprimer') _deleteCanal();
+                    },
+                    itemBuilder: (_) => [
+                      const PopupMenuItem(
+                        value: 'supprimer',
+                        child: Row(children: [
+                          Icon(Icons.delete_forever_rounded, size: 18, color: Colors.red),
+                          SizedBox(width: 10),
+                          Text('Supprimer le canal', style: TextStyle(color: Colors.red)),
+                        ]),
+                      ),
+                    ],
+                  ),
               ],
             ),
 
-// Boutons supplémentaires pour le propriétaire seulement
-            if (isOwner) ...[
-              SizedBox(height: 12),
-
-              // Bouton GÉRER LES ADMINS
-              Container(
+            // Bouton POSTER (propriétaire ou admin canal)
+            if (isOwner || widget.canal.adminIds?.contains(authProvider.loginUserData.id) == true) ...[
+              const SizedBox(height: 12),
+              SizedBox(
                 width: double.infinity,
                 height: 45,
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => CanalManageAdminsPage(canal: widget.canal),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _colors.warning,
-                    foregroundColor: _colors.onPrimary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.admin_panel_settings, size: 18),
-                      SizedBox(width: 6),
-                      Text(AppLocalizations.of(context).canalManageAdmins, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                ),
-              ),
-              SizedBox(height: 8),
-
-              // Bouton POSTER
-              Container(
-                width: double.infinity,
-                height: 45,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => CanalPostForm(canal: widget.canal)),
+                      MaterialPageRoute(builder: (_) => CanalPostForm(canal: widget.canal)),
                     );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _colors.primary,
                     foregroundColor: _colors.onPrimary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.add, size: 18),
-                      SizedBox(width: 6),
-                      Text('POSTER', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                ),
-              ),
-              SizedBox(height: 8),
-
-              // Bouton BOOSTER CE CANAL
-              Container(
-                width: double.infinity,
-                height: 45,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => UserProfileBoostPage(canal: widget.canal)),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFFD700),
-                    foregroundColor: Colors.black,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
                   ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.rocket_launch_outlined, size: 18),
-                      SizedBox(width: 6),
-                      Text('BOOSTER CE CANAL', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-
-// Pour les administrateurs (mais pas propriétaire)
-            if (!isOwner && widget.canal.adminIds?.contains(authProvider.loginUserData.id) == true) ...[
-              SizedBox(height: 12),
-
-              // Bouton POSTER pour admin
-              Container(
-                width: double.infinity,
-                height: 45,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => CanalPostForm(canal: widget.canal)),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _colors.primary,
-                    foregroundColor: _colors.onPrimary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.add, size: 18),
-                      SizedBox(width: 6),
-                      Text('POSTER', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                      const Icon(Icons.add, size: 18),
+                      const SizedBox(width: 6),
+                      const Text('POSTER', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),
@@ -1226,6 +1288,58 @@ class _CanalDetailsState extends State<CanalDetails> {
 
             SizedBox(height: 16),
 
+            // Bandeau propriétaire — visible uniquement pour les admins plateforme
+            if (authProvider.loginUserData.role == 'ADM' ||
+                authProvider.loginUserData.role == 'admin') ...[
+              GestureDetector(
+                onTap: () {
+                  if (widget.canal.userId != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => UserManagementPage(userId: widget.canal.userId!),
+                      ),
+                    );
+                  }
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.orange.withOpacity(0.4)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.admin_panel_settings, color: Colors.orange, size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Admin — Propriétaire : ',
+                        style: TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.w700),
+                      ),
+                      if (widget.canal.user?.imageUrl != null) ...[
+                        CircleAvatar(
+                          radius: 12,
+                          backgroundImage: NetworkImage(widget.canal.user!.imageUrl!),
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                      Expanded(
+                        child: Text(
+                          widget.canal.user?.pseudo ?? widget.canal.userId ?? 'Inconnu',
+                          style: const TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right, color: Colors.orange, size: 18),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+
             // Description
             Container(
               width: double.infinity,
@@ -1253,13 +1367,36 @@ class _CanalDetailsState extends State<CanalDetails> {
                     ],
                   ),
                   SizedBox(height: 8),
-                  Text(
-                    widget.canal.description ?? AppLocalizations.of(context).canalNoDescription,
-                    style: TextStyle(
-                      color: _colors.textSecondary,
-                      fontSize: 14,
-                    ),
-                  ),
+                  Builder(builder: (context) {
+                    final desc = widget.canal.description ?? AppLocalizations.of(context).canalNoDescription;
+                    const maxLines = 3;
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          desc,
+                          style: TextStyle(color: _colors.textSecondary, fontSize: 14),
+                          maxLines: _descriptionExpanded ? null : maxLines,
+                          overflow: _descriptionExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+                        ),
+                        if (widget.canal.description != null && widget.canal.description!.length > 120)
+                          GestureDetector(
+                            onTap: () => setState(() => _descriptionExpanded = !_descriptionExpanded),
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                _descriptionExpanded ? 'Voir moins' : 'Voir plus',
+                                style: TextStyle(
+                                  color: _colors.primary,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  }),
                 ],
               ),
             ),

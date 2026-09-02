@@ -19,6 +19,7 @@ import '../post_video_format_tel_details.dart';
 import '../user/otherUser/otherUser.dart';
 import '../canaux/detailsCanal.dart';
 import '../chat/group/group_info_page.dart';
+import '../chat/group/group_chat_page.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import '../../theme/app_colors.dart';
 
@@ -376,9 +377,10 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
         case 'group':
           if (!context.mounted) return;
           Navigator.push(context, MaterialPageRoute(
-            builder: (_) => GroupInfoPage(
+            builder: (_) => GroupChatPage(
               groupId: id,
               groupName: ad.ownerName ?? 'Groupe',
+              groupImageUrl: ad.ownerAvatar ?? '',
             ),
           ));
           break;

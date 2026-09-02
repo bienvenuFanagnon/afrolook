@@ -95,6 +95,14 @@ class _GroupChatPageState extends State<GroupChatPage> {
   // ── Permissions calculées ─────────────────────────────────────────────────
   bool get _isAdminOrOwner => _myRole == 'owner' || _myRole == 'admin';
 
+  // Identité expéditeur : owner/admin → profil du groupe, sinon profil personnel
+  String get _senderPseudo => _isAdminOrOwner
+      ? (_groupData['name'] as String? ?? widget.groupName ?? _auth.loginUserData.pseudo ?? '')
+      : (_auth.loginUserData.pseudo ?? '');
+  String get _senderImage => _isAdminOrOwner
+      ? (_groupData['image_url'] as String? ?? widget.groupImageUrl ?? _auth.loginUserData.imageUrl ?? '')
+      : (_auth.loginUserData.imageUrl ?? '');
+
   // ADM de l'app : tous les droits sans restriction (même groupe bloqué/gelé)
   bool get _userCanWrite =>
       _isAppAdmin ||
@@ -916,8 +924,8 @@ class _GroupChatPageState extends State<GroupChatPage> {
         'id': msgId,
         'group_id': widget.groupId,
         'send_by': myId,
-        'sender_pseudo': _auth.loginUserData.pseudo ?? '',
-        'sender_image': _auth.loginUserData.imageUrl ?? '',
+        'sender_pseudo': _senderPseudo,
+        'sender_image': _senderImage,
         'message': text,
         'message_type': 'text',
         'is_valide': true,
@@ -1003,8 +1011,8 @@ class _GroupChatPageState extends State<GroupChatPage> {
         'id': msgId,
         'group_id': widget.groupId,
         'send_by': myId,
-        'sender_pseudo': _auth.loginUserData.pseudo ?? '',
-        'sender_image': _auth.loginUserData.imageUrl ?? '',
+        'sender_pseudo': _senderPseudo,
+        'sender_image': _senderImage,
         'message': url,
         'message_type': 'image',
         if (caption.isNotEmpty) 'caption': caption,
@@ -1086,8 +1094,8 @@ class _GroupChatPageState extends State<GroupChatPage> {
         'id': msgId,
         'group_id': widget.groupId,
         'send_by': myId,
-        'sender_pseudo': _auth.loginUserData.pseudo ?? '',
-        'sender_image': _auth.loginUserData.imageUrl ?? '',
+        'sender_pseudo': _senderPseudo,
+        'sender_image': _senderImage,
         'message': urls.first,
         'image_urls': urls,
         'message_type': 'multi_image',
@@ -1217,8 +1225,8 @@ class _GroupChatPageState extends State<GroupChatPage> {
         'id': msgId,
         'group_id': widget.groupId,
         'send_by': myId,
-        'sender_pseudo': _auth.loginUserData.pseudo ?? '',
-        'sender_image': _auth.loginUserData.imageUrl ?? '',
+        'sender_pseudo': _senderPseudo,
+        'sender_image': _senderImage,
         'message': url,
         'message_type': 'video',
         if (caption.isNotEmpty) 'caption': caption,

@@ -2264,7 +2264,8 @@ class _DetailsPostState extends State<DetailsPost>
     try {
       // Vérifier qu'on a des IDs
       final post = widget.post;
-      if (post.user_id == null || post.canal_id == null) return;
+      if (post.user_id == null || post.user_id!.isEmpty) return;
+      final hasCanalId = post.canal_id != null && post.canal_id!.isNotEmpty;
 
       // Récupérer l'utilisateur
       final userDoc = await FirebaseFirestore.instance
@@ -2277,13 +2278,14 @@ class _DetailsPostState extends State<DetailsPost>
       }
 
       // Récupérer le canal
-      final canalDoc = await FirebaseFirestore.instance
-          .collection('Canaux')
-          .doc(post.canal_id)
-          .get();
-
-      if (canalDoc.exists) {
-        post.canal = Canal.fromJson(canalDoc.data()!);
+      if (hasCanalId) {
+        final canalDoc = await FirebaseFirestore.instance
+            .collection('Canaux')
+            .doc(post.canal_id)
+            .get();
+        if (canalDoc.exists) {
+          post.canal = Canal.fromJson(canalDoc.data()!);
+        }
       }
 
       // Rebuild UI avec les données chargées
@@ -3398,6 +3400,8 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         _animationController.forward().then((_) => _animationController.reverse());
       }
     });
+    // Déverrouiller immédiatement — le reste s'exécute en arrière-plan
+    setState(() => _isLiking = false);
 
     if (alreadyLiked) {
       _processUnlikeBackground(userId, postId);
@@ -3416,8 +3420,6 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         widget.post.loves = ((widget.post.loves ?? 0) + 1);
         widget.post.users_love_id?.add(userId);
       });
-    }).whenComplete(() {
-      if (mounted) setState(() => _isLiking = false);
     });
   }
 
@@ -3511,8 +3513,6 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       }
     }).catchError((e) {
       printVm("❌ Erreur like background: $e");
-    }).whenComplete(() {
-      if (mounted) setState(() => _isLiking = false);
     });
   }
   void _showInsufficientCoinsForLikeDialog() {
@@ -3989,8 +3989,8 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           'users_republier_id':
               FieldValue.arrayUnion([authProvider.loginUserData.id]),
           'popularity': FieldValue.increment(4),
-          'created_at': DateTime.now().microsecondsSinceEpoch,
-          'updated_at': DateTime.now().microsecondsSinceEpoch,
+          'created_at': DateTime.now().millisecondsSinceEpoch,
+          'updated_at': DateTime.now().millisecondsSinceEpoch,
         });
 
         await _createTransaction(
@@ -4363,23 +4363,9 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                 Icons.delete,
                 "Supprimer",
                 _colors.danger,
-                () async {
-                  if (authProvider.loginUserData.role == UserRole.ADM.name) {
-                    await deletePost(post, context);
-                  } else {
-                    post.status = PostStatus.SUPPRIMER.name;
-                    await deletePost(post, context);
-                  }
+                () {
                   Navigator.pop(context);
-
-                  final snackBar = SnackBar(
-                    content: Text(
-                      'Post supprimé !',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: _colors.success),
-                    ),
-                  );
-                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                  _confirmAndDeletePost(post);
                 },
               ),
             SizedBox(height: 8),
@@ -5967,6 +5953,95 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
     } catch (_) {}
   }
 
+  Future<void> _confirmAndDeletePost(Post post) async {
+    if (!mounted) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _colors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(children: [
+          Icon(Icons.delete_forever_rounded, color: _colors.danger, size: 24),
+          const SizedBox(width: 10),
+          Text('Supprimer ce post', style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
+        ]),
+        content: Text(
+          'Ce post sera supprimé définitivement. Cette action est irréversible.',
+          style: TextStyle(color: _colors.textSecondary, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Annuler', style: TextStyle(color: _colors.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _colors.danger,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Supprimer', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Center(child: CircularProgressIndicator(color: _colors.primary)),
+    );
+
+    try {
+      if (authProvider.loginUserData.role != UserRole.ADM.name) {
+        post.status = PostStatus.SUPPRIMER.name;
+      }
+      await deletePost(post, context);
+      if (!mounted) return;
+      Navigator.pop(context); // loader
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: const Row(children: [
+          Icon(Icons.check_circle, color: Colors.white),
+          SizedBox(width: 10),
+          Text('Post supprimé avec succès'),
+        ]),
+        backgroundColor: Colors.green.shade700,
+        duration: const Duration(seconds: 3),
+      ));
+      Navigator.pop(context); // retour page précédente
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context); // loader
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: const Row(children: [
+          Icon(Icons.error_outline, color: Colors.white),
+          SizedBox(width: 10),
+          Text('Échec de la suppression. Réessaie.'),
+        ]),
+        backgroundColor: _colors.danger,
+        duration: const Duration(seconds: 4),
+      ));
+    }
+  }
+
+  void _autoLikeIfNeeded(String userId) {
+    final postId = widget.post.id;
+    if (postId == null) return;
+    final alreadyLiked = widget.post.users_love_id?.contains(userId) ?? false;
+    if (alreadyLiked) return;
+    FirebaseFirestore.instance.collection('Posts').doc(postId).update({
+      'loves': FieldValue.increment(1),
+      'users_love_id': FieldValue.arrayUnion([userId]),
+    }).catchError((_) {});
+    if (mounted) setState(() {
+      widget.post.users_love_id ??= [];
+      widget.post.users_love_id!.add(userId);
+      widget.post.loves = (widget.post.loves ?? 0) + 1;
+    });
+  }
+
   Future<void> _sendQuickComment(String text) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty || _isSendingQuickComment) return;
@@ -5979,6 +6054,30 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
     });
 
     try {
+      // Identité canal : si le post appartient à un canal et que l'utilisateur en est owner/admin
+      Canal? canal = widget.post.canal;
+      final canalId = widget.post.canal_id;
+      // Canal peut ne pas être chargé encore (async initState) — on le charge si besoin
+      if (canal == null && canalId != null && canalId.isNotEmpty) {
+        try {
+          final doc = await FirebaseFirestore.instance.collection('Canaux').doc(canalId).get();
+          if (doc.exists) {
+            canal = Canal.fromJson(doc.data()!);
+            if (mounted) setState(() => widget.post.canal = canal);
+          }
+        } catch (_) {}
+      }
+      String? canalName;
+      String? canalImage;
+      if (canalId != null && canalId.isNotEmpty && canal != null) {
+        final isOwner = canal.userId == userId;
+        final isAdmin = canal.adminIds?.contains(userId) == true;
+        if (isOwner || isAdmin) {
+          canalName = canal.titre;
+          canalImage = canal.urlImage;
+        }
+      }
+
       final comment = PostComment(
         id: FirebaseFirestore.instance.collection('PostComments').doc().id,
         user_id: userId,
@@ -5992,6 +6091,9 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         comments: 0,
         createdAt: DateTime.now().microsecondsSinceEpoch,
         updatedAt: DateTime.now().microsecondsSinceEpoch,
+        canal_id: canalName != null ? canalId : null,
+        canal_name: canalName,
+        canal_image: canalImage,
       );
 
       final success = await postProvider.newComment(comment);
@@ -6024,15 +6126,20 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           postImageUrl: widget.post.images?.isNotEmpty == true ? widget.post.images!.first : '',
           postDataType: widget.post.dataType,
         );
+        _autoLikeIfNeeded(userId);
         FeedInteractionService.onPostCommented(widget.post, userId);
 
         if (widget.post.user != null && widget.post.user!.id != userId) {
           try {
-            final msg = "@${authProvider.loginUserData.pseudo!} a commenté votre publication";
+            final displayName = canalName != null ? '#$canalName' : '@${authProvider.loginUserData.pseudo!}';
+            final displayImage = canalImage ?? authProvider.loginUserData.imageUrl ?? '';
+            final msg = canalName != null
+                ? "Le canal $displayName a commenté votre publication"
+                : "$displayName a commenté votre publication";
             final notif = NotificationData(
               id: FirebaseFirestore.instance.collection('Notifications').doc().id,
               titre: "Nouvelle interaction",
-              media_url: authProvider.loginUserData.imageUrl,
+              media_url: displayImage,
               type: NotificationType.POST.name,
               description: msg,
               user_id: userId,
@@ -6048,7 +6155,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             if (receiverUser.isNotEmpty && receiverUser.first.oneIgnalUserid != null) {
               await authProvider.sendNotification(
                 userIds: [receiverUser.first.oneIgnalUserid!],
-                smallImage: authProvider.loginUserData.imageUrl!,
+                smallImage: displayImage,
                 send_user_id: userId,
                 recever_user_id: widget.post.user!.id!,
                 message: msg,

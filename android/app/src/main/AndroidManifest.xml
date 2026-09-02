@@ -62,6 +62,7 @@
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon"
         android:requestLegacyExternalStorage="true"
+        android:largeHeap="true"
         tools:replace="android:label"
         tools:ignore="ExtraText">
         <activity

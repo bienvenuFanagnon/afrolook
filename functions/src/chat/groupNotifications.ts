@@ -53,6 +53,28 @@ export const onGroupMessageCreated = onDocumentCreated(
     const senderData = senderDoc.data();
     const senderPseudo = (senderData?.pseudo as string) ?? "";
     const groupName = (groupData.name as string) ?? "";
+    const groupImageUrl = (groupData.image_url as string) ?? "";
+
+    // Vérifier si l'expéditeur est owner ou admin → afficher l'identité du groupe
+    let memberRole = "member";
+    try {
+      const memberDoc = await db
+        .collection("GroupChats")
+        .doc(groupId)
+        .collection("members")
+        .doc(senderId)
+        .get();
+      if (memberDoc.exists) {
+        memberRole = (memberDoc.data()?.role as string) ?? "member";
+      }
+    } catch (_) {}
+    const isAdminOrOwner = memberRole === "owner" || memberRole === "admin";
+
+    // Expéditeur affiché : groupe si admin/owner, personne sinon
+    const displayName = isAdminOrOwner ? groupName : `@${senderPseudo}`;
+    const displayImage = isAdminOrOwner
+      ? groupImageUrl
+      : ((senderData?.imageUrl as string) || (appConfig.app_logo as string) || "");
 
     // Construire le résumé du message pour la notification
     const msgType = (msg.message_type as string) ?? "text";
@@ -73,7 +95,9 @@ export const onGroupMessageCreated = onDocumentCreated(
       default:
         msgPreview = ((msg.message as string) ?? "").substring(0, 100);
     }
-    const notifMessage = `@${senderPseudo} dans ${groupName}: ${msgPreview}`;
+    const notifMessage = isAdminOrOwner
+      ? `${displayName}: ${msgPreview}`
+      : `${displayName} dans ${groupName}: ${msgPreview}`;
 
     // Membres à notifier (hors expéditeur, IDs valides uniquement)
     const memberIds = ((groupData.member_ids as string[]) ?? []).filter(
@@ -154,8 +178,8 @@ export const onGroupMessageCreated = onDocumentCreated(
         await sendToOneSignal(
           pushBatch,
           notifMessage,
-          `@${senderPseudo}`,
-          (senderData?.imageUrl as string) || (appConfig.app_logo as string) || "",
+          displayName,
+          displayImage || (appConfig.app_logo as string) || "",
           appConfig.one_signal_app_id as string,
           appConfig.one_signal_api_key as string,
           {

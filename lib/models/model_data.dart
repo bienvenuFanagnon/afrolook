@@ -1693,10 +1693,14 @@ class Post {
   }
 
   /// Convertit un champ potentiellement Timestamp Firestore en int (ms) pour JSON.
+  /// Normalise les microsecondes (16 chiffres) en millisecondes (13 chiffres).
   static int? _tsToMs(dynamic v) {
     if (v == null) return null;
-    if (v is int) return v;
     if (v is Timestamp) return v.millisecondsSinceEpoch;
+    if (v is int) {
+      // Les timestamps ms de 2020-2030 ont 13 chiffres ; µs en ont 16
+      return v > 9999999999999 ? v ~/ 1000 : v;
+    }
     return null;
   }
 
@@ -4020,6 +4024,11 @@ class PostComment {
   List<ResponsePostComment>? responseComments = [];
   List<Message>? replycommentaires = [];
 
+  // Identité canal ou groupe (si le commentaire est posté par un owner/admin)
+  String? canal_id;
+  String? canal_name;
+  String? canal_image;
+
   PostComment({
     this.id,
     this.comments,
@@ -4034,6 +4043,9 @@ class PostComment {
     this.createdAt,
     this.updatedAt,
     this.user,
+    this.canal_id,
+    this.canal_name,
+    this.canal_image,
   });
 
   PostComment.fromJson(Map<String, dynamic> json) {
@@ -4045,9 +4057,12 @@ class PostComment {
     message = json['message'];
     createdAt = json['created_at'];
     updatedAt = json['updated_at'];
-    users_like_id = json['users_like_id'] == null ? [] : json['users_like_id'].cast<String>(); // Changé pour String
+    users_like_id = json['users_like_id'] == null ? [] : json['users_like_id'].cast<String>();
     loves = json['loves'];
     likes = json['likes'];
+    canal_id = json['canal_id'];
+    canal_name = json['canal_name'];
+    canal_image = json['canal_image'];
     if (json['responseComments'] != null) {
       responseComments = <ResponsePostComment>[];
       json['responseComments'].forEach((v) {
@@ -4072,6 +4087,9 @@ class PostComment {
         : [];
     data['loves'] = this.loves;
     data['likes'] = this.likes;
+    if (canal_id != null) data['canal_id'] = canal_id;
+    if (canal_name != null) data['canal_name'] = canal_name;
+    if (canal_image != null) data['canal_image'] = canal_image;
 
     return data;
   }

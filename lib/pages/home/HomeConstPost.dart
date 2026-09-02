@@ -67,6 +67,7 @@ import 'home_boot_cache.dart';
 import '../../widgets/feed/weekly_top_creators_widget.dart';
 import '../../widgets/feed/sections/weekly_top_posts_section_widget.dart';
 import '../../widgets/feed/sections/weekly_top_commentators_widget.dart';
+import '../../widgets/feed/sections/comment_level_widget.dart';
 import '../../widgets/flame_streak_banner.dart';
 
 
@@ -118,6 +119,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   bool _isLoadingMorePosts = false;
   bool _hasMorePosts = true;
   bool _isLoadingBackground = false;
+
+  // Curseur DocumentSnapshot pour le mode récent (startAfterDocument — unit-agnostic)
+  QueryDocumentSnapshot? _recentLastDoc;
 
   // Système hybride de chargement
   Set<String> _loadedPostIds = Set();
@@ -194,6 +198,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
   late SharedPreferences _prefs;
   final String _lastViewDatePrefix = 'last_view_date_';
+  static const String _kLastSessionTsKey = 'last_session_timestamp';
+  bool _sessionTimestampSaved = false;
 
 // 🔥 NOUVELLE MÉTHODE
   Future<void> _initSharedPreferences() async {
@@ -273,6 +279,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   @override
   void dispose() {
     _oldPostsLoadTimer?.cancel();
+    _scrollCooldownTimer?.cancel();
     _scrollController.dispose();
     _visibilityTimers.forEach((key, timer) => timer.cancel());
     _backgroundLoadTimer?.cancel();
@@ -468,6 +475,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   }
 
   void _startOldPostsLoading() {
+    // En mode récent : pas de vieux posts aléatoires, l'ordre chronologique strict est conservé.
+    if (widget.sortType == 'recent') return;
     _oldPostsLoadTimer?.cancel();
     // Intervalle augmenté de 15s à 22s : réduit le nombre de round trips
     // Firestore tout en restant suffisamment réactif pour réalimenter le
@@ -539,6 +548,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       printVm('🔔 [Popup] Popup déjà en cours d\'affichage → annulé');
       return;
     }
+    if (_isScrollActive) {
+      printVm('🔔 [Popup] Scroll actif → annulé');
+      return;
+    }
     if (_isUserPremium()) {
       printVm('🔔 [Popup] Utilisateur premium → pas de popup');
       return;
@@ -563,10 +576,17 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     await prefs.setString(_lastPopupDateKey!, nowStr);
     printVm('🔔 [Popup] Date enregistrée: $nowStr');
 
+    // Vérifier que le widget est toujours monté après les await (navigation possible pendant l'async)
+    if (!mounted) return;
+
     printVm('🔔 [Popup] Affichage du popup...');
-    _showSupportDialog();
+    // Différer au prochain frame pour éviter le crash "hit test on unlaid-out box"
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _showSupportDialog();
+    });
   }
   void _showSupportDialog() {
+    if (!mounted) return;
     _isSupportDialogShowing = true;
     final colors = AppColors.of(context);
     final l10n = AppLocalizations.of(context);
@@ -673,8 +693,29 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     // Optional: show a thank‑you snackbar after ad dismisses
     // We'll do that inside the widget's callback in the build method.
   }
+  // Cooldown anti-crash : empêche les actions d'overlay (dialog, navigation)
+  // pendant un scroll actif — la race condition Overlay↔hitTest est debug-only
+  // mais on la prévient en bloquant les déclencheurs.
+  bool _isScrollActive = false;
+  Timer? _scrollCooldownTimer;
+
   void _setupScrollController() {
     _scrollController.addListener(_scrollListener);
+  }
+
+  void scrollToTop() {
+    if (!_scrollController.hasClients) return;
+    _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeOut,
+    );
+  }
+
+  /// Retourne true si le scroll est actif. Utiliser comme garde avant
+  /// tout showDialog / Navigator.push déclenché depuis le feed.
+  bool _canShowOverlay() {
+    return !_isScrollActive;
   }
 
   void _setupLifecycleObservers() {
@@ -782,7 +823,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   /// cet appel et remplacera/complètera ces données.
   Future<bool> _loadFromCacheAndDisplay() async {
     try {
-      final cached = await FeedCacheService.loadFeedData(_feedCacheKey);
+      // Cache valide uniquement pour le jour en cours (minuit → minuit).
+      // Le lendemain le cache est ignoré et un chargement réseau repart.
+      final cached = await FeedCacheService.loadFeedData(_feedCacheKey, dailyCacheOnly: true);
       if (cached == null) return false;
 
       final data = cached['data'] as Map<String, dynamic>;
@@ -1023,6 +1066,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     _hasMorePosts = true;
     _isLoadingMorePosts = false;
     _isLoadingBackground = false;
+    _recentLastDoc = null;
   }
 
   // ===========================================================================
@@ -1647,7 +1691,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       int limit = _initialLimit;
       printVm("_currentFilter data: ${_currentFilter}");
 
-      switch (_currentFilter) {
+      // Mode récent : chargement direct par curseur Firestore (unit-agnostic)
+      if (widget.sortType == 'recent') {
+        await _loadInitialRecentPosts(loadedIds, newPosts, limit);
+      } else switch (_currentFilter) {
         case 'ALL':
           await _loadAllCountriesMixed(loadedIds, newPosts, limit);
           break;
@@ -1696,49 +1743,75 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           break;
       }
 
-      // ── Injecter les posts non vus des following en tête de feed ──────────────
-      final preload = FeedPreloadService.instance;
-      if (preload.isReady && preload.unseenFollowingPosts.isNotEmpty) {
-        final preloadedIds = <String>{};
-        for (final p in preload.unseenFollowingPosts) {
-          if (p.id != null && !loadedIds.contains(p.id)) {
-            preloadedIds.add(p.id!);
+      // En mode "Récent" : aucun algorithme, l'ordre created_at desc de Firestore est conservé tel quel.
+      if (widget.sortType != 'recent') {
+        // ── Injecter les posts non vus des following en tête de feed ────────────
+        final preload = FeedPreloadService.instance;
+        if (preload.isReady && preload.unseenFollowingPosts.isNotEmpty) {
+          final preloadedIds = <String>{};
+          for (final p in preload.unseenFollowingPosts) {
+            if (p.id != null && !loadedIds.contains(p.id)) {
+              preloadedIds.add(p.id!);
+            }
           }
-        }
-        final unseenToPin = preload.unseenFollowingPosts
-            .where((p) => p.id != null && preloadedIds.contains(p.id))
-            .toList();
-
-        if (unseenToPin.isNotEmpty) {
-          // Placer les non-vus en tête, dédupliquer les autres
-          final regularPosts = newPosts
-              .where((p) => p.id != null && !preloadedIds.contains(p.id))
+          final unseenToPin = preload.unseenFollowingPosts
+              .where((p) => p.id != null && preloadedIds.contains(p.id))
               .toList();
-          newPosts = [...unseenToPin, ...regularPosts];
-          loadedIds.addAll(preloadedIds);
-        }
-      }
 
-      // ── Injecter les posts "Boost Découverte" toutes les 8 posts ─────────────
-      {
-        final me = authProvider.loginUserData;
-        final followedSet = Set<String>.from(me.userAbonnesIds ?? []);
-        final userCountry = me.countryData?['countryCode']?.toString().toUpperCase();
-        final boostSvc = DiscoveryBoostService.instance;
-        final boostPosts = boostSvc
-            .getBoostPosts(
-              followedSet: followedSet,
-              currentUserId: me.id ?? '',
-              userCountry: userCountry,
-            )
-            .where((p) => p.id != null && !loadedIds.contains(p.id))
-            .toList();
-
-        if (boostPosts.isNotEmpty) {
-          newPosts = boostSvc.injectIntoFeed(newPosts, boostPosts);
-          for (final p in boostPosts) {
-            if (p.id != null) loadedIds.add(p.id!);
+          if (unseenToPin.isNotEmpty) {
+            final regularPosts = newPosts
+                .where((p) => p.id != null && !preloadedIds.contains(p.id))
+                .toList();
+            newPosts = [...unseenToPin, ...regularPosts];
+            loadedIds.addAll(preloadedIds);
           }
+        }
+
+        // ── Injecter les posts "Boost Découverte" toutes les 8 posts ───────────
+        {
+          final me = authProvider.loginUserData;
+          final followedSet = Set<String>.from(me.userAbonnesIds ?? []);
+          final userCountry = me.countryData?['countryCode']?.toString().toUpperCase();
+          final boostSvc = DiscoveryBoostService.instance;
+          final boostPosts = boostSvc
+              .getBoostPosts(
+                followedSet: followedSet,
+                currentUserId: me.id ?? '',
+                userCountry: userCountry,
+              )
+              .where((p) => p.id != null && !loadedIds.contains(p.id))
+              .toList();
+
+          if (boostPosts.isNotEmpty) {
+            newPosts = boostSvc.injectIntoFeed(newPosts, boostPosts);
+            for (final p in boostPosts) {
+              if (p.id != null) loadedIds.add(p.id!);
+            }
+          }
+        }
+
+        // ── Posts non vus en priorité (cursor de session) ──────────────────────
+        {
+          final prefs = await SharedPreferences.getInstance();
+          final lastSessionMs = prefs.getInt(_kLastSessionTsKey) ?? 0;
+          if (lastSessionMs > 0 && newPosts.isNotEmpty) {
+            final unseen = newPosts.where((p) => p.isNewForUser(lastSessionMs)).toList();
+            if (unseen.isNotEmpty && unseen.length < newPosts.length) {
+              final seen = newPosts.where((p) => !p.isNewForUser(lastSessionMs)).toList();
+              newPosts = [...unseen, ...seen];
+            }
+          }
+          if (!_sessionTimestampSaved) {
+            _sessionTimestampSaved = true;
+            prefs.setInt(_kLastSessionTsKey, DateTime.now().millisecondsSinceEpoch);
+          }
+        }
+      } else {
+        // Mode récent : on sauvegarde quand même le timestamp de session
+        final prefs = await SharedPreferences.getInstance();
+        if (!_sessionTimestampSaved) {
+          _sessionTimestampSaved = true;
+          prefs.setInt(_kLastSessionTsKey, DateTime.now().millisecondsSinceEpoch);
         }
       }
 
@@ -2038,6 +2111,14 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
   void _scrollListener() {
     if (!_scrollController.hasClients) return;
+
+    // Marquer le scroll comme actif + reset du cooldown
+    _isScrollActive = true;
+    _scrollCooldownTimer?.cancel();
+    _scrollCooldownTimer = Timer(const Duration(milliseconds: 300), () {
+      _isScrollActive = false;
+    });
+
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 1500 &&
         !_isLoadingMorePosts &&
@@ -2069,10 +2150,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           _posts.addAll(newPosts);
           _loadedPostIds.addAll(newPosts.map((p) => p.id!));
           _totalPostsLoaded += newPosts.length;
-          // Fenêtre mémoire : max 40 posts, supprimer les 8 plus anciens
-          if (_posts.length > 40) {
-            _posts.removeRange(0, 8);
-          }
         });
 
         printVm('📱 ${newPosts.length} posts chargés manuellement (total: $_totalPostsLoaded)');
@@ -2096,7 +2173,75 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     }
   }
 
+  /// Chargement initial pour le mode "Récent" — query directe Firestore avec DocumentSnapshot curseur.
+  Future<void> _loadInitialRecentPosts(Set<String> loadedIds, List<Post> newPosts, int limit) async {
+    try {
+      final snap = await _firestore
+          .collection('Posts')
+          .orderBy('created_at', descending: true)
+          .limit(limit * 4)
+          .get();
+
+      for (final doc in snap.docs) {
+        try {
+          final post = Post.fromJson(doc.data());
+          post.id = doc.id;
+          if (post.id == null || post.isAdvertisement == true) continue;
+          if (loadedIds.contains(post.id) || _loadedPostIds.contains(post.id)) continue;
+          post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
+          loadedIds.add(post.id!);
+          newPosts.add(post);
+        } catch (_) {}
+      }
+
+      // Tri client-side par createdAt normalisé (ms) pour corriger le mélange µs/ms en base
+      newPosts.sort((a, b) => (b.createdAt ?? 0).compareTo(a.createdAt ?? 0));
+      if (newPosts.length > limit) newPosts.removeRange(limit, newPosts.length);
+
+      // Sauvegarder le dernier doc Firestore comme curseur (unit-agnostic)
+      if (snap.docs.isNotEmpty) _recentLastDoc = snap.docs.last;
+    } catch (e) {
+      printVm('❌ Erreur chargement initial récent: $e');
+    }
+  }
+
+  /// Pagination curseur pour le mode "Récent" — startAfterDocument (unit-agnostic).
+  Future<void> _loadMoreRecentCursor(List<Post> newPosts, int limit) async {
+    if (_recentLastDoc == null) return;
+    try {
+      final snap = await _firestore
+          .collection('Posts')
+          .orderBy('created_at', descending: true)
+          .startAfterDocument(_recentLastDoc!)
+          .limit(limit * 3)
+          .get();
+
+      for (final doc in snap.docs) {
+        try {
+          final post = Post.fromJson(doc.data());
+          post.id = doc.id;
+          if (post.id == null || _loadedPostIds.contains(post.id) || post.isAdvertisement == true) continue;
+          post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
+          newPosts.add(post);
+        } catch (_) {}
+        _recentLastDoc = doc; // avancer le curseur sur chaque doc traité
+        if (newPosts.length >= limit) break;
+      }
+
+      // Tri client-side pour corriger le mélange µs/ms restant en base
+      newPosts.sort((a, b) => (b.createdAt ?? 0).compareTo(a.createdAt ?? 0));
+    } catch (e) {
+      printVm('❌ Erreur pagination récente (curseur): $e');
+    }
+  }
+
   Future<void> _loadMorePostsByFilter(Set<String> loadedIds, List<Post> newPosts, int limit) async {
+    // Mode récent : pagination curseur strictement chronologique
+    if (widget.sortType == 'recent') {
+      await _loadMoreRecentCursor(newPosts, limit);
+      return;
+    }
+
     switch (_currentFilter) {
       case 'ALL':
         await _loadMoreAllCountriesMixed(loadedIds, newPosts, limit);
@@ -3030,19 +3175,12 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
     contentWidgets.add(_buildChroniquesSection());
 
-    // Lun & Jeu : promo AfroShop avant les posts
-    final _weekday = DateTime.now().weekday;
-    if ((_weekday == DateTime.monday || _weekday == DateTime.thursday) &&
-        _articles.isNotEmpty) {
-      contentWidgets.add(
-        ShopPromoFeedWidget(articles: _articles, isFirstPosition: true),
-      );
-    }
-
     // Pas de posts : créateurs en haut
     if (finalPosts.isEmpty) {
       contentWidgets.add(_buildProfilesSection());
     }
+
+    final bool _showShopPromo = _articles.isNotEmpty;
 
     for (int i = 0; i < finalPosts.length; i++) {
       final post = finalPosts[i];
@@ -3064,9 +3202,17 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         contentWidgets.add(_buildProfilesSection());
       }
 
-      // Après le 2ème post : classement hebdo commentateurs (visible toute la semaine)
+      // Après le 2ème post : niveau de commentaire — toujours visible
       if (i == 1) {
+        contentWidgets.add(const CommentLevelWidget());
+      }
+
+      // Après le 3ème post : classement hebdo commentateurs + promo AfroShop (lun/jeu)
+      if (i == 2) {
         contentWidgets.add(const WeeklyTopCommentatorsWidget());
+        if (_showShopPromo) {
+          contentWidgets.add(ShopPromoFeedWidget(articles: _articles, isFirstPosition: false));
+        }
       }
 
       // Pub toutes les 4 posts — toujours affichée

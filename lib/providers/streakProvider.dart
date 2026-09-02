@@ -46,6 +46,26 @@ class StreakProvider extends ChangeNotifier {
     return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   }
 
+  /// Pré-remplit le provider depuis les données déjà chargées dans UserData
+  /// (cache local). Évite l'affichage à 0 lors de l'ouverture du modal avant
+  /// que le stream Firestore n'ait répondu.
+  void seedFromUserData({
+    required int commentStreak,
+    required int bestCommentStreak,
+    required int streakShields,
+    required int todayCommentCount,
+    String? todayCommentDate,
+  }) {
+    this.commentStreak = commentStreak;
+    bestStreak = bestCommentStreak;
+    shields = streakShields;
+    final todayStr = _todayStr();
+    todayCount = (todayCommentDate == todayStr) ? todayCommentCount : 0;
+    level = StreakService.streakLevel(this.commentStreak);
+    levelLabel = StreakService.streakLevelLabel(level);
+    notifyListeners();
+  }
+
   /// Mise à jour immédiate depuis un [StreakResult] (avant que le stream revienne).
   void updateFromResult(StreakResult result) {
     commentStreak = result.currentStreak;

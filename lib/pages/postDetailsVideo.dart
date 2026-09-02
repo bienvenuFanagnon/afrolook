@@ -1609,6 +1609,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
         _currentPost.users_love_id!.add(userId);
       }
     });
+    // Déverrouiller immédiatement — le reste s'exécute en arrière-plan
+    setState(() => _isLiking = false);
 
     if (alreadyLiked) {
       _firestore.collection('Posts').doc(_currentPost.id).update({
@@ -1620,8 +1622,6 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
           _currentPost.loves = ((_currentPost.loves ?? 0) + 1);
           _currentPost.users_love_id?.add(userId);
         });
-      }).whenComplete(() {
-        if (mounted) setState(() => _isLiking = false);
       });
     } else {
       _processLikeBackground(userId, alreadyLiked);
@@ -1680,8 +1680,6 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       }
     }).catchError((e) {
       printVm("❌ Erreur like background: $e");
-    }).whenComplete(() {
-      if (mounted) setState(() => _isLiking = false);
     });
   }
   void _showInsufficientCoinsForLikeDialog() {
@@ -1965,31 +1963,34 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
   }
 
   void _showPostMenu() {
+    final colors = AppColors.of(context);
     showResponsiveBottomSheet(
       context: context,
-      backgroundColor: AppColors.of(context).surface,
+      backgroundColor: colors.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-      builder: (context) => Container(
-        padding: EdgeInsets.all(16),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          if (_currentPost.user_id != authProvider.loginUserData.id)
-            _buildMenuOption(Icons.flag, 'Signaler', Colors.white, () async {
-              _currentPost.status = PostStatus.SIGNALER.name;
-              await postProvider.updateVuePost(_currentPost, context);
-              Navigator.pop(context);
-            }),
-          if (_currentPost.user_id == authProvider.loginUserData.id || authProvider.loginUserData.role == UserRole.ADM.name)
-            _buildMenuOption(Icons.delete, 'Supprimer', Colors.red, () async {
-              await _firestore.collection('Posts').doc(_currentPost.id).delete();
-              Navigator.pop(context);
-              Navigator.pop(context);
-            }),
-          SizedBox(height: 8),
-          Container(height: 0.5, color: Colors.grey),
-          SizedBox(height: 8),
-          _buildMenuOption(Icons.cancel, 'Annuler', Colors.grey, () => Navigator.pop(context)),
-        ]),
-      ),
+      builder: (context) {
+        final sheetColors = AppColors.of(context);
+        return Container(
+          padding: EdgeInsets.all(16),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            if (_currentPost.user_id != authProvider.loginUserData.id)
+              _buildMenuOption(Icons.flag, 'Signaler', sheetColors.textPrimary, () async {
+                _currentPost.status = PostStatus.SIGNALER.name;
+                await postProvider.updateVuePost(_currentPost, context);
+                Navigator.pop(context);
+              }),
+            if (_currentPost.user_id == authProvider.loginUserData.id || authProvider.loginUserData.role == UserRole.ADM.name)
+              _buildMenuOption(Icons.delete, 'Supprimer', Colors.red, () {
+                Navigator.pop(context);
+                _confirmAndDeletePost();
+              }),
+            SizedBox(height: 8),
+            Container(height: 0.5, color: sheetColors.border),
+            SizedBox(height: 8),
+            _buildMenuOption(Icons.cancel, 'Annuler', sheetColors.textSecondary, () => Navigator.pop(context)),
+          ]),
+        );
+      },
     );
   }
 
@@ -2090,26 +2091,38 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     final canal = _currentPost.canal ?? _currentCanal;
     final user = _currentPost.user ?? _currentUser;
     final isLocked = _isLockedContent();
-    return GestureDetector(
-      onTap: () {
-        if (canal != null) Navigator.push(context, MaterialPageRoute(builder: (context) => CanalDetails(canal: canal)));
-        else if (user != null) showUserDetailsModalDialog(user, MediaQuery.of(context).size.width, MediaQuery.of(context).size.height, context);
-      },
-      child: Row(
-        children: [
-          CircleAvatar(radius: 25, backgroundImage: NetworkImage(canal?.urlImage ?? user?.imageUrl ?? ''), backgroundColor: AppColors.of(context).surface),
-          SizedBox(width: 12),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              Text(canal != null ? '#${canal.titre}' : '@${user?.pseudo ?? ''}', style: TextStyle(color: AppColors.of(context).textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
-              if (user != null) UserBadgeWidget(user: user, size: 15),
-              if (isLocked) Icon(Icons.lock, color: _afroYellow, size: 16),
+    final colors = AppColors.of(context);
+    return Row(
+      children: [
+        GestureDetector(
+          onTap: () {
+            if (canal != null) Navigator.push(context, MaterialPageRoute(builder: (context) => CanalDetails(canal: canal)));
+            else if (user != null) showUserDetailsModalDialog(user, MediaQuery.of(context).size.width, MediaQuery.of(context).size.height, context);
+          },
+          child: CircleAvatar(radius: 25, backgroundImage: NetworkImage(canal?.urlImage ?? user?.imageUrl ?? ''), backgroundColor: colors.surface),
+        ),
+        SizedBox(width: 12),
+        Expanded(
+          child: GestureDetector(
+            onTap: () {
+              if (canal != null) Navigator.push(context, MaterialPageRoute(builder: (context) => CanalDetails(canal: canal)));
+              else if (user != null) showUserDetailsModalDialog(user, MediaQuery.of(context).size.width, MediaQuery.of(context).size.height, context);
+            },
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Text(canal != null ? '#${canal.titre}' : '@${user?.pseudo ?? ''}', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
+                if (user != null) UserBadgeWidget(user: user, size: 15),
+                if (isLocked) Icon(Icons.lock, color: _afroYellow, size: 16),
+              ]),
+              Text(canal != null ? '${canal?.usersSuiviId?.length ?? 0} abonnés' : '${user?.userAbonnesIds?.length ?? 0} abonnés', style: TextStyle(color: Colors.grey)),
             ]),
-            Text(canal != null ? '${canal?.usersSuiviId?.length ?? 0} abonnés' : '${user?.userAbonnesIds?.length ?? 0} abonnés', style: TextStyle(color: Colors.grey)),
-          ])),
-          IconButton(icon: Icon(Icons.more_vert, color: Colors.white), onPressed: _showPostMenu),
-        ],
-      ),
+          ),
+        ),
+        IconButton(
+          icon: Icon(Icons.more_vert, color: colors.textPrimary),
+          onPressed: _showPostMenu,
+        ),
+      ],
     );
   }
 
@@ -2188,6 +2201,93 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     } catch (_) {}
   }
 
+  Future<void> _confirmAndDeletePost() async {
+    if (!mounted) return;
+    final colors = AppColors.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: colors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(children: [
+          Icon(Icons.delete_forever_rounded, color: colors.danger, size: 24),
+          const SizedBox(width: 10),
+          Text('Supprimer la vidéo', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
+        ]),
+        content: Text(
+          'Cette vidéo sera supprimée définitivement. Cette action est irréversible.',
+          style: TextStyle(color: colors.textSecondary, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Annuler', style: TextStyle(color: colors.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colors.danger,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Supprimer', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Center(child: CircularProgressIndicator(color: colors.primary)),
+    );
+
+    try {
+      await _firestore.collection('Posts').doc(_currentPost.id).delete();
+      if (!mounted) return;
+      Navigator.pop(context); // loader
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: const Row(children: [
+          Icon(Icons.check_circle, color: Colors.white),
+          SizedBox(width: 10),
+          Text('Vidéo supprimée avec succès'),
+        ]),
+        backgroundColor: Colors.green.shade700,
+        duration: const Duration(seconds: 3),
+      ));
+      Navigator.pop(context); // retour page précédente
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context); // loader
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: const Row(children: [
+          Icon(Icons.error_outline, color: Colors.white),
+          SizedBox(width: 10),
+          Text('Échec de la suppression. Réessaie.'),
+        ]),
+        backgroundColor: colors.danger,
+        duration: const Duration(seconds: 4),
+      ));
+    }
+  }
+
+  void _autoLikeIfNeeded(String userId) {
+    final postId = _currentPost.id;
+    if (postId == null) return;
+    final alreadyLiked = _currentPost.users_love_id?.contains(userId) ?? false;
+    if (alreadyLiked) return;
+    FirebaseFirestore.instance.collection('Posts').doc(postId).update({
+      'loves': FieldValue.increment(1),
+      'users_love_id': FieldValue.arrayUnion([userId]),
+    }).catchError((_) {});
+    if (mounted) setState(() {
+      _currentPost.users_love_id ??= [];
+      _currentPost.users_love_id!.add(userId);
+      _currentPost.loves = (_currentPost.loves ?? 0) + 1;
+    });
+  }
+
   Future<void> _sendQuickComment(String text) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty || _isSendingQuickComment) return;
@@ -2245,6 +2345,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
           postImageUrl: _currentPost.thumbnail ?? _currentPost.user?.imageUrl ?? '',
           postDataType: _currentPost.dataType,
         );
+        _autoLikeIfNeeded(userId);
         FeedInteractionService.onPostCommented(_currentPost, userId);
 
         if (_currentPost.user != null && _currentPost.user!.id != userId) {

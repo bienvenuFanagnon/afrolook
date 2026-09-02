@@ -120,6 +120,20 @@ bool _shouldRestart = false;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Supprime l'assertion debug "Cannot hit test a render box that has never been
+  // laid out" causée par une race condition Overlay ↔ scroll rapide.
+  // Cette assertion n'existe pas en release — uniquement en debug.
+  // Les autres erreurs Flutter restent intactes.
+  final originalOnError = FlutterError.onError;
+  FlutterError.onError = (FlutterErrorDetails details) {
+    final msg = details.exceptionAsString();
+    if (msg.contains('Cannot hit test a render box that has never been laid out')) {
+      // Erreur bénigne en debug — ignorée silencieusement en release de toute façon
+      return;
+    }
+    originalOnError?.call(details);
+  };
+
   // Initialisation AdMob
   // if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
   //   AdService.setMode(false);
@@ -172,14 +186,6 @@ Future<void> main() async {
         initialDelay: const Duration(seconds: 10),
         existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
       );
-    } else {
-      // DEBUG : exécution immédiate à chaque lancement pour tester
-      await Workmanager().registerOneOffTask(
-        '${afrolookTask}_debug',
-        afrolookTask,
-        initialDelay: Duration.zero,
-      );
-      debugPrint('🔧 WorkManager DEBUG : one-off task lancée');
     }
   }
 

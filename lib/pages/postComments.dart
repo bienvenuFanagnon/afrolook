@@ -98,6 +98,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     }
     _loadUsers();
     _loadInitialComments();
+    _ensureCanalLoaded();
     _textController.addListener(_onTextChanged);
 
     if (widget.initialText != null && widget.initialText!.isNotEmpty) {
@@ -174,6 +175,16 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
       _textController.selection = TextSelection.fromPosition(TextPosition(offset: newText.length));
     }
     setState(() => showUserSuggestions = false);
+  }
+
+  void _ensureCanalLoaded() {
+    final canalId = widget.post.canal_id;
+    if (canalId == null || canalId.isEmpty || widget.post.canal != null) return;
+    FirebaseFirestore.instance.collection('Canaux').doc(canalId).get().then((doc) {
+      if (doc.exists && mounted) {
+        setState(() => widget.post.canal = Canal.fromJson(doc.data()!));
+      }
+    }).catchError((_) {});
   }
 
   Future<void> _loadUsers() async {
@@ -654,7 +665,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
       children: [
         GestureDetector(
           onTap: () {
-            if (pcm.user != null) {
+            if (pcm.canal_name == null && pcm.user != null) {
               showUserDetailsModalDialog(
                 pcm.user!,
                 MediaQuery.of(context).size.width,
@@ -666,10 +677,16 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
           child: CircleAvatar(
             radius: 18,
             backgroundColor: _colors.surfaceVariant,
-            backgroundImage: (pcm.user?.imageUrl != null && pcm.user!.imageUrl!.isNotEmpty)
-                ? NetworkImage(pcm.user!.imageUrl!)
-                : null,
-            child: (pcm.user?.imageUrl == null || pcm.user!.imageUrl!.isEmpty)
+            backgroundImage: pcm.canal_name != null
+                ? (pcm.canal_image != null && pcm.canal_image!.isNotEmpty
+                    ? NetworkImage(pcm.canal_image!)
+                    : null)
+                : (pcm.user?.imageUrl != null && pcm.user!.imageUrl!.isNotEmpty
+                    ? NetworkImage(pcm.user!.imageUrl!)
+                    : null),
+            child: (pcm.canal_name != null
+                    ? (pcm.canal_image == null || pcm.canal_image!.isEmpty)
+                    : (pcm.user?.imageUrl == null || pcm.user!.imageUrl!.isEmpty))
                 ? Icon(Icons.person, size: 16, color: _colors.textSecondary)
                 : null,
           ),
@@ -681,12 +698,18 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
             children: [
               Row(
                 children: [
-                  Text(
-                    "@${pcm.user?.pseudo ?? '...'}",
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: _colors.textPrimary),
+                  Flexible(
+                    child: Text(
+                      pcm.canal_name != null
+                          ? "#${pcm.canal_name}"
+                          : "@${pcm.user?.pseudo ?? '...'}",
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: _colors.textPrimary),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                   const SizedBox(width: 4),
-                  UserBadgeWidget(user: pcm.user, size: 14),
+                  if (pcm.canal_name == null) UserBadgeWidget(user: pcm.user, size: 14),
                   const Spacer(),
                   Text(
                     formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(pcm.createdAt!)),
@@ -1254,6 +1277,8 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
       bool success = false;
       String receiverId = '';
       String action = '';
+      String? _canalName;
+      String? _canalImage;
 
       if (replying) {
         final response = ResponsePostComment(
@@ -1278,6 +1303,20 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
           _updateCommentLocally(commentSelectedToReply);
         }
       } else {
+        // Identité canal : si le post appartient à un canal et que l'utilisateur
+        // en est owner ou admin, le commentaire s'affiche au nom du canal.
+        final userId = authProvider.loginUserData.id;
+        final canal = widget.post.canal;
+        final canalId = widget.post.canal_id;
+        if (canalId != null && canalId.isNotEmpty && canal != null) {
+          final isOwner = canal.userId == userId;
+          final isAdmin = canal.adminIds?.contains(userId) == true;
+          if (isOwner || isAdmin) {
+            _canalName = canal.titre;
+            _canalImage = canal.urlImage;
+          }
+        }
+
         final comment = PostComment(
           id: FirebaseFirestore.instance.collection('PostComments').doc().id,
           user_id: authProvider.loginUserData.id,
@@ -1291,10 +1330,15 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
           comments: 0,
           createdAt: DateTime.now().microsecondsSinceEpoch,
           updatedAt: DateTime.now().microsecondsSinceEpoch,
+          canal_id: _canalName != null ? canalId : null,
+          canal_name: _canalName,
+          canal_image: _canalImage,
         );
         success = await postProvider.newComment(comment);
         if (widget.post.user != null) receiverId = widget.post.user!.id!;
-        action = "commente votre publication";
+        action = _canalName != null
+            ? "Le canal #$_canalName a commenté votre publication"
+            : "commente votre publication";
         if (success) {
           _addCommentLocally(comment);
           widget.post.comments = (widget.post.comments ?? 0) + 1;
@@ -1336,7 +1380,11 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
         FeedInteractionService.onPostCommented(widget.post, authProvider.loginUserData.id!);
 
         if (widget.post.user != null) {
-          await _sendCommentNotification(receiverId, action, textComment);
+          await _sendCommentNotification(
+            receiverId, action, textComment,
+            displayName: _canalName != null ? '#$_canalName' : null,
+            displayImage: _canalImage,
+          );
         }
         await _sendMentionNotifications(textComment);
         authProvider.checkAndRefreshPostDates(widget.post.id!);
@@ -1387,13 +1435,21 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     });
   }
 
-  Future<void> _sendCommentNotification(String receiverId, String action, String message) async {
+  Future<void> _sendCommentNotification(
+    String receiverId,
+    String action,
+    String message, {
+    String? displayName,
+    String? displayImage,
+  }) async {
     try {
-      final msg = "@${authProvider.loginUserData.pseudo!} a $action";
+      final name = displayName ?? "@${authProvider.loginUserData.pseudo!}";
+      final image = displayImage ?? authProvider.loginUserData.imageUrl ?? '';
+      final msg = displayName != null ? action : "$name a $action";
       final notif = NotificationData(
         id: firestore.collection('Notifications').doc().id,
         titre: "Nouvelle interaction",
-        media_url: authProvider.loginUserData.imageUrl,
+        media_url: image,
         type: NotificationType.POST.name,
         description: msg,
         user_id: authProvider.loginUserData.id,
@@ -1410,7 +1466,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
       if (receiverUser.isNotEmpty && receiverUser.first.oneIgnalUserid != null) {
         await authProvider.sendNotification(
           userIds: [receiverUser.first.oneIgnalUserid!],
-          smallImage: authProvider.loginUserData.imageUrl!,
+          smallImage: image,
           send_user_id: authProvider.loginUserData.id!,
           recever_user_id: receiverId,
           message: msg,

@@ -91,6 +91,7 @@ import '../../providers/chroniqueProvider.dart';
 import '../../providers/sound_provider.dart';
 import '../canaux/detailsCanal.dart';
 import '../chat/group/group_info_page.dart';
+import '../chat/group/group_chat_page.dart';
 import '../component/showUserDetails.dart';
 import '../postComments.dart';
 import '../user/otherUser/otherUser.dart';
@@ -987,7 +988,11 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
         case 'group':
           if (!context.mounted) return;
           Navigator.push(context, MaterialPageRoute(
-            builder: (_) => GroupInfoPage(groupId: id, groupName: ad.ownerName ?? 'Groupe'),
+            builder: (_) => GroupChatPage(
+              groupId: id,
+              groupName: ad.ownerName ?? 'Groupe',
+              groupImageUrl: ad.ownerAvatar ?? '',
+            ),
           ));
           break;
         default:

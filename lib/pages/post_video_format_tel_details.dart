@@ -135,6 +135,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   late SharedPreferences _prefs;
+  static const String _kLastSessionTsKey = 'last_session_timestamp';
+  bool _sessionTimestampSaved = false;
   int _itemsSinceLastLoad = 0;
   // Feed mixte : contient Post, Map<String,dynamic> (pub), ou _ShopPromoSentinel
   List<dynamic> _feedItems = [];
@@ -1787,6 +1789,23 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
       }
 
       if (newPosts.isNotEmpty) {
+        // ── Posts non vus en priorité au premier chargement ─────────────────
+        if (isInitial) {
+          final prefs = await SharedPreferences.getInstance();
+          final lastSessionMs = prefs.getInt(_kLastSessionTsKey) ?? 0;
+          if (lastSessionMs > 0) {
+            final unseen = newPosts.where((p) => p.isNewForUser(lastSessionMs)).toList();
+            if (unseen.isNotEmpty && unseen.length < newPosts.length) {
+              final seen = newPosts.where((p) => !p.isNewForUser(lastSessionMs)).toList();
+              newPosts = [...unseen, ...seen];
+            }
+          }
+          if (!_sessionTimestampSaved) {
+            _sessionTimestampSaved = true;
+            prefs.setInt(_kLastSessionTsKey, DateTime.now().millisecondsSinceEpoch);
+          }
+        }
+
         for (var post in newPosts) {
           if (post.id != null) {
             _loadedPostIds.add(post.id!);
@@ -2755,9 +2774,10 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
               ListTile(
                 leading: Icon(Icons.delete, color: colors.danger),
                 title: Text('Supprimer', style: TextStyle(color: colors.danger)),
-                onTap: () async {
+                onTap: () {
                   Navigator.pop(context);
-                  await _deletePost(post, context);
+                  // Utilise le contexte de la page, pas celui du sheet (déjà fermé)
+                  _confirmAndDeletePost(post);
                 },
               ).animate().fadeIn(duration: 200.ms, delay: 80.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
 
@@ -2791,13 +2811,79 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
       ),
     );
   }
-  Future<void> _deletePost(Post post, BuildContext context) async {
+  Future<void> _confirmAndDeletePost(Post post) async {
+    if (!mounted) return;
+    final colors = AppColors.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: colors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(children: [
+          Icon(Icons.delete_forever_rounded, color: colors.danger, size: 24),
+          const SizedBox(width: 10),
+          Text('Supprimer la vidéo', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
+        ]),
+        content: Text(
+          'Cette vidéo sera supprimée définitivement. Cette action est irréversible.',
+          style: TextStyle(color: colors.textSecondary, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Annuler', style: TextStyle(color: colors.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colors.danger,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Supprimer', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    // Indicateur de chargement
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Center(child: CircularProgressIndicator(color: colors.primary)),
+    );
+
     try {
       await _firestore.collection('Posts').doc(post.id).delete();
       await _firestore.collection('AppData').doc(appId).update({'allPostIds': FieldValue.arrayRemove([post.id])});
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Post supprimé')));
-      if (_videoPosts.length == 1) Navigator.pop(context);
-    } catch (e) { printVm('Erreur suppression: $e'); }
+      if (!mounted) return;
+      Navigator.pop(context); // ferme le loader
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: const Row(children: [
+          Icon(Icons.check_circle, color: Colors.white),
+          SizedBox(width: 10),
+          Text('Vidéo supprimée avec succès'),
+        ]),
+        backgroundColor: Colors.green.shade700,
+        duration: const Duration(seconds: 3),
+      ));
+      if (_videoPosts.length <= 1) Navigator.pop(context);
+    } catch (e) {
+      printVm('Erreur suppression: $e');
+      if (!mounted) return;
+      Navigator.pop(context); // ferme le loader
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: const Row(children: [
+          Icon(Icons.error_outline, color: Colors.white),
+          SizedBox(width: 10),
+          Text('Échec de la suppression. Réessaie.'),
+        ]),
+        backgroundColor: colors.danger,
+        duration: const Duration(seconds: 4),
+      ));
+    }
   }
 
   // ==================== CHALLENGE & VOTE ====================
@@ -3253,6 +3339,22 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
     } catch (_) {}
   }
 
+  void _autoLikeIfNeeded(String userId, Post post) {
+    final postId = post.id;
+    if (postId == null) return;
+    final alreadyLiked = _likedPosts[postId] ?? (post.users_love_id?.contains(userId) ?? false);
+    if (alreadyLiked) return;
+    FirebaseFirestore.instance.collection('Posts').doc(postId).update({
+      'loves': FieldValue.increment(1),
+      'users_love_id': FieldValue.arrayUnion([userId]),
+    }).catchError((_) {});
+    if (mounted) setState(() {
+      _likedPosts[postId] = true;
+      post.users_love_id = [...?post.users_love_id, userId];
+      post.loves = (post.loves ?? 0) + 1;
+    });
+  }
+
   Future<void> _sendQuickComment(String text, Post post) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty || _isSendingQuickComment) return;
@@ -3299,6 +3401,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
           postImageUrl: post.thumbnail ?? post.user?.imageUrl ?? '',
           postDataType: post.dataType,
         );
+        _autoLikeIfNeeded(userId, post);
         FeedInteractionService.onPostCommented(post, userId);
         try {
           final result = await StreakService.onCommentSent(

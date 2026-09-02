@@ -11,6 +11,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:http/http.dart' as http;
@@ -46,7 +47,7 @@ class UserAuthProvider extends ChangeNotifier {
   String _kLastDatingWidgetShown = "last_dating_widget_shown";
 
   // late String? userId = "";
-  late int app_version_code = 218;
+  late int app_version_code = 223;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();
@@ -2927,8 +2928,15 @@ if(actionType == 'comment'){
     }
     await Future.value().then((_) async {
       printVm("code app data *** : ${appDefaultData.app_version_code}");
+      // En mode debug, on ignore la vérification de version pour ne pas bloquer le dev
+      if (kDebugMode) {
+        onSuccess();
+        return;
+      }
       if (!appDefaultData.googleVerification!) {
-        if (app_version_code == appDefaultData.app_version_code) {
+        // Mise à jour requise uniquement si la version en ligne est SUPÉRIEURE à celle de l'utilisateur
+        final onlineVersion = appDefaultData.app_version_code ?? app_version_code;
+        if (app_version_code >= onlineVersion) {
           onSuccess();
         } else {
 

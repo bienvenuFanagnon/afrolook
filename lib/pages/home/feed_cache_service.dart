@@ -48,14 +48,17 @@ class FeedCacheService {
   /// Retourne `null` si :
   /// - aucune entrée n'existe pour [cacheKey],
   /// - la valeur stockée est invalide,
-  /// - [maxAge] est fourni ET les données sont plus anciennes que [maxAge].
+  /// - [maxAge] est fourni ET les données sont plus anciennes que [maxAge],
+  /// - [dailyCacheOnly] est `true` ET le cache date d'un autre jour calendaire.
   ///
-  /// Si [maxAge] est `null`, retourne les données quelle que soit leur âge
-  /// (c'est à l'appelant de décider s'il faut rafraîchir).
-  ///
-  /// La map retournée contient toujours `data` (le payload) et `cachedAt`
-  /// (DateTime de mise en cache).
-  static Future<Map<String, dynamic>?> loadFeedData(String cacheKey, {Duration? maxAge}) async {
+  /// [dailyCacheOnly] : si `true`, le cache n'est valide que pour le jour
+  /// courant (minuit → minuit). Un cache enregistré la veille ou avant est
+  /// automatiquement ignoré, forçant un rechargement réseau.
+  static Future<Map<String, dynamic>?> loadFeedData(
+    String cacheKey, {
+    Duration? maxAge,
+    bool dailyCacheOnly = false,
+  }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString(cacheKey);
@@ -73,9 +76,23 @@ class FeedCacheService {
         cachedAt = DateTime.tryParse(cachedAtStr);
       }
 
+      // Expiration par durée fixe
       if (maxAge != null && cachedAt != null) {
         final age = DateTime.now().difference(cachedAt);
         if (age > maxAge) return null;
+      }
+
+      // Expiration journalière : cache valide seulement si même jour calendaire
+      if (dailyCacheOnly && cachedAt != null) {
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+        final cacheDay = DateTime(cachedAt.year, cachedAt.month, cachedAt.day);
+        if (cacheDay != today) {
+          printVm('🗑️ FeedCacheService: cache expiré (jour différent) — $cacheKey');
+          // Supprimer le cache périmé proprement
+          try { await prefs.remove(cacheKey); } catch (_) {}
+          return null;
+        }
       }
 
       return {
