@@ -1692,14 +1692,19 @@ class Post {
 
   }
 
-  /// Convertit un champ potentiellement Timestamp Firestore en int (ms) pour JSON.
-  /// Normalise les microsecondes (16 chiffres) en millisecondes (13 chiffres).
+  /// Normalise un champ timestamp Firestore en **microsecondes** (unité attendue
+  /// par tout le code d'affichage via fromMicrosecondsSinceEpoch).
+  /// Détecte l'unité par le nombre de chiffres :
+  ///   ≤ 10 chiffres → secondes      → × 1 000 000
+  ///   13 chiffres   → millisecondes → × 1 000
+  ///   16 chiffres   → microsecondes → tel quel
   static int? _tsToMs(dynamic v) {
     if (v == null) return null;
-    if (v is Timestamp) return v.millisecondsSinceEpoch;
+    if (v is Timestamp) return v.microsecondsSinceEpoch;
     if (v is int) {
-      // Les timestamps ms de 2020-2030 ont 13 chiffres ; µs en ont 16
-      return v > 9999999999999 ? v ~/ 1000 : v;
+      if (v > 9999999999999) return v;              // déjà µs
+      if (v < 10000000000)   return v * 1000000;   // s  → µs
+      return v * 1000;                              // ms → µs
     }
     return null;
   }

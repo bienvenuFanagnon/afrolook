@@ -3989,8 +3989,8 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           'users_republier_id':
               FieldValue.arrayUnion([authProvider.loginUserData.id]),
           'popularity': FieldValue.increment(4),
-          'created_at': DateTime.now().millisecondsSinceEpoch,
-          'updated_at': DateTime.now().millisecondsSinceEpoch,
+          'created_at': DateTime.now().microsecondsSinceEpoch,
+          'updated_at': DateTime.now().microsecondsSinceEpoch,
         });
 
         await _createTransaction(
