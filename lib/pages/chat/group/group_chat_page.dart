@@ -95,12 +95,12 @@ class _GroupChatPageState extends State<GroupChatPage> {
   // ── Permissions calculées ─────────────────────────────────────────────────
   bool get _isAdminOrOwner => _myRole == 'owner' || _myRole == 'admin';
 
-  // Identité expéditeur : owner/admin → profil du groupe, sinon profil personnel
+  // Identité expéditeur : owner/admin → profil du groupe, jamais le profil personnel
   String get _senderPseudo => _isAdminOrOwner
-      ? (_groupData['name'] as String? ?? widget.groupName ?? _auth.loginUserData.pseudo ?? '')
+      ? (_groupData['name'] as String? ?? widget.groupName ?? '')
       : (_auth.loginUserData.pseudo ?? '');
   String get _senderImage => _isAdminOrOwner
-      ? (_groupData['image_url'] as String? ?? widget.groupImageUrl ?? _auth.loginUserData.imageUrl ?? '')
+      ? (_groupData['image_url'] as String? ?? widget.groupImageUrl ?? '')
       : (_auth.loginUserData.imageUrl ?? '');
 
   // ADM de l'app : tous les droits sans restriction (même groupe bloqué/gelé)
@@ -2717,8 +2717,16 @@ class _GroupChatPageState extends State<GroupChatPage> {
 
     final text = isDeleted ? 'Message supprime' : (msg['message'] as String? ?? '');
     final type = isDeleted ? 'text' : (msg['message_type'] as String? ?? 'text');
-    final pseudo = msg['sender_pseudo'] as String? ?? '';
-    final senderImage = msg['sender_image'] as String? ?? '';
+    final senderId = msg['send_by'] as String? ?? '';
+    final ownerId = _groupData['owner_id'] as String? ?? '';
+    final groupImage = _groupData['image_url'] as String? ?? '';
+    final groupName = _groupData['name'] as String? ?? '';
+    // Pour les messages de l'owner/admin : toujours afficher l'identité du groupe
+    final isGroupIdentityMsg = senderId == ownerId && ownerId.isNotEmpty;
+    final rawPseudo = msg['sender_pseudo'] as String? ?? '';
+    final rawSenderImage = msg['sender_image'] as String? ?? '';
+    final pseudo = isGroupIdentityMsg ? (groupName.isNotEmpty ? groupName : rawPseudo) : rawPseudo;
+    final senderImage = isGroupIdentityMsg ? groupImage : rawSenderImage;
     final ts = msg['create_at_time_spam'] as int? ?? 0;
     final timeStr = _formatTime(ts);
     final isRestricted = !isDeleted && GroupPermissionUtils.isMessageRestricted(msg);

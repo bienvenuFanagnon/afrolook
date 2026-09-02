@@ -242,6 +242,12 @@ class _PostShareSheetState extends State<PostShareSheet>
       }
     }
 
+    // Charger le rôle pour déterminer l'identité d'envoi
+    final memberDoc2 = await FirebaseFirestore.instance
+        .collection('GroupChats').doc(groupId).collection('members').doc(myId).get();
+    final senderRole = memberDoc2.data()?['role'] as String? ?? 'member';
+    final isOwnerOrAdmin = senderRole == 'owner' || senderRole == 'admin';
+
     setState(() => _sendingId = groupId);
     var sent = false;
     try {
@@ -249,6 +255,8 @@ class _PostShareSheetState extends State<PostShareSheet>
       final post = widget.post;
       final thumbnail = _getThumbnail(post);
       final now = DateTime.now().millisecondsSinceEpoch;
+      final senderPseudo = isOwnerOrAdmin ? groupName : (me.pseudo ?? '');
+      final senderImage = isOwnerOrAdmin ? (groupImage ?? '') : (me.imageUrl ?? '');
 
       final msgId =
           FirebaseFirestore.instance.collection('GroupMessages').doc().id;
@@ -259,8 +267,8 @@ class _PostShareSheetState extends State<PostShareSheet>
         'id': msgId,
         'group_id': groupId,
         'send_by': me.id,
-        'sender_pseudo': me.pseudo ?? '',
-        'sender_image': me.imageUrl ?? '',
+        'sender_pseudo': senderPseudo,
+        'sender_image': senderImage,
         'message': post.description ?? '',
         'message_type': 'post',
         'post_id': post.id,

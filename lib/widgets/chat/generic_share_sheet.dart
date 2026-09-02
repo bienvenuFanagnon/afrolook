@@ -202,10 +202,18 @@ class _GenericShareSheetState extends State<GenericShareSheet>
       }
     }
 
+    // Charger le rôle pour l'identité d'envoi (owner/admin → groupe, sinon personnel)
+    final memberDoc2 = await FirebaseFirestore.instance
+        .collection('GroupChats').doc(groupId).collection('members').doc(myId).get();
+    final senderRole = memberDoc2.data()?['role'] as String? ?? 'member';
+    final isOwnerOrAdmin = senderRole == 'owner' || senderRole == 'admin';
+
     setState(() => _sendingId = groupId);
     var sent = false;
     try {
       final me = _auth.loginUserData;
+      final senderPseudo = isOwnerOrAdmin ? groupName : (me.pseudo ?? '');
+      final senderImage = isOwnerOrAdmin ? (groupImage ?? '') : (me.imageUrl ?? '');
       final now = DateTime.now().millisecondsSinceEpoch;
       final msgId = FirebaseFirestore.instance.collection('GroupMessages').doc().id;
 
@@ -213,8 +221,8 @@ class _GenericShareSheetState extends State<GenericShareSheet>
         'id': msgId,
         'group_id': groupId,
         'send_by': me.id,
-        'sender_pseudo': me.pseudo ?? '',
-        'sender_image': me.imageUrl ?? '',
+        'sender_pseudo': senderPseudo,
+        'sender_image': senderImage,
         'message': widget.title,
         'message_type': 'link_share',
         'item_id': widget.itemId,
