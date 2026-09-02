@@ -3660,14 +3660,6 @@ class PostProvider extends ChangeNotifier {
           .doc(cmtId)
           .set(comment.toJson());
 
-      // Incrémenter le compteur de commentaires sur le post
-      if (comment.post_id != null && comment.post_id!.isNotEmpty) {
-        await FirebaseFirestore.instance
-            .collection('Posts')
-            .doc(comment.post_id)
-            .update({'comments': FieldValue.increment(1)});
-      }
-
       notifyListeners();
       return true;
     }catch(e){

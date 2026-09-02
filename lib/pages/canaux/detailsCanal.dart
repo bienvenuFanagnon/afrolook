@@ -296,6 +296,109 @@ class _CanalDetailsState extends State<CanalDetails> {
     }
   }
 
+  Future<void> _fillSubscribersWithActiveUsers() async {
+    // Saisie du nombre d'abonnés à ajouter
+    final controller = TextEditingController();
+    final count = await showDialog<int>(
+      context: context,
+      builder: (ctx) {
+        final colors = AppColors.of(ctx);
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: colors.surface,
+          title: Row(children: [
+            Icon(Icons.group_add, color: colors.primary, size: 22),
+            const SizedBox(width: 8),
+            Text('Remplir les abonnés', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: colors.textPrimary)),
+          ]),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Nombre d\'utilisateurs actifs à ajouter comme abonnés :',
+                style: TextStyle(color: colors.textSecondary, fontSize: 14),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                keyboardType: TextInputType.number,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'Ex : 50',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
+            ElevatedButton(
+              onPressed: () {
+                final n = int.tryParse(controller.text.trim());
+                if (n != null && n > 0) Navigator.pop(ctx, n);
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: colors.primary, foregroundColor: colors.onPrimary),
+              child: const Text('Ajouter'),
+            ),
+          ],
+        );
+      },
+    );
+    controller.dispose();
+    if (count == null || !mounted) return;
+
+    // Récupérer les N utilisateurs les plus actifs (triés par nombre d'abonnés)
+    try {
+      final existing = Set<String>.from(widget.canal.usersSuiviId ?? []);
+      existing.add(authProvider.loginUserData.id ?? ''); // exclure le propriétaire lui-même
+
+      final snap = await firestore
+          .collection('Users')
+          .orderBy('abonnes', descending: true)
+          .limit(count + existing.length)
+          .get();
+
+      final toAdd = <String>[];
+      for (final doc in snap.docs) {
+        if (toAdd.length >= count) break;
+        if (!existing.contains(doc.id)) toAdd.add(doc.id);
+      }
+
+      if (toAdd.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Aucun nouvel utilisateur actif à ajouter.')),
+          );
+        }
+        return;
+      }
+
+      await firestore.collection('Canaux').doc(widget.canal.id).update({
+        'usersSuiviId': FieldValue.arrayUnion(toAdd),
+        'suivi': FieldValue.increment(toAdd.length),
+      });
+
+      if (mounted) {
+        setState(() {
+          widget.canal.usersSuiviId ??= [];
+          widget.canal.usersSuiviId!.addAll(toAdd);
+          widget.canal.suivi = (widget.canal.suivi ?? 0) + toAdd.length;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${toAdd.length} abonné(s) ajouté(s) avec succès ✅')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur : $e')),
+        );
+      }
+    }
+  }
+
   Future<void> _deleteCanal() async {
     final myId = authProvider.loginUserData.id!;
     final isAppAdmin = authProvider.loginUserData.role == 'ADM' || authProvider.loginUserData.role == 'admin';
@@ -1054,6 +1157,9 @@ class _CanalDetailsState extends State<CanalDetails> {
                         case 'booster':
                           Navigator.push(context, MaterialPageRoute(builder: (_) => UserProfileBoostPage(canal: widget.canal)));
                           break;
+                        case 'remplir_abonnes':
+                          _fillSubscribersWithActiveUsers();
+                          break;
                         case 'supprimer':
                           _deleteCanal();
                           break;
@@ -1082,6 +1188,14 @@ class _CanalDetailsState extends State<CanalDetails> {
                           const Icon(Icons.rocket_launch_outlined, size: 18, color: Color(0xFFFFD700)),
                           const SizedBox(width: 10),
                           Text('Booster ce canal', style: TextStyle(color: _colors.textPrimary)),
+                        ]),
+                      ),
+                      PopupMenuItem(
+                        value: 'remplir_abonnes',
+                        child: Row(children: [
+                          Icon(Icons.group_add, size: 18, color: _colors.primary),
+                          const SizedBox(width: 10),
+                          Text('Remplir les abonnés', style: TextStyle(color: _colors.textPrimary)),
                         ]),
                       ),
                       PopupMenuItem(
