@@ -55,26 +55,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Future<bool> verifierPseudo(String nom) async {
-    CollectionReference pseudos = firestore.collection("Pseudo");
-    QuerySnapshot snapshot = await pseudos.get();
-    final list = snapshot.docs.map((doc) =>
-        UserPseudo.fromJson(doc.data() as Map<String, dynamic>)).toList();
-    bool existe = list.any((e) => (e.name ?? '').toLowerCase() == nom.toLowerCase());
+    final snap = await firestore.collection("Pseudo")
+        .where('name', isEqualTo: nom.trim().toLowerCase())
+        .limit(1)
+        .get();
 
-    if (!existe) {
-      try {
-        return false;
-      } on FirebaseException catch(error) {
-        return true;
-      }
-    } else {
+    if (snap.docs.isEmpty) return false;
+
+    if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context).signupPseudoExists, style: TextStyle(color: Colors.red)),
+          content: Text(AppLocalizations.of(context).signupPseudoExists, style: const TextStyle(color: Colors.red)),
         ),
       );
-      return true;
     }
+    return true;
   }
 
   bool isValidEmail(String email) {

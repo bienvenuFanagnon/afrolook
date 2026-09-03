@@ -647,13 +647,49 @@ class _UserManagementPageState extends State<UserManagementPage> {
   Widget _buildBalanceCard() {
     final depot = _userData!.votre_solde_depot ?? 0.0;
     final principal = _userData!.votre_solde_principal ?? 0.0;
+    final coins = _userData!.giftCoinsBalance ?? 0;
 
-    return Row(
+    return Column(
       children: [
-        Expanded(child: _buildSingleBalanceTile('SOLDE DÉPÔT', depot, const Color(0xFF34C759))),
-        const SizedBox(width: 12),
-        Expanded(child: _buildSingleBalanceTile('SOLDE GAINS', principal, Colors.amber.shade700)),
+        Row(
+          children: [
+            Expanded(child: _buildSingleBalanceTile('SOLDE DÉPÔT', depot, const Color(0xFF34C759))),
+            const SizedBox(width: 12),
+            Expanded(child: _buildSingleBalanceTile('SOLDE GAINS', principal, Colors.amber.shade700)),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _buildCoinsTile(coins),
       ],
+    );
+  }
+
+  Widget _buildCoinsTile(int coins) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[900],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.5), width: 1.5),
+      ),
+      child: Row(
+        children: [
+          const Text('🪙', style: TextStyle(fontSize: 24)),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('SOLDE PIÈCES', style: TextStyle(color: Colors.grey[500], fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 1)),
+              const SizedBox(height: 4),
+              Text(
+                '$coins pièces',
+                style: const TextStyle(color: Color(0xFFFFD700), fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

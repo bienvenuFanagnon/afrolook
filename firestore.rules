@@ -225,6 +225,15 @@ service cloud.firestore {
     }
 
     // ─────────────────────────────────────────────────────────────
+    // PSEUDO — lecture publique (vérification dispo lors de l'inscription)
+    // Écriture uniquement par un utilisateur authentifié (profil créé)
+    // ─────────────────────────────────────────────────────────────
+    match /Pseudo/{pseudoId} {
+      allow read: if true;
+      allow write: if isAuth();
+    }
+
+    // ─────────────────────────────────────────────────────────────
     // TOUTES LES AUTRES COLLECTIONS — requièrent auth minimale
     // ─────────────────────────────────────────────────────────────
     match /{document=**} {

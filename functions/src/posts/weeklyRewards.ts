@@ -157,7 +157,7 @@ async function rewardUser(params: {
   const description = `Récompense ${rankLabel} meilleur ${subLabel} — semaine ${weekId}`;
 
   await db.runTransaction(async (tx) => {
-    tx.update(userRef, { giftCoins: FieldValue.increment(coins) });
+    tx.update(userRef, { giftCoinsBalance: FieldValue.increment(coins) });
     tx.set(txSoldeRef, {
       id: txSoldeRef.id,
       user_id: userId,
