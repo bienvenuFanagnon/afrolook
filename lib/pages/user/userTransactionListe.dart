@@ -1,907 +1,938 @@
-﻿import 'package:afrotok/layout/centered_content.dart';
-import 'package:afrotok/pages/user/profile/retraitAdmin/retraitAdminList.dart';
+import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
-
-import 'package:afrotok/pages/user/profile/retraitAdmin/searchUserAdmin.dart';
-import 'package:afrotok/providers/authProvider.dart';
-
 import 'package:flutter/material.dart';
-
-import 'package:intl/intl.dart';
-
-import 'package:provider/provider.dart';
-
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
+import 'package:intl/intl.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../models/model_data.dart';
 
+// ── Palette (même charte que UserManagementPage) ──────────────────────────────
+const _bg      = Color(0xFF0D0D14);
+const _surface = Color(0xFF16161F);
+const _card    = Color(0xFF1C1C27);
+const _border  = Color(0xFF2A2A3A);
+const _gold    = Color(0xFFF0B429);
+const _green   = Color(0xFF34C759);
+const _amber   = Color(0xFFFF9F0A);
+const _blue    = Color(0xFF3B82F6);
+const _purple  = Color(0xFFBF5AF2);
+const _teal    = Color(0xFF30B0C7);
+const _pink    = Color(0xFFFF2D55);
+const _red     = Color(0xFFFF453A);
+const _textP   = Color(0xFFE8E8F0);
+const _textS   = Color(0xFF8891A6);
+
+// ── Catégorie de filtre ────────────────────────────────────────────────────────
+enum _TabFilter { tous, argent, pieces }
+
 class UserTransactionsPage extends StatefulWidget {
   final String userId;
-
-  const UserTransactionsPage({
-    Key? key,
-    required this.userId,
-  }) : super(key: key);
+  const UserTransactionsPage({Key? key, required this.userId}) : super(key: key);
 
   @override
   _UserTransactionsPageState createState() => _UserTransactionsPageState();
 }
 
-class _UserTransactionsPageState extends State<UserTransactionsPage> {
-  DateTime? _startDate;
-  DateTime? _endDate;
-  String _selectedType = "TOUS";
-  final ScrollController _scrollController = ScrollController();
+class _UserTransactionsPageState extends State<UserTransactionsPage>
+    with SingleTickerProviderStateMixin {
+  final _db             = FirebaseFirestore.instance;
+  final _scrollCtrl     = ScrollController();
 
-  // Pagination
-  int _currentPage = 0;
-  final int _pageSize = 10;
-  List<TransactionSolde> _allTransactions = [];
-  List<TransactionSolde> _displayedTransactions = [];
-  bool _isLoadingMore = false;
-  bool _hasMoreData = true;
-
-  // Données utilisateur
   UserData? _userData;
-  bool _isLoadingUser = true;
-  bool _isLoadingTransactions = true;
+  bool _isLoadingUser   = true;
+  bool _isLoadingTx     = true;
+  bool _isLoadingMore   = false;
+
+  List<TransactionSolde> _allTx       = [];
+  List<TransactionSolde> _filteredTx  = [];
+  List<TransactionSolde> _displayedTx = [];
+
+  _TabFilter _tab        = _TabFilter.tous;
+  String     _typeFilter = 'TOUS';
+  DateTime?  _startDate;
+  DateTime?  _endDate;
+
+  static const _pageSize = 15;
+  int  _page       = 0;
+  bool _hasMore    = true;
+
+  // ── Métadonnées par type ───────────────────────────────────────────────────
+
+  static const _meta = {
+    // ─ FCFA ─────────────────────────────────────────────────────────────────
+    'DEPOT':              _TxMeta('Dépôt',               _green,  Iconsax.arrow_down,        _TabFilter.argent, true),
+    'DEPOTADMIN':         _TxMeta('Dépôt Admin',          _green,  Iconsax.arrow_circle_down, _TabFilter.argent, true),
+    'RETRAIT':            _TxMeta('Retrait',               _amber,  Iconsax.arrow_up,          _TabFilter.argent, false),
+    'RETRAITADMIN':       _TxMeta('Retrait Admin',         _amber,  Iconsax.arrow_circle_up,   _TabFilter.argent, false),
+    'GAIN':               _TxMeta('Gain',                  _blue,   Iconsax.chart_2,           _TabFilter.argent, true),
+    'DEPENSE':            _TxMeta('Dépense',               _red,    Iconsax.wallet_minus,      _TabFilter.argent, false),
+    'ABONNEMENT_OFFICIEL':_TxMeta('Abonnement Officiel',   _purple, Iconsax.star,              _TabFilter.argent, false),
+    // ─ Pièces ────────────────────────────────────────────────────────────────
+    'GAIN_PIECES':        _TxMeta('Gain pièces',           _gold,   Iconsax.gift,              _TabFilter.pieces, true),
+    'LIKE_PIECES':        _TxMeta('Like → Pièces',         _gold,   Iconsax.heart,             _TabFilter.pieces, true),
+    'CADEAU_PIECES_RECU': _TxMeta('Cadeau reçu',           _teal,   Iconsax.receive_square,    _TabFilter.pieces, true),
+    'CADEAU_PIECES':      _TxMeta('Cadeau envoyé',          _pink,   Iconsax.send_square,       _TabFilter.pieces, false),
+    'ACHAT_PIECES':       _TxMeta('Achat pièces',           _purple, Iconsax.buy_crypto,        _TabFilter.pieces, false),
+    'CONVERSION_PIECES':  _TxMeta('Conversion pièces',     _teal,   Iconsax.convert_3d_cube,   _TabFilter.pieces, false),
+  };
+
+  static _TxMeta _metaFor(String? type) =>
+      _meta[type?.toUpperCase()] ??
+      const _TxMeta('Inconnu', _textS, Iconsax.transaction_minus, _TabFilter.tous, false);
+
+  static bool _isCoins(String? type) =>
+      _meta[type?.toUpperCase()]?.tab == _TabFilter.pieces;
+
+  String _unit(String? type) => _isCoins(type) ? 'pièces' : 'FCFA';
+  String _amount(TransactionSolde t) {
+    if (_isCoins(t.type)) {
+      return '${t.montant?.toInt() ?? 0}';
+    }
+    return (t.montant ?? 0.0).toStringAsFixed(2);
+  }
+
+  // ── Lifecycle ─────────────────────────────────────────────────────────────
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_scrollListener);
+    _scrollCtrl.addListener(_onScroll);
     _loadUserData();
   }
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    _scrollCtrl.dispose();
     super.dispose();
   }
 
+  void _onScroll() {
+    if (_scrollCtrl.offset >= _scrollCtrl.position.maxScrollExtent - 120 &&
+        !_isLoadingMore && _hasMore) {
+      _loadMore();
+    }
+  }
+
+  // ── Data ──────────────────────────────────────────────────────────────────
+
   Future<void> _loadUserData() async {
     try {
-      final userDoc = await FirebaseFirestore.instance
-          .collection("Users")  // Correction: "Users" au lieu de "users"
-          .doc(widget.userId)
+      final doc = await _db.collection('Users').doc(widget.userId).get();
+      if (doc.exists) setState(() => _userData = UserData.fromJson(doc.data()!));
+    } catch (e) { printVm('UserTx user load error: $e'); }
+    setState(() => _isLoadingUser = false);
+    _reload();
+  }
+
+  Future<void> _reload() async {
+    setState(() { _isLoadingTx = true; _allTx = []; _filteredTx = []; _displayedTx = []; });
+    try {
+      final snap = await _db
+          .collection('TransactionSoldes')
+          .where('user_id', isEqualTo: widget.userId)
+          .orderBy('createdAt', descending: true)
           .get();
-
-      if (userDoc.exists) {
-        setState(() {
-          _userData = UserData.fromJson(userDoc.data()!);
-        });
-      } else {
-        printVm("Utilisateur non trouvé avec l'ID: ${widget.userId}");
-      }
-    } catch (e) {
-      printVm("Erreur chargement user: $e");
-    } finally {
-      setState(() {
-        _isLoadingUser = false;
-      });
-      // Charger les transactions une fois les données utilisateur chargées
-      _applyFilters();
-    }
-  }
-
-  void _scrollListener() {
-    if (_scrollController.offset >=
-        _scrollController.position.maxScrollExtent - 100 &&
-        !_scrollController.position.outOfRange &&
-        !_isLoadingMore &&
-        _hasMoreData) {
-      _loadMoreTransactions();
-    }
-  }
-
-  Future<void> _loadMoreTransactions() async {
-    if (_isLoadingMore) return;
-
-    setState(() {
-      _isLoadingMore = true;
-    });
-
-    await Future.delayed(Duration(milliseconds: 500));
-
-    final nextPage = _currentPage + 1;
-    final startIndex = nextPage * _pageSize;
-
-    if (startIndex >= _allTransactions.length) {
-      setState(() {
-        _hasMoreData = false;
-        _isLoadingMore = false;
-      });
-      return;
-    }
-
-    final endIndex = (startIndex + _pageSize).clamp(0, _allTransactions.length);
-    final newTransactions = _allTransactions.sublist(startIndex, endIndex);
-
-    setState(() {
-      _displayedTransactions.addAll(newTransactions);
-      _currentPage = nextPage;
-      _isLoadingMore = false;
-      _hasMoreData = endIndex < _allTransactions.length;
-    });
-  }
-
-  Future<void> _selectDate(BuildContext context, bool isStart) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2023),
-      lastDate: DateTime(2100),
-      locale: const Locale("fr", "FR"),
-    );
-    if (picked != null) {
-      setState(() {
-        if (isStart) {
-          _startDate = picked;
-        } else {
-          _endDate = picked;
-        }
-      });
-      _applyFilters();
-    }
+      _allTx = snap.docs.map((d) {
+        final data = d.data();
+        data['id'] = d.id;
+        return TransactionSolde.fromJson(data);
+      }).toList();
+    } catch (e) { printVm('UserTx load error: $e'); }
+    setState(() => _isLoadingTx = false);
+    _applyFilters();
   }
 
   void _applyFilters() {
+    final filtered = _allTx.where((t) {
+      if (t.createdAt == null) return false;
+
+      // Onglet
+      if (_tab == _TabFilter.argent && _isCoins(t.type)) return false;
+      if (_tab == _TabFilter.pieces && !_isCoins(t.type)) return false;
+
+      // Type précis
+      if (_typeFilter != 'TOUS' && t.type?.toUpperCase() != _typeFilter) return false;
+
+      // Dates
+      final dt = DateTime.fromMillisecondsSinceEpoch(t.createdAt!);
+      if (_startDate != null && dt.isBefore(_startDate!)) return false;
+      if (_endDate   != null && dt.isAfter(_endDate!.add(const Duration(days: 1)))) return false;
+
+      return true;
+    }).toList();
+
     setState(() {
-      _currentPage = 0;
-      _displayedTransactions = [];
-      _hasMoreData = true;
-      _isLoadingTransactions = true;
-    });
-
-    // Charger les transactions filtrées
-    _loadFilteredTransactions();
-  }
-
-  Future<void> _loadFilteredTransactions() async {
-    try {
-      Query query = FirebaseFirestore.instance
-          .collection("TransactionSoldes")
-          .where("user_id", isEqualTo: widget.userId)
-          .orderBy("createdAt", descending: true);
-
-      final snapshot = await query.get();
-
-      List<TransactionSolde> transactions = snapshot.docs.map((e) {
-        final data = e.data() as Map<String, dynamic>;
-        data['id'] = e.id;
-        return TransactionSolde.fromJson(data);
-      }).toList();
-
-      // Appliquer les filtres locaux (date et type)
-      final filtered = transactions.where((t) {
-        if (t.createdAt == null) return false;
-        final date = DateTime.fromMillisecondsSinceEpoch(t.createdAt!);
-
-        // Filtrage par date
-        if (_startDate != null && date.isBefore(_startDate!)) {
-          return false;
-        }
-        if (_endDate != null && date.isAfter(_endDate!.add(const Duration(days: 1)))) {
-          return false;
-        }
-
-        // Filtrage par type
-        if (_selectedType != "TOUS" && t.type?.toUpperCase() != _selectedType) {
-          return false;
-        }
-
-        return true;
-      }).toList();
-
-      setState(() {
-        _allTransactions = filtered;
-        _isLoadingTransactions = false;
-      });
-
-      // Charger la première page
-      _loadFirstPage();
-
-    } catch (e) {
-      printVm("Erreur chargement transactions: $e");
-      setState(() {
-        _isLoadingTransactions = false;
-      });
-    }
-  }
-
-  void _loadFirstPage() {
-    final endIndex = _pageSize.clamp(0, _allTransactions.length);
-    setState(() {
-      _displayedTransactions = _allTransactions.sublist(0, endIndex);
-      _currentPage = 0;
-      _hasMoreData = _allTransactions.length > _pageSize;
+      _filteredTx = filtered;
+      _page       = 0;
+      _hasMore    = filtered.length > _pageSize;
+      _displayedTx = filtered.take(_pageSize).toList();
     });
   }
 
-  // Liste mise à jour avec les nouveaux types
-  final List<String> _types = [
-    "TOUS",
-    "DEPOT",
-    "RETRAIT",
-    "DEPOTADMIN",
-    "RETRAITADMIN",
-    "GAIN",
-    "DEPENSE",
-  ];
-
-  // Méthode pour obtenir la couleur selon le type de transaction
-  Color _getTransactionColor(String? type) {
-    switch (type?.toUpperCase()) {
-      case 'DEPOT':
-      case 'DEPOTADMIN':
-        return Colors.green;
-      case 'RETRAIT':
-      case 'RETRAITADMIN':
-        return Colors.orange;
-      case 'GAIN':
-        return Colors.blue;
-      case 'DEPENSE':
-        return Colors.red;
-      default:
-        return Colors.grey;
+  void _loadMore() {
+    setState(() => _isLoadingMore = true);
+    final next = (_page + 1) * _pageSize;
+    if (next >= _filteredTx.length) {
+      setState(() { _hasMore = false; _isLoadingMore = false; });
+      return;
     }
+    final end = (next + _pageSize).clamp(0, _filteredTx.length);
+    setState(() {
+      _displayedTx.addAll(_filteredTx.sublist(next, end));
+      _page++;
+      _hasMore = end < _filteredTx.length;
+      _isLoadingMore = false;
+    });
   }
 
-  // Méthode pour obtenir l'icône selon le type de transaction
-  IconData _getTransactionIcon(String? type) {
-    switch (type?.toUpperCase()) {
-      case 'DEPOT':
-      case 'DEPOTADMIN':
-        return Iconsax.arrow_down;
-      case 'RETRAIT':
-      case 'RETRAITADMIN':
-        return Iconsax.arrow_up;
-      case 'GAIN':
-        return Iconsax.gift;
-      case 'DEPENSE':
-        return Iconsax.wallet_minus;
-      default:
-        return Iconsax.transaction_minus;
-    }
-  }
-
-  // Méthode pour formater le type de transaction
-  String _formatTransactionType(String? type) {
-    switch (type?.toUpperCase()) {
-      case 'DEPOTADMIN':
-        return 'Dépôt Admin';
-      case 'RETRAITADMIN':
-        return 'Retrait Admin';
-      case 'DEPOT':
-        return 'Dépôt';
-      case 'RETRAIT':
-        return 'Retrait';
-      case 'GAIN':
-        return 'Gain';
-      case 'DEPENSE':
-        return 'Dépense';
-      default:
-        return type ?? 'Inconnu';
-    }
-  }
-
-  Future<void> _showTransactionDetails(TransactionSolde transaction) async {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: Row(
-          children: [
-            Icon(Icons.receipt_long, color: Colors.yellow[700]),
-            SizedBox(width: 8),
-            Text(
-              "Détails de la transaction",
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Informations utilisateur
-              if (_userData != null) ...[
-                _buildDetailItem("Utilisateur",
-                    "${_userData!.pseudo ?? 'N/A'} (${_userData!.email ?? 'N/A'})"),
-                _buildDetailItem("Téléphone", _userData!.numeroDeTelephone ?? 'N/A'),
-                SizedBox(height: 16),
-              ],
-
-              // Informations transaction
-              _buildDetailItem("Type", _formatTransactionType(transaction.type)),
-              _buildDetailItem("Montant", "${transaction.montant?.toStringAsFixed(2) ?? '0.00'} FCFA"),
-
-              if (transaction.frais != null && transaction.frais! > 0)
-                _buildDetailItem("Frais", "${transaction.frais?.toStringAsFixed(2) ?? '0.00'} FCFA"),
-
-              if (transaction.montant_total != null && transaction.montant_total! > 0)
-                _buildDetailItem("Montant total", "${transaction.montant_total?.toStringAsFixed(2) ?? '0.00'} FCFA"),
-
-              if (transaction.description != null && transaction.description!.isNotEmpty)
-                _buildDetailItem("Description", transaction.description!),
-
-              if (transaction.statut != null && transaction.statut!.isNotEmpty)
-                _buildDetailItem("Statut", transaction.statut!),
-
-              if (transaction.methode_paiement != null && transaction.methode_paiement!.isNotEmpty)
-                _buildDetailItem("Méthode de paiement", transaction.methode_paiement!),
-
-              if (transaction.id_transaction_cinetpay != null && transaction.id_transaction_cinetpay!.isNotEmpty)
-                _buildDetailItem("ID CinetPay", transaction.id_transaction_cinetpay!),
-
-              _buildDetailItem("Date", _formatDetailedDate(transaction.createdAt ?? 0)),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              "Fermer",
-              style: TextStyle(color: Colors.yellow[700]),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailItem(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              "$label:",
-              style: TextStyle(
-                color: Colors.grey[400],
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Text(
-              value,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatDetailedDate(int timestamp) {
-    final date = DateTime.fromMillisecondsSinceEpoch(timestamp);
-    return DateFormat('dd/MM/yyyy à HH:mm:ss').format(date);
-  }
-
-  Widget _buildUserHeader() {
-    if (_isLoadingUser) {
-      return Container(
-        padding: EdgeInsets.all(16),
-        color: Colors.grey[800],
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 25,
-              backgroundColor: Colors.grey[700],
-              child: CircularProgressIndicator(
-                color: Colors.yellow[700],
-              ),
-            ),
-            SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 120,
-                    height: 16,
-                    color: Colors.grey[700],
-                  ),
-                  SizedBox(height: 8),
-                  Container(
-                    width: 80,
-                    height: 12,
-                    color: Colors.grey[700],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (_userData == null) {
-      return Container(
-        padding: EdgeInsets.all(16),
-        color: Colors.red[900]!.withOpacity(0.3),
-        child: Row(
-          children: [
-            Icon(Icons.error_outline, color: Colors.red),
-            SizedBox(width: 8),
-            Text(
-              "Utilisateur non trouvé",
-              style: TextStyle(color: Colors.white),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Container(
-      padding: EdgeInsets.all(16),
-      color: Colors.grey[800],
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 25,
-            backgroundColor: Colors.grey[700],
-            backgroundImage: _userData!.imageUrl != null && _userData!.imageUrl!.isNotEmpty
-                ? NetworkImage(_userData!.imageUrl!)
-                : null,
-            child: _userData!.imageUrl == null || _userData!.imageUrl!.isEmpty
-                ? Icon(Icons.person, color: Colors.grey[400])
-                : null,
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _userData!.pseudo ?? 'Utilisateur',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  _userData!.email ?? 'N/A',
-                  style: TextStyle(
-                    color: Colors.grey[400],
-                    fontSize: 12,
-                  ),
-                ),
-                if (_userData!.numeroDeTelephone != null && _userData!.numeroDeTelephone!.isNotEmpty)
-                  Text(
-                    _userData!.numeroDeTelephone!,
-                    style: TextStyle(
-                      color: Colors.grey[400],
-                      fontSize: 12,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          // Solde actuel
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.yellow[700]!.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.yellow[700]!),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  'SOLDE',
-                  style: TextStyle(
-                    color: Colors.yellow[700],
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 2),
-                Text(
-                  '${_userData!.votre_solde_principal?.toStringAsFixed(2) ?? '0.00'} FCFA',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 1),
-                Text(
-                  '${_userData!.votre_solde?.toStringAsFixed(2) ?? '0.00'} FCFA',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 8,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // ── UI ────────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
-      appBar: AppBar(
-        title: const Text(
-          "Transactions Utilisateur",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Colors.black,
-        centerTitle: true,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        actions: [
-          // Filtre par type
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: DropdownButton<String>(
-              value: _selectedType,
-              dropdownColor: Colors.black87,
-              icon: const Icon(Icons.filter_list, color: Colors.white),
-              underline: const SizedBox(),
-              items: _types
-                  .map((type) => DropdownMenuItem(
-                value: type,
-                child: Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: _getTransactionColor(type == "TOUS" ? null : type),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    Text(
-                      type == "TOUS" ? "TOUS" : _formatTransactionType(type),
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ))
-                  .toList(),
-              onChanged: (val) {
-                setState(() {
-                  _selectedType = val!;
-                });
-                _applyFilters();
-              },
-            ),
-          )
-        ],
-      ),
-      body: Column(
-        children: [
-          // En-tête utilisateur
-          _buildUserHeader(),
-
-          // Filtres par date
-          Container(
-            padding: const EdgeInsets.all(12),
-            color: Colors.grey[900],
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    icon: Icon(Icons.calendar_today, size: 16),
-                    label: Text(
-                      _startDate == null
-                          ? "Date début"
-                          : DateFormat("dd/MM/yyyy").format(_startDate!),
-                      style: TextStyle(fontSize: 12),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green.shade800,
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    onPressed: () => _selectDate(context, true),
-                  ),
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    icon: Icon(Icons.calendar_today, size: 16),
-                    label: Text(
-                      _endDate == null
-                          ? "Date fin"
-                          : DateFormat("dd/MM/yyyy").format(_endDate!),
-                      style: TextStyle(fontSize: 12),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue.shade800,
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    onPressed: () => _selectDate(context, false),
-                  ),
-                ),
-                SizedBox(width: 12),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red.shade800,
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _startDate = null;
-                      _endDate = null;
-                      _selectedType = "TOUS";
-                    });
-                    _applyFilters();
-                  },
-                  child: Icon(Icons.clear, size: 16),
-                ),
-              ],
-            ),
-          ),
-
-          // Statistiques rapides pour cet utilisateur
-          _buildUserQuickStats(),
-
-          // Liste des transactions
-          Expanded(
-            child: _isLoadingTransactions
-                ? Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.yellow[700]!),
-              ),
-            )
-                : _allTransactions.isEmpty
-                ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.receipt_long, color: Colors.grey, size: 60),
-                  SizedBox(height: 16),
-                  Text(
-                    "Aucune transaction",
-                    style: TextStyle(color: Colors.grey, fontSize: 16),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    "Cet utilisateur n'a effectué aucune transaction",
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
-                  ),
-                ],
-              ),
-            )
-                : Column(
-              children: [
-                // Compteur de résultats
-                Container(
-                  padding: EdgeInsets.all(8),
-                  color: Colors.grey[800],
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "Affichées: ${_displayedTransactions.length}",
-                        style: TextStyle(color: Colors.grey[400], fontSize: 12),
-                      ),
-                      Text(
-                        "Total: ${_allTransactions.length}",
-                        style: TextStyle(color: Colors.grey[400], fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-
-                Expanded(
-                  child: CenteredContent(child: ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(12),
-                    itemCount: _displayedTransactions.length + (_isLoadingMore ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      if (index == _displayedTransactions.length) {
-                        return _buildLoadingIndicator();
-                      }
-                      final t = _displayedTransactions[index];
-                      return _buildTransactionCard(t);
-                    },
-                  )),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+      backgroundColor: _bg,
+      appBar: _buildAppBar(),
+      body: Column(children: [
+        _buildUserHeader(),
+        _buildTabBar(),
+        _buildDateFilters(),
+        if (!_isLoadingTx) _buildStats(),
+        _buildTypeChips(),
+        Expanded(child: _buildBody()),
+      ]),
     );
   }
 
-  Widget _buildLoadingIndicator() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.yellow[700]!),
+  // ── AppBar ────────────────────────────────────────────────────────────────
+
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: _surface,
+      foregroundColor: _textP,
+      elevation: 0,
+      centerTitle: false,
+      title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Text('Transactions',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: _textP)),
+        if (_userData != null)
+          Text('@${_userData!.pseudo ?? ''}',
+              style: const TextStyle(fontSize: 11, color: _textS, fontWeight: FontWeight.w400)),
+      ]),
+      actions: [
+        IconButton(
+          icon: const Icon(Iconsax.refresh, size: 20),
+          tooltip: 'Actualiser',
+          onPressed: _reload,
         ),
-      ),
-    );
-  }
-
-  Widget _buildUserQuickStats() {
-    if (_isLoadingTransactions || _allTransactions.isEmpty) {
-      return SizedBox.shrink();
-    }
-
-    // Calcul des statistiques pour cet utilisateur
-    final totalDepots = _allTransactions
-        .where((t) => t.type == 'DEPOT' || t.type == 'DEPOTADMIN')
-        .fold(0.0, (sum, t) => sum + (t.montant ?? 0));
-
-    final totalRetraits = _allTransactions
-        .where((t) => t.type == 'RETRAIT' || t.type == 'RETRAITADMIN')
-        .fold(0.0, (sum, t) => sum + (t.montant ?? 0));
-
-    final totalGains = _allTransactions
-        .where((t) => t.type == 'GAIN')
-        .fold(0.0, (sum, t) => sum + (t.montant ?? 0));
-
-    return Container(
-      padding: EdgeInsets.all(12),
-      color: Colors.grey[850],
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildStatItem('Dépôts', totalDepots, Colors.green),
-          _buildStatItem('Retraits', totalRetraits, Colors.orange),
-          _buildStatItem('Gains', totalGains, Colors.blue),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatItem(String label, double value, Color color) {
-    return Column(
-      children: [
-        Text(
-          value >= 1000 ? '${(value/1000).toStringAsFixed(1)}k' : value.toStringAsFixed(0),
-          style: TextStyle(
-            color: color,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
+        if (_startDate != null || _endDate != null)
+          IconButton(
+            icon: const Icon(Icons.clear_rounded, color: _red, size: 20),
+            tooltip: 'Effacer les dates',
+            onPressed: () {
+              setState(() { _startDate = null; _endDate = null; });
+              _applyFilters();
+            },
           ),
-        ),
-        SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.grey[400],
-            fontSize: 10,
-          ),
-        ),
+        const SizedBox(width: 4),
       ],
     );
   }
 
-  Widget _buildTransactionCard(TransactionSolde transaction) {
-    final isDepot = transaction.type == 'DEPOT' || transaction.type == 'DEPOTADMIN';
-    final color = _getTransactionColor(transaction.type);
-    final icon = _getTransactionIcon(transaction.type);
-    final typeText = _formatTransactionType(transaction.type);
+  // ── Header utilisateur ────────────────────────────────────────────────────
 
-    return Card(
-      color: Colors.grey[900],
-      margin: EdgeInsets.only(bottom: 8),
-      elevation: 2,
-      child: ListTile(
-        contentPadding: EdgeInsets.all(16),
-        leading: Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.2),
-            shape: BoxShape.circle,
-            border: Border.all(color: color),
-          ),
-          child: Icon(icon, color: color, size: 24),
+  Widget _buildUserHeader() {
+    if (_isLoadingUser) {
+      return Container(
+        height: 70, color: _surface,
+        child: const Center(child: CircularProgressIndicator(color: _gold, strokeWidth: 2)),
+      );
+    }
+    if (_userData == null) return const SizedBox.shrink();
+
+    final imgUrl = _userData!.imageUrl ?? '';
+    return Container(
+      color: _surface,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: Row(children: [
+        CircleAvatar(
+          radius: 22,
+          backgroundColor: _card,
+          backgroundImage: imgUrl.isNotEmpty ? NetworkImage(imgUrl) : null,
+          child: imgUrl.isEmpty ? const Icon(Icons.person, color: _textS, size: 22) : null,
         ),
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              '${transaction.montant?.toStringAsFixed(2) ?? '0.00'} FCFA',
-              style: TextStyle(
-                color: isDepot ? Colors.green : Colors.orange,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        const SizedBox(width: 12),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(_userData!.pseudo ?? '—',
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _textP)),
+          if ((_userData!.email ?? '').isNotEmpty)
+            Text(_userData!.email!, style: const TextStyle(fontSize: 11, color: _textS)),
+        ])),
+        // Soldes compacts
+        _MiniBalance(label: 'Dépôt',  value: '${(_userData!.votre_solde_depot    ?? 0).toStringAsFixed(0)} F', color: _green),
+        const SizedBox(width: 8),
+        _MiniBalance(label: 'Gains',  value: '${(_userData!.votre_solde_principal ?? 0).toStringAsFixed(0)} F', color: _amber),
+        const SizedBox(width: 8),
+        _MiniBalance(label: '🪙', value: '${_userData!.giftCoinsBalance ?? 0}', color: _gold),
+      ]),
+    );
+  }
+
+  // ── Tabs Tous / Argent / Pièces ───────────────────────────────────────────
+
+  Widget _buildTabBar() {
+    return Container(
+      color: _surface,
+      child: Row(children: [
+        for (final t in _TabFilter.values)
+          Expanded(child: _TabBtn(
+            label: t == _TabFilter.tous ? 'Tous' : t == _TabFilter.argent ? 'Argent' : '🪙 Pièces',
+            active: _tab == t,
+            onTap: () { setState(() { _tab = t; _typeFilter = 'TOUS'; }); _applyFilters(); },
+          )),
+      ]),
+    );
+  }
+
+  // ── Filtres date ──────────────────────────────────────────────────────────
+
+  Widget _buildDateFilters() {
+    return Container(
+      color: _card,
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+      child: Row(children: [
+        Expanded(child: _DateBtn(
+          label: _startDate == null ? 'Depuis' : DateFormat('dd/MM/yy').format(_startDate!),
+          active: _startDate != null,
+          onTap: () async {
+            final p = await showDatePicker(
+              context: context, initialDate: DateTime.now(),
+              firstDate: DateTime(2023), lastDate: DateTime(2100),
+              locale: const Locale('fr', 'FR'),
+            );
+            if (p != null) { setState(() => _startDate = p); _applyFilters(); }
+          },
+        )),
+        const SizedBox(width: 8),
+        Expanded(child: _DateBtn(
+          label: _endDate == null ? "Jusqu'à" : DateFormat('dd/MM/yy').format(_endDate!),
+          active: _endDate != null,
+          onTap: () async {
+            final p = await showDatePicker(
+              context: context, initialDate: DateTime.now(),
+              firstDate: DateTime(2023), lastDate: DateTime(2100),
+              locale: const Locale('fr', 'FR'),
+            );
+            if (p != null) { setState(() => _endDate = p); _applyFilters(); }
+          },
+        )),
+      ]),
+    );
+  }
+
+  // ── Stats rapides ─────────────────────────────────────────────────────────
+
+  Widget _buildStats() {
+    if (_filteredTx.isEmpty) return const SizedBox.shrink();
+
+    double fcfaIn = 0, fcfaOut = 0;
+    int coinsIn = 0, coinsOut = 0;
+
+    for (final t in _filteredTx) {
+      final m = _metaFor(t.type);
+      if (_isCoins(t.type)) {
+        final v = (t.montant ?? 0).toInt();
+        m.isCredit ? coinsIn  += v : coinsOut += v;
+      } else {
+        final v = t.montant ?? 0;
+        m.isCredit ? fcfaIn  += v : fcfaOut += v;
+      }
+    }
+
+    return Container(
+      color: _bg,
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+      child: Row(children: [
+        _StatBadge(label: 'Crédits',   value: _fmtFcfa(fcfaIn),   color: _green),
+        const SizedBox(width: 8),
+        _StatBadge(label: 'Débits',    value: _fmtFcfa(fcfaOut),  color: _amber),
+        const SizedBox(width: 8),
+        _StatBadge(label: '🪙 Entrées', value: '$coinsIn',         color: _gold),
+        const SizedBox(width: 8),
+        _StatBadge(label: '🪙 Sorties', value: '$coinsOut',        color: _pink),
+      ]),
+    );
+  }
+
+  // ── Chips filtre par type ─────────────────────────────────────────────────
+
+  Widget _buildTypeChips() {
+    final types = ['TOUS', ..._meta.keys.where((k) {
+      final t = _meta[k]!.tab;
+      if (_tab == _TabFilter.argent && t == _TabFilter.pieces) return false;
+      if (_tab == _TabFilter.pieces && t == _TabFilter.argent) return false;
+      return true;
+    })];
+
+    return Container(
+      height: 40,
+      color: _bg,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: types.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 6),
+        itemBuilder: (_, i) {
+          final type = types[i];
+          final active = _typeFilter == type;
+          final m = type == 'TOUS' ? null : _meta[type];
+          final color = m?.color ?? _textS;
+          return GestureDetector(
+            onTap: () { setState(() => _typeFilter = type); _applyFilters(); },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: color),
+                color: active ? color : color.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: active ? color : color.withOpacity(0.25)),
               ),
-              child: Text(
-                typeText,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                if (m != null) ...[Icon(m.icon, size: 12, color: active ? Colors.white : color), const SizedBox(width: 5)],
+                Text(
+                  type == 'TOUS' ? 'Tous' : (m?.label ?? type),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: active ? Colors.white : color,
+                  ),
                 ),
-              ),
+              ]),
             ),
-          ],
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (transaction.description != null && transaction.description!.isNotEmpty)
-              Text(
-                transaction.description!,
-                style: TextStyle(
-                  color: Colors.grey[400],
-                  fontSize: 12,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            SizedBox(height: 4),
-            Text(
-              _formatDate(transaction.createdAt ?? 0),
-              style: TextStyle(
-                color: Colors.grey[500],
-                fontSize: 11,
-              ),
-            ),
-          ],
-        ),
-        trailing: Icon(
-          Icons.arrow_forward_ios,
-          color: Colors.grey[600],
-          size: 16,
-        ),
-        onTap: () {
-          _showTransactionDetails(transaction);
+          );
         },
       ),
     );
   }
 
-  String _formatDate(int timestamp) {
-    final date = DateTime.fromMillisecondsSinceEpoch(timestamp);
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final yesterday = today.subtract(Duration(days: 1));
+  // ── Corps liste ───────────────────────────────────────────────────────────
 
-    if (date.isAfter(today)) {
-      return 'Aujourd\'hui à ${DateFormat('HH:mm').format(date)}';
-    } else if (date.isAfter(yesterday)) {
-      return 'Hier à ${DateFormat('HH:mm').format(date)}';
-    } else {
-      return DateFormat('dd/MM/yyyy à HH:mm').format(date);
+  Widget _buildBody() {
+    if (_isLoadingTx) {
+      return const Center(child: CircularProgressIndicator(color: _gold));
     }
+    if (_filteredTx.isEmpty) {
+      return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        const Icon(Iconsax.receipt, size: 64, color: _border),
+        const SizedBox(height: 16),
+        const Text('Aucune transaction', style: TextStyle(color: _textP, fontSize: 16, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 6),
+        Text(
+          _typeFilter == 'TOUS' ? 'Cet utilisateur n\'a pas encore de transactions'
+              : 'Aucune transaction de ce type sur la période',
+          style: const TextStyle(color: _textS, fontSize: 13),
+          textAlign: TextAlign.center,
+        ),
+      ]));
+    }
+
+    return Column(children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 2),
+        child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Text('${_displayedTx.length} / ${_filteredTx.length} transactions',
+              style: const TextStyle(color: _textS, fontSize: 11)),
+          Text('Total : ${_filteredTx.length}',
+              style: const TextStyle(color: _textS, fontSize: 11)),
+        ]),
+      ),
+      Expanded(
+        child: CenteredContent(
+          child: ListView.builder(
+            controller: _scrollCtrl,
+            padding: const EdgeInsets.fromLTRB(12, 6, 12, 24),
+            itemCount: _displayedTx.length + (_isLoadingMore ? 1 : 0),
+            itemBuilder: (_, i) {
+              if (i == _displayedTx.length) {
+                return const Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Center(child: CircularProgressIndicator(color: _gold, strokeWidth: 2)),
+                );
+              }
+              return _TxCard(
+                tx: _displayedTx[i],
+                meta: _metaFor(_displayedTx[i].type),
+                amount: _amount(_displayedTx[i]),
+                unit: _unit(_displayedTx[i].type),
+                onTap: () => _showDetails(_displayedTx[i]),
+              );
+            },
+          ),
+        ),
+      ),
+    ]);
+  }
+
+  // ── Dialog détails ────────────────────────────────────────────────────────
+
+  void _showDetails(TransactionSolde t) {
+    final m = _metaFor(t.type);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: _card,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      isScrollControlled: true,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.4,
+        maxChildSize: 0.85,
+        expand: false,
+        builder: (_, ctrl) => _TxDetailSheet(
+          tx: t, meta: m,
+          amount: _amount(t), unit: _unit(t.type),
+          userData: _userData,
+          scrollController: ctrl,
+        ),
+      ),
+    );
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  String _fmtFcfa(double v) {
+    if (v >= 1000000) return '${(v/1000000).toStringAsFixed(1)}M F';
+    if (v >= 1000)    return '${(v/1000).toStringAsFixed(1)}k F';
+    return '${v.toStringAsFixed(0)} F';
+  }
+}
+
+// ── Métadonnées type transaction ──────────────────────────────────────────────
+
+class _TxMeta {
+  final String    label;
+  final Color     color;
+  final IconData  icon;
+  final _TabFilter tab;
+  final bool      isCredit;
+  const _TxMeta(this.label, this.color, this.icon, this.tab, this.isCredit);
+}
+
+// ── Composants réutilisables ──────────────────────────────────────────────────
+
+class _TabBtn extends StatelessWidget {
+  final String label;
+  final bool   active;
+  final VoidCallback onTap;
+  const _TabBtn({required this.label, required this.active, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: active ? _gold : Colors.transparent,
+              width: 2.5,
+            ),
+          ),
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+            color: active ? _gold : _textS,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DateBtn extends StatelessWidget {
+  final String label;
+  final bool   active;
+  final VoidCallback onTap;
+  const _DateBtn({required this.label, required this.active, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: active ? _blue.withOpacity(0.1) : _surface,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: active ? _blue : _border),
+        ),
+        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Icon(Icons.calendar_today_rounded, size: 12,
+              color: active ? _blue : _textS),
+          const SizedBox(width: 6),
+          Text(label, style: TextStyle(fontSize: 12, color: active ? _blue : _textS,
+              fontWeight: FontWeight.w600)),
+        ]),
+      ),
+    );
+  }
+}
+
+class _MiniBalance extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color  color;
+  const _MiniBalance({required this.label, required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Column(children: [
+        Text(label, style: TextStyle(fontSize: 8, color: color, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 2),
+        Text(value, style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w800,
+            fontFeatures: const [FontFeature.tabularFigures()])),
+      ]),
+    );
+  }
+}
+
+class _StatBadge extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color  color;
+  const _StatBadge({required this.label, required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withOpacity(0.2)),
+        ),
+        child: Column(children: [
+          Text(value, style: TextStyle(fontSize: 13, color: color, fontWeight: FontWeight.w800,
+              fontFeatures: const [FontFeature.tabularFigures()])),
+          const SizedBox(height: 2),
+          Text(label, style: const TextStyle(fontSize: 9, color: _textS, fontWeight: FontWeight.w500),
+              maxLines: 1, overflow: TextOverflow.ellipsis),
+        ]),
+      ),
+    );
+  }
+}
+
+class _TxCard extends StatelessWidget {
+  final TransactionSolde tx;
+  final _TxMeta  meta;
+  final String   amount;
+  final String   unit;
+  final VoidCallback onTap;
+  const _TxCard({
+    required this.tx, required this.meta, required this.amount,
+    required this.unit, required this.onTap,
+  });
+
+  String _fmtDate(int ts) {
+    final date = DateTime.fromMillisecondsSinceEpoch(ts);
+    final now   = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yest  = today.subtract(const Duration(days: 1));
+    if (date.isAfter(today))  return 'Aujourd\'hui  ${DateFormat('HH:mm').format(date)}';
+    if (date.isAfter(yest))   return 'Hier  ${DateFormat('HH:mm').format(date)}';
+    return DateFormat('dd MMM yyyy  HH:mm', 'fr').format(date);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = meta.color;
+    final sign  = meta.isCredit ? '+' : '−';
+    final signColor = meta.isCredit ? color : _amber;
+    final statut = tx.statut?.toUpperCase() ?? '';
+    Color statutColor = _textS;
+    if (statut == 'VALIDER') statutColor = _green;
+    else if (statut == 'ENCOURS') statutColor = _amber;
+    else if (statut == 'ANNULER') statutColor = _red;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: _card,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withOpacity(0.15)),
+        ),
+        child: Row(children: [
+          // Barre de couleur latérale
+          Container(
+            width: 4,
+            height: 72,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(14), bottomLeft: Radius.circular(14)),
+            ),
+          ),
+          // Icône
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 12),
+            width: 42, height: 42,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(meta.icon, color: color, size: 20),
+          ),
+          // Contenu
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  // Badge type
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: color.withOpacity(0.3)),
+                    ),
+                    child: Text(meta.label,
+                        style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w700)),
+                  ),
+                  const SizedBox(width: 6),
+                  if (statut.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: statutColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(statut,
+                          style: TextStyle(fontSize: 9, color: statutColor, fontWeight: FontWeight.w600)),
+                    ),
+                ]),
+                const SizedBox(height: 4),
+                if ((tx.description ?? '').isNotEmpty)
+                  Text(tx.description!, maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 12, color: _textS)),
+                const SizedBox(height: 3),
+                Text(_fmtDate(tx.createdAt ?? 0),
+                    style: const TextStyle(fontSize: 10, color: _textS)),
+              ]),
+            ),
+          ),
+          // Montant
+          Padding(
+            padding: const EdgeInsets.only(right: 14),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              Text('$sign$amount',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: signColor,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  )),
+              Text(unit, style: const TextStyle(fontSize: 10, color: _textS)),
+            ]),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+// ── Bottom sheet détails ──────────────────────────────────────────────────────
+
+class _TxDetailSheet extends StatelessWidget {
+  final TransactionSolde tx;
+  final _TxMeta          meta;
+  final String           amount;
+  final String           unit;
+  final UserData?        userData;
+  final ScrollController scrollController;
+
+  const _TxDetailSheet({
+    required this.tx, required this.meta, required this.amount,
+    required this.unit, required this.userData, required this.scrollController,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      controller: scrollController,
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      children: [
+        // Handle
+        Center(
+          child: Container(
+            width: 36, height: 4,
+            decoration: BoxDecoration(color: _border, borderRadius: BorderRadius.circular(2)),
+          ),
+        ),
+        const SizedBox(height: 20),
+        // En-tête montant
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: meta.color.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: meta.color.withOpacity(0.2)),
+          ),
+          child: Column(children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: meta.color.withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(meta.icon, color: meta.color, size: 28),
+            ),
+            const SizedBox(height: 12),
+            Text(meta.label, style: TextStyle(color: meta.color, fontSize: 13, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 6),
+            RichText(text: TextSpan(children: [
+              TextSpan(
+                text: '${meta.isCredit ? '+' : '−'}$amount',
+                style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: meta.color,
+                    fontFeatures: const [FontFeature.tabularFigures()]),
+              ),
+              TextSpan(text: '  $unit',
+                  style: const TextStyle(fontSize: 14, color: _textS, fontWeight: FontWeight.w500)),
+            ])),
+            if ((tx.statut ?? '').isNotEmpty) ...[
+              const SizedBox(height: 10),
+              _StatutBadge(tx.statut!),
+            ],
+          ]),
+        ),
+        const SizedBox(height: 20),
+        // Infos utilisateur
+        if (userData != null) ...[
+          _SectionTitle('Utilisateur'),
+          _Row('Pseudo',    '@${userData!.pseudo ?? '—'}'),
+          _Row('E-mail',    userData!.email   ?? '—'),
+          if ((userData!.numeroDeTelephone ?? '').isNotEmpty)
+            _Row('Téléphone', userData!.numeroDeTelephone!),
+          const SizedBox(height: 12),
+        ],
+        // Infos transaction
+        _SectionTitle('Transaction'),
+        _Row('Type',        meta.label),
+        _Row('Montant',     '$amount $unit'),
+        if ((tx.frais ?? 0) > 0)
+          _Row('Frais', '${tx.frais!.toStringAsFixed(2)} FCFA'),
+        if ((tx.montant_total ?? 0) > 0)
+          _Row('Montant total', '${tx.montant_total!.toStringAsFixed(2)} FCFA'),
+        if ((tx.description ?? '').isNotEmpty)
+          _Row('Description',   tx.description!),
+        if ((tx.methode_paiement ?? '').isNotEmpty)
+          _Row('Méthode',       tx.methode_paiement!),
+        if ((tx.id_transaction_cinetpay ?? '').isNotEmpty)
+          _Row('ID CinetPay',   tx.id_transaction_cinetpay!),
+        if ((tx.numero_depot ?? '').isNotEmpty)
+          _Row('N° dépôt',      tx.numero_depot!),
+        _Row('Date',
+            tx.createdAt != null
+                ? DateFormat('dd MMM yyyy  HH:mm:ss', 'fr')
+                    .format(DateTime.fromMillisecondsSinceEpoch(tx.createdAt!))
+                : '—'),
+        if ((tx.id ?? '').isNotEmpty) ...[
+          const SizedBox(height: 4),
+          GestureDetector(
+            onTap: () { Clipboard.setData(ClipboardData(text: tx.id!)); },
+            child: _Row('ID', tx.id!, mono: true, tapLabel: 'Copier'),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _StatutBadge extends StatelessWidget {
+  final String statut;
+  const _StatutBadge(this.statut);
+
+  @override
+  Widget build(BuildContext context) {
+    Color c = _textS;
+    if (statut.toUpperCase() == 'VALIDER') c = _green;
+    else if (statut.toUpperCase() == 'ENCOURS') c = _amber;
+    else if (statut.toUpperCase() == 'ANNULER') c = _red;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+      decoration: BoxDecoration(
+        color: c.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: c.withOpacity(0.3)),
+      ),
+      child: Text(statut, style: TextStyle(fontSize: 12, color: c, fontWeight: FontWeight.w700)),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  final String text;
+  const _SectionTitle(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(text.toUpperCase(),
+          style: const TextStyle(fontSize: 10, color: _textS,
+              fontWeight: FontWeight.w700, letterSpacing: 1.4)),
+    );
+  }
+}
+
+class _Row extends StatelessWidget {
+  final String  label;
+  final String  value;
+  final bool    mono;
+  final String? tapLabel;
+  const _Row(this.label, this.value, {this.mono = false, this.tapLabel});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        SizedBox(width: 120,
+            child: Text(label, style: const TextStyle(fontSize: 13, color: _textS, fontWeight: FontWeight.w500))),
+        Expanded(
+          child: Row(children: [
+            Expanded(
+              child: Text(value,
+                  style: TextStyle(fontSize: 13, color: _textP,
+                      fontFamily: mono ? 'monospace' : null),
+                  maxLines: 2, overflow: TextOverflow.ellipsis),
+            ),
+            if (tapLabel != null) ...[
+              const SizedBox(width: 8),
+              Text(tapLabel!, style: const TextStyle(fontSize: 11, color: _blue)),
+            ],
+          ]),
+        ),
+      ]),
+    );
   }
 }
