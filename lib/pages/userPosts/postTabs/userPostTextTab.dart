@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/models/model_data.dart';
@@ -65,7 +65,7 @@ class _UserPubTextState extends State<UserPubText> {
   List<AfricanCountry> _selectedCountries = [];
   List<AfricanCountry> _filteredCountries = [];
   bool _selectAllCountries = false;
-  int _maxCountriesForFree = 2;
+  int _maxCountriesForFree = 1;
   bool _showCountrySelection = false;
   final FocusNode _countrySearchFocus = FocusNode();
 
@@ -323,13 +323,12 @@ class _UserPubTextState extends State<UserPubText> {
 
   // Méthodes pour la sélection des pays
   void _toggleCountrySelection(AfricanCountry country) {
-    final isPremium = AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement);
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
 
-    if (!isPremium && !isAdmin) {
-      // Pour les utilisateurs gratuits
-      if (_selectedCountries.length >= _maxCountriesForFree &&
-          !_selectedCountries.contains(country)) {
+    if (!isAdmin) {
+      final isGold = AbonnementUtils.isGold(authProvider.loginUserData.abonnement);
+      final limit = isGold ? 999 : (AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement) ? 20 : _maxCountriesForFree);
+      if (_selectedCountries.length >= limit && !_selectedCountries.contains(country)) {
         _showCountryLimitModal();
         return;
       }
@@ -346,16 +345,14 @@ class _UserPubTextState extends State<UserPubText> {
   }
 
   void _toggleSelectAllCountries() {
-    final isPremium = AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement);
+    final isGold = AbonnementUtils.isGold(authProvider.loginUserData.abonnement);
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
 
-    // Vérifier si l'utilisateur peut sélectionner "Tous les pays"
-    if (!isPremium && !isAdmin) {
+    if (!isGold && !isAdmin) {
       _showPremiumModal(
-        title: 'Fonctionnalité Premium',
-        message: 'L\'option "Tous les pays" est réservée aux abonnés Premium.\n'
-            'Passez à Afrolook Premium pour atteindre toute l\'Afrique.',
-        actionText: 'PASSER À PREMIUM',
+        title: 'Fonctionnalité Gold 👑',
+        message: 'Sélectionner tous les pays en un clic est réservé au plan Gold 👑.\n\nAvec Premium : jusqu\'à 20 pays — Gratuit : 1 pays.',
+        actionText: 'PASSER À GOLD',
       );
       return;
     }
@@ -401,8 +398,7 @@ class _UserPubTextState extends State<UserPubText> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'L\'abonnement gratuit est limité à 2 pays maximum.\n'
-                  'Passez à Afrolook Premium pour sélectionner tous les pays africains.',
+              'Gratuit : 1 pays\nPremium : jusqu\'à 20 pays\n👑 Gold : tous les pays d\'un clic',
               style: TextStyle(color: _c.textSecondary),
             ),
             SizedBox(height: 20),
@@ -543,7 +539,7 @@ class _UserPubTextState extends State<UserPubText> {
                           ),
                           SizedBox(width: 6),
                           Text(
-                            isPremium || isAdmin ? 'Pays illimités' : 'Max 2 pays',
+                            isAdmin ? 'Illimité' : (AbonnementUtils.isGold(authProvider.loginUserData.abonnement) ? '🌍 Tous les pays' : (AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement) ? 'Max 20 pays' : 'Max 1 pays')),
                             style: TextStyle(
                               color: isPremium || isAdmin ? _c.accent : _c.primary,
                               fontSize: 12,
@@ -628,7 +624,7 @@ class _UserPubTextState extends State<UserPubText> {
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      'PREMIUM',
+                      'GOLD',
                       style: TextStyle(
                         color: _c.accent,
                         fontSize: 10,
@@ -639,7 +635,7 @@ class _UserPubTextState extends State<UserPubText> {
                 ],
               ),
               subtitle: Text(
-                'Fonctionnalité Premium - Votre post sera visible dans toute l\'Afrique',
+                'Gold 👑 uniquement — appuyez pour en savoir plus',
                 style: TextStyle(color: _c.textSecondary),
               ),
               trailing: _selectAllCountries
@@ -675,7 +671,7 @@ class _UserPubTextState extends State<UserPubText> {
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Abonnement gratuit : Sélectionnez 1 ou 2 pays maximum',
+                      'Abonnement gratuit : Sélectionnez jusqu'a 20 pays maximum',
                       style: TextStyle(
                         color: _c.textPrimary,
                         fontSize: 12,
@@ -696,9 +692,9 @@ class _UserPubTextState extends State<UserPubText> {
               itemBuilder: (context, index) {
                 final country = _filteredCountries[index];
                 final isSelected = _selectedCountries.contains(country);
-                final isDisabled = !isPremium && !isAdmin &&
-                    _selectedCountries.length >= _maxCountriesForFree &&
-                    !isSelected;
+                final isGold = AbonnementUtils.isGold(authProvider.loginUserData.abonnement);
+                final limit = isGold || isAdmin ? 999 : (AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement) ? 20 : _maxCountriesForFree);
+                final isDisabled = _selectedCountries.length >= limit && !isSelected;
 
                 return Material(
                   color: isSelected ? _c.primary.withOpacity(0.1) : _c.surface,
@@ -1667,7 +1663,7 @@ class _UserPubTextState extends State<UserPubText> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Veuillez sélectionner 1 ou 2 pays maximum',
+                'Veuillez sélectionner jusqu'a 20 pays maximum',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: _c.danger),
               ),
@@ -1952,7 +1948,7 @@ class _UserPubTextState extends State<UserPubText> {
       infoText = 'Mode Premium : Tous pays • 3000 caractères • Pas d\'attente';
       infoColor = Color(0xFFFDB813);
     } else {
-      infoText = 'Mode Gratuit : Max 2 pays • 300 caractères • Attente 60min';
+      infoText = 'Mode Gratuit : Max 20 pays • 300 caractères • Attente 60min';
       infoColor = Colors.grey;
     }
 
@@ -2378,4 +2374,6 @@ class _UserPubTextState extends State<UserPubText> {
     );
   }
 }
+
+
 

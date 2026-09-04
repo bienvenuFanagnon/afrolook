@@ -111,7 +111,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
   List<AfricanCountry> _selectedCountries = [];
   List<AfricanCountry> _filteredCountries = [];
   bool _selectAllCountries = false;
-  int _maxCountriesForFree = 2;
+  int _maxCountriesForFree = 1;
   bool _showCountrySelection = false;
   final FocusNode _countrySearchFocus = FocusNode();
 
@@ -559,12 +559,12 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
   // ========== SÉLECTION PAYS ==========
 
   void _toggleCountrySelection(AfricanCountry country) {
-    final isPremium = AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement);
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
 
-    if (!isPremium && !isAdmin) {
-      if (_selectedCountries.length >= _maxCountriesForFree &&
-          !_selectedCountries.contains(country)) {
+    if (!isAdmin) {
+      final isGold = AbonnementUtils.isGold(authProvider.loginUserData.abonnement);
+      final limit = isGold ? 999 : (AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement) ? 20 : _maxCountriesForFree);
+      if (_selectedCountries.length >= limit && !_selectedCountries.contains(country)) {
         _showCountryLimitModal();
         return;
       }
@@ -581,15 +581,14 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
   }
 
   void _toggleSelectAllCountries() {
-    final isPremium = AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement);
+    final isGold = AbonnementUtils.isGold(authProvider.loginUserData.abonnement);
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
 
-    if (!isPremium && !isAdmin) {
+    if (!isGold && !isAdmin) {
       _showPremiumModal(
-        title: 'Fonctionnalité Premium',
-        message: 'L\'option "Tous les pays" est réservée aux abonnés Premium.\n'
-            'Passez à Afrolook Premium pour atteindre toute l\'Afrique.',
-        actionText: 'PASSER À PREMIUM',
+        title: 'Fonctionnalité Gold 👑',
+        message: 'Sélectionner tous les pays en un clic est réservé au plan Gold 👑.\n\nAvec Premium : jusqu\'à 20 pays — Gratuit : 1 pays.',
+        actionText: 'PASSER À GOLD',
       );
       return;
     }
@@ -624,8 +623,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'L\'abonnement gratuit est limité à 2 pays maximum.\n'
-                  'Passez à Afrolook Premium pour sélectionner tous les pays africains.',
+              'Gratuit : 1 pays\nPremium : jusqu\'à 20 pays\n👑 Gold : tous les pays d\'un clic',
               style: TextStyle(color: _c.textSecondary),
             ),
             SizedBox(height: 20),
@@ -739,7 +737,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                           ),
                           SizedBox(width: 6),
                           Text(
-                            isPremium || isAdmin ? 'Pays illimités' : 'Max 2 pays',
+                            isAdmin ? 'Illimité' : (AbonnementUtils.isGold(authProvider.loginUserData.abonnement) ? '🌍 Tous les pays' : (AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement) ? 'Max 20 pays' : 'Max 1 pays')),
                             style: TextStyle(
                               color: isPremium || isAdmin ? _c.accent : _c.primary,
                               fontSize: 12,
@@ -808,13 +806,13 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                       color: _c.accent.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: Text('PREMIUM',
+                    child: Text('GOLD',
                         style: TextStyle(color: _c.accent, fontSize: 10, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
               subtitle: Text(
-                'Fonctionnalité Premium - Votre post sera visible dans toute l\'Afrique',
+                'Gold 👑 uniquement — appuyez pour en savoir plus',
                 style: TextStyle(color: _c.textSecondary),
               ),
               trailing: _selectAllCountries
@@ -837,9 +835,9 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
               itemBuilder: (context, index) {
                 final country = _filteredCountries[index];
                 final isSelected = _selectedCountries.contains(country);
-                final isDisabled = !isPremium && !isAdmin &&
-                    _selectedCountries.length >= _maxCountriesForFree &&
-                    !isSelected;
+                final isGold = AbonnementUtils.isGold(authProvider.loginUserData.abonnement);
+                final limit = isGold || isAdmin ? 999 : (AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement) ? 20 : _maxCountriesForFree);
+                final isDisabled = _selectedCountries.length >= limit && !isSelected;
 
                 return Material(
                   color: isSelected ? _c.primary.withOpacity(0.1) : _c.surface,
@@ -2078,7 +2076,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                                       ? 'Mode Admin: Aucune restriction'
                                       : AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement)
                                       ? 'Mode Premium: Pays illimités • Audio 3 min • 3000 caractères'
-                                      : 'Mode Gratuit: Max 2 pays • Audio 3 min • 300 caractères',
+                                      : 'Mode Gratuit: Max 20 pays • Audio 3 min • 300 caractères',
                                   style: TextStyle(color: _c.textSecondary, fontSize: 12),
                                 ),
                               ),
@@ -2250,3 +2248,4 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
     );
   }
 }
+

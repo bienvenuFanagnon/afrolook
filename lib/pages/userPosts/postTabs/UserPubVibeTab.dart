@@ -92,7 +92,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
   List<AfricanCountry> _selectedCountries = [];
   List<AfricanCountry> _filteredCountries = [];
   bool _selectAllCountries = false;
-  int _maxCountriesForFree = 2;
+  int _maxCountriesForFree = 1;
   bool _showCountrySelection = false;
   final FocusNode _countrySearchFocus = FocusNode();
 
@@ -285,10 +285,11 @@ class _UserPubVibeState extends State<UserPubVibe> {
   }
 
   void _toggleCountrySelection(AfricanCountry country) {
-    final isPremium = AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement);
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
-    if (!isPremium && !isAdmin) {
-      if (_selectedCountries.length >= _maxCountriesForFree && !_selectedCountries.contains(country)) {
+    if (!isAdmin) {
+      final isGold = AbonnementUtils.isGold(authProvider.loginUserData.abonnement);
+      final limit = isGold ? 999 : (AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement) ? 20 : _maxCountriesForFree);
+      if (_selectedCountries.length >= limit && !_selectedCountries.contains(country)) {
         _showCountryLimitModal();
         return;
       }
@@ -304,13 +305,13 @@ class _UserPubVibeState extends State<UserPubVibe> {
   }
 
   void _toggleSelectAllCountries() {
-    final isPremium = AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement);
+    final isGold = AbonnementUtils.isGold(authProvider.loginUserData.abonnement);
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
-    if (!isPremium && !isAdmin) {
+    if (!isGold && !isAdmin) {
       _showPremiumModal(
-        title: 'Fonctionnalité Premium',
-        message: 'L\'option "Tous les pays" est réservée aux abonnés Premium.\nPassez à Afrolook Premium pour atteindre toute l\'Afrique.',
-        actionText: 'PASSER À PREMIUM',
+        title: 'Fonctionnalité Gold 👑',
+        message: 'Sélectionner tous les pays en un clic est réservé au plan Gold 👑.\n\nAvec Premium : jusqu\'à 20 pays — Gratuit : 1 pays.',
+        actionText: 'PASSER À GOLD',
       );
       return;
     }
@@ -336,7 +337,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('L\'abonnement gratuit est limité à 2 pays maximum.\nPassez à Afrolook Premium pour sélectionner tous les pays africains.',
+            Text('Gratuit : 1 pays\nPremium : jusqu\'à 20 pays\n👑 Gold : tous les pays d\'un clic',
                 style: TextStyle(color: _c.textSecondary)),
             SizedBox(height: 20),
             Container(
@@ -421,7 +422,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
                           Icon(isPremium || isAdmin ? Icons.workspace_premium : Icons.lock, size: 14,
                               color: isPremium || isAdmin ? _c.accent : _c.primary),
                           SizedBox(width: 6),
-                          Text(isPremium || isAdmin ? 'Pays illimités' : 'Max 2 pays',
+                          Text(isAdmin ? 'Illimité' : (AbonnementUtils.isGold(authProvider.loginUserData.abonnement) ? '🌍 Tous les pays' : (AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement) ? 'Max 20 pays' : 'Max 1 pays')),
                               style: TextStyle(color: isPremium || isAdmin ? _c.accent : _c.primary, fontSize: 12, fontWeight: FontWeight.bold)),
                         ],
                       ),
@@ -469,11 +470,11 @@ class _UserPubVibeState extends State<UserPubVibe> {
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(color: _c.accent.withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
-                    child: Text('PREMIUM', style: TextStyle(color: _c.accent, fontSize: 10, fontWeight: FontWeight.bold)),
+                    child: Text('GOLD', style: TextStyle(color: _c.accent, fontSize: 10, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
-              subtitle: Text('Fonctionnalité Premium - Votre vibe sera visible dans toute l\'Afrique', style: TextStyle(color: _c.textSecondary)),
+              subtitle: Text('Gold 👑 uniquement — appuyez pour en savoir plus', style: TextStyle(color: _c.textSecondary)),
               trailing: _selectAllCountries
                   ? Container(padding: EdgeInsets.all(8), decoration: BoxDecoration(color: _c.primary, shape: BoxShape.circle), child: Icon(Icons.check, color: Colors.white, size: 20))
                   : null,
@@ -487,7 +488,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
                 children: [
                   Icon(Icons.info, size: 16, color: _c.primary),
                   SizedBox(width: 8),
-                  Expanded(child: Text('Abonnement gratuit : Sélectionnez 1 ou 2 pays maximum', style: TextStyle(color: _c.textPrimary, fontSize: 12))),
+                  Expanded(child: Text('Abonnement gratuit : Sélectionnez jusqu'a 20 pays maximum', style: TextStyle(color: _c.textPrimary, fontSize: 12))),
                 ],
               ),
             ),
@@ -499,7 +500,9 @@ class _UserPubVibeState extends State<UserPubVibe> {
               itemBuilder: (context, index) {
                 final country = _filteredCountries[index];
                 final isSelected = _selectedCountries.contains(country);
-                final isDisabled = !isPremium && !isAdmin && _selectedCountries.length >= _maxCountriesForFree && !isSelected;
+                final isGold = AbonnementUtils.isGold(authProvider.loginUserData.abonnement);
+                final limit = isGold || isAdmin ? 999 : (AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement) ? 20 : _maxCountriesForFree);
+                final isDisabled = _selectedCountries.length >= limit && !isSelected;
                 return Material(
                   color: isSelected ? _c.primary.withOpacity(0.1) : _c.surface,
                   child: ListTile(
@@ -884,7 +887,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
       infoText = 'Mode Premium : Tous pays • 100 Mo • 45 sec max • Pas d\'attente';
       infoColor = Color(0xFFFDB813);
     } else {
-      infoText = 'Mode Gratuit : Max 2 pays • 50 Mo • 30 sec max • Attente 30min';
+      infoText = 'Mode Gratuit : Max 20 pays • 50 Mo • 30 sec max • Attente 30min';
       infoColor = Colors.grey;
     }
     return Container(
@@ -1213,7 +1216,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
       }
       if (!isPremium && !isAdmin) {
         if (_selectedCountries.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez sélectionner 1 ou 2 pays maximum')));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez sélectionner jusqu'a 20 pays maximum')));
           return;
         }
         if (_selectedCountries.length > _maxCountriesForFree) {
@@ -2049,3 +2052,4 @@ class _UserPubVibeState extends State<UserPubVibe> {
     );
   }
 }
+
