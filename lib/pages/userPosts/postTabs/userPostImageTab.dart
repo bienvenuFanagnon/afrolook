@@ -303,9 +303,14 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
       return;
     }
 
+    final isGold    = AbonnementUtils.isGold(abonnement);
     final isPremium = AbonnementUtils.isPremiumActive(abonnement);
 
-    if (isPremium) {
+    if (isGold) {
+      _maxImages = 5;
+      _maxCharacters = 5000;
+      _cooldownMinutes = 0;
+    } else if (isPremium) {
       _maxImages = 3;
       _maxCharacters = 3000;
       _cooldownMinutes = 0;
@@ -364,7 +369,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
     if (_selectedImages.length >= _maxImages) {
       _showPremiumModal(
         title: 'Limite d\'images atteinte',
-        message: 'L\'abonnement gratuit est limité à 1 image.\nPassez à Afrolook Premium pour publier jusqu\'à 3 images.',
+        message: 'L\'abonnement gratuit est limité à 1 image.\nPremium : jusqu\'à 3 images — Gold 👑 : jusqu\'à 5 images.',
         actionText: 'VOIR L\'ABONNEMENT',
       );
       return;
@@ -495,7 +500,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('Afrolook Premium', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
-                        Text('Pays illimités • 3 images • Pas de cooldown', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
+                        Text('Pays illimités • 3 images (5 avec Gold 👑) • Pas de cooldown', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
                       ],
                     ),
                   ),
@@ -1069,8 +1074,9 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
   }
 
   Widget _buildImageCounter() {
-    final isPremium = AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement);
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
+    final isGold = AbonnementUtils.isGold(authProvider.loginUserData.abonnement);
+    final isPremium = !isGold && AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement);
 
     String statusText;
     Color statusColor;
@@ -1078,9 +1084,12 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
     if (isAdmin) {
       statusText = 'Admin • Images illimitées';
       statusColor = _c.primary;
+    } else if (isGold) {
+      statusText = 'Gold 👑 • ${_selectedImages.length}/5 images';
+      statusColor = const Color(0xFFFFD700);
     } else if (isPremium) {
       statusText = 'Premium • ${_selectedImages.length}/3 images';
-      statusColor = Color(0xFFFDB813);
+      statusColor = const Color(0xFFFDB813);
     } else {
       statusText = 'Gratuit • ${_selectedImages.length}/1 image';
       statusColor = Colors.grey;
@@ -1830,6 +1839,8 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                                 child: Text(
                                   authProvider.loginUserData.role == UserRole.ADM.name
                                       ? 'Mode Admin: Aucune restriction'
+                                      : AbonnementUtils.isGold(authProvider.loginUserData.abonnement)
+                                      ? 'Gold 👑: Pays illimités • 5 images • 5000 caractères'
                                       : AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement)
                                       ? 'Mode Premium: Pays illimités • 3 images • 3000 caractères'
                                       : 'Mode Gratuit: Max 2 pays • 1 image • 300 caractères',

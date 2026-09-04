@@ -93,8 +93,8 @@ class _UserPubVideoState extends State<UserPubVideo> {
   bool _hasAcceptedVideoConditions = false;
   int _maxCharacters = 300;
 
-  // 🔥 NOUVELLE LIMITE UNIQUE POUR TOUS : 30 Mo (TEMPORAIRE)
-  static const int _maxVideoSizeMB = 30;
+  // Limite vidéo selon le plan (initialisée dans _setupRestrictions)
+  int _maxVideoSizeMB = 30;
 
   int _cooldownMinutes = 5;
 
@@ -380,30 +380,32 @@ class _UserPubVideoState extends State<UserPubVideo> {
     }
   }
 
-  // 🔥 MÉTHODE MODIFIÉE : Limite unique de 30 Mo pour TOUS
   void _setupRestrictions() {
     final user = authProvider.loginUserData;
     final abonnement = user.abonnement;
 
-    // Admin garde 200 Mo pour la modération
     if (user.role == UserRole.ADM.name) {
       _maxCharacters = 5000;
+      _maxVideoSizeMB = 200;
       _cooldownMinutes = 0;
-      printVm('🔓 Mode Admin activé: 200 Mo pour la modération');
       return;
     }
 
+    final isGold    = AbonnementUtils.isGold(abonnement);
     final isPremium = AbonnementUtils.isPremiumActive(abonnement);
 
-    // 🔥 TOUS les utilisateurs normaux ont 30 Mo maximum (temporaire)
-    if (isPremium) {
-      _maxCharacters = 3000;
+    if (isGold) {
+      _maxCharacters = 5000;
+      _maxVideoSizeMB = 50;
       _cooldownMinutes = 0;
-      printVm('🌟 Mode Premium: 3000 caractères, 30 Mo (limite temporaire), pas de cooldown');
+    } else if (isPremium) {
+      _maxCharacters = 3000;
+      _maxVideoSizeMB = 30;
+      _cooldownMinutes = 0;
     } else {
       _maxCharacters = 300;
+      _maxVideoSizeMB = 30;
       _cooldownMinutes = 5;
-      printVm('🔒 Mode Gratuit: 300 caractères, 30 Mo (limite temporaire), cooldown 5min');
     }
   }
 
@@ -1086,13 +1088,12 @@ class _UserPubVideoState extends State<UserPubVideo> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '🔄 Mesure temporaire :',
+                        'Limites vidéo selon votre plan :',
                         style: TextStyle(color: _c.accent, fontWeight: FontWeight.bold, fontSize: 13),
                       ),
                       SizedBox(height: 4),
                       Text(
-                        'La taille maximale des vidéos est limitée à 30 Mo pour TOUS les utilisateurs (Gratuit et Premium) '
-                            'le temps d\'optimiser nos infrastructures.',
+                        'Gratuit & Premium : 30 Mo max — Gold 👑 : 50 Mo max — Admin : 200 Mo max.',
                         style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
                       ),
                     ],
@@ -1118,18 +1119,22 @@ class _UserPubVideoState extends State<UserPubVideo> {
 
   // 🔥 VERSION MODIFIÉE : Message clair sur la limite temporaire
   Widget _buildVideoSizeInfo() {
-    final isPremium = AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement);
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
+    final isGold = AbonnementUtils.isGold(authProvider.loginUserData.abonnement);
+    final isPremium = !isGold && AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement);
     String sizeText;
     Color color;
     if (isAdmin) {
       sizeText = 'Admin: 200 Mo';
       color = _c.primary;
+    } else if (isGold) {
+      sizeText = 'Gold: 50 Mo';
+      color = const Color(0xFFFFD700);
     } else if (isPremium) {
-      sizeText = 'Premium: 30 Mo (temporaire)';
-      color = Color(0xFFFDB813);
+      sizeText = 'Premium: 30 Mo';
+      color = const Color(0xFFFDB813);
     } else {
-      sizeText = 'Gratuit: 30 Mo (temporaire)';
+      sizeText = 'Gratuit: 30 Mo';
       color = Colors.grey;
     }
     return Container(
@@ -1147,18 +1152,22 @@ class _UserPubVideoState extends State<UserPubVideo> {
   }
 
   Widget _buildRestrictionsInfo() {
-    final isPremium = AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement);
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
+    final isGold = AbonnementUtils.isGold(authProvider.loginUserData.abonnement);
+    final isPremium = !isGold && AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement);
     String infoText;
     Color infoColor;
     if (isAdmin) {
       infoText = 'Admin : Tous pays • 200 Mo';
       infoColor = _c.primary;
+    } else if (isGold) {
+      infoText = 'Gold 👑 : Tous pays • 50 Mo • Pas d\'attente';
+      infoColor = const Color(0xFFFFD700);
     } else if (isPremium) {
-      infoText = 'Premium : Tous pays • 30 Mo (temporaire) • Pas d\'attente';
-      infoColor = Color(0xFFFDB813);
+      infoText = 'Premium : Tous pays • 30 Mo • Pas d\'attente';
+      infoColor = const Color(0xFFFDB813);
     } else {
-      infoText = 'Gratuit : Max 2 pays • 30 Mo (temporaire) • Attente 60min';
+      infoText = 'Gratuit : Max 2 pays • 30 Mo • Attente 60min';
       infoColor = Colors.grey;
     }
     return Container(
@@ -1898,7 +1907,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
                   children: [
                     Row(children: [Icon(Icons.insert_drive_file, color: _c.textSecondary, size: 16), SizedBox(width: 8), Expanded(child: Text(_videoFileName ?? 'Vidéo', style: TextStyle(color: _c.textPrimary, fontSize: 13), overflow: TextOverflow.ellipsis))]),
                     SizedBox(height: 8),
-                    Row(children: [Icon(sizeInMB > _maxVideoSizeMB ? Icons.warning : Icons.check_circle, color: sizeInMB > _maxVideoSizeMB ? _c.warning : _c.primary, size: 16), SizedBox(width: 8), Expanded(child: Text(sizeInMB > _maxVideoSizeMB ? 'Dépasse la limite autorisée (30 Mo max temporaire)' : 'Taille dans les limites', style: TextStyle(color: sizeInMB > _maxVideoSizeMB ? _c.warning : _c.primary, fontSize: 13)))]),
+                    Row(children: [Icon(sizeInMB > _maxVideoSizeMB ? Icons.warning : Icons.check_circle, color: sizeInMB > _maxVideoSizeMB ? _c.warning : _c.primary, size: 16), SizedBox(width: 8), Expanded(child: Text(sizeInMB > _maxVideoSizeMB ? 'Dépasse la limite autorisée ($_maxVideoSizeMB Mo max)' : 'Taille dans les limites', style: TextStyle(color: sizeInMB > _maxVideoSizeMB ? _c.warning : _c.primary, fontSize: 13)))]),
                   ],
                 )),
                 SizedBox(height: 12),

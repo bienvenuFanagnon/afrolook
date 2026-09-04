@@ -1751,17 +1751,14 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     final images = widget.post.images!;
 
     if (imageCount == 1) {
-      // 1 image : pleine largeur
       return _buildSingleImage(images[0], height);
     } else if (imageCount == 2) {
-      // 2 images : côte à côte
       return _buildTwoImages(images, height);
-    } else if (imageCount == 3) {
-      // 3 images : 1 grande + 2 petites
-      return _buildThreeImages(images, height);
     } else {
-      // 4+ images : grid 2x2 avec indicateur
-      return _buildMultipleImages(images, height);
+      // 3+ images : layout 1 grande + 2 petites.
+      // Si plus de 3, la dernière petite affiche "+N" pour les images cachées.
+      final extra = imageCount > 3 ? imageCount - 3 : 0;
+      return _buildThreeImages(images, height, extraCount: extra);
     }
   }
 
@@ -1836,7 +1833,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     );
   }
 
-  Widget _buildThreeImages(List<String> images, double height) {
+  Widget _buildThreeImages(List<String> images, double height, {int extraCount = 0}) {
     final colors = AppColors.of(context);
     return GestureDetector(
       onTap: _openDetailsPage,
@@ -1890,21 +1887,39 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                     ),
                   ),
 
-                  // Troisième image - moitié inférieure
+                  // Troisième image - moitié inférieure (+ badge si images cachées)
                   Expanded(
                     child: Padding(
                       padding: EdgeInsets.only(top: 2),
-                      child: CachedNetworkImage(
-                        imageUrl: _optimizeUrl(images[2]),
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        placeholder: (context, url) => Container(
-                          color: colors.shimmerBase,
-                        ),
-                        errorWidget: (context, url, error) => Container(
-                          color: colors.shimmerBase,
-                          child: Icon(Icons.broken_image, color: colors.textSecondary),
-                        ),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          CachedNetworkImage(
+                            imageUrl: _optimizeUrl(images[2]),
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            placeholder: (context, url) => Container(
+                              color: colors.shimmerBase,
+                            ),
+                            errorWidget: (context, url, error) => Container(
+                              color: colors.shimmerBase,
+                              child: Icon(Icons.broken_image, color: colors.textSecondary),
+                            ),
+                          ),
+                          if (extraCount > 0)
+                            Container(
+                              color: Colors.black.withOpacity(0.55),
+                              alignment: Alignment.center,
+                              child: Text(
+                                '+$extraCount',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ),
@@ -2286,7 +2301,6 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
             icon: isLiked ? FontAwesome.heart : FontAwesome.heart_o,
             count: _localLovesCount,
             color: isLiked ? colors.danger : colors.textSecondary,
-            isLoading: _isLiking,
             onPressed: (hasAccess && !_isLiking) ? () {
               _handleLike();
               recordUniquePostView();

@@ -1973,7 +1973,6 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
             icon: isLiked ? FontAwesome.heart : FontAwesome.heart_o,
             count: widget.post.loves ?? 0,
             color: isLiked ? colors.danger : colors.textSecondary,
-            isLoading: _isLiking,
             onPressed: (hasAccess && !_isLiking) ? _handleLike : null,
           ),
           _buildFavoriteButton(hasAccess),
