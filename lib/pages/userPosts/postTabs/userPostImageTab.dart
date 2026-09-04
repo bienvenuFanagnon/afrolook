@@ -1625,7 +1625,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => UserAbonnementPage(),
+          builder: (_) => AbonnementScreen(),
         ));
       },
       child: Container(
