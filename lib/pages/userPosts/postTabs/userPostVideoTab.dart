@@ -1150,7 +1150,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
           if (showGoldHint) ...[
             const SizedBox(width: 6),
             GestureDetector(
-              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const UserAbonnementPage())),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => UserAbonnementPage())),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(color: const Color(0xFFFFD700).withOpacity(0.2), borderRadius: BorderRadius.circular(6), border: Border.all(color: const Color(0xFFFFD700))),
