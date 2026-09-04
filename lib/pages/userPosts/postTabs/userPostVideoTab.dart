@@ -400,7 +400,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
       _cooldownMinutes = 0;
     } else if (isPremium) {
       _maxCharacters = 3000;
-      _maxVideoSizeMB = 30;
+      _maxVideoSizeMB = 40;
       _cooldownMinutes = 0;
     } else {
       _maxCharacters = 300;
@@ -1048,7 +1048,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
           const SizedBox(height: 10),
           _planRow('🆓 Gratuit', '30 Mo max • Attente 60 min', Colors.grey),
           const SizedBox(height: 6),
-          _planRow('⭐ Premium', '30 Mo max • Pas d\'attente', const Color(0xFFFDB813)),
+          _planRow('⭐ Premium', '40 Mo max • Pas d\'attente', const Color(0xFFFDB813)),
           const SizedBox(height: 6),
           _planRow('👑 Gold', '50 Mo max • Pas d\'attente', const Color(0xFFFFD700)),
         ],
@@ -1080,7 +1080,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
       sizeText = 'Gold: 50 Mo';
       color = const Color(0xFFFFD700);
     } else if (isPremium) {
-      sizeText = 'Premium: 30 Mo';
+      sizeText = 'Premium: 40 Mo';
       color = const Color(0xFFFDB813);
     } else {
       sizeText = 'Gratuit: 30 Mo';
@@ -1126,7 +1126,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
       infoText = 'Gold 👑 : Tous pays • 50 Mo • Pas d\'attente';
       infoColor = const Color(0xFFFFD700);
     } else if (isPremium) {
-      infoText = 'Premium : Tous pays • 30 Mo • Pas d\'attente';
+      infoText = 'Premium : Tous pays • 40 Mo • Pas d\'attente';
       infoColor = const Color(0xFFFDB813);
     } else {
       infoText = 'Gratuit : Max 2 pays • 30 Mo • Attente 60min';
@@ -1210,13 +1210,13 @@ class _UserPubVideoState extends State<UserPubVideo> {
         final isPremium = !isGold && AbonnementUtils.isPremiumActive(abonnement);
         title = 'Vidéo trop grande';
         if (isPremium) {
-          message = 'Votre vidéo dépasse la limite de 30 Mo (plan Premium).\n\n'
+          message = 'Votre vidéo dépasse la limite de 40 Mo (plan Premium).\n\n'
               '👑 Avec Gold, vous pouvez publier des vidéos jusqu\'à 50 Mo !\n\n'
               '📹 Compressez votre vidéo ou passez à Gold.';
           actionText = 'PASSER À GOLD';
         } else {
-          message = 'Votre vidéo dépasse la limite de 30 Mo.\n\n'
-              '⭐ Premium : 30 Mo max\n'
+          message = 'Votre vidéo dépasse votre limite actuelle.\n\n'
+              '⭐ Premium : 40 Mo max\n'
               '👑 Gold : 50 Mo max\n\n'
               '📹 Compressez votre vidéo ou changez de plan.';
           actionText = 'VOIR LES ABONNEMENTS';

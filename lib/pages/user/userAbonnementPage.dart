@@ -1155,7 +1155,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
     _Feature('Messagerie privée', true),
     _Feature('Créer et gérer des groupes · 2 groupes max · 100 membres/groupe', true),
     _Feature('Posts visibles partout en Afrique', true),
-    _Feature('3 photos par look · vidéos jusqu\'à 30 Mo', true),
+    _Feature('3 photos par look · vidéos jusqu\'à 40 Mo', true),
     _Feature('Live HD · latence 500ms', true),
     _Feature('Mode fantôme · connexion cachée', true),
     _Feature('Emojis 3D · Stickers exclusifs', true),
@@ -1178,7 +1178,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
     _Feature('Tout le plan Premium inclus', true),
     // ── Posts & médias
     _Feature('5 photos par look (Premium : 3)', true, isGoldOnly: true),
-    _Feature('Vidéos jusqu\'à 50 Mo (Premium : 30 Mo)', true, isGoldOnly: true),
+    _Feature('Vidéos jusqu\'à 50 Mo (Premium : 40 Mo)', true, isGoldOnly: true),
     // ── Groupes : limites levées
     _Feature('Groupes illimités (Premium : 2 max)', true, isGoldOnly: true),
     _Feature('Membres illimités par groupe (Premium : 100 max)', true, isGoldOnly: true),
