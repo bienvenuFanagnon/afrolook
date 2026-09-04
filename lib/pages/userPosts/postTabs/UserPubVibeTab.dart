@@ -488,7 +488,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
                 children: [
                   Icon(Icons.info, size: 16, color: _c.primary),
                   SizedBox(width: 8),
-                  Expanded(child: Text('Abonnement gratuit : Sélectionnez jusqu'a 20 pays maximum', style: TextStyle(color: _c.textPrimary, fontSize: 12))),
+                  Expanded(child: Text('Abonnement gratuit : Sélectionnez jusqu\u0027a 20 pays maximum', style: TextStyle(color: _c.textPrimary, fontSize: 12))),
                 ],
               ),
             ),
@@ -1216,7 +1216,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
       }
       if (!isPremium && !isAdmin) {
         if (_selectedCountries.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez sélectionner jusqu'a 20 pays maximum')));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez sélectionner jusqu\u0027a 20 pays maximum')));
           return;
         }
         if (_selectedCountries.length > _maxCountriesForFree) {

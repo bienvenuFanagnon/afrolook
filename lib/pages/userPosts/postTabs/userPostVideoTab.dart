@@ -652,7 +652,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
                 children: [
                   Icon(Icons.info, size: 16, color: _c.primary),
                   SizedBox(width: 8),
-                  Expanded(child: Text('Abonnement gratuit : Sélectionnez jusqu'a 20 pays maximum', style: TextStyle(color: _c.textPrimary, fontSize: 12))),
+                  Expanded(child: Text('Abonnement gratuit : Sélectionnez jusqu\u0027a 20 pays maximum', style: TextStyle(color: _c.textPrimary, fontSize: 12))),
                 ],
               ),
             ),
@@ -1545,7 +1545,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
       }
       if (!isPremium && !isAdmin) {
         if (_selectedCountries.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez sélectionner jusqu'a 20 pays maximum', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez sélectionner jusqu\u0027a 20 pays maximum', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))));
           return;
         }
         if (_selectedCountries.length > _maxCountriesForFree) {
@@ -2944,7 +2944,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //                 children: [
 //                   Icon(Icons.info, size: 16, color: _c.primary),
 //                   SizedBox(width: 8),
-//                   Expanded(child: Text('Abonnement gratuit : Sélectionnez jusqu'a 20 pays maximum', style: TextStyle(color: _c.textPrimary, fontSize: 12))),
+//                   Expanded(child: Text('Abonnement gratuit : Sélectionnez jusqu\u0027a 20 pays maximum', style: TextStyle(color: _c.textPrimary, fontSize: 12))),
 //                 ],
 //               ),
 //             ),
@@ -2957,8 +2957,8 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //                 final country = _filteredCountries[index];
 //                 final isSelected = _selectedCountries.contains(country);
 //                 final isGold = AbonnementUtils.isGold(authProvider.loginUserData.abonnement);
-                final limit = isGold || isAdmin ? 999 : (AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement) ? 20 : _maxCountriesForFree);
-                final isDisabled = _selectedCountries.length >= limit && !isSelected;
+//                 final limit = isGold || isAdmin ? 999 : (AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement) ? 20 : _maxCountriesForFree);
+//                 final isDisabled = _selectedCountries.length >= limit && !isSelected;
 //                 return Material(
 //                   color: isSelected ? _c.primary.withOpacity(0.1) : _c.surface,
 //                   child: ListTile(
@@ -3832,7 +3832,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //       }
 //       if (!isPremium && !isAdmin) {
 //         if (_selectedCountries.isEmpty) {
-//           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez sélectionner jusqu'a 20 pays maximum', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))));
+//           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez sélectionner jusqu\u0027a 20 pays maximum', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))));
 //           return;
 //         }
 //         if (_selectedCountries.length > _maxCountriesForFree) {

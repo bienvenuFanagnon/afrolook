@@ -671,7 +671,7 @@ class _UserPubTextState extends State<UserPubText> {
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Abonnement gratuit : Sélectionnez jusqu'a 20 pays maximum',
+                      'Abonnement gratuit : Sélectionnez jusqu\u0027a 20 pays maximum',
                       style: TextStyle(
                         color: _c.textPrimary,
                         fontSize: 12,
@@ -1663,7 +1663,7 @@ class _UserPubTextState extends State<UserPubText> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Veuillez sélectionner jusqu'a 20 pays maximum',
+                'Veuillez sélectionner jusqu\u0027a 20 pays maximum',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: _c.danger),
               ),
