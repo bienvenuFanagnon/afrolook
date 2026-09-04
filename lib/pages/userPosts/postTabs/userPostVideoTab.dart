@@ -1137,18 +1137,31 @@ class _UserPubVideoState extends State<UserPubVideo> {
       sizeText = 'Gratuit: 30 Mo';
       color = Colors.grey;
     }
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+    final showGoldHint = !isAdmin && !isGold;
+    final badgeWidget = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(color: color.withOpacity(0.2), borderRadius: BorderRadius.circular(12), border: Border.all(color: color)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.storage, size: 14, color: color),
-          SizedBox(width: 6),
+          const SizedBox(width: 6),
           Text(sizeText, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
+          if (showGoldHint) ...[
+            const SizedBox(width: 6),
+            GestureDetector(
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const UserAbonnementPage())),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(color: const Color(0xFFFFD700).withOpacity(0.2), borderRadius: BorderRadius.circular(6), border: Border.all(color: const Color(0xFFFFD700))),
+                child: const Text('👑 50 Mo', style: TextStyle(color: Color(0xFFFFD700), fontSize: 11, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
         ],
       ),
     );
+    return badgeWidget;
   }
 
   Widget _buildRestrictionsInfo() {
@@ -1243,12 +1256,22 @@ class _UserPubVideoState extends State<UserPubVideo> {
   void _showPremiumModal({String? reason, String? title, String? message, String? actionText}) {
     if (title == null) {
       if (reason == 'size') {
+        final abonnement = authProvider.loginUserData.abonnement;
+        final isGold = AbonnementUtils.isGold(abonnement);
+        final isPremium = !isGold && AbonnementUtils.isPremiumActive(abonnement);
         title = 'Vidéo trop grande';
-        message = '⚠️ Pour des raisons techniques liées à l\'affluence record sur notre plateforme, '
-            'la taille maximale des vidéos est temporairement limitée à 30 Mo pour TOUS les utilisateurs.\n\n'
-            '📹 Nous vous invitons à compresser votre vidéo avant de la publier.\n\n'
-            '🔜 L\'ancienne limite sera rétablie dès que possible. Merci pour votre compréhension !';
-        actionText = 'COMPRENDRE';
+        if (isPremium) {
+          message = 'Votre vidéo dépasse la limite de 30 Mo (plan Premium).\n\n'
+              '👑 Avec Gold, vous pouvez publier des vidéos jusqu\'à 50 Mo !\n\n'
+              '📹 Compressez votre vidéo ou passez à Gold.';
+          actionText = 'PASSER À GOLD';
+        } else {
+          message = 'Votre vidéo dépasse la limite de 30 Mo.\n\n'
+              '⭐ Premium : 30 Mo max\n'
+              '👑 Gold : 50 Mo max\n\n'
+              '📹 Compressez votre vidéo ou changez de plan.';
+          actionText = 'VOIR LES ABONNEMENTS';
+        }
       } else {
         title = 'Limite de caractères atteinte';
         message = 'L\'abonnement gratuit est limité à 300 caractères.\nPassez à Afrolook Premium pour écrire jusqu\'à 3000 caractères.';

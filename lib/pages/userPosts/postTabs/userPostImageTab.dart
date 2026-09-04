@@ -367,11 +367,24 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
 
   Future<void> _selectImage() async {
     if (_selectedImages.length >= _maxImages) {
-      _showPremiumModal(
-        title: 'Limite d\'images atteinte',
-        message: 'L\'abonnement gratuit est limité à 1 image.\nPremium : jusqu\'à 3 images — Gold 👑 : jusqu\'à 5 images.',
-        actionText: 'VOIR L\'ABONNEMENT',
-      );
+      final abonnement = authProvider.loginUserData.abonnement;
+      final isGold = AbonnementUtils.isGold(abonnement);
+      final isPremium = !isGold && AbonnementUtils.isPremiumActive(abonnement);
+      if (isPremium) {
+        // Premium à 3 images → proposer Gold
+        _showPremiumModal(
+          title: 'Limite Premium atteinte',
+          message: 'Vous avez atteint la limite de 3 images (plan Premium).\n\n👑 Avec Gold, publiez jusqu\'à 5 images par post !',
+          actionText: 'PASSER À GOLD',
+        );
+      } else {
+        // Gratuit à 1 image → proposer Premium ou Gold
+        _showPremiumModal(
+          title: 'Limite d\'images atteinte',
+          message: 'L\'abonnement gratuit est limité à 1 image.\n\n⭐ Premium : jusqu\'à 3 images\n👑 Gold : jusqu\'à 5 images',
+          actionText: 'VOIR LES ABONNEMENTS',
+        );
+      }
       return;
     }
 
@@ -1593,6 +1606,48 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
     }
   }
 
+  Widget _buildImageUpgradeBanner() {
+    final abonnement = authProvider.loginUserData.abonnement;
+    final isGold = AbonnementUtils.isGold(abonnement);
+    final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
+    if (isGold || isAdmin) return const SizedBox.shrink();
+
+    final isPremium = AbonnementUtils.isPremiumActive(abonnement);
+    final String text;
+    final Color color;
+    if (isPremium) {
+      text = '👑 Gold : jusqu\'à 5 images par post';
+      color = const Color(0xFFFFD700);
+    } else {
+      text = '⭐ Premium : 3 images — 👑 Gold : 5 images par post';
+      color = const Color(0xFFFDB813);
+    }
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => const UserAbonnementPage(),
+        ));
+      },
+      child: Container(
+        margin: const EdgeInsets.only(top: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withOpacity(0.4)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.upgrade, color: color, size: 16),
+            const SizedBox(width: 8),
+            Expanded(child: Text(text, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w500))),
+            Icon(Icons.chevron_right, color: color, size: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildImageGrid() {
     if (_selectedImages.isEmpty) {
       return GestureDetector(
@@ -1753,6 +1808,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                           ),
                           child: _buildImageGrid(),
                         ),
+                        _buildImageUpgradeBanner(),
                         SizedBox(height: 20),
                         Container(
                           decoration: BoxDecoration(
