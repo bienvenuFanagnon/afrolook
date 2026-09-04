@@ -1667,7 +1667,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
               SizedBox(height: 16),
               Text('Ajouter une image', style: TextStyle(color: _c.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
               SizedBox(height: 8),
-              Text('Cliquez pour sélectionner\n(1 image pour gratuit, 3 pour Premium)', textAlign: TextAlign.center, style: TextStyle(color: _c.textSecondary, fontSize: 12)),
+              Text('Cliquez pour sélectionner\n(Gratuit : 1 • Premium : 3 • Gold 👑 : 5)', textAlign: TextAlign.center, style: TextStyle(color: _c.textSecondary, fontSize: 12)),
             ],
           ),
         ),

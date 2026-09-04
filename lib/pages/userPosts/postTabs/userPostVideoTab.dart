@@ -1032,88 +1032,37 @@ class _UserPubVideoState extends State<UserPubVideo> {
     );
   }
 
-  // 🔥 BANDEAU D'INFORMATION SERVEUR (NOUVEAU)
   Widget _buildServerMaintenanceBanner() {
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color.lerp(_c.warning, Colors.black, 0.4)!, Color.lerp(_c.warning, Colors.black, 0.25)!],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))],
+        color: _c.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _c.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(Icons.warning_amber_rounded, color: _c.accent, size: 28),
-              SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  '📢 INFORMATION IMPORTANTE',
-                  style: TextStyle(color: _c.accent, fontWeight: FontWeight.bold, fontSize: 14),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 12),
-          Text(
-            'Chers utilisateurs,',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Notre communauté grandit chaque jour ! Avec l\'augmentation exceptionnelle du nombre d\'utilisateurs, '
-                'nous rencontrons actuellement des pics de charge sur nos serveurs liés aux vidéos de grande taille.',
-            style: TextStyle(color: Colors.white.withOpacity(0.95), fontSize: 13, height: 1.4),
-          ),
-          SizedBox(height: 12),
-          Container(
-            padding: EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.speed, color: _c.accent, size: 20),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Limites vidéo selon votre plan :',
-                        style: TextStyle(color: _c.accent, fontWeight: FontWeight.bold, fontSize: 13),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Gratuit & Premium : 30 Mo max — Gold 👑 : 50 Mo max — Admin : 200 Mo max.',
-                        style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: 12),
-          Text(
-            '🔜 L\'ancienne limite sera rétablie dès que possible. Merci pour votre compréhension et votre fidélité !',
-            style: TextStyle(color: _c.accent, fontSize: 12, fontWeight: FontWeight.w500, fontStyle: FontStyle.italic),
-          ),
-          SizedBox(height: 8),
-          Text(
-            '💡 Astuce : Compressez vos vidéos avant de les publier pour respecter la limite.',
-            style: TextStyle(color: Colors.white70, fontSize: 11),
-          ),
+          Text('Limites vidéo par plan', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 13)),
+          const SizedBox(height: 10),
+          _planRow('🆓 Gratuit', '30 Mo max • Attente 60 min', Colors.grey),
+          const SizedBox(height: 6),
+          _planRow('⭐ Premium', '30 Mo max • Pas d\'attente', const Color(0xFFFDB813)),
+          const SizedBox(height: 6),
+          _planRow('👑 Gold', '50 Mo max • Pas d\'attente', const Color(0xFFFFD700)),
         ],
       ),
+    );
+  }
+
+  Widget _planRow(String plan, String details, Color color) {
+    return Row(
+      children: [
+        Text(plan, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12)),
+        const SizedBox(width: 8),
+        Expanded(child: Text(details, style: TextStyle(color: _c.textSecondary, fontSize: 12))),
+      ],
     );
   }
 
@@ -1987,7 +1936,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
                       children: [
                         Icon(Icons.warning, color: _c.danger, size: 18),
                         SizedBox(width: 8),
-                        Expanded(child: Text('⚠️ Cette vidéo dépasse la limite temporaire de 30 Mo. Veuillez la compresser avant publication.', style: TextStyle(color: _c.danger, fontSize: 12, fontWeight: FontWeight.w500))),
+                        Expanded(child: Text('⚠️ Cette vidéo dépasse votre limite ($_maxVideoSizeMB Mo). Compressez-la avant publication.', style: TextStyle(color: _c.danger, fontSize: 12, fontWeight: FontWeight.w500))),
                       ],
                     ),
                   ),
@@ -2258,7 +2207,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
                                     children: [
                                       Text('SÉLECTIONNER UNE VIDÉO', style: TextStyle(color: _c.accent, fontWeight: FontWeight.bold, fontSize: 16)),
                                       SizedBox(height: 2),
-                                      Text('Maximum 30 Mo (temporaire)', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
+                                      Text('Max $_maxVideoSizeMB Mo selon votre plan', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
                                     ],
                                   ),
                                 ],
