@@ -2101,19 +2101,10 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       );
     }
     final isLiked = _currentPost.users_love_id?.contains(authProvider.loginUserData.id) ?? false;
-    return Stack(
-      children: [
-        DoubleTapLike(
-          alreadyLiked: isLiked,
-          onDoubleTap: _handleLike,
-          child: AspectRatio(aspectRatio: 16 / 9, child: Chewie(controller: _chewieController!)),
-        ),
-        Positioned(
-          top: 8,
-          right: 8,
-          child: _buildPostTypeBadge(_currentPost),
-        ),
-      ],
+    return DoubleTapLike(
+      alreadyLiked: isLiked,
+      onDoubleTap: _handleLike,
+      child: AspectRatio(aspectRatio: 16 / 9, child: Chewie(controller: _chewieController!)),
     );
   }
 
@@ -2143,7 +2134,6 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
                 Text(canal != null ? '#${canal.titre}' : '@${user?.pseudo ?? ''}', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
                 if (user != null) UserBadgeWidget(user: user, size: 15),
                 if (isLocked) Icon(Icons.lock, color: _afroYellow, size: 16),
-                if ((_currentPost.typeTabbar ?? '').isNotEmpty) _buildTabbarBadge(_currentPost.typeTabbar!),
               ]),
               Text(canal != null ? '${canal?.usersSuiviId?.length ?? 0} abonnés' : '${user?.userAbonnesIds?.length ?? 0} abonnés', style: TextStyle(color: Colors.grey)),
             ]),
@@ -2986,8 +2976,42 @@ class _PostDetailBadgesRow extends StatelessWidget {
                 Text(countryLabel, style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w600)),
               ]),
             ),
+          if ((post.typeTabbar ?? '').isNotEmpty)
+            _TabbarBadge(typeTabbar: post.typeTabbar!),
         ],
       ),
+    );
+  }
+}
+
+class _TabbarBadge extends StatelessWidget {
+  final String typeTabbar;
+  const _TabbarBadge({required this.typeTabbar});
+
+  @override
+  Widget build(BuildContext context) {
+    const meta = {
+      'SPORT':      ('⚽', 'Sport',      Color(0xFF2196F3)),
+      'LOOKS':      ('👗', 'Looks',      Color(0xFFE91E63)),
+      'ACTUALITES': ('📰', 'Actus',      Color(0xFF607D8B)),
+      'EVENEMENT':  ('🎉', 'Événement',  Color(0xFFFF9800)),
+      'OFFRES':     ('🛍️', 'Offres',    Color(0xFF4CAF50)),
+      'GAMER':      ('🎮', 'Gamer',      Color(0xFF9C27B0)),
+    };
+    final m = meta[typeTabbar.toUpperCase()];
+    if (m == null) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: m.$3.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: m.$3.withValues(alpha: 0.6)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Text(m.$1, style: const TextStyle(fontSize: 11)),
+        const SizedBox(width: 4),
+        Text(m.$2, style: TextStyle(color: m.$3, fontSize: 10.5, fontWeight: FontWeight.w700)),
+      ]),
     );
   }
 }
