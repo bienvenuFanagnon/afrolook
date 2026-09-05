@@ -2046,12 +2046,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     List<Post> newPosts,
     int limit,
   ) async {
-    final interests = authProvider.loginUserData.interests ?? [];
-    printVm('🎯 [TIER2] interests utilisateur: ${interests.length} → $interests');
-    if (interests.isEmpty) {
-      printVm('🎯 [TIER2] → aucun intérêt, Tier2 ignoré');
-      return;
-    }
+    final userInterests = authProvider.loginUserData.interests ?? [];
+    // Nouveau utilisateur sans intérêts configurés → intérêts par défaut (1 par catégorie)
+    final interests = userInterests.isEmpty ? UserInterests.defaults : userInterests;
+    final isDefault = userInterests.isEmpty;
+    printVm('🎯 [TIER2] interests: ${interests.length} (défaut=$isDefault) → $interests');
     final countryCode = authProvider.loginUserData.countryData?['countryCode'] as String? ?? '';
     try {
       final posts = await FeedRepository().fetchInterestPosts(

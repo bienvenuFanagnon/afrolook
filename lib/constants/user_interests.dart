@@ -163,6 +163,21 @@ class UserInterests {
   static List<UserInterest> fromCodes(List<String> codes) =>
       codes.map((c) => byCode(c)).whereType<UserInterest>().toList();
 
+  /// Intérêts par défaut pour les nouveaux utilisateurs sans profil configuré.
+  /// 1 code populaire par catégorie — utilisés pour le Tier 2 quand interests=[].
+  static const List<String> defaults = [
+    'music_afrobeat',       // Musique
+    'sport_foot',           // Sport
+    'dance_afro',           // Danse & Spectacle
+    'fashion_mode',         // Mode & Beauté
+    'food_cuisine',         // Gastronomie
+    'cinema_film',          // Cinéma & Créativité
+    'culture_histoire',     // Culture & Savoir
+    'business_entrepreneuriat', // Business & Finance
+    'lifestyle_voyage',     // Lifestyle & Société
+    'gaming_mobile',        // Gaming & Tech
+  ];
+
   // IDs de catégories pour le prompt Gemini
   static String get allCategoryIdsForPrompt =>
       categories.map((c) => '${c.id} (${c.labelFr})').join(', ');
