@@ -1334,7 +1334,7 @@ class UserAuthProvider extends ChangeNotifier {
 
       final currentTime = DateTime.now().millisecondsSinceEpoch;
       final notifTime = DateTime.now().microsecondsSinceEpoch;
-      final oneHour = 60 * 60 * 1000;
+      final throttleMs = _throttleForType(typeNotif);
 
       final List<String> validOneSignalIds = [];
 
@@ -1361,7 +1361,7 @@ class UserAuthProvider extends ChangeNotifier {
             postType: postType,
             notifTime: notifTime,
             currentTime: currentTime,
-            oneHour: oneHour,
+            throttleMs: throttleMs,
             smallImage: smallImage,
           )),
         );
@@ -1626,7 +1626,7 @@ class UserAuthProvider extends ChangeNotifier {
 
       final currentTime = DateTime.now().millisecondsSinceEpoch;
       final notifTime = DateTime.now().microsecondsSinceEpoch;
-      final oneHour = 60 * 60 * 1000;
+      final throttleMs = _throttleForType(typeNotif);
 
       // 🔹 Étape 3 : Traiter en parallèle
       final List<String> validOneSignalIds = [];
@@ -1654,7 +1654,7 @@ class UserAuthProvider extends ChangeNotifier {
               postType: postType,
               notifTime: notifTime,
               currentTime: currentTime,
-              oneHour: oneHour,
+              throttleMs: throttleMs,
               smallImage: smallImage,
             ))
         );
@@ -2060,6 +2060,16 @@ if(actionType == 'comment'){
   //     printVm('❌ Erreur notifySubscribersOfInteraction: $e');
   //   }
   // }
+// 🔹 Délai minimum entre deux pushs selon le type (0 = immédiat)
+  static int _throttleForType(String typeNotif) {
+    const immediateTypes = {
+      'ABONNER', 'COMMENT', 'MESSAGE', 'PARRAINAGE', 'GAIN',
+      'INVITATION', 'ACCEPTINVITATION',
+    };
+    if (immediateTypes.contains(typeNotif.toUpperCase())) return 0;
+    return 15 * 60 * 1000; // 15 minutes
+  }
+
 // 🔹 Fonction helper pour traiter un utilisateur
   Future<_UserNotificationResult> _processUserNotification({
     required UserData user,
@@ -2072,14 +2082,14 @@ if(actionType == 'comment'){
     required String? postType,
     required int notifTime,
     required int currentTime,
-    required int oneHour,
+    required int throttleMs,
     required String? smallImage,
   })
   async {
     try {
       final lastNotif = user.lastNotificationTime ?? 0;
       final timeSinceLast = currentTime - lastNotif;
-      final canReceive = sender.role == 'ADM' || timeSinceLast >= oneHour;
+      final canReceive = sender.role == 'ADM' || throttleMs == 0 || timeSinceLast >= throttleMs;
 
       // 1. Enregistrer dans Firestore (sans attendre la fin)
       unawaited(_saveToFirestore(
@@ -2243,12 +2253,12 @@ if(actionType == 'comment'){
     String? smallImage,
   }) async {
     final currentTime = DateTime.now().millisecondsSinceEpoch;
-    const oneHour = 60 * 60 * 1000;
+    final throttleMs = _throttleForType(typeNotif);
     final lastNotif = receiver.lastNotificationTime ?? 0;
-    final canReceive = sender.role == 'ADM' || (currentTime - lastNotif) >= oneHour;
+    final canReceive = sender.role == 'ADM' || throttleMs == 0 || (currentTime - lastNotif) >= throttleMs;
 
     if (!canReceive) {
-      printVm("🚫 ${receiver.pseudo} a déjà reçu une notif il y a moins d’une heure");
+      printVm("🚫 ${receiver.pseudo} a déjà reçu une notif il y a moins de ${throttleMs ~/ 60000} min");
       return;
     }
 
