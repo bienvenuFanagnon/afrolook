@@ -1768,9 +1768,9 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       }
 
       setState(() {
-        _posts = newPosts;
+        _posts = _spreadCreators(newPosts);
         _loadedPostIds.addAll(loadedIds);
-        _totalPostsLoaded = newPosts.length;
+        _totalPostsLoaded = _posts.length;
         _isFirstLoad = false;
       });
 
@@ -1825,6 +1825,35 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     }
   }
 
+  List<Post> _spreadCreators(List<Post> posts) {
+    if (posts.length <= 3) return posts;
+    const int minGap = 3;
+    final result = <Post>[];
+    final pending = List<Post>.from(posts);
+    final lastSeen = <String, int>{};
+    while (pending.isNotEmpty) {
+      final currentPos = result.length;
+      bool placed = false;
+      for (int i = 0; i < pending.length; i++) {
+        final creatorId = pending[i].user_id ?? '';
+        final last = lastSeen[creatorId];
+        if (last == null || currentPos - last > minGap) {
+          result.add(pending.removeAt(i));
+          if (creatorId.isNotEmpty) lastSeen[creatorId] = currentPos;
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        final post = pending.removeAt(0);
+        result.add(post);
+        final creatorId = post.user_id ?? '';
+        if (creatorId.isNotEmpty) lastSeen[creatorId] = currentPos;
+      }
+    }
+    return result;
+  }
+
   void _addFetchedToList(
       List<Post> fetched, Set<String> loadedIds, List<Post> newPosts, int limit) {
     int added = 0;
@@ -1838,7 +1867,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       newPosts.add(post);
       added++;
     }
-    if (newPosts.length > 1) newPosts.shuffle();
+    // Pas de shuffle global : l'ordre est préservé, _spreadCreators gère la répartition.
   }
 
   Widget _buildAdAdvertisement({required String key}) => FeedAdCarousel(adKey: key);
