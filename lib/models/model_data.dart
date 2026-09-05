@@ -964,6 +964,11 @@ class UserData {
   // {"creatorId": 3, ...} — remis à zéro quand l'user ouvre la page du créateur
   Map<String, int>? newPostsByCreator = {};
 
+  // Posts non vus des abonnements — {postId: createdAtMs}
+  // Alimenté par Cloud Function à chaque nouveau post d'un créateur suivi.
+  // Vidé progressivement quand l'user voit les posts (markPostsSeen CF).
+  Map<String, int>? unreadPosts = {};
+
   // Centres d'intérêt (codes de UserInterests.all)
   List<String>? interests = [];
 
@@ -1310,6 +1315,8 @@ class UserData {
           .where((e) => (e.value as num).toInt() > 0)
           .map((e) => MapEntry(e.key, (e.value as num).toInt())),
     );
+    unreadPosts = ((json['unreadPosts'] as Map<String, dynamic>?) ?? {})
+        .map((k, v) => MapEntry(k, (v as num).toInt()));
 
     suspendedUntil = parseTimestamp(json['suspendedUntil']);
     suspendedPermanently = json['suspendedPermanently'] as bool?;
@@ -1402,6 +1409,9 @@ class UserData {
     data['todayCommentDate'] = todayCommentDate;
     // todayCommentedPostIds reste local (SharedPreferences), ne pas envoyer en Firestore
     data['interests'] = interests ?? [];
+    if (unreadPosts != null && unreadPosts!.isNotEmpty) {
+      data['unreadPosts'] = unreadPosts;
+    }
 
     return data;
   }

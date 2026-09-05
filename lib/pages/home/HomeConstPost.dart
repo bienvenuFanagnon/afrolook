@@ -56,6 +56,8 @@ import '../../widgets/feed/sections/feed_filter_bar.dart';
 import '../../widgets/feed/sections/feed_ad_widgets.dart';
 import '../../services/feed/feed_repository.dart';
 import '../../services/feed/feed_preload_service.dart';
+import '../../constants/user_interests.dart';
+import '../../widgets/feed/sections/feed_category_section.dart';
 import '../../services/feed/discovery_boost_service.dart';
 import '../../services/active_creators_service.dart';
 import '../user/active_creators_list_page.dart';
@@ -78,6 +80,44 @@ const Color lightBackground = Color(0xFF1E1E1E);
 const Color textColor = Colors.white;
 const Color accentYellow = Color(0xFFFFD700);
 final Color _primaryColor = Color(0xFFE21221); // Rouge
+
+// ── Helpers top-level pour la gestion des posts vus (Tier 1) ─────────────────
+const _kSeenPostsPrefKey = 'seen_tier1_posts_pending';
+
+Future<void> _persistSeenLocally(Set<String> ids) async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final existing = prefs.getStringList(_kSeenPostsPrefKey) ?? [];
+    final merged = {...existing, ...ids}.toList();
+    if (merged.length > 1000) merged.removeRange(0, merged.length - 1000);
+    await prefs.setStringList(_kSeenPostsPrefKey, merged);
+  } catch (_) {}
+}
+
+/// Flush les posts vus de la session précédente vers Firestore ET nettoie
+/// la mémoire. Appelé avant le chargement du feed pour que Tier 1 soit propre.
+Future<void> flushSeenPostsAndCleanMemory(
+  String userId,
+  UserData userData,
+) async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final pending = prefs.getStringList(_kSeenPostsPrefKey) ?? [];
+    if (pending.isEmpty) return;
+    final toFlush = pending.take(500).toList();
+    final updates = <String, dynamic>{};
+    for (final id in toFlush) {
+      updates['unreadPosts.$id'] = FieldValue.delete();
+    }
+    await FirebaseFirestore.instance.collection('Users').doc(userId).update(updates);
+    for (final id in toFlush) {
+      userData.unreadPosts?.remove(id);
+    }
+    final remaining = pending.length > 500 ? pending.sublist(500) : <String>[];
+    await prefs.setStringList(_kSeenPostsPrefKey, remaining);
+  } catch (_) {}
+}
+
 class HomeConstPostPage extends StatefulWidget {
   final String type;
   final String? sortType;
@@ -171,6 +211,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   final _activeCreatorsService = ActiveCreatorsService();
   // Posts déjà décrémentés dans cette session (évite double-décrément au scroll)
   final _decrementedPostIds = <String>{};
+  // IDs des posts Tier 1 affichés cette session → seront marqués "vus" à la sortie
+  final _seenTier1PostIds = <String>{};
   Timer? _stayTimer;
   bool _isPageVisible = true;
   bool _isSupportDialogShowing = false;
@@ -282,11 +324,13 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     _scrollCooldownTimer?.cancel();
     _scrollController.dispose();
     _visibilityTimers.forEach((key, timer) => timer.cancel());
+    _seenTimers.forEach((_, t) => t.cancel());
     _backgroundLoadTimer?.cancel();
     _starController.dispose();
     _unlikeController.dispose();
     WidgetsBinding.instance.removeObserver(this);
     MediaPlaybackManager.dispose();
+    _markSeenPostsInFirestore();
     super.dispose();
   }
 
@@ -737,6 +781,16 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     );
   }
   void _initializeData() async {
+    // Flush les posts vus lors de la session précédente → une seule écriture Firestore
+    // On await pour que unreadPosts soit à jour avant de charger le feed Tier 1
+    final userId = authProvider.loginUserData.id;
+    if (userId != null && userId.isNotEmpty) {
+      await flushSeenPostsAndCleanMemory(
+        userId,
+        authProvider.loginUserData,
+      );
+    }
+
     // Précharger les top créateurs, top posts et top commentateurs en parallèle
     WeeklyTopCreatorsWidget.preload();
     WeeklyTopPostsSectionWidget.preload();
@@ -1694,7 +1748,15 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       // Mode récent : chargement direct par curseur Firestore (unit-agnostic)
       if (widget.sortType == 'recent') {
         await _loadInitialRecentPosts(loadedIds, newPosts, limit);
-      } else switch (_currentFilter) {
+      } else {
+        // Tier 1 : posts non vus des abonnements (toujours en priorité)
+        await _loadTier1Posts(loadedIds, newPosts, 15);
+        // Tier 2 : découverte par intérêts (complète si Tier 1 insuffisant)
+        if (newPosts.length < limit) {
+          await _loadTier2InterestPosts(loadedIds, newPosts, limit - newPosts.length);
+        }
+      }
+      if (widget.sortType != 'recent') switch (_currentFilter) {
         case 'ALL':
           await _loadAllCountriesMixed(loadedIds, newPosts, limit);
           break;
@@ -1901,6 +1963,79 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     // Mélanger pour variété
     if (newPosts.length > 1) {
       newPosts.shuffle();
+    }
+  }
+
+  // ── TIER 1 : posts non vus des abonnements ───────────────────────────────
+  Future<void> _loadTier1Posts(
+    Set<String> loadedIds,
+    List<Post> newPosts,
+    int limit,
+  ) async {
+    final unread = authProvider.loginUserData.unreadPosts ?? {};
+    if (unread.isEmpty) return;
+    try {
+      final posts = await FeedRepository().fetchUnreadSubscriptionPosts(
+        unread,
+        {...loadedIds, ..._loadedPostIds},
+        limit: limit,
+      );
+      _addFetchedToList(posts, loadedIds, newPosts, limit);
+      // Mémoriser les IDs Tier 1 pour les marquer "vus" au dispose
+      for (final p in posts) {
+        if (p.id != null) _seenTier1PostIds.add(p.id!);
+      }
+      printVm('📌 Tier 1 : ${posts.length} posts non vus des abonnements');
+    } catch (e) {
+      printVm('⚠️ Tier 1 erreur : $e');
+    }
+  }
+
+  // ── TIER 2 : découverte par intérêts ─────────────────────────────────────
+  Future<void> _loadTier2InterestPosts(
+    Set<String> loadedIds,
+    List<Post> newPosts,
+    int limit,
+  ) async {
+    final interests = authProvider.loginUserData.interests ?? [];
+    if (interests.isEmpty) return;
+    final countryCode = authProvider.loginUserData.countryData?['countryCode'] as String? ?? '';
+    try {
+      final posts = await FeedRepository().fetchInterestPosts(
+        interests,
+        {...loadedIds, ..._loadedPostIds},
+        countryCode: countryCode,
+        limit: limit,
+      );
+      _addFetchedToList(posts, loadedIds, newPosts, limit);
+      printVm('🎯 Tier 2 : ${posts.length} posts par intérêts');
+    } catch (e) {
+      printVm('⚠️ Tier 2 erreur : $e');
+    }
+  }
+
+  // ── Marquer les posts vus : stocke en local, update Firestore au prochain lancement ──
+  void _markSeenPostsInFirestore() {
+    if (_seenTier1PostIds.isEmpty) return;
+    _persistSeenLocally(_seenTier1PostIds);
+  }
+
+  // ── Un post est considéré "vu" après 2 secondes d'affichage continu ──────
+  final Map<String, Timer> _seenTimers = {};
+
+  void _onPostBecameVisible(String postId, double fraction) {
+    if (!_seenTier1PostIds.contains(postId) &&
+        (authProvider.loginUserData.unreadPosts ?? {}).containsKey(postId)) {
+      if (fraction >= 0.5) {
+        // Démarrer le timer de 2 secondes seulement si > 50% visible
+        _seenTimers.putIfAbsent(postId, () => Timer(const Duration(seconds: 2), () {
+          _seenTier1PostIds.add(postId);
+          _seenTimers.remove(postId);
+        }));
+      } else {
+        // Moins de 50% visible → annuler le timer
+        _seenTimers.remove(postId)?.cancel();
+      }
     }
   }
 
@@ -3207,26 +3342,48 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         contentWidgets.add(const CommentLevelWidget());
       }
 
-      // Après le 3ème post : classement hebdo commentateurs + promo AfroShop (lun/jeu)
+      // Après le 3ème post : classement hebdo commentateurs + carousel Afrolook + articles
       if (i == 2) {
         contentWidgets.add(const WeeklyTopCommentatorsWidget());
+        // Carousel Afrolook — position prioritaire et très visible
+        contentWidgets.add(_buildUnifiedAdSlot(key: 'ad_post2'));
         if (_showShopPromo) {
           contentWidgets.add(ShopPromoFeedWidget(articles: _articles, isFirstPosition: false));
         }
       }
 
-      // Pub toutes les 4 posts — toujours affichée
+      // Pub toutes les 4 posts
       final postNumber = i + 1;
       if (postNumber % 4 == 0) {
         final slotN = postNumber ~/ 4 - 1;
         contentWidgets.add(_buildUnifiedAdSlot(key: 'ad_slot_$slotN'));
       }
-      // Slot découverte toutes les 6 posts (compteur indépendant des ads)
-      // Si le widget pool n'a pas de contenu, FeedPoolOrAd bascule sur une pub.
-      if (postNumber % 6 == 0) {
-        final poolCount = postNumber ~/ 6 - 1;
+      // Slot découverte toutes les 8 posts — moins fréquent = plus de posts visibles
+      if (postNumber % 8 == 0) {
+        final poolCount = postNumber ~/ 8 - 1;
         final poolIdx = poolCount % _kPoolOrder.length;
         contentWidgets.add(_buildPoolOrAd(_kPoolOrder[poolIdx], 'pool_slot_$poolCount'));
+      }
+    }
+
+    // ── Sections de découverte par catégorie ────────────────────────────────
+    // Affichées après les posts principaux, une section par intérêt de l'user.
+    // Chaque section : 2 posts compacts + bouton "Voir plus" → CategoryFeedPage.
+    // Chargement indépendant (widget stateful), n'interfère pas avec l'algo Tier.
+    final userInterests = authProvider.loginUserData.interests ?? [];
+    if (userInterests.isNotEmpty && !_isLoadingPosts) {
+      // Garder seulement les catégories (music, sport, …) — les intérêts
+      // peuvent être des sous-catégories (music_afrobeat) ou des catégories.
+      final categories = userInterests
+          .where((id) => UserInterests.isCategoryId(id))
+          .toList();
+      final alreadyShownIds = Set<String>.from(_loadedPostIds);
+      for (final catId in categories) {
+        contentWidgets.add(FeedCategorySectionWidget(
+          key: ValueKey('cat_$catId'),
+          categoryId: catId,
+          excludedIds: alreadyShownIds,
+        ));
       }
     }
 

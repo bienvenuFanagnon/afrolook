@@ -3939,6 +3939,20 @@
                                            "order":  "DESCENDING"
                                        }
                                    ]
+                    },
+                    {
+                        "collectionGroup":  "Posts",
+                        "queryScope":  "COLLECTION",
+                        "fields":  [
+                            {
+                                "fieldPath":  "postInterests",
+                                "arrayConfig":  "CONTAINS"
+                            },
+                            {
+                                "fieldPath":  "created_at",
+                                "order":  "DESCENDING"
+                            }
+                        ]
                     }
                 ],
     "fieldOverrides":  [

@@ -6,6 +6,7 @@ export * from "./live/agora";
 export * from "./posts/sharing";
 export * from "./posts/interactions";
 export * from "./posts/lifecycle";
+export * from "./posts/feedMigration";
 // export { generateCommentSuggestions } from "./posts/commentSuggestions"; // désactivé temporairement
 export * from "./posts/weeklyRewards";
 export * from "./notifications/bulk";

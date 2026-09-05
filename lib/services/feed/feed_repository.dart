@@ -530,4 +530,70 @@ class FeedRepository {
       default: return null;
     }
   }
+
+  /// Tier 2 — posts dont les intérêts (postInterests) matchent ceux de l'user.
+  /// Index requis : Posts / postInterests (ARRAY_CONTAINS) + created_at (DESC).
+  /// Tous les autres filtres (statut, isAdvertisement, pays) sont faits client-side
+  /// pour ne nécessiter qu'un seul index composite simple.
+  Future<List<Post>> fetchInterestPosts(
+    List<String> interests,
+    Set<String> excluded, {
+    String? countryCode,
+    int limit = 20,
+  }) async {
+    if (interests.isEmpty) return [];
+    try {
+      final tags = interests.take(10).toList();
+      final snap = await _db
+          .collection('Posts')
+          .where('postInterests', arrayContainsAny: tags)
+          .orderBy('created_at', descending: true)
+          .limit(limit * 4)
+          .get();
+
+      final result = <Post>[];
+      for (final doc in snap.docs) {
+        try {
+          final post = Post.fromJson(doc.data());
+          post.id = doc.id;
+          if (post.id == null || excluded.contains(post.id)) continue;
+          if (post.isAdvertisement == true) continue;
+          if (post.status != null && post.status != 'VALIDE') continue;
+          if (countryCode != null && countryCode.isNotEmpty) {
+            final ok = post.availableCountries.isEmpty ||
+                post.availableCountries.contains('ALL') ||
+                post.availableCountries.contains(countryCode);
+            if (!ok) continue;
+          }
+          result.add(post);
+          if (result.length >= limit) break;
+        } catch (_) {}
+      }
+      return result;
+    } catch (e) {
+      printVm('⚠️ [FeedRepository] fetchInterestPosts: $e');
+      return [];
+    }
+  }
+
+  /// Tier 1 — posts non vus des abonnements.
+  /// [unreadMap] = {postId: createdAtMs} depuis UserData.unreadPosts.
+  /// Retourne les [limit] posts les plus récents, en excluant [excluded].
+  Future<List<Post>> fetchUnreadSubscriptionPosts(
+    Map<String, int> unreadMap,
+    Set<String> excluded, {
+    int limit = 25,
+  }) async {
+    if (unreadMap.isEmpty) return [];
+    // Trier par timestamp desc, prendre les N plus récents
+    final sorted = unreadMap.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final ids = sorted
+        .where((e) => !excluded.contains(e.key))
+        .take(limit)
+        .map((e) => e.key)
+        .toList();
+    if (ids.isEmpty) return [];
+    return loadPostsByIds(ids);
+  }
 }

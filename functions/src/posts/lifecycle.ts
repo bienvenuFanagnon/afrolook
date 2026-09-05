@@ -4,10 +4,10 @@ import { FieldValue } from "firebase-admin/firestore";
 import { db } from "../shared/firebase";
 
 /**
- * Firestore trigger : quand un post est créé, incrémente newPostsByCreator
- * sur le document de chaque abonné du créateur.
- * Traitement identique à l'envoi des notifications — continue même si
- * l'utilisateur quitte l'app.
+ * Firestore trigger : quand un post est créé,
+ * - incrémente newPostsByCreator {creatorId: count} sur chaque abonné
+ * - ajoute {postId: createdAtMs} dans unreadPosts sur chaque abonné
+ *   (map timestampé pour le Tier 1 du feed algorithmique)
  */
 export const updateFollowersNewPostCount = onDocumentCreated(
   "Posts/{postId}",
@@ -18,24 +18,23 @@ export const updateFollowersNewPostCount = onDocumentCreated(
     const creatorId = post.user_id as string | undefined;
     if (!creatorId) return;
 
-    // Seuls les posts "normaux" incrémentent le compteur
     const allowedTypes = ["POST", "CHRONIQUE", "CHALLENGE", "CHALLENGEPARTICIPATION"];
     if (!allowedTypes.includes(post.type)) return;
 
-    // Récupère la liste des abonnés du créateur
+    const postId = event.params.postId;
+    // created_at est en microsecondes côté Flutter → convertir en ms
+    const createdAtMs: number = post.created_at
+      ? Math.floor(post.created_at / 1000)
+      : Date.now();
+
     const creatorDoc = await db.collection("Users").doc(creatorId).get();
     if (!creatorDoc.exists) return;
 
     const followerIds: string[] = creatorDoc.data()?.userAbonnesIds ?? [];
     if (followerIds.length === 0) return;
 
-    console.log(`Post ${event.params.postId} de ${creatorId} — mise à jour de ${followerIds.length} abonnés`);
+    console.log(`Post ${postId} de ${creatorId} — fan-out vers ${followerIds.length} abonnés`);
 
-    // Firestore batch : max 500 opérations par batch.
-    // On utilise set+merge au lieu de update pour éviter un plantage si un
-    // document abonné n'existe plus (compte supprimé, ID orphelin, etc.).
-    // Chaque lot est dans son propre try-catch : un lot raté ne relance pas
-    // la fonction entière (ce qui causerait du double-comptage).
     const BATCH_SIZE = 400;
     for (let i = 0; i < followerIds.length; i += BATCH_SIZE) {
       const chunk = followerIds.slice(i, i + BATCH_SIZE);
@@ -44,6 +43,7 @@ export const updateFollowersNewPostCount = onDocumentCreated(
         const ref = db.collection("Users").doc(followerId);
         batch.set(ref, {
           newPostsByCreator: { [creatorId]: FieldValue.increment(1) },
+          unreadPosts: { [postId]: createdAtMs },
         }, { merge: true });
       }
       try {
@@ -53,6 +53,29 @@ export const updateFollowersNewPostCount = onDocumentCreated(
         console.error(`Lot ${Math.floor(i / BATCH_SIZE) + 1} échoué :`, err);
       }
     }
+  }
+);
+
+/**
+ * Callable admin : supprime les postIds vus du map unreadPosts de l'utilisateur.
+ * Appelé par l'app quand l'utilisateur a scrollé sur des posts Tier 1.
+ */
+export const markPostsSeen = onCall(
+  { timeoutSeconds: 10 },
+  async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Auth requise");
+
+    const uid = request.auth.uid;
+    const seenIds: string[] = request.data?.seenIds ?? [];
+    if (seenIds.length === 0) return { ok: true };
+
+    const updates: Record<string, unknown> = {};
+    for (const id of seenIds.slice(0, 200)) {
+      updates[`unreadPosts.${id}`] = FieldValue.delete();
+    }
+
+    await db.collection("Users").doc(uid).update(updates);
+    return { ok: true, removed: Math.min(seenIds.length, 200) };
   }
 );
 
