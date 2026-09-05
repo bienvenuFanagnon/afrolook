@@ -2031,7 +2031,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         // Démarrer le timer de 2 secondes seulement si > 50% visible.
         // On ajoute à _viewedUnreadIds (flush Firestore) et NON à _seenTier1PostIds
         // pour ne pas changer le badge d'un post Tendance en Nouveau au scroll.
-        _seenTimers.putIfAbsent(postId, () => Timer(const Duration(seconds: 2), () {
+        _seenTimers.putIfAbsent(postId, () => Timer(const Duration(seconds: 1), () {
           _viewedUnreadIds.add(postId);
           _seenTimers.remove(postId);
         }));
@@ -2902,7 +2902,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         DiscoveryBoostService.instance.discoveryPostIds.contains(pid);
     final isTier1 = pid != null && _seenTier1PostIds.contains(pid);
     final isTier2 = pid != null && _tier2PostIds.contains(pid) && !isTier1;
-    final isTier3 = pid != null && !isTier1 && !isTier2;
+    // Tendance uniquement affiché après la fin du chargement initial.
+    // Pendant _isFirstLoad le tier est inconnu → on n'affiche rien.
+    final isTier3 = !_isFirstLoad && pid != null && !isTier1 && !isTier2;
 
     return VisibilityDetector(
       key: Key('post-${post.id}'),
