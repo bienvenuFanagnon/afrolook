@@ -26,6 +26,7 @@ import '../../home/user_presence_widget.dart';
 import '../../widgetGlobal.dart';
 import '../../../widgets/interests_selector_widget.dart';
 import '../userPubs/user_profile_boost_page.dart';
+import '../user_following_page.dart';
 import '../../suspension_screen.dart';
 import '../../chat/myChat.dart';
 import 'package:page_transition/page_transition.dart';
@@ -75,6 +76,10 @@ class _OtherUserPageState extends State<OtherUserPage> {
   Set<String> _selectedPostIds = {};
   bool _isDeletingPosts = false;
 
+  // ── Stats d'abonnements ────────────────────────────────────
+  int _followingCount = 0;
+  int _canalCount = 0;
+
   bool get _canManagePosts =>
       authProvider.loginUserData.id == widget.otherUser.id ||
       authProvider.loginUserData.role == 'ADM';
@@ -86,6 +91,26 @@ class _OtherUserPageState extends State<OtherUserPage> {
     _profileLikes = widget.otherUser.userlikes ?? 0;
     _loadInitialPosts();
     _scrollController.addListener(_scrollListener);
+    _loadFollowingStats();
+  }
+
+  Future<void> _loadFollowingStats() async {
+    if (widget.otherUser.id == null) return;
+    try {
+      final results = await Future.wait([
+        FirebaseFirestore.instance.collection('Users').doc(widget.otherUser.id).get(),
+        FirebaseFirestore.instance.collection('Canaux').where('usersSuiviId', arrayContains: widget.otherUser.id).count().get(),
+      ]);
+      final userDoc = results[0] as DocumentSnapshot;
+      final canalCount = results[1] as AggregateQuerySnapshot;
+      final followingIds = (userDoc.data() as Map<String, dynamic>?)?['followingIds'] as List<dynamic>? ?? [];
+      if (mounted) {
+        setState(() {
+          _followingCount = followingIds.length;
+          _canalCount = canalCount.count ?? 0;
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _sendReminderEmail() async {
@@ -1388,7 +1413,64 @@ class _OtherUserPageState extends State<OtherUserPage> {
                       taux: widget.otherUser.popularite!,
                       points: widget.otherUser.pointContribution!,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
+                    // Abonnements : créateurs + canaux suivis
+                    if (_followingCount > 0 || _canalCount > 0)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (_followingCount > 0)
+                            GestureDetector(
+                              onTap: () => Navigator.push(context, MaterialPageRoute(
+                                builder: (_) => UserFollowingPage(
+                                  userId: widget.otherUser.id!,
+                                  displayName: widget.otherUser.pseudo,
+                                  initialTab: 0,
+                                ),
+                              )),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: colors.surfaceVariant,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: colors.primary.withOpacity(0.3)),
+                                ),
+                                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                  Icon(Icons.person_outline, size: 14, color: colors.primary),
+                                  const SizedBox(width: 4),
+                                  Text('$_followingCount créateur${_followingCount > 1 ? 's' : ''} suivi${_followingCount > 1 ? 's' : ''}',
+                                      style: TextStyle(color: colors.textPrimary, fontSize: 12, fontWeight: FontWeight.w600)),
+                                ]),
+                              ),
+                            ),
+                          if (_followingCount > 0 && _canalCount > 0) const SizedBox(width: 8),
+                          if (_canalCount > 0)
+                            GestureDetector(
+                              onTap: () => Navigator.push(context, MaterialPageRoute(
+                                builder: (_) => UserFollowingPage(
+                                  userId: widget.otherUser.id!,
+                                  displayName: widget.otherUser.pseudo,
+                                  initialTab: 1,
+                                ),
+                              )),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: colors.surfaceVariant,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: colors.primary.withOpacity(0.3)),
+                                ),
+                                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                  Icon(Icons.campaign_outlined, size: 14, color: colors.primary),
+                                  const SizedBox(width: 4),
+                                  Text('$_canalCount canal${_canalCount > 1 ? 'aux' : ''} suivi${_canalCount > 1 ? 's' : ''}',
+                                      style: TextStyle(color: colors.textPrimary, fontSize: 12, fontWeight: FontWeight.w600)),
+                                ]),
+                              ),
+                            ),
+                        ],
+                      ),
+                    const SizedBox(height: 12),
                     Row(
                       children: [
                         Expanded(
