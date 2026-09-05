@@ -175,16 +175,18 @@ class _MesNotificationState extends State<MesNotification> {
     final userId = _authProvider.loginUserData.id!;
     await Future.wait(_groupTypes.entries.map((entry) async {
       try {
+        // Pas d'orderBy ici : whereIn + orderBy exige un index composite Firestore.
+        // On récupère jusqu'à 10 docs sans tri puis on trie côté client.
         final snap = await _firestore
             .collection('Notifications')
             .where('receiver_id', isEqualTo: userId)
             .where('type', whereIn: entry.value)
-            .orderBy('created_at', descending: true)
-            .limit(2)
+            .limit(10)
             .get();
         final items = snap.docs
             .map((d) => NotificationData.fromJson(d.data() as Map<String, dynamic>))
-            .toList();
+            .toList()
+          ..sort((a, b) => (b.createdAt ?? 0).compareTo(a.createdAt ?? 0));
         for (final n in items) {
           if (n.canal_id != null && n.canal_id!.isNotEmpty) {
             _loadCanalData(n.canal_id!);
@@ -193,7 +195,9 @@ class _MesNotificationState extends State<MesNotification> {
           }
         }
         if (mounted) setState(() => _groupSamples[entry.key] = items);
-      } catch (_) {}
+      } catch (e) {
+        printVm('Erreur samples groupe ${entry.key}: $e');
+      }
     }));
   }
 
