@@ -3659,6 +3659,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     } else {
       _visibilityTimers.remove(postId);
     }
+    // Tier 1 : marquer vu après 2 secondes à ≥50% de visibilité
+    _onPostBecameVisible(postId, info.visibleFraction);
   }
   // 🔥 NOUVELLE MÉTHODE UTILITAIRE
   String _getTodayDateString() {
