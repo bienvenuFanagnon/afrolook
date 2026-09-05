@@ -47,7 +47,7 @@ class UserAuthProvider extends ChangeNotifier {
   String _kLastDatingWidgetShown = "last_dating_widget_shown";
 
   // late String? userId = "";
-  late int app_version_code = 223;
+  late int app_version_code = 225;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();

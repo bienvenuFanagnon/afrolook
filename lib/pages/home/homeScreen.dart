@@ -1449,13 +1449,13 @@ class _MyHomePageState extends State<MyHomePage>
 
 
     // _tabController = TabController(length: _tabs.length, vsync: this);
-    _tabController = TabController(length: 8, vsync: this);
+    _tabController = TabController(length: 7, vsync: this);
     // Écouter le changement d'onglet
     _tabController!.addListener(() {
       if (_tabController!.indexIsChanging) return;
 
-      // index 1 → Récent (rendu inline, pas de push)
-      if (_tabController!.index == 2) {
+      // index 1 → Sport (push + retour à 0)
+      if (_tabController!.index == 1) {
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -1466,7 +1466,8 @@ class _MyHomePageState extends State<MyHomePage>
           _tabController!.animateTo(0);
         });
       }
-      if (_tabController!.index == 4) {
+      // index 3 → VIP (push + retour à 0)
+      if (_tabController!.index == 3) {
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -2095,7 +2096,6 @@ class _MyHomePageState extends State<MyHomePage>
                       tabAlignment: TabAlignment.start,
                       tabs: [
                         Tab(text: l10n.tabHome),
-                        Tab(text: l10n.tabRecent),
                         Tab(text: l10n.tabSport),
                         Tab(text: l10n.tabEvents),
                         Tab(text: l10n.tabVip),
@@ -2329,11 +2329,9 @@ class _MyHomePageState extends State<MyHomePage>
     switch (_tabController?.index ?? 0) {
       case 0:
         return _looksRecentKey;
-      case 1:
-        return _recentFeedKey;
-      case 3:
+      case 2:
         return _discoverKey;
-      case 7:
+      case 6:
         return _looksPopularKey;
       default:
         return null;
@@ -2469,10 +2467,9 @@ class _MyHomePageState extends State<MyHomePage>
   /// Enfants du TabBarView — partagés par le layout mobile et wide.
   List<Widget> get _tabViewChildren => [
     LooksPage(type: TabBarType.LOOKS.name, sortType: 'recent', feedKey: _looksRecentKey),
-    HomeConstPostPage(key: _recentFeedKey, type: '', sortType: 'recent'),
-    const SizedBox.shrink(),
+    const SizedBox.shrink(), // Sport → push
     HomeConstPostTypePage(key: _discoverKey, type: TabBarType.EVENEMENT.name, sortType: 'recent'),
-    const SizedBox.shrink(),
+    const SizedBox.shrink(), // VIP → push
     ChallengesListPage(),
     ChroniqueHomePage(),
     LooksPage(type: TabBarType.LOOKS.name, sortType: 'popular', feedKey: _looksPopularKey),
@@ -2963,7 +2960,6 @@ class _MyHomePageState extends State<MyHomePage>
         tabAlignment: TabAlignment.start,
         tabs: [
           Tab(text: l10n.tabHome),
-          Tab(text: l10n.tabRecent),
           Tab(text: l10n.tabSport),
           Tab(text: l10n.tabEvents),
           Tab(text: l10n.tabVip),

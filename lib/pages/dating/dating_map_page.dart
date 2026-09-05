@@ -119,7 +119,26 @@ class _DatingMapPageState extends State<DatingMapPage> {
     return Scaffold(
       backgroundColor: AppColors.of(context).background,
       appBar: AppBar(
-        title: Text(t.datingMapPageTitle, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(t.datingMapPageTitle, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            if (located.isNotEmpty) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.25),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${located.length} profil${located.length > 1 ? 's' : ''}',
+                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ],
+        ),
         backgroundColor: Colors.red.shade600,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),

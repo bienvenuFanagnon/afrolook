@@ -54,7 +54,7 @@ class AppLocalizations {
   String get feedSuggestions => _t({'fr': 'Suggestions', 'en': 'Suggestions', 'es': 'Sugerencias', 'de': 'Vorschläge', 'ar': 'اقتراحات', 'pt': 'Sugestões', 'zh': '建议', 'sw': 'Mapendekezo'});
 
   // ── Onglets de la page d'accueil ──────────────────────────────────────────
-  String get tabHome => _t({'fr': '🏠 Accueil', 'en': '🏠 Home', 'es': '🏠 Inicio', 'de': '🏠 Start', 'ar': '🏠 الرئيسية', 'pt': '🏠 Início', 'zh': '🏠 首页', 'sw': '🏠 Nyumbani'});
+  String get tabHome => _t({'fr': '✨ Pour toi', 'en': '✨ For you', 'es': '✨ Para ti', 'de': '✨ Für dich', 'ar': '✨ لك', 'pt': '✨ Para você', 'zh': '✨ 为你', 'sw': '✨ Kwako'});
   String get tabRecent => _t({'fr': '🕐 Récent', 'en': '🕐 Recent', 'es': '🕐 Reciente', 'de': '🕐 Aktuell', 'ar': '🕐 الأحدث', 'pt': '🕐 Recente', 'zh': '🕐 最新', 'sw': '🕐 Hivi Karibuni'});
   String get tabSport => '⚽ Sport';
   String get tabVibe => _t({'fr': '📱 Vibe vidéos', 'en': '📱 Vibe videos', 'es': '📱 Vibe vídeos', 'de': '📱 Vibe-Videos', 'ar': '📱 فيديوهات Vibe', 'pt': '📱 Vibe vídeos', 'zh': '📱 Vibe视频', 'sw': '📱 Video za Vibe'});

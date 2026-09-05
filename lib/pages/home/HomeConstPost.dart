@@ -283,11 +283,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     postProvider = Provider.of<PostProvider>(context, listen: false);
     mixedFeedProvider = Provider.of<MixedFeedServiceProvider>(context, listen: false);
 
-    // Lecture synchrone du boot cache (pré-chargé avant navigation dans le splash).
-    // Le premier build dispose déjà des données → zéro shimmer pour les sessions
-    // suivantes.
+    // Boot cache désactivé — le système Tier charge toujours du réseau au démarrage.
     final boot = HomeBootCache.instance;
-    if (boot.isReady) {
+    if (false && boot.isReady) {
       _posts = List.from(boot.posts);
       _loadedPostIds.addAll(boot.posts.map((p) => p.id ?? '').where((id) => id.isNotEmpty));
       _totalPostsLoaded = boot.posts.length;
@@ -842,8 +840,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     // 0a. Pré-chargement des posts non vus en arrière-plan (startup)
     _startFeedPreload();
 
-    // 0b. 🔥 Affichage instantané depuis le cache local (Facebook-style) avant
-    // même que le réseau ait répondu - skip si rien en cache.
+    // Charge les données auxiliaires (chroniques, canaux, etc.) depuis le cache.
+    // Les posts eux-mêmes ignorent le cache et viennent toujours du réseau (système Tier).
     final bool hasCachedPosts = await _loadFromCacheAndDisplay();
 
     // 3. Réinitialiser la pagination. Si le cache a déjà rempli `_posts`,
@@ -1002,16 +1000,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         }
       }
 
-      if (!mounted) return cachedPosts.isNotEmpty;
+      if (!mounted) return false;
 
+      // Posts ignorés du cache — le système Tier charge toujours depuis le réseau.
       setState(() {
-        if (cachedPosts.isNotEmpty) {
-          _posts = cachedPosts;
-          _loadedPostIds.addAll(cachedPosts.map((p) => p.id ?? '').where((id) => id.isNotEmpty));
-          _totalPostsLoaded = cachedPosts.length;
-          _isFirstLoad = false;
-          _isLoadingPosts = false; // skip le skeleton, affichage instantané
-        }
         if (cachedChroniques.isNotEmpty) {
           _chroniques = cachedChroniques;
           _isLoadingChroniques = false; // données dispo depuis le cache → pas de jump
@@ -1030,8 +1022,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         }
       });
 
-      printVm('⚡ Feed affiché instantanément depuis le cache local ($_feedCacheKey)');
-      return cachedPosts.isNotEmpty;
+      printVm('⚡ Données auxiliaires chargées depuis le cache ($_feedCacheKey), posts chargés depuis le réseau');
+      return false; // Posts toujours depuis le réseau
     } catch (e) {
       printVm('⚠️ Erreur _loadFromCacheAndDisplay: $e');
       return false;
@@ -1045,14 +1037,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     try {
       final data = <String, dynamic>{};
 
-      if (_posts.isNotEmpty) {
-        data['posts'] = _posts.map((p) {
-          final json = p.toJson();
-          json['id'] = p.id;
-          return json;
-        }).toList();
-      }
-
+      // Posts exclus du cache — toujours rechargés depuis le réseau (système Tier).
       if (_chroniques.isNotEmpty) {
         data['chroniques'] = _chroniques.map((c) {
           final map = Map<String, dynamic>.from(c.toMap());
@@ -1927,11 +1912,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
       printVm('✅ ${newPosts.length} posts chargés avec filtre: $_currentFilter');
 
-      // Sauvegarder en cache pour le prochain lancement (contenu à jour)
-      if (newPosts.isNotEmpty) {
-        _saveFeedToCache();
-      }
-
     } catch (e) {
       printVm('❌ Erreur chargement posts: $e');
       setState(() {
@@ -2697,14 +2677,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       });
 
       _saveFeedToCache();
-      if (userId.isNotEmpty) {
-        HomeBootCache.save(
-          userId: userId,
-          posts: _posts,
-          chroniques: _chroniques,
-          suggestedUsers: _suggestedUsers,
-        );
-      }
     } catch (e) {
       printVm('Error loading active creators: $e');
     } finally {
@@ -2779,7 +2751,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         }
         _saveFeedToCache();
       }
-      // Si null (timeout) : on garde _chroniques tel quel (boot cache ou données précédentes)
+      // Si null (timeout) : on garde _chroniques tel quel
     } catch (e) {
       printVm('❌ Erreur chargement chroniques: $e');
     } finally {
@@ -3380,25 +3352,24 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         contentWidgets.add(const CommentLevelWidget());
       }
 
-      // Après le 3ème post : classement hebdo commentateurs + carousel Afrolook + articles
+      // Après le 3ème post : classement hebdo commentateurs + articles
       if (i == 2) {
         contentWidgets.add(const WeeklyTopCommentatorsWidget());
-        // Carousel Afrolook — position prioritaire et très visible
-        contentWidgets.add(_buildUnifiedAdSlot(key: 'ad_post2'));
         if (_showShopPromo) {
           contentWidgets.add(ShopPromoFeedWidget(articles: _articles, isFirstPosition: false));
         }
       }
 
-      // Pub toutes les 4 posts
+      // Pub toutes les 3 posts, première après le 2ème post (i=1, 4, 7, 10...)
+      // Pattern : i >= 1 && (i - 1) % 3 == 0
       final postNumber = i + 1;
-      if (postNumber % 4 == 0) {
-        final slotN = postNumber ~/ 4 - 1;
+      if (i >= 1 && (i - 1) % 3 == 0) {
+        final slotN = (i - 1) ~/ 3;
         contentWidgets.add(_buildUnifiedAdSlot(key: 'ad_slot_$slotN'));
       }
-      // Slot découverte toutes les 8 posts — moins fréquent = plus de posts visibles
-      if (postNumber % 8 == 0) {
-        final poolCount = postNumber ~/ 8 - 1;
+      // Slot découverte toutes les 9 posts
+      if (postNumber % 9 == 0) {
+        final poolCount = postNumber ~/ 9 - 1;
         final poolIdx = poolCount % _kPoolOrder.length;
         contentWidgets.add(_buildPoolOrAd(_kPoolOrder[poolIdx], 'pool_slot_$poolCount'));
       }
@@ -3432,30 +3403,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       contentWidgets.add(_buildShimmerPost());
       contentWidgets.add(_buildShimmerPost());
     } else if (!_hasMorePosts && _oldPostsCache.isEmpty) {
-      final colors2 = AppColors.of(context);
-      contentWidgets.add(
-        Container(
-          padding: const EdgeInsets.symmetric(vertical: 30),
-          child: Center(
-            child: Column(
-              children: [
-                Icon(Icons.flag, color: colors2.primary, size: 36),
-                const SizedBox(height: 10),
-                Text(
-                  _getEndMessage(),
-                  style: TextStyle(color: colors2.textSecondary, fontSize: 14),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  'Revenez plus tard pour de nouveaux contenus',
-                  style: TextStyle(color: colors2.textSecondary, fontSize: 11),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
+      contentWidgets.add(_buildEndOfFeedWidget());
     }
 
     return CustomScrollView(
@@ -3488,6 +3436,59 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       default:
         return 'Fin des contenus';
     }
+  }
+
+  Widget _buildEndOfFeedWidget() {
+    final colors2 = AppColors.of(context);
+    // Détermine le prochain filtre à proposer
+    final String? nextFilter = _currentFilter == 'COUNTRY'
+        ? 'MIXED'
+        : _currentFilter == 'MIXED'
+            ? 'ALL'
+            : null;
+    final String? nextLabel = _currentFilter == 'COUNTRY'
+        ? 'Voir des créateurs d\'autres pays'
+        : _currentFilter == 'MIXED'
+            ? 'Voir tous les contenus'
+            : null;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 24),
+      child: Column(
+        children: [
+          Icon(Icons.flag, color: colors2.primary, size: 36),
+          const SizedBox(height: 10),
+          Text(
+            _getEndMessage(),
+            style: TextStyle(color: colors2.textSecondary, fontSize: 14),
+            textAlign: TextAlign.center,
+          ),
+          if (nextFilter != null && nextLabel != null) ...[
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _applyFilter(filterType: nextFilter, countryCode: _selectedCountryCode),
+                icon: const Icon(Icons.explore_outlined, size: 18),
+                label: Text(nextLabel),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: colors2.primary,
+                  side: BorderSide(color: colors2.primary.withOpacity(0.5)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ] else ...[
+            const SizedBox(height: 5),
+            Text(
+              'Revenez plus tard pour de nouveaux contenus',
+              style: TextStyle(color: colors2.textSecondary, fontSize: 11),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
   // ===========================================================================

@@ -2111,74 +2111,55 @@ class _DetailsPostState extends State<DetailsPost>
 
     final userId = authProvider.loginUserData.id!;
     final postId = widget.post.id!;
+    final wasLiked = _isFavorite;
 
+    // Mise à jour optimiste instantanée — l'UI répond immédiatement au tap.
     setState(() {
       _isProcessingFavorite = true;
+      _isFavorite = !wasLiked;
+      if (_isFavorite) {
+        widget.post.favoritesCount = ((widget.post.favoritesCount ?? 0) + 1).clamp(0, 999999);
+        widget.post.users_favorite_id?.add(userId);
+      } else {
+        widget.post.favoritesCount = ((widget.post.favoritesCount ?? 0) - 1).clamp(0, 999999);
+        widget.post.users_favorite_id?.remove(userId);
+      }
     });
 
     try {
-      if (_isFavorite) {
-        // Retirer des favoris
+      if (wasLiked) {
         await _removeFromFavorites(userId, postId, firestore);
       } else {
-        // Ajouter aux favoris
         await _addToFavorites(userId, postId, firestore);
+        // Notification uniquement lors de l'ajout
+        authProvider.notifySubscribersOfInteraction(
+          actionUserId: userId,
+          postOwnerId: widget.post.user_id!,
+          postId: postId,
+          actionType: 'favorite',
+          postDescription: widget.post.description,
+          postImageUrl: widget.post.images?.first,
+          postDataType: widget.post.dataType,
+        );
       }
-
-      // Mettre à jour l'état local
-      setState(() {
-        _isFavorite = !_isFavorite;
-        if (_isFavorite) {
-          widget.post.favoritesCount = (widget.post.favoritesCount ?? 0) + 1;
-          widget.post.users_favorite_id?.add(userId);
-        } else {
-          widget.post.favoritesCount = (widget.post.favoritesCount ?? 0) - 1;
-          widget.post.users_favorite_id?.remove(userId);
-        }
-      });
       await authProvider.incrementPostTotalInteractions(
-        postId: widget.post.id!,
+        postId: postId,
         userId: userId,
         interactionType: 'favorite',
       );
-
-      authProvider.notifySubscribersOfInteraction(
-        actionUserId: authProvider.loginUserData.id!,
-        postOwnerId: widget.post.user_id!,
-        postId: widget.post.id!,
-        actionType: 'favorite',
-        postDescription: widget.post.description,
-        postImageUrl: widget.post.images?.first,
-        postDataType: widget.post.dataType,
-      );
-      // Afficher un feedback
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _isFavorite
-                ? '✅ Post ajouté aux favoris'
-                : '🗑️ Post retiré des favoris',
-            style: TextStyle(color: _colors.onPrimary),
-          ),
-          backgroundColor: _isFavorite ? _colors.primary : _colors.textSecondary,
-          duration: Duration(seconds: 2),
-        ),
-      );
     } catch (e) {
+      // Rollback si erreur réseau
       printVm('Erreur toggle favori: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '❌ Erreur lors de la modification',
-            style: TextStyle(color: _colors.onPrimary),
-          ),
-          backgroundColor: _colors.danger,
-        ),
-      );
-    } finally {
       setState(() {
-        _isProcessingFavorite = false;
+        _isFavorite = wasLiked;
+        if (wasLiked) {
+          widget.post.favoritesCount = ((widget.post.favoritesCount ?? 0) + 1).clamp(0, 999999);
+        } else {
+          widget.post.favoritesCount = ((widget.post.favoritesCount ?? 0) - 1).clamp(0, 999999);
+        }
       });
+    } finally {
+      if (mounted) setState(() => _isProcessingFavorite = false);
     }
   }
 

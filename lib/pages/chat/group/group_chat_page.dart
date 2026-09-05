@@ -84,6 +84,8 @@ class _GroupChatPageState extends State<GroupChatPage> {
   bool _isLoadingMessages = true;
   bool _permissionsLoaded = false;
   final Map<String, Map<String, dynamic>> _senderBadgeCache = {};
+  // IDs des membres admin/owner du groupe (pour masquer leur identité dans les bulles)
+  final Set<String> _groupAdminIds = {};
 
   // Reponse
   Map<String, dynamic>? _replyingToMsg;
@@ -177,6 +179,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
         });
       }
       await _checkOwnerPremium(data);
+      _loadGroupAdminIds();
 
       // Vérifier l'adhésion pour les groupes gratuits (sauf ADM)
       if (mounted && !isAppAdmin) {
@@ -855,6 +858,23 @@ class _GroupChatPageState extends State<GroupChatPage> {
       final user = UserData.fromJson(doc.data()!);
       final size = MediaQuery.of(context).size;
       showUserDetailsModalDialog(user, size.width, size.height, context);
+    } catch (_) {}
+  }
+
+  Future<void> _loadGroupAdminIds() async {
+    try {
+      final snap = await _firestore
+          .collection('GroupChats')
+          .doc(widget.groupId)
+          .collection('members')
+          .where('role', whereIn: ['admin', 'owner'])
+          .get();
+      if (!mounted) return;
+      setState(() {
+        _groupAdminIds
+          ..clear()
+          ..addAll(snap.docs.map((d) => d.id));
+      });
     } catch (_) {}
   }
 
@@ -2719,12 +2739,16 @@ class _GroupChatPageState extends State<GroupChatPage> {
     final type = isDeleted ? 'text' : (msg['message_type'] as String? ?? 'text');
     final senderId = msg['send_by'] as String? ?? '';
     final ownerId = _groupData['owner_id'] as String? ?? '';
+    final myId = _auth.loginUserData.id ?? '';
     final groupImage = _groupData['image_url'] as String? ?? '';
     final groupName = _groupData['name'] as String? ?? '';
-    // Pour les messages de l'owner/admin : toujours afficher l'identité du groupe
-    final isGroupIdentityMsg = senderId == ownerId && ownerId.isNotEmpty;
     final rawPseudo = msg['sender_pseudo'] as String? ?? '';
     final rawSenderImage = msg['sender_image'] as String? ?? '';
+    // Tout admin/owner → identité du groupe, sauf si le viewer EST le propriétaire
+    final senderIsAdmin = senderId.isNotEmpty &&
+        (senderId == ownerId || _groupAdminIds.contains(senderId));
+    final viewerIsOwner = myId == ownerId;
+    final isGroupIdentityMsg = senderIsAdmin && !viewerIsOwner;
     final pseudo = isGroupIdentityMsg ? (groupName.isNotEmpty ? groupName : rawPseudo) : rawPseudo;
     final senderImage = isGroupIdentityMsg ? groupImage : rawSenderImage;
     final ts = msg['create_at_time_spam'] as int? ?? 0;
@@ -2789,7 +2813,9 @@ class _GroupChatPageState extends State<GroupChatPage> {
               ),
             if (!isMe && !(_isSelectionMode && _isAppAdmin)) ...[
               GestureDetector(
-                onTap: () => _showSenderProfile(msg['send_by'] as String? ?? ''),
+                onTap: isGroupIdentityMsg
+                    ? null  // tap sur avatar groupe → rien (ou page groupe si implémenté)
+                    : () => _showSenderProfile(msg['send_by'] as String? ?? ''),
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [
