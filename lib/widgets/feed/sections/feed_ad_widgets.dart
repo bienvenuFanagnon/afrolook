@@ -1,39 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../pages/admin/AfrolookPub/advertisementCarouselWidget.dart';
-import '../../../pages/pub/banner_ad_widget.dart';
-import '../../../pages/pub/native_ad_widget.dart';
 import '../../../providers/authProvider.dart';
 
-/// Bannière publicitaire (petit format).
-/// BannerAdWidget retourne SizedBox.shrink() si non chargée — pas de marge fixe ici.
+/// Bannière désactivée — Appodeal n'est plus utilisé.
 class FeedAdBanner extends StatelessWidget {
   final String adKey;
   const FeedAdBanner({Key? key, required this.adKey}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    return BannerAdWidget(
-      key: ValueKey(adKey),
-      onAdLoaded: () {},
-    );
-  }
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
-/// Publicité format rectangle moyen (MREC — 300×250).
-/// MrecAdWidget gère lui-même sa visibilité : SizedBox.shrink() quand non chargée,
-/// hauteur naturelle quand chargée. Pas de Container fixe ici pour éviter le blanc.
+/// Slot MREC désactivé — Appodeal n'est plus utilisé, pas d'espace blanc.
 class FeedAdMrec extends StatelessWidget {
   final String adKey;
   const FeedAdMrec({Key? key, required this.adKey}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    return MrecAdWidget(
-      key: ValueKey(adKey),
-      onAdLoaded: () {},
-    );
-  }
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
 /// Carrousel de publicités Afrolook — s'affiche comme un post normal dans le feed

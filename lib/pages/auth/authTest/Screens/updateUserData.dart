@@ -1,6 +1,5 @@
 ﻿import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/splashChargement.dart';
-import 'package:csc_picker_plus/csc_picker_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:geocoding/geocoding.dart';
@@ -10,100 +9,6 @@ import 'package:provider/provider.dart';
 
 import '../../../../providers/authProvider.dart';
 
-
-final Map<String, String> countryCodes = {
-  // Afrique
-  "Togo": "TG",
-  "Benin": "BJ",
-  "Burkina Faso": "BF",
-  "Cameroon": "CM",
-  "Ivory Coast": "CI",
-  "Algeria": "DZ",
-  "Angola": "AO",
-  "Botswana": "BW",
-  "Burundi": "BI",
-  "Cape Verde": "CV",
-  "Central African Republic": "CF",
-  "Chad": "TD",
-  "Comoros": "KM",
-  "Congo": "CG",
-  "Democratic Republic of the Congo": "CD",
-  "Djibouti": "DJ",
-  "Egypt": "EG",
-  "Equatorial Guinea": "GQ",
-  "Eritrea": "ER",
-  "Eswatini": "SZ",
-  "Ethiopia": "ET",
-  "Gabon": "GA",
-  "Gambia": "GM",
-  "Ghana": "GH",
-  "Guinea": "GN",
-  "Guinea-Bissau": "GW",
-  "Kenya": "KE",
-  "Lesotho": "LS",
-  "Liberia": "LR",
-  "Libya": "LY",
-  "Madagascar": "MG",
-  "Malawi": "MW",
-  "Mali": "ML",
-  "Mauritania": "MR",
-  "Mauritius": "MU",
-  "Morocco": "MA",
-  "Mozambique": "MZ",
-  "Namibia": "NA",
-  "Niger": "NE",
-  "Nigeria": "NG",
-  "Rwanda": "RW",
-  "Sao Tome and Principe": "ST",
-  "Senegal": "SN",
-  "Seychelles": "SC",
-  "Sierra Leone": "SL",
-  "Somalia": "SO",
-  "South Africa": "ZA",
-  "South Sudan": "SS",
-  "Sudan": "SD",
-  "Tanzania": "TZ",
-  "Tunisia": "TN",
-  "Uganda": "UG",
-  "Zambia": "ZM",
-  "Zimbabwe": "ZW",
-
-  // Europe
-  "France": "FR",
-  "Germany": "DE",
-  "Italy": "IT",
-  "Spain": "ES",
-  "Portugal": "PT",
-  "Netherlands": "NL",
-  "Belgium": "BE",
-  "Sweden": "SE",
-  "Switzerland": "CH",
-  "Norway": "NO",
-  "United Kingdom": "GB",
-
-  // Amérique
-  "United States": "US",
-  "Canada": "CA",
-  "Brazil": "BR",
-  "Argentina": "AR",
-  "Mexico": "MX",
-  "Chile": "CL",
-  "Colombia": "CO",
-  "Peru": "PE",
-  "Venezuela": "VE",
-  "Uruguay": "UY",
-
-  // Asie
-  "China": "CN",
-  "Japan": "JP",
-  "India": "IN",
-  "Thailand": "TH",
-  "Vietnam": "VN",
-  "Malaysia": "MY",
-  "Singapore": "SG",
-  "Philippines": "PH",
-  "Indonesia": "ID",
-};
 
 class UpdateUserData extends StatefulWidget {
   UpdateUserData({Key? key, required this.title}) : super(key: key);
@@ -132,9 +37,6 @@ class _UpdateUserDataState extends State<UpdateUserData>
   final Color primaryRed = Color(0xFFE63946);
   final Color primaryYellow = Color(0xFFFFD700);
 
-  String getCountryCodeFromName(String country) {
-    return countryCodes[country] ?? "";
-  }
   Future<void> _getCountryCodeInBackground() async {
     if (kIsWeb) return;
     if (hasRequestedLocation) return;
@@ -155,6 +57,8 @@ class _UpdateUserDataState extends State<UpdateUserData>
           setState(() {
             detectedCountryCode = placemarks[0].isoCountryCode;
             detectedCountryName = placemarks[0].country;
+            stateValue = placemarks[0].administrativeArea ?? "";
+            cityValue = placemarks[0].locality ?? "";
           });
         }
       } catch (e) {
@@ -261,42 +165,13 @@ class _UpdateUserDataState extends State<UpdateUserData>
     }
   }
 
-  Future<String?> getCountryCode() async {
-    if (kIsWeb) return null;
-
-    // ✅ toujours demander la permission ici
-    PermissionStatus permission = await Permission.location.request();
-
-    if (permission.isGranted) {
-      try {
-        final position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 5),
-        );
-
-        List<Placemark> placemarks = await placemarkFromCoordinates(
-          position.latitude,
-          position.longitude,
-        );
-
-        if (placemarks.isNotEmpty) {
-          return placemarks[0].isoCountryCode;
-        }
-      } catch (e) {
-        printVm("Erreur: $e");
-      }
-    }
-
-    return null;
-  }
-
   Future<void> _saveData() async {
     if (_formKey.currentState!.validate()) {
-      // Vérifier si le pays a été sélectionné
-      if (countryValue.isEmpty) {
+      // Géolocalisation requise — pas de sélection manuelle
+      if (!kIsWeb && detectedCountryCode == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Veuillez sélectionner un pays',
+            content: Text('Localisation en cours, veuillez patienter…',
                 style: TextStyle(color: Colors.white)),
             backgroundColor: primaryRed,
             behavior: SnackBarBehavior.floating,
@@ -310,47 +185,18 @@ class _UpdateUserDataState extends State<UpdateUserData>
       });
 
       Map<String, String> userData = {
-        "country": countryValue,
+        "country": detectedCountryName ?? "",
         "state": stateValue,
         "city": cityValue,
-        "countryCode": "",
+        "countryCode": detectedCountryCode ?? "",
+        "realCountry": detectedCountryName ?? "",
       };
 
-      // Sur mobile, on récupère le vrai code pays en arrière-plan
-      if (!kIsWeb) {
-        String? realCountryCode = await getCountryCode();
-        if(countryValue!=null){
-          String selectedCode = getCountryCodeFromName(countryValue);
-
-          detectedCountryCode = selectedCode;
-        }
-
-        userData["countryCode"] = realCountryCode ?? detectedCountryCode ?? "";
-        userData["realCountry"] = detectedCountryName ?? "";
-
-        printVm("=== Informations utilisateur (Mobile) ===");
-        printVm("Pays choisi par l'utilisateur: $countryValue");
-        printVm("Région choisie: $stateValue");
-        printVm("Ville choisie: $cityValue");
-        printVm("=== Informations réelles (Localisation mobile) ===");
-        printVm("Vrai pays: ${detectedCountryName ?? "Non détecté"}");
-        printVm("Vrai code pays: ${realCountryCode ?? "Non détecté"}");
-      } else {
-        // Sur le web, on n'utilise que les informations choisies
-
-        String selectedCode = getCountryCodeFromName(countryValue);
-
-        userData["countryCode"] = selectedCode;
-        userData["realCountry"] = countryValue;
-        printVm("=== Informations utilisateur (Web) ===");
-        printVm("Pays choisi par l'utilisateur: $countryValue");
-        printVm("Pays choisi par l'utilisateur code: $selectedCode");
-        printVm("Région choisie: $stateValue");
-        printVm("Ville choisie: $cityValue");
-        printVm("userData: $userData");
-        printVm("=== Note ===");
-        printVm("Géolocalisation non disponible sur le web");
-      }
+      printVm("=== Informations localisation ===");
+      printVm("Pays: ${detectedCountryName ?? "Non détecté"}");
+      printVm("Code pays: ${detectedCountryCode ?? "Non détecté"}");
+      printVm("Région: $stateValue");
+      printVm("Ville: $cityValue");
 
       authProvider.loginUserData.countryData = userData;
       await authProvider.updateUserCountryCode(authProvider.loginUserData).then((value) async {
@@ -511,8 +357,8 @@ class _UpdateUserDataState extends State<UpdateUserData>
                           SizedBox(height: 8),
                           Text(
                             kIsWeb
-                                ? "Sélectionne ton pays et ta région"
-                                : "Sélectionne ton pays et ta région (localisation automatique)",
+                                ? "Ta localisation est détectée automatiquement"
+                                : "Ta localisation est détectée automatiquement",
                             style: TextStyle(
                               color: Colors.grey[400],
                               fontSize: 14,
@@ -522,98 +368,81 @@ class _UpdateUserDataState extends State<UpdateUserData>
                       ),
                     ),
 
-                    // Sélecteur de pays
+                    // Localisation détectée automatiquement (lecture seule)
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.grey[900],
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: primaryRed.withOpacity(0.3)),
                       ),
-                      child: CSCPickerPlus(
-                        showStates: true,
-                        showCities: false,
-                        defaultCountry: CscCountry.Togo,
-                        flagState: CountryFlag.SHOW_IN_DROP_DOWN_ONLY,
-                        dropdownDecoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          color: Colors.grey[850],
-                          border: Border.all(color: primaryRed.withOpacity(0.5), width: 1),
-                        ),
-                        disabledDropdownDecoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          color: Colors.grey[800],
-                          border: Border.all(color: Colors.grey[700]!, width: 1),
-                        ),
-                        countrySearchPlaceholder: "Rechercher un pays",
-                        stateSearchPlaceholder: "Rechercher une région",
-                        citySearchPlaceholder: "Rechercher une ville",
-                        countryDropdownLabel: "Sélectionnez un pays",
-                        stateDropdownLabel: "Sélectionnez une région",
-                        cityDropdownLabel: "Sélectionnez une ville",
-
-                        countryFilter: const [
-                          // Pays africains
-                          CscCountry.Togo,
-                          CscCountry.Algeria, CscCountry.Angola, CscCountry.Benin, CscCountry.Botswana,
-                          CscCountry.Burkina_Faso, CscCountry.Burundi, CscCountry.Cameroon, CscCountry.Chad,
-                          CscCountry.Comoros, CscCountry.Congo, CscCountry.Djibouti, CscCountry.Egypt,
-                          CscCountry.Eritrea, CscCountry.Ethiopia, CscCountry.Gabon, CscCountry.Gambia_The,
-                          CscCountry.Ghana, CscCountry.Guinea, CscCountry.Kenya, CscCountry.Lesotho,
-                          CscCountry.Liberia, CscCountry.Libya, CscCountry.Madagascar, CscCountry.Malawi,
-                          CscCountry.Mali, CscCountry.Mauritania, CscCountry.Mauritius, CscCountry.Morocco,
-                          CscCountry.Mozambique, CscCountry.Namibia, CscCountry.Niger, CscCountry.Nigeria,
-                          CscCountry.Rwanda, CscCountry.Senegal, CscCountry.Seychelles, CscCountry.Sierra_Leone,
-                          CscCountry.Somalia, CscCountry.South_Africa, CscCountry.Sudan, CscCountry.Tanzania,
-                          CscCountry.Tunisia, CscCountry.Uganda, CscCountry.Zambia,
-                          CscCountry.Zimbabwe,
-                          // Pays européens
-                          CscCountry.France, CscCountry.Germany, CscCountry.Italy, CscCountry.Spain,
-                          CscCountry.Portugal, CscCountry.Netherlands_The, CscCountry.Belgium, CscCountry.Sweden,
-                          CscCountry.Switzerland, CscCountry.Norway,
-                          // Pays américains
-                          CscCountry.United_States, CscCountry.Canada, CscCountry.Brazil, CscCountry.Argentina,
-                          CscCountry.Mexico, CscCountry.Chile, CscCountry.Colombia, CscCountry.Peru,
-                          CscCountry.Venezuela, CscCountry.Uruguay,
-                          // Pays asiatiques
-                          CscCountry.China, CscCountry.Japan, CscCountry.India,
-                          CscCountry.Thailand, CscCountry.Vietnam, CscCountry.Malaysia, CscCountry.Singapore,
-                          CscCountry.Philippines, CscCountry.Indonesia
-                        ],
-
-                        // Styles pour une meilleure visibilité
-                        selectedItemStyle: TextStyle(
-                          color: Colors.yellow,
-                          fontSize: 14,
-                        ),
-                        dropdownHeadingStyle: TextStyle(
-                          color: Colors.black,
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        dropdownItemStyle: TextStyle(
-                          color: Colors.black,
-                          fontSize: 14,
-                        ),
-                        dropdownDialogRadius: 16.0,
-                        searchBarRadius: 12.0,
-
-                        onCountryChanged: (value) {
-                          setState(() {
-                            printVm('Pays selectionner !: ${value}');
-                            countryValue = value;
-                          });
-                        },
-                        onStateChanged: (value) {
-                          setState(() {
-                            stateValue = value ?? "";
-                          });
-                        },
-                        onCityChanged: (value) {
-                          setState(() {
-                            cityValue = value ?? "";
-                          });
-                        },
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                      child: detectedCountryCode == null
+                          ? Row(
+                              children: [
+                                SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(primaryYellow),
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                Text(
+                                  "Détection de ta localisation…",
+                                  style: TextStyle(color: Colors.grey[400], fontSize: 14),
+                                ),
+                              ],
+                            )
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(Icons.location_on, color: primaryYellow, size: 20),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        detectedCountryName ?? detectedCountryCode!,
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: primaryYellow.withOpacity(0.15),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: primaryYellow.withOpacity(0.4)),
+                                      ),
+                                      child: Text(
+                                        detectedCountryCode!,
+                                        style: TextStyle(
+                                          color: primaryYellow,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (stateValue.isNotEmpty || cityValue.isNotEmpty) ...[
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    [if (stateValue.isNotEmpty) stateValue, if (cityValue.isNotEmpty) cityValue].join(", "),
+                                    style: TextStyle(color: Colors.grey[400], fontSize: 13),
+                                  ),
+                                ],
+                                const SizedBox(height: 12),
+                                Text(
+                                  "Localisation détectée automatiquement — non modifiable.",
+                                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                                ),
+                              ],
+                            ),
                     ),
 
                     SizedBox(height: 32),
