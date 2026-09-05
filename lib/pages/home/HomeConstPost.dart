@@ -1758,6 +1758,16 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       } else {
         // Tier 1 : posts non vus des abonnements (toujours en priorité)
         await _loadTier1Posts(loadedIds, newPosts, 15);
+        // Affichage immédiat des posts Tier 1 pour éviter l'attente de 5 secondes.
+        if (newPosts.isNotEmpty && mounted) {
+          setState(() {
+            _posts = _spreadCreators(List.from(newPosts));
+            _loadedPostIds.addAll(loadedIds);
+            _totalPostsLoaded = newPosts.length;
+            _isLoadingPosts = false;
+            _isFirstLoad = false;
+          });
+        }
         // Tier 2 : découverte par intérêts (complète si Tier 1 insuffisant)
         if (newPosts.length < limit) {
           await _loadTier2InterestPosts(loadedIds, newPosts, limit - newPosts.length);
@@ -1884,31 +1894,14 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         }
       }
 
-      if (_posts.isEmpty) {
-        // Aucun cache : afficher directement les posts réseau
-        setState(() {
-          _posts = _spreadCreators(newPosts);
-          _loadedPostIds.addAll(loadedIds);
-          _totalPostsLoaded = newPosts.length;
-          _isFirstLoad = false;
-        });
-      } else {
-        // Cache déjà affiché : mettre à jour les stats des posts existants
-        // et prépendre uniquement les posts vraiment nouveaux.
-        final alreadyShown = Set<String>.from(_loadedPostIds);
-        final freshById = {for (final p in newPosts) if (p.id != null) p.id!: p};
-        final trulyNew = newPosts.where((p) => p.id != null && !alreadyShown.contains(p.id)).toList();
-        setState(() {
-          // Remplacer les posts du cache par leur version fraîche (stats à jour)
-          _posts = _posts.map((p) => p.id != null && freshById.containsKey(p.id) ? freshById[p.id]! : p).toList();
-          if (trulyNew.isNotEmpty) {
-            _posts = _spreadCreators([...trulyNew, ..._posts]);
-          }
-          _loadedPostIds.addAll(loadedIds);
-          _totalPostsLoaded = _posts.length;
-          _isFirstLoad = false;
-        });
-      }
+      // Toujours remplacer par la liste finale Tier 1→2→3 ordonnée.
+      // (Plus de cache post : pas de merge avec d'anciens posts persistés.)
+      setState(() {
+        _posts = _spreadCreators(newPosts);
+        _loadedPostIds.addAll(loadedIds);
+        _totalPostsLoaded = _posts.length;
+        _isFirstLoad = false;
+      });
 
       printVm('✅ ${newPosts.length} posts chargés avec filtre: $_currentFilter');
 
@@ -2165,25 +2158,39 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   }
 
   /// Ajoute les posts récupérés à [newPosts] avec dédup et mélange final.
+  /// Répartit les posts pour qu'un même créateur n'apparaisse jamais
+  /// deux fois dans moins de 3 posts d'écart (gap minimum = 3).
+  /// Préserve la priorité Tier 1 → Tier 2 → Tier 3 en prenant toujours
+  /// le premier post en attente dont le créateur respecte le gap.
   List<Post> _spreadCreators(List<Post> posts) {
-    if (posts.length <= 2) return posts;
-    final list = List<Post>.from(posts);
-    for (int i = 2; i < list.length; i++) {
-      final creator = list[i].user_id ?? '';
-      if (creator.isNotEmpty &&
-          (list[i - 1].user_id ?? '') == creator &&
-          (list[i - 2].user_id ?? '') == creator) {
-        for (int j = i + 1; j < list.length; j++) {
-          if ((list[j].user_id ?? '') != creator) {
-            final tmp = list[i];
-            list[i] = list[j];
-            list[j] = tmp;
-            break;
-          }
+    if (posts.length <= 3) return posts;
+    const int minGap = 3;
+    final result = <Post>[];
+    final pending = List<Post>.from(posts);
+    final lastSeen = <String, int>{}; // creatorId → dernier index dans result
+
+    while (pending.isNotEmpty) {
+      final currentPos = result.length;
+      bool placed = false;
+      for (int i = 0; i < pending.length; i++) {
+        final creatorId = pending[i].user_id ?? '';
+        final last = lastSeen[creatorId];
+        if (last == null || currentPos - last > minGap) {
+          result.add(pending.removeAt(i));
+          if (creatorId.isNotEmpty) lastSeen[creatorId] = currentPos;
+          placed = true;
+          break;
         }
       }
+      // Si aucun post ne respecte le gap, on place le premier en attente (force)
+      if (!placed) {
+        final post = pending.removeAt(0);
+        result.add(post);
+        final creatorId = post.user_id ?? '';
+        if (creatorId.isNotEmpty) lastSeen[creatorId] = currentPos;
+      }
     }
-    return list;
+    return result;
   }
 
   void _addFetchedToList(
@@ -2199,7 +2206,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       newPosts.add(post);
       added++;
     }
-    if (newPosts.length > 1) newPosts.shuffle();
+    // Pas de shuffle global : l'ordre Tier 1 → Tier 2 → Tier 3 est préservé.
+    // _spreadCreators() s'occupe de varier les créateurs dans la liste finale.
   }
   Future<void> _loadAllCountriesPosts(
       Set<String> loadedIds,
