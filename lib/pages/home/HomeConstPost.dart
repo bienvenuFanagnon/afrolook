@@ -211,8 +211,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   final _activeCreatorsService = ActiveCreatorsService();
   // Posts déjà décrémentés dans cette session (évite double-décrément au scroll)
   final _decrementedPostIds = <String>{};
-  // IDs des posts Tier 1 chargés cette session → seront marqués "vus" à la sortie
+  // IDs des posts Tier 1 CHARGÉS comme Tier 1 → utilisés uniquement pour le badge badge "Nouveau".
+  // NE JAMAIS ajouter ici des posts vus au scroll : uniquement _loadTier1Posts().
   final _seenTier1PostIds = <String>{};
+  // IDs des posts unreadPosts vus au scroll → pour flush Firestore (séparé du badge).
+  final _viewedUnreadIds = <String>{};
   // Tier 2 : posts chargés par intérêts (pour badge "Découverte")
   final _tier2PostIds = <String>{};
   Timer? _stayTimer;
@@ -2013,8 +2016,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
   // ── Marquer les posts vus : stocke en local, update Firestore au prochain lancement ──
   void _markSeenPostsInFirestore() {
-    if (_seenTier1PostIds.isEmpty) return;
-    _persistSeenLocally(_seenTier1PostIds);
+    final toFlush = {..._seenTier1PostIds, ..._viewedUnreadIds};
+    if (toFlush.isEmpty) return;
+    _persistSeenLocally(toFlush);
   }
 
   // ── Un post est considéré "vu" après 2 secondes d'affichage continu ──────
@@ -2024,9 +2028,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     if (!_seenTier1PostIds.contains(postId) &&
         (authProvider.loginUserData.unreadPosts ?? {}).containsKey(postId)) {
       if (fraction >= 0.5) {
-        // Démarrer le timer de 2 secondes seulement si > 50% visible
+        // Démarrer le timer de 2 secondes seulement si > 50% visible.
+        // On ajoute à _viewedUnreadIds (flush Firestore) et NON à _seenTier1PostIds
+        // pour ne pas changer le badge d'un post Tendance en Nouveau au scroll.
         _seenTimers.putIfAbsent(postId, () => Timer(const Duration(seconds: 2), () {
-          _seenTier1PostIds.add(postId);
+          _viewedUnreadIds.add(postId);
           _seenTimers.remove(postId);
         }));
       } else {
