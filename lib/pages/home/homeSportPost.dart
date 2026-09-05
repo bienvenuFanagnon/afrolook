@@ -1910,14 +1910,15 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     }
 
     try {
-      final posts = await FeedRepository().fetchUnreadSubscriptionPosts(
+      final allPosts = await FeedRepository().fetchUnreadSubscriptionPosts(
         unread,
         {...loadedIds, ..._loadedPostIds},
         limit: limit,
       );
+      final posts = allPosts.where((p) => (p.typeTabbar ?? '').toUpperCase() == 'SPORT').toList();
+      printVm('📌 [SPORT][TIER1] ${allPosts.length} fetched → ${posts.length} SPORT conservés');
       _addFetchedToList(posts, loadedIds, newPosts, limit);
       for (final p in posts) { if (p.id != null) _seenTier1PostIds.add(p.id!); }
-      printVm('📌 [SPORT][TIER1] ${posts.length} posts chargés');
     } catch (e) {
       printVm('⚠️ [SPORT][TIER1] erreur : $e');
     }
@@ -1929,15 +1930,16 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     if (interests.isEmpty) return;
     final countryCode = authProvider.loginUserData.countryData?['countryCode'] as String? ?? '';
     try {
-      final posts = await FeedRepository().fetchInterestPosts(
+      final allPosts = await FeedRepository().fetchInterestPosts(
         interests,
         {...loadedIds, ..._loadedPostIds},
         countryCode: countryCode,
         limit: limit,
       );
+      final posts = allPosts.where((p) => (p.typeTabbar ?? '').toUpperCase() == 'SPORT').toList();
+      printVm('🎯 [SPORT][TIER2] ${allPosts.length} fetched → ${posts.length} SPORT conservés');
       _addFetchedToList(posts, loadedIds, newPosts, limit);
       for (final p in posts) { if (p.id != null) _tier2PostIds.add(p.id!); }
-      printVm('🎯 [SPORT][TIER2] ${posts.length} posts chargés');
     } catch (e) {
       printVm('⚠️ [SPORT][TIER2] erreur : $e');
     }
