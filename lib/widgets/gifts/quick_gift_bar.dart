@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../models/coin_pack.dart';
 import '../../models/model_data.dart';
 import '../../pages/coins/coin_gift_dialog.dart';
+import '../../pages/coins/coin_recharge_screen.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/coin_gift_provider.dart';
 import '../../services/quick_gift_service.dart';
@@ -61,7 +62,7 @@ class _QuickGiftBarState extends State<QuickGiftBar> {
     final balance = coinProvider.giftCoinsBalance;
 
     if (balance < pack.coins) {
-      _showError('Solde insuffisant pour envoyer ${pack.icon} (${pack.coins} 🪙)');
+      _showInsufficientBalanceModal(pack.coins);
       return;
     }
 
@@ -104,6 +105,43 @@ class _QuickGiftBarState extends State<QuickGiftBar> {
       ),
     );
     overlay.insert(entry);
+  }
+
+  void _showInsufficientBalanceModal(int required) {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.monetization_on, color: Colors.amber),
+            SizedBox(width: 8),
+            Text('Solde insuffisant'),
+          ],
+        ),
+        content: Text(
+          'Il te manque des pièces pour envoyer ce cadeau ($required 🪙 requis).\nRecharge ton solde pour continuer.',
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const CoinRechargeScreen()));
+            },
+            icon: const Icon(Icons.add_circle_outline, color: Colors.white),
+            label: const Text('Recharger', style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.amber.shade700),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showError(String msg) {
