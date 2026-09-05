@@ -1957,6 +1957,8 @@ class _DetailsPostState extends State<DetailsPost>
 
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     postProvider = Provider.of<PostProvider>(context, listen: false);
+    // Écouter les mises à jour des suggestions pour forcer un rebuild quand elles chargent
+    postProvider.addListener(_onSuggestionsUpdated);
 
     // Marquer le post comme vu (Tier 1) si l'utilisateur l'ouvre consciemment
     final _pid = widget.post.id;
@@ -2089,8 +2091,13 @@ class _DetailsPostState extends State<DetailsPost>
       ),
     );
   }
+  void _onSuggestionsUpdated() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
+    postProvider.removeListener(_onSuggestionsUpdated);
     _suggestionModalTimer?.cancel();
 
     _animationController.dispose();
