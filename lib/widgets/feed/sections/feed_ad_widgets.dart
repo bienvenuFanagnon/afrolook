@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../pages/admin/AfrolookPub/advertisementCarouselWidget.dart';
+import '../../../pages/pub/afrolook_inline_ad.dart';
 import '../../../providers/authProvider.dart';
 
 /// Bannière désactivée — Appodeal n'est plus utilisé.
@@ -32,9 +33,8 @@ class FeedAdCarousel extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     const hMargin = 12.0;
     final cardWidth = screenWidth - hMargin * 2;
-    // Hauteur de la partie image uniquement (4:5, format feed agréable).
-    // Le widget total sera plus haut car il inclut les stats et boutons.
-    final imageHeight = cardWidth * 0.85;
+    // Hauteur image : ratio 4:3 pour s'aligner avec les posts normaux du feed
+    final imageHeight = cardWidth * 0.65;
 
     return Container(
       key: ValueKey(adKey),
@@ -53,8 +53,8 @@ class FeedAdCarousel extends StatelessWidget {
   }
 }
 
-/// Slot pub unifié : affiche le carousel Afrolook si des posts boostés existent,
-/// sinon affiche le MRec Google Ads. Jamais les deux ensemble.
+/// Slot pub unifié : affiche le carousel grande pub si des posts boostés existent,
+/// sinon affiche une pub bannière AfrolookInlineAd. Jamais les deux ensemble.
 class FeedUnifiedAdSlot extends StatelessWidget {
   final String adKey;
   const FeedUnifiedAdSlot({Key? key, required this.adKey}) : super(key: key);
@@ -63,12 +63,14 @@ class FeedUnifiedAdSlot extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<UserAuthProvider>(
       builder: (context, auth, _) {
+        if (auth.advertisements.isEmpty) return const SizedBox.shrink();
         final hasBoostedPosts = auth.advertisements
             .any((a) => a['isEntityBoost'] != true && a['post'] != null);
         if (hasBoostedPosts) {
           return FeedAdCarousel(adKey: adKey);
         }
-        return FeedAdMrec(adKey: adKey);
+        // Fallback : bannière inline (entity boost ou créateur sponsorisé)
+        return const AfrolookInlineAd();
       },
     );
   }

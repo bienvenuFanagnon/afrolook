@@ -131,6 +131,99 @@ export const moderatePostLifecycle = onDocumentCreated(
 );
 
 /**
+ * Callable admin : backfill unreadPosts pour les N derniers jours.
+ * Parcourt tous les posts récents, pour chaque post écrit {postId: timestamp}
+ * dans unreadPosts de chaque abonné du créateur.
+ * Appelable une seule fois pour réinitialiser le Tier 1.
+ */
+export const backfillUnreadPosts = onCall(
+  { timeoutSeconds: 540, memory: "512MiB" },
+  async (request) => {
+    const ADMIN_UIDS = ["gXEe76s0hQZqBhWph3n2jDUqi8f2"]; // kfanagnon uid
+    if (!request.auth || !ADMIN_UIDS.includes(request.auth.uid)) {
+      throw new HttpsError("permission-denied", "Réservé à l'admin");
+    }
+
+    const daysBack: number = request.data?.daysBack ?? 40;
+    const cutoffMs = Date.now() - daysBack * 24 * 60 * 60 * 1000;
+    // Flutter stocke created_at en microsecondes
+    const cutoffMicros = cutoffMs * 1000;
+
+    const allowedTypes = ["POST", "CHRONIQUE", "CHALLENGE", "CHALLENGEPARTICIPATION"];
+    const BATCH_SIZE = 400;
+
+    console.log(`🔄 Backfill unreadPosts — ${daysBack} derniers jours (cutoff: ${new Date(cutoffMs).toISOString()})`);
+
+    // Charger tous les posts récents
+    const postsSnap = await db.collection("Posts")
+      .where("created_at", ">=", cutoffMicros)
+      .orderBy("created_at", "desc")
+      .get();
+
+    const posts = postsSnap.docs.filter(d => allowedTypes.includes(d.data().type ?? d.data().dataType));
+    console.log(`📦 ${posts.length} posts à traiter`);
+
+    let totalWrites = 0;
+    let errors = 0;
+
+    // Cache créateurs déjà chargés pour éviter les lectures répétées
+    const creatorFollowersCache: Record<string, string[]> = {};
+
+    for (const postDoc of posts) {
+      const post = postDoc.data();
+      const postId = postDoc.id;
+      const creatorId: string = post.user_id ?? "";
+      if (!creatorId) continue;
+
+      const createdAtMs = post.created_at
+        ? Math.floor(post.created_at / 1000)
+        : cutoffMs;
+
+      // Charger les abonnés du créateur (avec cache)
+      if (!(creatorId in creatorFollowersCache)) {
+        try {
+          const creatorDoc = await db.collection("Users").doc(creatorId).get();
+          creatorFollowersCache[creatorId] = creatorDoc.data()?.userAbonnesIds ?? [];
+        } catch {
+          creatorFollowersCache[creatorId] = [];
+        }
+      }
+      const followerIds = creatorFollowersCache[creatorId];
+      if (followerIds.length === 0) continue;
+
+      // Fan-out en batches de 400
+      for (let i = 0; i < followerIds.length; i += BATCH_SIZE) {
+        const chunk = followerIds.slice(i, i + BATCH_SIZE);
+        const batch = db.batch();
+        for (const followerId of chunk) {
+          batch.set(
+            db.collection("Users").doc(followerId),
+            { unreadPosts: { [postId]: createdAtMs } },
+            { merge: true }
+          );
+        }
+        try {
+          await batch.commit();
+          totalWrites += chunk.length;
+        } catch (err) {
+          console.error(`❌ Lot échoué (post ${postId}) :`, err);
+          errors++;
+        }
+      }
+    }
+
+    const result = {
+      ok: true,
+      postsProcessed: posts.length,
+      totalWrites,
+      errors,
+    };
+    console.log(`✅ Backfill terminé :`, result);
+    return result;
+  }
+);
+
+/**
  * Callable Firebase : vérifie côté serveur si l'utilisateur peut poster (cooldown 5 minutes).
  */
 export const checkPostCooldownServer = onCall(
