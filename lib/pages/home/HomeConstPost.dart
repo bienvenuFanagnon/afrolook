@@ -3389,11 +3389,17 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     // Chargement indépendant (widget stateful), n'interfère pas avec l'algo Tier.
     final userInterests = authProvider.loginUserData.interests ?? [];
     if (userInterests.isNotEmpty && !_isLoadingPosts) {
-      // Garder seulement les catégories (music, sport, …) — les intérêts
-      // peuvent être des sous-catégories (music_afrobeat) ou des catégories.
-      final categories = userInterests
-          .where((id) => UserInterests.isCategoryId(id))
-          .toList();
+      // Dériver les catégories parentes depuis les sous-intérêts de l'utilisateur.
+      // Les intérêts stockés sont du type "music_afrobeat", "sport_foot"…
+      // On remonte à la catégorie parente (music, sport…) via UserInterests.all.
+      final categories = userInterests.map((id) {
+        if (UserInterests.isCategoryId(id)) return id;
+        try {
+          return UserInterests.all.firstWhere((i) => i.code == id).category;
+        } catch (_) {
+          return null;
+        }
+      }).whereType<String>().toSet().toList();
       final alreadyShownIds = Set<String>.from(_loadedPostIds);
       for (final catId in categories) {
         contentWidgets.add(FeedCategorySectionWidget(
