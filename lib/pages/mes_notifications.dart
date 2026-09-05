@@ -89,15 +89,18 @@ class _MesNotificationState extends State<MesNotification> {
         _isLoading = false;
         _hasMore = snap.docs.length >= _pageSize;
         if (snap.docs.isNotEmpty) _lastDoc = snap.docs.last;
-        // Auto-ouvrir uniquement le premier groupe qui a du contenu
-        bool opened = false;
-        for (final g in _groupTypes.keys) {
-          if (!opened && items.any((n) => _groupForType(n.type) == g)) {
-            _groupExpanded[g] = true;
-            opened = true;
-          } else {
-            _groupExpanded[g] = false;
+        // Auto-ouvrir le groupe avec la notification la plus récente (même tri que l'UI)
+        String? mostRecentGroup;
+        int mostRecentTs = 0;
+        for (final n in items) {
+          final g = _groupForType(n.type);
+          if ((n.createdAt ?? 0) > mostRecentTs) {
+            mostRecentTs = n.createdAt ?? 0;
+            mostRecentGroup = g;
           }
+        }
+        for (final g in _groupTypes.keys) {
+          _groupExpanded[g] = g == mostRecentGroup;
         }
       });
     } catch (e) {
@@ -144,8 +147,10 @@ class _MesNotificationState extends State<MesNotification> {
     }
   }
 
-  // Compatibilité avec le code de chargement de counts (optionnel, pour les badges)
   final Map<String, int> _groupUnreadCounts = {};
+  // 2 notifications préchargées par groupe pour garantir l'affichage même si
+  // le groupe n'a pas de notification dans le batch global des 60 dernières.
+  final Map<String, List<NotificationData>> _groupSamples = {};
 
   Future<void> _loadGroupCounts() async {
     final userId = _authProvider.loginUserData.id!;
@@ -159,6 +164,35 @@ class _MesNotificationState extends State<MesNotification> {
             .count()
             .get();
         if (mounted) setState(() => _groupUnreadCounts[entry.key] = snap.count ?? 0);
+      } catch (_) {}
+    }));
+  }
+
+  /// Charge 2 notifications par groupe en parallèle.
+  /// Utilisé pour afficher quelque chose même quand le groupe n'est pas
+  /// présent dans les 60 notifications du batch global.
+  Future<void> _loadGroupSamples() async {
+    final userId = _authProvider.loginUserData.id!;
+    await Future.wait(_groupTypes.entries.map((entry) async {
+      try {
+        final snap = await _firestore
+            .collection('Notifications')
+            .where('receiver_id', isEqualTo: userId)
+            .where('type', whereIn: entry.value)
+            .orderBy('created_at', descending: true)
+            .limit(2)
+            .get();
+        final items = snap.docs
+            .map((d) => NotificationData.fromJson(d.data() as Map<String, dynamic>))
+            .toList();
+        for (final n in items) {
+          if (n.canal_id != null && n.canal_id!.isNotEmpty) {
+            _loadCanalData(n.canal_id!);
+          } else if (n.user_id != null && n.user_id!.isNotEmpty) {
+            _loadUserData(n.user_id!);
+          }
+        }
+        if (mounted) setState(() => _groupSamples[entry.key] = items);
       } catch (_) {}
     }));
   }
@@ -232,6 +266,7 @@ class _MesNotificationState extends State<MesNotification> {
     _loadAvailableTypes();
     _loadInitialNotifications();
     _loadGroupCounts();
+    _loadGroupSamples();
   }
 
   Future<void> _loadAvailableTypes() async {
@@ -1370,11 +1405,17 @@ class _MesNotificationState extends State<MesNotification> {
                         ...() {
                           // Groupes avec contenu en premier (triés par plus récent),
                           // puis les groupes vides à la suite.
+                          // On prend le max entre le batch global et les samples préchargés.
                           final groups = _groupTypes.keys.toList()
                             ..sort((a, b) {
-                              int latestOf(String g) => _notifications
-                                  .where((n) => _groupForType(n.type) == g)
-                                  .fold<int>(0, (m, n) => (n.createdAt ?? 0) > m ? (n.createdAt ?? 0) : m);
+                              int latestOf(String g) {
+                                final fromBatch = _notifications
+                                    .where((n) => _groupForType(n.type) == g)
+                                    .fold<int>(0, (m, n) => (n.createdAt ?? 0) > m ? (n.createdAt ?? 0) : m);
+                                final fromSamples = (_groupSamples[g] ?? [])
+                                    .fold<int>(0, (m, n) => (n.createdAt ?? 0) > m ? (n.createdAt ?? 0) : m);
+                                return fromBatch > fromSamples ? fromBatch : fromSamples;
+                              }
                               final la = latestOf(a), lb = latestOf(b);
                               if (la == 0 && lb == 0) return 0;
                               if (la == 0) return 1;
@@ -1383,14 +1424,21 @@ class _MesNotificationState extends State<MesNotification> {
                             });
                           return groups;
                         }().map((group) {
-                          final items = _notifications
+                          // Notifications du groupe dans le batch global (60 dernières)
+                          final batchItems = _notifications
                               .where((n) => _groupForType(n.type) == group)
                               .toList();
+                          // Si le groupe n'a pas de résultat dans le batch, utiliser
+                          // les 2 items préchargés par groupe (_groupSamples).
+                          final items = batchItems.isNotEmpty
+                              ? batchItems
+                              : (_groupSamples[group] ?? []);
                           // Vrai compte non-lus depuis Firestore (query count), fallback local
                           final unread = _groupUnreadCounts.containsKey(group)
                               ? _groupUnreadCounts[group]!
                               : items.where((n) => !(n.is_open ?? false)).length;
                           final isOpen = _groupExpanded[group] ?? false;
+                          // Groupe vraiment vide seulement si ni le batch ni les samples n'ont rien
                           final isEmpty = items.isEmpty;
                           return Column(
                             children: [
