@@ -14,7 +14,7 @@ class DiscoveryBoostService {
   DiscoveryBoostService._();
   static final instance = DiscoveryBoostService._();
 
-  static const int followersThreshold = 200;
+  static const int followersThreshold = 20;
   static const int injectEvery = 8;
   static const Duration _cacheTtl = Duration(hours: 1);
 
