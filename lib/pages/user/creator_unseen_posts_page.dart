@@ -122,7 +122,13 @@ class _CreatorUnseenPostsPageState extends State<CreatorUnseenPostsPage> {
       final data = Map<String, dynamic>.from(d.data());
       data['id'] = d.id;
       return Post.fromJson(data);
-    }).where((p) => p.id != null && !viewedSet.contains(p.id)).toList();
+    }).where((p) {
+      if (p.id == null) return false;
+      if (viewedSet.contains(p.id)) return false;
+      // Exclure les posts de canaux — cette page n'affiche que les posts directs du créateur
+      if (p.canal_id != null && p.canal_id!.isNotEmpty) return false;
+      return true;
+    }).toList();
   }
 
   Future<void> _loadPosts() async {

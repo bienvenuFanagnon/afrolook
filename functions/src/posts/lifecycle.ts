@@ -5,9 +5,11 @@ import { db } from "../shared/firebase";
 
 /**
  * Firestore trigger : quand un post est créé,
- * - incrémente newPostsByCreator {creatorId: count} sur chaque abonné
+ * - incrémente newPostsByCreator {creatorId: count} sur chaque abonné au créateur
  * - ajoute {postId: createdAtMs} dans unreadPosts sur chaque abonné
  *   (map timestampé pour le Tier 1 du feed algorithmique)
+ * - si le post appartient à un canal, incrémente aussi newPostsByCanal {canalId: count}
+ *   sur chaque abonné du canal (usersSuiviId)
  */
 export const updateFollowersNewPostCount = onDocumentCreated(
   "Posts/{postId}",
@@ -27,30 +29,60 @@ export const updateFollowersNewPostCount = onDocumentCreated(
       ? Math.floor(post.created_at / 1000)
       : Date.now();
 
-    const creatorDoc = await db.collection("Users").doc(creatorId).get();
-    if (!creatorDoc.exists) return;
-
-    const followerIds: string[] = creatorDoc.data()?.userAbonnesIds ?? [];
-    if (followerIds.length === 0) return;
-
-    console.log(`Post ${postId} de ${creatorId} — fan-out vers ${followerIds.length} abonnés`);
+    const canalId = post.canal_id as string | undefined;
 
     const BATCH_SIZE = 400;
-    for (let i = 0; i < followerIds.length; i += BATCH_SIZE) {
-      const chunk = followerIds.slice(i, i + BATCH_SIZE);
-      const batch = db.batch();
-      for (const followerId of chunk) {
-        const ref = db.collection("Users").doc(followerId);
-        batch.set(ref, {
-          newPostsByCreator: { [creatorId]: FieldValue.increment(1) },
-          unreadPosts: { [postId]: createdAtMs },
-        }, { merge: true });
+
+    // ── Fan-out vers les abonnés du créateur ──────────────────────────────
+    const creatorDoc = await db.collection("Users").doc(creatorId).get();
+    if (creatorDoc.exists) {
+      const followerIds: string[] = creatorDoc.data()?.userAbonnesIds ?? [];
+      if (followerIds.length > 0) {
+        console.log(`Post ${postId} de ${creatorId} — fan-out créateur vers ${followerIds.length} abonnés`);
+        for (let i = 0; i < followerIds.length; i += BATCH_SIZE) {
+          const chunk = followerIds.slice(i, i + BATCH_SIZE);
+          const batch = db.batch();
+          for (const followerId of chunk) {
+            const ref = db.collection("Users").doc(followerId);
+            batch.set(ref, {
+              newPostsByCreator: { [creatorId]: FieldValue.increment(1) },
+              unreadPosts: { [postId]: createdAtMs },
+            }, { merge: true });
+          }
+          try {
+            await batch.commit();
+            console.log(`Créateur lot ${Math.floor(i / BATCH_SIZE) + 1} commité (${chunk.length})`);
+          } catch (err) {
+            console.error(`Créateur lot ${Math.floor(i / BATCH_SIZE) + 1} échoué :`, err);
+          }
+        }
       }
-      try {
-        await batch.commit();
-        console.log(`Lot ${Math.floor(i / BATCH_SIZE) + 1} commité (${chunk.length} abonnés)`);
-      } catch (err) {
-        console.error(`Lot ${Math.floor(i / BATCH_SIZE) + 1} échoué :`, err);
+    }
+
+    // ── Fan-out vers les abonnés du canal (si post dans un canal) ─────────
+    if (canalId && canalId.trim() !== "") {
+      const canalDoc = await db.collection("Canaux").doc(canalId).get();
+      if (canalDoc.exists) {
+        const canalFollowerIds: string[] = canalDoc.data()?.usersSuiviId ?? [];
+        if (canalFollowerIds.length > 0) {
+          console.log(`Post canal ${postId} — fan-out canal ${canalId} vers ${canalFollowerIds.length} abonnés`);
+          for (let i = 0; i < canalFollowerIds.length; i += BATCH_SIZE) {
+            const chunk = canalFollowerIds.slice(i, i + BATCH_SIZE);
+            const batch = db.batch();
+            for (const followerId of chunk) {
+              const ref = db.collection("Users").doc(followerId);
+              batch.set(ref, {
+                newPostsByCanal: { [canalId]: FieldValue.increment(1) },
+              }, { merge: true });
+            }
+            try {
+              await batch.commit();
+              console.log(`Canal lot ${Math.floor(i / BATCH_SIZE) + 1} commité (${chunk.length})`);
+            } catch (err) {
+              console.error(`Canal lot ${Math.floor(i / BATCH_SIZE) + 1} échoué :`, err);
+            }
+          }
+        }
       }
     }
   }

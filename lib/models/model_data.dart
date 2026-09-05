@@ -964,6 +964,10 @@ class UserData {
   // {"creatorId": 3, ...} — remis à zéro quand l'user ouvre la page du créateur
   Map<String, int>? newPostsByCreator = {};
 
+  // Posts non vus par canal — mis à jour par Cloud Function à chaque post de canal
+  // {"canalId": 2, ...} — remis à zéro quand l'user ouvre la page du canal
+  Map<String, int>? newPostsByCanal = {};
+
   // Posts non vus des abonnements — {postId: createdAtMs}
   // Alimenté par Cloud Function à chaque nouveau post d'un créateur suivi.
   // Vidé progressivement quand l'user voit les posts (markPostsSeen CF).
@@ -1311,6 +1315,12 @@ class UserData {
     postViewsMigrationDone = json['postViewsMigrationDone'] ?? false;
     newPostsByCreator = Map<String, int>.fromEntries(
       ((json['newPostsByCreator'] as Map<String, dynamic>?) ?? {})
+          .entries
+          .where((e) => (e.value as num).toInt() > 0)
+          .map((e) => MapEntry(e.key, (e.value as num).toInt())),
+    );
+    newPostsByCanal = Map<String, int>.fromEntries(
+      ((json['newPostsByCanal'] as Map<String, dynamic>?) ?? {})
           .entries
           .where((e) => (e.value as num).toInt() > 0)
           .map((e) => MapEntry(e.key, (e.value as num).toInt())),
@@ -3939,8 +3949,31 @@ class NotificationData {
 
   NotificationData.fromJson(Map<String, dynamic> json) {
     id = json['id'];
-    createdAt = json['created_at'];
-    updatedAt = json['updated_at'];
+    // Normalise created_at vers des microsecondes quel que soit le format stocké.
+    // Certaines notifications (ex: Messages) stockent en ms côté CF (Date.now()).
+    // Seuil : < 1e13 → secondes ou ms → convertir ; >= 1e15 → déjà μs.
+    final rawCa = json['created_at'];
+    if (rawCa is int) {
+      if (rawCa >= 1000000000000000) {
+        createdAt = rawCa; // déjà microsecondes
+      } else if (rawCa >= 1000000000000) {
+        createdAt = rawCa * 1000; // millisecondes → microsecondes
+      } else if (rawCa > 0) {
+        createdAt = rawCa * 1000000; // secondes → microsecondes
+      } else {
+        createdAt = null;
+      }
+    } else {
+      createdAt = null;
+    }
+    final rawUp = json['updated_at'];
+    if (rawUp is int) {
+      updatedAt = rawUp >= 1000000000000000 ? rawUp
+          : rawUp >= 1000000000000 ? rawUp * 1000
+          : rawUp * 1000000;
+    } else {
+      updatedAt = null;
+    }
     type = json['type'];
     status = json['status'];
     user_id = json['user_id'];
