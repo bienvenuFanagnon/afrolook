@@ -55,6 +55,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       final now = DateTime.now();
       final startOfMonth = DateTime(now.year, now.month, 1).millisecondsSinceEpoch;
       final startOfDay  = DateTime(now.year, now.month, now.day).millisecondsSinceEpoch;
+      // Borne supérieure pour exclure les anciens docs dont createdAt est en microsecondes
+      // (valeurs ~1000x plus grandes que les ms actuels, ils passeraient sinon le filtre >= startOfDay)
+      final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59).millisecondsSinceEpoch;
 
       final results = await Future.wait([
         _db.collection('Users').count().get(),
@@ -67,7 +70,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         _db.collection('TransactionSoldes')
             .where('createdAt', isGreaterThanOrEqualTo: startOfMonth).count().get(),
         _db.collection('Users')
-            .where('createdAt', isGreaterThanOrEqualTo: startOfDay).count().get(),
+            .where('createdAt', isGreaterThanOrEqualTo: startOfDay)
+            .where('createdAt', isLessThanOrEqualTo: endOfDay).count().get(),
       ]);
 
       // Activité récente : 5 dernières actions sur comptes officiels
