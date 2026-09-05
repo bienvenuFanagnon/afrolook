@@ -89,10 +89,14 @@ class _MesNotificationState extends State<MesNotification> {
         _isLoading = false;
         _hasMore = snap.docs.length >= _pageSize;
         if (snap.docs.isNotEmpty) _lastDoc = snap.docs.last;
-        // Auto-ouvrir les groupes qui ont du contenu
+        // Auto-ouvrir uniquement le premier groupe qui a du contenu
+        bool opened = false;
         for (final g in _groupTypes.keys) {
-          if (items.any((n) => _groupForType(n.type) == g)) {
+          if (!opened && items.any((n) => _groupForType(n.type) == g)) {
             _groupExpanded[g] = true;
+            opened = true;
+          } else {
+            _groupExpanded[g] = false;
           }
         }
       });
@@ -174,31 +178,37 @@ class _MesNotificationState extends State<MesNotification> {
 
   // ── Groupes accordion ──
   static const Map<String, List<String>> _groupTypes = {
-    'Activité':                   ['FAVORITE', 'COMMENT', 'COMMENTAIRE', 'POST'],
-    'Nouveaux abonnés':           ['ABONNER', 'INVITATION', 'ACCEPTINVITATION'],
+    'J\'aime':                    ['FAVORITE'],
+    'Commentaires':               ['COMMENT', 'COMMENTAIRE'],
+    'Abonnés':                    ['ABONNER', 'INVITATION', 'ACCEPTINVITATION'],
     'Messages':                   ['MESSAGE'],
-    'Nouveaux contenus':          ['NEWPOST', 'ARTICLE', 'CHRONIQUE', 'CHALLENGE', 'LIVE', 'SERVICE'],
-    'Récompenses hebdomadaires':  ['WEEKLY_REWARD'],
+    'Publications & Lives':       ['NEWPOST', 'POST', 'LIVE', 'CHALLENGE'],
+    'Articles & Contenus':        ['ARTICLE', 'CHRONIQUE', 'SERVICE'],
+    'Récompenses':                ['WEEKLY_REWARD'],
     'Gains & Parrainages':        ['GAIN', 'PARRAINAGE'],
     'Afrolook':                   ['SUPPORT', 'MARKETING', 'COMPTE_OFFICIEL', 'USER'],
   };
 
   static const Map<String, IconData> _groupIcons = {
-    'Activité':                   Icons.favorite_border,
-    'Nouveaux abonnés':           Icons.person_add_alt_1_outlined,
-    'Messages':                   Icons.chat_bubble_outline,
-    'Nouveaux contenus':          Icons.play_circle_outline,
-    'Récompenses hebdomadaires':  Icons.emoji_events_outlined,
+    'J\'aime':                    Icons.favorite_border,
+    'Commentaires':               Icons.chat_bubble_outline,
+    'Abonnés':                    Icons.person_add_alt_1_outlined,
+    'Messages':                   Icons.mark_chat_unread_outlined,
+    'Publications & Lives':       Icons.play_circle_outline,
+    'Articles & Contenus':        Icons.article_outlined,
+    'Récompenses':                Icons.emoji_events_outlined,
     'Gains & Parrainages':        Icons.monetization_on_outlined,
     'Afrolook':                   Icons.verified_outlined,
   };
 
   final Map<String, bool> _groupExpanded = {
-    'Activité':                   false,
-    'Nouveaux abonnés':           false,
+    'J\'aime':                    false,
+    'Commentaires':               false,
+    'Abonnés':                    false,
     'Messages':                   false,
-    'Nouveaux contenus':          false,
-    'Récompenses hebdomadaires':  false,
+    'Publications & Lives':       false,
+    'Articles & Contenus':        false,
+    'Récompenses':                false,
     'Gains & Parrainages':        false,
     'Afrolook':                   false,
   };
