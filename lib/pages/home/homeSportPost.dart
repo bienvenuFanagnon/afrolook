@@ -55,6 +55,7 @@ import '../../widgets/feed/sections/feed_state_widgets.dart';
 import '../../widgets/feed/sections/feed_filter_bar.dart';
 import '../../widgets/feed/sections/feed_ad_widgets.dart';
 import '../../services/feed/feed_repository.dart';
+import 'HomeConstPost.dart' show flushSeenPostsAndCleanMemory;
 import '../../widgets/feed/weekly_top_creators_widget.dart';
 import '../../widgets/feed/sections/weekly_top_commentators_widget.dart';
 import '../../widgets/feed/sections/weekly_top_posts_section_widget.dart';
@@ -78,6 +79,19 @@ const List<String> availablePostTypes = [
   'OFFRES',
   'GAMER'
 ];
+
+// Clé SharedPreferences partagée avec HomeConstPost (même bucket de flush)
+const _kSportSeenPostsPrefKey = 'seen_tier1_posts_pending';
+
+Future<void> _persistSeenSport(Set<String> ids) async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final existing = prefs.getStringList(_kSportSeenPostsPrefKey) ?? [];
+    final merged = {...existing, ...ids}.toList();
+    if (merged.length > 1000) merged.removeRange(0, merged.length - 1000);
+    await prefs.setStringList(_kSportSeenPostsPrefKey, merged);
+  } catch (_) {}
+}
 
 class HomeSportPostPage extends StatefulWidget {
   final String type;
@@ -156,6 +170,14 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   // Gestion de visibilité
   final Map<String, Timer> _visibilityTimers = {};
   final Map<String, bool> _postsViewedInSession = {};
+
+  // ── Système Tier badges (Nouveau / Découverte / Tendance) ─────────────────
+  final _seenTier1PostIds = <String>{};   // posts chargés comme Tier 1 → badge Nouveau
+  final _tier2PostIds     = <String>{};   // posts chargés comme Tier 2 → badge Découverte
+  final _flushingIds      = <String>{};   // posts en cours de flush Firestore
+  final Map<String, int>   _visibleSince  = {};  // timestamp entrée viewport
+  final Map<String, Timer> _seenTimers    = {};
+  static const int _kSeenDelayMs = 700;
 
   Timer? _stayTimer;
   bool _isPageVisible = true;
@@ -563,6 +585,9 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     WeeklyTopCreatorsWidget.preload();
     WeeklyTopCommentatorsWidget.preload();
 
+    // Flush posts vus + refresh unreadPosts depuis Firestore
+    await _flushAndRefreshUnread();
+
     // 1. Détecter le pays de l'utilisateur
     _selectedCountryCode = authProvider.loginUserData.countryData?['countryCode']?.toUpperCase();
     printVm('Pays utilisateur détecté: ${_selectedCountryCode}');
@@ -608,6 +633,12 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     if (clearPosts) {
       _posts.clear();
       _loadedPostIds.clear();
+      _seenTier1PostIds.clear();
+      _tier2PostIds.clear();
+      _flushingIds.clear();
+      _seenTimers.forEach((_, t) => t.cancel());
+      _seenTimers.clear();
+      _visibleSince.clear();
     }
     _totalPostsLoaded = 0;
     _backgroundPostsLoaded = 0;
@@ -1767,8 +1798,14 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         }
       }
 
+      // Charger Tier 1 (non vus abonnements) et Tier 2 (intérêts) en parallèle
+      await Future.wait([
+        _loadTier1Posts(loadedIds, newPosts, limit),
+        _loadTier2InterestPosts(loadedIds, newPosts, limit),
+      ]);
+
       setState(() {
-        _posts = _spreadCreators(newPosts);
+        _posts = _buildTieredFeed(newPosts);
         _loadedPostIds.addAll(loadedIds);
         _totalPostsLoaded = _posts.length;
         _isFirstLoad = false;
@@ -1822,6 +1859,137 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       _addFetchedToList(posts, loadedIds, newPosts, limit);
     } catch (e) {
       printVm('❌ Erreur chargement posts: $e');
+    }
+  }
+
+  // ── Flush posts vus + relit unreadPosts depuis Firestore ──────────────────
+  Future<void> _flushAndRefreshUnread() async {
+    final userId = authProvider.loginUserData.id;
+    if (userId == null || userId.isEmpty) return;
+    await flushSeenPostsAndCleanMemory(userId, authProvider.loginUserData);
+    try {
+      final userDoc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
+      final fresh = ((userDoc.data()?['unreadPosts'] as Map<String, dynamic>?) ?? {})
+          .map((k, v) => MapEntry(k, (v as num).toInt()));
+      authProvider.loginUserData.unreadPosts = fresh;
+      printVm('🔄 [SPORT][UNREAD] unreadPosts mis à jour : ${fresh.length} posts non vus');
+    } catch (e) {
+      printVm('⚠️ [SPORT][UNREAD] Impossible de rafraîchir unreadPosts : $e');
+    }
+  }
+
+  // ── Tier 1 : posts non vus des abonnements ─────────────────────────────────
+  Future<void> _loadTier1Posts(Set<String> loadedIds, List<Post> newPosts, int limit) async {
+    var unread = authProvider.loginUserData.unreadPosts ?? {};
+    printVm('📌 [SPORT][TIER1] unreadPosts: ${unread.length} entrées');
+    if (unread.isEmpty && authProvider.loginUserData.id != null) {
+      try {
+        await authProvider.refreshUserData();
+        unread = authProvider.loginUserData.unreadPosts ?? {};
+      } catch (_) {}
+    }
+    if (unread.isEmpty) return;
+
+    // Plafond : si > 200, supprimer les plus anciens
+    const int kMaxUnread = 200;
+    if (unread.length > kMaxUnread) {
+      final sorted = unread.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+      final toKeep = sorted.take(kMaxUnread).map((e) => e.key).toSet();
+      final toDelete = unread.keys.where((id) => !toKeep.contains(id)).toList();
+      for (final id in toDelete) { unread.remove(id); }
+      authProvider.loginUserData.unreadPosts = unread;
+      final uid = authProvider.loginUserData.id;
+      if (uid != null) {
+        for (int i = 0; i < toDelete.length; i += 500) {
+          final batch = toDelete.sublist(i, min(i + 500, toDelete.length));
+          final updates = <String, dynamic>{};
+          for (final id in batch) { updates['unreadPosts.$id'] = FieldValue.delete(); }
+          FirebaseFirestore.instance.collection('Users').doc(uid).update(updates).catchError((_) {});
+        }
+      }
+    }
+
+    try {
+      final posts = await FeedRepository().fetchUnreadSubscriptionPosts(
+        unread,
+        {...loadedIds, ..._loadedPostIds},
+        limit: limit,
+      );
+      _addFetchedToList(posts, loadedIds, newPosts, limit);
+      for (final p in posts) { if (p.id != null) _seenTier1PostIds.add(p.id!); }
+      printVm('📌 [SPORT][TIER1] ${posts.length} posts chargés');
+    } catch (e) {
+      printVm('⚠️ [SPORT][TIER1] erreur : $e');
+    }
+  }
+
+  // ── Tier 2 : découverte par intérêts ─────────────────────────────────────
+  Future<void> _loadTier2InterestPosts(Set<String> loadedIds, List<Post> newPosts, int limit) async {
+    final interests = authProvider.loginUserData.interests ?? [];
+    if (interests.isEmpty) return;
+    final countryCode = authProvider.loginUserData.countryData?['countryCode'] as String? ?? '';
+    try {
+      final posts = await FeedRepository().fetchInterestPosts(
+        interests,
+        {...loadedIds, ..._loadedPostIds},
+        countryCode: countryCode,
+        limit: limit,
+      );
+      _addFetchedToList(posts, loadedIds, newPosts, limit);
+      for (final p in posts) { if (p.id != null) _tier2PostIds.add(p.id!); }
+      printVm('🎯 [SPORT][TIER2] ${posts.length} posts chargés');
+    } catch (e) {
+      printVm('⚠️ [SPORT][TIER2] erreur : $e');
+    }
+  }
+
+  // ── Organise les posts en Tier 1 → Tier 2 → Tier 3 ──────────────────────
+  List<Post> _buildTieredFeed(List<Post> posts) {
+    final t1 = <Post>[], t2 = <Post>[], t3 = <Post>[];
+    for (final p in posts) {
+      final pid = p.id;
+      if (pid == null) { t3.add(p); continue; }
+      if (_seenTier1PostIds.contains(pid)) { t1.add(p); continue; }
+      if (_tier2PostIds.contains(pid)) { t2.add(p); continue; }
+      t3.add(p);
+    }
+    return [..._spreadCreators(t1), ..._spreadCreators(t2), ..._spreadCreators(t3)];
+  }
+
+  // ── Marquage des posts vus ─────────────────────────────────────────────────
+  void _onPostBecameVisible(String postId, double fraction) {
+    if (_flushingIds.contains(postId)) return;
+    if (!(authProvider.loginUserData.unreadPosts ?? {}).containsKey(postId)) return;
+    if (fraction >= 0.5) {
+      _visibleSince.putIfAbsent(postId, () => DateTime.now().millisecondsSinceEpoch);
+      _seenTimers.putIfAbsent(postId, () => Timer(Duration(milliseconds: _kSeenDelayMs), () {
+        _seenTimers.remove(postId);
+        final enteredAt = _visibleSince.remove(postId);
+        final elapsed = enteredAt != null ? DateTime.now().millisecondsSinceEpoch - enteredAt : _kSeenDelayMs;
+        printVm('👁️ [SPORT][VUE] post=${postId.substring(0, postId.length.clamp(0, 8))}... vu ${elapsed}ms → marqué vu');
+        _markPostAsSeenNow(postId);
+      }));
+    } else {
+      final t = _seenTimers.remove(postId);
+      if (t != null) {
+        t.cancel();
+        _visibleSince.remove(postId);
+      }
+    }
+  }
+
+  void _markPostAsSeenNow(String postId) {
+    if (_flushingIds.contains(postId)) return;
+    _flushingIds.add(postId);
+    authProvider.loginUserData.unreadPosts?.remove(postId);
+    _persistSeenSport({postId});
+    final userId = authProvider.loginUserData.id;
+    if (userId != null && userId.isNotEmpty) {
+      FirebaseFirestore.instance
+          .collection('Users')
+          .doc(userId)
+          .update({'unreadPosts.$postId': FieldValue.delete()})
+          .catchError((e) { printVm('⚠️ [SPORT][SEEN] Firestore delete échoué : $e'); });
     }
   }
 
@@ -2182,53 +2350,62 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       FeedUnifiedAdSlot(adKey: key);
 
   Widget _buildPostWidget(Post post, double width, double height, int index) {
+    final pid = post.id;
+    final isTier1 = pid != null && _seenTier1PostIds.contains(pid);
+    final isTier2 = pid != null && _tier2PostIds.contains(pid) && !isTier1;
+    final isTier3 = !_isFirstLoad && pid != null && !isTier1 && !isTier2;
+
     return VisibilityDetector(
       key: Key('post-${post.id}'),
       onVisibilityChanged: (VisibilityInfo info) {
         _handleVisibilityChanged(post, info);
+        if (pid != null) _onPostBecameVisible(pid, info.visibleFraction);
       },
-      child: Container(
-        child: Stack(
-          children: [
-            // Badge de disponibilité/pays (existant)
-            // _buildAvailabilityBadge(post),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // ── Badges Tier ──────────────────────────────────────────────────
+          if (isTier1)
+            _SportTierBadge(label: 'Nouveau · Abonnement', color: const Color(0xFF25D366))
+          else if (isTier2)
+            _SportTierBadge(label: 'Découverte · Intérêts', color: const Color(0xFF6C63FF))
+          else if (isTier3)
+            _SportTierBadge(label: 'Tendance', color: const Color(0xFFE21221)),
 
-            // Contenu du post
-            post.type == PostType.PRONOSTIC.name
-                ? SizedBox.shrink()
-                : post.type == PostType.CHALLENGEPARTICIPATION.name
-                ? LookChallengePostWidget(post: post, height: height, width: width)
-                : (post.type == PostType.POST.name && post.dataType == PostDataType.VIDEO.name)
-                ? YouTubeVideoCard(
-              key: ValueKey('ytcard_${post.id}'),
-              post: post,
-              index: index,
-              suppressInlineAd: true,
-              onNeighborhoodPreload: _preloadVideoNeighborhood,
-              currentFilterCountry: _currentFilter == 'ALL' || _currentFilter == 'MIXED' ? null : _selectedCountryCode,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => VideoYoutubePageDetails(initialPost: post),
-                  ),
-                );
-              },
-            )
-                : HomePostUsersWidget(
-              key: ValueKey('hwp-${post.id}'),
-              index: index,
-              post: post,
-              color: _getRandomColor(),
-              height: height * 0.6,
-              width: width,
-              isDegrade: true,
-              suppressInlineAd: true,
-              currentFilterCountry: _currentFilter == 'ALL' || _currentFilter == 'MIXED' ? null : _selectedCountryCode,
-            ),
-
-          ],
-        ),
+          // ── Contenu du post ──────────────────────────────────────────────
+          post.type == PostType.PRONOSTIC.name
+              ? SizedBox.shrink()
+              : post.type == PostType.CHALLENGEPARTICIPATION.name
+              ? LookChallengePostWidget(post: post, height: height, width: width)
+              : (post.type == PostType.POST.name && post.dataType == PostDataType.VIDEO.name)
+              ? YouTubeVideoCard(
+                  key: ValueKey('ytcard_${post.id}'),
+                  post: post,
+                  index: index,
+                  suppressInlineAd: true,
+                  onNeighborhoodPreload: _preloadVideoNeighborhood,
+                  currentFilterCountry: _currentFilter == 'ALL' || _currentFilter == 'MIXED' ? null : _selectedCountryCode,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => VideoYoutubePageDetails(initialPost: post),
+                      ),
+                    );
+                  },
+                )
+              : HomePostUsersWidget(
+                  key: ValueKey('hwp-${post.id}'),
+                  index: index,
+                  post: post,
+                  color: _getRandomColor(),
+                  height: height * 0.6,
+                  width: width,
+                  isDegrade: true,
+                  suppressInlineAd: true,
+                  currentFilterCountry: _currentFilter == 'ALL' || _currentFilter == 'MIXED' ? null : _selectedCountryCode,
+                ),
+        ],
       ),
     );
   }
@@ -3133,6 +3310,9 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       _backgroundPostsLoaded = 0;
     });
 
+    // Flush posts vus + relit unreadPosts avant de reconstruire le feed
+    await _flushAndRefreshUnread();
+
     _resetPagination();
     await _loadInitialPosts();
 
@@ -3470,6 +3650,33 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
           style: TextStyle(color: Colors.green, fontSize: 9),
         ),
       )).toList(),
+    );
+  }
+}
+
+// Badge Tier pour HomeSportPostPage (Nouveau / Découverte / Tendance)
+class _SportTierBadge extends StatelessWidget {
+  final String label;
+  final Color color;
+  const _SportTierBadge({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(left: 12, top: 6, bottom: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color, width: 1),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600),
+        ),
+      ),
     );
   }
 }

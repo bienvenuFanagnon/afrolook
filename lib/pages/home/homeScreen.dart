@@ -2466,7 +2466,7 @@ class _MyHomePageState extends State<MyHomePage>
 
   /// Enfants du TabBarView — partagés par le layout mobile et wide.
   List<Widget> get _tabViewChildren => [
-    LooksPage(type: TabBarType.LOOKS.name, sortType: 'recent', feedKey: _looksRecentKey),
+    LooksPage(type: TabBarType.LOOKS.name, feedKey: _looksRecentKey),
     const SizedBox.shrink(), // Sport → push
     HomeConstPostTypePage(key: _discoverKey, type: TabBarType.EVENEMENT.name, sortType: 'recent'),
     const SizedBox.shrink(), // VIP → push

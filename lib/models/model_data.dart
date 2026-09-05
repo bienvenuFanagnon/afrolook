@@ -4710,7 +4710,9 @@ class ContentPurchase {
       amountPaid: json['amountPaid']?.toDouble() ?? 0.0,
       ownerEarnings: json['ownerEarnings']?.toDouble() ?? 0.0,
       platformEarnings: json['platformEarnings']?.toDouble() ?? 0.0,
-      purchaseDate: json['purchaseDate'] ?? 0,
+      purchaseDate: json['purchaseDate'] is Timestamp
+          ? (json['purchaseDate'] as Timestamp).millisecondsSinceEpoch
+          : (json['purchaseDate'] as int? ?? 0),
     );
   }
 

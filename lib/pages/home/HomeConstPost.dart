@@ -1990,6 +1990,30 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   ) async {
     var unread = authProvider.loginUserData.unreadPosts ?? {};
     printVm('📌 [TIER1] unreadPosts dans loginUserData: ${unread.length} entrées');
+
+    // Plafond de sécurité : si trop de posts non vus s'accumulent (ex. 1000+),
+    // supprimer les plus anciens de Firestore pour éviter une liste infinie.
+    const int _kMaxUnread = 200;
+    if (unread.length > _kMaxUnread) {
+      final sorted = unread.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+      final toKeep = sorted.take(_kMaxUnread).map((e) => e.key).toSet();
+      final toDelete = unread.keys.where((id) => !toKeep.contains(id)).toList();
+      printVm('📌 [TIER1] ⚠️ ${unread.length} posts non vus → plafond $_kMaxUnread dépassé, suppression de ${toDelete.length} anciens');
+      // Nettoyer en mémoire immédiatement
+      for (final id in toDelete) { unread.remove(id); }
+      authProvider.loginUserData.unreadPosts = unread;
+      // Supprimer de Firestore en arrière-plan (batches de 500)
+      final userId = authProvider.loginUserData.id;
+      if (userId != null) {
+        for (int i = 0; i < toDelete.length; i += 500) {
+          final batch = toDelete.sublist(i, min(i + 500, toDelete.length));
+          final updates = <String, dynamic>{};
+          for (final id in batch) { updates['unreadPosts.$id'] = FieldValue.delete(); }
+          FirebaseFirestore.instance.collection('Users').doc(userId).update(updates).catchError((_) {});
+        }
+      }
+    }
+
     // Si vide en mémoire (utilisateur connecté avant la migration), forcer un refresh Firestore
     if (unread.isEmpty && authProvider.loginUserData.id != null) {
       printVm('📌 [TIER1] → vide en mémoire, refresh Firestore...');
@@ -2053,31 +2077,108 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     }
   }
 
-  // ── Marquer les posts vus : stocke en local, update Firestore au prochain lancement ──
+  // Appelé au dispose : s'assure que les posts vus sont bien en SharedPreferences
+  // (backup pour les cas où l'écriture Firestore en temps réel aurait échoué).
   void _markSeenPostsInFirestore() {
     final toFlush = {..._seenTier1PostIds, ..._viewedUnreadIds};
     if (toFlush.isEmpty) return;
     _persistSeenLocally(toFlush);
   }
 
-  // ── Un post est considéré "vu" après 2 secondes d'affichage continu ──────
+  // ── Flush des posts vus + refresh Firestore avant tout rechargement ──────────
+  // À appeler avant chaque rechargement (pull-to-refresh, load-more, etc.)
+  // pour que unreadPosts soit propre et à jour avant de reconstruire le feed.
+  Future<void> _flushAndRefreshUnread() async {
+    final userId = authProvider.loginUserData.id;
+    if (userId == null || userId.isEmpty) return;
+
+    // 1. Flush immédiat des posts vus en session (backup SharedPreferences → Firestore)
+    //    Couvre les cas où l'écriture temps-réel de _markPostAsSeenNow a échoué.
+    await flushSeenPostsAndCleanMemory(userId, authProvider.loginUserData);
+
+    // 2. Relire unreadPosts depuis Firestore pour être à jour
+    //    (nouveaux posts d'abonnements arrivés depuis la dernière lecture)
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(userId)
+          .get();
+      final fresh = ((userDoc.data()?['unreadPosts'] as Map<String, dynamic>?) ?? {})
+          .map((k, v) => MapEntry(k, (v as num).toInt()));
+      authProvider.loginUserData.unreadPosts = fresh;
+      printVm('🔄 [UNREAD] unreadPosts mis à jour : ${fresh.length} posts non vus');
+    } catch (e) {
+      printVm('⚠️ [UNREAD] Impossible de rafraîchir unreadPosts : $e');
+    }
+  }
+
+  // ── Un post est considéré "vu" après 1 seconde d'affichage continu ──────
+  // Ajuster _kSeenDelayMs pour tester 500ms vs 1000ms.
+  static const int _kSeenDelayMs = 700;
+
   final Map<String, Timer> _seenTimers = {};
+  // Timestamps d'entrée dans le viewport (pour mesurer le temps réel de vue)
+  final Map<String, int> _visibleSince = {};
+  // IDs déjà en cours de flush pour éviter les doublons
+  final _flushingIds = <String>{};
 
   void _onPostBecameVisible(String postId, double fraction) {
-    if (!_seenTier1PostIds.contains(postId) &&
-        (authProvider.loginUserData.unreadPosts ?? {}).containsKey(postId)) {
-      if (fraction >= 0.5) {
-        // Démarrer le timer de 2 secondes seulement si > 50% visible.
-        // On ajoute à _viewedUnreadIds (flush Firestore) et NON à _seenTier1PostIds
-        // pour ne pas changer le badge d'un post Tendance en Nouveau au scroll.
-        _seenTimers.putIfAbsent(postId, () => Timer(const Duration(seconds: 1), () {
-          _viewedUnreadIds.add(postId);
-          _seenTimers.remove(postId);
-        }));
-      } else {
-        // Moins de 50% visible → annuler le timer
-        _seenTimers.remove(postId)?.cancel();
+    // _seenTier1PostIds = badge display only. Ne PAS l'utiliser pour bloquer le marquage vu.
+    // Seul _flushingIds empêche le double traitement.
+    if (_flushingIds.contains(postId)) return;
+    final inUnread = (authProvider.loginUserData.unreadPosts ?? {}).containsKey(postId);
+    if (!inUnread) return;
+
+    if (fraction >= 0.5) {
+      // Enregistrer le moment d'entrée dans le viewport si pas déjà fait
+      _visibleSince.putIfAbsent(postId, () => DateTime.now().millisecondsSinceEpoch);
+
+      _seenTimers.putIfAbsent(postId, () => Timer(Duration(milliseconds: _kSeenDelayMs), () {
+        _seenTimers.remove(postId);
+        final enteredAt = _visibleSince.remove(postId);
+        final elapsed = enteredAt != null
+            ? DateTime.now().millisecondsSinceEpoch - enteredAt
+            : _kSeenDelayMs;
+        printVm('👁️ [VUE] post=${postId.substring(0, postId.length.clamp(0, 8))}... vu pendant ${elapsed}ms (seuil=${_kSeenDelayMs}ms, fraction=${fraction.toStringAsFixed(2)}) → marqué vu');
+        _markPostAsSeenNow(postId);
+      }));
+    } else {
+      // Post sorti du viewport avant le seuil → annuler
+      final timer = _seenTimers.remove(postId);
+      if (timer != null) {
+        timer.cancel();
+        final enteredAt = _visibleSince.remove(postId);
+        final elapsed = enteredAt != null
+            ? DateTime.now().millisecondsSinceEpoch - enteredAt
+            : 0;
+        printVm('👁️ [VUE] post=${postId.substring(0, postId.length.clamp(0, 8))}... quitté après ${elapsed}ms (fraction=${fraction.toStringAsFixed(2)}) → PAS marqué vu');
       }
+    }
+  }
+
+  // Supprime immédiatement le post de unreadPosts en mémoire ET sur Firestore.
+  // Fire-and-forget : l'UI ne bloque pas sur l'écriture réseau.
+  void _markPostAsSeenNow(String postId) {
+    if (_flushingIds.contains(postId)) return;
+    _flushingIds.add(postId);
+    _viewedUnreadIds.add(postId);
+
+    // Retrait en mémoire immédiat → le prochain rechargement ne verra plus ce post en Tier 1
+    authProvider.loginUserData.unreadPosts?.remove(postId);
+
+    // Sauvegarde locale en backup (au cas où l'écriture réseau échoue)
+    _persistSeenLocally({postId});
+
+    // Écriture Firestore asynchrone (fire-and-forget)
+    final userId = authProvider.loginUserData.id;
+    if (userId != null && userId.isNotEmpty) {
+      FirebaseFirestore.instance
+          .collection('Users')
+          .doc(userId)
+          .update({'unreadPosts.$postId': FieldValue.delete()})
+          .catchError((e) {
+            printVm('⚠️ [SEEN] Firestore delete échoué pour $postId : $e');
+          });
     }
   }
 
@@ -2406,6 +2507,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     if (_isLoadingMorePosts || _isLoadingBackground || !_hasMorePosts || _totalPostsLoaded >= _maxTotalPosts) {
       return;
     }
+
+    // Flush les posts déjà vus + relit unreadPosts avant de charger la suite
+    await _flushAndRefreshUnread();
 
     setState(() {
       _isLoadingMorePosts = true;
@@ -3399,55 +3503,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     if (_hasErrorPosts && _posts.isEmpty) return _buildErrorWidget();
     if (_posts.isEmpty) return _buildEmptyWidget();
 
-    // ------------------------------------------------------------
-    // 1. Construction du flux alterné (3 normaux → 2 anciens)
-    // ------------------------------------------------------------
-    List<Post> normalPosts = List.from(_posts);
-    // Filet de sécurité : exclure tout post déjà présent dans le feed principal,
-    // même si la race condition entre _startOldPostsLoading et _loadInitialPosts
-    // a permis un chevauchement.
-    List<Post> oldBuffer = _oldPostsCache
-        .where((p) => p.id != null && !_loadedPostIds.contains(p.id))
-        .toList();
-
-    List<Post> finalPosts = [];
-
-    const int normalBatchSize = 3;
-    const int oldPerBatch = 2;
-
-    int normalIndex = 0;
-
-    while (normalIndex < normalPosts.length) {
-      int end = normalIndex + normalBatchSize;
-
-      if (end > normalPosts.length) {
-        end = normalPosts.length;
-      }
-
-      finalPosts.addAll(
-        normalPosts.sublist(normalIndex, end),
-      );
-
-      normalIndex = end;
-
-      if (oldBuffer.isNotEmpty) {
-        int take = oldPerBatch;
-
-        if (take > oldBuffer.length) {
-          take = oldBuffer.length;
-        }
-
-        finalPosts.addAll(
-          oldBuffer.sublist(0, take),
-        );
-
-        oldBuffer.removeRange(0, take);
-      }
-    }
-
-    if (oldBuffer.isNotEmpty) {
-      finalPosts.addAll(oldBuffer);
-    }
+    // L'ordre Tier 1 → Tier 2 → Tier 3 est déjà assuré par _buildTieredFeed.
+    // Les anciens posts non vus sont injectés en fin de _posts via _injectOldPostsAndResume.
+    // Pas d'interleaving manuel : on affiche _posts tel quel.
+    List<Post> finalPosts = List.from(_posts);
 
     // 🔥 Mémoriser la liste rendue pour le préchargement vidéo (index -> post)
     _renderedFeedPosts = finalPosts;
@@ -4160,6 +4219,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       _useBackgroundLoading = true; // Réactiver le background
       _backgroundPostsLoaded = 0; // Réinitialiser le compteur
     });
+
+    // Flush les posts déjà vus + relit unreadPosts depuis Firestore
+    // pour que Tier 1 soit propre avant de reconstruire le feed.
+    await _flushAndRefreshUnread();
 
     _resetPagination();
     await _loadInitialPosts();
