@@ -89,6 +89,7 @@ class HomePostUsersWidget extends StatefulWidget {
   final String? currentFilterCountry;
   final bool isAdContext;
   final bool suppressInlineAd;
+  final String? feedTier;
 
   HomePostUsersWidget({
     required this.post,
@@ -108,6 +109,7 @@ class HomePostUsersWidget extends StatefulWidget {
     this.currentFilterCountry,
     this.isAdContext = false,
     this.suppressInlineAd = false,
+    this.feedTier,
   }) : super(key: key);
 
   @override
@@ -565,7 +567,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     final url = widget.post.url_media;
     if (url == null || url.isEmpty) {
       Navigator.push(context, MaterialPageRoute(
-        builder: (c) => VideoYoutubePageDetails(initialPost: widget.post),
+        builder: (c) => VideoYoutubePageDetails(initialPost: widget.post, feedTier: widget.feedTier),
       ));
       return;
     }
@@ -598,7 +600,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       if (!mounted) return;
       setState(() { _isPreviewPlaying = false; _showPreviewCta = false; });
       Navigator.push(context, MaterialPageRoute(
-        builder: (c) => VideoYoutubePageDetails(initialPost: widget.post),
+        builder: (c) => VideoYoutubePageDetails(initialPost: widget.post, feedTier: widget.feedTier),
       ));
     }
   }
@@ -2146,7 +2148,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                 child: Center(
                   child: GestureDetector(
                     onTap: () => Navigator.push(context, MaterialPageRoute(
-                      builder: (context) => VideoYoutubePageDetails(initialPost: widget.post),
+                      builder: (context) => VideoYoutubePageDetails(initialPost: widget.post, feedTier: widget.feedTier),
                     )),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -3357,7 +3359,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   void _openDetailsPage() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => DetailsPost(post: widget.post)),
+      MaterialPageRoute(builder: (_) => DetailsPost(post: widget.post, feedTier: widget.feedTier)),
     ).then((_) => _refreshPostStats());
   }
 

@@ -783,15 +783,35 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     );
   }
   void _initializeData() async {
-    // Flush les posts vus lors de la session précédente → une seule écriture Firestore
-    // On await pour que unreadPosts soit à jour avant de charger le feed Tier 1
     final userId = authProvider.loginUserData.id;
     if (userId != null && userId.isNotEmpty) {
+      // 0. Rafraîchir unreadPosts depuis Firestore AVANT le flush :
+      //    loginUserData est chargé une seule fois à la connexion, mais de nouveaux
+      //    posts d'abonnements peuvent être arrivés depuis. Sans ce refresh, Tier 1
+      //    serait toujours vide entre deux sessions.
+      try {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('Users')
+            .doc(userId)
+            .get();
+        final fresh = ((userDoc.data()?['unreadPosts'] as Map<String, dynamic>?) ?? {})
+            .map((k, v) => MapEntry(k, (v as num).toInt()));
+        authProvider.loginUserData.unreadPosts = fresh;
+        printVm('🔄 Tier 1 — unreadPosts rafraîchi : ${fresh.length} posts non vus');
+      } catch (e) {
+        printVm('⚠️ Impossible de rafraîchir unreadPosts : $e');
+      }
+
+      // Flush les posts vus lors de la session précédente → une seule écriture Firestore
       await flushSeenPostsAndCleanMemory(
         userId,
         authProvider.loginUserData,
       );
     }
+
+    // Diagnostic Tier 2 — intérêts
+    final interests = authProvider.loginUserData.interests ?? [];
+    printVm('🎯 Tier 2 — interests utilisateur : $interests (${interests.length} configurés)');
 
     // Précharger les top créateurs, top posts et top commentateurs en parallèle
     WeeklyTopCreatorsWidget.preload();
@@ -2938,7 +2958,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => VideoYoutubePageDetails(initialPost: post),
+                        builder: (context) => VideoYoutubePageDetails(
+                          initialPost: post,
+                          feedTier: isTier1 ? 'tier1' : isTier2 ? 'tier2' : 'tier3',
+                        ),
                       ),
                     );
                   },
@@ -2953,6 +2976,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                   isDegrade: true,
                   suppressInlineAd: true,
                   currentFilterCountry: _currentFilter == 'ALL' || _currentFilter == 'MIXED' ? null : _selectedCountryCode,
+                  feedTier: isTier1 ? 'tier1' : isTier2 ? 'tier2' : 'tier3',
                 ),
               ],
             ),

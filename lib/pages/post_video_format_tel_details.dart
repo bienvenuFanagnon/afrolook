@@ -115,8 +115,9 @@ const _twitterRed = Color(0xFFF91880);
 class PostDetailsVideoFormatTel extends StatefulWidget {
   final Post? initialPost;
   final bool isIn;
+  final String? feedTier;
 
-  const PostDetailsVideoFormatTel({Key? key, this.initialPost, this.isIn = false}) : super(key: key);
+  const PostDetailsVideoFormatTel({Key? key, this.initialPost, this.isIn = false, this.feedTier}) : super(key: key);
 
   @override
   _PostDetailsVideoFormatTelState createState() => _PostDetailsVideoFormatTelState();
@@ -4189,6 +4190,14 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
           ),
         if (_isLoadingMore && _videoPosts.length - _currentPage <= _preloadThreshold)
           const Positioned(bottom: 100, child: Center(child: CircularProgressIndicator(color: _afroGreen))),
+
+        // Badges Tier + Pays — uniquement pour le post initial (tier connu depuis le feed)
+        if (_currentPage == 0 && (widget.feedTier != null || !(post.availableCountries.contains('ALL') || post.availableCountries.isEmpty)))
+          Positioned(
+            top: MediaQuery.of(context).padding.top + (widget.isIn ? 60 : 12),
+            left: 12,
+            child: _VideoPageBadges(post: post, feedTier: _currentPage == 0 ? widget.feedTier : null),
+          ),
       ],
     );
   }
@@ -4432,6 +4441,74 @@ class _AnimatedHeartState extends State<_AnimatedHeart> with SingleTickerProvide
           ),
         );
       },
+    );
+  }
+}
+
+// ── Badges Tier + Pays pour la page vidéo format téléphone ───────────────────
+class _VideoPageBadges extends StatelessWidget {
+  final Post post;
+  final String? feedTier;
+  const _VideoPageBadges({required this.post, this.feedTier});
+
+  @override
+  Widget build(BuildContext context) {
+    final tierLabel = switch (feedTier) {
+      'tier1' => ('Nouveau · Abonnement', const Color(0xFF25D366)),
+      'tier2' => ('Découverte · Intérêts', const Color(0xFF6C63FF)),
+      'tier3' => ('Tendance', const Color(0xFF9E9E9E)),
+      _ => null,
+    };
+
+    final countries = post.availableCountries;
+    final isAll = countries.contains('ALL') || countries.isEmpty;
+
+    String flagText = '';
+    String countryLabel = '';
+    if (!isAll) {
+      final code = countries.first.toUpperCase();
+      final found = AfricanCountry.allCountries.where((c) => c.code.toUpperCase() == code).toList();
+      flagText = found.isNotEmpty ? found.first.flag : '🏳️';
+      countryLabel = countries.length == 1 ? code : '+${countries.length - 1}';
+    }
+
+    if (tierLabel == null && isAll) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (tierLabel != null) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: tierLabel.$2.withOpacity(0.6)),
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.circle, color: tierLabel.$2, size: 6),
+              const SizedBox(width: 5),
+              Text(tierLabel.$1, style: TextStyle(color: tierLabel.$2, fontSize: 10.5, fontWeight: FontWeight.w700)),
+            ]),
+          ),
+          const SizedBox(height: 4),
+        ],
+        if (!isAll)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFE74C3C).withOpacity(0.6)),
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Text(flagText, style: const TextStyle(fontSize: 12)),
+              const SizedBox(width: 5),
+              Text(countryLabel, style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w600)),
+            ]),
+          ),
+      ],
     );
   }
 }

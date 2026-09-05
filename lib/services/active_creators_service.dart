@@ -417,6 +417,18 @@ class ActiveCreatorsService {
     } catch (_) {}
   }
 
+  Future<void> resetCanalCounter(
+    String currentUserId,
+    String canalId,
+  ) async {
+    if (currentUserId.isEmpty || canalId.isEmpty) return;
+    try {
+      await _db.collection('Users').doc(currentUserId).update({
+        'newPostsByCanal.$canalId': FieldValue.delete(),
+      });
+    } catch (_) {}
+  }
+
   Future<List<UserData>> fetchUsersById(List<String> ids) =>
       _fetchUsers(ids);
 

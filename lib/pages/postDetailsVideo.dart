@@ -107,8 +107,9 @@ const _afroLightGrey = Color(0xFF71767B);
 class VideoYoutubePageDetails extends StatefulWidget {
   final Post initialPost;
   final bool isIn;
+  final String? feedTier;
 
-  const VideoYoutubePageDetails({Key? key, required this.initialPost, this.isIn = false}) : super(key: key);
+  const VideoYoutubePageDetails({Key? key, required this.initialPost, this.isIn = false, this.feedTier}) : super(key: key);
 
   @override
   _VideoYoutubePageDetailsState createState() => _VideoYoutubePageDetailsState();
@@ -2832,6 +2833,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               // Lecteur vidéo
               isLocked ? Container(height: MediaQuery.of(context).size.width * 9 / 16, child: _buildLockedOverlay()) : _buildVideoPlayer(),
+              // Badges Tier + Pays
+              _PostDetailBadgesRow(post: _currentPost, feedTier: widget.feedTier),
               // Informations
               // Badge SPONSORISÉ si publicité
               if (_currentPost.isAdvertisement == true)
@@ -2866,6 +2869,80 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
           ),  // CenteredContent
           if (_showRewardedAd) RewardedAdWidget(key: _rewardedAdKey, onUserEarnedReward: (amount, name)  => _onSupportAdRewarded(), onAdDismissed: () => setState(() { _showRewardedAd = false; _isSupporting = false; }), child: SizedBox.shrink()),
           if (_showMidrollAd && !_isUserPremium()) _buildMidrollCard(),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Badges Tier + Pays pour les pages de détail ──────────────────────────────
+class _PostDetailBadgesRow extends StatelessWidget {
+  final Post post;
+  final String? feedTier;
+  const _PostDetailBadgesRow({required this.post, this.feedTier});
+
+  String _flagEmoji(String code) => code.toUpperCase().codeUnits
+      .map((c) => String.fromCharCode(c + 127397))
+      .join();
+
+  @override
+  Widget build(BuildContext context) {
+    final tierLabel = switch (feedTier) {
+      'tier1' => ('Nouveau · Abonnement', const Color(0xFF25D366)),
+      'tier2' => ('Découverte · Intérêts', const Color(0xFF6C63FF)),
+      'tier3' => ('Tendance', const Color(0xFF9E9E9E)),
+      _ => null,
+    };
+
+    final countries = post.availableCountries;
+    final isAll = countries.contains('ALL') || countries.isEmpty;
+    String flagText;
+    String countryLabel;
+    if (isAll) {
+      flagText = '🌍';
+      countryLabel = 'Tous';
+    } else {
+      final code = countries.first.toUpperCase();
+      final found = AfricanCountry.allCountries.where((c) => c.code.toUpperCase() == code).toList();
+      flagText = found.isNotEmpty ? found.first.flag : '🏳️';
+      countryLabel = countries.length == 1 ? code : '+${countries.length - 1}';
+    }
+
+    if (tierLabel == null && isAll) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 6, 8, 4),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 4,
+        children: [
+          if (tierLabel != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: tierLabel.$2.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: tierLabel.$2.withOpacity(0.35)),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.circle, color: tierLabel.$2, size: 6),
+                const SizedBox(width: 5),
+                Text(tierLabel.$1, style: TextStyle(color: tierLabel.$2, fontSize: 10.5, fontWeight: FontWeight.w700)),
+              ]),
+            ),
+          if (!isAll)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE74C3C).withOpacity(0.85),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Text(flagText, style: const TextStyle(fontSize: 12)),
+                const SizedBox(width: 5),
+                Text(countryLabel, style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w600)),
+              ]),
+            ),
         ],
       ),
     );

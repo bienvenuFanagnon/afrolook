@@ -24,6 +24,7 @@ class _ActiveCreatorsSectionWidgetState extends State<ActiveCreatorsSectionWidge
   List<ActiveCreator> _activeCreators = [];
   List<UserData> _users = [];
   Map<String, int> _unseenCounts = {};
+  Map<String, int> _canalUnseenCounts = {};
   Map<String, int> _creatorLastActivityUs = {};
   List<ActiveCanal> _recentCanaux = [];
   List<String> _followedCanalIds = [];
@@ -65,13 +66,20 @@ class _ActiveCreatorsSectionWidgetState extends State<ActiveCreatorsSectionWidge
         canaux = await _service.fetchFollowedCanauxDirect(canalIds, limit: 5);
       }
 
-      // 3. Compteurs non vus frais
+      // 3. Compteurs non vus frais (créateurs + canaux en une seule lecture)
       Map<String, int> freshCounts = {};
+      Map<String, int> freshCanalCounts = {};
       try {
         final doc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
-        final raw = doc.data()?['newPostsByCreator'] as Map<String, dynamic>? ?? {};
+        final rawCreator = doc.data()?['newPostsByCreator'] as Map<String, dynamic>? ?? {};
         freshCounts = Map<String, int>.fromEntries(
-          raw.entries
+          rawCreator.entries
+              .where((e) => (e.value as num? ?? 0).toInt() > 0)
+              .map((e) => MapEntry(e.key, (e.value as num).toInt())),
+        );
+        final rawCanal = doc.data()?['newPostsByCanal'] as Map<String, dynamic>? ?? {};
+        freshCanalCounts = Map<String, int>.fromEntries(
+          rawCanal.entries
               .where((e) => (e.value as num? ?? 0).toInt() > 0)
               .map((e) => MapEntry(e.key, (e.value as num).toInt())),
         );
@@ -125,6 +133,7 @@ class _ActiveCreatorsSectionWidgetState extends State<ActiveCreatorsSectionWidge
           for (final c in ordered)
             if (c.unseenCount > 0 && c.user.id != null) c.user.id!: c.unseenCount,
         };
+        _canalUnseenCounts = freshCanalCounts;
         _creatorLastActivityUs = {
           for (final c in ordered) if (c.user.id != null) c.user.id!: c.lastActivityUs,
         };
@@ -161,6 +170,7 @@ class _ActiveCreatorsSectionWidgetState extends State<ActiveCreatorsSectionWidge
       isLoading: _loading,
       title: title,
       unseenCounts: _unseenCounts,
+      canalUnseenCounts: _canalUnseenCounts,
       recentCanaux: _recentCanaux,
       creatorLastActivityUs: _creatorLastActivityUs,
       roundCards: true,
@@ -208,6 +218,15 @@ class _ActiveCreatorsSectionWidgetState extends State<ActiveCreatorsSectionWidge
             });
           }
         });
+      },
+      onTapCanal: (canal) {
+        final canalId = canal.id ?? '';
+        if (canalId.isNotEmpty && me.id != null) {
+          // Réinitialiser le compteur Firestore dès l'ouverture du canal
+          _service.resetCanalCounter(me.id!, canalId);
+          // Effacer localement immédiatement pour que le badge disparaisse
+          setState(() => _canalUnseenCounts.remove(canalId));
+        }
       },
     );
   }

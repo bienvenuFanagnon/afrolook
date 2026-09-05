@@ -36,6 +36,13 @@ class FeedProfilesSection extends StatelessWidget {
   /// Timestamp d'activité par créateur pour le tri mixte (microsecondes).
   final Map<String, int> creatorLastActivityUs;
 
+  /// Posts non vus par canal {canalId: count} — pour le badge rouge sur les bulles de canaux.
+  final Map<String, int> canalUnseenCounts;
+
+  /// Appelé quand l'utilisateur tape sur une bulle de canal (avant navigation).
+  /// Permet au parent de réinitialiser le compteur côté Firestore.
+  final void Function(Canal)? onTapCanal;
+
   const FeedProfilesSection({
     Key? key,
     required this.users,
@@ -51,6 +58,8 @@ class FeedProfilesSection extends StatelessWidget {
     this.roundCards = false,
     this.recentCanaux = const <ActiveCanal>[],
     this.creatorLastActivityUs = const {},
+    this.canalUnseenCounts = const {},
+    this.onTapCanal,
   }) : super(key: key);
 
   @override
@@ -123,8 +132,10 @@ class FeedProfilesSection extends StatelessWidget {
             users: users,
             unseenCounts: unseenCounts,
             canaux: recentCanaux,
+            canalUnseenCounts: canalUnseenCounts,
             creatorLastActivityUs: creatorLastActivityUs,
             onTap: onTapCard ?? onShowProfile,
+            onTapCanal: onTapCanal,
           )
         else
           _RectList(
@@ -160,10 +171,10 @@ class _RoundItem {
         unseen = unseenCount,
         sortUs = actUs;
 
-  _RoundItem.canal(ActiveCanal c)
+  _RoundItem.canal(ActiveCanal c, int unseenCount)
       : canal = c,
         user = null,
-        unseen = 0,
+        unseen = unseenCount,
         sortUs = c.lastActivityUs;
 
   bool get isUser => user != null;
@@ -173,15 +184,19 @@ class _RoundList extends StatelessWidget {
   final List<UserData> users;
   final Map<String, int> unseenCounts;
   final List<ActiveCanal> canaux;
+  final Map<String, int> canalUnseenCounts;
   final Map<String, int> creatorLastActivityUs;
   final void Function(UserData) onTap;
+  final void Function(Canal)? onTapCanal;
 
   const _RoundList({
     required this.users,
     required this.unseenCounts,
     required this.onTap,
     this.canaux = const <ActiveCanal>[],
+    this.canalUnseenCounts = const {},
     this.creatorLastActivityUs = const {},
+    this.onTapCanal,
   });
 
   @override
@@ -195,7 +210,8 @@ class _RoundList extends StatelessWidget {
           unseenCounts[u.id] ?? 0,
           creatorLastActivityUs[u.id] ?? 0,
         ),
-      for (final c in canaux) _RoundItem.canal(c),
+      for (final c in canaux)
+        _RoundItem.canal(c, canalUnseenCounts[c.canal.id] ?? 0),
     ]..sort((a, b) {
         // Non vus en premier
         final aUnseen = a.unseen > 0 ? 1 : 0;
@@ -223,12 +239,16 @@ class _RoundList extends StatelessWidget {
           final activeCanal = item.canal!;
           return _CanalRoundCard(
             activeCanal: activeCanal,
-            onTap: () => Navigator.push(
-              ctx,
-              MaterialPageRoute(
-                builder: (_) => CanalDetails(canal: activeCanal.canal),
-              ),
-            ),
+            unseenCount: item.unseen,
+            onTap: () {
+              onTapCanal?.call(activeCanal.canal);
+              Navigator.push(
+                ctx,
+                MaterialPageRoute(
+                  builder: (_) => CanalDetails(canal: activeCanal.canal),
+                ),
+              );
+            },
           );
         },
       ),
@@ -389,9 +409,14 @@ class _RoundCard extends StatelessWidget {
 
 class _CanalRoundCard extends StatelessWidget {
   final ActiveCanal activeCanal;
+  final int unseenCount;
   final VoidCallback onTap;
 
-  const _CanalRoundCard({required this.activeCanal, required this.onTap});
+  const _CanalRoundCard({
+    required this.activeCanal,
+    required this.onTap,
+    this.unseenCount = 0,
+  });
 
   Canal get canal => activeCanal.canal;
 
@@ -415,7 +440,7 @@ class _CanalRoundCard extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Avatar canal avec badge "Canal" distinctif
+            // Avatar canal avec badge "Canal" + badge posts non vus
             Stack(
               clipBehavior: Clip.none,
               alignment: Alignment.center,
@@ -425,10 +450,16 @@ class _CanalRoundCard extends StatelessWidget {
                   height: 62,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(0xFF8B0000),
-                      width: 2,
-                    ),
+                    gradient: unseenCount > 0
+                        ? const LinearGradient(
+                            colors: [Color(0xFFFFD700), Color(0xFF8B0000)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          )
+                        : null,
+                    border: unseenCount == 0
+                        ? Border.all(color: const Color(0xFF8B0000), width: 2)
+                        : null,
                   ),
                   padding: const EdgeInsets.all(2.5),
                   child: CircleAvatar(
@@ -444,6 +475,30 @@ class _CanalRoundCard extends StatelessWidget {
                         : null,
                   ),
                 ),
+                // Badge nombre de posts non vus
+                if (unseenCount > 0)
+                  Positioned(
+                    top: -2,
+                    right: -2,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 5, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: colors.primary,
+                        borderRadius: BorderRadius.circular(10),
+                        border:
+                            Border.all(color: colors.surface, width: 1.5),
+                      ),
+                      child: Text(
+                        unseenCount > 9 ? '9+' : '$unseenCount',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
                 // Étiquette "Canal" en bas
                 Positioned(
                   bottom: -2,
