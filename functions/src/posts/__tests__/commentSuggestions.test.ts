@@ -1,101 +1,101 @@
-import { extractHashtags, buildPrompt, parseSuggestions } from "../commentSuggestions";
+import {
+  extractHashtags,
+  extractInterestsManually,
+  HASHTAG_TO_CATEGORY,
+  CATEGORY_IDS,
+} from "../commentSuggestions";
 
 // ─── extractHashtags ──────────────────────────────────────────────────────────
 
 describe("extractHashtags", () => {
-  it("extrait les hashtags simples", () => {
-    expect(extractHashtags("Super post #Blague #humour")).toEqual(["#Blague", "#humour"]);
+  it("extrait les hashtags simples en minuscule", () => {
+    expect(extractHashtags("Super post #Mode #Humour")).toEqual(["mode", "humour"]);
   });
 
   it("retourne [] si pas de hashtag", () => {
     expect(extractHashtags("Aucun hashtag ici")).toEqual([]);
   });
 
-  it("limite à 10 hashtags", () => {
-    const input = Array.from({ length: 15 }, (_, i) => `#tag${i}`).join(" ");
-    expect(extractHashtags(input)).toHaveLength(10);
+  it("déduplique les hashtags", () => {
+    const result = extractHashtags("#look #look #mode");
+    expect(result).toEqual(["look", "mode"]);
   });
 
-  it("gère les accents dans les hashtags", () => {
-    // Les accents ne sont pas des \w — comportement attendu : s'arrête à l'accent
+  it("limite à 20 hashtags", () => {
+    const input = Array.from({ length: 25 }, (_, i) => `#tag${i}`).join(" ");
+    expect(extractHashtags(input)).toHaveLength(20);
+  });
+
+  it("s'arrête à l'accent (\\w ne couvre pas les caractères accentués)", () => {
     const result = extractHashtags("#Beauté #mode");
-    expect(result[0]).toBe("#Beaut");
+    expect(result[0]).toBe("beaut"); // s'arrête avant é
+    expect(result[1]).toBe("mode");
+  });
+
+  it("retourne [] pour texte vide", () => {
+    expect(extractHashtags("")).toEqual([]);
   });
 });
 
-// ─── buildPrompt ──────────────────────────────────────────────────────────────
+// ─── extractInterestsManually ────────────────────────────────────────────────
 
-describe("buildPrompt", () => {
-  it("contient la description quand elle est fournie", () => {
-    const p = buildPrompt("Mon super post", []);
-    expect(p).toContain("Mon super post");
+describe("extractInterestsManually", () => {
+  it("mappe #mode → fashion", () => {
+    expect(extractInterestsManually(["mode"])).toContain("fashion");
   });
 
-  it("contient les hashtags quand ils sont fournis", () => {
-    const p = buildPrompt("", ["#humour", "#blague"]);
-    expect(p).toContain("#humour");
-    expect(p).toContain("#blague");
+  it("mappe #sport → sport", () => {
+    expect(extractInterestsManually(["sport"])).toContain("sport");
   });
 
-  it("tronque une description trop longue", () => {
-    const longDesc = "a".repeat(1000);
-    const p = buildPrompt(longDesc, []);
-    expect(p).toContain("a".repeat(500));
-    expect(p).not.toContain("a".repeat(501));
+  it("utilise typeTabbar LOOKS → fashion si aucun hashtag ne matche", () => {
+    expect(extractInterestsManually([], "LOOKS")).toEqual(["fashion"]);
   });
 
-  it("demande exactement 8 suggestions", () => {
-    const p = buildPrompt("test", []);
-    expect(p).toContain("exactement 5");
+  it("utilise typeTabbar SPORT → sport", () => {
+    expect(extractInterestsManually([], "SPORT")).toEqual(["sport"]);
+  });
+
+  it("combine hashtags + typeTabbar (sans doublons)", () => {
+    const result = extractInterestsManually(["mode", "look"], "LOOKS");
+    expect(result).toEqual(["fashion"]); // fashion apparaît une seule fois
+  });
+
+  it("retourne ['lifestyle'] si rien ne matche", () => {
+    expect(extractInterestsManually([], "")).toEqual(["lifestyle"]);
+    expect(extractInterestsManually(["zzzzinconnu"], "")).toEqual(["lifestyle"]);
+  });
+
+  it("limite à 3 catégories", () => {
+    const hashtags = ["music", "sport", "fashion", "food", "gaming"];
+    const result = extractInterestsManually(hashtags);
+    expect(result.length).toBeLessThanOrEqual(3);
+  });
+
+  it("toutes les valeurs retournées sont des CATEGORY_IDS valides", () => {
+    const result = extractInterestsManually(["afrobeat", "foot", "wax", "cuisine"], "SPORT");
+    for (const cat of result) {
+      expect(CATEGORY_IDS).toContain(cat);
+    }
   });
 });
 
-// ─── parseSuggestions ────────────────────────────────────────────────────────
+// ─── HASHTAG_TO_CATEGORY ─────────────────────────────────────────────────────
 
-describe("parseSuggestions", () => {
-  it("parse une réponse bien formée", () => {
-    const raw = [
-      "Super contenu !",
-      "Trop drôle ce post",
-      "Continue comme ça",
-      "Waow incroyable",
-      "Je suis fan",
-    ].join("\n");
-
-    const result = parseSuggestions(raw);
-    expect(result).toHaveLength(5);
-    expect(result[0]).toBe("Super contenu !");
+describe("HASHTAG_TO_CATEGORY", () => {
+  it("toutes les valeurs sont des CATEGORY_IDS valides", () => {
+    const values = Object.values(HASHTAG_TO_CATEGORY);
+    for (const v of values) {
+      expect(CATEGORY_IDS).toContain(v);
+    }
   });
 
-  it("supprime les numéros de liste", () => {
-    const raw = "1. Super post\n2. Trop bien\n3. Cool\n4. Waow\n5. Ok";
-    const result = parseSuggestions(raw);
-    expect(result[0]).toBe("Super post");
-    expect(result[1]).toBe("Trop bien");
-  });
-
-  it("supprime les tirets en début de ligne", () => {
-    const raw = "- Super\n- Bien\n- Cool\n- Waow\n- Ok";
-    const result = parseSuggestions(raw);
-    expect(result[0]).toBe("Super");
-  });
-
-  it("filtre les lignes trop courtes ou trop longues", () => {
-    const raw = "ok\nSuper post vraiment bien\n" + "x".repeat(121) + "\nBien joué";
-    const result = parseSuggestions(raw);
-    expect(result).not.toContain("ok");
-    expect(result).not.toContain("x".repeat(121));
-    expect(result).toContain("Super post vraiment bien");
-  });
-
-  it("limite à 5 suggestions même si Gemini en génère plus", () => {
-    const lines = Array.from({ length: 10 }, (_, i) => `Suggestion numéro ${i + 1}`);
-    const result = parseSuggestions(lines.join("\n"));
-    expect(result).toHaveLength(5);
-  });
-
-  it("retourne [] pour une réponse vide", () => {
-    expect(parseSuggestions("")).toEqual([]);
-    expect(parseSuggestions("\n\n")).toEqual([]);
+  it("les clés courantes existent", () => {
+    expect(HASHTAG_TO_CATEGORY["music"]).toBe("music");
+    expect(HASHTAG_TO_CATEGORY["afrobeat"]).toBe("music");
+    expect(HASHTAG_TO_CATEGORY["football"]).toBe("sport");
+    expect(HASHTAG_TO_CATEGORY["looks"]).toBe("fashion");
+    expect(HASHTAG_TO_CATEGORY["mode"]).toBe("fashion");
+    expect(HASHTAG_TO_CATEGORY["business"]).toBe("business");
   });
 });

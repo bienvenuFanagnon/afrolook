@@ -1528,7 +1528,8 @@ class Post {
   int? eventDate;
 
   List<String>? commentSuggestions; // Suggestions générées par l'IA (Cloud Functions + Gemini)
-  List<String>? postInterests;      // Centres d'intérêt du post détectés par Gemini
+  List<String>? postInterests;      // Centres d'intérêt du post (hashtags + typeTabbar)
+  List<String>? hashtags;           // Hashtags extraits de la description (sans #)
 
   Post({
     this.id,
@@ -1708,6 +1709,9 @@ class Post {
         : null;
     postInterests = json['postInterests'] != null
         ? List<String>.from(json['postInterests'])
+        : null;
+    hashtags = json['hashtags'] != null
+        ? List<String>.from(json['hashtags'])
         : null;
 
   }

@@ -1988,10 +1988,21 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     List<Post> newPosts,
     int limit,
   ) async {
-    final unread = authProvider.loginUserData.unreadPosts ?? {};
+    var unread = authProvider.loginUserData.unreadPosts ?? {};
     printVm('📌 [TIER1] unreadPosts dans loginUserData: ${unread.length} entrées');
+    // Si vide en mémoire (utilisateur connecté avant la migration), forcer un refresh Firestore
+    if (unread.isEmpty && authProvider.loginUserData.id != null) {
+      printVm('📌 [TIER1] → vide en mémoire, refresh Firestore...');
+      try {
+        await authProvider.refreshUserData();
+        unread = authProvider.loginUserData.unreadPosts ?? {};
+        printVm('📌 [TIER1] → après refresh: ${unread.length} entrées');
+      } catch (e) {
+        printVm('⚠️ [TIER1] refresh échoué : $e');
+      }
+    }
     if (unread.isEmpty) {
-      printVm('📌 [TIER1] → vide, aucun post Tier1 chargé');
+      printVm('📌 [TIER1] → toujours vide, aucun post Tier1 chargé');
       return;
     }
     try {
