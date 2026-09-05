@@ -40,7 +40,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   int _newUsersToday = 0;
   int _activeUsersToday = 0;
   int _activeUsersWeek = 0;
-  int _activeUsersMonth = 0;
+  int _activeUsers30d = 0;
+  int _activeUsers90d = 0;
   bool _loading = true;
 
   // Activité récente
@@ -61,8 +62,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       // Borne supérieure pour exclure les anciens docs dont createdAt est en microsecondes
       // (valeurs ~1000x plus grandes que les ms actuels, ils passeraient sinon le filtre >= startOfDay)
       final endOfDay    = DateTime(now.year, now.month, now.day, 23, 59, 59).millisecondsSinceEpoch;
-      final startOfWeek  = now.subtract(const Duration(days: 7)).millisecondsSinceEpoch;
+      final startOfWeek   = now.subtract(const Duration(days: 7)).millisecondsSinceEpoch;
       final startOf30Days = now.subtract(const Duration(days: 30)).millisecondsSinceEpoch;
+      final startOf90Days = now.subtract(const Duration(days: 90)).millisecondsSinceEpoch;
 
       final results = await Future.wait([
         _db.collection('Users').count().get(),
@@ -84,6 +86,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             .where('last_time_active', isGreaterThanOrEqualTo: startOfWeek).count().get(),
         _db.collection('Users')
             .where('last_time_active', isGreaterThanOrEqualTo: startOf30Days).count().get(),
+        _db.collection('Users')
+            .where('last_time_active', isGreaterThanOrEqualTo: startOf90Days).count().get(),
       ]);
 
       // Activité récente : 5 dernières actions sur comptes officiels
@@ -110,7 +114,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           _newUsersToday     = results[5].count ?? 0;
           _activeUsersToday  = results[6].count ?? 0;
           _activeUsersWeek   = results[7].count ?? 0;
-          _activeUsersMonth  = results[8].count ?? 0;
+          _activeUsers30d    = results[8].count ?? 0;
+          _activeUsers90d    = results[9].count ?? 0;
           _recentEvents      = events;
           _loading = false;
         });
@@ -178,9 +183,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   _SectionLabel('Connexions', colors),
                   const SizedBox(height: 10),
                   _ActiveUsersCard(
-                    today: _activeUsersToday,
-                    week:  _activeUsersWeek,
-                    month: _activeUsersMonth,
+                    today:  _activeUsersToday,
+                    week:   _activeUsersWeek,
+                    days30: _activeUsers30d,
+                    days90: _activeUsers90d,
                     colors: colors,
                   ),
                   const SizedBox(height: 20),
@@ -634,43 +640,59 @@ class _StatsGrid extends StatelessWidget {
 // ── Active users card ──────────────────────────────────────────────────────────
 
 class _ActiveUsersCard extends StatelessWidget {
-  final int today, week, month;
+  final int today, week, days30, days90;
   final AppColors colors;
 
-  const _ActiveUsersCard({required this.today, required this.week, required this.month, required this.colors});
+  const _ActiveUsersCard({
+    required this.today,
+    required this.week,
+    required this.days30,
+    required this.days90,
+    required this.colors,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: colors.border),
-      ),
-      child: Row(
-        children: [
-          Expanded(child: _activeCol('Aujourd\'hui', today, const Color(0xFF0F6E56), Icons.today_rounded)),
-          _divider(colors),
-          Expanded(child: _activeCol('7 derniers jours', week, const Color(0xFF185FA5), Icons.date_range_rounded)),
-          _divider(colors),
-          Expanded(child: _activeCol('30 derniers jours', month, const Color(0xFF7B2EBC), Icons.calendar_month_rounded)),
-        ],
-      ),
+    return Column(
+      children: [
+        Row(children: [
+          Expanded(child: _activeCell('Aujourd\'hui', today, const Color(0xFF0F6E56), Icons.today_rounded)),
+          const SizedBox(width: 8),
+          Expanded(child: _activeCell('7 derniers jours', week, const Color(0xFF185FA5), Icons.date_range_rounded)),
+        ]),
+        const SizedBox(height: 8),
+        Row(children: [
+          Expanded(child: _activeCell('30 derniers jours', days30, const Color(0xFF7B2EBC), Icons.calendar_month_rounded)),
+          const SizedBox(width: 8),
+          Expanded(child: _activeCell('3 derniers mois', days90, const Color(0xFFB84B00), Icons.calendar_today_rounded)),
+        ]),
+      ],
     );
   }
 
-  Widget _divider(AppColors c) => Container(width: 1, height: 48, color: c.border, margin: const EdgeInsets.symmetric(horizontal: 8));
-
-  Widget _activeCol(String label, int count, Color color, IconData icon) {
-    return Column(
-      children: [
-        Icon(icon, color: color, size: 20),
-        const SizedBox(height: 6),
-        Text('$count', style: TextStyle(color: color, fontSize: 22, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 2),
-        Text(label, textAlign: TextAlign.center, style: TextStyle(color: colors.textSecondary, fontSize: 11)),
-      ],
+  Widget _activeCell(String label, int count, Color color, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.07),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.18)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 22),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('$count', style: TextStyle(color: color, fontSize: 20, fontWeight: FontWeight.bold)),
+                Text(label, style: TextStyle(color: colors.textSecondary, fontSize: 11)),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
