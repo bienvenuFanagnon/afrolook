@@ -1124,6 +1124,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       _posts.clear();
       _loadedPostIds.clear();
       _isLoadingPosts = true; // évite l'écran vide pendant le rechargement
+      _seenTier1PostIds.clear();
+      _tier2PostIds.clear();
     }
     _totalPostsLoaded = 0;
     _backgroundPostsLoaded = 0;
@@ -1764,7 +1766,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         // Affichage immédiat des posts Tier 1 pour éviter l'attente de 5 secondes.
         if (newPosts.isNotEmpty && mounted) {
           setState(() {
-            _posts = _spreadCreators(List.from(newPosts));
+            _posts = _buildTieredFeed(List.from(newPosts));
             _loadedPostIds.addAll(loadedIds);
             _totalPostsLoaded = newPosts.length;
             _isLoadingPosts = false;
@@ -1774,6 +1776,16 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         // Tier 2 : découverte par intérêts (complète si Tier 1 insuffisant)
         if (newPosts.length < limit) {
           await _loadTier2InterestPosts(loadedIds, newPosts, limit - newPosts.length);
+        }
+        // Affichage immédiat si Tier 1 était vide mais Tier 2 a des résultats
+        if (_isFirstLoad && newPosts.isNotEmpty && mounted) {
+          setState(() {
+            _posts = _buildTieredFeed(List.from(newPosts));
+            _loadedPostIds.addAll(loadedIds);
+            _totalPostsLoaded = newPosts.length;
+            _isLoadingPosts = false;
+            _isFirstLoad = false;
+          });
         }
       }
       if (widget.sortType != 'recent') switch (_currentFilter) {
@@ -1900,7 +1912,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       // Toujours remplacer par la liste finale Tier 1→2→3 ordonnée.
       // (Plus de cache post : pas de merge avec d'anciens posts persistés.)
       setState(() {
-        _posts = _spreadCreators(newPosts);
+        _posts = _buildTieredFeed(newPosts);
         _loadedPostIds.addAll(loadedIds);
         _totalPostsLoaded = _posts.length;
         _isFirstLoad = false;
@@ -1958,10 +1970,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       attempts++;
     }
 
-    // Mélanger pour variété
-    if (newPosts.length > 1) {
-      newPosts.shuffle();
-    }
   }
 
   // ── TIER 1 : posts non vus des abonnements ───────────────────────────────
@@ -2197,6 +2205,22 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       }
     }
     return result;
+  }
+
+  /// Répartit les posts en maintenant strictement l'ordre Tier 1 → Tier 2 → Tier 3.
+  /// Le spread créateurs est appliqué DANS chaque tier, pas en travers.
+  List<Post> _buildTieredFeed(List<Post> posts) {
+    final t1 = <Post>[];
+    final t2 = <Post>[];
+    final t3 = <Post>[];
+    for (final p in posts) {
+      final pid = p.id;
+      if (pid == null) { t3.add(p); continue; }
+      if (_seenTier1PostIds.contains(pid)) { t1.add(p); continue; }
+      if (_tier2PostIds.contains(pid)) { t2.add(p); continue; }
+      t3.add(p);
+    }
+    return [..._spreadCreators(t1), ..._spreadCreators(t2), ..._spreadCreators(t3)];
   }
 
   void _addFetchedToList(
