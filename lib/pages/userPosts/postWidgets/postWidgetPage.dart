@@ -36,6 +36,7 @@ import '../../../providers/sound_provider.dart';
 import '../../../services/linkService.dart';
 import '../../../services/utils/abonnement_utils.dart';
 import '../../../widgets/user_badge_widget.dart';
+import '../../../widgets/double_tap_like.dart';
 import '../../coins/coin_gift_dialog.dart';
 import '../../coins/coin_recharge_screen.dart';
 import '../../../widgets/gifts/quick_gift_bar.dart';
@@ -1629,7 +1630,13 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
             color: colors.shimmerBase,
             child: Opacity(
               opacity: isLocked ? 0.15 : 1.0,
-              child: _buildImageGrid(contentHeight, imageCount),
+              child: DoubleTapLike(
+                alreadyLiked: _isLikedLocally,
+                onDoubleTap: () {
+                  if (!_isLikedLocally) _handleLike();
+                },
+                child: _buildImageGrid(contentHeight, imageCount),
+              ),
             ),
           ),
 

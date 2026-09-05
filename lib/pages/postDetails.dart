@@ -67,6 +67,7 @@ import '../services/streak_service.dart';
 import '../services/postService/post_view_service.dart';
 import '../services/utils/abonnement_utils.dart';
 import '../widgets/user_badge_widget.dart';
+import '../widgets/double_tap_like.dart';
 import 'UserServices/deviceService.dart';
 import 'canaux/detailsCanal.dart';
 
@@ -4901,7 +4902,10 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(15),
-        child: Stack(
+        child: DoubleTapLike(
+          alreadyLiked: _localIsLiked ?? (widget.post.users_love_id?.contains(authProvider.loginUserData.id) ?? false),
+          onDoubleTap: _handleLike,
+          child: Stack(
           children: [
             // 🔥 CAROUSEL D'IMAGES
             PageView.builder(
@@ -5022,6 +5026,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
               ),
           ],
         ),
+        ), // DoubleTapLike
       ),
     );
   }

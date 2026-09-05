@@ -70,6 +70,7 @@ import 'package:afrotok/pages/postComments.dart';
 import 'package:afrotok/services/linkService.dart';
 
 import 'package:afrotok/widgets/user_badge_widget.dart';
+import '../widgets/double_tap_like.dart';
 
 import 'package:video_thumbnail/video_thumbnail.dart';
 
@@ -2099,7 +2100,12 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
         child: Center(child: CircularProgressIndicator(color: _afroGreen)),
       );
     }
-    return AspectRatio(aspectRatio: 16 / 9, child: Chewie(controller: _chewieController!));
+    final isLiked = _currentPost.users_love_id?.contains(authProvider.loginUserData.id) ?? false;
+    return DoubleTapLike(
+      alreadyLiked: isLiked,
+      onDoubleTap: _handleLike,
+      child: AspectRatio(aspectRatio: 16 / 9, child: Chewie(controller: _chewieController!)),
+    );
   }
 
   Widget _buildUserHeader() {
