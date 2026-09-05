@@ -175,6 +175,9 @@ class _DetailsPostState extends State<DetailsPost>
   bool _isSupporting = false;
   bool? _hasSeenSupportModal;
 
+  // Follow / S'abonner — optimistic
+  bool? _localIsFollowing;
+
   Future<void> _loadSupportModalSeen() async {
     final prefs = await SharedPreferences.getInstance();
     final userId = authProvider.loginUserData.id;
@@ -4353,6 +4356,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
               ],
             ),
           ),
+          _buildFollowButton(canal, user),
           GestureDetector(
             onTap: () => _showPostMenu(widget.post),
             child: Icon(
@@ -4364,6 +4368,109 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         ],
       ),
     );
+  }
+
+  Widget _buildFollowButton(Canal? canal, UserData? user) {
+    final myId = authProvider.loginUserData.id;
+    if (myId == null) return const SizedBox.shrink();
+
+    if (canal != null) {
+      final isOwner = canal.userId == myId;
+      if (isOwner) return const SizedBox.shrink();
+      final alreadySubscribed = _localIsFollowing ??
+          (canal.usersSuiviId?.contains(myId) ?? false);
+      if (alreadySubscribed) return const SizedBox.shrink();
+      return Padding(
+        padding: const EdgeInsets.only(right: 8),
+        child: GestureDetector(
+          onTap: () => _handleFollowCanal(canal),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: _colors.primary,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              'S\'abonner',
+              style: TextStyle(
+                color: _colors.onPrimary,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (user != null) {
+      final isMe = user.id == myId;
+      if (isMe) return const SizedBox.shrink();
+      final alreadyFollowing = _localIsFollowing ??
+          (authProvider.loginUserData.followingIds?.contains(user.id) ?? false);
+      if (alreadyFollowing) return const SizedBox.shrink();
+      return Padding(
+        padding: const EdgeInsets.only(right: 8),
+        child: GestureDetector(
+          onTap: () => _handleFollowUser(user),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: _colors.primary,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              'Suivre',
+              style: TextStyle(
+                color: _colors.onPrimary,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return const SizedBox.shrink();
+  }
+
+  Future<void> _handleFollowUser(UserData targetUser) async {
+    if (!mounted) return;
+    setState(() => _localIsFollowing = true);
+    await authProvider.abonner(targetUser, context);
+  }
+
+  Future<void> _handleFollowCanal(Canal canal) async {
+    if (!mounted) return;
+    final myId = authProvider.loginUserData.id!;
+
+    if ((canal.isPrivate == true) || (canal.subscriptionPrice ?? 0) > 0) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => CanalDetails(canal: canal)),
+      );
+      return;
+    }
+
+    setState(() => _localIsFollowing = true);
+
+    canal.usersSuiviId ??= [];
+    canal.usersSuiviId!.add(myId);
+    canal.suivi = (canal.suivi ?? 0) + 1;
+
+    final fs = FirebaseFirestore.instance;
+    fs.collection('Canaux').doc(canal.id).update({
+      'usersSuiviId': FieldValue.arrayUnion([myId]),
+      'suivi': FieldValue.increment(1),
+    }).catchError((_) {
+      canal.usersSuiviId?.remove(myId);
+      canal.suivi = (canal.suivi ?? 1) - 1;
+      if (mounted) setState(() => _localIsFollowing = false);
+    });
+    fs.collection('Users').doc(myId).update({
+      'canauxSuivisIds': FieldValue.arrayUnion([canal.id]),
+    }).catchError((_) {});
   }
 
   void _showPostMenu(Post post) {
