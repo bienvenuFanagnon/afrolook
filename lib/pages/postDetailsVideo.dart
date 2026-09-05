@@ -200,6 +200,20 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     postProvider = Provider.of<PostProvider>(context, listen: false);
     _currentPost = widget.initialPost;
+
+    // Marquer le post comme vu (Tier 1) si l'utilisateur l'ouvre consciemment
+    final _pid = widget.initialPost.id;
+    if (_pid != null &&
+        (authProvider.loginUserData.unreadPosts ?? {}).containsKey(_pid)) {
+      SharedPreferences.getInstance().then((prefs) {
+        final list = prefs.getStringList('seen_tier1_posts_pending') ?? [];
+        if (!list.contains(_pid)) {
+          list.add(_pid);
+          prefs.setStringList('seen_tier1_posts_pending', list);
+        }
+      });
+    }
+
     _startSuggestionModalTimer();
 
     // ✅ Vérification correcte : portrait ET pas déjà sur la page adaptée

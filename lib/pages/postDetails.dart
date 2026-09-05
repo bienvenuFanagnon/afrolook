@@ -1956,6 +1956,20 @@ class _DetailsPostState extends State<DetailsPost>
 
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     postProvider = Provider.of<PostProvider>(context, listen: false);
+
+    // Marquer le post comme vu (Tier 1) si l'utilisateur l'ouvre consciemment
+    final _pid = widget.post.id;
+    if (_pid != null &&
+        (authProvider.loginUserData.unreadPosts ?? {}).containsKey(_pid)) {
+      SharedPreferences.getInstance().then((prefs) {
+        final list = prefs.getStringList('seen_tier1_posts_pending') ?? [];
+        if (!list.contains(_pid)) {
+          list.add(_pid);
+          prefs.setStringList('seen_tier1_posts_pending', list);
+        }
+      });
+    }
+
     // 🔥 INITIALISATION DU CAROUSEL
     _carouselController = PageController();
 
