@@ -1538,7 +1538,8 @@ class _MyHomePageState extends State<MyHomePage>
     switch (dest.type) {
       case 'post':
         if (dest.post != null) {
-          _navigateToPostWidget(dest.post!);
+          // Stack : home → notifications → post (retour = liste des notifs)
+          _navigateViaNotifications(() => _navigateToPostWidget(dest.post!));
         }
         break;
       case 'chat':
@@ -1548,7 +1549,7 @@ class _MyHomePageState extends State<MyHomePage>
         break;
       case 'chronique':
         if (dest.chroniqueId != null) {
-          _navigateToChroniqueDetail(dest.chroniqueId!);
+          _navigateViaNotifications(() => _navigateToChroniqueDetail(dest.chroniqueId!));
         }
         break;
       case 'chronique_home':
@@ -1573,27 +1574,29 @@ class _MyHomePageState extends State<MyHomePage>
         break;
       case 'contenu':
         if (dest.content != null) {
-          Navigator.push(
+          _navigateViaNotifications(() => Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => ContentDetailPage(content: dest.content!)),
-          );
+          ));
         }
         break;
       case 'creator':
         if (dest.creatorId != null) {
-          FirebaseFirestore.instance.collection('Users').doc(dest.creatorId).get().then((doc) {
-            if (!mounted || !doc.exists) return;
-            final user = UserData.fromJson(doc.data()!);
-            Navigator.push(context, MaterialPageRoute(builder: (_) => OtherUserPage(otherUser: user)));
+          _navigateViaNotifications(() {
+            FirebaseFirestore.instance.collection('Users').doc(dest.creatorId).get().then((doc) {
+              if (!mounted || !doc.exists) return;
+              final user = UserData.fromJson(doc.data()!);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => OtherUserPage(otherUser: user)));
+            });
           });
         }
         break;
       case 'canal':
         if (dest.canal != null) {
-          Navigator.push(
+          _navigateViaNotifications(() => Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => CanalDetails(canal: dest.canal!)),
-          );
+          ));
         }
         break;
       case 'live':
@@ -1719,6 +1722,19 @@ class _MyHomePageState extends State<MyHomePage>
       context,
       MaterialPageRoute(builder: (context) => MonetisationPage()),
     );
+  }
+
+  /// Pousse la page notifications dans la stack, puis appelle [then] sur le
+  /// prochain frame pour empiler la destination finale au-dessus.
+  /// Stack résultante : home → notifications → destination.
+  void _navigateViaNotifications(VoidCallback then) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => MesNotification()),
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) then();
+    });
   }
 
   void _navigateToNotifications() {
