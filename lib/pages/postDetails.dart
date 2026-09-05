@@ -6252,6 +6252,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           label: 'Interactions',
         ),
         GestureDetector(
+          behavior: HitTestBehavior.opaque,
           onTap: _isLiking ? null : _handleLike,
           child: _isLiking
               ? Column(
@@ -6283,6 +6284,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                 ),
         ),
         GestureDetector(
+          behavior: HitTestBehavior.opaque,
           onTap: hasAccess
               ? () {
                   firestore.collection('Posts').doc(widget.post.id).update({
@@ -6305,6 +6307,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         ),
         // NOUVEAU : Compteur de favoris
         GestureDetector(
+          behavior: HitTestBehavior.opaque,
           onTap: hasAccess && !_isProcessingFavorite ? _toggleFavorite : null,
           child: _buildStatItem(
             icon: _isFavorite ? Icons.bookmark : Icons.bookmark_border,
@@ -6342,6 +6345,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           ),
         )
             :GestureDetector(
+          behavior: HitTestBehavior.opaque,
           onTap: hasAccess ? _showShareOptions : null,
           child: _buildStatItem(
             icon: Icons.share,

@@ -3612,62 +3612,68 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
                 Text('${post.votesChallenge ?? 0}', style: const TextStyle(color: Colors.white)),
               ],
             ),
-          Column(
-            children: [
-              GestureDetector(
-                onTap: _isLiking ? null : () => _handleLike(post),
-                child: Icon(
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _isLiking ? null : () => _handleLike(post),
+            child: Column(
+              children: [
+                Icon(
                   (_likedPosts[post.id] ?? (post.users_love_id?.contains(authProvider.loginUserData.id) ?? false))
                       ? Icons.favorite
                       : Icons.favorite_border,
                   color: _afroRed,
                   size: 30,
                 ),
-              ),
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 350),
-                transitionBuilder: (child, animation) => SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, 0.6),
-                    end: Offset.zero,
-                  ).animate(animation),
-                  child: FadeTransition(opacity: animation, child: child),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 350),
+                  transitionBuilder: (child, animation) => SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.6),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: FadeTransition(opacity: animation, child: child),
+                  ),
+                  child: Text(
+                    '${_lovesCount[post.id] ?? post.loves ?? 0}',
+                    key: ValueKey(_lovesCount[post.id] ?? post.loves ?? 0),
+                    style: const TextStyle(color: Colors.white),
+                  ),
                 ),
-                child: Text(
-                  '${_lovesCount[post.id] ?? post.loves ?? 0}',
-                  key: ValueKey(_lovesCount[post.id] ?? post.loves ?? 0),
-                  style: const TextStyle(color: Colors.white),
-                ),
-              ),
-            ],
-          ),
-          Column(
-            children: [
-              GestureDetector(onTap: () => _showCommentsModal(post), child: const Icon(Icons.chat_bubble_outline, color: Colors.white, size: 33)),
-              Text('${post.comments ?? 0}', style: const TextStyle(color: Colors.white)),
-            ],
-          ),
-          if (post.type != PostType.CHALLENGEPARTICIPATION.name)
-            Column(
-              children: [
-                GestureDetector(onTap: () => _showGiftDialog(post), child: const Icon(Icons.card_giftcard, color: _afroYellow, size: 30)),
-                Text('${post.totalGiftCoinsSentOnThisPost ?? 0}', style: const TextStyle(color: Colors.white)),
               ],
             ),
-          Column(
-            children: [
-              GestureDetector(onTap: () {}, child: const Icon(Icons.bar_chart, color: Colors.blue, size: 35)),
-              Text('${post.totalInteractions ?? 0}', style: const TextStyle(color: Colors.white)),
-            ],
           ),
-          Column(
-            children: [
-              GestureDetector(
-                onTap: _toggleFavorite,
-                child: Icon(_isFavorite ? Icons.bookmark : Icons.bookmark_border, color: _isFavorite ? _afroYellow : Colors.white, size: 30),
-              ),
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _showCommentsModal(post),
+            child: Column(children: [
+              const Icon(Icons.chat_bubble_outline, color: Colors.white, size: 33),
+              Text('${post.comments ?? 0}', style: const TextStyle(color: Colors.white)),
+            ]),
+          ),
+          if (post.type != PostType.CHALLENGEPARTICIPATION.name)
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => _showGiftDialog(post),
+              child: Column(children: [
+                const Icon(Icons.card_giftcard, color: _afroYellow, size: 30),
+                Text('${post.totalGiftCoinsSentOnThisPost ?? 0}', style: const TextStyle(color: Colors.white)),
+              ]),
+            ),
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {},
+            child: Column(children: [
+              const Icon(Icons.bar_chart, color: Colors.blue, size: 35),
+              Text('${post.totalInteractions ?? 0}', style: const TextStyle(color: Colors.white)),
+            ]),
+          ),
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _toggleFavorite,
+            child: Column(children: [
+              Icon(_isFavorite ? Icons.bookmark : Icons.bookmark_border, color: _isFavorite ? _afroYellow : Colors.white, size: 30),
               Text(_formatNumber(_favoritesCount), style: const TextStyle(color: Colors.white)),
-            ],
+            ]),
           ),
           GestureDetector(
             onTap: () => _showPostMenu(post),

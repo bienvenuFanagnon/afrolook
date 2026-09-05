@@ -211,8 +211,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   final _activeCreatorsService = ActiveCreatorsService();
   // Posts déjà décrémentés dans cette session (évite double-décrément au scroll)
   final _decrementedPostIds = <String>{};
-  // IDs des posts Tier 1 affichés cette session → seront marqués "vus" à la sortie
+  // IDs des posts Tier 1 chargés cette session → seront marqués "vus" à la sortie
   final _seenTier1PostIds = <String>{};
+  // Tier 2 : posts chargés par intérêts (pour badge "Découverte")
+  final _tier2PostIds = <String>{};
   Timer? _stayTimer;
   bool _isPageVisible = true;
   bool _isSupportDialogShowing = false;
@@ -1981,7 +1983,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         limit: limit,
       );
       _addFetchedToList(posts, loadedIds, newPosts, limit);
-      // Mémoriser les IDs Tier 1 pour les marquer "vus" au dispose
       for (final p in posts) {
         if (p.id != null) _seenTier1PostIds.add(p.id!);
       }
@@ -2008,6 +2009,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         limit: limit,
       );
       _addFetchedToList(posts, loadedIds, newPosts, limit);
+      for (final p in posts) {
+        if (p.id != null) _tier2PostIds.add(p.id!);
+      }
       printVm('🎯 Tier 2 : ${posts.length} posts par intérêts');
     } catch (e) {
       printVm('⚠️ Tier 2 erreur : $e');
@@ -2887,8 +2891,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       FeedUnifiedAdSlot(adKey: key);
 
   Widget _buildPostWidget(Post post, double width, double height, int index) {
-    final isDiscovery = post.id != null &&
-        DiscoveryBoostService.instance.discoveryPostIds.contains(post.id);
+    final pid = post.id;
+    final isDiscovery = pid != null &&
+        DiscoveryBoostService.instance.discoveryPostIds.contains(pid);
+    final isTier1 = pid != null && _seenTier1PostIds.contains(pid);
+    final isTier2 = pid != null && _tier2PostIds.contains(pid) && !isTier1;
 
     return VisibilityDetector(
       key: Key('post-${post.id}'),
@@ -2899,9 +2906,13 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // ── Badge "Nouveau créateur" ─────────────────────────────────────────
-          if (isDiscovery)
-            _NewCreatorBadge(postId: post.id!, userId: post.user_id ?? ''),
+          // ── Badges Tier ──────────────────────────────────────────────────────
+          if (isTier1)
+            _FeedTierBadge(label: 'Nouveau · Abonnement', color: const Color(0xFF25D366))
+          else if (isTier2)
+            _FeedTierBadge(label: 'Découverte · Intérêts', color: const Color(0xFF6C63FF))
+          else if (isDiscovery)
+            _NewCreatorBadge(postId: pid!, userId: post.user_id ?? ''),
 
           // ── Contenu du post ──────────────────────────────────────────────────
           Container(
@@ -4156,6 +4167,43 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
             ),
           ),
         ),      ),
+    );
+  }
+}
+
+// ── Badge générique Tier (Nouveau·Abonnement / Découverte·Intérêts) ──────────
+
+class _FeedTierBadge extends StatelessWidget {
+  final String label;
+  final Color color;
+  const _FeedTierBadge({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.35), width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.circle, color: color, size: 6),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
