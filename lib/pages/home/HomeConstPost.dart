@@ -2916,8 +2916,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         DiscoveryBoostService.instance.discoveryPostIds.contains(pid);
     final isTier1 = pid != null && _seenTier1PostIds.contains(pid);
     final isTier2 = pid != null && _tier2PostIds.contains(pid) && !isTier1;
-    // Tier 3 = tous les autres posts chargés dans cette session (tendance/récents)
-    final isTier3 = pid != null && !isTier1 && !isTier2;
 
     return VisibilityDetector(
       key: Key('post-${post.id}'),
@@ -2934,9 +2932,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           else if (isTier2)
             _FeedTierBadge(label: 'Découverte · Intérêts', color: const Color(0xFF6C63FF))
           else if (isDiscovery)
-            _NewCreatorBadge(postId: pid!, userId: post.user_id ?? '')
-          else if (isTier3)
-            _FeedTierBadge(label: 'Tendance', color: const Color(0xFF9E9E9E)),
+            _NewCreatorBadge(postId: pid!, userId: post.user_id ?? ''),
 
           // ── Contenu du post ──────────────────────────────────────────────────
           Container(
@@ -2960,7 +2956,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                       MaterialPageRoute(
                         builder: (context) => VideoYoutubePageDetails(
                           initialPost: post,
-                          feedTier: isTier1 ? 'tier1' : isTier2 ? 'tier2' : 'tier3',
+                          feedTier: isTier1 ? 'tier1' : isTier2 ? 'tier2' : null,
                         ),
                       ),
                     );
@@ -2976,7 +2972,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                   isDegrade: true,
                   suppressInlineAd: true,
                   currentFilterCountry: _currentFilter == 'ALL' || _currentFilter == 'MIXED' ? null : _selectedCountryCode,
-                  feedTier: isTier1 ? 'tier1' : isTier2 ? 'tier2' : 'tier3',
+                  feedTier: isTier1 ? 'tier1' : isTier2 ? 'tier2' : null,
                 ),
               ],
             ),

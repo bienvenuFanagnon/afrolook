@@ -6841,7 +6841,6 @@ class _PostDetailBadgesRow extends StatelessWidget {
     final tierLabel = switch (feedTier) {
       'tier1' => ('Nouveau · Abonnement', const Color(0xFF25D366)),
       'tier2' => ('Découverte · Intérêts', const Color(0xFF6C63FF)),
-      'tier3' => ('Tendance', const Color(0xFF9E9E9E)),
       _ => null,
     };
 

@@ -20,9 +20,16 @@
 ### 3. Badges Tier dans le feed (fait — `homeConstPost.dart`)
 - Tier 1 (non vus abonnements) → badge vert "Nouveau · Abonnement"
 - Tier 2 (intérêts) → badge violet "Découverte · Intérêts"
-- Tier 3 (tendance/récents) → badge gris "Tendance" ← ajouté dernier pour debug
+- Tier 3 → pas de badge (retiré, était debug seulement)
 - Discovery (nouveaux créateurs < 20 abonnés) → `_NewCreatorBadge`
 - Widget : `_FeedTierBadge` (bas du fichier `homeConstPost.dart`)
+
+### 3b. Badges Tier + Pays dans les pages de détail (fait — commit `406b291`)
+- `DetailsPost`, `VideoYoutubePageDetails`, `PostDetailsVideoFormatTel` : paramètre `feedTier?`
+- Badge Tier (vert/violet) affiché si `feedTier == 'tier1'` ou `'tier2'`
+- Badge Pays (drapeau + code) affiché si `post.availableCountries` n'est pas `['ALL']`
+- `HomePostUsersWidget` : `feedTier` forwardé aux pages de détail
+- `homeConstPost.dart` : `feedTier` passé aux deux chemins (YouTubeCard + HomePostUsersWidget)
 
 ### 4. Boutons like insensibles (fait — commits `1e172c8`, `9275b75`)
 - `postDetails.dart`, `postDetailsVideo.dart` : `HitTestBehavior.opaque` sur les 4 GestureDetectors.
@@ -44,42 +51,19 @@
 
 ## Ce qui reste à faire
 
-### A. Déployer les Cloud Functions
+### A. Déployer les Cloud Functions ⚠️ À faire manuellement
 ```bash
 cd functions
 npm run build
 firebase deploy --only functions
 ```
-Les fonctions modifiées : `updateFollowersNewPostCount` (lifecycle.ts).
+Les fonctions modifiées : `updateFollowersNewPostCount` + fan-out `newPostsByCanal` (lifecycle.ts).
 
-### B. Badge `newPostsByCanal` dans la section Accueil (canaux actifs)
-- **Fichier** : `lib/widgets/feed/sections/active_creators_section_widget.dart`
-- **Objectif** : afficher le compteur de posts non vus sur les bulles de canaux, comme pour les créateurs.
-- **Données** : `loginUserData.newPostsByCanal[canalId]` (champ déjà présent dans le modèle).
-- **Pattern** : copier exactement ce qui est fait pour `newPostsByCreator` et les bulles de créateurs.
-- **Reset** : quand l'user ouvre un canal, faire `newPostsByCanal.$canalId: FieldValue.delete()` dans Firestore (voir `active_creators_service.dart:clearCreatorUnseenCount`).
-
-### C. Comprendre pourquoi Tier 1 et Tier 2 n'apparaissent pas
-- **Tier 1 vide** : `loginUserData.unreadPosts` est peut-être vide → aucun abonnement récent n'a posté ou la CF `updateFollowersNewPostCount` ne tourne pas encore sur l'env de dev.
-- **Tier 2 vide** : `loginUserData.interests` est peut-être `[]` → l'utilisateur n'a pas configuré ses intérêts dans son profil. Vérifier avec `print(authProvider.loginUserData.interests)` au démarrage.
-- **Posts sans `postInterests`** : tester dans Firestore console : un post au hasard a-t-il le champ `postInterests: [...]` ?
-
-### D. Badge "Tendance" — décision UX finale
-- Actuellement : badge gris "Tendance" ajouté sur TOUS les posts Tier 3 pour debug.
-- Décision à prendre : garder ce badge en prod ou le retirer une fois le debug terminé.
-- **Si on retire** : supprimer le bloc `else if (isTier3)` dans `_buildPostWidget` dans `homeConstPost.dart`.
-
-### E. Même algo feed partout (non fait)
-Pages qui doivent utiliser le même algo Tier 1/2/3 :
+### B. Même algo feed partout (non fait — priorité basse)
+Pages qui pourraient bénéficier du même algo Tier 1/2/3 :
 - `lib/pages/home/HomeSportPost.dart` (page sport)
-- `lib/pages/post_video_format_tel_details.dart` (format téléphone)
 - `lib/pages/user/following_unseen_feed_page.dart` (feed abonnements)
 - Page catégorie (clic sur une catégorie dans le feed)
-
-### F. Section catégories dans le feed ("aucune catégorie pour aller voir plus")
-- Le widget `feed_category_section.dart` est importé dans `homeConstPost.dart`.
-- Vérifier qu'il est bien injecté dans la liste `contentWidgets` (chercher `FeedCategorySection` dans `homeConstPost.dart`).
-- Si absent ou conditionnel, l'ajouter à la bonne position dans la liste de posts.
 
 ---
 
