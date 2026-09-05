@@ -1122,6 +1122,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
   void _resetPagination({bool clearPosts = true}) {
     if (clearPosts) {
+      printVm('🧹 [RESET] _resetPagination clearPosts=true → seenTier1=${_seenTier1PostIds.length} IDs vidés, tier2=${_tier2PostIds.length} IDs vidés');
       _posts.clear();
       _loadedPostIds.clear();
       _isLoadingPosts = true; // évite l'écran vide pendant le rechargement
@@ -1774,6 +1775,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
             _isLoadingPosts = false;
             _isFirstLoad = false;
           });
+          printVm('⚡ [STATE] setState intermédiaire Tier1 → _isFirstLoad=false, posts=${_posts.length}');
+          _logBadgeSummary();
+        } else {
+          printVm('⚡ [STATE] Tier1 vide ou unmounted → pas de setState intermédiaire');
         }
         // Tier 2 : découverte par intérêts (complète si Tier 1 insuffisant)
         if (newPosts.length < limit) {
@@ -1788,6 +1793,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
             _isLoadingPosts = false;
             _isFirstLoad = false;
           });
+          printVm('⚡ [STATE] setState intermédiaire Tier2 → _isFirstLoad=false, posts=${_posts.length}');
+          _logBadgeSummary();
         }
       }
       if (widget.sortType != 'recent') switch (_currentFilter) {
@@ -1913,14 +1920,15 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
       // Toujours remplacer par la liste finale Tier 1→2→3 ordonnée.
       // (Plus de cache post : pas de merge avec d'anciens posts persistés.)
+      printVm('🏁 [FINAL] Avant setState final: newPosts=${newPosts.length}, seenT1=${_seenTier1PostIds.length}, tier2=${_tier2PostIds.length}, _isFirstLoad=$_isFirstLoad, filtre=$_currentFilter');
       setState(() {
         _posts = _buildTieredFeed(newPosts);
         _loadedPostIds.addAll(loadedIds);
         _totalPostsLoaded = _posts.length;
         _isFirstLoad = false;
       });
-
-      printVm('✅ ${newPosts.length} posts chargés avec filtre: $_currentFilter');
+      _logBadgeSummary();
+      printVm('✅ [FINAL] ${_posts.length} posts affichés, filtre=$_currentFilter');
 
     } catch (e) {
       printVm('❌ Erreur chargement posts: $e');
@@ -1981,20 +1989,25 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     int limit,
   ) async {
     final unread = authProvider.loginUserData.unreadPosts ?? {};
-    if (unread.isEmpty) return;
+    printVm('📌 [TIER1] unreadPosts dans loginUserData: ${unread.length} entrées');
+    if (unread.isEmpty) {
+      printVm('📌 [TIER1] → vide, aucun post Tier1 chargé');
+      return;
+    }
     try {
       final posts = await FeedRepository().fetchUnreadSubscriptionPosts(
         unread,
         {...loadedIds, ..._loadedPostIds},
         limit: limit,
       );
+      printVm('📌 [TIER1] fetchUnreadSubscriptionPosts retourné: ${posts.length} posts (limit=$limit)');
       _addFetchedToList(posts, loadedIds, newPosts, limit);
       for (final p in posts) {
         if (p.id != null) _seenTier1PostIds.add(p.id!);
       }
-      printVm('📌 Tier 1 : ${posts.length} posts non vus des abonnements');
+      printVm('📌 [TIER1] _seenTier1PostIds: ${_seenTier1PostIds.length} IDs → ${_seenTier1PostIds.take(5).join(', ')}${_seenTier1PostIds.length > 5 ? '...' : ''}');
     } catch (e) {
-      printVm('⚠️ Tier 1 erreur : $e');
+      printVm('⚠️ [TIER1] erreur : $e');
     }
   }
 
@@ -2005,7 +2018,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     int limit,
   ) async {
     final interests = authProvider.loginUserData.interests ?? [];
-    if (interests.isEmpty) return;
+    printVm('🎯 [TIER2] interests utilisateur: ${interests.length} → $interests');
+    if (interests.isEmpty) {
+      printVm('🎯 [TIER2] → aucun intérêt, Tier2 ignoré');
+      return;
+    }
     final countryCode = authProvider.loginUserData.countryData?['countryCode'] as String? ?? '';
     try {
       final posts = await FeedRepository().fetchInterestPosts(
@@ -2014,11 +2031,12 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         countryCode: countryCode,
         limit: limit,
       );
+      printVm('🎯 [TIER2] fetchInterestPosts retourné: ${posts.length} posts (limit=$limit, pays=$countryCode)');
       _addFetchedToList(posts, loadedIds, newPosts, limit);
       for (final p in posts) {
         if (p.id != null) _tier2PostIds.add(p.id!);
       }
-      printVm('🎯 Tier 2 : ${posts.length} posts par intérêts');
+      printVm('🎯 [TIER2] _tier2PostIds: ${_tier2PostIds.length} IDs → ${_tier2PostIds.take(5).join(', ')}${_tier2PostIds.length > 5 ? '...' : ''}');
     } catch (e) {
       printVm('⚠️ Tier 2 erreur : $e');
     }
@@ -2266,7 +2284,28 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       if (_tier2PostIds.contains(pid)) { t2.add(p); continue; }
       t3.add(p);
     }
-    return [..._spreadCreators(t1), ..._spreadCreators(t2), ..._spreadCreators(t3)];
+    final result = [..._spreadCreators(t1), ..._spreadCreators(t2), ..._spreadCreators(t3)];
+    printVm('🏗️ [FEED] _buildTieredFeed → T1=${t1.length} | T2=${t2.length} | T3=${t3.length} | total=${result.length}');
+    printVm('🏗️ [FEED] _seenTier1PostIds=${_seenTier1PostIds.length} _tier2PostIds=${_tier2PostIds.length} _isFirstLoad=$_isFirstLoad');
+    return result;
+  }
+
+  void _logBadgeSummary() {
+    if (_posts.isEmpty) {
+      printVm('🏷️ [BADGES] _posts vide — aucun badge à afficher');
+      return;
+    }
+    final lines = <String>[];
+    for (int i = 0; i < _posts.length && i < 15; i++) {
+      final p = _posts[i];
+      final pid = p.id ?? 'null';
+      final isTier1 = pid != 'null' && _seenTier1PostIds.contains(pid);
+      final isTier2 = pid != 'null' && _tier2PostIds.contains(pid) && !isTier1;
+      final isTier3 = !_isFirstLoad && pid != 'null' && !isTier1 && !isTier2;
+      final badge = isTier1 ? 'NOUVEAU' : isTier2 ? 'DECOUVERTE' : isTier3 ? 'TENDANCE' : 'AUCUN(_isFirstLoad=$_isFirstLoad)';
+      lines.add('  [$i] ${pid.substring(0, pid.length.clamp(0, 8))}... → $badge');
+    }
+    printVm('🏷️ [BADGES] Résumé des ${_posts.length.clamp(0, 15)} premiers posts:\n${lines.join('\n')}');
   }
 
   void _addFetchedToList(
@@ -2976,6 +3015,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     // Tendance uniquement affiché après la fin du chargement initial.
     // Pendant _isFirstLoad le tier est inconnu → on n'affiche rien.
     final isTier3 = !_isFirstLoad && pid != null && !isTier1 && !isTier2;
+
+    if (index < 5) {
+      final badge = isTier1 ? 'NOUVEAU' : isTier2 ? 'DECOUVERTE' : isTier3 ? 'TENDANCE' : 'AUCUN(_isFirstLoad=$_isFirstLoad)';
+      printVm('🏷️ [POST $index] pid=${pid?.substring(0, pid.length.clamp(0, 8))}... badge=$badge (T1=${_seenTier1PostIds.contains(pid)} T2=${_tier2PostIds.contains(pid)})');
+    }
 
     return VisibilityDetector(
       key: Key('post-${post.id}'),
