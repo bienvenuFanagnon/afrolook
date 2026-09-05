@@ -508,10 +508,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
     if (available.isEmpty) return;
 
+    final spread = _spreadCreatorsWithContext(available, _posts);
     setState(() {
-      _posts.addAll(available);
+      _posts.addAll(spread);
       _loadedPostIds.addAll(available.map((p) => p.id!));
-      _totalPostsLoaded += available.length;
+      _totalPostsLoaded += spread.length;
       _hasMorePosts = true;
       _backgroundPostsLoaded = 0;
       _useBackgroundLoading = true;
@@ -1206,16 +1207,17 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
       await _loadMorePostsByFilter(loadedIds, newPosts, _backgroundLoadLimit);
 
-      // Ajouter les nouveaux posts à la liste
+      // Ajouter les nouveaux posts à la liste (spread pour éviter les rafales)
       if (newPosts.isNotEmpty) {
+        final spread = _spreadCreatorsWithContext(newPosts, _posts);
         setState(() {
-          _posts.addAll(newPosts);
+          _posts.addAll(spread);
           _loadedPostIds.addAll(newPosts.map((p) => p.id!));
-          _totalPostsLoaded += newPosts.length;
-          _backgroundPostsLoaded += newPosts.length;
+          _totalPostsLoaded += spread.length;
+          _backgroundPostsLoaded += spread.length;
         });
 
-        printVm('✅ ${newPosts.length} posts chargés en background (total: $_totalPostsLoaded, background: $_backgroundPostsLoaded)');
+        printVm('✅ ${spread.length} posts chargés en background (total: $_totalPostsLoaded, background: $_backgroundPostsLoaded)');
       }
 
       // Vérifier s'il reste des posts à charger
@@ -2207,6 +2209,50 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     return result;
   }
 
+  /// Spread des créateurs dans [newPosts] en respectant le gap par rapport à la
+  /// fin de [existingPosts] déjà affichés (évite les rafales lors de la pagination).
+  List<Post> _spreadCreatorsWithContext(List<Post> newPosts, List<Post> existingPosts) {
+    if (newPosts.isEmpty) return newPosts;
+    const int minGap = 3;
+    final result = <Post>[];
+    final pending = List<Post>.from(newPosts);
+
+    // Initialiser lastSeen depuis les derniers minGap posts déjà à l'écran
+    final lastSeen = <String, int>{};
+    final tail = existingPosts.length > minGap
+        ? existingPosts.sublist(existingPosts.length - minGap)
+        : existingPosts;
+    for (int i = 0; i < tail.length; i++) {
+      final creatorId = tail[i].user_id ?? '';
+      if (creatorId.isNotEmpty) {
+        // Positions négatives = avant result[0]
+        lastSeen[creatorId] = -(tail.length - i);
+      }
+    }
+
+    while (pending.isNotEmpty) {
+      final currentPos = result.length;
+      bool placed = false;
+      for (int i = 0; i < pending.length; i++) {
+        final creatorId = pending[i].user_id ?? '';
+        final last = lastSeen[creatorId];
+        if (last == null || currentPos - last > minGap) {
+          result.add(pending.removeAt(i));
+          if (creatorId.isNotEmpty) lastSeen[creatorId] = currentPos;
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        final post = pending.removeAt(0);
+        result.add(post);
+        final creatorId = post.user_id ?? '';
+        if (creatorId.isNotEmpty) lastSeen[creatorId] = result.length - 1;
+      }
+    }
+    return result;
+  }
+
   /// Répartit les posts en maintenant strictement l'ordre Tier 1 → Tier 2 → Tier 3.
   /// Le spread créateurs est appliqué DANS chaque tier, pas en travers.
   List<Post> _buildTieredFeed(List<Post> posts) {
@@ -2321,15 +2367,16 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
       await _loadMorePostsByFilter(loadedIds, newPosts, _manualLoadLimit);
 
-      // Ajouter les nouveaux posts
+      // Ajouter les nouveaux posts (spread pour éviter les rafales)
       if (newPosts.isNotEmpty) {
+        final spread = _spreadCreatorsWithContext(newPosts, _posts);
         setState(() {
-          _posts.addAll(newPosts);
+          _posts.addAll(spread);
           _loadedPostIds.addAll(newPosts.map((p) => p.id!));
-          _totalPostsLoaded += newPosts.length;
+          _totalPostsLoaded += spread.length;
         });
 
-        printVm('📱 ${newPosts.length} posts chargés manuellement (total: $_totalPostsLoaded)');
+        printVm('📱 ${spread.length} posts chargés manuellement (total: $_totalPostsLoaded)');
       }
 
       _hasMorePosts = newPosts.length >= (_manualLoadLimit ~/ 2);
