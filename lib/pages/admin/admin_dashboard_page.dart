@@ -61,7 +61,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       // Borne supérieure pour exclure les anciens docs dont createdAt est en microsecondes
       // (valeurs ~1000x plus grandes que les ms actuels, ils passeraient sinon le filtre >= startOfDay)
       final endOfDay    = DateTime(now.year, now.month, now.day, 23, 59, 59).millisecondsSinceEpoch;
-      final startOfWeek = now.subtract(const Duration(days: 7)).millisecondsSinceEpoch;
+      final startOfWeek  = now.subtract(const Duration(days: 7)).millisecondsSinceEpoch;
+      final startOf30Days = now.subtract(const Duration(days: 30)).millisecondsSinceEpoch;
 
       final results = await Future.wait([
         _db.collection('Users').count().get(),
@@ -82,7 +83,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         _db.collection('Users')
             .where('last_time_active', isGreaterThanOrEqualTo: startOfWeek).count().get(),
         _db.collection('Users')
-            .where('last_time_active', isGreaterThanOrEqualTo: startOfMonth).count().get(),
+            .where('last_time_active', isGreaterThanOrEqualTo: startOf30Days).count().get(),
       ]);
 
       // Activité récente : 5 dernières actions sur comptes officiels
@@ -653,7 +654,7 @@ class _ActiveUsersCard extends StatelessWidget {
           _divider(colors),
           Expanded(child: _activeCol('7 derniers jours', week, const Color(0xFF185FA5), Icons.date_range_rounded)),
           _divider(colors),
-          Expanded(child: _activeCol('Ce mois', month, const Color(0xFF7B2EBC), Icons.calendar_month_rounded)),
+          Expanded(child: _activeCol('30 derniers jours', month, const Color(0xFF7B2EBC), Icons.calendar_month_rounded)),
         ],
       ),
     );
