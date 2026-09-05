@@ -1332,15 +1332,17 @@ class _MesNotificationState extends State<MesNotification> {
                     color: _colors.surface,
                     child: Row(
                       children: [
-                        Text(
-                          _l10n.notifUnreadCount(_notifications.where((n) => !n.is_open!).length),
-                          style: TextStyle(
-                            color: _colors.danger,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
+                        Expanded(
+                          child: Text(
+                            _l10n.notifUnreadCount(_notifications.where((n) => !n.is_open!).length),
+                            style: TextStyle(
+                              color: _colors.danger,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        Spacer(),
                         if (_selectedTypeFilter != null)
                           Container(
                             padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -1355,10 +1357,9 @@ class _MesNotificationState extends State<MesNotification> {
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                               ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                        if (_selectedTypeFilter == null)
-                          ..._buildTypeCounts(),
                       ],
                     ),
                   ),
@@ -1367,37 +1368,61 @@ class _MesNotificationState extends State<MesNotification> {
                     child: ListView(
                       children: [
                         ...() {
-                          // Trier les groupes par notification la plus récente
+                          // Groupes avec contenu en premier (triés par plus récent),
+                          // puis les groupes vides à la suite.
                           final groups = _groupTypes.keys.toList()
                             ..sort((a, b) {
                               int latestOf(String g) => _notifications
                                   .where((n) => _groupForType(n.type) == g)
                                   .fold<int>(0, (m, n) => (n.createdAt ?? 0) > m ? (n.createdAt ?? 0) : m);
-                              return latestOf(b).compareTo(latestOf(a));
+                              final la = latestOf(a), lb = latestOf(b);
+                              if (la == 0 && lb == 0) return 0;
+                              if (la == 0) return 1;
+                              if (lb == 0) return -1;
+                              return lb.compareTo(la);
                             });
                           return groups;
                         }().map((group) {
                           final items = _notifications
                               .where((n) => _groupForType(n.type) == group)
                               .toList();
-                          if (items.isEmpty) return const SizedBox.shrink();
-                          final unread = items.where((n) => !(n.is_open ?? false)).length;
+                          // Vrai compte non-lus depuis Firestore (query count), fallback local
+                          final unread = _groupUnreadCounts.containsKey(group)
+                              ? _groupUnreadCounts[group]!
+                              : items.where((n) => !(n.is_open ?? false)).length;
                           final isOpen = _groupExpanded[group] ?? false;
+                          final isEmpty = items.isEmpty;
                           return Column(
                             children: [
-                              // ── En-tête groupe ──
+                              // ── En-tête groupe (toujours visible) ──
                               InkWell(
-                                onTap: () => setState(() => _groupExpanded[group] = !isOpen),
+                                onTap: isEmpty
+                                    ? null
+                                    : () => setState(() => _groupExpanded[group] = !isOpen),
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                  color: _colors.surface,
+                                  color: isEmpty
+                                      ? _colors.surface.withOpacity(0.6)
+                                      : _colors.surface,
                                   child: Row(
                                     children: [
-                                      Icon(_groupIcons[group] ?? Icons.notifications_outlined, size: 20, color: _colors.textSecondary),
+                                      Icon(
+                                        _groupIcons[group] ?? Icons.notifications_outlined,
+                                        size: 20,
+                                        color: isEmpty ? _colors.textSecondary.withOpacity(0.4) : _colors.textSecondary,
+                                      ),
                                       const SizedBox(width: 10),
                                       Expanded(
-                                        child: Text(group,
-                                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: _colors.textPrimary)),
+                                        child: Text(
+                                          group,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 14,
+                                            color: isEmpty
+                                                ? _colors.textPrimary.withOpacity(0.4)
+                                                : _colors.textPrimary,
+                                          ),
+                                        ),
                                       ),
                                       if (unread > 0)
                                         Container(
@@ -1412,13 +1437,19 @@ class _MesNotificationState extends State<MesNotification> {
                                             style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                                           ),
                                         ),
-                                      Icon(isOpen ? Icons.expand_less : Icons.expand_more, color: _colors.textSecondary, size: 20),
+                                      if (isEmpty)
+                                        Text(
+                                          'Vide',
+                                          style: TextStyle(color: _colors.textSecondary.withOpacity(0.4), fontSize: 11),
+                                        )
+                                      else
+                                        Icon(isOpen ? Icons.expand_less : Icons.expand_more, color: _colors.textSecondary, size: 20),
                                     ],
                                   ),
                                 ),
                               ),
                               // ── Items du groupe (2 au départ, +5 à chaque "Voir plus") ──
-                              if (isOpen) ...[
+                              if (isOpen && !isEmpty) ...[
                                 ...() {
                                   final visible = _groupVisibleCount[group] ?? 2;
                                   return items.take(visible).map((n) => _buildNotificationItem(n));
@@ -1429,7 +1460,6 @@ class _MesNotificationState extends State<MesNotification> {
                                   final remaining = items.length - visible;
                                   if (remaining <= 0 && !_hasMore) return const SizedBox.shrink();
                                   if (remaining <= 0 && _hasMore) {
-                                    // On a tout affiché localement mais Firestore a peut-être plus
                                     return _isLoadingMore
                                         ? const Padding(
                                             padding: EdgeInsets.symmetric(vertical: 8),
