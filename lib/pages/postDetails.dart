@@ -103,6 +103,10 @@ class _DetailsPostState extends State<DetailsPost>
   bool _isExpanded = false;
   String? _translatedDescription;
 
+  // Like : état local indépendant du stream Firestore
+  int? _localLikes;
+  bool? _localIsLiked;
+
   // Suggestions
   Timer? _suggestionModalTimer;
   bool _hasSeenSuggestionsModal = false;
@@ -3384,44 +3388,50 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
   }
 
   Future<void> _handleLike() async {
-    if (_isLiking) return;
     final userId = authProvider.loginUserData.id;
     if (userId == null) return;
     final postId = widget.post.id;
     if (postId == null) return;
 
-    final alreadyLiked = widget.post.users_love_id?.contains(userId) ?? false;
+    // Utiliser l'état local si déjà initialisé, sinon lire depuis widget.post
+    final alreadyLiked = _localIsLiked ?? (widget.post.users_love_id?.contains(userId) ?? false);
+    final currentCount = _localLikes ?? (widget.post.loves ?? 0);
 
+    // Mise à jour optimiste instantanée — totalement indépendante du stream Firestore
     setState(() {
-      _isLiking = true;
-      widget.post.loves = ((widget.post.loves ?? 0) + (alreadyLiked ? -1 : 1)).clamp(0, double.maxFinite.toInt());
-      widget.post.users_love_id ??= [];
-      if (alreadyLiked) {
-        widget.post.users_love_id!.remove(userId);
-      } else {
-        widget.post.users_love_id!.add(userId);
-        _animationController.forward().then((_) => _animationController.reverse());
-      }
+      _localIsLiked = !alreadyLiked;
+      _localLikes = (currentCount + (alreadyLiked ? -1 : 1)).clamp(0, 999999);
     });
-    // Déverrouiller immédiatement — le reste s'exécute en arrière-plan
-    setState(() => _isLiking = false);
+
+    // Animation hors setState — déclenchée immédiatement
+    if (!alreadyLiked) {
+      _animationController.forward().then((_) => _animationController.reverse());
+    }
 
     if (alreadyLiked) {
-      _processUnlikeBackground(userId, postId);
+      _processUnlikeBackground(userId, postId, currentCount);
     } else {
       _processLikeBackground(userId, postId, alreadyLiked);
     }
   }
 
-  void _processUnlikeBackground(String userId, String postId) {
-    firestore.collection('Posts').doc(postId).update({
-      'loves': FieldValue.increment(-1),
-      'users_love_id': FieldValue.arrayRemove([userId]),
-      'popularity': FieldValue.increment(-1),
+  void _processUnlikeBackground(String userId, String postId, int countBeforeUnlike) {
+    // Transaction pour ne jamais descendre sous 0 côté Firestore
+    firestore.runTransaction((tx) async {
+      final ref = firestore.collection('Posts').doc(postId);
+      final snap = await tx.get(ref);
+      if (!snap.exists) return;
+      final current = (snap.data()?['loves'] as num?)?.toInt() ?? 0;
+      tx.update(ref, {
+        'loves': current > 0 ? current - 1 : 0,
+        'users_love_id': FieldValue.arrayRemove([userId]),
+        'popularity': FieldValue.increment(-1),
+      });
     }).catchError((_) {
+      // Rollback : annuler l'état local
       if (mounted) setState(() {
-        widget.post.loves = ((widget.post.loves ?? 0) + 1);
-        widget.post.users_love_id?.add(userId);
+        _localIsLiked = true;
+        _localLikes = ((_localLikes ?? countBeforeUnlike) + 1).clamp(0, 999999);
       });
     });
   }
@@ -6242,35 +6252,16 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         ),
         GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTap: _isLiking ? null : _handleLike,
-          child: _isLiking
-              ? Column(
-                  children: [
-                    SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: _colors.danger,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      formatNumber(post.loves ?? 0),
-                      style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 12),
-                    ),
-                    Text('Likes', style: TextStyle(color: _colors.textSecondary, fontSize: 10)),
-                  ],
-                )
-              : _buildStatItem(
-                  icon: isIn(post.users_love_id!, authProvider.loginUserData.id!)
-                      ? Icons.favorite
-                      : Icons.favorite_border,
-                  count: post.loves ?? 0,
-                  label: 'Likes',
-                  isLiked: isIn(post.users_love_id!, authProvider.loginUserData.id!),
-                  isLocked: false,
-                ),
+          onTap: _handleLike,
+          child: _buildStatItem(
+            icon: (_localIsLiked ?? isIn(post.users_love_id ?? [], authProvider.loginUserData.id ?? ''))
+                ? Icons.favorite
+                : Icons.favorite_border,
+            count: _localLikes ?? post.loves ?? 0,
+            label: 'Likes',
+            isLiked: _localIsLiked ?? isIn(post.users_love_id ?? [], authProvider.loginUserData.id ?? ''),
+            isLocked: false,
+          ),
         ),
         GestureDetector(
           behavior: HitTestBehavior.opaque,

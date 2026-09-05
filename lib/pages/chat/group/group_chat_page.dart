@@ -86,6 +86,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
   final Map<String, Map<String, dynamic>> _senderBadgeCache = {};
   // IDs des membres admin/owner du groupe (pour masquer leur identité dans les bulles)
   final Set<String> _groupAdminIds = {};
+  bool _groupAdminIdsLoaded = false;
 
   // Reponse
   Map<String, dynamic>? _replyingToMsg;
@@ -874,6 +875,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
         _groupAdminIds
           ..clear()
           ..addAll(snap.docs.map((d) => d.id));
+        _groupAdminIdsLoaded = true;
       });
     } catch (_) {}
   }
@@ -2745,12 +2747,15 @@ class _GroupChatPageState extends State<GroupChatPage> {
     final rawPseudo = msg['sender_pseudo'] as String? ?? '';
     final rawSenderImage = msg['sender_image'] as String? ?? '';
     // Tout admin/owner → identité du groupe, sauf si le viewer EST le propriétaire
-    final senderIsAdmin = senderId.isNotEmpty &&
-        (senderId == ownerId || _groupAdminIds.contains(senderId));
+    final senderIsOwner = senderId.isNotEmpty && senderId == ownerId;
+    final senderIsAdmin = senderIsOwner || (_groupAdminIdsLoaded && _groupAdminIds.contains(senderId));
     final viewerIsOwner = myId == ownerId;
     final isGroupIdentityMsg = senderIsAdmin && !viewerIsOwner;
+    // Tant que les IDs admin ne sont pas chargés, on ne sait pas encore l'identité
+    // des non-propriétaires → avatar squelette (pas de fausse image personnelle)
+    final isIdentityUnknown = !_groupAdminIdsLoaded && !senderIsOwner && senderId != myId;
     final pseudo = isGroupIdentityMsg ? (groupName.isNotEmpty ? groupName : rawPseudo) : rawPseudo;
-    final senderImage = isGroupIdentityMsg ? groupImage : rawSenderImage;
+    final senderImage = isGroupIdentityMsg ? groupImage : (isIdentityUnknown ? '' : rawSenderImage);
     final ts = msg['create_at_time_spam'] as int? ?? 0;
     final timeStr = _formatTime(ts);
     final isRestricted = !isDeleted && GroupPermissionUtils.isMessageRestricted(msg);

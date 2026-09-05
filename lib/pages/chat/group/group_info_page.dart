@@ -1948,7 +1948,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                 ),
               ],
             )
-          : _buildRoleBadge(role),
+          : canManage ? _buildRoleBadge(role) : null,
       onLongPress: showManage ? () => _showMemberOptions(userId, pseudo, role) : null,
     );
   }
