@@ -15,7 +15,7 @@ class DiscoveryBoostService {
   static final instance = DiscoveryBoostService._();
 
   static const int followersThreshold = 20;
-  static const int injectEvery = 8;
+  static const int injectEvery = 10;
   static const Duration _cacheTtl = Duration(hours: 1);
 
   final _db = FirebaseFirestore.instance;
@@ -26,6 +26,9 @@ class DiscoveryBoostService {
 
   /// IDs des posts injectés via boost (pour afficher le badge).
   Set<String> get discoveryPostIds => _discoveryPostIds;
+
+  /// Ajoute des IDs externes à l'ensemble (posts réguliers injectés depuis HomeConstPost).
+  void addDiscoveryIds(Iterable<String> ids) => _discoveryPostIds.addAll(ids);
 
   bool get _cacheValid =>
       _cacheTime != null &&
@@ -100,6 +103,46 @@ class DiscoveryBoostService {
     _cachedPosts.removeWhere((p) => p.user_id == creatorId);
     _discoveryPostIds
         .removeWhere((id) => _cachedPosts.every((p) => p.id != id));
+  }
+
+  /// Posts récents de créateurs non suivis, sans filtre de taille (tous créateurs).
+  /// Utilisé pour remplir les slots 2 & 3 de chaque batch découverte.
+  Future<List<Post>> fetchRegularDiscovery({
+    required Set<String> followedSet,
+    required String currentUserId,
+    required String? userCountry,
+    int limit = 18,
+  }) async {
+    final sinceUs = DateTime.now()
+        .subtract(const Duration(days: 30))
+        .microsecondsSinceEpoch;
+    try {
+      final snap = await _db
+          .collection('Posts')
+          .where('created_at', isGreaterThan: sinceUs)
+          .orderBy('created_at', descending: true)
+          .limit(limit * 8)
+          .get();
+
+      final latestByCreator = <String, Post>{};
+      for (final doc in snap.docs) {
+        final data = doc.data();
+        final uid = data['user_id'] as String? ?? '';
+        if (uid.isEmpty || uid == currentUserId || followedSet.contains(uid)) continue;
+        if (latestByCreator.containsKey(uid)) continue;
+        final postData = Map<String, dynamic>.from(data);
+        postData['id'] = doc.id;
+        final post = Post.fromJson(postData);
+        if (_passesCountryFilter(post, userCountry)) {
+          latestByCreator[uid] = post;
+        }
+      }
+
+      final eligible = latestByCreator.values.toList()..shuffle();
+      return eligible.take(limit).toList();
+    } catch (_) {
+      return [];
+    }
   }
 
   // ── Privé ─────────────────────────────────────────────────────────────────────

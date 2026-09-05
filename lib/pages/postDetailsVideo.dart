@@ -2101,10 +2101,19 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       );
     }
     final isLiked = _currentPost.users_love_id?.contains(authProvider.loginUserData.id) ?? false;
-    return DoubleTapLike(
-      alreadyLiked: isLiked,
-      onDoubleTap: _handleLike,
-      child: AspectRatio(aspectRatio: 16 / 9, child: Chewie(controller: _chewieController!)),
+    return Stack(
+      children: [
+        DoubleTapLike(
+          alreadyLiked: isLiked,
+          onDoubleTap: _handleLike,
+          child: AspectRatio(aspectRatio: 16 / 9, child: Chewie(controller: _chewieController!)),
+        ),
+        Positioned(
+          top: 8,
+          right: 8,
+          child: _buildPostTypeBadge(_currentPost),
+        ),
+      ],
     );
   }
 

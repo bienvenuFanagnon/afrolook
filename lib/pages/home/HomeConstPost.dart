@@ -218,6 +218,12 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   final _viewedUnreadIds = <String>{};
   // Tier 2 : posts chargés par intérêts (pour badge "Découverte")
   final _tier2PostIds = <String>{};
+  // Découverte créateur : posts injectés depuis créateurs non suivis (badge "Découverte · Créateur")
+  final _localDiscoveryIds = <String>{};
+  // Pool de posts réguliers de créateurs non suivis (rempli en arrière-plan)
+  List<Post> _regularDiscoveryPool = [];
+  // 30 % de chance de commencer par les posts découverte avant les T1
+  bool _leadDiscoveryWithT1 = false;
   Timer? _stayTimer;
   bool _isPageVisible = true;
   bool _isSupportDialogShowing = false;
@@ -1128,6 +1134,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       _isLoadingPosts = true; // évite l'écran vide pendant le rechargement
       _seenTier1PostIds.clear();
       _tier2PostIds.clear();
+      _localDiscoveryIds.clear();
+      _regularDiscoveryPool = [];
+      _leadDiscoveryWithT1 = Random().nextDouble() < 0.3;
     }
     _totalPostsLoaded = 0;
     _backgroundPostsLoaded = 0;
@@ -1780,9 +1789,14 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         } else {
           printVm('⚡ [STATE] Tier1 vide ou unmounted → pas de setState intermédiaire');
         }
-        // Tier 2 : découverte par intérêts (complète si Tier 1 insuffisant)
-        if (newPosts.length < limit) {
-          await _loadTier2InterestPosts(loadedIds, newPosts, limit - newPosts.length);
+        // Tier 2 : découverte par intérêts
+        // Si T1 vide → charger beaucoup plus de T2 (jusqu'à 30 posts)
+        {
+          final t1Count = _seenTier1PostIds.length;
+          final t2Limit = t1Count == 0 ? 30 : (newPosts.length < limit ? limit - newPosts.length : 0);
+          if (t2Limit > 0) {
+            await _loadTier2InterestPosts(loadedIds, newPosts, t2Limit);
+          }
         }
         // Affichage immédiat si Tier 1 était vide mais Tier 2 a des résultats
         if (_isFirstLoad && newPosts.isNotEmpty && mounted) {
@@ -1870,28 +1884,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           }
         }
 
-        // ── Injecter les posts "Boost Découverte" toutes les 8 posts ───────────
-        {
-          final me = authProvider.loginUserData;
-          final followedSet = Set<String>.from(me.userAbonnesIds ?? []);
-          final userCountry = me.countryData?['countryCode']?.toString().toUpperCase();
-          final boostSvc = DiscoveryBoostService.instance;
-          final boostPosts = boostSvc
-              .getBoostPosts(
-                followedSet: followedSet,
-                currentUserId: me.id ?? '',
-                userCountry: userCountry,
-              )
-              .where((p) => p.id != null && !loadedIds.contains(p.id))
-              .toList();
-
-          if (boostPosts.isNotEmpty) {
-            newPosts = boostSvc.injectIntoFeed(newPosts, boostPosts);
-            for (final p in boostPosts) {
-              if (p.id != null) loadedIds.add(p.id!);
-            }
-          }
-        }
+        // ── Pré-charger le boost découverte (injection dans _buildTieredFeed) ──
+        _loadDiscoveryBoostInBackground();
 
         // ── Posts non vus en priorité (cursor de session) ──────────────────────
         {
@@ -2383,8 +2377,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     return result;
   }
 
-  /// Répartit les posts en maintenant strictement l'ordre Tier 1 → Tier 2 → Tier 3.
-  /// Le spread créateurs est appliqué DANS chaque tier, pas en travers.
+  /// Répartit les posts en maintenant l'ordre Tier 1 → Tier 2 → Tier 3.
+  /// Spread créateurs appliqué en tenant compte des frontières inter-tiers
+  /// (jamais 3 posts consécutifs du même créateur/canal).
+  /// Injecte 3 posts découverte toutes les 10 posts T1.
   List<Post> _buildTieredFeed(List<Post> posts) {
     final t1 = <Post>[];
     final t2 = <Post>[];
@@ -2396,10 +2392,106 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       if (_tier2PostIds.contains(pid)) { t2.add(p); continue; }
       t3.add(p);
     }
-    final result = [..._spreadCreators(t1), ..._spreadCreators(t2), ..._spreadCreators(t3)];
-    printVm('🏗️ [FEED] _buildTieredFeed → T1=${t1.length} | T2=${t2.length} | T3=${t3.length} | total=${result.length}');
-    printVm('🏗️ [FEED] _seenTier1PostIds=${_seenTier1PostIds.length} _tier2PostIds=${_tier2PostIds.length} _isFirstLoad=$_isFirstLoad');
+
+    // Spread par tier avec contexte cross-tier pour éviter 3+ consécutifs
+    final s1 = _spreadCreators(t1);
+    final s2 = _spreadCreatorsWithContext(t2, s1);
+    final s3 = _spreadCreatorsWithContext(t3, [...s1, ...s2]);
+    final ordered = [...s1, ...s2, ...s3];
+
+    printVm('🏗️ [FEED] _buildTieredFeed → T1=${t1.length} | T2=${t2.length} | T3=${t3.length} | total=${ordered.length}');
+
+    // ── Injection découverte : 3 posts toutes les 10 posts T1 ───────────────
+    final me = authProvider.loginUserData;
+    final followedSet = _followingIds.isNotEmpty
+        ? Set<String>.from(_followingIds)
+        : Set<String>.from(me.followingIds ?? []);
+    followedSet.add(me.id ?? '');
+
+    final alreadyInjected = DiscoveryBoostService.instance.discoveryPostIds;
+    final boostPool = DiscoveryBoostService.instance.getBoostPosts(
+      followedSet: followedSet,
+      currentUserId: me.id ?? '',
+      userCountry: me.countryData?['countryCode']?.toString().toUpperCase(),
+    ).where((p) => p.id != null
+        && !_loadedPostIds.contains(p.id)
+        && !alreadyInjected.contains(p.id)).toList();
+
+    final regularPool = _regularDiscoveryPool
+        .where((p) => p.id != null
+            && !_loadedPostIds.contains(p.id)
+            && !_localDiscoveryIds.contains(p.id))
+        .toList();
+
+    if (boostPool.isEmpty && regularPool.isEmpty) return ordered;
+    return _injectDiscoveryPosts(ordered, boostPool, regularPool,
+        leadWithDiscovery: _leadDiscoveryWithT1);
+  }
+
+  /// Injecte 3 posts découverte toutes les 10 posts T1.
+  /// Chaque batch = [1 boost (nouveau créateur) + 2 réguliers (créateur non suivi)].
+  /// Si [leadWithDiscovery], ajoute le premier batch avant tous les posts T1.
+  List<Post> _injectDiscoveryPosts(
+    List<Post> ordered,
+    List<Post> boostPool,
+    List<Post> regularPool, {
+    required bool leadWithDiscovery,
+  }) {
+    // Construire les batches : [boost, regular, regular]
+    final batches = <List<Post>>[];
+    int bi = 0, ri = 0;
+    while (bi < boostPool.length || ri < regularPool.length) {
+      final batch = <Post>[];
+      if (bi < boostPool.length) batch.add(boostPool[bi++]);
+      else if (ri < regularPool.length) batch.add(regularPool[ri++]);
+      if (ri < regularPool.length) batch.add(regularPool[ri++]);
+      if (ri < regularPool.length) batch.add(regularPool[ri++]);
+      if (batch.isEmpty) break;
+      batches.add(batch);
+    }
+    if (batches.isEmpty) return ordered;
+
+    final result = <Post>[];
+    int batchIdx = 0;
+    int postCount = 0;
+    // Si pas de T1, compter tous les posts (T2+T3) pour déclencher l'injection
+    final bool noT1 = _seenTier1PostIds.isEmpty;
+
+    // Optionnellement : commencer par le premier batch avant les posts
+    if (leadWithDiscovery && batchIdx < batches.length) {
+      _registerBatch(batches[batchIdx]);
+      result.addAll(batches[batchIdx++]);
+    }
+
+    for (final post in ordered) {
+      result.add(post);
+      final pid = post.id;
+      if (pid != null) {
+        final isT1 = _seenTier1PostIds.contains(pid);
+        if (isT1 || noT1) {
+          postCount++;
+          if (postCount % 10 == 0 && batchIdx < batches.length) {
+            _registerBatch(batches[batchIdx]);
+            result.addAll(batches[batchIdx++]);
+          }
+        }
+      }
+    }
+
+    printVm('🔍 [DISCOVERY] injecté ${batchIdx} batch(es) de 3 posts (comptés=$postCount noT1=$noT1 lead=$leadWithDiscovery)');
     return result;
+  }
+
+  void _registerBatch(List<Post> batch) {
+    for (int i = 0; i < batch.length; i++) {
+      final id = batch[i].id;
+      if (id == null) continue;
+      if (i == 0) {
+        DiscoveryBoostService.instance.addDiscoveryIds([id]); // badge "Nouveau créateur"
+      } else {
+        _localDiscoveryIds.add(id); // badge "Découverte · Créateur"
+      }
+    }
   }
 
   void _logBadgeSummary() {
@@ -2756,13 +2848,32 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     final followedSet = _followingIds.isNotEmpty
         ? Set<String>.from(_followingIds)
         : Set<String>.from(me.followingIds ?? []);
+    followedSet.add(me.id!);
     final userCountry = me.countryData?['countryCode']?.toString().toUpperCase();
     await DiscoveryBoostService.instance.preload(
       followedSet: followedSet,
       currentUserId: me.id!,
       userCountry: userCountry,
     );
-    // Pas de setState : le boost est injecté à la prochaine construction de la liste
+  }
+
+  Future<void> _loadRegularDiscoveryPool() async {
+    final me = authProvider.loginUserData;
+    if (me.id == null) return;
+    final followedSet = _followingIds.isNotEmpty
+        ? Set<String>.from(_followingIds)
+        : Set<String>.from(me.followingIds ?? []);
+    followedSet.add(me.id!);
+    final userCountry = me.countryData?['countryCode']?.toString().toUpperCase();
+    final pool = await DiscoveryBoostService.instance.fetchRegularDiscovery(
+      followedSet: followedSet,
+      currentUserId: me.id!,
+      userCountry: userCountry,
+    );
+    if (!mounted) return;
+    setState(() {
+      _regularDiscoveryPool = pool;
+    });
   }
 
   // ===========================================================================
@@ -2777,6 +2888,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     _loadCanauxInBackground();
     _loadChroniquesInBackground();
     _loadDiscoveryBoostInBackground();
+    _loadRegularDiscoveryPool();
   }
 
   Future<void> _loadFollowedCanalIdsInBackground() async {
@@ -3125,11 +3237,12 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     final pid = post.id;
     final isDiscovery = pid != null &&
         DiscoveryBoostService.instance.discoveryPostIds.contains(pid);
+    final isLocalDiscovery = pid != null && !isDiscovery && _localDiscoveryIds.contains(pid);
     final isTier1 = pid != null && _seenTier1PostIds.contains(pid);
     final isTier2 = pid != null && _tier2PostIds.contains(pid) && !isTier1;
     // Tendance uniquement affiché après la fin du chargement initial.
     // Pendant _isFirstLoad le tier est inconnu → on n'affiche rien.
-    final isTier3 = !_isFirstLoad && pid != null && !isTier1 && !isTier2;
+    final isTier3 = !_isFirstLoad && pid != null && !isTier1 && !isTier2 && !isDiscovery && !isLocalDiscovery;
 
     if (index < 5) {
       final badge = isTier1 ? 'NOUVEAU' : isTier2 ? 'DECOUVERTE' : isTier3 ? 'TENDANCE' : 'AUCUN(_isFirstLoad=$_isFirstLoad)';
@@ -3152,6 +3265,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
             _FeedTierBadge(label: 'Découverte · Intérêts', color: const Color(0xFF6C63FF))
           else if (isDiscovery)
             _NewCreatorBadge(postId: pid!, userId: post.user_id ?? '')
+          else if (isLocalDiscovery)
+            _FeedTierBadge(label: 'Découverte · Créateur', color: const Color(0xFFFF8C00))
           else if (isTier3)
             _FeedTierBadge(label: 'Tendance', color: const Color(0xFF9E9E9E)),
 
