@@ -56,6 +56,7 @@ import '../../services/sessions/session_checker_service.dart';
 import '../../services/sessions/session_service.dart';
 import '../../services/utils/abonnement_utils.dart';
 import '../../widgets/user_badge_widget.dart';
+import '../../widgets/notification_toast_widget.dart';
 import '../LiveAgora/livesAgora.dart';
 import '../LiveAgora/mesLives.dart';
 import '../Marketing/affiliationMarketing.dart';
@@ -179,6 +180,7 @@ class _MyHomePageState extends State<MyHomePage>
   Color _color =Colors.blue;
   TabController? _tabController;
   int _unreadNotificationsCount = 0;
+  DateTime? _lastToastTime;
   String _appVersion = '';
   int? _shorebirdPatch;
   Widget? _desktopSection;
@@ -212,6 +214,19 @@ class _MyHomePageState extends State<MyHomePage>
       _desktopSection = null;
       _desktopSectionTitle = null;
     });
+  }
+
+  void _onScroll() {
+    if (_unreadNotificationsCount <= 0) return;
+    final now = DateTime.now();
+    if (_lastToastTime != null &&
+        now.difference(_lastToastTime!) < const Duration(minutes: 5)) return;
+    _lastToastTime = now;
+    NotificationToast.show(
+      context: context,
+      count: _unreadNotificationsCount,
+      onTap: () => Navigator.pushNamed(context, '/mes_notifications'),
+    );
   }
 
   Future<void> _launchUrl(Uri url) async {
@@ -1396,6 +1411,7 @@ class _MyHomePageState extends State<MyHomePage>
       context.read<GoldGroupsProvider>().load();
     });
     _initializeFeedService();
+    _scrollController.addListener(_onScroll);
 
     // Écouter les navigations en direct (app déjà ouverte, tap notif WorkManager)
     _liveNavSub = NavigationCacheService().liveNavigationStream.listen(_handleLiveNavigation);
@@ -1750,6 +1766,8 @@ class _MyHomePageState extends State<MyHomePage>
     // 🔥 Très important : Arrêter le timer à la destruction de la page
     _presenceService.stopHeartbeat();
     commentController.dispose();
+    _scrollController.removeListener(_onScroll);
+    NotificationToast.dismiss();
     _scrollController.dispose();
     super.dispose();
   }
