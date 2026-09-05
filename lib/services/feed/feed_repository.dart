@@ -302,16 +302,18 @@ class FeedRepository {
   }
 
   /// Charge des posts par leurs IDs (par batches de 10, limite Firestore).
-  Future<List<Post>> loadPostsByIds(List<String> ids) async {
+  /// [tabbarType] filtre côté Firestore si fourni (ex. 'SPORT').
+  Future<List<Post>> loadPostsByIds(List<String> ids, {String? tabbarType}) async {
     if (ids.isEmpty) return [];
     final posts = <Post>[];
     for (int i = 0; i < ids.length; i += 10) {
       final batch = ids.sublist(i, min(i + 10, ids.length));
       try {
-        final snap = await _db
+        Query<Map<String, dynamic>> q = _db
             .collection('Posts')
-            .where(FieldPath.documentId, whereIn: batch)
-            .get();
+            .where(FieldPath.documentId, whereIn: batch);
+        if (tabbarType != null) q = q.where('typeTabbar', isEqualTo: tabbarType);
+        final snap = await q.get();
         for (final doc in snap.docs) {
           try {
             posts.add(Post.fromJson({'id': doc.id, ...doc.data()}));
@@ -540,13 +542,16 @@ class FeedRepository {
     Set<String> excluded, {
     String? countryCode,
     int limit = 20,
+    String? tabbarType,
   }) async {
     if (interests.isEmpty) return [];
     try {
       final tags = interests.take(10).toList();
-      final snap = await _db
+      Query<Map<String, dynamic>> q = _db
           .collection('Posts')
-          .where('postInterests', arrayContainsAny: tags)
+          .where('postInterests', arrayContainsAny: tags);
+      if (tabbarType != null) q = q.where('typeTabbar', isEqualTo: tabbarType);
+      final snap = await q
           .orderBy('created_at', descending: true)
           .limit(limit * 4)
           .get();
@@ -583,6 +588,7 @@ class FeedRepository {
     Map<String, int> unreadMap,
     Set<String> excluded, {
     int limit = 25,
+    String? tabbarType,
   }) async {
     if (unreadMap.isEmpty) return [];
     // Trier par timestamp desc, prendre les N plus récents
@@ -594,6 +600,6 @@ class FeedRepository {
         .map((e) => e.key)
         .toList();
     if (ids.isEmpty) return [];
-    return loadPostsByIds(ids);
+    return loadPostsByIds(ids, tabbarType: tabbarType);
   }
 }

@@ -2874,6 +2874,33 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       ),
     );
   }
+
+  Widget _buildTabbarBadge(String typeTabbar) {
+    final Map<String, _VideoTabbarMeta> meta = {
+      'SPORT':      _VideoTabbarMeta('⚽', 'Sport',      const Color(0xFF2196F3)),
+      'LOOKS':      _VideoTabbarMeta('👗', 'Looks',      const Color(0xFFE91E63)),
+      'ACTUALITES': _VideoTabbarMeta('📰', 'Actus',      const Color(0xFF607D8B)),
+      'EVENEMENT':  _VideoTabbarMeta('🎉', 'Événement',  const Color(0xFFFF9800)),
+      'OFFRES':     _VideoTabbarMeta('🛍️', 'Offres',    const Color(0xFF4CAF50)),
+      'GAMER':      _VideoTabbarMeta('🎮', 'Gamer',      const Color(0xFF9C27B0)),
+    };
+    final m = meta[typeTabbar.toUpperCase()];
+    if (m == null) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.only(left: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: m.color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: m.color),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Text(m.emoji, style: const TextStyle(fontSize: 9)),
+        const SizedBox(width: 3),
+        Text(m.label, style: TextStyle(color: m.color, fontSize: 9, fontWeight: FontWeight.bold)),
+      ]),
+    );
+  }
 }
 
 // ── Badges Tier + Pays pour les pages de détail ──────────────────────────────
@@ -2946,33 +2973,6 @@ class _PostDetailBadgesRow extends StatelessWidget {
             ),
         ],
       ),
-    );
-  }
-
-  Widget _buildTabbarBadge(String typeTabbar) {
-    final Map<String, _VideoTabbarMeta> meta = {
-      'SPORT':      _VideoTabbarMeta('⚽', 'Sport',      const Color(0xFF2196F3)),
-      'LOOKS':      _VideoTabbarMeta('👗', 'Looks',      const Color(0xFFE91E63)),
-      'ACTUALITES': _VideoTabbarMeta('📰', 'Actus',      const Color(0xFF607D8B)),
-      'EVENEMENT':  _VideoTabbarMeta('🎉', 'Événement',  const Color(0xFFFF9800)),
-      'OFFRES':     _VideoTabbarMeta('🛍️', 'Offres',    const Color(0xFF4CAF50)),
-      'GAMER':      _VideoTabbarMeta('🎮', 'Gamer',      const Color(0xFF9C27B0)),
-    };
-    final m = meta[typeTabbar.toUpperCase()];
-    if (m == null) return const SizedBox.shrink();
-    return Container(
-      margin: const EdgeInsets.only(left: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: m.color.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: m.color),
-      ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Text(m.emoji, style: const TextStyle(fontSize: 9)),
-        const SizedBox(width: 3),
-        Text(m.label, style: TextStyle(color: m.color, fontSize: 9, fontWeight: FontWeight.bold)),
-      ]),
     );
   }
 }
