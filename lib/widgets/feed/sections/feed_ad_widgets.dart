@@ -6,40 +6,32 @@ import '../../../pages/pub/native_ad_widget.dart';
 import '../../../providers/authProvider.dart';
 
 /// Bannière publicitaire (petit format).
+/// BannerAdWidget retourne SizedBox.shrink() si non chargée — pas de marge fixe ici.
 class FeedAdBanner extends StatelessWidget {
   final String adKey;
   const FeedAdBanner({Key? key, required this.adKey}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return BannerAdWidget(
       key: ValueKey(adKey),
-      margin: const EdgeInsets.symmetric(vertical: 16),
-      child: BannerAdWidget(
-        onAdLoaded: () {},
-      ),
+      onAdLoaded: () {},
     );
   }
 }
 
 /// Publicité format rectangle moyen (MREC — 300×250).
-/// La hauteur est explicitement contrainte pour éviter que Google Ads reçoive
-/// des contraintes nulles (cause du crash _RenderDeferredLayoutBox).
+/// MrecAdWidget gère lui-même sa visibilité : SizedBox.shrink() quand non chargée,
+/// hauteur naturelle quand chargée. Pas de Container fixe ici pour éviter le blanc.
 class FeedAdMrec extends StatelessWidget {
   final String adKey;
   const FeedAdMrec({Key? key, required this.adKey}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return MrecAdWidget(
       key: ValueKey(adKey),
-      margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      height: 260,
-      alignment: Alignment.center,
-      child: MrecAdWidget(
-        key: ValueKey(adKey),
-        onAdLoaded: () {},
-      ),
+      onAdLoaded: () {},
     );
   }
 }
