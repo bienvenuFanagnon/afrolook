@@ -56,6 +56,7 @@ import '../../widgets/feed/sections/feed_filter_bar.dart';
 import '../../widgets/feed/sections/feed_ad_widgets.dart';
 import '../../services/feed/feed_repository.dart';
 import '../../services/feed/seen_discovery_cache.dart';
+import '../../services/feed/discovery_posts_cache.dart';
 import '../../services/feed/feed_preload_service.dart';
 import '../../constants/user_interests.dart';
 import '../../widgets/feed/sections/feed_category_section.dart';
@@ -263,7 +264,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   Future<void> _initSharedPreferences() async {
     _prefs = await SharedPreferences.getInstance();
     final uid = authProvider.loginUserData.id ?? '';
-    if (uid.isNotEmpty) await SeenDiscoveryCache.load(uid);
+    if (uid.isNotEmpty) {
+      await SeenDiscoveryCache.load(uid);
+      await DiscoveryPostsCache.load(uid);
+    }
   }
 
 
@@ -1904,29 +1908,72 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     List<Post> newPosts,
     int limit,
   ) async {
+    final dpc = DiscoveryPostsCache.instance;
+    final alreadyShown = {...loadedIds, ..._loadedPostIds};
+
+    // ── 1. Servir depuis le cache local si possible ────────────────────────
+    if (dpc.available >= limit) {
+      final cached = dpc.take(limit);
+      final filtered = cached.where((p) => !alreadyShown.contains(p.id)).toList();
+      _addFetchedToList(filtered, loadedIds, newPosts, limit);
+      for (final p in filtered) { if (p.id != null) _tier2PostIds.add(p.id!); }
+      printVm('🎯 [TIER2] ${filtered.length} posts depuis cache local (pool restant: ${dpc.available})');
+
+      // Si le pool est bientôt vide → recharger en arrière-plan
+      if (dpc.needsRefetch) _refetchDiscoveryPool();
+      return;
+    }
+
+    // ── 2. Pool insuffisant → fetch Firestore + replenish ─────────────────
+    printVm('🎯 [TIER2] pool insuffisant (${dpc.available}) → fetch Firestore');
     final userInterests = authProvider.loginUserData.interests ?? [];
     final interests = userInterests.isEmpty ? UserInterests.defaults : userInterests;
-    final isDefault = userInterests.isEmpty;
-    printVm('🎯 [TIER2] interests: ${interests.length} (défaut=$isDefault) → $interests');
     final countryCode = authProvider.loginUserData.countryData?['countryCode'] as String? ?? '';
     try {
-      final excluded = {...loadedIds, ..._loadedPostIds, ...SeenDiscoveryCache.instance.seenIds};
+      final excluded = {
+        ...alreadyShown,
+        ...SeenDiscoveryCache.instance.seenIds,
+        ...dpc.poolIds,
+      };
       final posts = await FeedRepository().fetchInterestPosts(
         interests,
         excluded,
         countryCode: countryCode,
-        limit: limit,
+        limit: DiscoveryPostsCache.maxPoolSize,
       );
-      printVm('🎯 [TIER2] fetchInterestPosts retourné: ${posts.length} posts (limit=$limit, pays=$countryCode, exclus=${excluded.length})');
-      _addFetchedToList(posts, loadedIds, newPosts, limit);
-      final newIds = posts.where((p) => p.id != null).map((p) => p.id!).toList();
-      for (final id in newIds) { _tier2PostIds.add(id); }
-      SeenDiscoveryCache.instance.add(newIds);
+      dpc.replenish(posts);
+      final taken = dpc.take(limit);
+      final filtered = taken.where((p) => !alreadyShown.contains(p.id)).toList();
+      _addFetchedToList(filtered, loadedIds, newPosts, limit);
+      final shownIds = filtered.where((p) => p.id != null).map((p) => p.id!).toList();
+      for (final id in shownIds) { _tier2PostIds.add(id); }
+      SeenDiscoveryCache.instance.add(shownIds);
       SeenDiscoveryCache.instance.save();
-      printVm('🎯 [TIER2] _tier2PostIds: ${_tier2PostIds.length} IDs, cache découverte: ${SeenDiscoveryCache.instance.seenIds.length}');
+      printVm('🎯 [TIER2] ${filtered.length} posts affichés, pool rechargé: ${dpc.available}');
     } catch (e) {
       printVm('⚠️ Tier 2 erreur : $e');
     }
+  }
+
+  void _refetchDiscoveryPool() {
+    final userInterests = authProvider.loginUserData.interests ?? [];
+    final interests = userInterests.isEmpty ? UserInterests.defaults : userInterests;
+    final countryCode = authProvider.loginUserData.countryData?['countryCode'] as String? ?? '';
+    final dpc = DiscoveryPostsCache.instance;
+    final excluded = {
+      ...SeenDiscoveryCache.instance.seenIds,
+      ..._loadedPostIds,
+      ...dpc.poolIds,
+    };
+    FeedRepository().fetchInterestPosts(
+      interests,
+      excluded,
+      countryCode: countryCode,
+      limit: DiscoveryPostsCache.maxPoolSize,
+    ).then((posts) {
+      dpc.replenish(posts);
+      printVm('🔄 [TIER2] Pool rechargé en background: ${dpc.available} posts');
+    }).catchError((_) {});
   }
 
   // Appelé au dispose : s'assure que les posts vus sont bien en SharedPreferences

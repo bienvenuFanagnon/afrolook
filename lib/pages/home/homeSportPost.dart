@@ -58,6 +58,7 @@ import '../../widgets/feed/sections/feed_filter_bar.dart';
 import '../../widgets/feed/sections/feed_ad_widgets.dart';
 import '../../services/feed/feed_repository.dart';
 import '../../services/feed/seen_discovery_cache.dart';
+import '../../services/feed/discovery_posts_cache.dart';
 import 'HomeConstPost.dart' show flushSeenPostsAndCleanMemory;
 import '../../widgets/feed/weekly_top_creators_widget.dart';
 import '../../widgets/feed/sections/weekly_top_commentators_widget.dart';
@@ -230,7 +231,10 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   Future<void> _initSharedPreferences() async {
     _prefs = await SharedPreferences.getInstance();
     final uid = authProvider.loginUserData.id ?? '';
-    if (uid.isNotEmpty) await SeenDiscoveryCache.load(uid);
+    if (uid.isNotEmpty) {
+      await SeenDiscoveryCache.load(uid);
+      await DiscoveryPostsCache.load(uid);
+    }
   }
 
 
@@ -1939,25 +1943,69 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   Future<void> _loadTier2InterestPosts(Set<String> loadedIds, List<Post> newPosts, int limit) async {
     final interests = authProvider.loginUserData.interests ?? [];
     if (interests.isEmpty) return;
+    final dpc = DiscoveryPostsCache.instance;
+    final alreadyShown = {...loadedIds, ..._loadedPostIds};
+
+    // ── 1. Servir depuis le cache local si possible ────────────────────────
+    if (dpc.available >= limit) {
+      final cached = dpc.take(limit);
+      final filtered = cached.where((p) => !alreadyShown.contains(p.id)).toList();
+      _addFetchedToList(filtered, loadedIds, newPosts, limit);
+      for (final p in filtered) { if (p.id != null) _tier2PostIds.add(p.id!); }
+      printVm('🎯 [SPORT][TIER2] ${filtered.length} posts depuis cache local (pool: ${dpc.available})');
+      if (dpc.needsRefetch) _refetchDiscoveryPool();
+      return;
+    }
+
+    // ── 2. Pool insuffisant → fetch Firestore ─────────────────────────────
     final countryCode = authProvider.loginUserData.countryData?['countryCode'] as String? ?? '';
     try {
-      final excluded = {...loadedIds, ..._loadedPostIds, ...SeenDiscoveryCache.instance.seenIds};
+      final excluded = {
+        ...alreadyShown,
+        ...SeenDiscoveryCache.instance.seenIds,
+        ...dpc.poolIds,
+      };
       final posts = await FeedRepository().fetchInterestPosts(
         interests,
         excluded,
         countryCode: countryCode,
-        limit: limit,
+        limit: DiscoveryPostsCache.maxPoolSize,
         tabbarType: 'SPORT',
       );
-      printVm('🎯 [SPORT][TIER2] ${posts.length} posts SPORT chargés (exclus=${excluded.length})');
-      _addFetchedToList(posts, loadedIds, newPosts, limit);
-      final newIds = posts.where((p) => p.id != null).map((p) => p.id!).toList();
-      for (final id in newIds) { _tier2PostIds.add(id); }
-      SeenDiscoveryCache.instance.add(newIds);
+      dpc.replenish(posts);
+      final taken = dpc.take(limit);
+      final filtered = taken.where((p) => !alreadyShown.contains(p.id)).toList();
+      _addFetchedToList(filtered, loadedIds, newPosts, limit);
+      final shownIds = filtered.where((p) => p.id != null).map((p) => p.id!).toList();
+      for (final id in shownIds) { _tier2PostIds.add(id); }
+      SeenDiscoveryCache.instance.add(shownIds);
       SeenDiscoveryCache.instance.save();
+      printVm('🎯 [SPORT][TIER2] ${filtered.length} posts, pool: ${dpc.available}');
     } catch (e) {
       printVm('⚠️ [SPORT][TIER2] erreur : $e');
     }
+  }
+
+  void _refetchDiscoveryPool() {
+    final interests = authProvider.loginUserData.interests ?? [];
+    if (interests.isEmpty) return;
+    final countryCode = authProvider.loginUserData.countryData?['countryCode'] as String? ?? '';
+    final dpc = DiscoveryPostsCache.instance;
+    final excluded = {
+      ...SeenDiscoveryCache.instance.seenIds,
+      ..._loadedPostIds,
+      ...dpc.poolIds,
+    };
+    FeedRepository().fetchInterestPosts(
+      interests,
+      excluded,
+      countryCode: countryCode,
+      limit: DiscoveryPostsCache.maxPoolSize,
+      tabbarType: 'SPORT',
+    ).then((posts) {
+      dpc.replenish(posts);
+      printVm('🔄 [SPORT][TIER2] Pool rechargé en background: ${dpc.available} posts');
+    }).catchError((_) {});
   }
 
   // ── Organise les posts en Tier 1 → Tier 2 → Tier 3 ──────────────────────
