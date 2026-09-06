@@ -58,6 +58,7 @@ import '../../services/feed/feed_repository.dart';
 import '../../services/feed/feed_preload_service.dart';
 import '../../constants/user_interests.dart';
 import '../../widgets/feed/sections/feed_category_section.dart';
+import '../../widgets/feed/sections/feed_end_discovery_section.dart';
 import '../../services/feed/discovery_boost_service.dart';
 import '../../services/active_creators_service.dart';
 import '../user/active_creators_list_page.dart';
@@ -3755,8 +3756,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     final bool _showEndDiscovery = _t3CutoffReached ||
         (!_isLoadingMorePosts && !_hasMorePosts && _oldPostsCache.isEmpty);
     if (_showEndDiscovery) {
-      contentWidgets.add(_buildProfilesSection());
-      if (_canaux.isNotEmpty) contentWidgets.add(_buildCanauxSection());
+      contentWidgets.add(const FeedEndDiscoverySection());
     }
 
     // Bouton de rafraîchissement après le seuil de posts Tendance
