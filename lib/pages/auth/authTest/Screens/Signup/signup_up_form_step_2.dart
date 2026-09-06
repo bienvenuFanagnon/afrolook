@@ -524,6 +524,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
       'publi_cash': (parrain.publi_cash ?? 0.0) + 5.1,
       'usersParrainer': FieldValue.arrayUnion([id]),
       'userAbonnesIds': FieldValue.arrayUnion([id]),
+      'abonnes': FieldValue.increment(1),
     });
 
     // Batch operations

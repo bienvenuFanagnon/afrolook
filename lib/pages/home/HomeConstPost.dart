@@ -2659,12 +2659,12 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       return;
     }
 
+    // Lever le flag AVANT tout await pour bloquer les appels concurrents du scroll listener
+    _isLoadingMorePosts = true;
+    if (mounted) setState(() {});
+
     // Flush les posts déjà vus + relit unreadPosts avant de charger la suite
     await _flushAndRefreshUnread();
-
-    setState(() {
-      _isLoadingMorePosts = true;
-    });
 
     try {
       Set<String> loadedIds = Set.from(_loadedPostIds);
