@@ -976,6 +976,9 @@ class UserData {
   // Centres d'intérêt (codes de UserInterests.all)
   List<String>? interests = [];
 
+  // Catégorie principale du créateur (id de UserInterests.categories, ex: 'sport', 'music')
+  String? mainCategory;
+
   // ── Suspension de compte ─────────────────────────────────────────────────
   int? suspendedUntil;         // timestamp ms, null = non suspendu
   bool? suspendedPermanently;  // true = suspension définitive
@@ -1357,6 +1360,7 @@ class UserData {
     todayCommentDate = json['todayCommentDate'] as String?;
     todayCommentedPostIds = List<String>.from(json['todayCommentedPostIds'] ?? []);
     interests = (json['interests'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+    mainCategory = json['mainCategory'] as String?;
   }
 
   Map<String, dynamic> toJson() {
@@ -1419,6 +1423,7 @@ class UserData {
     data['todayCommentDate'] = todayCommentDate;
     // todayCommentedPostIds reste local (SharedPreferences), ne pas envoyer en Firestore
     data['interests'] = interests ?? [];
+    if (mainCategory != null) data['mainCategory'] = mainCategory;
     if (unreadPosts != null && unreadPosts!.isNotEmpty) {
       data['unreadPosts'] = unreadPosts;
     }
@@ -3079,6 +3084,14 @@ class Canal {
   List<String>? allowedPostersIds; // IDs des utilisateurs autorisés à poster
   bool? allowAllMembersToPost; // Si tous les membres peuvent poster
 
+  // Types de posts publiés dans ce canal (ex: ['SPORT', 'ACTUALITES'])
+  List<String>? categories;
+
+  // Catégorie principale choisie par l'admin à la création (ex: 'SPORT')
+  String? mainCategory;
+  // Timestamp (ms) du dernier changement de mainCategory — cooldown 7j
+  int? categoryUpdatedAt;
+
   Canal({
     this.user,
     this.titre,
@@ -3103,6 +3116,9 @@ class Canal {
     this.adminIds,
     this.allowedPostersIds,
     this.urlCouverture = "",
+    this.categories,
+    this.mainCategory,
+    this.categoryUpdatedAt,
   });
   factory Canal.fromJson(Map<String, dynamic> json) {
     final isPrivate = json['isPrivate'] ?? false;
@@ -3135,6 +3151,9 @@ class Canal {
       adminIds: json['adminIds'] != null ? List<String>.from(json['adminIds']) : [],
       allowedPostersIds: json['allowedPostersIds'] != null ? List<String>.from(json['allowedPostersIds']) : [],
       allowAllMembersToPost: json['allowAllMembersToPost'] ?? false,
+      categories: json['categories'] != null ? List<String>.from(json['categories']) : null,
+      mainCategory: json['mainCategory'],
+      categoryUpdatedAt: json['categoryUpdatedAt'],
     );
   }
 
@@ -3162,6 +3181,9 @@ class Canal {
       'adminIds': adminIds,
       'allowedPostersIds': allowedPostersIds,
       'allowAllMembersToPost': allowAllMembersToPost,
+      if (categories != null) 'categories': categories,
+      if (mainCategory != null) 'mainCategory': mainCategory,
+      if (categoryUpdatedAt != null) 'categoryUpdatedAt': categoryUpdatedAt,
     };
   }
 

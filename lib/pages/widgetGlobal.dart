@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../constants/user_interests.dart';
 import '../providers/authProvider.dart';
 import '../widgets/interests_selector_widget.dart';
+import 'user/profile/profileDetail/page/profile_page.dart';
 
 // Couleurs
 final Color _primaryColor = Color(0xFFE21221);
@@ -786,6 +787,7 @@ String formatCount(int count) {
 
 // ── Modal onboarding centres d'intérêt ───────────────────────────────────────
 
+const _kPrefCreatorCategoryOnboardingShown = 'creator_category_onboarding_shown';
 const _kPrefInterestsOnboardingShown = 'interests_onboarding_shown';
 
 Future<void> showInterestsOnboardingModal(BuildContext context) async {
@@ -1003,6 +1005,185 @@ class _InterestsOnboardingModalState extends State<_InterestsOnboardingModal>
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODAL ONBOARDING — CATÉGORIE CRÉATEUR
+// Redirige vers la page de profil pour définir la catégorie principale.
+// ─────────────────────────────────────────────────────────────────────────────
+
+Future<void> showCreatorCategoryOnboardingModal(BuildContext context) async {
+  final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+  final uid = authProvider.loginUserData.id;
+  if (uid == null) return;
+
+  final prefs = await SharedPreferences.getInstance();
+  if (prefs.getBool(_kPrefCreatorCategoryOnboardingShown) ?? false) return;
+
+  // Vérification Firestore pour éviter race condition au démarrage
+  final doc = await FirebaseFirestore.instance.collection('Users').doc(uid).get();
+  if (!doc.exists) return;
+  final firestoreCategory = doc.data()?['mainCategory'] as String?;
+  if (firestoreCategory != null && firestoreCategory.isNotEmpty) {
+    if (authProvider.loginUserData.mainCategory == null) {
+      authProvider.loginUserData.mainCategory = firestoreCategory;
+    }
+    await prefs.setBool(_kPrefCreatorCategoryOnboardingShown, true);
+    return;
+  }
+
+  if (!context.mounted) return;
+  await showDialog(
+    context: context,
+    barrierDismissible: true,
+    barrierColor: Colors.black.withValues(alpha: 0.75),
+    builder: (ctx) => _CreatorCategoryOnboardingModal(prefs: prefs),
+  );
+}
+
+class _CreatorCategoryOnboardingModal extends StatelessWidget {
+  final SharedPreferences prefs;
+  const _CreatorCategoryOnboardingModal({required this.prefs});
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 60),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A1A),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // En-tête dégradé
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: const BoxDecoration(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                gradient: LinearGradient(
+                  colors: [Color(0xFFFFD700), Color(0xFFFF8C00)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: Row(
+                children: const [
+                  Text('🎯', style: TextStyle(fontSize: 28)),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Ta catégorie créateur',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Sois découvert par la bonne audience',
+                          style: TextStyle(color: Colors.white70, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Corps
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  const Text(
+                    'Choisir ta catégorie principale permet à Afrolook de te recommander aux bonnes personnes — sur la page Sport, Musique, Mode...',
+                    style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.5),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    alignment: WrapAlignment.center,
+                    children: UserInterests.categories.take(6).map((cat) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.07),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.white24),
+                        ),
+                        child: Text(
+                          '${cat.emoji} ${cat.labelFr}',
+                          style: const TextStyle(color: Colors.white70, fontSize: 11),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+
+            // Boutons
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Column(
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        await prefs.setBool(_kPrefCreatorCategoryOnboardingShown, true);
+                        if (!context.mounted) return;
+                        Navigator.of(context).pop();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => ProfilePage()),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFFD700),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Compléter mon profil',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () async {
+                      await prefs.setBool(_kPrefCreatorCategoryOnboardingShown, true);
+                      if (context.mounted) Navigator.of(context).pop();
+                    },
+                    child: const Text(
+                      'Plus tard',
+                      style: TextStyle(color: Colors.grey, fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

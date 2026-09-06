@@ -13,8 +13,10 @@ import '../../../theme/app_colors.dart';
 
 /// Section de fin de feed — créateurs et canaux non encore suivis.
 /// Chargement autonome, pas de dépendance sur l'état parent.
+/// [pageType] : si fourni (ex: 'SPORT'), filtre créateurs et canaux par catégorie.
 class FeedEndDiscoverySection extends StatefulWidget {
-  const FeedEndDiscoverySection({Key? key}) : super(key: key);
+  final String? pageType;
+  const FeedEndDiscoverySection({Key? key, this.pageType}) : super(key: key);
 
   @override
   State<FeedEndDiscoverySection> createState() =>
@@ -62,13 +64,37 @@ class _FeedEndDiscoverySectionState extends State<FeedEndDiscoverySection> {
     }
   }
 
+  // Convertit un pageType (ex: 'SPORT') en userCategoryFilter (ex: 'sport')
+  static String? _pageTypeToUserCategory(String? pageType) {
+    if (pageType == null || pageType.isEmpty) return null;
+    switch (pageType) {
+      case 'SPORT':      return 'sport';
+      case 'EVENEMENT':  return 'dance';
+      case 'LOOKS':      return 'fashion';
+      case 'ACTUALITES': return 'culture';
+      case 'GAMER':      return 'gaming';
+      default:           return pageType.toLowerCase();
+    }
+  }
+
   Future<List<UserData>> _fetchUsers(Set<String> exclude) async {
-    final snap = await FirebaseFirestore.instance
-        .collection('Users')
-        .where('status', isEqualTo: 'VALIDE')
-        .orderBy('abonnes', descending: true)
-        .limit(20)
-        .get();
+    final userCategory = _pageTypeToUserCategory(widget.pageType);
+    QuerySnapshot<Map<String, dynamic>> snap;
+    if (userCategory != null) {
+      snap = await FirebaseFirestore.instance
+          .collection('Users')
+          .where('status', isEqualTo: 'VALIDE')
+          .where('mainCategory', isEqualTo: userCategory)
+          .limit(20)
+          .get();
+    } else {
+      snap = await FirebaseFirestore.instance
+          .collection('Users')
+          .where('status', isEqualTo: 'VALIDE')
+          .orderBy('abonnes', descending: true)
+          .limit(20)
+          .get();
+    }
 
     final all = snap.docs
         .map((d) {
@@ -90,9 +116,10 @@ class _FeedEndDiscoverySectionState extends State<FeedEndDiscoverySection> {
     final snap = await FirebaseFirestore.instance
         .collection('Canaux')
         .orderBy('suivi', descending: true)
-        .limit(15)
+        .limit(30)
         .get();
 
+    final pageType = widget.pageType;
     final all = snap.docs
         .map((d) {
           try {
@@ -103,6 +130,13 @@ class _FeedEndDiscoverySectionState extends State<FeedEndDiscoverySection> {
         })
         .whereType<Canal>()
         .where((c) => !(c.usersSuiviId?.contains(myId) ?? false))
+        .where((c) {
+          if (pageType == null || pageType.isEmpty) return true;
+          // Filtrer par catégorie principale ou liste de catégories du canal
+          final matchMain = c.mainCategory == pageType;
+          final matchList = c.categories?.contains(pageType) ?? false;
+          return matchMain || matchList;
+        })
         .toList();
 
     all.shuffle(Random());
@@ -183,7 +217,7 @@ class _FeedEndDiscoverySectionState extends State<FeedEndDiscoverySection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SectionHeader(colors: colors),
+          _SectionHeader(colors: colors, pageType: widget.pageType),
           const SizedBox(height: 12),
           if (_suggestedUsers.isNotEmpty) ...[
             _SubTitle(label: 'Créateurs', colors: colors),
@@ -230,8 +264,21 @@ class _FeedEndDiscoverySectionState extends State<FeedEndDiscoverySection> {
 // ── Sous-widgets ─────────────────────────────────────────────────────────────
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.colors});
+  const _SectionHeader({required this.colors, this.pageType});
   final AppColors colors;
+  final String? pageType;
+
+  String _label() {
+    if (pageType == null || pageType!.isEmpty) return 'À découvrir · Créateurs & Canaux';
+    switch (pageType) {
+      case 'SPORT':      return '⚽ Créateurs & Canaux Sport';
+      case 'EVENEMENT':  return '🎉 Créateurs & Canaux Événement';
+      case 'LOOKS':      return '👗 Créateurs & Canaux Mode';
+      case 'ACTUALITES': return '📰 Créateurs & Canaux Actu';
+      case 'GAMER':      return '🎮 Créateurs & Canaux Gaming';
+      default:           return 'À découvrir · Créateurs & Canaux';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -246,7 +293,7 @@ class _SectionHeader extends StatelessWidget {
       ),
       const SizedBox(width: 8),
       Text(
-        'À découvrir · Créateurs & Canaux',
+        _label(),
         style: TextStyle(
           color: colors.textPrimary,
           fontWeight: FontWeight.bold,

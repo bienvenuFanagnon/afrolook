@@ -55,6 +55,7 @@ class _ProfilePageState extends State<ProfilePage> {
   TextEditingController _aproposController = TextEditingController();
   TextEditingController _pseudoController = TextEditingController();
   List<String> _editInterests = [];
+  String? _editCreatorCategory;
 
   // 'same' | 'checking' | 'available' | 'taken' | 'invalid' | 'locked'
   String _pseudoStatus = 'same';
@@ -146,6 +147,7 @@ class _ProfilePageState extends State<ProfilePage> {
     _phoneController.text = authProvider.loginUserData.numeroDeTelephone ?? '';
     _aproposController.text = authProvider.loginUserData.apropos ?? '';
     _editInterests = List.from(authProvider.loginUserData.interests ?? []);
+    _editCreatorCategory = authProvider.loginUserData.mainCategory;
     // On lit le pseudo directement depuis Firestore pour avoir la vérité serveur
     _loadPseudoFromServer();
     _pseudoController.addListener(_onPseudoChanged);
@@ -402,6 +404,10 @@ class _ProfilePageState extends State<ProfilePage> {
       if (interestsChanged) {
         updates['interests'] = _editInterests;
       }
+      if (_editCreatorCategory != authProvider.loginUserData.mainCategory &&
+          _editCreatorCategory != null) {
+        updates['mainCategory'] = _editCreatorCategory;
+      }
       final nowMs = DateTime.now().millisecondsSinceEpoch;
       if (pseudoChanged && _pseudoStatus == 'available') {
         updates['pseudo'] = formattedPseudo;
@@ -450,6 +456,9 @@ class _ProfilePageState extends State<ProfilePage> {
       authProvider.loginUserData.apropos = _aproposController.text;
       if (interestsChanged) {
         authProvider.loginUserData.interests = List.from(_editInterests);
+      }
+      if (_editCreatorCategory != null) {
+        authProvider.loginUserData.mainCategory = _editCreatorCategory;
       }
       authProvider.notifyListeners();
 
@@ -1230,6 +1239,11 @@ class _ProfilePageState extends State<ProfilePage> {
               // Centres d'intérêt
               _buildInterestsSection(),
 
+              SizedBox(height: 8),
+
+              // Catégorie créateur
+              _buildCreatorCategorySection(),
+
               SizedBox(height: 20),
 
               // Section Parrainage
@@ -1239,6 +1253,132 @@ class _ProfilePageState extends State<ProfilePage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildCreatorCategorySection() {
+    final cats = UserInterests.categories;
+    final current = _editCreatorCategory ?? authProvider.loginUserData.mainCategory;
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _colors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _colors.border, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: _colors.background,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: _colors.primary.withOpacity(0.3)),
+                ),
+                child: Icon(Icons.category_outlined, color: _colors.primary, size: 20),
+              ),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Catégorie créateur',
+                    style: TextStyle(
+                      color: _colors.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  Text(
+                    'Domaine principal de tes contenus',
+                    style: TextStyle(
+                      color: _colors.textSecondary.withOpacity(0.6),
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (isEditMode)
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: cats.map((cat) {
+                final selected = current == cat.id;
+                final catColor = UserInterests.categoryColor(cat.id, isDark: _colors.isDark);
+                return GestureDetector(
+                  onTap: () => setState(() => _editCreatorCategory = cat.id),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: selected ? catColor.withOpacity(0.15) : _colors.background,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: selected ? catColor : _colors.border,
+                        width: selected ? 1.5 : 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(cat.emoji, style: const TextStyle(fontSize: 13)),
+                        const SizedBox(width: 5),
+                        Text(
+                          cat.labelFr,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+                            color: selected ? catColor : _colors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            )
+          else if (current != null)
+            () {
+              final cat = UserInterests.categoryById(current);
+              final catColor = UserInterests.categoryColor(current, isDark: _colors.isDark);
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: catColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: catColor.withOpacity(0.4)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(cat?.emoji ?? '📌', style: const TextStyle(fontSize: 14)),
+                    const SizedBox(width: 6),
+                    Text(
+                      cat?.labelFr ?? current,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: catColor,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }()
+          else
+            Text(
+              'Aucune catégorie définie',
+              style: TextStyle(color: _colors.textSecondary, fontSize: 14),
+            ),
+        ],
       ),
     );
   }

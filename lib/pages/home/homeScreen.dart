@@ -1424,8 +1424,12 @@ class _MyHomePageState extends State<MyHomePage>
     // Écouter les navigations en direct (app déjà ouverte, tap notif WorkManager)
     _liveNavSub = NavigationCacheService().liveNavigationStream.listen(_handleLiveNavigation);
 
-    // Initialisation du listener de cycle de vie
- userProvider.updateTopUsersPopularity(authProvider.appDefaultData);
+    // Mise à jour popularité différée — appDefaultData.appTotalPoints peut être 0 au démarrage
+    Future.delayed(const Duration(seconds: 6), () {
+      if (mounted && authProvider.appDefaultData.appTotalPoints > 0) {
+        userProvider.updateTopUsersPopularity(authProvider.appDefaultData);
+      }
+    });
     // userProvider.getTopAfrolookeur().then((value) {
     //   // TopFiveModal.showTopFiveModal(context, value.take(5).toList());
     // },);
@@ -1461,7 +1465,12 @@ class _MyHomePageState extends State<MyHomePage>
           if (context.mounted) {
             showInterestsOnboardingModal(context);
           }
-            // Appeler cette fonction quand tu veux afficher le modal
+          // Onboarding catégorie créateur (affiché après les intérêts)
+          if (context.mounted) {
+            Future.delayed(const Duration(milliseconds: 600), () {
+              if (context.mounted) showCreatorCategoryOnboardingModal(context);
+            });
+          }
 
         });
 
@@ -1807,6 +1816,10 @@ class _MyHomePageState extends State<MyHomePage>
       case AppLifecycleState.resumed:
         printVm('🟢 REPRISE APPLICATION : Relance du Heartbeat');
         _presenceService.startHeartbeat(uid);
+        // Réinitialiser le cooldown pour que le toast de notification s'affiche à chaque reprise
+        NotificationToast.dismiss();
+        _lastToastTime = null;
+        if (mounted) _showNotificationToastIfNeeded();
         break;
 
       case AppLifecycleState.paused:

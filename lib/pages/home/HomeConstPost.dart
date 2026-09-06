@@ -151,9 +151,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   // Variables d'état pour les posts
   List<Post> _posts = [];
 
-  // 🔥 Liste des posts effectivement rendus dans le feed (avec anciens posts
-  // mélangés), utilisée par le préchargement vidéo Facebook-style pour
-  // retrouver les voisins d'un index donné.
+  // Liste des posts effectivement rendus dans le feed, utilisée par le
+  // préchargement vidéo Facebook-style pour retrouver les voisins d'un index donné.
   List<Post> _renderedFeedPosts = [];
   bool _isLoadingPosts = true;
   bool _hasErrorPosts = false;
@@ -262,16 +261,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   }
 
 
-  // Dans _HomeConstPostPageState
-  List<Post> _oldPostsCache = [];
-  bool _isLoadingOldPosts = false;
-
-  // Cache des fenêtres mensuelles déjà testées et trouvées vides (clé = startDate du mois)
-  final Set<DateTime> _emptyOldPostsWindows = {};
-
-  Timer? _oldPostsLoadTimer;
-  DocumentSnapshot? _lastOldPostDocument;
-
   late SoundProvider _soundProvider;
   @override
   void initState() {
@@ -331,7 +320,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
   @override
   void dispose() {
-    _oldPostsLoadTimer?.cancel();
     _scrollCooldownTimer?.cancel();
     _scrollController.dispose();
     _visibilityTimers.forEach((key, timer) => timer.cancel());
@@ -359,194 +347,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     }
   }
 
-  /// Choisit une fenêtre mensuelle aléatoire (pondérée) en évitant si possible
-  /// les fenêtres déjà connues comme vides.
-  DateTime _pickRandomOldPostsWindowStart(Random random) {
-    DateTime? candidate;
-
-    for (int attempt = 0; attempt < 5; attempt++) {
-      int monthsBack;
-      int chance = random.nextInt(100);
-
-      if (chance < 50) {
-        // 50% → 1 à 6 mois
-        monthsBack = random.nextInt(6) + 1;
-      } else if (chance < 80) {
-        // 30% → 6 à 18 mois
-        monthsBack = random.nextInt(12) + 6;
-      } else {
-        // 20% → 18 à 30 mois
-        monthsBack = random.nextInt(12) + 18;
-      }
-
-      final now = DateTime.now();
-      final DateTime endDate = DateTime(now.year, now.month - monthsBack, 1);
-      final DateTime startDate = DateTime(endDate.year, endDate.month - 1, 1);
-
-      if (!_emptyOldPostsWindows.contains(startDate)) {
-        return startDate;
-      }
-      candidate = startDate;
-    }
-
-    // Toutes les tentatives sont tombées sur des fenêtres déjà vides :
-    // on retente quand même avec la dernière, le cache pourra avoir été
-    // rafraîchi entre-temps (nouveaux posts publiés).
-    return candidate!;
-  }
-
-  /// Exécute la requête Firestore pour une fenêtre mensuelle donnée et
-  /// retourne les posts valides trouvés (sans les ajouter au cache).
-  Future<List<Post>> _fetchOldPostsForWindow(DateTime startDate) async {
-    final DateTime endDate = DateTime(startDate.year, startDate.month + 1, 1);
-
-    final int startMicros = startDate.microsecondsSinceEpoch;
-
-    // Borne supérieure : jamais les 2 derniers jours (évite tout chevauchement
-    // avec le feed principal qui charge les posts les plus récents).
-    final int twoDaysAgoMicros = DateTime.now()
-        .subtract(const Duration(days: 2))
-        .microsecondsSinceEpoch;
-    final int safeEndMicros =
-        endDate.microsecondsSinceEpoch < twoDaysAgoMicros
-            ? endDate.microsecondsSinceEpoch
-            : twoDaysAgoMicros;
-
-    if (safeEndMicros <= startMicros) return [];
-
-    printVm("📜 Chargement anciens posts entre $startDate et $endDate");
-
-    Query query = _firestore.collection('Posts');
-
-    if (widget.isVideoPage) {
-      query = query.where(
-        "dataType",
-        isEqualTo: PostDataType.VIDEO.name,
-      );
-    }
-
-    query = query
-        .where("created_at", isGreaterThanOrEqualTo: startMicros)
-        .where("created_at", isLessThan: safeEndMicros)
-        .orderBy("created_at")
-        .limit(30); // on prend large pour filtrer ensuite
-
-    final snapshot = await query.get();
-
-    if (snapshot.docs.isEmpty) {
-      printVm("⚠️ Aucun post trouvé dans cette période");
-      return [];
-    }
-
-    List<Post> validOldPosts = [];
-
-    for (final doc in snapshot.docs) {
-      final post = Post.fromJson(doc.data() as Map<String, dynamic>);
-      post.id = doc.id;
-
-      if (_loadedPostIds.contains(post.id)) continue;
-      if (_oldPostsCache.any((p) => p.id == post.id)) continue;
-      if (post.isAdvertisement == true) continue;
-
-      post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
-
-      validOldPosts.add(post);
-
-      if (validOldPosts.length >= 12) break;
-    }
-
-    return validOldPosts;
-  }
-
-  Future<void> _loadOldPostsInBackground() async {
-    if (_isLoadingOldPosts) return;
-    _isLoadingOldPosts = true;
-
-    try {
-      final random = Random();
-
-      // Jusqu'à 3 fenêtres tentées dans cette même passe : la fenêtre
-      // initiale + jusqu'à 2 fallbacks si vide/quasi-vide (<3 posts).
-      const int maxFallbacks = 2;
-      List<Post> validOldPosts = [];
-
-      for (int attempt = 0; attempt <= maxFallbacks; attempt++) {
-        final startDate = _pickRandomOldPostsWindowStart(random);
-
-        final found = await _fetchOldPostsForWindow(startDate);
-
-        if (found.length < 3) {
-          _emptyOldPostsWindows.add(startDate);
-        }
-
-        if (found.isNotEmpty) {
-          validOldPosts = found;
-          break;
-        }
-
-        printVm("↩️ Fenêtre vide, tentative de repli (${attempt + 1}/${maxFallbacks + 1})");
-      }
-
-      if (validOldPosts.isNotEmpty) {
-        validOldPosts.shuffle();
-
-        _oldPostsCache.addAll(validOldPosts);
-
-        printVm(
-          "✅ ${validOldPosts.length} anciens posts ajoutés (cache: ${_oldPostsCache.length})",
-        );
-      } else {
-        printVm("⚠️ Aucun post valide après filtrage (toutes les tentatives vides)");
-      }
-    } catch (e) {
-      printVm("❌ Erreur chargement anciens posts: $e");
-    } finally {
-      _isLoadingOldPosts = false;
-    }
-  }
-
-
-  // Injecte les anciens posts dans le feed quand le feed récent est épuisé.
-  // Relance le background loading pour continuer à alimenter le cache.
-  void _injectOldPostsAndResume() {
-    final available = _oldPostsCache
-        .where((p) => p.id != null && !_loadedPostIds.contains(p.id))
-        .take(12)
-        .toList()..shuffle();
-
-    if (available.isEmpty) return;
-
-    final spread = _spreadCreatorsWithContext(available, _posts);
-    setState(() {
-      _posts.addAll(spread);
-      _loadedPostIds.addAll(available.map((p) => p.id!));
-      _totalPostsLoaded += spread.length;
-      _hasMorePosts = true;
-      _backgroundPostsLoaded = 0;
-      _useBackgroundLoading = true;
-    });
-
-    _oldPostsCache.removeWhere((p) => available.any((a) => a.id == p.id));
-    _startBackgroundLoading();
-  }
-
-  void _startOldPostsLoading() {
-    // En mode récent : pas de vieux posts aléatoires, l'ordre chronologique strict est conservé.
-    if (widget.sortType == 'recent') return;
-    _oldPostsLoadTimer?.cancel();
-    // Intervalle augmenté de 15s à 22s : réduit le nombre de round trips
-    // Firestore tout en restant suffisamment réactif pour réalimenter le
-    // cache d'anciens posts (cf. SUIVI_REFONTE.md - Session 9).
-    _oldPostsLoadTimer = Timer.periodic(Duration(seconds: 22), (timer) {
-      if (_oldPostsCache.length < 4 && !_isLoadingOldPosts) {
-        _loadOldPostsInBackground();
-      }
-    });
-    // Premier chargement immédiat
-    _loadOldPostsInBackground();
-  }
-
-// Appeler _startOldPostsLoading() dans _initializeData() après _loadInitialPosts
   Future<bool> _shouldStartTimer() async {
     if (_isUserPremium()) {
       printVm('⏱️ [Timer] Utilisateur premium → timer non démarré');
@@ -864,10 +664,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
     if (hasCachedPosts) {
       // Cache présent : réseau en arrière-plan, pas de skeleton.
-      // _startOldPostsLoading démarre après pour que _loadedPostIds
-      // soit peuplé par le cache avant la première requête old posts.
       _loadInitialPosts();
-      _startOldPostsLoading();
       _startBackgroundLoading();
       // Décalé pour laisser T1+T2 s'exécuter sans contention Firestore
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -883,7 +680,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         });
       });
       await _loadInitialPosts();
-      _startOldPostsLoading();
       _startBackgroundLoading();
     }
   }
@@ -1247,11 +1043,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
       // Vérifier s'il reste des posts à charger
       _hasMorePosts = newPosts.length >= (_backgroundLoadLimit ~/ 2);
-
-      // Feed récent épuisé → injecter les anciens posts si disponibles
-      if (!_hasMorePosts && _oldPostsCache.isNotEmpty) {
-        _injectOldPostsAndResume();
-      }
 
       // Si on atteint la limite de background, désactiver
       if (_backgroundPostsLoaded >= _maxBackgroundPosts) {
@@ -1743,9 +1534,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
     // Redémarrer le chargement background
     _startBackgroundLoading();
-    _oldPostsCache.clear();
-    _lastOldPostDocument = null;
-    _loadOldPostsInBackground(); // recharger immédiatement
     setState(() {
       _isLoadingPosts = false;
     });
@@ -1825,7 +1613,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
         final t1Future = unread.isEmpty
             ? Future.value(<Post>[])
-            : FeedRepository().fetchUnreadSubscriptionPosts(unread, excludedSnapshot, limit: 15);
+            : FeedRepository().fetchUnreadSubscriptionPosts(unread, excludedSnapshot, limit: 5);
         // T2 skippé si l'utilisateur n'a pas configuré ses intérêts (évite 3-4s pour 0 résultats)
         final t2Future = hasRealInterests
             ? FeedRepository().fetchInterestPosts(interests, excludedSnapshot, countryCode: countryCode, limit: 25)
@@ -2686,15 +2474,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
       _hasMorePosts = newPosts.length >= (_manualLoadLimit ~/ 2);
 
-      // Feed épuisé → injecter les anciens posts si disponibles
-      if (!_hasMorePosts && _oldPostsCache.isNotEmpty) {
-        _injectOldPostsAndResume();
-      }
-
     } catch (e) {
       printVm('❌ Erreur chargement manuel: $e');
       _hasMorePosts = false;
-      if (_oldPostsCache.isNotEmpty) _injectOldPostsAndResume();
     } finally {
       setState(() {
         _isLoadingMorePosts = false;
@@ -3675,10 +3457,26 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
     if (_isLoadingPosts && _posts.isEmpty) return _buildLoadingShimmer(width, height);
     if (_hasErrorPosts && _posts.isEmpty) return _buildErrorWidget();
-    if (_posts.isEmpty) return _buildEmptyWidget();
+    if (_posts.isEmpty) {
+      // Sur une page typée (sport, evenement...) sans posts, afficher la section
+      // découverte de fin de feed au lieu du widget vide centré.
+      if (widget.type.isNotEmpty) {
+        return CustomScrollView(
+          controller: _scrollController,
+          slivers: [
+            SliverList(
+              delegate: SliverChildListDelegate([
+                FeedEndDiscoverySection(pageType: widget.type.isNotEmpty ? widget.type : null),
+                _buildT3RefreshWidget(),
+              ]),
+            ),
+          ],
+        );
+      }
+      return _buildEmptyWidget();
+    }
 
     // L'ordre Tier 1 → Tier 2 → Tier 3 est déjà assuré par _buildTieredFeed.
-    // Les anciens posts non vus sont injectés en fin de _posts via _injectOldPostsAndResume.
     // Pas d'interleaving manuel : on affiche _posts tel quel.
     List<Post> finalPosts = List.from(_posts);
 
@@ -3715,6 +3513,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     // SPORT toujours présent (garanti en cat1 de chaque slot)
     final _inlineCategoriesOther =
         _inlineAllCategories.where((c) => c != 'SPORT').toList();
+    // Fallback si l'utilisateur n'a pas d'intérêts configurés
+    const _fallbackCategories = ['EVENEMENT', 'LOOKS', 'ACTUALITES', 'GAMER'];
+    final _cat2Pool = _inlineCategoriesOther.isNotEmpty
+        ? _inlineCategoriesOther
+        : _fallbackCategories;
     final _inlineExcludedIds = Set<String>.from(_loadedPostIds);
     // Index rotatif pour la 2ème catégorie (hors SPORT)
     int _inlineCatIdx = 0;
@@ -3788,16 +3591,19 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
       // ── 2 sections catégorie inline toutes les 8 posts ──
       // Cat1 = SPORT (toujours), Cat2 = rotation dans les intérêts de l'utilisateur.
+      // Ne pas injecter une catégorie si la page affiche déjà ce type de contenu.
       if ((i + 1) % 8 == 0) {
         final slotNum = i ~/ 8;
-        contentWidgets.add(FeedCategorySectionWidget(
-          key: ValueKey('inline_cat_SPORT_$slotNum'),
-          categoryId: 'SPORT',
-          excludedIds: _inlineExcludedIds,
-        ));
-        if (_inlineCategoriesOther.isNotEmpty) {
-          final cat2 = _inlineCategoriesOther[_inlineCatIdx % _inlineCategoriesOther.length];
-          _inlineCatIdx++;
+        if (widget.type != 'SPORT') {
+          contentWidgets.add(FeedCategorySectionWidget(
+            key: ValueKey('inline_cat_SPORT_$slotNum'),
+            categoryId: 'SPORT',
+            excludedIds: _inlineExcludedIds,
+          ));
+        }
+        final cat2 = _cat2Pool[_inlineCatIdx % _cat2Pool.length];
+        _inlineCatIdx++;
+        if (widget.type != cat2) {
           contentWidgets.add(FeedCategorySectionWidget(
             key: ValueKey('inline_cat_${cat2}_${slotNum}_b'),
             categoryId: cat2,
@@ -3811,9 +3617,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     // Affichée avant le bouton refresh T3 et avant "Fin du feed".
     // Encourage l'utilisateur à suivre des créateurs/canaux pour enrichir son T1.
     final bool _showEndDiscovery = _t3CutoffReached ||
-        (!_isLoadingMorePosts && !_hasMorePosts && _oldPostsCache.isEmpty);
+        (!_isLoadingMorePosts && !_hasMorePosts);
     if (_showEndDiscovery) {
-      contentWidgets.add(const FeedEndDiscoverySection());
+      contentWidgets.add(FeedEndDiscoverySection(pageType: widget.type.isNotEmpty ? widget.type : null));
     }
 
     // Bouton de rafraîchissement après le seuil de posts Tendance
@@ -3827,7 +3633,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         contentWidgets.add(_buildShimmerPost());
         contentWidgets.add(_buildShimmerPost());
         contentWidgets.add(_buildShimmerPost());
-      } else if (!_hasMorePosts && _oldPostsCache.isEmpty) {
+      } else if (!_hasMorePosts) {
         contentWidgets.add(_buildEndOfFeedWidget());
       }
     }
