@@ -358,8 +358,25 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     // 🔥 S'abonner aux changements du provider de son (un seul abonnement, retiré dans dispose)
     _soundProvider.addListener(_updateVolume);
     _initSharedPreferences();
+
+    final _swPost = Stopwatch()..start();
+    final postId  = widget.post.id ?? '?';
+    final postType = widget.post.typeTabbar ?? widget.post.dataType ?? widget.post.type ?? '?';
+    final isCanalPost = widget.post.canal_id != null && widget.post.canal_id!.isNotEmpty;
+    printVm('⏱️ [POST-DISPLAY] id=$postId type=$postType canal=$isCanalPost — initState start');
+
     _initFromSnapshot();
-    _loadCreatorData();
+    final snapMs = _swPost.elapsedMilliseconds;
+    final hadSnapshot = isCanalPost ? widget.post.canalSnapshot != null : widget.post.creatorSnapshot != null;
+    printVm('⏱️ [POST-DISPLAY] id=$postId — snapshot=${hadSnapshot ? "✅ ${snapMs}ms (affichage immédiat)" : "❌ pas de snapshot → placeholder"}');
+
+    _loadCreatorData().then((_) {
+      final totalMs = _swPost.elapsedMilliseconds;
+      final source = isCanalPost
+          ? (widget.post.canal != null ? 'canal complet chargé' : 'canal manquant')
+          : (widget.post.user != null ? 'user complet chargé' : 'user manquant');
+      printVm('⏱️ [POST-DISPLAY] id=$postId — $source — total=${totalMs}ms (snap=${snapMs}ms + fetch=${totalMs - snapMs}ms)');
+    });
     _checkIfFavorite();
     _checkInteractionRecordedToday();
     _loadLastComment();
@@ -581,18 +598,28 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   /// Ne stocke que les infos stables (pseudo, image, compteur) — les badges sont
   /// gérés par UserBadgeWidget et chargés avec le profil complet.
   void _initFromSnapshot() {
+    final postId = widget.post.id ?? '?';
     final isCanalPost = widget.post.canal_id != null && widget.post.canal_id!.isNotEmpty;
     if (isCanalPost) {
+      if (widget.post.canal != null) {
+        _creatorCanal = widget.post.canal;
+        printVm('⏱️ [POST-SNAP] id=$postId → canal depuis post.canal (cache)');
+        return;
+      }
       final snap = widget.post.canalSnapshot;
       if (snap != null) {
         _creatorCanal = Canal()
           ..titre = snap['titre'] as String?
           ..urlImage = snap['urlImage'] as String?
           ..suivi = snap['suivi'] as int? ?? 0;
+        printVm('⏱️ [POST-SNAP] id=$postId → canal depuis canalSnapshot');
+      } else {
+        printVm('⏱️ [POST-SNAP] id=$postId → canal: ni cache ni snapshot → placeholder');
       }
     } else {
       if (widget.post.user != null) {
         _creatorUser = widget.post.user;
+        printVm('⏱️ [POST-SNAP] id=$postId → user depuis post.user (cache)');
         return;
       }
       final snap = widget.post.creatorSnapshot;
@@ -601,6 +628,9 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
           ..pseudo = snap['pseudo'] as String?
           ..imageUrl = snap['imageUrl'] as String?
           ..abonnes = snap['abonnes'] as int? ?? 0;
+        printVm('⏱️ [POST-SNAP] id=$postId → user depuis creatorSnapshot');
+      } else {
+        printVm('⏱️ [POST-SNAP] id=$postId → user: ni cache ni snapshot → placeholder');
       }
     }
   }

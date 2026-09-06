@@ -7,6 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
+import '../../theme/app_colors.dart';
 import '../postDetails.dart';
 import '../postDetailsVideo.dart';
 
@@ -44,8 +45,19 @@ class _ChallengePostCardState extends State<ChallengePostCard> {
   @override
   void initState() {
     super.initState();
+    final swPost = Stopwatch()..start();
+    final postId   = widget.post.id ?? '?';
+    final isCanalPost = widget.post.canal_id != null && widget.post.canal_id!.isNotEmpty;
+    printVm('⏱️ [CHALLENGE-CARD] id=$postId canal=$isCanalPost — initState start');
+
     _initFromSnapshot();
-    _loadCreatorData();
+    final snapMs = swPost.elapsedMilliseconds;
+    final hadSnapshot = isCanalPost ? widget.post.canalSnapshot != null : widget.post.creatorSnapshot != null;
+    printVm('⏱️ [CHALLENGE-CARD] id=$postId — snapshot=${hadSnapshot ? "✅ ${snapMs}ms" : "❌ pas de snapshot"}');
+
+    _loadCreatorData().then((_) {
+      printVm('⏱️ [CHALLENGE-CARD] id=$postId — profil complet — total=${swPost.elapsedMilliseconds}ms');
+    });
   }
 
   void _initFromSnapshot() {
@@ -117,8 +129,8 @@ class _ChallengePostCardState extends State<ChallengePostCard> {
   }
 
   int get _subscriberCount {
-    if (_canal != null) return _canal!.usersSuiviId?.length ?? 0;
-    if (_user != null) return _user!.userAbonnesIds?.length ?? 0;
+    if (_canal != null) return _canal!.suivi ?? _canal!.usersSuiviId?.length ?? 0;
+    if (_user != null) return _user!.abonnes ?? _user!.userAbonnesIds?.length ?? 0;
     return 0;
   }
 
@@ -130,6 +142,7 @@ class _ChallengePostCardState extends State<ChallengePostCard> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     final isVideo = widget.post.dataType == PostDataType.VIDEO.name;
     final isAudio = widget.post.dataType == PostDataType.AUDIO.name;
     final isText = widget.post.dataType == PostDataType.TEXT.name;
@@ -144,12 +157,12 @@ class _ChallengePostCardState extends State<ChallengePostCard> {
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: const Color(0xFF1A1A1A),
+          color: colors.surface,
           borderRadius: BorderRadius.circular(16),
         ),
-        child: const Padding(
-          padding: EdgeInsets.all(20),
-          child: Center(child: CircularProgressIndicator(color: Color(0xFFFFD600))),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Center(child: CircularProgressIndicator(color: colors.accent)),
         ),
       );
     }
@@ -165,9 +178,9 @@ class _ChallengePostCardState extends State<ChallengePostCard> {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: const Color(0xFF1A1A1A),
+          color: colors.surface,
           borderRadius: BorderRadius.circular(16),
-          border: widget.isWinner ? Border.all(color: const Color(0xFFFFD600), width: 2) : null,
+          border: widget.isWinner ? Border.all(color: colors.accent, width: 2) : Border.all(color: colors.border, width: 1),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -175,26 +188,26 @@ class _ChallengePostCardState extends State<ChallengePostCard> {
             // Miniature média + badge rang
             Stack(
               children: [
-                // Contenu selon le type
                 if (isVideo && (thumbnail != null && thumbnail.isNotEmpty))
                   ClipRRect(
                     borderRadius: const BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
-                    child: Image.network(thumbnail, height: 180, width: double.infinity, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _buildFallbackContent(isVideo, isAudio, isText)),
+                    child: Image.network(thumbnail, height: 180, width: double.infinity, fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _buildFallbackContent(isVideo, isAudio, isText, colors)),
                   )
                 else if (hasImage)
                   ClipRRect(
                     borderRadius: const BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
                     child: CachedNetworkImage(
-                      imageUrl:_optimizeUrl(widget.post.images!.first) ,
+                      imageUrl: _optimizeUrl(widget.post.images!.first),
                       height: 180,
                       width: double.infinity,
                       fit: BoxFit.cover,
-                      placeholder: (_, __) => _placeholder(),
-                      errorWidget: (_, __, ___) => _buildFallbackContent(isVideo, isAudio, isText),
+                      placeholder: (_, __) => _placeholder(colors),
+                      errorWidget: (_, __, ___) => _buildFallbackContent(isVideo, isAudio, isText, colors),
                     ),
                   )
                 else
-                  _buildFallbackContent(isVideo, isAudio, isText),
+                  _buildFallbackContent(isVideo, isAudio, isText, colors),
                 // Badge rang
                 Positioned(
                   top: 8,
@@ -202,37 +215,33 @@ class _ChallengePostCardState extends State<ChallengePostCard> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: widget.rank == 1 ? const Color(0xFFFFD600) : Colors.black54,
+                      color: widget.rank == 1 ? colors.accent : Colors.black54,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(widget.rank == 1 ? Icons.emoji_events : Icons.star,
-                            color: widget.rank == 1 ? Colors.black : Colors.white, size: 16),
+                            color: widget.rank == 1 ? colors.onAccent : Colors.white, size: 16),
                         const SizedBox(width: 4),
                         Text(
                           '#${widget.rank}',
                           style: TextStyle(
-                              color: widget.rank == 1 ? Colors.black : Colors.white,
+                              color: widget.rank == 1 ? colors.onAccent : Colors.white,
                               fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
                   ),
                 ),
-                // Badge vidéo
                 if (isVideo)
                   const Positioned(
-                    bottom: 8,
-                    right: 8,
+                    bottom: 8, right: 8,
                     child: Icon(Icons.play_circle_filled, color: Colors.white, size: 32),
                   ),
-                // Badge audio
                 if (isAudio)
                   const Positioned(
-                    bottom: 8,
-                    right: 8,
+                    bottom: 8, right: 8,
                     child: Icon(Icons.audiotrack, color: Colors.white, size: 24),
                   ),
               ],
@@ -244,29 +253,30 @@ class _ChallengePostCardState extends State<ChallengePostCard> {
                 children: [
                   CircleAvatar(
                     radius: 18,
+                    backgroundColor: colors.surfaceVariant,
                     backgroundImage: _avatarUrl != null ? NetworkImage(_avatarUrl!) : null,
-                    child: _avatarUrl == null ? const Icon(Icons.person) : null,
+                    child: _avatarUrl == null ? Icon(Icons.person, color: colors.textSecondary) : null,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(_displayName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                        Text('$_subscriberCount abonnés', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                        Text(_displayName, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold)),
+                        Text('$_subscriberCount abonnés', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
                       ],
                     ),
                   ),
                   // Score totalInteractions
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(color: Colors.blueGrey[800], borderRadius: BorderRadius.circular(20)),
+                    decoration: BoxDecoration(color: colors.surfaceVariant, borderRadius: BorderRadius.circular(20)),
                     child: Row(
                       children: [
-                        const Icon(Icons.bar_chart, color: Colors.amber, size: 16),
+                        Icon(Icons.bar_chart, color: colors.accent, size: 16),
                         const SizedBox(width: 4),
                         Text(_formatCount(totalInteractions),
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold)),
                       ],
                     ),
                   ),
@@ -280,25 +290,25 @@ class _ChallengePostCardState extends State<ChallengePostCard> {
                 widget.post.description ?? '',
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: Colors.white70, fontSize: 13),
+                style: TextStyle(color: colors.textSecondary, fontSize: 13),
               ),
             ),
             const SizedBox(height: 8),
-            // Statistiques : likes, commentaires, favoris
+            // Statistiques
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Row(
                 children: [
-                  _buildStatIcon(FontAwesome.heart_o, likes, Colors.red),
+                  _buildStatIcon(FontAwesome.heart_o, likes, colors.danger, colors),
                   const SizedBox(width: 16),
-                  _buildStatIcon(FontAwesome.comment_o, comments, Colors.blue),
+                  _buildStatIcon(FontAwesome.comment_o, comments, colors.info, colors),
                   const SizedBox(width: 16),
-                  _buildStatIcon(Icons.bookmark_border, favorites, Colors.yellow),
+                  _buildStatIcon(Icons.bookmark_border, favorites, colors.accent, colors),
                 ],
               ),
             ),
             const SizedBox(height: 12),
-            // Bouton encaisser (si gagnant et propriétaire)
+            // Bouton encaisser
             if (widget.isWinner && widget.onPayout != null)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -307,8 +317,8 @@ class _ChallengePostCardState extends State<ChallengePostCard> {
                   icon: const Icon(Icons.monetization_on, size: 18),
                   label: const Text('Encaisser le prix'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2E7D32),
-                    foregroundColor: Colors.white,
+                    backgroundColor: colors.primary,
+                    foregroundColor: colors.onPrimary,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                   ),
                 ),
@@ -320,38 +330,32 @@ class _ChallengePostCardState extends State<ChallengePostCard> {
     );
   }
 
-  Widget _buildStatIcon(IconData icon, int count, Color color) {
+  Widget _buildStatIcon(IconData icon, int count, Color color, AppColors colors) {
     return Row(
       children: [
         Icon(icon, size: 18, color: color),
         const SizedBox(width: 4),
-        Text(
-          _formatCount(count),
-          style: TextStyle(color: Colors.white70, fontSize: 13),
-        ),
+        Text(_formatCount(count), style: TextStyle(color: colors.textSecondary, fontSize: 13)),
       ],
     );
   }
 
-  Widget _buildFallbackContent(bool isVideo, bool isAudio, bool isText) {
+  Widget _buildFallbackContent(bool isVideo, bool isAudio, bool isText, AppColors colors) {
     return Container(
       height: 180,
       width: double.infinity,
-      color: Colors.grey[800],
+      color: colors.surfaceVariant,
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (isAudio)
-              const Icon(Icons.audiotrack, size: 48, color: Colors.white70),
-            if (isText)
-              const Icon(Icons.text_fields, size: 48, color: Colors.white70),
-            if (!isAudio && !isText)
-              const Icon(Icons.image, size: 48, color: Colors.white70),
+            if (isAudio) Icon(Icons.audiotrack, size: 48, color: colors.textSecondary),
+            if (isText) Icon(Icons.text_fields, size: 48, color: colors.textSecondary),
+            if (!isAudio && !isText) Icon(Icons.image, size: 48, color: colors.textSecondary),
             const SizedBox(height: 8),
             Text(
               isAudio ? 'Audio' : (isText ? 'Texte' : 'Image manquante'),
-              style: const TextStyle(color: Colors.white70, fontSize: 14),
+              style: TextStyle(color: colors.textSecondary, fontSize: 14),
             ),
           ],
         ),
@@ -359,5 +363,9 @@ class _ChallengePostCardState extends State<ChallengePostCard> {
     );
   }
 
-  Widget _placeholder() => Container(height: 180, color: Colors.grey[800], child: const Center(child: CircularProgressIndicator()));
+  Widget _placeholder(AppColors colors) => Container(
+        height: 180,
+        color: colors.surfaceVariant,
+        child: Center(child: CircularProgressIndicator(color: colors.primary)),
+      );
 }

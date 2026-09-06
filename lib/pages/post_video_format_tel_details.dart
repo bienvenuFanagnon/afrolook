@@ -1735,42 +1735,61 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
     return videoCount - 1; // retourne l'index dans _videoPosts (0-based)
   }
   Future<void> _loadPostRelations(Post post) async {
-    // Initialise depuis snapshot si dispo (affichage immédiat sans fetch)
+    final _sw = Stopwatch()..start();
+    final postId = post.id ?? '?';
+    final isCanalPost = post.canal_id != null && post.canal_id!.isNotEmpty;
+
+    // ── Phase 1 : snapshot → affichage immédiat ──────────────────────────────
+    bool usedSnapshot = false;
     if (post.user == null && post.creatorSnapshot != null) {
       final snap = post.creatorSnapshot!;
       post.user = UserData()
         ..pseudo = snap['pseudo'] as String?
         ..imageUrl = snap['imageUrl'] as String?
         ..abonnes = snap['abonnes'] as int? ?? 0;
+      usedSnapshot = true;
     }
-    if (post.canal == null && post.canalSnapshot != null && post.canal_id != null && post.canal_id!.isNotEmpty) {
+    if (post.canal == null && post.canalSnapshot != null && isCanalPost) {
       final snap = post.canalSnapshot!;
       post.canal = Canal()
         ..titre = snap['titre'] as String?
         ..urlImage = snap['urlImage'] as String?
         ..suivi = snap['suivi'] as int? ?? 0;
+      usedSnapshot = true;
     }
+    printVm('⏱️ [DETAILS-CARD] id=$postId canal=$isCanalPost — snapshot=${usedSnapshot ? "✅ ${_sw.elapsedMilliseconds}ms" : "❌ pas de snapshot"}');
     if (mounted) setState(() {});
 
-    // Charge les profils complets en arrière-plan uniquement si nécessaire
-    if (post.user_id != null && (post.user == null || post.user!.isVerify == null)) {
+    // ── Phase 2 : profil complet en arrière-plan ─────────────────────────────
+    final needUserFetch = post.user_id != null && (post.user == null || post.user!.isVerify == null);
+    final needCanalFetch = isCanalPost && (post.canal == null || post.canal!.usersSuiviId == null);
+
+    if (!needUserFetch && !needCanalFetch) {
+      printVm('⏱️ [DETAILS-CARD] id=$postId — cache hit, pas de fetch réseau — ${_sw.elapsedMilliseconds}ms');
+      return;
+    }
+
+    if (needUserFetch) {
       try {
         final userDoc = await _firestore.collection('Users').doc(post.user_id).get();
         if (userDoc.exists) {
           post.user = UserData.fromJson(userDoc.data()!);
+          printVm('⏱️ [DETAILS-CARD] id=$postId — user fetch complet — ${_sw.elapsedMilliseconds}ms');
         }
       } catch (e) { printVm('Erreur chargement user: $e'); }
     }
 
-    if (post.canal_id != null && post.canal_id!.isNotEmpty && (post.canal == null || post.canal!.usersSuiviId == null)) {
+    if (needCanalFetch) {
       try {
         final canalDoc = await _firestore.collection('Canaux').doc(post.canal_id).get();
         if (canalDoc.exists) {
           post.canal = Canal.fromJson(canalDoc.data()!);
+          printVm('⏱️ [DETAILS-CARD] id=$postId — canal fetch complet — ${_sw.elapsedMilliseconds}ms');
         }
       } catch (e) { printVm('Erreur chargement canal: $e'); }
     }
     if (mounted) setState(() {});
+    printVm('⏱️ [DETAILS-CARD] id=$postId — total=${_sw.elapsedMilliseconds}ms');
   }
 
   Future<void> _loadMoreVideos({bool isInitial = false, int? limit}) async {
