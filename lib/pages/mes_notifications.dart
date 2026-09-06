@@ -44,6 +44,7 @@ class _MesNotificationState extends State<MesNotification> {
   final Map<String, UserData> _userCache = {};
   final Map<String, Canal> _canalCache = {};
   bool _isHandlingNotification = false;
+  bool _isMarkingAllRead = false;
   bool _showFilterMenu = false;
   String? _selectedTypeFilter;
   List<String> _availableTypes = [];
@@ -1176,13 +1177,11 @@ class _MesNotificationState extends State<MesNotification> {
   }
 
   Future<void> _markAllAsRead() async {
+    if (_isMarkingAllRead) return;
+    if (mounted) setState(() => _isMarkingAllRead = true);
     final userId = _authProvider.loginUserData.id!;
     try {
-      // Requête directe Firestore — ne dépend pas de ce qui est chargé en mémoire
-      // On traite par lots de 500 (limite Firestore batch)
       QuerySnapshot snap;
-      int totalMarked = 0;
-
       do {
         snap = await _firestore
             .collection('Notifications')
@@ -1201,21 +1200,23 @@ class _MesNotificationState extends State<MesNotification> {
           });
         }
         await batch.commit();
-        totalMarked += snap.docs.length;
       } while (snap.docs.length == 500);
 
-      // Mettre à jour aussi la liste locale déjà chargée
       if (mounted) {
         setState(() {
           for (final notif in _notifications) {
             notif.is_open = true;
           }
+          _isMarkingAllRead = false;
         });
         _showSuccessSnackBar(_l10n.notifAllMarkedAsRead);
       }
     } catch (e) {
       printVm("Erreur marquer tout comme lu: $e");
-      if (mounted) _showErrorSnackBar(_l10n.notifErrorMarkingAsRead);
+      if (mounted) {
+        setState(() => _isMarkingAllRead = false);
+        _showErrorSnackBar(_l10n.notifErrorMarkingAsRead);
+      }
     }
   }
 
@@ -1276,11 +1277,23 @@ class _MesNotificationState extends State<MesNotification> {
               tooltip: _l10n.notifFilterByType,
             ),
           if (_notifications.any((n) => !n.is_open!))
-            IconButton(
-              onPressed: _markAllAsRead,
-              icon: Icon(Icons.done_all, color: _colors.danger),
-              tooltip: l10n.notifMarkRead,
-            ),
+            _isMarkingAllRead
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        valueColor: AlwaysStoppedAnimation<Color>(_colors.danger),
+                      ),
+                    ),
+                  )
+                : IconButton(
+                    onPressed: _markAllAsRead,
+                    icon: Icon(Icons.done_all, color: _colors.danger),
+                    tooltip: l10n.notifMarkRead,
+                  ),
         ],
       ),
       body: CenteredContent(

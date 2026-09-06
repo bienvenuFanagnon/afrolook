@@ -1,22 +1,26 @@
+import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/model_data.dart';
 
-/// Service de boost de visibilité pour les nouveaux créateurs (< 200 abonnés).
+/// Service de boost de visibilité pour les nouveaux créateurs.
 ///
-/// Stratégie :
-///  1. Query globale des posts récents (< 7 jours)
-///  2. Filtre client : exclure les créateurs déjà suivis, appliquer filtre pays
-///  3. Fetch les users → garder seulement ceux avec < [followersThreshold] abonnés
-///  4. Cache 1h pour ne pas requêter à chaque scroll
+/// Critères éligibilité :
+///  - Compte créé il y a moins de [creatorAgeDays] jours (60 jours)
+///  - Moins de [followersThreshold] abonnés (20)
+///  - Non suivi par l'utilisateur courant
 ///
-/// Injection dans le feed : 1 post boosté toutes les [injectEvery] posts normaux.
+/// Variété : le cache stocke jusqu'à 50 créateurs éligibles.
+/// Chaque appel à [getBoostPosts] retourne un sous-ensemble shufflé aléatoirement
+/// pour ne pas toujours afficher les mêmes.
 class DiscoveryBoostService {
   DiscoveryBoostService._();
   static final instance = DiscoveryBoostService._();
 
   static const int followersThreshold = 20;
+  static const int creatorAgeDays = 60;
   static const int injectEvery = 10;
-  static const Duration _cacheTtl = Duration(hours: 1);
+  static const Duration _cacheTtl = Duration(minutes: 20);
 
   final _db = FirebaseFirestore.instance;
 
@@ -51,21 +55,22 @@ class DiscoveryBoostService {
     _cacheTime = DateTime.now();
   }
 
-  /// Retourne les posts boostés (depuis le cache si valide).
+  /// Retourne un sous-ensemble shufflé des posts boostés (variété à chaque appel).
   List<Post> getBoostPosts({
     required Set<String> followedSet,
     required String currentUserId,
     required String? userCountry,
+    int limit = 10,
   }) {
     if (!_cacheValid) {
-      // Lance en arrière-plan si cache expiré
       preload(
         followedSet: followedSet,
         currentUserId: currentUserId,
         userCountry: userCountry,
       );
     }
-    return List.from(_cachedPosts);
+    final copy = List<Post>.from(_cachedPosts)..shuffle(Random());
+    return copy.take(limit).toList();
   }
 
   /// Injecte les posts boostés dans la liste de posts du feed.
@@ -138,7 +143,7 @@ class DiscoveryBoostService {
         }
       }
 
-      final eligible = latestByCreator.values.toList()..shuffle();
+      final eligible = latestByCreator.values.toList()..shuffle(Random());
       return eligible.take(limit).toList();
     } catch (_) {
       return [];
@@ -151,12 +156,16 @@ class DiscoveryBoostService {
     required Set<String> followedSet,
     required String currentUserId,
     required String? userCountry,
-    int globalLimit = 300,
-    int maxPosts = 30,
+    int globalLimit = 400,
+    int maxPosts = 50,
   }) async {
     final sinceUs = DateTime.now()
-        .subtract(const Duration(days: 7))
+        .subtract(const Duration(days: 30))
         .microsecondsSinceEpoch;
+    // Seuil 60 jours pour l'ancienneté du compte (en ms, Firestore stocke ms ou µs)
+    final creatorSinceMs = DateTime.now()
+        .subtract(const Duration(days: creatorAgeDays))
+        .millisecondsSinceEpoch;
 
     try {
       // 1. Posts récents (< 7 jours), un seul appel Firestore
@@ -193,17 +202,21 @@ class DiscoveryBoostService {
       final creatorIds = latestByCreator.keys.toList();
       final users = await _fetchUsers(creatorIds);
 
-      // 4. Garder seulement les petits créateurs (< followersThreshold abonnés)
+      // 4. Garder seulement les nouveaux petits créateurs :
+      //    - < followersThreshold abonnés
+      //    - compte créé il y a moins de creatorAgeDays jours
       final eligible = <Post>[];
       for (final user in users) {
         if ((user.abonnes ?? 0) >= followersThreshold) continue;
         if (user.id == null) continue;
+        // Filtre ancienneté compte (createdAt en ms)
+        final ca = user.createdAt;
+        if (ca != null && ca < creatorSinceMs) continue;
         final post = latestByCreator[user.id!];
         if (post != null) eligible.add(post);
       }
 
-      // Mélanger pour la variété et limiter
-      eligible.shuffle();
+      eligible.shuffle(Random());
       return eligible.take(maxPosts).toList();
     } catch (_) {
       return [];
