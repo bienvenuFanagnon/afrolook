@@ -2011,17 +2011,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       }
     }
 
-    // Si vide en mémoire (utilisateur connecté avant la migration), forcer un refresh Firestore
-    if (unread.isEmpty && authProvider.loginUserData.id != null) {
-      printVm('📌 [TIER1] → vide en mémoire, refresh Firestore...');
-      try {
-        await authProvider.refreshUserData();
-        unread = authProvider.loginUserData.unreadPosts ?? {};
-        printVm('📌 [TIER1] → après refresh: ${unread.length} entrées');
-      } catch (e) {
-        printVm('⚠️ [TIER1] refresh échoué : $e');
-      }
-    }
     if (unread.isEmpty) {
       printVm('📌 [TIER1] → toujours vide, aucun post Tier1 chargé');
       return;
