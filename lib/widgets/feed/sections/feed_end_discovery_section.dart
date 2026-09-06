@@ -30,9 +30,8 @@ class _FeedEndDiscoverySectionState extends State<FeedEndDiscoverySection> {
   List<Canal> _suggestedCanaux = [];
   bool _loading = true;
 
-  // Suivi local optimiste (évite de tout recharger après un clic)
+  // Suivi local optimiste pour les utilisateurs uniquement
   final Set<String> _followedIds = {};
-  final Set<String> _subscribedCanalIds = {};
 
   @override
   void initState() {
@@ -64,27 +63,15 @@ class _FeedEndDiscoverySectionState extends State<FeedEndDiscoverySection> {
     }
   }
 
-  // Convertit un pageType (ex: 'SPORT') en userCategoryFilter (ex: 'sport')
-  static String? _pageTypeToUserCategory(String? pageType) {
-    if (pageType == null || pageType.isEmpty) return null;
-    switch (pageType) {
-      case 'SPORT':      return 'sport';
-      case 'EVENEMENT':  return 'dance';
-      case 'LOOKS':      return 'fashion';
-      case 'ACTUALITES': return 'culture';
-      case 'GAMER':      return 'gaming';
-      default:           return pageType.toLowerCase();
-    }
-  }
-
   Future<List<UserData>> _fetchUsers(Set<String> exclude) async {
-    final userCategory = _pageTypeToUserCategory(widget.pageType);
+    final pageType = widget.pageType;
     QuerySnapshot<Map<String, dynamic>> snap;
-    if (userCategory != null) {
+    // mainCategory dans UserData utilise les mêmes valeurs uppercase que les posts/canaux
+    if (pageType != null && pageType.isNotEmpty) {
       snap = await FirebaseFirestore.instance
           .collection('Users')
           .where('status', isEqualTo: 'VALIDE')
-          .where('mainCategory', isEqualTo: userCategory)
+          .where('mainCategory', isEqualTo: pageType)
           .limit(20)
           .get();
     } else {
@@ -174,33 +161,6 @@ class _FeedEndDiscoverySectionState extends State<FeedEndDiscoverySection> {
     }
   }
 
-  Future<void> _subscribeCanal(Canal canal) async {
-    final canalId = canal.id;
-    if (canalId == null) return;
-    final auth = Provider.of<UserAuthProvider>(context, listen: false);
-    final myId = auth.loginUserData.id ?? '';
-    if (myId.isEmpty) return;
-
-    setState(() {
-      _subscribedCanalIds.add(canalId);
-      canal.usersSuiviId ??= [];
-      canal.usersSuiviId!.add(myId);
-      canal.suivi = (canal.suivi ?? 0) + 1;
-    });
-
-    FirebaseFirestore.instance.collection('Canaux').doc(canalId).update({
-      'usersSuiviId': FieldValue.arrayUnion([myId]),
-      'suivi': FieldValue.increment(1),
-    }).catchError((_) {
-      if (!mounted) return;
-      setState(() {
-        _subscribedCanalIds.remove(canalId);
-        canal.usersSuiviId?.remove(myId);
-        canal.suivi = (canal.suivi ?? 1) - 1;
-      });
-    });
-  }
-
   // ── Build ────────────────────────────────────────────────────────────────────
 
   @override
@@ -236,8 +196,6 @@ class _FeedEndDiscoverySectionState extends State<FeedEndDiscoverySection> {
             const SizedBox(height: 8),
             ..._suggestedCanaux.map((c) => _CanalCard(
                   canal: c,
-                  subscribed: _subscribedCanalIds.contains(c.id),
-                  onSubscribe: () => _subscribeCanal(c),
                   onTap: () => _openCanal(c),
                   colors: colors,
                 )),
@@ -387,15 +345,11 @@ class _UserCard extends StatelessWidget {
 class _CanalCard extends StatelessWidget {
   const _CanalCard({
     required this.canal,
-    required this.subscribed,
-    required this.onSubscribe,
     required this.onTap,
     required this.colors,
   });
 
   final Canal canal;
-  final bool subscribed;
-  final VoidCallback onSubscribe;
   final VoidCallback onTap;
   final AppColors colors;
 
@@ -432,9 +386,9 @@ class _CanalCard extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           _CtaButton(
-            label: subscribed ? 'Abonné ✓' : "S'abonner",
-            done: subscribed,
-            onPressed: subscribed ? null : onSubscribe,
+            label: 'Voir le canal',
+            done: false,
+            onPressed: onTap,
           ),
         ]),
       ),
