@@ -8,6 +8,7 @@ import '../../providers/authProvider.dart';
 import '../../services/feed/feed_repository.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/feed/sections/feed_ad_widgets.dart';
+import '../../widgets/user_badge_widget.dart';
 import '../postDetailsVideo.dart';
 import '../postDetails.dart';
 
@@ -37,7 +38,6 @@ class _CategoryFeedPageState extends State<CategoryFeedPage> {
   // false au départ pour que _load() puisse s'exécuter dès le premier appel
   bool _isLoading = false;
   bool _hasMore = true;
-  int _adCounter = 0;
 
   static const _pageSize = 10;
   // Une pub toutes les 5 cartes
@@ -180,10 +180,10 @@ class _CategoryFeedPageState extends State<CategoryFeedPage> {
   Widget _buildShimmer(AppColors colors) {
     return ListView.builder(
       padding: const EdgeInsets.only(top: 8),
-      itemCount: 6,
+      itemCount: 4,
       itemBuilder: (_, __) => Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        height: 90,
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        height: 240,
         decoration: BoxDecoration(
           color: colors.shimmerBase,
           borderRadius: BorderRadius.circular(16),
@@ -215,37 +215,61 @@ class _CategoryPostCard extends StatelessWidget {
     final dt = post.dataType ?? '';
     if (dt == PostDataType.IMAGE.name) {
       if (post.images?.isNotEmpty == true) return post.images!.first;
-      return post.thumbnail ?? '';
     }
     return post.thumbnail ?? '';
+  }
+
+  // Résolution pseudo/avatar depuis snapshot dénormalisé ou fallback post.user
+  bool get _isCanalPost => post.canal_id != null && post.canal_id!.isNotEmpty;
+
+  String get _displayName {
+    if (_isCanalPost) {
+      final titre = post.canalSnapshot?['titre'] as String?;
+      if (titre != null && titre.isNotEmpty) return '#$titre';
+      return post.canal_id ?? '';
+    }
+    final pseudo = post.creatorSnapshot?['pseudo'] as String?;
+    if (pseudo != null && pseudo.isNotEmpty) return '@$pseudo';
+    final fallback = post.user?.pseudo ?? '';
+    return fallback.isNotEmpty ? '@$fallback' : '';
+  }
+
+  String get _avatarUrl {
+    if (_isCanalPost) {
+      return (post.canalSnapshot?['urlImage'] as String?) ??
+          post.user?.imageUrl ?? '';
+    }
+    return (post.creatorSnapshot?['imageUrl'] as String?) ??
+        post.user?.imageUrl ?? '';
   }
 
   @override
   Widget build(BuildContext context) {
     final thumb = _thumbUrl();
     final desc = post.description ?? '';
-    final pseudo = post.user?.pseudo ?? '';
-    final avatar = post.user?.imageUrl ?? '';
     final isVideo = post.dataType == PostDataType.VIDEO.name;
     final isAudio = post.dataType == PostDataType.AUDIO.name;
+    final avatar = _avatarUrl;
+    final name = _displayName;
 
     return GestureDetector(
       onTap: () => _open(context),
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: colors.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: colors.border),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Miniature
+            // ── Miniature grande ──────────────────────────────────────────
             ClipRRect(
-              borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
               child: SizedBox(
-                width: 90,
-                height: 90,
+                width: double.infinity,
+                height: 180,
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -257,68 +281,118 @@ class _CategoryPostCard extends StatelessWidget {
                       )
                     else
                       _placeholder(isAudio: isAudio),
-                    if (isVideo)
+                    // Overlay play/audio
+                    if (isVideo || isAudio)
                       Container(
-                        color: Colors.black26,
-                        child: const Center(
-                          child: Icon(Icons.play_circle_outline, color: Colors.white, size: 28),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            // Info
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (desc.isNotEmpty)
-                      Text(
-                        desc,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: colors.textPrimary,
-                        ),
-                      ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        if (avatar.isNotEmpty)
-                          CircleAvatar(
-                            radius: 10,
-                            backgroundImage: CachedNetworkImageProvider(avatar),
-                          ),
-                        if (avatar.isNotEmpty) const SizedBox(width: 5),
-                        Expanded(
-                          child: Text(
-                            '@$pseudo',
-                            style: TextStyle(fontSize: 11, color: colors.textSecondary),
-                            overflow: TextOverflow.ellipsis,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [Colors.transparent, Colors.black54],
                           ),
                         ),
-                      ],
+                      ),
+                    if (isVideo)
+                      const Center(
+                        child: Icon(Icons.play_circle_fill,
+                            color: Colors.white, size: 48),
+                      ),
+                    if (isAudio)
+                      Center(
+                        child: Icon(Icons.music_note_rounded,
+                            color: Colors.white.withOpacity(0.85), size: 44),
+                      ),
+                    // Badge type en haut à droite
+                    Positioned(
+                      top: 8,
+                      right: 10,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: catColor.withOpacity(0.85),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          isVideo
+                              ? Icons.videocam_rounded
+                              : isAudio
+                                  ? Icons.music_note_rounded
+                                  : Icons.image_rounded,
+                          size: 13,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
-            // Indicateur type
+            // ── Info ─────────────────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: Icon(
-                isVideo
-                    ? Icons.play_circle_outline
-                    : isAudio
-                        ? Icons.music_note_rounded
-                        : Icons.image_outlined,
-                size: 18,
-                color: catColor.withOpacity(0.8),
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Auteur (avatar + pseudo/canal + badge)
+                  Row(
+                    children: [
+                      if (avatar.isNotEmpty)
+                        CircleAvatar(
+                          radius: 14,
+                          backgroundColor: colors.shimmerBase,
+                          backgroundImage: CachedNetworkImageProvider(avatar),
+                        )
+                      else
+                        CircleAvatar(
+                          radius: 14,
+                          backgroundColor: colors.shimmerBase,
+                          child: Icon(
+                            _isCanalPost
+                                ? Icons.tv_rounded
+                                : Icons.person_rounded,
+                            size: 14,
+                            color: colors.textSecondary,
+                          ),
+                        ),
+                      const SizedBox(width: 7),
+                      Expanded(
+                        child: Text(
+                          name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: colors.textSecondary,
+                          ),
+                        ),
+                      ),
+                      // Badge vérification — disponible si post.user chargé
+                      if (post.user != null)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 4),
+                          child: UserBadgeWidget(
+                            user: post.user,
+                            size: 13,
+                            withBackground: false,
+                          ),
+                        ),
+                    ],
+                  ),
+                  if (desc.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      desc,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
           ],
@@ -330,9 +404,13 @@ class _CategoryPostCard extends StatelessWidget {
   Widget _placeholder({bool isAudio = false}) {
     return Container(
       color: colors.shimmerBase,
-      child: isAudio
-          ? Center(child: Icon(Icons.music_note_rounded, color: catColor.withOpacity(0.5), size: 32))
-          : const SizedBox.shrink(),
+      child: Center(
+        child: Icon(
+          isAudio ? Icons.music_note_rounded : Icons.image_outlined,
+          color: catColor.withOpacity(0.4),
+          size: 40,
+        ),
+      ),
     );
   }
 }
