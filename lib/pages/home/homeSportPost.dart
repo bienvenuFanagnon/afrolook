@@ -904,8 +904,9 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         final spread = _spreadCreatorsWithContext(newPosts, _posts);
         setState(() {
           _posts.addAll(spread);
+          if (_posts.length > 25) _posts = _posts.take(25).toList();
           _loadedPostIds.addAll(newPosts.map((p) => p.id!));
-          _totalPostsLoaded += spread.length;
+          _totalPostsLoaded = _posts.length;
           _backgroundPostsLoaded += spread.length;
         });
 
@@ -2171,8 +2172,9 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         final spread = _spreadCreatorsWithContext(newPosts, _posts);
         setState(() {
           _posts.addAll(spread);
+          if (_posts.length > 25) _posts = _posts.take(25).toList();
           _loadedPostIds.addAll(newPosts.map((p) => p.id!));
-          _totalPostsLoaded += spread.length;
+          _totalPostsLoaded = _posts.length;
         });
 
         printVm('📱 ${spread.length} posts chargés manuellement (spread)');
