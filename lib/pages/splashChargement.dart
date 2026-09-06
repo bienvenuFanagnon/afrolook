@@ -488,6 +488,16 @@ class _SplashChargementState extends State<SplashChargement> {
       authProvider.loginUserData = cachedUser;
       if (cachedApp != null) authProvider.appDefaultData = cachedApp;
 
+      // Warmup Firestore gRPC — élimine le cold start de ~3.5s dans HomeConstPost.
+      // Le splash navigue depuis le cache (sans Firestore), donc la connexion gRPC
+      // n'est pas établie. Ce fetch minimal l'initialise pendant _prepareDestination()
+      // pour que T1+T2 trouvent la connexion déjà ouverte.
+      unawaited(
+        FirebaseFirestore.instance.collection('Users').doc(userId).get()
+            .then((_) => printVm('⚡ [SPLASH] Warmup Firestore terminé'))
+            .catchError((_) {}),
+      );
+
       final countryCode = cachedUser.countryData?["countryCode"]?.toString();
       if (countryCode == null || countryCode.isEmpty) {
         if (mounted && !_hasNavigated) {

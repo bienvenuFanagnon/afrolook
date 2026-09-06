@@ -1812,19 +1812,24 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           }
         }
         final userInterests = authProvider.loginUserData.interests ?? [];
-        final interests = userInterests.isEmpty ? UserInterests.defaults : userInterests;
+        // T2 seulement si l'utilisateur a configuré ses propres intérêts.
+        // Avec les defaults (userInterests vide), la query retourne souvent 0 résultats
+        // et coûte inutilement ~3-4s de Firestore cold start.
+        final hasRealInterests = userInterests.isNotEmpty;
+        final interests = hasRealInterests ? userInterests : UserInterests.defaults;
         final countryCode = authProvider.loginUserData.countryData?['countryCode'] as String? ?? '';
         // Snapshot des IDs exclus avant le lancement (évite les mutations concurrentes)
         final excludedSnapshot = Set<String>.from(_loadedPostIds);
 
-        printVm('⏱️ [PERF] lancement T1+T2 en parallèle — unread=${unread.length}, interests=${interests.length}');
+        printVm('⏱️ [PERF] lancement T1+T2 en parallèle — unread=${unread.length}, interests=${userInterests.length} (réels=${hasRealInterests})');
 
         final t1Future = unread.isEmpty
             ? Future.value(<Post>[])
             : FeedRepository().fetchUnreadSubscriptionPosts(unread, excludedSnapshot, limit: 15);
-        final t2Future = FeedRepository().fetchInterestPosts(
-          interests, excludedSnapshot, countryCode: countryCode, limit: 25,
-        );
+        // T2 skippé si l'utilisateur n'a pas configuré ses intérêts (évite 3-4s pour 0 résultats)
+        final t2Future = hasRealInterests
+            ? FeedRepository().fetchInterestPosts(interests, excludedSnapshot, countryCode: countryCode, limit: 25)
+            : Future.value(<Post>[]);
 
         final parallelResults = await Future.wait([t1Future, t2Future]);
         final t1Posts = parallelResults[0];
