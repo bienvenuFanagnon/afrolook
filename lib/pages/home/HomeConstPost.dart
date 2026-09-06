@@ -55,6 +55,7 @@ import '../../widgets/feed/sections/feed_state_widgets.dart';
 import '../../widgets/feed/sections/feed_filter_bar.dart';
 import '../../widgets/feed/sections/feed_ad_widgets.dart';
 import '../../services/feed/feed_repository.dart';
+import '../../services/feed/seen_discovery_cache.dart';
 import '../../services/feed/feed_preload_service.dart';
 import '../../constants/user_interests.dart';
 import '../../widgets/feed/sections/feed_category_section.dart';
@@ -261,6 +262,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 // 🔥 NOUVELLE MÉTHODE
   Future<void> _initSharedPreferences() async {
     _prefs = await SharedPreferences.getInstance();
+    final uid = authProvider.loginUserData.id ?? '';
+    if (uid.isNotEmpty) await SeenDiscoveryCache.load(uid);
   }
 
 
@@ -1902,24 +1905,25 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     int limit,
   ) async {
     final userInterests = authProvider.loginUserData.interests ?? [];
-    // Nouveau utilisateur sans intérêts configurés → intérêts par défaut (1 par catégorie)
     final interests = userInterests.isEmpty ? UserInterests.defaults : userInterests;
     final isDefault = userInterests.isEmpty;
     printVm('🎯 [TIER2] interests: ${interests.length} (défaut=$isDefault) → $interests');
     final countryCode = authProvider.loginUserData.countryData?['countryCode'] as String? ?? '';
     try {
+      final excluded = {...loadedIds, ..._loadedPostIds, ...SeenDiscoveryCache.instance.seenIds};
       final posts = await FeedRepository().fetchInterestPosts(
         interests,
-        {...loadedIds, ..._loadedPostIds},
+        excluded,
         countryCode: countryCode,
         limit: limit,
       );
-      printVm('🎯 [TIER2] fetchInterestPosts retourné: ${posts.length} posts (limit=$limit, pays=$countryCode)');
+      printVm('🎯 [TIER2] fetchInterestPosts retourné: ${posts.length} posts (limit=$limit, pays=$countryCode, exclus=${excluded.length})');
       _addFetchedToList(posts, loadedIds, newPosts, limit);
-      for (final p in posts) {
-        if (p.id != null) _tier2PostIds.add(p.id!);
-      }
-      printVm('🎯 [TIER2] _tier2PostIds: ${_tier2PostIds.length} IDs → ${_tier2PostIds.take(5).join(', ')}${_tier2PostIds.length > 5 ? '...' : ''}');
+      final newIds = posts.where((p) => p.id != null).map((p) => p.id!).toList();
+      for (final id in newIds) { _tier2PostIds.add(id); }
+      SeenDiscoveryCache.instance.add(newIds);
+      SeenDiscoveryCache.instance.save();
+      printVm('🎯 [TIER2] _tier2PostIds: ${_tier2PostIds.length} IDs, cache découverte: ${SeenDiscoveryCache.instance.seenIds.length}');
     } catch (e) {
       printVm('⚠️ Tier 2 erreur : $e');
     }

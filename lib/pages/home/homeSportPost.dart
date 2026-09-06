@@ -57,6 +57,7 @@ import '../../widgets/feed/sections/feed_state_widgets.dart';
 import '../../widgets/feed/sections/feed_filter_bar.dart';
 import '../../widgets/feed/sections/feed_ad_widgets.dart';
 import '../../services/feed/feed_repository.dart';
+import '../../services/feed/seen_discovery_cache.dart';
 import 'HomeConstPost.dart' show flushSeenPostsAndCleanMemory;
 import '../../widgets/feed/weekly_top_creators_widget.dart';
 import '../../widgets/feed/sections/weekly_top_commentators_widget.dart';
@@ -228,6 +229,8 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   // 🔥 NOUVELLE MÉTHODE
   Future<void> _initSharedPreferences() async {
     _prefs = await SharedPreferences.getInstance();
+    final uid = authProvider.loginUserData.id ?? '';
+    if (uid.isNotEmpty) await SeenDiscoveryCache.load(uid);
   }
 
 
@@ -1938,16 +1941,20 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     if (interests.isEmpty) return;
     final countryCode = authProvider.loginUserData.countryData?['countryCode'] as String? ?? '';
     try {
+      final excluded = {...loadedIds, ..._loadedPostIds, ...SeenDiscoveryCache.instance.seenIds};
       final posts = await FeedRepository().fetchInterestPosts(
         interests,
-        {...loadedIds, ..._loadedPostIds},
+        excluded,
         countryCode: countryCode,
         limit: limit,
         tabbarType: 'SPORT',
       );
-      printVm('🎯 [SPORT][TIER2] ${posts.length} posts SPORT chargés (filtré Firebase)');
+      printVm('🎯 [SPORT][TIER2] ${posts.length} posts SPORT chargés (exclus=${excluded.length})');
       _addFetchedToList(posts, loadedIds, newPosts, limit);
-      for (final p in posts) { if (p.id != null) _tier2PostIds.add(p.id!); }
+      final newIds = posts.where((p) => p.id != null).map((p) => p.id!).toList();
+      for (final id in newIds) { _tier2PostIds.add(id); }
+      SeenDiscoveryCache.instance.add(newIds);
+      SeenDiscoveryCache.instance.save();
     } catch (e) {
       printVm('⚠️ [SPORT][TIER2] erreur : $e');
     }
