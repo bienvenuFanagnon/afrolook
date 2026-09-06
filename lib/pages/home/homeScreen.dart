@@ -1396,7 +1396,10 @@ class _MyHomePageState extends State<MyHomePage>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _handleInitialDestination();
       // Gestion des notifications à chaud (app déjà ouverte)
-      authProvider.loadAdvertisements();
+      // Décalé de 3s pour laisser les posts charger sans concurrence Firestore
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted) authProvider.loadAdvertisements();
+      });
 
       _listenUnreadNotifications();
       final String? uid = authProvider.loginUserData?.id;
