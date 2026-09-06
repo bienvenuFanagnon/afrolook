@@ -67,7 +67,10 @@ class UserAuthProvider extends ChangeNotifier {
   // final FirebaseFunctions functions = FirebaseFunctions.instance;
 
 
-  // Dans UserAuthProvider, ajouter:
+  // Pubs — liste en mémoire + cache SharedPreferences (rotation toutes les 3 sessions)
+  static const _kAdSessionKey  = 'ad_session_count';
+  static const _kAdsCacheKey   = 'ads_cache_v1';
+  static const _kAdRefreshEvery = 3;
 
   List<Map<String, dynamic>> _advertisements = [];
   List<Map<String, dynamic>> get advertisements => _advertisements;
@@ -113,7 +116,37 @@ class UserAuthProvider extends ChangeNotifier {
     }
   }
   Future<void> loadAdvertisements() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // ── Compteur de sessions ──────────────────────────────────────────────────
+    final sessionCount = (prefs.getInt(_kAdSessionKey) ?? 0) + 1;
+    await prefs.setInt(_kAdSessionKey, sessionCount);
+    final shouldRefreshFromFirestore = sessionCount % _kAdRefreshEvery == 0;
+
+    // ── Sessions intermédiaires : cache local + re-shuffle ──────────────────
+    if (!shouldRefreshFromFirestore) {
+      final cached = prefs.getString(_kAdsCacheKey);
+      if (cached != null) {
+        try {
+          final list = (jsonDecode(cached) as List)
+              .cast<Map<String, dynamic>>();
+          list.shuffle();
+          _advertisements = list;
+          notifyListeners();
+          await AdRotationService.instance.init();
+          AdRotationService.instance.onAdsReloaded();
+          AdPreloadService.instance.preload();
+          printVm('📦 [Pub] session $sessionCount/$_kAdRefreshEvery — cache local (${list.length} pubs, re-shuffled)');
+          return;
+        } catch (_) {
+          // Cache corrompu → on re-fetch quand même
+        }
+      }
+    }
+
+    // ── Session de refresh (toutes les $_kAdRefreshEvery sessions) ou pas de cache ─
     try {
+      printVm('🔄 [Pub] session $sessionCount — re-fetch Firestore');
       final now = DateTime.now().microsecondsSinceEpoch;
       final adsSnapshot = await _firestore
           .collection('Advertisements')
@@ -132,7 +165,6 @@ class UserAuthProvider extends ChangeNotifier {
         final ad = Advertisement.fromJson(adDoc.data());
         final adDescription = adDoc.data()['description'] as String? ?? '';
         if (ad.postId == null) {
-          // Boost entité (profil / canal / groupe) — pas de post associé
           if (ad.ownerName?.isNotEmpty == true) {
             final adJson = ad.toJson();
             adJson['adDescription'] = adDescription;
@@ -152,12 +184,18 @@ class UserAuthProvider extends ChangeNotifier {
       }
       tempAds.shuffle();
       _advertisements = tempAds;
+
+      // Persister le nouveau cache
+      try {
+        await prefs.setString(_kAdsCacheKey, jsonEncode(tempAds));
+      } catch (_) {}
+
       notifyListeners();
-      // Initialise la rotation équitable et pré-charge les vidéos pub
       await AdRotationService.instance.init();
       AdRotationService.instance.onAdsReloaded();
       AdPreloadService.instance.invalidate();
       AdPreloadService.instance.preload();
+      printVm('✅ [Pub] ${tempAds.length} pubs chargées depuis Firestore et mises en cache');
     } catch (e) {
       printVm('Erreur chargement pubs: $e');
     }
