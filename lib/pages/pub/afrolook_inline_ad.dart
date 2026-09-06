@@ -12,6 +12,9 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
+import '../../services/ad_preload_service.dart';
+import '../../services/ad_rotation_service.dart';
+import '../../services/media_cache_service.dart';
 import '../../services/utils/abonnement_utils.dart';
 import '../user/userAbonnementPage.dart';
 import '../postDetails.dart';
@@ -96,22 +99,12 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
     final ads = auth.advertisements;
     if (ads.isEmpty) return;
 
-    Map<String, dynamic> picked;
-    if (ads.length == 1) {
-      picked = ads.first;
-    } else {
-      // Éviter de re-choisir la même pub (sauf si une seule disponible)
-      List<Map<String, dynamic>> candidates = ads.where((a) {
-        final adId = (a['ad'] as Map<String, dynamic>?)?['id'];
-        return adId != _lastAdId;
-      }).toList();
-      if (candidates.isEmpty) candidates = ads;
-      candidates.shuffle(Random());
-      picked = candidates.first;
-    }
-
+    // Rotation équitable : chaque appel réclame le prochain index global.
+    // Deux bannières adjacentes voient toujours des pubs différentes.
+    final idx = AdRotationService.instance.claimNext(ads.length);
+    final picked = ads[idx];
     final newId = (picked['ad'] as Map<String, dynamic>?)?['id'];
-    if (!rotate && newId == _lastAdId) return;
+    if (!rotate && newId == _lastAdId && ads.length > 1) return;
 
     _lastAdId = newId;
     _viewRecorded = false;
@@ -157,7 +150,24 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
           (post.url_media?.contains('.mov') ?? false);
       if (!isVideo || post.url_media?.isEmpty != false) return;
       final cdnUrl = auth.convertToCdnUrl(post.url_media!, auth.appDefaultData);
-      final ctrl = VideoPlayerController.networkUrl(Uri.parse(cdnUrl));
+
+      // 1. Contrôleur pré-initialisé disponible → lecture immédiate sans spinner
+      final adId = (picked['ad'] as Map<String, dynamic>?)?['id'] as String?;
+      if (adId != null) {
+        final preloaded = AdPreloadService.instance.claimController(adId);
+        if (preloaded != null && preloaded.value.isInitialized) {
+          _adVideoController = preloaded;
+          preloaded.setVolume(0);
+          preloaded.setLooping(true);
+          preloaded.play();
+          if (mounted) setState(() => _adVideoInitialized = true);
+          return;
+        }
+        preloaded?.dispose();
+      }
+
+      // 2. Fallback : cache disque (file) si dispo, sinon réseau + mise en cache bg
+      final ctrl = await MediaCacheService.videoController(cdnUrl);
       _adVideoController = ctrl;
       await ctrl.initialize();
       await ctrl.setVolume(0);

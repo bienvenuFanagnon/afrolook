@@ -3644,8 +3644,42 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
     final bool _showShopPromo = _articles.isNotEmpty;
 
+    // Catégories de l'utilisateur calculées avant la boucle pour l'injection inline
+    final _inlineUserInterests = authProvider.loginUserData.interests ?? [];
+    final _inlineCategories = _inlineUserInterests.map((id) {
+      if (UserInterests.isCategoryId(id)) return id;
+      try {
+        return UserInterests.all.firstWhere((i) => i.code == id).category;
+      } catch (_) {
+        return null;
+      }
+    }).whereType<String>().toSet().toList();
+    final _inlineExcludedIds = Set<String>.from(_loadedPostIds);
+    // Index rotatif pour ne pas répéter la même catégorie deux fois de suite
+    int _inlineCatIdx = 0;
+
+    // Nombre de posts T3 (Tendance) affichés avant de proposer le rafraîchissement
+    const int _t3CutoffCount = 3;
+    int _t3Shown = 0;
+    bool _t3CutoffReached = false;
+
     for (int i = 0; i < finalPosts.length; i++) {
       final post = finalPosts[i];
+      final pid = post.id ?? '';
+
+      // Détecter les posts T3 (ni T1 ni T2)
+      final isT1 = _seenTier1PostIds.contains(pid);
+      final isT2 = _tier2PostIds.contains(pid) && !isT1;
+      final isT3 = !isT1 && !isT2 && pid.isNotEmpty && !_isFirstLoad;
+
+      if (isT3) {
+        _t3Shown++;
+        if (_t3Shown > _t3CutoffCount) {
+          // Couper ici et injecter le bouton de rafraîchissement
+          _t3CutoffReached = true;
+          break;
+        }
+      }
 
       final _isVideoPost = post.type == PostType.POST.name && post.dataType == PostDataType.VIDEO.name;
       contentWidgets.add(
@@ -3690,43 +3724,45 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         final poolIdx = poolCount % _kPoolOrder.length;
         contentWidgets.add(_buildPoolOrAd(_kPoolOrder[poolIdx], 'pool_slot_$poolCount'));
       }
-    }
 
-    // ── Sections de découverte par catégorie ────────────────────────────────
-    // Affichées après les posts principaux, une section par intérêt de l'user.
-    // Chaque section : 2 posts compacts + bouton "Voir plus" → CategoryFeedPage.
-    // Chargement indépendant (widget stateful), n'interfère pas avec l'algo Tier.
-    final userInterests = authProvider.loginUserData.interests ?? [];
-    if (userInterests.isNotEmpty && !_isLoadingPosts) {
-      // Dériver les catégories parentes depuis les sous-intérêts de l'utilisateur.
-      // Les intérêts stockés sont du type "music_afrobeat", "sport_foot"…
-      // On remonte à la catégorie parente (music, sport…) via UserInterests.all.
-      final categories = userInterests.map((id) {
-        if (UserInterests.isCategoryId(id)) return id;
-        try {
-          return UserInterests.all.firstWhere((i) => i.code == id).category;
-        } catch (_) {
-          return null;
-        }
-      }).whereType<String>().toSet().toList();
-      final alreadyShownIds = Set<String>.from(_loadedPostIds);
-      for (final catId in categories) {
+      // ── Section catégorie inline toutes les 8 posts ──────────────────────
+      // Affiche 2 posts d'une catégorie différente à chaque fois (rotation).
+      // Ne répète pas la même catégorie deux fois de suite.
+      if (_inlineCategories.isNotEmpty && (i + 1) % 8 == 0) {
+        final catId = _inlineCategories[_inlineCatIdx % _inlineCategories.length];
         contentWidgets.add(FeedCategorySectionWidget(
-          key: ValueKey('cat_$catId'),
+          key: ValueKey('inline_cat_${catId}_${i ~/ 8}'),
           categoryId: catId,
-          excludedIds: alreadyShownIds,
+          excludedIds: _inlineExcludedIds,
         ));
+        _inlineCatIdx++;
       }
     }
 
+    // ── Section "À suivre pour plus de posts" en fin de feed ────────────────
+    // Affichée avant le bouton refresh T3 et avant "Fin du feed".
+    // Encourage l'utilisateur à suivre des créateurs/canaux pour enrichir son T1.
+    final bool _showEndDiscovery = _t3CutoffReached ||
+        (!_isLoadingMorePosts && !_hasMorePosts && _oldPostsCache.isEmpty);
+    if (_showEndDiscovery) {
+      contentWidgets.add(_buildProfilesSection());
+      if (_canaux.isNotEmpty) contentWidgets.add(_buildCanauxSection());
+    }
+
+    // Bouton de rafraîchissement après le seuil de posts Tendance
+    if (_t3CutoffReached) {
+      contentWidgets.add(_buildT3RefreshWidget());
+    }
+
     // Indicateurs de chargement / fin de feed
-    if (_isLoadingMorePosts) {
-      // Shimmer posts pendant le chargement
-      contentWidgets.add(_buildShimmerPost());
-      contentWidgets.add(_buildShimmerPost());
-      contentWidgets.add(_buildShimmerPost());
-    } else if (!_hasMorePosts && _oldPostsCache.isEmpty) {
-      contentWidgets.add(_buildEndOfFeedWidget());
+    if (!_t3CutoffReached) {
+      if (_isLoadingMorePosts) {
+        contentWidgets.add(_buildShimmerPost());
+        contentWidgets.add(_buildShimmerPost());
+        contentWidgets.add(_buildShimmerPost());
+      } else if (!_hasMorePosts && _oldPostsCache.isEmpty) {
+        contentWidgets.add(_buildEndOfFeedWidget());
+      }
     }
 
     return CustomScrollView(
@@ -3759,6 +3795,57 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       default:
         return 'Fin des contenus';
     }
+  }
+
+  Widget _buildT3RefreshWidget() {
+    final colors = AppColors.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 24),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: colors.primary.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.auto_awesome, color: colors.primary, size: 30),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Vous avez vu les Tendances',
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Rechargez pour voir de nouveaux posts et des créateurs à découvrir',
+            style: TextStyle(color: colors.textSecondary, fontSize: 13),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _refreshData,
+              icon: const Icon(Icons.refresh, size: 18),
+              label: const Text('Voir les nouveautés'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colors.primary,
+                foregroundColor: colors.onPrimary,
+                padding: const EdgeInsets.symmetric(vertical: 13),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+                elevation: 0,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildEndOfFeedWidget() {

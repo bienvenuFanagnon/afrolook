@@ -34,6 +34,8 @@ import '../pages/component/consoleWidget.dart';
 import '../services/auth/authService.dart';
 import '../services/streak_service.dart';
 import '../services/user/userService.dart';
+import '../services/ad_preload_service.dart';
+import '../services/ad_rotation_service.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 class UserAuthProvider extends ChangeNotifier {
@@ -47,7 +49,7 @@ class UserAuthProvider extends ChangeNotifier {
   String _kLastDatingWidgetShown = "last_dating_widget_shown";
 
   // late String? userId = "";
-  late int app_version_code = 225;
+  late int app_version_code = 226;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();
@@ -151,6 +153,11 @@ class UserAuthProvider extends ChangeNotifier {
       tempAds.shuffle();
       _advertisements = tempAds;
       notifyListeners();
+      // Initialise la rotation équitable et pré-charge les vidéos pub
+      await AdRotationService.instance.init();
+      AdRotationService.instance.onAdsReloaded();
+      AdPreloadService.instance.invalidate();
+      AdPreloadService.instance.preload();
     } catch (e) {
       printVm('Erreur chargement pubs: $e');
     }

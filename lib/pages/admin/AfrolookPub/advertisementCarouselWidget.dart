@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/providers/authProvider.dart';
-import '../../../services/ad_carousel_service.dart';
+import '../../../pages/pub/afrolook_inline_ad.dart';
+import '../../../services/ad_rotation_service.dart';
 import '../../../theme/app_colors.dart';
 import 'advertisementPostImageWidget.dart';
 import 'advertisement_video_widget.dart';
@@ -30,39 +31,46 @@ class AdvertisementCarouselWidget extends StatefulWidget {
 }
 
 class _AdvertisementCarouselWidgetState extends State<AdvertisementCarouselWidget> {
-  final AdCarouselService _carouselService = AdCarouselService.instance;
   int _currentIndex = 0;
   bool _isInitializing = true;
 
   @override
   void initState() {
     super.initState();
-    _restoreIndex();
+    _initIndex();
   }
 
-  Future<void> _restoreIndex() async {
-    final savedIndex = await _carouselService.getCurrentIndex();
-    if (mounted) {
-      setState(() {
-        _currentIndex = savedIndex;
-        _isInitializing = false;
-      });
-    }
+  void _initIndex() {
+    // Le carousel démarre à la position courante du service de rotation,
+    // puis réclame un slot (avance le compteur global).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final auth = context.read<UserAuthProvider>();
+      final ads = auth.advertisements
+          .where((a) => a['isEntityBoost'] != true && a['post'] != null)
+          .toList();
+      if (ads.isNotEmpty) {
+        final idx = AdRotationService.instance.claimNext(ads.length);
+        setState(() {
+          _currentIndex = idx;
+          _isInitializing = false;
+        });
+      } else {
+        setState(() => _isInitializing = false);
+      }
+    });
   }
 
-  Future<void> _goToPrevious(List<Map<String, dynamic>> ads) async {
+  void _goToPrevious(List<Map<String, dynamic>> ads) {
     if (ads.isEmpty) return;
-    int newIndex = (_currentIndex - 1) % ads.length;
-    if (newIndex < 0) newIndex = ads.length - 1;
+    final newIndex = AdRotationService.instance.carouselPrev(ads.length);
     setState(() => _currentIndex = newIndex);
-    await _carouselService.setCurrentIndex(newIndex);
   }
 
-  Future<void> _goToNext(List<Map<String, dynamic>> ads) async {
+  void _goToNext(List<Map<String, dynamic>> ads) {
     if (ads.isEmpty) return;
-    int newIndex = (_currentIndex + 1) % ads.length;
+    final newIndex = AdRotationService.instance.carouselNext(ads.length);
     setState(() => _currentIndex = newIndex);
-    await _carouselService.setCurrentIndex(newIndex);
   }
 
   String _formatCount(int count) {
@@ -81,15 +89,8 @@ class _AdvertisementCarouselWidgetState extends State<AdvertisementCarouselWidge
             .where((a) => a['isEntityBoost'] != true && a['post'] != null)
             .toList();
 
-        // État de chargement : si les pubs ne sont pas encore chargées
-        if (ads.isEmpty) {
-          return Container(
-            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            height: widget.height * 0.5,
-            decoration: BoxDecoration(color: colors.surfaceVariant, borderRadius: BorderRadius.circular(16)),
-            child: Center(child: CircularProgressIndicator(color: colors.accent)),
-          );
-        }
+        // Aucune post-ad disponible → fallback bannière (évite le spinner infini)
+        if (ads.isEmpty) return const AfrolookInlineAd();
 
         // Ajuster l'index si la liste a changé (par ex. après un refresh)
         if (_currentIndex >= ads.length) {
