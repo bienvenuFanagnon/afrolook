@@ -3286,12 +3286,49 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   // ===========================================================================
 
   Widget _buildFilterChips() {
+    final colors = AppColors.of(context);
+    // Bouton "Nouvelle chronique" injecté dans la barre de filtre quand pas encore de chroniques
+    final List<Widget> trailing = _chroniques.isEmpty && !_isLoadingChroniques
+        ? [
+            GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => AddChroniquePage()),
+              ).then((_) {
+                if (!mounted) return;
+                setState(() => _hasStartedLoadChroniques = false);
+                _loadChroniquesInBackground();
+              }),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: colors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: colors.primary.withOpacity(0.4)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add_circle_outline, size: 14, color: colors.primary),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Nouvelle chronique',
+                      style: TextStyle(color: colors.primary, fontSize: 11, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ]
+        : [];
+
     return FeedFilterBar(
       currentFilter: _currentFilter,
       selectedCountryCode: _selectedCountryCode,
       onApplyFilter: ({required String filterType, String? countryCode}) =>
           _applyFilter(filterType: filterType, countryCode: countryCode),
       onShowCountryModal: _showCountryFilterModal,
+      trailingChildren: trailing,
     );
   }
 
@@ -3338,46 +3375,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       );
     }
     if (_chroniques.isEmpty) {
-      // Bouton "Nouvelle chronique" quand aucune chronique n'existe encore
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => AddChroniquePage()),
-            ).then((_) {
-              if (!mounted) return;
-              setState(() { _hasStartedLoadChroniques = false; });
-              _loadChroniquesInBackground();
-            }),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                border: Border.all(color: AppColors.of(context).primary.withOpacity(0.5)),
-                borderRadius: BorderRadius.circular(30),
-                color: AppColors.of(context).primary.withOpacity(0.07),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.add_circle_outline, size: 18, color: AppColors.of(context).primary),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Nouvelle chronique',
-                    style: TextStyle(
-                      color: AppColors.of(context).primary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
+      // Bouton affiché dans la barre de filtre (_buildFilterChips), pas ici
+      return const SizedBox.shrink();
     }
 
     return ChroniqueSectionComponent(

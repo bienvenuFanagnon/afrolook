@@ -1,61 +1,62 @@
 import 'package:flutter/material.dart';
 
 /// Barre de filtres pays réutilisable (Tous / Mon pays / Mix / Autre).
+/// [trailingChildren] : widgets optionnels ajoutés à la fin de la barre (séparés par un divider).
 class FeedFilterBar extends StatelessWidget {
   final String currentFilter;
   final String? selectedCountryCode;
   final void Function({required String filterType, String? countryCode}) onApplyFilter;
-  final VoidCallback onShowCountryModal;
+  final VoidCallback? onShowCountryModal;
+  final List<Widget> trailingChildren;
 
   const FeedFilterBar({
     Key? key,
     required this.currentFilter,
     required this.selectedCountryCode,
     required this.onApplyFilter,
-    required this.onShowCountryModal,
+    this.onShowCountryModal,
+    this.trailingChildren = const [],
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: SingleChildScrollView(
+    return SizedBox(
+      height: 38,
+      child: ListView(
         scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        children: [
+          FeedFilterChip(
+            label: '🌍 Tous',
+            isSelected: currentFilter == 'ALL',
+            color: const Color(0xFF25D366),
+            onTap: () => onApplyFilter(filterType: 'ALL', countryCode: null),
+          ),
+          if (selectedCountryCode != null) ...[
+            const SizedBox(width: 6),
             FeedFilterChip(
-              label: '🌍 Tous',
-              isSelected: currentFilter == 'ALL',
-              color: const Color(0xFF25D366),
-              onTap: () => onApplyFilter(filterType: 'ALL', countryCode: null),
+              label: '📍 Mon pays',
+              isSelected: currentFilter == 'COUNTRY',
+              color: Colors.blue,
+              onTap: () => onApplyFilter(
+                  filterType: 'COUNTRY', countryCode: selectedCountryCode),
             ),
-            const SizedBox(width: 8),
-            if (selectedCountryCode != null) ...[
-              FeedFilterChip(
-                label: '📍 Mon pays $selectedCountryCode',
-                isSelected: currentFilter == 'COUNTRY',
-                color: Colors.blue,
-                onTap: () => onApplyFilter(
-                    filterType: 'COUNTRY', countryCode: selectedCountryCode),
-              ),
-              const SizedBox(width: 8),
-              FeedFilterChip(
-                label: '🔄 Mix',
-                isSelected: currentFilter == 'MIXED',
-                color: Colors.purple,
-                onTap: () => onApplyFilter(
-                    filterType: 'MIXED', countryCode: selectedCountryCode),
-              ),
-              const SizedBox(width: 8),
-            ],
+            const SizedBox(width: 6),
             FeedFilterChip(
-              label: '⚙️ Autre',
-              isSelected: currentFilter == 'CUSTOM',
-              color: Colors.orange,
-              onTap: onShowCountryModal,
+              label: '🔄 Mix',
+              isSelected: currentFilter == 'MIXED',
+              color: Colors.purple,
+              onTap: () => onApplyFilter(
+                  filterType: 'MIXED', countryCode: selectedCountryCode),
             ),
           ],
-        ),
+          if (trailingChildren.isNotEmpty) ...[
+            const SizedBox(width: 10),
+            Center(child: Container(width: 1, height: 16, color: Colors.grey[700])),
+            const SizedBox(width: 10),
+            ...trailingChildren,
+          ],
+        ],
       ),
     );
   }
@@ -81,12 +82,12 @@ class FeedFilterChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
           color: isSelected ? color : Colors.grey[800],
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isSelected ? Colors.white : Colors.transparent,
+            color: isSelected ? Colors.white.withAlpha(60) : Colors.transparent,
           ),
         ),
         child: Text(
