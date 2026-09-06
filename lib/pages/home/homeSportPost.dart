@@ -1,6 +1,7 @@
 import 'package:afrotok/utils/responsive_sheet.dart';
 import '../../widgets/feed/sections/feed_sport_discovery_section.dart';
 import '../../widgets/feed/sections/feed_live_section.dart';
+import '../LiveAgora/livesAgora.dart';
 import 'dart:async';
 import 'dart:math';
 import 'package:afrotok/layout/centered_content.dart';
@@ -2301,6 +2302,9 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     _loadArticlesInBackground();
     _loadCanauxInBackground();
     _loadChroniquesInBackground();
+    if (mounted) {
+      context.read<LiveProvider>().fetchActiveLives();
+    }
   }
 
 
@@ -2873,8 +2877,9 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     contentWidgets.add(const SizedBox(height: 8));
 
     final chroniquesSection = _buildChroniquesSection();
-    if (chroniquesSection is! SizedBox) contentWidgets.add(chroniquesSection);
-    contentWidgets.add(const FeedLiveSection());
+    final bool _hasChroniques = chroniquesSection is! SizedBox;
+    if (_hasChroniques) contentWidgets.add(chroniquesSection);
+    if (!_hasChroniques) contentWidgets.add(const FeedLiveSection());
 
     if (finalPosts.isNotEmpty) {
       contentWidgets.add(const PronosticsCarouselWidget());
@@ -2902,6 +2907,11 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         if (_t2FillShown % 2 == 0 && _t2FillShown <= 6) {
           contentWidgets.add(const FeedSportDiscoverySection());
         }
+      }
+
+      // Après le 1er post : lives si chroniques présentes
+      if (i == 0 && _hasChroniques) {
+        contentWidgets.add(const FeedLiveSection());
       }
 
       // Après le 2ème post : classement hebdo commentateurs + promo AfroShop (lun/jeu)

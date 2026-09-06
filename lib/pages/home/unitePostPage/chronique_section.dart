@@ -133,14 +133,15 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 7),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            'Chroniques Actives',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: colors.textPrimary,
+          Expanded(
+            child: Text(
+              'Chroniques Actives',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: colors.textPrimary,
+              ),
             ),
           ),
           Row(

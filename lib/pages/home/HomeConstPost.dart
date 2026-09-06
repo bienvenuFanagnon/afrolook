@@ -62,6 +62,7 @@ import '../../constants/user_interests.dart';
 import '../../widgets/feed/sections/feed_category_section.dart';
 import '../../widgets/feed/sections/feed_end_discovery_section.dart';
 import '../../widgets/feed/sections/feed_live_section.dart';
+import '../LiveAgora/livesAgora.dart';
 import '../../services/feed/discovery_boost_service.dart';
 import '../../services/active_creators_service.dart';
 import '../user/active_creators_list_page.dart';
@@ -2802,6 +2803,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     _loadChroniquesInBackground();
     _loadDiscoveryBoostInBackground();
     _loadRegularDiscoveryPool();
+    if (mounted) {
+      context.read<LiveProvider>().fetchActiveLives();
+    }
   }
 
   Future<void> _loadFollowedCanalIdsInBackground() async {
@@ -3564,7 +3568,12 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     contentWidgets.add(const SizedBox(height: 8));
 
     contentWidgets.add(_buildChroniquesSection());
-    contentWidgets.add(const FeedLiveSection());
+
+    // Lives juste sous les chroniques uniquement quand il n'y a pas de chroniques
+    final bool _hasChroniques = _groupChroniquesByUser(_chroniques).isNotEmpty;
+    if (!_hasChroniques) {
+      contentWidgets.add(const FeedLiveSection());
+    }
 
     // Pas de posts : créateurs en haut
     if (finalPosts.isEmpty) {
@@ -3639,9 +3648,12 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         }
       }
 
-      // Après le 1er post : section créateurs actifs
+      // Après le 1er post : section créateurs actifs + lives si chroniques présentes
       if (i == 0) {
         contentWidgets.add(_buildProfilesSection());
+        if (_hasChroniques) {
+          contentWidgets.add(const FeedLiveSection());
+        }
       }
 
       // Après le 2ème post : niveau de commentaire — toujours visible
