@@ -1778,36 +1778,62 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       if (widget.sortType == 'recent') {
         await _loadInitialRecentPosts(loadedIds, newPosts, limit);
       } else {
-        // Tier 1 : posts non vus des abonnements (toujours en priorité)
-        await _loadTier1Posts(loadedIds, newPosts, 15);
-        printVm('⏱️ [PERF] après T1: ${_sw.elapsedMilliseconds}ms — ${newPosts.length} posts');
-        // Affichage immédiat des posts Tier 1 pour éviter l'attente de 5 secondes.
-        if (newPosts.isNotEmpty && mounted) {
-          setState(() {
-            _posts = _buildTieredFeed(List.from(newPosts));
-            _loadedPostIds.addAll(loadedIds);
-            _totalPostsLoaded = newPosts.length;
-            _isLoadingPosts = false;
-            _isFirstLoad = false;
-          });
-          printVm('⚡ [STATE] setState intermédiaire Tier1 → _isFirstLoad=false, posts=${_posts.length}');
-          printVm('⏱️ [PERF] 1er affichage (T1): ${_sw.elapsedMilliseconds}ms');
-          _logBadgeSummary();
-        } else {
-          printVm('⚡ [STATE] Tier1 vide ou unmounted → pas de setState intermédiaire');
-        }
-        // Tier 2 : découverte par intérêts
-        // Si T1 vide → charger beaucoup plus de T2 (jusqu'à 30 posts)
-        {
-          final t1Count = _seenTier1PostIds.length;
-          final t2Limit = t1Count == 0 ? 30 : (newPosts.length < limit ? limit - newPosts.length : 0);
-          if (t2Limit > 0) {
-            await _loadTier2InterestPosts(loadedIds, newPosts, t2Limit);
-            printVm('⏱️ [PERF] après T2: ${_sw.elapsedMilliseconds}ms — ${newPosts.length} posts');
+        // ── T1 + T2 en PARALLÈLE ────────────────────────────────────────────
+        // Prépare les données nécessaires aux deux requêtes
+        var unread = authProvider.loginUserData.unreadPosts ?? {};
+        // Plafond anti-accumulation (identique à _loadTier1Posts)
+        const int _kMaxUnread = 200;
+        if (unread.length > _kMaxUnread) {
+          final sorted = unread.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+          final toKeep = sorted.take(_kMaxUnread).map((e) => e.key).toSet();
+          final toDelete = unread.keys.where((id) => !toKeep.contains(id)).toList();
+          for (final id in toDelete) { unread.remove(id); }
+          authProvider.loginUserData.unreadPosts = unread;
+          final userId = authProvider.loginUserData.id;
+          if (userId != null) {
+            for (int i = 0; i < toDelete.length; i += 500) {
+              final batch = toDelete.sublist(i, min(i + 500, toDelete.length));
+              final updates = <String, dynamic>{};
+              for (final id in batch) { updates['unreadPosts.$id'] = FieldValue.delete(); }
+              FirebaseFirestore.instance.collection('Users').doc(userId).update(updates).catchError((_) {});
+            }
           }
         }
-        // Affichage immédiat si Tier 1 était vide mais Tier 2 a des résultats
-        if (_isFirstLoad && newPosts.isNotEmpty && mounted) {
+        final userInterests = authProvider.loginUserData.interests ?? [];
+        final interests = userInterests.isEmpty ? UserInterests.defaults : userInterests;
+        final countryCode = authProvider.loginUserData.countryData?['countryCode'] as String? ?? '';
+        // Snapshot des IDs exclus avant le lancement (évite les mutations concurrentes)
+        final excludedSnapshot = Set<String>.from(_loadedPostIds);
+
+        printVm('⏱️ [PERF] lancement T1+T2 en parallèle — unread=${unread.length}, interests=${interests.length}');
+
+        final t1Future = unread.isEmpty
+            ? Future.value(<Post>[])
+            : FeedRepository().fetchUnreadSubscriptionPosts(unread, excludedSnapshot, limit: 15);
+        final t2Future = FeedRepository().fetchInterestPosts(
+          interests, excludedSnapshot, countryCode: countryCode, limit: 25,
+        );
+
+        final parallelResults = await Future.wait([t1Future, t2Future]);
+        final t1Posts = parallelResults[0];
+        final t2Posts = parallelResults[1];
+        printVm('⏱️ [PERF] T1+T2 parallèle terminé: ${_sw.elapsedMilliseconds}ms — T1=${t1Posts.length}, T2=${t2Posts.length}');
+
+        // Update tracking (T1 seen IDs, T2 seen IDs)
+        for (final p in t1Posts) { if (p.id != null) _seenTier1PostIds.add(p.id!); }
+
+        // Merge sans doublons : T1 prioritaire, T2 complète
+        final mergedSeen = <String>{};
+        final allMerged = <Post>[];
+        for (final p in [...t1Posts, ...t2Posts]) {
+          if (p.id != null && mergedSeen.add(p.id!)) allMerged.add(p);
+        }
+        for (final p in allMerged) { if (p.id != null) _tier2PostIds.add(p.id!); }
+        printVm('⏱️ [PERF] merge: ${allMerged.length} posts uniques (T1+T2)');
+
+        // ── Phase 1 : 2 posts → 1er affichage immédiat ──────────────────────
+        if (allMerged.isNotEmpty && mounted) {
+          _addFetchedToList(allMerged.take(2).toList(), loadedIds, newPosts, 2);
           setState(() {
             _posts = _buildTieredFeed(List.from(newPosts));
             _loadedPostIds.addAll(loadedIds);
@@ -1815,9 +1841,26 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
             _isLoadingPosts = false;
             _isFirstLoad = false;
           });
-          printVm('⚡ [STATE] setState intermédiaire Tier2 → _isFirstLoad=false, posts=${_posts.length}');
-          printVm('⏱️ [PERF] 1er affichage (T2 fallback): ${_sw.elapsedMilliseconds}ms');
+          printVm('⏱️ [PERF] 1er affichage (${newPosts.length} posts): ${_sw.elapsedMilliseconds}ms');
           _logBadgeSummary();
+        }
+
+        // ── Phase 2 : 3 posts suivants → quasi-instantané (mémoire) ────────
+        if (allMerged.length > 2 && mounted) {
+          _addFetchedToList(allMerged.skip(2).take(3).toList(), loadedIds, newPosts, 3);
+          setState(() {
+            _posts = _buildTieredFeed(List.from(newPosts));
+            _loadedPostIds.addAll(loadedIds);
+            _totalPostsLoaded = newPosts.length;
+          });
+          printVm('⏱️ [PERF] 2ème affichage (${newPosts.length} posts): ${_sw.elapsedMilliseconds}ms');
+        }
+
+        // ── Phase 3 : tous les autres → quasi-instantané (mémoire) ─────────
+        if (allMerged.length > 5) {
+          _addFetchedToList(allMerged.skip(5).toList(), loadedIds, newPosts, allMerged.length);
+          _loadedPostIds.addAll(loadedIds);
+          printVm('⏱️ [PERF] phase3 (${newPosts.length} posts total): ${_sw.elapsedMilliseconds}ms');
         }
       }
       if (widget.sortType != 'recent') switch (_currentFilter) {
