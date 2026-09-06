@@ -1653,6 +1653,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 
         String fileURL = await _uploadVideo();
         post.url_media = fileURL;
+        post.creatorSnapshot = Post.buildCreatorSnapshot(authProvider.loginUserData);
 
         await FirebaseFirestore.instance.collection('Posts').doc(postId).set(post.toJson());
         await PostCooldownService.markPosted();

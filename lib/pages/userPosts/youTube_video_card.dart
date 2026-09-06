@@ -358,6 +358,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     // 🔥 S'abonner aux changements du provider de son (un seul abonnement, retiré dans dispose)
     _soundProvider.addListener(_updateVolume);
     _initSharedPreferences();
+    _initFromSnapshot();
     _loadCreatorData();
     _checkIfFavorite();
     _checkInteractionRecordedToday();
@@ -575,8 +576,44 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     }
   }
 
+  /// Hydrate _creatorUser / _creatorCanal depuis le snapshot stocké dans le post.
+  /// Synchrone — appelé avant _loadCreatorData() pour un affichage immédiat.
+  /// Ne stocke que les infos stables (pseudo, image, compteur) — les badges sont
+  /// gérés par UserBadgeWidget et chargés avec le profil complet.
+  void _initFromSnapshot() {
+    final isCanalPost = widget.post.canal_id != null && widget.post.canal_id!.isNotEmpty;
+    if (isCanalPost) {
+      final snap = widget.post.canalSnapshot;
+      if (snap != null) {
+        _creatorCanal = Canal()
+          ..titre = snap['titre'] as String?
+          ..urlImage = snap['urlImage'] as String?
+          ..suivi = snap['suivi'] as int? ?? 0;
+      }
+    } else {
+      if (widget.post.user != null) {
+        _creatorUser = widget.post.user;
+        return;
+      }
+      final snap = widget.post.creatorSnapshot;
+      if (snap != null) {
+        _creatorUser = UserData()
+          ..pseudo = snap['pseudo'] as String?
+          ..imageUrl = snap['imageUrl'] as String?
+          ..abonnes = snap['abonnes'] as int? ?? 0;
+      }
+    }
+  }
+
   Future<void> _loadCreatorData() async {
-    if (widget.post.canal_id != null && widget.post.canal_id!.isNotEmpty) {
+    final isCanalPost = widget.post.canal_id != null && widget.post.canal_id!.isNotEmpty;
+    if (isCanalPost) {
+      // Réutilise le cache post si déjà chargé (scroll retour = 0 fetch)
+      if (widget.post.canal != null) {
+        _creatorCanal = widget.post.canal;
+        if (mounted) setState(() {});
+        return;
+      }
       if (mounted) setState(() => _isLoadingUser = true);
       try {
         final canalDoc = await _firestore
@@ -592,8 +629,13 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       } finally {
         if (mounted) setState(() => _isLoadingUser = false);
       }
-    }
-    if (widget.post.user_id != null) {
+    } else if (widget.post.user_id != null) {
+      // Réutilise le cache post si déjà chargé
+      if (widget.post.user != null) {
+        _creatorUser = widget.post.user;
+        if (mounted) setState(() {});
+        return;
+      }
       if (mounted) setState(() => _isLoadingUser = true);
       try {
         final userDoc = await _firestore
@@ -1441,7 +1483,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     final isCurrentUser = _authProvider.loginUserData.id == widget.post.user_id;
     final isAbonne = isCanalPost
         ? (_creatorCanal?.usersSuiviId?.contains(_authProvider.loginUserData.id) ?? false)
-        : (_creatorUser?.userAbonnesIds?.contains(_authProvider.loginUserData.id) ?? false);
+        : (_authProvider.loginUserData.followingIds?.contains(widget.post.user_id) ?? false);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,

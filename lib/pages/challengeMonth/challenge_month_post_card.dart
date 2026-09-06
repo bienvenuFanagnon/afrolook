@@ -44,20 +44,37 @@ class _ChallengePostCardState extends State<ChallengePostCard> {
   @override
   void initState() {
     super.initState();
+    _initFromSnapshot();
     _loadCreatorData();
   }
 
+  void _initFromSnapshot() {
+    if (widget.post.user != null) { _user = widget.post.user; return; }
+    if (widget.post.canal != null) { _canal = widget.post.canal; return; }
+    final isCanalPost = widget.post.canal_id != null && widget.post.canal_id!.isNotEmpty;
+    if (isCanalPost) {
+      final snap = widget.post.canalSnapshot;
+      if (snap != null) {
+        _canal = Canal()
+          ..titre = snap['titre'] as String?
+          ..urlImage = snap['urlImage'] as String?
+          ..suivi = snap['suivi'] as int? ?? 0;
+      }
+    } else {
+      final snap = widget.post.creatorSnapshot;
+      if (snap != null) {
+        _user = UserData()
+          ..pseudo = snap['pseudo'] as String?
+          ..imageUrl = snap['imageUrl'] as String?
+          ..abonnes = snap['abonnes'] as int? ?? 0;
+      }
+    }
+  }
+
   Future<void> _loadCreatorData() async {
-     printVm('Poste  challenge user: ${widget.post.user_id}');
-     printVm('Poste  challenge canal: ${widget.post.canal_id}');
-    if (widget.post.user != null) {
-      _user = widget.post.user;
-      return;
-    }
-    if (widget.post.canal != null) {
-      _canal = widget.post.canal;
-      return;
-    }
+    // Réutilise le cache post si déjà chargé (snapshot ou scroll retour)
+    if (widget.post.user != null) { _user = widget.post.user; if (mounted) setState(() {}); return; }
+    if (widget.post.canal != null) { _canal = widget.post.canal; if (mounted) setState(() {}); return; }
 
     setState(() => _isLoading = true);
     try {

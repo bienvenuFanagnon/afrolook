@@ -395,6 +395,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
       post.colorDomine = colorData['dominantColor'];
       post.colorSecondaire = colorData['vibrantColor'];
       post.images!.add(fileURL);
+      post.creatorSnapshot = Post.buildCreatorSnapshot(authProvider.loginUserData);
 
       // 🔥 ÉTAPE 1: Sauvegarder le post dans Firebase
       await FirebaseFirestore.instance.collection('Posts').doc(postId).set(post.toJson());

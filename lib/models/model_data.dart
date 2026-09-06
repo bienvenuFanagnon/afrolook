@@ -1531,6 +1531,24 @@ class Post {
   List<String>? postInterests;      // Centres d'intérêt du post (hashtags + typeTabbar)
   List<String>? hashtags;           // Hashtags extraits de la description (sans #)
 
+  // Snapshot du créateur/canal stocké à la création du post pour éviter les fetches profil
+  Map<String, dynamic>? creatorSnapshot;
+  Map<String, dynamic>? canalSnapshot;
+
+  // Seules les infos stables pour l'affichage immédiat — pas de badges (isVerify/abonnement)
+  // car ils peuvent changer et le snapshot deviendrait obsolète.
+  static Map<String, dynamic> buildCreatorSnapshot(UserData user) => {
+    'pseudo': user.pseudo,
+    'imageUrl': user.imageUrl,
+    'abonnes': user.abonnes ?? 0,
+  };
+
+  static Map<String, dynamic> buildCanalSnapshot(Canal canal) => {
+    'titre': canal.titre,
+    'urlImage': canal.urlImage,
+    'suivi': canal.suivi ?? 0,
+  };
+
   Post({
     this.id,
     this.comments,
@@ -1714,6 +1732,12 @@ class Post {
         ? List<String>.from(json['hashtags'])
         : null;
 
+    creatorSnapshot = json['creatorSnapshot'] != null
+        ? Map<String, dynamic>.from(json['creatorSnapshot'] as Map)
+        : null;
+    canalSnapshot = json['canalSnapshot'] != null
+        ? Map<String, dynamic>.from(json['canalSnapshot'] as Map)
+        : null;
   }
 
   /// Normalise un champ timestamp Firestore en **microsecondes** (unité attendue
@@ -1804,6 +1828,8 @@ class Post {
     data['isPortrait'] = isPortrait;
     if (eventDate != null) data['eventDate'] = _tsToMs(eventDate);
     if (postInterests != null) data['postInterests'] = postInterests;
+    if (creatorSnapshot != null) data['creatorSnapshot'] = creatorSnapshot;
+    if (canalSnapshot != null) data['canalSnapshot'] = canalSnapshot;
     return data;
   }
 

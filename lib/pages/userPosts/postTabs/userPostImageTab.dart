@@ -1471,6 +1471,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
         }
 
         post.images = imageUrls;
+        post.creatorSnapshot = Post.buildCreatorSnapshot(authProvider.loginUserData);
 
         // Sauvegarder le post
         await FirebaseFirestore.instance.collection('Posts').doc(postId).set(post.toJson());

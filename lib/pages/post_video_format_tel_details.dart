@@ -1735,7 +1735,25 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
     return videoCount - 1; // retourne l'index dans _videoPosts (0-based)
   }
   Future<void> _loadPostRelations(Post post) async {
-    if (post.user_id != null && post.user == null) {
+    // Initialise depuis snapshot si dispo (affichage immédiat sans fetch)
+    if (post.user == null && post.creatorSnapshot != null) {
+      final snap = post.creatorSnapshot!;
+      post.user = UserData()
+        ..pseudo = snap['pseudo'] as String?
+        ..imageUrl = snap['imageUrl'] as String?
+        ..abonnes = snap['abonnes'] as int? ?? 0;
+    }
+    if (post.canal == null && post.canalSnapshot != null && post.canal_id != null && post.canal_id!.isNotEmpty) {
+      final snap = post.canalSnapshot!;
+      post.canal = Canal()
+        ..titre = snap['titre'] as String?
+        ..urlImage = snap['urlImage'] as String?
+        ..suivi = snap['suivi'] as int? ?? 0;
+    }
+    if (mounted) setState(() {});
+
+    // Charge les profils complets en arrière-plan uniquement si nécessaire
+    if (post.user_id != null && (post.user == null || post.user!.isVerify == null)) {
       try {
         final userDoc = await _firestore.collection('Users').doc(post.user_id).get();
         if (userDoc.exists) {
@@ -1744,7 +1762,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
       } catch (e) { printVm('Erreur chargement user: $e'); }
     }
 
-    if (post.canal_id != null && post.canal_id!.isNotEmpty && post.canal == null) {
+    if (post.canal_id != null && post.canal_id!.isNotEmpty && (post.canal == null || post.canal!.usersSuiviId == null)) {
       try {
         final canalDoc = await _firestore.collection('Canaux').doc(post.canal_id).get();
         if (canalDoc.exists) {

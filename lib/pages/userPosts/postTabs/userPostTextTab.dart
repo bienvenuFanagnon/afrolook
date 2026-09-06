@@ -1745,6 +1745,7 @@ class _UserPubTextState extends State<UserPubText> {
           post.canal_id = widget.canal!.id;
           post.categorie = "CANAL";
         }
+        post.creatorSnapshot = Post.buildCreatorSnapshot(authProvider.loginUserData);
 
         // Sauvegarder le post dans Firestore
         await FirebaseFirestore.instance.collection('Posts').doc(postId).set(post.toJson());
