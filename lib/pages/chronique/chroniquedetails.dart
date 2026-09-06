@@ -1131,9 +1131,6 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
     final typeLabel = ad.ownerType == 'canal' ? 'Canal' : ad.ownerType == 'group' ? 'Groupe' : 'Créateur';
     final ctaLabel = ad.ownerType == 'canal' ? "S'abonner" : ad.ownerType == 'group' ? 'Rejoindre' : 'Suivre';
     final adDescription = ad.description ?? '';
-    final followers = ad.ownerFollowers ?? 0;
-    final followersLabel = ad.ownerType == 'group' ? 'membres' : 'abonnés';
-
     return Stack(
       fit: StackFit.expand,
       children: [

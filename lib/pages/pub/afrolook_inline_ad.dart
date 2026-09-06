@@ -805,9 +805,6 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
   }) {
     final auth = Provider.of<UserAuthProvider>(context, listen: false);
     final showClicks = _isAdminOrOwner(ad, auth);
-    final followers = _liveFollowers ?? ad.ownerFollowers ?? 0;
-    final followersLabel = typeLabel == 'Groupe' ? 'membres' : 'abonnés';
-
     Widget sponsoredBadges = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
