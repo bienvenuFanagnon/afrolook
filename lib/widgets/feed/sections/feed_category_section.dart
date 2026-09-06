@@ -147,11 +147,29 @@ class _MiniCategoryCard extends StatelessWidget {
     Navigator.push(context, route);
   }
 
+  /// Extrait la bonne miniature selon le type du post.
+  String _thumbUrl() {
+    final dt = post.dataType ?? '';
+    if (dt == PostDataType.IMAGE.name) {
+      // IMAGE : première image de la liste
+      if (post.images?.isNotEmpty == true) return post.images!.first;
+      return post.thumbnail ?? '';
+    }
+    if (dt == PostDataType.VIDEO.name) {
+      // VIDEO : thumbnail généré, jamais l'URL vidéo
+      return post.thumbnail ?? '';
+    }
+    // AUDIO, TEXT, etc.
+    return post.thumbnail ?? '';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final thumb = post.thumbnail ?? post.url_media ?? '';
+    final thumb = _thumbUrl();
     final desc = post.description ?? '';
     final pseudo = post.user?.pseudo ?? '';
+    final isVideo = post.dataType == PostDataType.VIDEO.name;
+    final isAudio = post.dataType == PostDataType.AUDIO.name;
 
     return GestureDetector(
       onTap: () => _open(context),
@@ -164,20 +182,35 @@ class _MiniCategoryCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Miniature
+            // Miniature — taille agrandie
             ClipRRect(
               borderRadius: const BorderRadius.horizontal(left: Radius.circular(14)),
               child: SizedBox(
-                width: 80,
-                height: 80,
-                child: thumb.isNotEmpty
-                    ? CachedNetworkImage(
+                width: 104,
+                height: 104,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (thumb.isNotEmpty)
+                      CachedNetworkImage(
                         imageUrl: thumb,
                         fit: BoxFit.cover,
-                        errorWidget: (_, __, ___) =>
-                            Container(color: colors.shimmerBase),
+                        errorWidget: (_, __, ___) => _placeholder(isAudio: isAudio),
                       )
-                    : Container(color: colors.shimmerBase),
+                    else
+                      _placeholder(isAudio: isAudio),
+                    // Overlay type
+                    if (isVideo)
+                      Container(
+                        color: Colors.black26,
+                        child: const Center(
+                          child: Icon(Icons.play_circle_outline, color: Colors.white, size: 34),
+                        ),
+                      )
+                    else if (isAudio && thumb.isEmpty)
+                      const SizedBox.shrink(),
+                  ],
+                ),
               ),
             ),
             // Description + auteur
@@ -190,19 +223,20 @@ class _MiniCategoryCard extends StatelessWidget {
                     if (desc.isNotEmpty)
                       Text(
                         desc,
-                        maxLines: 2,
+                        maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 12.5,
+                          fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: colors.textPrimary,
+                          height: 1.35,
                         ),
                       ),
                     if (pseudo.isNotEmpty) ...[
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 5),
                       Text(
                         '@$pseudo',
-                        style: TextStyle(fontSize: 10.5, color: colors.textSecondary),
+                        style: TextStyle(fontSize: 11, color: colors.textSecondary),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
@@ -218,6 +252,15 @@ class _MiniCategoryCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _placeholder({bool isAudio = false}) {
+    return Container(
+      color: colors.shimmerBase,
+      child: isAudio
+          ? Center(child: Icon(Icons.music_note_rounded, color: catColor.withOpacity(0.6), size: 38))
+          : const SizedBox.shrink(),
     );
   }
 }

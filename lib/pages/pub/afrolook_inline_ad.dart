@@ -44,6 +44,7 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
   VideoPlayerController? _adVideoController;
   bool _adVideoInitialized = false;
   bool _isCtaLoading = false;
+  int? _liveFollowers;
 
   late AnimationController _bounceCtrl;
   late Animation<double> _bounceOffset;
@@ -114,9 +115,34 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
 
     _lastAdId = newId;
     _viewRecorded = false;
+    _liveFollowers = null;
     if (mounted) setState(() { _adData = picked; _adVideoInitialized = false; });
+    if (picked['isEntityBoost'] == true) _fetchLiveFollowers(picked);
     _recordView(picked);
     _initAdVideo(picked, auth);
+  }
+
+  Future<void> _fetchLiveFollowers(Map<String, dynamic> adData) async {
+    try {
+      final ad = Advertisement.fromJson(adData['ad'] as Map<String, dynamic>);
+      if (ad.ownerId?.isEmpty != false) return;
+      final fs = FirebaseFirestore.instance;
+      int? count;
+      switch (ad.ownerType) {
+        case 'canal':
+          final doc = await fs.collection('Canaux').doc(ad.ownerId).get();
+          count = doc.data()?['suivi'] as int?;
+          break;
+        case 'group':
+          final doc = await fs.collection('Groups').doc(ad.ownerId).get();
+          count = doc.data()?['member_count'] as int?;
+          break;
+        default:
+          final doc = await fs.collection('Users').doc(ad.ownerId).get();
+          count = doc.data()?['abonnes'] as int?;
+      }
+      if (mounted && count != null) setState(() => _liveFollowers = count);
+    } catch (_) {}
   }
 
   Future<void> _initAdVideo(Map<String, dynamic> picked, UserAuthProvider auth) async {
@@ -769,7 +795,7 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
   }) {
     final auth = Provider.of<UserAuthProvider>(context, listen: false);
     final showClicks = _isAdminOrOwner(ad, auth);
-    final followers = ad.ownerFollowers ?? 0;
+    final followers = _liveFollowers ?? ad.ownerFollowers ?? 0;
     final followersLabel = typeLabel == 'Groupe' ? 'membres' : 'abonnés';
 
     Widget sponsoredBadges = Row(
