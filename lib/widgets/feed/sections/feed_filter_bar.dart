@@ -20,43 +20,47 @@ class FeedFilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 38,
-      child: ListView(
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 14),
-        children: [
-          FeedFilterChip(
-            label: '🌍 Tous',
-            isSelected: currentFilter == 'ALL',
-            color: const Color(0xFF25D366),
-            onTap: () => onApplyFilter(filterType: 'ALL', countryCode: null),
-          ),
-          if (selectedCountryCode != null) ...[
-            const SizedBox(width: 6),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Bouton(s) prioritaires en premier (ex: Nouvelle chronique)
+            if (trailingChildren.isNotEmpty) ...[
+              ...trailingChildren,
+              const SizedBox(width: 10),
+              Container(width: 1, height: 16, color: Colors.grey[700]),
+              const SizedBox(width: 10),
+            ],
             FeedFilterChip(
-              label: '📍 Mon pays',
-              isSelected: currentFilter == 'COUNTRY',
-              color: Colors.blue,
-              onTap: () => onApplyFilter(
-                  filterType: 'COUNTRY', countryCode: selectedCountryCode),
+              label: '🌍 Tous',
+              isSelected: currentFilter == 'ALL',
+              color: const Color(0xFF25D366),
+              onTap: () => onApplyFilter(filterType: 'ALL', countryCode: null),
             ),
-            const SizedBox(width: 6),
-            FeedFilterChip(
-              label: '🔄 Mix',
-              isSelected: currentFilter == 'MIXED',
-              color: Colors.purple,
-              onTap: () => onApplyFilter(
-                  filterType: 'MIXED', countryCode: selectedCountryCode),
-            ),
+            if (selectedCountryCode != null) ...[
+              const SizedBox(width: 6),
+              FeedFilterChip(
+                label: '📍 Mon pays',
+                isSelected: currentFilter == 'COUNTRY',
+                color: Colors.blue,
+                onTap: () => onApplyFilter(
+                    filterType: 'COUNTRY', countryCode: selectedCountryCode),
+              ),
+              const SizedBox(width: 6),
+              FeedFilterChip(
+                label: '🔄 Mix',
+                isSelected: currentFilter == 'MIXED',
+                color: Colors.purple,
+                onTap: () => onApplyFilter(
+                    filterType: 'MIXED', countryCode: selectedCountryCode),
+              ),
+            ],
           ],
-          if (trailingChildren.isNotEmpty) ...[
-            const SizedBox(width: 10),
-            Center(child: Container(width: 1, height: 16, color: Colors.grey[700])),
-            const SizedBox(width: 10),
-            ...trailingChildren,
-          ],
-        ],
+        ),
       ),
     );
   }
