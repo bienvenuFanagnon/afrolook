@@ -176,8 +176,9 @@ class _DetailsPostState extends State<DetailsPost>
   bool _isSupporting = false;
   bool? _hasSeenSupportModal;
 
-  // Follow / S'abonner — optimistic
+  // Follow / S'abonner — optimistic + guard contre doubles clics
   bool? _localIsFollowing;
+  bool _isProcessingFollow = false;
 
   Future<void> _loadSupportModalSeen() async {
     final prefs = await SharedPreferences.getInstance();
@@ -4184,10 +4185,14 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           Stack(
             children: [
               CircleAvatar(
-                backgroundImage: NetworkImage(
-                  _optimizeImageUrl(canal?.urlImage ?? user?.imageUrl ?? '')
-                  ,
-                ),
+                backgroundImage: () {
+                  final url = _optimizeImageUrl(canal?.urlImage ?? user?.imageUrl ?? '');
+                  return url.isNotEmpty ? NetworkImage(url) : null;
+                }(),
+                backgroundColor: Colors.grey[800],
+                child: (canal?.urlImage ?? user?.imageUrl ?? '').isEmpty
+                    ? const Icon(Icons.person_rounded, color: Colors.white54, size: 22)
+                    : null,
                 radius: 25,
               ),
               if ((canal?.isVerify ?? false) || (user?.isVerify ?? false))
@@ -4437,41 +4442,53 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
   }
 
   Future<void> _handleFollowUser(UserData targetUser) async {
-    if (!mounted) return;
-    setState(() => _localIsFollowing = true);
-    await authProvider.abonner(targetUser, context);
+    if (!mounted || _isProcessingFollow) return;
+    setState(() { _isProcessingFollow = true; _localIsFollowing = true; });
+    try {
+      await authProvider.abonner(targetUser, context);
+    } finally {
+      if (mounted) setState(() => _isProcessingFollow = false);
+    }
   }
 
   Future<void> _handleFollowCanal(Canal canal) async {
-    if (!mounted) return;
+    if (!mounted || _isProcessingFollow) return;
     final myId = authProvider.loginUserData.id!;
 
     if ((canal.isPrivate == true) || (canal.subscriptionPrice ?? 0) > 0) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => CanalDetails(canal: canal)),
-      );
+      Navigator.push(context, MaterialPageRoute(builder: (_) => CanalDetails(canal: canal)));
       return;
     }
 
-    setState(() => _localIsFollowing = true);
+    setState(() { _isProcessingFollow = true; _localIsFollowing = true; });
 
     canal.usersSuiviId ??= [];
-    canal.usersSuiviId!.add(myId);
-    canal.suivi = (canal.suivi ?? 0) + 1;
+    if (!canal.usersSuiviId!.contains(myId)) {
+      canal.usersSuiviId!.add(myId);
+      canal.suivi = (canal.suivi ?? 0) + 1;
+    }
 
     final fs = FirebaseFirestore.instance;
-    fs.collection('Canaux').doc(canal.id).update({
-      'usersSuiviId': FieldValue.arrayUnion([myId]),
-      'suivi': FieldValue.increment(1),
-    }).catchError((_) {
+    try {
+      await fs.runTransaction((txn) async {
+        final snap = await txn.get(fs.collection('Canaux').doc(canal.id));
+        final ids = List<String>.from(snap.data()?['usersSuiviId'] ?? []);
+        if (ids.contains(myId)) return;
+        txn.update(snap.reference, {
+          'usersSuiviId': FieldValue.arrayUnion([myId]),
+          'suivi': FieldValue.increment(1),
+        });
+        txn.update(fs.collection('Users').doc(myId), {
+          'canauxSuivisIds': FieldValue.arrayUnion([canal.id]),
+        });
+      });
+    } catch (_) {
       canal.usersSuiviId?.remove(myId);
       canal.suivi = (canal.suivi ?? 1) - 1;
       if (mounted) setState(() => _localIsFollowing = false);
-    });
-    fs.collection('Users').doc(myId).update({
-      'canauxSuivisIds': FieldValue.arrayUnion([canal.id]),
-    }).catchError((_) {});
+    } finally {
+      if (mounted) setState(() => _isProcessingFollow = false);
+    }
   }
 
   void _showPostMenu(Post post) {
@@ -5668,8 +5685,14 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                                   child: Column(
                                     children: [
                                       CircleAvatar(
-                                        backgroundImage: NetworkImage(_optimizeImageUrl(userData.imageUrl ?? '')
-                                            ),
+                                        backgroundImage: () {
+                                          final url = _optimizeImageUrl(userData.imageUrl ?? '');
+                                          return url.isNotEmpty ? NetworkImage(url) : null;
+                                        }(),
+                                        backgroundColor: Colors.grey[800],
+                                        child: (userData.imageUrl ?? '').isEmpty
+                                            ? const Icon(Icons.person_rounded, color: Colors.white54, size: 12)
+                                            : null,
                                         radius: 15,
                                       ),
                                       SizedBox(height: 2),

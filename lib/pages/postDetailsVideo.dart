@@ -167,6 +167,10 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
   Canal? _currentCanal;
   bool _isLoadingUser = false;
   bool _isLoadingCanal = false;
+
+  // Follow / S'abonner
+  bool? _localIsFollowing;
+  bool _isProcessingFollow = false;
 // Publicité
   bool _isAd = false;
   Advertisement? _advertisement;
@@ -2092,6 +2096,16 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     final user = _currentPost.user ?? _currentUser;
     final isLocked = _isLockedContent();
     final colors = AppColors.of(context);
+    final myId = authProvider.loginUserData.id;
+
+    // Compteur affiché : liste en priorité, sinon le champ entier (snapshot)
+    final int followerCount = canal != null
+        ? (canal.usersSuiviId?.length ?? canal.suivi ?? 0)
+        : (user?.userAbonnesIds?.length ?? user?.abonnes ?? 0);
+    final String followerLabel = followerCount > 0
+        ? '$followerCount abonné${followerCount > 1 ? 's' : ''}'
+        : '';
+
     return Row(
       children: [
         GestureDetector(
@@ -2099,7 +2113,17 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
             if (canal != null) Navigator.push(context, MaterialPageRoute(builder: (context) => CanalDetails(canal: canal)));
             else if (user != null) showUserDetailsModalDialog(user, MediaQuery.of(context).size.width, MediaQuery.of(context).size.height, context);
           },
-          child: CircleAvatar(radius: 25, backgroundImage: NetworkImage(canal?.urlImage ?? user?.imageUrl ?? ''), backgroundColor: colors.surface),
+          child: CircleAvatar(
+            radius: 25,
+            backgroundImage: () {
+              final url = canal?.urlImage ?? user?.imageUrl ?? '';
+              return url.isNotEmpty ? NetworkImage(url) : null;
+            }(),
+            backgroundColor: colors.surface,
+            child: (canal?.urlImage ?? user?.imageUrl ?? '').isEmpty
+                ? const Icon(Icons.person_rounded, color: Colors.white54, size: 22)
+                : null,
+          ),
         ),
         SizedBox(width: 12),
         Expanded(
@@ -2110,20 +2134,126 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
             },
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
-                Text(canal != null ? '#${canal.titre}' : '@${user?.pseudo ?? ''}', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
+                Flexible(child: Text(canal != null ? '#${canal.titre}' : '@${user?.pseudo ?? ''}', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16), overflow: TextOverflow.ellipsis)),
                 if (user != null) UserBadgeWidget(user: user, size: 15),
                 if (isLocked) Icon(Icons.lock, color: _afroYellow, size: 16),
               ]),
-              Text(canal != null ? '${canal?.usersSuiviId?.length ?? 0} abonnés' : '${user?.userAbonnesIds?.length ?? 0} abonnés', style: TextStyle(color: Colors.grey)),
+              if (followerLabel.isNotEmpty)
+                Text(followerLabel, style: TextStyle(color: Colors.grey, fontSize: 12)),
             ]),
           ),
         ),
+        // Bouton Suivre / S'abonner
+        _buildFollowButton(canal, user, myId),
         IconButton(
           icon: Icon(Icons.more_vert, color: colors.textPrimary),
           onPressed: _showPostMenu,
         ),
       ],
     );
+  }
+
+  Widget _buildFollowButton(Canal? canal, UserData? user, String? myId) {
+    if (myId == null) return const SizedBox.shrink();
+    final colors = AppColors.of(context);
+
+    if (canal != null) {
+      final isOwner = canal.userId == myId;
+      if (isOwner) return const SizedBox.shrink();
+      final alreadySubscribed = _localIsFollowing ?? (canal.usersSuiviId?.contains(myId) ?? false);
+      if (alreadySubscribed) return const SizedBox.shrink();
+      return Padding(
+        padding: const EdgeInsets.only(right: 4),
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: canal.isPrivate == true ? colors.accent : colors.primary,
+            foregroundColor: canal.isPrivate == true ? colors.onAccent : colors.onPrimary,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+            minimumSize: const Size(0, 30),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+          onPressed: _isProcessingFollow ? null : () => _handleFollowCanal(canal),
+          child: _isProcessingFollow
+              ? SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: colors.onPrimary))
+              : Text(canal.isPrivate == true ? 'S\'abonner' : 'Suivre', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+        ),
+      );
+    }
+
+    if (user != null) {
+      final isMe = user.id == myId;
+      if (isMe) return const SizedBox.shrink();
+      final alreadyFollowing = _localIsFollowing ?? (authProvider.loginUserData.followingIds?.contains(user.id) ?? false);
+      if (alreadyFollowing) return const SizedBox.shrink();
+      return Padding(
+        padding: const EdgeInsets.only(right: 4),
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: colors.primary,
+            foregroundColor: colors.onPrimary,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+            minimumSize: const Size(0, 30),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+          onPressed: _isProcessingFollow ? null : () => _handleFollowUser(user),
+          child: _isProcessingFollow
+              ? SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: colors.onPrimary))
+              : const Text('Suivre', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+        ),
+      );
+    }
+
+    return const SizedBox.shrink();
+  }
+
+  Future<void> _handleFollowUser(UserData targetUser) async {
+    if (!mounted || _isProcessingFollow) return;
+    setState(() { _isProcessingFollow = true; _localIsFollowing = true; });
+    try {
+      await authProvider.abonner(targetUser, context);
+    } finally {
+      if (mounted) setState(() => _isProcessingFollow = false);
+    }
+  }
+
+  Future<void> _handleFollowCanal(Canal canal) async {
+    if (!mounted || _isProcessingFollow) return;
+    final myId = authProvider.loginUserData.id!;
+
+    if ((canal.isPrivate == true) || (canal.subscriptionPrice ?? 0) > 0) {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => CanalDetails(canal: canal)));
+      return;
+    }
+
+    setState(() { _isProcessingFollow = true; _localIsFollowing = true; });
+
+    canal.usersSuiviId ??= [];
+    if (!canal.usersSuiviId!.contains(myId)) {
+      canal.usersSuiviId!.add(myId);
+      canal.suivi = (canal.suivi ?? 0) + 1;
+    }
+
+    final fs = FirebaseFirestore.instance;
+    try {
+      await fs.runTransaction((txn) async {
+        final snap = await txn.get(fs.collection('Canaux').doc(canal.id));
+        final ids = List<String>.from(snap.data()?['usersSuiviId'] ?? []);
+        if (ids.contains(myId)) return;
+        txn.update(snap.reference, {
+          'usersSuiviId': FieldValue.arrayUnion([myId]),
+          'suivi': FieldValue.increment(1),
+        });
+        txn.update(fs.collection('Users').doc(myId), {
+          'canauxSuivisIds': FieldValue.arrayUnion([canal.id]),
+        });
+      });
+    } catch (_) {
+      canal.usersSuiviId?.remove(myId);
+      canal.suivi = (canal.suivi ?? 1) - 1;
+      if (mounted) setState(() => _localIsFollowing = false);
+    } finally {
+      if (mounted) setState(() => _isProcessingFollow = false);
+    }
   }
 
   bool _isLockedContent() {
