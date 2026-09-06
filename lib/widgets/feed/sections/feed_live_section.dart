@@ -116,7 +116,7 @@ class _FeedLiveSectionState extends State<FeedLiveSection> {
               ),
             ),
             SizedBox(
-              height: 140,
+              height: 170,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -151,110 +151,111 @@ class _LiveCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isPaid = live.isPaidLive;
+    final likes = live.likeCount ?? 0;
 
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: 110,
-        decoration: BoxDecoration(
-          color: colors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: colors.danger.withAlpha(80), width: 1.5),
-        ),
-        child: Column(
-          children: [
-            // Avatar + badge LIVE
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
-                  child: _Avatar(url: live.hostImage, size: 70),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: 115,
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: colors.danger.withAlpha(80), width: 1.5),
+          ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Image de couverture plein widget
+              _Avatar(url: live.hostImage),
+              // Dégradé bas pour lisibilité du texte
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Colors.transparent, Colors.black.withAlpha(200)],
+                      stops: const [0.4, 1.0],
+                    ),
+                  ),
                 ),
-                // Badge LIVE rouge
+              ),
+              // Badge LIVE
+              Positioned(
+                top: 6,
+                left: 6,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: colors.danger,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text('LIVE', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              // Badge payant
+              if (isPaid)
                 Positioned(
                   top: 6,
-                  left: 6,
+                  right: 6,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                     decoration: BoxDecoration(
-                      color: colors.danger,
+                      color: Colors.amber[700],
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: const Text('LIVE', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+                    child: const Text('💰', style: TextStyle(fontSize: 9)),
                   ),
                 ),
-                // Badge payant
-                if (isPaid)
-                  Positioned(
-                    top: 6,
-                    right: 6,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.amber[700],
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text('💰', style: TextStyle(fontSize: 9)),
-                    ),
+              // Likes (bas droite)
+              Positioned(
+                bottom: 32,
+                right: 6,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(6),
                   ),
-                // Viewers
-                Positioned(
-                  bottom: 4,
-                  right: 4,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.remove_red_eye, color: Colors.white, size: 9),
-                        const SizedBox(width: 2),
-                        Text(
-                          '${live.viewerCount}',
-                          style: const TextStyle(color: Colors.white, fontSize: 9),
-                        ),
-                      ],
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.favorite_rounded, color: Colors.pinkAccent, size: 9),
+                      const SizedBox(width: 2),
+                      Text('$likes', style: const TextStyle(color: Colors.white, fontSize: 9)),
+                    ],
                   ),
                 ),
-              ],
-            ),
-            // Infos texte
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              ),
+              // Pseudo + titre (bas)
+              Positioned(
+                left: 6,
+                right: 6,
+                bottom: 6,
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      live.hostName ?? '',
-                      style: TextStyle(
-                        color: colors.textPrimary,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      '@${live.hostName ?? ''}',
+                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
                     ),
-                    if (live.title.isNotEmpty) ...[
-                      const SizedBox(height: 2),
+                    if (live.title.isNotEmpty)
                       Text(
                         live.title,
-                        style: TextStyle(color: colors.textSecondary, fontSize: 10),
+                        style: TextStyle(color: Colors.white.withAlpha(200), fontSize: 9),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
                       ),
-                    ],
                   ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -262,28 +263,19 @@ class _LiveCard extends StatelessWidget {
 }
 
 class _Avatar extends StatelessWidget {
-  const _Avatar({required this.url, required this.size});
+  const _Avatar({required this.url});
   final String? url;
-  final double size;
 
   @override
   Widget build(BuildContext context) {
     final hasUrl = url != null && url!.isNotEmpty;
-    return SizedBox(
-      width: double.infinity,
-      height: size,
-      child: hasUrl
-          ? Image.network(
-              url!,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _placeholder(),
-            )
-          : _placeholder(),
-    );
+    return hasUrl
+        ? Image.network(url!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _placeholder())
+        : _placeholder();
   }
 
   Widget _placeholder() => Container(
         color: Colors.grey[800],
-        child: const Icon(Icons.person_rounded, color: Colors.white54, size: 28),
+        child: const Icon(Icons.person_rounded, color: Colors.white54, size: 36),
       );
 }

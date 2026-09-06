@@ -144,6 +144,7 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
             ),
           ),
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               // Bouton + pour ajouter une chronique
               GestureDetector(
