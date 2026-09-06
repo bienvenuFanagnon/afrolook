@@ -139,7 +139,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     'BoostedContent', 'WeeklyTopCreators', 'Canaux', 'VIPContent', 'Articles',
   ];
   final int _maxBackgroundPosts = 20;
-  final int _maxTotalPosts = 1000;
+  final int _maxTotalPosts = 25;
   Timer? _backgroundLoadTimer;
   bool _useBackgroundLoading = true;
 
@@ -910,6 +910,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       }
 
       _hasMorePosts = newPosts.length >= (_backgroundLoadLimit ~/ 2);
+      if (_posts.length >= 25) _hasMorePosts = false;
 
       if (_backgroundPostsLoaded >= _maxBackgroundPosts) {
         _useBackgroundLoading = false;
@@ -1811,6 +1812,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         _loadedPostIds.addAll(loadedIds);
         _totalPostsLoaded = _posts.length;
         _isFirstLoad = false;
+        if (_posts.length >= 25) _hasMorePosts = false;
       });
 
       if (newPosts.isNotEmpty) {
@@ -1893,7 +1895,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     if (unread.isEmpty) return;
 
     // Plafond : si > 200, supprimer les plus anciens
-    const int kMaxUnread = 200;
+    const int kMaxUnread = 16;
     if (unread.length > kMaxUnread) {
       final sorted = unread.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
       final toKeep = sorted.take(kMaxUnread).map((e) => e.key).toSet();
@@ -1957,7 +1959,10 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       if (_tier2PostIds.contains(pid)) { t2.add(p); continue; }
       t3.add(p);
     }
-    return [..._spreadCreators(t1), ..._spreadCreators(t2), ..._spreadCreators(t3)];
+    final s1 = _spreadCreators(t1.take(16).toList());
+    final s2 = _spreadCreatorsWithContext(t2.take(6).toList(), s1);
+    final s3 = _spreadCreatorsWithContext(t3.take(3).toList(), [...s1, ...s2]);
+    return [...s1, ...s2, ...s3];
   }
 
   // ── Marquage des posts vus ─────────────────────────────────────────────────
@@ -2151,16 +2156,13 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
           _posts.addAll(spread);
           _loadedPostIds.addAll(newPosts.map((p) => p.id!));
           _totalPostsLoaded += spread.length;
-          // Fenêtre mémoire : max 40 posts
-          if (_posts.length > 40) {
-            _posts.removeRange(0, 8);
-          }
         });
 
         printVm('📱 ${spread.length} posts chargés manuellement (spread)');
       }
 
       _hasMorePosts = newPosts.length >= (_manualLoadLimit ~/ 2);
+      if (_posts.length >= 25) _hasMorePosts = false;
 
     } catch (e) {
       printVm('❌ Erreur chargement manuel: $e');

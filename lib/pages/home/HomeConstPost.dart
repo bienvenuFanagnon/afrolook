@@ -171,7 +171,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   final int _backgroundLoadLimit = 8;
   final int _manualLoadLimit = 8;
   final int _maxBackgroundPosts = 20;
-  final int _maxTotalPosts = 1000;
+  final int _maxTotalPosts = 25;
   Timer? _backgroundLoadTimer;
   bool _useBackgroundLoading = true;
 
@@ -1043,6 +1043,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
       // Vérifier s'il reste des posts à charger
       _hasMorePosts = newPosts.length >= (_backgroundLoadLimit ~/ 2);
+      if (_posts.length >= 25) _hasMorePosts = false;
 
       // Si on atteint la limite de background, désactiver
       if (_backgroundPostsLoaded >= _maxBackgroundPosts) {
@@ -1582,7 +1583,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         // Prépare les données nécessaires aux deux requêtes
         var unread = authProvider.loginUserData.unreadPosts ?? {};
         // Plafond anti-accumulation (identique à _loadTier1Posts)
-        const int _kMaxUnread = 200;
+        const int _kMaxUnread = 16;
         if (unread.length > _kMaxUnread) {
           final sorted = unread.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
           final toKeep = sorted.take(_kMaxUnread).map((e) => e.key).toSet();
@@ -1778,6 +1779,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         _loadedPostIds.addAll(loadedIds);
         _totalPostsLoaded = _posts.length;
         _isFirstLoad = false;
+        if (_posts.length >= 25) _hasMorePosts = false;
       });
       _logBadgeSummary();
       printVm('✅ [FINAL] ${_posts.length} posts affichés, filtre=$_currentFilter');
@@ -2241,9 +2243,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     }
 
     // Spread par tier avec contexte cross-tier pour éviter 3+ consécutifs
-    final s1 = _spreadCreators(t1);
-    final s2 = _spreadCreatorsWithContext(t2, s1);
-    final s3 = _spreadCreatorsWithContext(t3, [...s1, ...s2]);
+    final s1 = _spreadCreators(t1.take(16).toList());
+    final s2 = _spreadCreatorsWithContext(t2.take(6).toList(), s1);
+    final s3 = _spreadCreatorsWithContext(t3.take(3).toList(), [...s1, ...s2]);
     final ordered = [...s1, ...s2, ...s3];
 
     printVm('🏗️ [FEED] _buildTieredFeed → T1=${t1.length} | T2=${t2.length} | T3=${t3.length} | total=${ordered.length}');
@@ -2473,6 +2475,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       }
 
       _hasMorePosts = newPosts.length >= (_manualLoadLimit ~/ 2);
+      if (_posts.length >= 25) _hasMorePosts = false;
 
     } catch (e) {
       printVm('❌ Erreur chargement manuel: $e');
