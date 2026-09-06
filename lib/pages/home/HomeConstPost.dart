@@ -222,8 +222,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   final _localDiscoveryIds = <String>{};
   // Pool de posts réguliers de créateurs non suivis (rempli en arrière-plan)
   List<Post> _regularDiscoveryPool = [];
-  // 30 % de chance de commencer par les posts découverte avant les T1
+  // Lead découverte : 1 fois sur 3 exactement (compteur déterministe)
   bool _leadDiscoveryWithT1 = false;
+  static int _leadDiscoveryCounter = 0;
   Timer? _stayTimer;
   bool _isPageVisible = true;
   bool _isSupportDialogShowing = false;
@@ -1136,7 +1137,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       _tier2PostIds.clear();
       _localDiscoveryIds.clear();
       _regularDiscoveryPool = [];
-      _leadDiscoveryWithT1 = Random().nextDouble() < 0.3;
+      _leadDiscoveryWithT1 = (_leadDiscoveryCounter % 3 == 0);
+      _leadDiscoveryCounter++;
     }
     _totalPostsLoaded = 0;
     _backgroundPostsLoaded = 0;
@@ -2436,16 +2438,16 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     List<Post> regularPool, {
     required bool leadWithDiscovery,
   }) {
-    // Construire les batches : [boost, regular, regular]
+    // Construire les batches : toujours [1 boost (nouveau créateur) + 2 réguliers]
+    // Un batch incomplet (< 3 posts) n'est pas créé pour éviter les déséquilibres.
     final batches = <List<Post>>[];
     int bi = 0, ri = 0;
-    while (bi < boostPool.length || ri < regularPool.length) {
-      final batch = <Post>[];
-      if (bi < boostPool.length) batch.add(boostPool[bi++]);
-      else if (ri < regularPool.length) batch.add(regularPool[ri++]);
-      if (ri < regularPool.length) batch.add(regularPool[ri++]);
-      if (ri < regularPool.length) batch.add(regularPool[ri++]);
-      if (batch.isEmpty) break;
+    while (bi < boostPool.length && ri + 1 < regularPool.length) {
+      final batch = <Post>[
+        boostPool[bi++],       // slot 0 : nouveau créateur
+        regularPool[ri++],     // slot 1 : découverte régulière
+        regularPool[ri++],     // slot 2 : découverte régulière
+      ];
       batches.add(batch);
     }
     if (batches.isEmpty) return ordered;

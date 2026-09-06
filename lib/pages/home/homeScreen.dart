@@ -216,18 +216,7 @@ class _MyHomePageState extends State<MyHomePage>
     });
   }
 
-  void _onScroll() {
-    if (_unreadNotificationsCount <= 0) return;
-    final now = DateTime.now();
-    if (_lastToastTime != null &&
-        now.difference(_lastToastTime!) < const Duration(minutes: 5)) return;
-    _lastToastTime = now;
-    NotificationToast.show(
-      context: context,
-      count: _unreadNotificationsCount,
-      onTap: () => Navigator.pushNamed(context, '/mes_notifications'),
-    );
-  }
+  void _onScroll() => _showNotificationToastIfNeeded();
 
   Future<void> _launchUrl(Uri url) async {
     if (!await launchUrl(url)) {
@@ -347,37 +336,37 @@ class _MyHomePageState extends State<MyHomePage>
   }
 
   void _listenUnreadNotifications() {
-    String _currentUserId = authProvider.loginUserData!.id!;
-    if (_currentUserId == null) {
-      printVm('⚠️ _listenUnreadNotifications: currentUserId is null');
-      return;
-    }
-
-    final datingTypes = [
-      'DATING_LIKE',
-      'DATING_MATCH',
-      'DATING_SUPER_LIKE',
-      'DATING_MESSAGE',
-    ];
-
-    printVm('🔔 Listening for unread dating notifications for user: $_currentUserId');
-    printVm('📋 Types recherchés: $datingTypes');
+    final currentUserId = authProvider.loginUserData?.id;
+    if (currentUserId == null) return;
 
     firestore
         .collection('Notifications')
-        .where('receiver_id', isEqualTo: _currentUserId)
-        .where('type', whereIn: datingTypes)
+        .where('receiver_id', isEqualTo: currentUserId)
         .where('is_open', isEqualTo: false)
         .snapshots()
         .listen((snapshot) {
-      printVm('📬 Snapshot reçu: ${snapshot.docs.length} documents');
-      for (var doc in snapshot.docs) {
-        printVm('   - ${doc.id} | type: ${doc['type']} | is_open: ${doc['is_open']}');
+      if (!mounted) return;
+      final count = snapshot.docs.length;
+      setState(() => _unreadNotificationsCount = count);
+      if (count > 0 && _lastToastTime == null) {
+        _showNotificationToastIfNeeded();
       }
-      if (mounted) setState(() => _unreadNotificationsCount = snapshot.docs.length);
     }, onError: (e) {
       printVm('❌ Erreur dans le stream des notifications: $e');
     });
+  }
+
+  void _showNotificationToastIfNeeded() {
+    final now = DateTime.now();
+    if (_lastToastTime != null &&
+        now.difference(_lastToastTime!) < const Duration(minutes: 5)) return;
+    if (_unreadNotificationsCount <= 0) return;
+    _lastToastTime = now;
+    NotificationToast.show(
+      context: context,
+      count: _unreadNotificationsCount,
+      onTap: () => Navigator.pushNamed(context, '/mes_notifications'),
+    );
   }
 
 

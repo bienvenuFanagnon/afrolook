@@ -68,7 +68,7 @@ class _ToastWidgetState extends State<_ToastWidget>
 
     _ctrl.forward();
 
-    Future.delayed(const Duration(seconds: 2), () {
+    Future.delayed(const Duration(seconds: 4), () {
       if (mounted) {
         _ctrl.reverse().then((_) => widget.onDismiss());
       }
@@ -99,15 +99,15 @@ class _ToastWidgetState extends State<_ToastWidget>
               onTap: widget.onTap,
               child: Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                 decoration: BoxDecoration(
                   color: const Color(0xFF1A1A2E),
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(28),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
+                      color: Colors.black.withValues(alpha: 0.35),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
                     ),
                   ],
                 ),
@@ -115,23 +115,23 @@ class _ToastWidgetState extends State<_ToastWidget>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Icon(Icons.notifications_active,
-                        color: Color(0xFFE8B86D), size: 18),
-                    const SizedBox(width: 8),
+                        color: Color(0xFFE8B86D), size: 22),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         'Tu as ${widget.count} notification${widget.count > 1 ? 's' : ''} non lue${widget.count > 1 ? 's' : ''}',
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     const Icon(Icons.arrow_forward_ios,
-                        color: Colors.white54, size: 12),
+                        color: Colors.white54, size: 14),
                   ],
                 ),
               ),
