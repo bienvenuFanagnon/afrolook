@@ -21,18 +21,51 @@ class LiveListPage extends StatefulWidget {
   _LiveListPageState createState() => _LiveListPageState();
 }
 
+// Tab 0 = En cours | Tab 1 = Tous | Tab 2 = Mes lives
 class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderStateMixin {
   final RefreshController _refreshController = RefreshController(initialRefresh: false);
   late TabController _tabController;
   int _selectedTab = 0;
-  bool _isLoading = true;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(_handleTab);
-    _loadLives(reset: true);
+    _initLoad();
+  }
+
+  Future<void> _initLoad() async {
+    final lp = context.read<LiveProvider>();
+
+    // Si on a déjà des lives actifs (chargés au boot) → pas de spinner
+    if (lp.activeLives.isNotEmpty) {
+      // Refresh silencieux en arrière-plan
+      lp.fetchActiveLivesBatch(reset: true).then((_) {
+        if (mounted) _autoSwitchIfEmpty(lp);
+      });
+      return;
+    }
+
+    // Sinon : charger avec spinner
+    if (mounted) setState(() => _isLoading = true);
+    try {
+      await lp.fetchActiveLivesBatch(reset: true);
+    } catch (_) {}
+
+    if (!mounted) return;
+    _autoSwitchIfEmpty(lp);
+    setState(() => _isLoading = false);
+  }
+
+  void _autoSwitchIfEmpty(LiveProvider lp) {
+    // Pas de lives actifs → basculer sur "Tous"
+    if (lp.activeLives.isEmpty && _selectedTab == 0) {
+      _tabController.animateTo(1);
+      setState(() => _selectedTab = 1);
+      _loadLives(reset: true);
+    }
   }
 
   void _handleTab() {
@@ -56,7 +89,7 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
     final lp = context.read<LiveProvider>();
     setState(() => _isLoading = true);
     try {
-      if (_selectedTab == 1) {
+      if (_selectedTab == 0) {
         await lp.fetchActiveLivesBatch(reset: reset);
       } else {
         await lp.fetchAllLivesBatch(reset: reset);
@@ -68,7 +101,7 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
   Future<void> _loadMore() async {
     final lp = context.read<LiveProvider>();
     try {
-      if (_selectedTab == 1) {
+      if (_selectedTab == 0) {
         await lp.fetchActiveLivesBatch();
       } else {
         await lp.fetchAllLivesBatch();
@@ -121,8 +154,9 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
     final actifs = all.where((l) => l.isLive).toList();
     final termines = all.where((l) => !l.isLive).toList();
 
+    // Tab 0 = En cours | Tab 1 = Tous | Tab 2 = Mes lives
     List<PostLive> displayed;
-    if (_selectedTab == 1) {
+    if (_selectedTab == 0) {
       displayed = actifs;
     } else if (_selectedTab == 2) {
       displayed = all.where((l) => l.hostId == auth.userId).toList();
@@ -151,7 +185,8 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
                         waterDropColor: colors.accent,
                         complete: Icon(Icons.check, color: colors.accent),
                       ),
-                      child: _selectedTab == 0
+                      // Tab 0 = En cours (liste simple) | Tab 1 = Tous (carousel + liste)
+                      child: _selectedTab == 1
                           ? _buildAllTab(actifs, termines, colors)
                           : _buildSimpleList(displayed, colors),
                     ),
@@ -223,8 +258,8 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
       child: TabBar(
         controller: _tabController,
         tabs: const [
-          Tab(text: 'Tous'),
           Tab(text: 'En cours'),
+          Tab(text: 'Tous'),
           Tab(text: 'Mes lives'),
         ],
         indicator: BoxDecoration(
