@@ -800,7 +800,8 @@ class LiveProvider extends ChangeNotifier {
       QuerySnapshot snapshot = await _firestore
           .collection('lives')
           .where('isLive', isEqualTo: true)
-          .orderBy('startTime', descending: true)
+          .orderBy('viewerCount', descending: true)
+          .limit(3)
           .get();
 
       _activeLives = [];

@@ -17,7 +17,6 @@ class FeedLiveSection extends StatefulWidget {
 }
 
 class _FeedLiveSectionState extends State<FeedLiveSection> {
-  bool _fetched = false;
   Timer? _pulseTimer;
   bool _pulseOn = true;
 
@@ -37,8 +36,7 @@ class _FeedLiveSectionState extends State<FeedLiveSection> {
   }
 
   Future<void> _load() async {
-    if (!mounted || _fetched) return;
-    _fetched = true;
+    if (!mounted) return;
     await context.read<LiveProvider>().fetchActiveLives();
   }
 
@@ -65,8 +63,10 @@ class _FeedLiveSectionState extends State<FeedLiveSection> {
   Widget build(BuildContext context) {
     return Consumer<LiveProvider>(
       builder: (context, liveProvider, _) {
-        final lives = liveProvider.activeLives.where((l) => l.isLive).toList()
-          ..sort((a, b) => b.viewerCount.compareTo(a.viewerCount));
+        final lives = (liveProvider.activeLives.where((l) => l.isLive).toList()
+              ..sort((a, b) => b.viewerCount.compareTo(a.viewerCount)))
+            .take(3)
+            .toList();
 
         if (lives.isEmpty) return const SizedBox.shrink();
 
