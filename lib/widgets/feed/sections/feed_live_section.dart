@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../pages/LiveAgora/live_list_page.dart';
 import '../../../pages/LiveAgora/livePage.dart';
 import '../../../pages/LiveAgora/livesAgora.dart';
 import '../../../providers/authProvider.dart';
@@ -110,6 +111,36 @@ class _FeedLiveSectionState extends State<FeedLiveSection> {
                     child: Text(
                       '${lives.length}',
                       style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => LiveListPage()),
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: colors.danger.withAlpha(25),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: colors.danger.withAlpha(100)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Voir plus',
+                            style: TextStyle(
+                              color: colors.danger,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(width: 3),
+                          Icon(Icons.arrow_forward_ios_rounded, color: colors.danger, size: 10),
+                        ],
+                      ),
                     ),
                   ),
                 ],
