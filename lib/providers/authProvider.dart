@@ -161,6 +161,9 @@ class UserAuthProvider extends ChangeNotifier {
       }
 
       List<Map<String, dynamic>> tempAds = [];
+
+      // Séparer les entity-boosts (pas de postId) des pubs avec post
+      final List<Map<String, dynamic>> adsWithPost = [];
       for (var adDoc in adsSnapshot.docs) {
         final ad = Advertisement.fromJson(adDoc.data());
         final adDescription = adDoc.data()['description'] as String? ?? '';
@@ -170,10 +173,24 @@ class UserAuthProvider extends ChangeNotifier {
             adJson['adDescription'] = adDescription;
             tempAds.add({'ad': adJson, 'isEntityBoost': true});
           }
-          continue;
+        } else {
+          adsWithPost.add({'adData': adDoc.data(), 'adDescription': adDescription});
         }
-        final postDoc = await _firestore.collection('Posts').doc(ad.postId).get();
-        if (postDoc.exists) {
+      }
+
+      // Récupérer tous les posts en PARALLÈLE (au lieu d'un par un)
+      if (adsWithPost.isNotEmpty) {
+        final postFutures = adsWithPost.map((entry) {
+          final ad = Advertisement.fromJson(entry['adData'] as Map<String, dynamic>);
+          return _firestore.collection('Posts').doc(ad.postId).get();
+        }).toList();
+        final postDocs = await Future.wait(postFutures);
+        for (int i = 0; i < postDocs.length; i++) {
+          final postDoc = postDocs[i];
+          if (!postDoc.exists) continue;
+          final entry = adsWithPost[i];
+          final ad = Advertisement.fromJson(entry['adData'] as Map<String, dynamic>);
+          final adDescription = entry['adDescription'] as String;
           final post = Post.fromJson(postDoc.data()!);
           post.advertisementId = ad.id;
           post.isAdvertisement = true;
