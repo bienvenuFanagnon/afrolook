@@ -56,6 +56,7 @@ class _ProfilePageState extends State<ProfilePage> {
   TextEditingController _pseudoController = TextEditingController();
   List<String> _editInterests = [];
   String? _editCreatorCategory;
+  int? _categoryLastChangedAt;
 
   // 'same' | 'checking' | 'available' | 'taken' | 'invalid' | 'locked'
   String _pseudoStatus = 'same';
@@ -162,11 +163,13 @@ class _ProfilePageState extends State<ProfilePage> {
       final data = doc.data();
       final serverPseudo = (data?['pseudo'] as String?) ?? (authProvider.loginUserData.pseudo ?? '');
       final lastChanged = data?['pseudo_last_changed_at'] as int?;
+      final categoryLastChanged = data?['category_last_changed_at'] as int?;
       if (!mounted) return;
       setState(() {
         _originalPseudo = serverPseudo;
         _pseudoLastChangedAt = lastChanged;
         _pseudoController.text = serverPseudo;
+        _categoryLastChangedAt = categoryLastChanged;
       });
     } catch (_) {
       _originalPseudo = authProvider.loginUserData.pseudo ?? '';
@@ -183,6 +186,18 @@ class _ProfilePageState extends State<ProfilePage> {
   DateTime? _pseudoNextChangeDate() {
     if (_pseudoLastChangedAt == null) return null;
     return DateTime.fromMillisecondsSinceEpoch(_pseudoLastChangedAt!)
+        .add(const Duration(days: 7));
+  }
+
+  bool _categoryIsLocked() {
+    if (_categoryLastChangedAt == null) return false;
+    final elapsed = DateTime.now().millisecondsSinceEpoch - _categoryLastChangedAt!;
+    return elapsed < const Duration(days: 7).inMilliseconds;
+  }
+
+  DateTime? _categoryNextChangeDate() {
+    if (_categoryLastChangedAt == null) return null;
+    return DateTime.fromMillisecondsSinceEpoch(_categoryLastChangedAt!)
         .add(const Duration(days: 7));
   }
 
@@ -404,11 +419,13 @@ class _ProfilePageState extends State<ProfilePage> {
       if (interestsChanged) {
         updates['interests'] = _editInterests;
       }
-      if (_editCreatorCategory != authProvider.loginUserData.mainCategory &&
-          _editCreatorCategory != null) {
-        updates['mainCategory'] = _editCreatorCategory;
-      }
       final nowMs = DateTime.now().millisecondsSinceEpoch;
+      final categoryChanged = _editCreatorCategory != null &&
+          _editCreatorCategory != authProvider.loginUserData.mainCategory;
+      if (categoryChanged && !_categoryIsLocked()) {
+        updates['mainCategory'] = _editCreatorCategory;
+        updates['category_last_changed_at'] = nowMs;
+      }
       if (pseudoChanged && _pseudoStatus == 'available') {
         updates['pseudo'] = formattedPseudo;
         updates['pseudo_last_changed_at'] = nowMs;
@@ -457,8 +474,9 @@ class _ProfilePageState extends State<ProfilePage> {
       if (interestsChanged) {
         authProvider.loginUserData.interests = List.from(_editInterests);
       }
-      if (_editCreatorCategory != null) {
+      if (categoryChanged && !_categoryIsLocked()) {
         authProvider.loginUserData.mainCategory = _editCreatorCategory;
+        _categoryLastChangedAt = nowMs;
       }
       authProvider.notifyListeners();
 
@@ -1257,8 +1275,32 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  // Mêmes options que canal et types de post
+  static const _creatorCategoryOptions = [
+    {'value': 'SPORT',      'label': 'Sport',       'emoji': '⚽'},
+    {'value': 'ACTUALITES', 'label': 'Actualités',  'emoji': '📰'},
+    {'value': 'LOOKS',      'label': 'Looks',       'emoji': '👗'},
+    {'value': 'EVENEMENT',  'label': 'Événement',   'emoji': '🎉'},
+    {'value': 'OFFRES',     'label': 'Offres',      'emoji': '🛍️'},
+    {'value': 'GAMER',      'label': 'Gaming',      'emoji': '🎮'},
+    {'value': 'VIBE',       'label': 'Vibe',        'emoji': '🎵'},
+    {'value': 'GENERAL',    'label': 'Général',     'emoji': '📌'},
+  ];
+
+  static Color _categoryColor(String value, {required bool isDark}) {
+    switch (value) {
+      case 'SPORT':      return isDark ? const Color(0xFF5B9CFA) : const Color(0xFF2979FF);
+      case 'ACTUALITES': return isDark ? const Color(0xFF2ECC71) : const Color(0xFF1FAA59);
+      case 'LOOKS':      return isDark ? const Color(0xFFAF52DE) : const Color(0xFF9C27B0);
+      case 'EVENEMENT':  return isDark ? const Color(0xFFFF9500) : const Color(0xFFFF6D00);
+      case 'OFFRES':     return isDark ? const Color(0xFFFF6B9D) : const Color(0xFFE91E8C);
+      case 'GAMER':      return isDark ? const Color(0xFF9D8AFF) : const Color(0xFF5E35B1);
+      case 'VIBE':       return isDark ? const Color(0xFFFF6B9D) : const Color(0xFFE91E8C);
+      default:           return isDark ? const Color(0xFF9A9A95) : const Color(0xFF757575);
+    }
+  }
+
   Widget _buildCreatorCategorySection() {
-    final cats = UserInterests.categories;
     final current = _editCreatorCategory ?? authProvider.loginUserData.mainCategory;
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 6),
@@ -1306,15 +1348,38 @@ class _ProfilePageState extends State<ProfilePage> {
             ],
           ),
           const SizedBox(height: 12),
-          if (isEditMode)
+          if (isEditMode) ...[
+            if (_categoryIsLocked()) ...[
+              Row(
+                children: [
+                  Icon(Icons.lock_clock_outlined, size: 14, color: Colors.orange.shade400),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      () {
+                        final d = _categoryNextChangeDate();
+                        if (d == null) return 'Modifiable dans 7 jours';
+                        return 'Modifiable le ${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+                      }(),
+                      style: TextStyle(fontSize: 11, color: Colors.orange.shade400),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: cats.map((cat) {
-                final selected = current == cat.id;
-                final catColor = UserInterests.categoryColor(cat.id, isDark: _colors.isDark);
+              children: _creatorCategoryOptions.map((opt) {
+                final value = opt['value']!;
+                final selected = current == value;
+                final locked = _categoryIsLocked();
+                final catColor = locked
+                    ? _colors.textSecondary.withOpacity(0.4)
+                    : _categoryColor(value, isDark: _colors.isDark);
                 return GestureDetector(
-                  onTap: () => setState(() => _editCreatorCategory = cat.id),
+                  onTap: locked ? null : () => setState(() => _editCreatorCategory = value),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -1329,10 +1394,10 @@ class _ProfilePageState extends State<ProfilePage> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(cat.emoji, style: const TextStyle(fontSize: 13)),
+                        Text(opt['emoji']!, style: const TextStyle(fontSize: 13)),
                         const SizedBox(width: 5),
                         Text(
-                          cat.labelFr,
+                          opt['label']!,
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
@@ -1344,11 +1409,15 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 );
               }).toList(),
-            )
-          else if (current != null)
+            ),
+          ],
+          if (!isEditMode && current != null)
             () {
-              final cat = UserInterests.categoryById(current);
-              final catColor = UserInterests.categoryColor(current, isDark: _colors.isDark);
+              final opt = _creatorCategoryOptions.firstWhere(
+                (o) => o['value'] == current,
+                orElse: () => {'value': current, 'label': current, 'emoji': '📌'},
+              );
+              final catColor = _categoryColor(current, isDark: _colors.isDark);
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
@@ -1359,10 +1428,10 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(cat?.emoji ?? '📌', style: const TextStyle(fontSize: 14)),
+                    Text(opt['emoji']!, style: const TextStyle(fontSize: 14)),
                     const SizedBox(width: 6),
                     Text(
-                      cat?.labelFr ?? current,
+                      opt['label']!,
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -1372,8 +1441,8 @@ class _ProfilePageState extends State<ProfilePage> {
                   ],
                 ),
               );
-            }()
-          else
+            }(),
+          if (!isEditMode && current == null)
             Text(
               'Aucune catégorie définie',
               style: TextStyle(color: _colors.textSecondary, fontSize: 14),
