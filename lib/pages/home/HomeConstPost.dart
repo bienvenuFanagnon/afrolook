@@ -3725,17 +3725,27 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         contentWidgets.add(_buildPoolOrAd(_kPoolOrder[poolIdx], 'pool_slot_$poolCount'));
       }
 
-      // ── Section catégorie inline toutes les 8 posts ──────────────────────
-      // Affiche 2 posts d'une catégorie différente à chaque fois (rotation).
-      // Ne répète pas la même catégorie deux fois de suite.
+      // ── 2 sections catégorie inline toutes les 8 posts (4 posts au total) ──
+      // Chaque slot affiche 2 catégories différentes en rotation.
       if (_inlineCategories.isNotEmpty && (i + 1) % 8 == 0) {
-        final catId = _inlineCategories[_inlineCatIdx % _inlineCategories.length];
+        final slotNum = i ~/ 8;
+        final cat1 = _inlineCategories[_inlineCatIdx % _inlineCategories.length];
+        _inlineCatIdx++;
         contentWidgets.add(FeedCategorySectionWidget(
-          key: ValueKey('inline_cat_${catId}_${i ~/ 8}'),
-          categoryId: catId,
+          key: ValueKey('inline_cat_${cat1}_$slotNum'),
+          categoryId: cat1,
           excludedIds: _inlineExcludedIds,
         ));
-        _inlineCatIdx++;
+        // Deuxième catégorie (différente de la première si possible)
+        if (_inlineCategories.length > 1) {
+          final cat2 = _inlineCategories[_inlineCatIdx % _inlineCategories.length];
+          _inlineCatIdx++;
+          contentWidgets.add(FeedCategorySectionWidget(
+            key: ValueKey('inline_cat_${cat2}_${slotNum}_b'),
+            categoryId: cat2,
+            excludedIds: _inlineExcludedIds,
+          ));
+        }
       }
     }
 
