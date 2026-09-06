@@ -1540,8 +1540,8 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
               ),
             ],
           ),
-          // Clics pub
-          if ((ad.clicks ?? 0) > 0) ...[
+          // Clics pub — admin uniquement
+          if (authProvider.loginUserData.role == 'ADM' && (ad.clicks ?? 0) > 0) ...[
             const SizedBox(height: 12),
             Column(
               mainAxisSize: MainAxisSize.min,

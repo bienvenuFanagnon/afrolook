@@ -2136,21 +2136,25 @@ class _OtherUserPageState extends State<OtherUserPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Ligne stats si Advertisement chargé
-                    if (ad != null)
-                      Row(
+                    // Ligne stats si Advertisement chargé (clics réservés à l'admin)
+                    if (ad != null) Builder(builder: (ctx) {
+                      final isAdm = authProvider.loginUserData.role == 'ADM';
+                      return Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
                           _buildAdStat(Icons.remove_red_eye,
                               _formatNumber(ad.views ?? 0), colors.info),
-                          _buildAdStat(Icons.ads_click,
-                              _formatNumber(ad.clicks ?? 0), colors.warning),
-                          _buildAdStat(
-                              Icons.trending_up,
-                              '${ad.ctr.toStringAsFixed(1)}%',
-                              ad.ctr > 5 ? colors.primary : colors.warning),
+                          if (isAdm) ...[
+                            _buildAdStat(Icons.ads_click,
+                                _formatNumber(ad.clicks ?? 0), colors.warning),
+                            _buildAdStat(
+                                Icons.trending_up,
+                                '${ad.ctr.toStringAsFixed(1)}%',
+                                ad.ctr > 5 ? colors.primary : colors.warning),
+                          ],
                         ],
-                      ),
+                      );
+                    }),
                     // Bouton d'action
                     if (ad != null &&
                         (ad.actionButtonText != null ||

@@ -1194,12 +1194,6 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
                           const Icon(Icons.remove_red_eye_outlined, size: 13, color: Colors.white54),
                           const SizedBox(width: 4),
                           Text('${ad.views} vues', style: const TextStyle(color: Colors.white54, fontSize: 11, decoration: TextDecoration.none)),
-                          if ((ad.clicks ?? 0) > 0) ...[
-                            const SizedBox(width: 12),
-                            const Icon(Icons.touch_app_outlined, size: 13, color: Colors.white54),
-                            const SizedBox(width: 4),
-                            Text('${ad.clicks} clics', style: const TextStyle(color: Colors.white54, fontSize: 11, decoration: TextDecoration.none)),
-                          ],
                         ]),
                       ],
                       const SizedBox(height: 20),
@@ -1485,13 +1479,6 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
                                       const SizedBox(width: 4),
                                       Text('${ad!.views} vues',
                                         style: const TextStyle(color: Colors.white54, fontSize: 11, decoration: TextDecoration.none)),
-                                      if ((ad!.clicks ?? 0) > 0) ...[
-                                        const SizedBox(width: 12),
-                                        const Icon(Icons.touch_app_outlined, size: 13, color: Colors.white54),
-                                        const SizedBox(width: 4),
-                                        Text('${ad!.clicks} clics',
-                                          style: const TextStyle(color: Colors.white54, fontSize: 11, decoration: TextDecoration.none)),
-                                      ],
                                     ]),
                                   ],
                                   const SizedBox(height: 12),
@@ -2690,22 +2677,25 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
             ],
           ),
           const SizedBox(height: 6),
-          // Stats ligne
-          Row(
-            children: [
+          // Stats ligne (clics réservés à l'admin)
+          Builder(builder: (ctx) {
+            final isAdm = authProvider.loginUserData.role == 'ADM';
+            return Row(children: [
               Icon(Icons.visibility_outlined, size: 13, color: colors.textSecondary),
               const SizedBox(width: 3),
               Text('${ad.views} vues', style: TextStyle(color: colors.textSecondary, fontSize: 11)),
-              const SizedBox(width: 12),
-              Icon(Icons.touch_app_outlined, size: 13, color: colors.textSecondary),
-              const SizedBox(width: 3),
-              Text('${ad.clicks} clics', style: TextStyle(color: colors.textSecondary, fontSize: 11)),
-              const SizedBox(width: 12),
-              Icon(Icons.percent, size: 13, color: colors.accent),
-              const SizedBox(width: 3),
-              Text('CTR ${ad.ctr.toStringAsFixed(1)}%', style: TextStyle(color: colors.accent, fontSize: 11)),
-            ],
-          ),
+              if (isAdm) ...[
+                const SizedBox(width: 12),
+                Icon(Icons.touch_app_outlined, size: 13, color: colors.textSecondary),
+                const SizedBox(width: 3),
+                Text('${ad.clicks} clics', style: TextStyle(color: colors.textSecondary, fontSize: 11)),
+                const SizedBox(width: 12),
+                Icon(Icons.percent, size: 13, color: colors.accent),
+                const SizedBox(width: 3),
+                Text('CTR ${ad.ctr.toStringAsFixed(1)}%', style: TextStyle(color: colors.accent, fontSize: 11)),
+              ],
+            ]);
+          }),
         ],
       ),
     );
@@ -2796,21 +2786,24 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
           ),
           if (ad.status == 'active') ...[
             const SizedBox(height: 8),
-            Row(
-              children: [
+            Builder(builder: (ctx) {
+              final isAdm = authProvider.loginUserData.role == 'ADM';
+              return Row(children: [
                 Icon(Icons.visibility_outlined, size: 13, color: colors.textSecondary),
                 const SizedBox(width: 3),
                 Text('${ad.views}', style: TextStyle(color: colors.textSecondary, fontSize: 11)),
-                const SizedBox(width: 10),
-                Icon(Icons.touch_app_outlined, size: 13, color: colors.textSecondary),
-                const SizedBox(width: 3),
-                Text('${ad.clicks}', style: TextStyle(color: colors.textSecondary, fontSize: 11)),
-                const SizedBox(width: 10),
-                Icon(Icons.percent, size: 13, color: colors.accent),
-                const SizedBox(width: 3),
-                Text('CTR ${ad.ctr.toStringAsFixed(1)}%', style: TextStyle(color: colors.accent, fontSize: 11)),
-              ],
-            ),
+                if (isAdm) ...[
+                  const SizedBox(width: 10),
+                  Icon(Icons.touch_app_outlined, size: 13, color: colors.textSecondary),
+                  const SizedBox(width: 3),
+                  Text('${ad.clicks}', style: TextStyle(color: colors.textSecondary, fontSize: 11)),
+                  const SizedBox(width: 10),
+                  Icon(Icons.percent, size: 13, color: colors.accent),
+                  const SizedBox(width: 3),
+                  Text('CTR ${ad.ctr.toStringAsFixed(1)}%', style: TextStyle(color: colors.accent, fontSize: 11)),
+                ],
+              ]);
+            }),
           ],
         ],
       ),

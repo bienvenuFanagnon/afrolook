@@ -993,8 +993,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
                                                       fontSize: 11,
                                                       decoration: TextDecoration.none,
                                                     ),
-                                                  )
-,
+                                                  ),
                                               ],
                                             ),
                                           ),

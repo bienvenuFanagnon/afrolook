@@ -435,11 +435,8 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
     }
   }
 
-  bool _isAdminOrOwner(Advertisement ad, UserAuthProvider auth) {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return false;
-    return uid == ad.ownerId || AbonnementUtils.isAdmin(auth.loginUserData?.role);
-  }
+  bool _isAdmin(UserAuthProvider auth) =>
+      AbonnementUtils.isAdmin(auth.loginUserData?.role);
 
   // ── Dispatcher entité ──────────────────────────────────────────────
   Widget _buildEntityBoostBanner(BuildContext context, Advertisement ad, String adDescription) {
@@ -456,7 +453,7 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
   Widget _buildEntityBoostBannerHorizontal(BuildContext context, Advertisement ad, String adDescription) {
     final colors = AppColors.of(context);
     final auth = Provider.of<UserAuthProvider>(context, listen: false);
-    final showClicks = _isAdminOrOwner(ad, auth);
+    final showClicks = _isAdmin(auth);
     final typeLabel = ad.ownerType == 'canal' ? 'Canal' : ad.ownerType == 'group' ? 'Groupe' : 'Créateur';
     final ctaLabel  = ad.ownerType == 'canal' ? "S'abonner" : ad.ownerType == 'group' ? 'Rejoindre' : 'Suivre';
     final ctaIcon   = ad.ownerType == 'canal' ? Icons.notifications_none : ad.ownerType == 'group' ? Icons.login : Icons.person_add;
@@ -804,7 +801,7 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
     required String adDescription,
   }) {
     final auth = Provider.of<UserAuthProvider>(context, listen: false);
-    final showClicks = _isAdminOrOwner(ad, auth);
+    final showClicks = _isAdmin(auth);
     Widget sponsoredBadges = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
