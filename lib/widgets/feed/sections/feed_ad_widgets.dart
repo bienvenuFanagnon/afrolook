@@ -53,24 +53,49 @@ class FeedAdCarousel extends StatelessWidget {
   }
 }
 
-/// Slot pub unifié : affiche le carousel grande pub si des posts boostés existent,
-/// sinon affiche une pub bannière AfrolookInlineAd. Jamais les deux ensemble.
-class FeedUnifiedAdSlot extends StatelessWidget {
+/// Slot pub unifié : alterne entre carousel et bannière.
+///
+/// - Si des post-ads existent : alterne carousel / bannière (1 sur 2)
+/// - Si seulement entity boosts : toujours bannière
+/// - Vide → rien (invisible, pas de saut de layout)
+///
+/// Le format est verrouillé au premier chargement des pubs pour éviter
+/// le passage bannière → carousel lors du chargement asynchrone.
+class FeedUnifiedAdSlot extends StatefulWidget {
   final String adKey;
   const FeedUnifiedAdSlot({Key? key, required this.adKey}) : super(key: key);
+
+  static int _slotCounter = 0;
+
+  @override
+  State<FeedUnifiedAdSlot> createState() => _FeedUnifiedAdSlotState();
+}
+
+class _FeedUnifiedAdSlotState extends State<FeedUnifiedAdSlot> {
+  /// null = pas encore décidé ; true = carousel ; false = bannière
+  bool? _showCarousel;
 
   @override
   Widget build(BuildContext context) {
     return Consumer<UserAuthProvider>(
       builder: (context, auth, _) {
         if (auth.advertisements.isEmpty) return const SizedBox.shrink();
-        final hasBoostedPosts = auth.advertisements
-            .any((a) => a['isEntityBoost'] != true && a['post'] != null);
-        if (hasBoostedPosts) {
-          return FeedAdCarousel(adKey: adKey);
+
+        // Verrouiller le format une seule fois, au premier chargement non vide.
+        if (_showCarousel == null) {
+          final hasPostAds = auth.advertisements
+              .any((a) => a['isEntityBoost'] != true && a['post'] != null);
+          if (hasPostAds) {
+            _showCarousel = (FeedUnifiedAdSlot._slotCounter % 2 == 0);
+            FeedUnifiedAdSlot._slotCounter++;
+          } else {
+            _showCarousel = false;
+          }
         }
-        // Fallback : bannière inline (entity boost ou créateur sponsorisé)
-        return const AfrolookInlineAd();
+
+        return _showCarousel == true
+            ? FeedAdCarousel(adKey: widget.adKey)
+            : const AfrolookInlineAd();
       },
     );
   }
