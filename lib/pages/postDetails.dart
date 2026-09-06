@@ -4715,28 +4715,20 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       );
     }
 
-    // Collapsed: 2 lignes + "Voir plus" en overlay à droite
+    // Collapsed: 2 lignes + "Voir plus" sur sa propre ligne en dessous
     return GestureDetector(
       onLongPress: copyToClipboard,
-      child: Stack(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           buildLinkify(maxLines: 2, overflow: TextOverflow.ellipsis),
-          Positioned(
-            bottom: 0, right: 0,
-            child: GestureDetector(
-              onTap: () => setState(() => _isExpanded = true),
-              child: Container(
-                padding: const EdgeInsets.only(left: 20),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.centerLeft, end: Alignment.centerRight,
-                    colors: [_colors.surface.withOpacity(0), _colors.surface],
-                  ),
-                ),
-                child: Text('Voir plus',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
-                    color: _colors.info, height: 1.4, decoration: TextDecoration.none)),
-              ),
+          GestureDetector(
+            onTap: () => setState(() => _isExpanded = true),
+            child: Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text('Voir plus',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
+                  color: _colors.info, decoration: TextDecoration.none)),
             ),
           ),
         ],
