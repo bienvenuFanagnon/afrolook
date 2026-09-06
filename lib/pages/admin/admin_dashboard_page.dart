@@ -104,6 +104,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         return _RecentEvent(pseudo: pseudo, status: status, timestamp: ts);
       }).toList();
 
+      final pendingBoostsSnap = await _db.collection('Advertisements')
+          .where('status', isEqualTo: 'pending').count().get();
+      final pendingCount = pendingBoostsSnap.count ?? 0;
+
       if (mounted) {
         setState(() {
           _totalUsers        = results[0].count ?? 0;
@@ -119,10 +123,92 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           _recentEvents      = events;
           _loading = false;
         });
+        if (pendingCount > 0) {
+          WidgetsBinding.instance.addPostFrameCallback((_) => _showPendingBoostModal(pendingCount));
+        }
       }
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  void _showPendingBoostModal(int count) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final colors = AppColors.of(ctx);
+        return AlertDialog(
+          backgroundColor: colors.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFD700).withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.campaign_rounded, color: Color(0xFFFFD700), size: 22),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text('Boosts en attente', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
+            ),
+          ]),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              RichText(
+                text: TextSpan(
+                  style: TextStyle(color: colors.textSecondary, fontSize: 14, height: 1.5),
+                  children: [
+                    TextSpan(text: '$count demande${count > 1 ? 's' : ''} de boost '),
+                    TextSpan(text: 'en attente de validation', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold)),
+                    const TextSpan(text: '.\n\nLes utilisateurs attendent une activation sous '),
+                    TextSpan(text: '24h', style: TextStyle(color: const Color(0xFFE21221), fontWeight: FontWeight.bold)),
+                    const TextSpan(text: '.'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE21221).withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFE21221).withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.access_time, color: Color(0xFFE21221), size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text('Validez les boosts dès que possible.', style: TextStyle(color: colors.textPrimary, fontSize: 12))),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Plus tard', style: TextStyle(color: colors.textSecondary)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const AdvertisementManagementPage()));
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE21221),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: Text('Voir les boosts ($count)'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override

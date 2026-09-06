@@ -488,6 +488,55 @@ export const sendBulkEmail = onCall(
 );
 
 /**
+ * Notifie officiel.afrolook@gmail.com dès qu'un boost est soumis.
+ */
+export const notifyAdminBoostSubmission = onCall(
+  { timeoutSeconds: 30 },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Authentification requise");
+    }
+
+    const { ownerName, ownerType, durationWeeks, pricePaid } = request.data;
+
+    const typeLabel = ownerType === "canal" ? "Canal" : ownerType === "group" ? "Groupe" : ownerType === "user" ? "Profil" : "Post";
+    const subject = `🚀 Nouveau boost en attente — ${typeLabel}: ${ownerName ?? "Inconnu"}`;
+    const html = `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:24px;background:#f9f9f9;">
+        <div style="background:#E21221;padding:20px;border-radius:12px 12px 0 0;text-align:center;">
+          <h1 style="color:#FFD700;margin:0;font-size:22px;">Afrolook — Nouvelle demande de boost</h1>
+        </div>
+        <div style="background:#fff;padding:24px;border-radius:0 0 12px 12px;border:1px solid #eee;">
+          <p style="color:#333;font-size:16px;">Une nouvelle demande de boost est en attente de validation :</p>
+          <table style="width:100%;border-collapse:collapse;margin-top:12px;">
+            <tr><td style="padding:8px 0;color:#666;font-size:14px;">Type</td><td style="padding:8px 0;font-weight:bold;color:#333;">${typeLabel}</td></tr>
+            <tr><td style="padding:8px 0;color:#666;font-size:14px;">Entité</td><td style="padding:8px 0;font-weight:bold;color:#333;">${ownerName ?? "—"}</td></tr>
+            <tr><td style="padding:8px 0;color:#666;font-size:14px;">Durée</td><td style="padding:8px 0;font-weight:bold;color:#333;">${durationWeeks ?? "?"} semaine(s)</td></tr>
+            <tr><td style="padding:8px 0;color:#666;font-size:14px;">Montant</td><td style="padding:8px 0;font-weight:bold;color:#E21221;">${pricePaid ?? 0} FCFA</td></tr>
+          </table>
+          <div style="margin-top:20px;padding:14px;background:#FFF8E1;border-radius:8px;border-left:4px solid #FFD700;">
+            <p style="margin:0;color:#333;font-size:14px;">⚠️ L'utilisateur attend une validation sous <strong>24h</strong>. Connectez-vous au dashboard admin pour approuver.</p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    try {
+      await emailTransporter.sendMail({
+        from: '"Afrolook" <epargneplus@epargneplusfinance.com>',
+        to: "officiel.afrolook@gmail.com",
+        subject,
+        html,
+      });
+      return { success: true };
+    } catch (error: any) {
+      console.error("notifyAdminBoostSubmission error:", error);
+      throw new HttpsError("internal", error.message);
+    }
+  }
+);
+
+/**
  * Fonction de test simple
  */
 export const testEmail = onCall(async (request) => {

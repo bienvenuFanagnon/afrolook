@@ -6,8 +6,10 @@ import 'package:afrotok/services/ad_config_service.dart';
 import 'package:afrotok/theme/app_colors.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Page de boost standalone pour un profil utilisateur, un canal ou un groupe de chat.
 /// Crée une Advertisement sans post (ownerType = 'user' | 'canal' | 'group'),
@@ -241,6 +243,13 @@ class _UserProfileBoostPageState extends State<UserProfileBoostPage> {
       await FirebaseFirestore.instance.collection('Advertisements').doc(adId).set(adJson);
 
       if (!mounted) return;
+      // Notifier l'admin par email (fire & forget)
+      _sendAdminNotificationEmail(
+        ownerType: ownerType,
+        ownerName: ownerName,
+        durationWeeks: _selectedDurationWeeks!,
+        pricePaid: price,
+      );
       _showSuccessDialog();
     } catch (e) {
       debugPrint('UserProfileBoostPage._submit error: $e');
@@ -272,6 +281,27 @@ class _UserProfileBoostPageState extends State<UserProfileBoostPage> {
     }
   }
 
+  Future<void> _sendAdminNotificationEmail({required String ownerType, required String ownerName, required int durationWeeks, required int pricePaid}) async {
+    try {
+      await FirebaseFunctions.instance.httpsCallable('notifyAdminBoostSubmission').call({
+        'ownerType': ownerType,
+        'ownerName': ownerName,
+        'durationWeeks': durationWeeks,
+        'pricePaid': pricePaid,
+      });
+    } catch (e) {
+      debugPrint('notifyAdminBoostSubmission error (non-fatal): $e');
+    }
+  }
+
+  Future<void> _openSupportContact() async {
+    const whatsappNumber = "22890000000";
+    final url = Uri.parse("https://wa.me/$whatsappNumber");
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    }
+  }
+
   void _showInsufficientBalanceDialog(int price, double balance) {
     showDialog(
       context: context,
@@ -298,14 +328,45 @@ class _UserProfileBoostPageState extends State<UserProfileBoostPage> {
         title: Row(children: [
           Icon(Icons.check_circle, color: _gold),
           const SizedBox(width: 8),
-          Text('Demande envoyée', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
+          Expanded(child: Text('Demande envoyée', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold))),
         ]),
-        content: Text(
-          'Votre boost ${_isGroup ? 'de groupe' : _isCanal ? 'de canal' : 'de profil'} est en attente de validation par l\'équipe Afrolook. '
-          'Vous serez notifié(e) dès son activation.',
-          style: TextStyle(color: _c.textSecondary),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Votre boost ${_isGroup ? 'de groupe' : _isCanal ? 'de canal' : 'de profil'} est en attente de validation par l\'équipe Afrolook.',
+              style: TextStyle(color: _c.textSecondary),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: _gold.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: _gold.withOpacity(0.4)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.access_time, color: _gold, size: 18),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Si votre boost n\'est pas activé sous 24h, contactez notre service client.',
+                      style: TextStyle(color: _c.textPrimary, fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
         actions: [
+          TextButton(
+            onPressed: _openSupportContact,
+            child: Text('Service client', style: TextStyle(color: _gold)),
+          ),
           ElevatedButton(
             onPressed: () { Navigator.pop(context); Navigator.pop(context); },
             style: ElevatedButton.styleFrom(backgroundColor: _gold, foregroundColor: Colors.black),

@@ -13,6 +13,7 @@ import 'package:chewie/chewie.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:path_provider/path_provider.dart';
@@ -576,6 +577,8 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
       await FirebaseFirestore.instance.collection('Advertisements').doc(adId).set(ad.toJson());
       await FirebaseFirestore.instance.collection('Posts').doc(postId).update({'advertisementId': adId});
 
+      // Notifier l'admin par email (fire & forget)
+      _sendAdminNotificationEmail(durationWeeks: _selectedDurationWeeks!, pricePaid: price);
       _showSuccessDialog();
     } catch (e) {
       printVm('Erreur publication: $e');
@@ -609,6 +612,23 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
     await FirebaseFirestore.instance.collection('TransactionSoldes').doc(transaction.id).set(transaction.toJson());
   }
 
+  Future<void> _sendAdminNotificationEmail({required int durationWeeks, required int pricePaid}) async {
+    final userData = authProvider.loginUserData;
+    final ownerName = ('${userData.prenom ?? ''} ${userData.nom ?? ''}'.trim().isNotEmpty
+        ? '${userData.prenom ?? ''} ${userData.nom ?? ''}'.trim()
+        : (userData.pseudo ?? ''));
+    try {
+      await FirebaseFunctions.instance.httpsCallable('notifyAdminBoostSubmission').call({
+        'ownerType': 'post',
+        'ownerName': ownerName,
+        'durationWeeks': durationWeeks,
+        'pricePaid': pricePaid,
+      });
+    } catch (e) {
+      debugPrint('notifyAdminBoostSubmission error (non-fatal): $e');
+    }
+  }
+
   void _showInsufficientBalanceDialog() {
     showDialog(
       context: context,
@@ -637,21 +657,33 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
       builder: (context) => AlertDialog(
         backgroundColor: _c.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(children: [Icon(Icons.check_circle, color: Colors.green), SizedBox(width: 10), Text('Publicité soumise !', style: TextStyle(color: _c.textPrimary))]),
+        title: Row(children: [
+          Icon(Icons.check_circle, color: Colors.green),
+          SizedBox(width: 10),
+          Expanded(child: Text('Publicité soumise !', style: TextStyle(color: _c.textPrimary))),
+        ]),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Votre publicité sera diffusée après validation par notre équipe.', style: TextStyle(color: _c.textSecondary)),
-            SizedBox(height: 16),
+            SizedBox(height: 12),
             Container(
               padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(color: _secondaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(
+                color: _secondaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _secondaryColor.withOpacity(0.4)),
+              ),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.contact_support, color: _secondaryColor),
-                  SizedBox(width: 12),
-                  Expanded(child: Text('Pour accélérer la validation, contactez notre service client.', style: TextStyle(color: _c.textPrimary, fontSize: 12))),
+                  Icon(Icons.access_time, color: _secondaryColor, size: 18),
+                  SizedBox(width: 10),
+                  Expanded(child: Text(
+                    'Si votre publicité n\'est pas activée sous 24h, contactez notre service client.',
+                    style: TextStyle(color: _c.textPrimary, fontSize: 13),
+                  )),
                 ],
               ),
             ),
@@ -663,7 +695,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
               Navigator.pop(context);
               _contactSupport();
             },
-            child: Text('CONTACTER LE SERVICE CLIENT'),
+            child: Text('SERVICE CLIENT'),
             style: ElevatedButton.styleFrom(backgroundColor: _secondaryColor, foregroundColor: Colors.black),
           ),
           TextButton(
