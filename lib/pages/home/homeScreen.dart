@@ -181,6 +181,7 @@ class _MyHomePageState extends State<MyHomePage>
   TabController? _tabController;
   int _unreadNotificationsCount = 0;
   DateTime? _lastToastTime;
+  List<NotificationData> _latestUnreadNotifs = [];
   String _appVersion = '';
   int? _shorebirdPatch;
   Widget? _desktopSection;
@@ -343,11 +344,20 @@ class _MyHomePageState extends State<MyHomePage>
         .collection('Notifications')
         .where('receiver_id', isEqualTo: currentUserId)
         .where('is_open', isEqualTo: false)
+        .orderBy('createdAt', descending: true)
         .snapshots()
         .listen((snapshot) {
       if (!mounted) return;
       final count = snapshot.docs.length;
-      setState(() => _unreadNotificationsCount = count);
+      final latest = snapshot.docs.take(2).map((d) {
+        final data = Map<String, dynamic>.from(d.data());
+        data['id'] = d.id;
+        return NotificationData.fromJson(data);
+      }).toList();
+      setState(() {
+        _unreadNotificationsCount = count;
+        _latestUnreadNotifs = latest;
+      });
       if (count > 0 && _lastToastTime == null) {
         _showNotificationToastIfNeeded();
       }
@@ -365,6 +375,7 @@ class _MyHomePageState extends State<MyHomePage>
     NotificationToast.show(
       context: context,
       count: _unreadNotificationsCount,
+      latestNotifs: _latestUnreadNotifs,
       onTap: () => Navigator.pushNamed(context, '/mes_notifications'),
     );
   }

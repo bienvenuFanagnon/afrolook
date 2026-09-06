@@ -430,7 +430,9 @@ if (await friendsStream.isEmpty) {
   Widget build(BuildContext context) {
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
-    return CenteredContent(
+    return Material(
+      type: MaterialType.transparency,
+      child: CenteredContent(
       maxWidth: AppLayout.isDesktop(context) ? 700 : AppLayout.maxFeedWidth,
       child: SingleChildScrollView(
       child: Column(
@@ -695,6 +697,7 @@ if (await friendsStream.isEmpty) {
         ],
       ),
       ),  // CenteredContent
+      ),  // Material
     );
   }
 }

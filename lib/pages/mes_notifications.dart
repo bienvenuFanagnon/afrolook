@@ -564,6 +564,25 @@ class _MesNotificationState extends State<MesNotification> {
             });
           });
           break;
+        case 'FOLLOW_CANAL':
+          final canalId = notification.canal_id;
+          if (canalId != null && canalId.isNotEmpty) {
+            final doc = await _firestore.collection('Canaux').doc(canalId).get();
+            _hideLoadingOverlay();
+            if (!mounted) return;
+            if (doc.exists) {
+              final canal = Canal.fromJson({...doc.data()!, 'id': doc.id});
+              Navigator.push(context, MaterialPageRoute(
+                builder: (_) => CanalDetails(canal: canal),
+              )).then((_) => setState(() => _isHandlingNotification = false));
+            } else {
+              setState(() => _isHandlingNotification = false);
+            }
+          } else {
+            _hideLoadingOverlay();
+            setState(() => _isHandlingNotification = false);
+          }
+          break;
         case 'PARRAINAGE':
           _hideLoadingOverlay();
           Navigator.push(context, MaterialPageRoute(

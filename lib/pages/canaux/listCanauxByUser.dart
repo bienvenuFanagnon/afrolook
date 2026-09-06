@@ -108,6 +108,7 @@ class _CanalListPageByUserState extends State<CanalListPageByUser> {
           description: "@${authProvider.loginUserData.pseudo!} suit votre canal #${canal.titre!}",
           user_id: userId,
           receiver_id: canal.userId,
+          canal_id: canal.id,
           createdAt: DateTime.now().microsecondsSinceEpoch,
           updatedAt: DateTime.now().microsecondsSinceEpoch,
           status: "VALIDE",
