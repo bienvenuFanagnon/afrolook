@@ -301,29 +301,39 @@ class FeedRepository {
     }
   }
 
-  /// Charge des posts par leurs IDs (par batches de 10, limite Firestore).
+  /// Charge des posts par leurs IDs (batches de 10 en parallèle, limite Firestore).
   /// [tabbarType] filtre côté Firestore si fourni (ex. 'SPORT').
   Future<List<Post>> loadPostsByIds(List<String> ids, {String? tabbarType}) async {
     if (ids.isEmpty) return [];
-    final posts = <Post>[];
+
+    final batches = <List<String>>[];
     for (int i = 0; i < ids.length; i += 10) {
-      final batch = ids.sublist(i, min(i + 10, ids.length));
-      try {
-        Query<Map<String, dynamic>> q = _db
-            .collection('Posts')
-            .where(FieldPath.documentId, whereIn: batch);
-        if (tabbarType != null) q = q.where('typeTabbar', isEqualTo: tabbarType);
-        final snap = await q.get();
-        for (final doc in snap.docs) {
-          try {
-            posts.add(Post.fromJson({'id': doc.id, ...doc.data()}));
-          } catch (_) {}
-        }
-      } catch (e) {
-        printVm('⚠️ [FeedRepository] loadPostsByIds batch[$i]: $e');
-      }
+      batches.add(ids.sublist(i, min(i + 10, ids.length)));
     }
-    return posts;
+
+    final results = await Future.wait(
+      batches.map((batch) async {
+        try {
+          Query<Map<String, dynamic>> q = _db
+              .collection('Posts')
+              .where(FieldPath.documentId, whereIn: batch);
+          if (tabbarType != null) q = q.where('typeTabbar', isEqualTo: tabbarType);
+          final snap = await q.get();
+          return snap.docs.map((doc) {
+            try {
+              return Post.fromJson({'id': doc.id, ...doc.data()});
+            } catch (_) {
+              return null;
+            }
+          }).whereType<Post>().toList();
+        } catch (e) {
+          printVm('⚠️ [FeedRepository] loadPostsByIds batch: $e');
+          return <Post>[];
+        }
+      }),
+    );
+
+    return results.expand((posts) => posts).toList();
   }
 
   // ── CONTENU GLOBAL (partagé par tous les feeds) ──────────────────────────────

@@ -261,10 +261,14 @@ class _MyHomePageState extends State<MyHomePage>
       _mixedFeedService = widget.preloadedFeedService!;
       printVm('🎯 Service de feed préchargé utilisé: ${_mixedFeedService!.preparedPostsCount} posts prêts');
 
-      // 🔥 CHARGER LE CONTENU GLOBAL DEPUIS LA PAGE
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        await _mixedFeedService!.loadGlobalContentFromPage();
-        printVm('🌍 Contenu global chargé depuis MyHomePage');
+      // 🔥 CHARGER LE CONTENU GLOBAL — décalé pour laisser les posts charger
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future.delayed(const Duration(seconds: 4), () async {
+          if (mounted) {
+            await _mixedFeedService!.loadGlobalContentFromPage();
+            printVm('🌍 Contenu global chargé depuis MyHomePage');
+          }
+        });
       });
     } else {
       // Créer un nouveau service si pas de service préchargé
@@ -276,14 +280,15 @@ class _MyHomePageState extends State<MyHomePage>
         contentProvider: Provider.of<ContentProvider>(context, listen: false),
       );
 
-      // Préparer les posts et charger le contenu global
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        final currentUserId = authProvider.loginUserData.id;
-        if (currentUserId != null) {
-          // await _mixedFeedService!.preparePostsOnly();
-          await _mixedFeedService!.loadGlobalContentFromPage();
-          printVm('🔄 Nouveau service créé: ${_mixedFeedService!.preparedPostsCount} posts prêts');
-        }
+      // Préparer les posts et charger le contenu global — décalé pour laisser les posts charger
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future.delayed(const Duration(seconds: 4), () async {
+          final currentUserId = authProvider.loginUserData.id;
+          if (mounted && currentUserId != null) {
+            await _mixedFeedService!.loadGlobalContentFromPage();
+            printVm('🔄 Nouveau service créé: ${_mixedFeedService!.preparedPostsCount} posts prêts');
+          }
+        });
       });
     }
   }

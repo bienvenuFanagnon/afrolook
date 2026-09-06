@@ -869,17 +869,18 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       _loadInitialPosts();
       _startOldPostsLoading();
       _startBackgroundLoading();
+      // Décalé pour laisser T1+T2 s'exécuter sans contention Firestore
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _loadAllAdditionalDataInParallel();
+        Future.delayed(const Duration(seconds: 5), () {
+          if (mounted) _loadAllAdditionalDataInParallel();
+        });
       });
     } else {
-      // Pas de cache : lancer les sections EN PARALLÈLE avec les posts.
-      // Les sections (chroniques, profils, canaux, articles) n'ont pas besoin
-      // de _loadedPostIds → elles peuvent démarrer tout de suite.
-      // _startOldPostsLoading() attend la fin de _loadInitialPosts() car il
-      // utilise _loadedPostIds pour dédupliquer.
+      // Pas de cache : décaler les sections pour éviter la contention avec T1+T2.
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _loadAllAdditionalDataInParallel();
+        Future.delayed(const Duration(seconds: 5), () {
+          if (mounted) _loadAllAdditionalDataInParallel();
+        });
       });
       await _loadInitialPosts();
       _startOldPostsLoading();
@@ -1122,9 +1123,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     // 4. Démarrer le chargement background (si activé)
     _startBackgroundLoading();
 
-    // 5. Charger les autres données EN PARALLÈLE (non bloquant)
+    // 5. Charger les autres données EN PARALLÈLE (décalé pour éviter contention)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadAllAdditionalDataInParallel();
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted) _loadAllAdditionalDataInParallel();
+      });
     });
   }
 
