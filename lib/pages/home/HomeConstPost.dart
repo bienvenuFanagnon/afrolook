@@ -909,11 +909,17 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   /// le réseau. Le chargement réseau classique se poursuit normalement après
   /// cet appel et remplacera/complètera ces données.
   Future<bool> _loadFromCacheAndDisplay() async {
+    final _swCache = Stopwatch()..start();
     try {
+      printVm('⏱️ [CACHE] lecture disque...');
       // Cache valide uniquement pour le jour en cours (minuit → minuit).
       // Le lendemain le cache est ignoré et un chargement réseau repart.
       final cached = await FeedCacheService.loadFeedData(_feedCacheKey, dailyCacheOnly: true);
-      if (cached == null) return false;
+      if (cached == null) {
+        printVm('⏱️ [CACHE] aucun cache valide — ${_swCache.elapsedMilliseconds}ms');
+        return false;
+      }
+      printVm('⏱️ [CACHE] lecture disque terminée — ${_swCache.elapsedMilliseconds}ms');
 
       final data = cached['data'] as Map<String, dynamic>;
 
@@ -1015,6 +1021,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
       if (!mounted) return false;
 
+      final parseMs = _swCache.elapsedMilliseconds;
+      printVm('⏱️ [CACHE] parsing JSON — ${cachedChroniques.length} chroniques, ${cachedSuggestedUsers.length} profils, ${cachedCanaux.length} canaux, ${cachedArticles.length} articles — ${parseMs}ms');
+
       // Posts ignorés du cache — le système Tier charge toujours depuis le réseau.
       setState(() {
         if (cachedChroniques.isNotEmpty) {
@@ -1035,10 +1044,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         }
       });
 
-      printVm('⚡ Données auxiliaires chargées depuis le cache ($_feedCacheKey), posts chargés depuis le réseau');
+      printVm('⏱️ [CACHE] total: ${_swCache.elapsedMilliseconds}ms — données auxiliaires affichées depuis le cache');
       return false; // Posts toujours depuis le réseau
     } catch (e) {
-      printVm('⚠️ Erreur _loadFromCacheAndDisplay: $e');
+      printVm('⚠️ Erreur _loadFromCacheAndDisplay: $e [${_swCache.elapsedMilliseconds}ms]');
       return false;
     }
   }

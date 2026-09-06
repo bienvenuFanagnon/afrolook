@@ -305,35 +305,44 @@ class FeedRepository {
   /// [tabbarType] filtre côté Firestore si fourni (ex. 'SPORT').
   Future<List<Post>> loadPostsByIds(List<String> ids, {String? tabbarType}) async {
     if (ids.isEmpty) return [];
+    final _swBatch = Stopwatch()..start();
 
     final batches = <List<String>>[];
     for (int i = 0; i < ids.length; i += 10) {
       batches.add(ids.sublist(i, min(i + 10, ids.length)));
     }
+    printVm('⏱️ [T1] loadPostsByIds: ${ids.length} IDs → ${batches.length} batch(es) en parallèle');
 
     final results = await Future.wait(
-      batches.map((batch) async {
+      batches.asMap().entries.map((entry) async {
+        final idx = entry.key;
+        final batch = entry.value;
+        final _swSingle = Stopwatch()..start();
         try {
           Query<Map<String, dynamic>> q = _db
               .collection('Posts')
               .where(FieldPath.documentId, whereIn: batch);
           if (tabbarType != null) q = q.where('typeTabbar', isEqualTo: tabbarType);
           final snap = await q.get();
-          return snap.docs.map((doc) {
+          final posts = snap.docs.map((doc) {
             try {
               return Post.fromJson({'id': doc.id, ...doc.data()});
             } catch (_) {
               return null;
             }
           }).whereType<Post>().toList();
+          printVm('⏱️ [T1] batch[$idx/${batches.length}] ${batch.length} IDs → ${posts.length} posts — ${_swSingle.elapsedMilliseconds}ms');
+          return posts;
         } catch (e) {
-          printVm('⚠️ [FeedRepository] loadPostsByIds batch: $e');
+          printVm('⚠️ [FeedRepository] loadPostsByIds batch[$idx]: $e [${_swSingle.elapsedMilliseconds}ms]');
           return <Post>[];
         }
       }),
     );
 
-    return results.expand((posts) => posts).toList();
+    final allPosts = results.expand((posts) => posts).toList();
+    printVm('⏱️ [T1] loadPostsByIds: ${allPosts.length} posts total — ${_swBatch.elapsedMilliseconds}ms (max des batches parallèles)');
+    return allPosts;
   }
 
   // ── CONTENU GLOBAL (partagé par tous les feeds) ──────────────────────────────
@@ -555,16 +564,20 @@ class FeedRepository {
     String? tabbarType,
   }) async {
     if (interests.isEmpty) return [];
+    final _swT2 = Stopwatch()..start();
     try {
       final tags = interests.take(10).toList();
       Query<Map<String, dynamic>> q = _db
           .collection('Posts')
           .where('postInterests', arrayContainsAny: tags);
       if (tabbarType != null) q = q.where('typeTabbar', isEqualTo: tabbarType);
+      printVm('⏱️ [T2] fetchInterestPosts: requête Firestore (tags=${tags.length}, limit×4=${limit * 4})...');
       final snap = await q
           .orderBy('created_at', descending: true)
           .limit(limit * 4)
           .get();
+      final queryMs = _swT2.elapsedMilliseconds;
+      printVm('⏱️ [T2] fetchInterestPosts: query terminée — ${queryMs}ms — ${snap.docs.length} docs bruts');
 
       final result = <Post>[];
       for (final doc in snap.docs) {
@@ -584,9 +597,10 @@ class FeedRepository {
           if (result.length >= limit) break;
         } catch (_) {}
       }
+      printVm('⏱️ [T2] fetchInterestPosts: filtre client → ${result.length}/${snap.docs.length} posts retenus — ${_swT2.elapsedMilliseconds}ms total');
       return result;
     } catch (e) {
-      printVm('⚠️ [FeedRepository] fetchInterestPosts: $e');
+      printVm('⚠️ [FeedRepository] fetchInterestPosts: $e [${_swT2.elapsedMilliseconds}ms]');
       return [];
     }
   }
@@ -601,6 +615,7 @@ class FeedRepository {
     String? tabbarType,
   }) async {
     if (unreadMap.isEmpty) return [];
+    final _swT1 = Stopwatch()..start();
     // Trier par timestamp desc, prendre les N plus récents
     final sorted = unreadMap.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
@@ -609,7 +624,10 @@ class FeedRepository {
         .take(limit)
         .map((e) => e.key)
         .toList();
+    printVm('⏱️ [T1] fetchUnreadSubscriptionPosts: ${unreadMap.length} unread → ${ids.length} IDs sélectionnés (tri: ${_swT1.elapsedMilliseconds}ms)');
     if (ids.isEmpty) return [];
-    return loadPostsByIds(ids, tabbarType: tabbarType);
+    final result = await loadPostsByIds(ids, tabbarType: tabbarType);
+    printVm('⏱️ [T1] fetchUnreadSubscriptionPosts: terminé — ${result.length} posts — ${_swT1.elapsedMilliseconds}ms total');
+    return result;
   }
 }
