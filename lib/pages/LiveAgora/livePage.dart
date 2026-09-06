@@ -125,6 +125,9 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   Timer? _trialTimer;
   bool _showTrialOverlay = false;
 
+  // HEARTBEAT (host uniquement — maintient le live actif)
+  Timer? _heartbeatTimer;
+
   // ANIMATIONS
   final List<GiftEffect> _giftEffects = [];
   final ScrollController _commentsScrollController = ScrollController();
@@ -180,6 +183,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     _isFollowing = authProvider.loginUserData.followingIds?.contains(widget.postLive.hostId) == true;
+
+    if (widget.isHost) _startHeartbeat();
 
     // Vérification de la session Firebase avant toute connexion Agora/Firestore
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1515,6 +1520,17 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         );
       },
     );
+  }
+
+  void _startHeartbeat() {
+    _sendHeartbeat();
+    _heartbeatTimer = Timer.periodic(const Duration(minutes: 2), (_) => _sendHeartbeat());
+  }
+
+  void _sendHeartbeat() {
+    _firestore.collection('lives').doc(widget.liveId).update({
+      'lastHeartbeatAt': FieldValue.serverTimestamp(),
+    }).catchError((_) {});
   }
 
   void _endLive() async {
@@ -2902,6 +2918,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   @override
   void dispose() {
     _removeUserFromSpectators();
+    _heartbeatTimer?.cancel();
     _trialTimer?.cancel();
     _typingTimer?.cancel();
     _liveSubscription?.cancel();

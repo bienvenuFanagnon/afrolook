@@ -349,7 +349,7 @@ class _DetailsPostState extends State<DetailsPost>
                       const SizedBox(height: 6),
                       Row(
                         children: [
-                          _suggStatItem(Icons.remove_red_eye_outlined, _formatCount(post.vues ?? post.totalInteractions ?? 0)),
+                          _suggStatItem(Icons.trending_up_rounded, _formatCount(post.totalInteractions ?? (post.loves ?? 0) + (post.comments ?? 0))),
                           const SizedBox(width: 12),
                           _suggStatItem(Icons.favorite_rounded, _formatCount(post.loves ?? 0), color: const Color(0xFFFF6B6B)),
                           const SizedBox(width: 12),

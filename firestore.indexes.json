@@ -265,6 +265,20 @@
                         "queryScope":  "COLLECTION",
                         "fields":  [
                                        {
+                                           "fieldPath":  "categories",
+                                           "arrayConfig":  "CONTAINS"
+                                       },
+                                       {
+                                           "fieldPath":  "suivi",
+                                           "order":  "DESCENDING"
+                                       }
+                                   ]
+                    },
+                    {
+                        "collectionGroup":  "Canaux",
+                        "queryScope":  "COLLECTION",
+                        "fields":  [
+                                       {
                                            "fieldPath":  "adminIds",
                                            "arrayConfig":  "CONTAINS"
                                        },
@@ -1631,6 +1645,20 @@
                                        {
                                            "fieldPath":  "totalspectateurs",
                                            "order":  "DESCENDING"
+                                       }
+                                   ]
+                    },
+                    {
+                        "collectionGroup":  "lives",
+                        "queryScope":  "COLLECTION",
+                        "fields":  [
+                                       {
+                                           "fieldPath":  "isLive",
+                                           "order":  "ASCENDING"
+                                       },
+                                       {
+                                           "fieldPath":  "lastHeartbeatAt",
+                                           "order":  "ASCENDING"
                                        }
                                    ]
                     },
@@ -3735,6 +3763,20 @@
                                        {
                                            "fieldPath":  "createdAt",
                                            "order":  "DESCENDING"
+                                       }
+                                   ]
+                    },
+                    {
+                        "collectionGroup":  "Users",
+                        "queryScope":  "COLLECTION",
+                        "fields":  [
+                                       {
+                                           "fieldPath":  "status",
+                                           "order":  "ASCENDING"
+                                       },
+                                       {
+                                           "fieldPath":  "interests",
+                                           "arrayConfig":  "CONTAINS"
                                        }
                                    ]
                     },

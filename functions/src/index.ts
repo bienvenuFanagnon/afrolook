@@ -3,6 +3,7 @@ export * from "./payments/cinetpay";
 export * from "./payments/paygate";
 export * from "./payments/feexpay";
 export * from "./live/agora";
+export * from "./live/autoTerminate";
 export * from "./posts/sharing";
 export * from "./posts/interactions";
 export * from "./posts/lifecycle";
