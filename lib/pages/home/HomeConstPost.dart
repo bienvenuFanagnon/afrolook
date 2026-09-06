@@ -3647,7 +3647,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
     // Catégories de l'utilisateur calculées avant la boucle pour l'injection inline
     final _inlineUserInterests = authProvider.loginUserData.interests ?? [];
-    final _inlineCategories = _inlineUserInterests.map((id) {
+    final _inlineAllCategories = _inlineUserInterests.map((id) {
       if (UserInterests.isCategoryId(id)) return id;
       try {
         return UserInterests.all.firstWhere((i) => i.code == id).category;
@@ -3655,8 +3655,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         return null;
       }
     }).whereType<String>().toSet().toList();
+    // SPORT toujours présent (garanti en cat1 de chaque slot)
+    final _inlineCategoriesOther =
+        _inlineAllCategories.where((c) => c != 'SPORT').toList();
     final _inlineExcludedIds = Set<String>.from(_loadedPostIds);
-    // Index rotatif pour ne pas répéter la même catégorie deux fois de suite
+    // Index rotatif pour la 2ème catégorie (hors SPORT)
     int _inlineCatIdx = 0;
 
     // Nombre de posts T3 (Tendance) affichés avant de proposer le rafraîchissement
@@ -3726,20 +3729,17 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         contentWidgets.add(_buildPoolOrAd(_kPoolOrder[poolIdx], 'pool_slot_$poolCount'));
       }
 
-      // ── 2 sections catégorie inline toutes les 8 posts (4 posts au total) ──
-      // Chaque slot affiche 2 catégories différentes en rotation.
-      if (_inlineCategories.isNotEmpty && (i + 1) % 8 == 0) {
+      // ── 2 sections catégorie inline toutes les 8 posts ──
+      // Cat1 = SPORT (toujours), Cat2 = rotation dans les intérêts de l'utilisateur.
+      if ((i + 1) % 8 == 0) {
         final slotNum = i ~/ 8;
-        final cat1 = _inlineCategories[_inlineCatIdx % _inlineCategories.length];
-        _inlineCatIdx++;
         contentWidgets.add(FeedCategorySectionWidget(
-          key: ValueKey('inline_cat_${cat1}_$slotNum'),
-          categoryId: cat1,
+          key: ValueKey('inline_cat_SPORT_$slotNum'),
+          categoryId: 'SPORT',
           excludedIds: _inlineExcludedIds,
         ));
-        // Deuxième catégorie (différente de la première si possible)
-        if (_inlineCategories.length > 1) {
-          final cat2 = _inlineCategories[_inlineCatIdx % _inlineCategories.length];
+        if (_inlineCategoriesOther.isNotEmpty) {
+          final cat2 = _inlineCategoriesOther[_inlineCatIdx % _inlineCategoriesOther.length];
           _inlineCatIdx++;
           contentWidgets.add(FeedCategorySectionWidget(
             key: ValueKey('inline_cat_${cat2}_${slotNum}_b'),
