@@ -2316,7 +2316,7 @@ class PostProvider extends ChangeNotifier {
 
       List<UserData> userList = querySnapshotUser.docs.map((doc) =>
           UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-      if(p.canal_id!.isNotEmpty){
+      if((p.canal_id ?? '').isNotEmpty){
 
         printVm("------------------post canal data 2 -----------------");
 

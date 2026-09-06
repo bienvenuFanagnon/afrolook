@@ -1347,47 +1347,60 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
         }
       }
 
+      // Notifications et effets secondaires isolés — une erreur ici ne doit
+      // pas afficher de toast (le commentaire est déjà enregistré).
       if (success) {
-        authProvider.incrementPostTotalInteractions(
-          postId: widget.post.id!,
-          userId: authProvider.loginUserData.id!,
-          interactionType: 'comment',
-        );
         try {
+          authProvider.incrementPostTotalInteractions(
+            postId: widget.post.id!,
+            userId: authProvider.loginUserData.id!,
+            interactionType: 'comment',
+          );
           await StreakService.onCommentSent(
             userId: authProvider.loginUserData.id!,
             postId: widget.post.id!,
-          );
-        } catch (e) {
-          debugPrint('[Streak] erreur onCommentSent: $e');
-        }
-        authProvider.notifySubscribersOfInteraction(
-          actionUserId: authProvider.loginUserData.id!,
-          postOwnerId: widget.post.user_id!,
-          postId: widget.post.id!,
-          actionType: 'comment',
-          commentaireMessage: textComment,
-          postDescription: widget.post.description,
-          postImageUrl: widget.post.type != PostDataType.IMAGE.name
-              ? (widget.post.thumbnail != null && widget.post.thumbnail!.isNotEmpty
-                  ? widget.post.thumbnail!
-                  : (widget.post.user?.imageUrl ?? ''))
-              : (widget.post.images != null && widget.post.images!.isNotEmpty
-                  ? widget.post.images!.first
-                  : ''),
-          postDataType: widget.post.dataType,
-        );
-        FeedInteractionService.onPostCommented(widget.post, authProvider.loginUserData.id!);
+          ).catchError((e) => debugPrint('[Streak] erreur onCommentSent: $e'));
 
-        if (widget.post.user != null) {
-          await _sendCommentNotification(
-            receiverId, action, textComment,
-            displayName: _canalName != null ? '#$_canalName' : null,
-            displayImage: _canalImage,
+          // Pour les posts de canal, utiliser l'image du canal comme contexte
+          // visuel dans la notification aux abonnés.
+          final isCanalPost = (widget.post.canal_id ?? '').isNotEmpty;
+          final notifImageUrl = widget.post.type != PostDataType.IMAGE.name
+              ? (widget.post.thumbnail?.isNotEmpty == true
+                  ? widget.post.thumbnail!
+                  : (widget.post.canal?.urlImage ?? widget.post.user?.imageUrl ?? ''))
+              : (widget.post.images?.isNotEmpty == true
+                  ? widget.post.images!.first
+                  : '');
+          authProvider.notifySubscribersOfInteraction(
+            actionUserId: authProvider.loginUserData.id!,
+            postOwnerId: widget.post.user_id!,
+            postId: widget.post.id!,
+            actionType: 'comment',
+            commentaireMessage: textComment,
+            postDescription: widget.post.description,
+            postImageUrl: notifImageUrl,
+            postDataType: widget.post.dataType,
           );
+          FeedInteractionService.onPostCommented(widget.post, authProvider.loginUserData.id!);
+
+          if (widget.post.user != null) {
+            // Affiche le nom/image du canal si c'est un post de canal
+            await _sendCommentNotification(
+              receiverId, action, textComment,
+              displayName: _canalName != null
+                  ? '#$_canalName'
+                  : (isCanalPost && widget.post.canal?.titre != null
+                      ? '#${widget.post.canal!.titre}'
+                      : null),
+              displayImage: _canalImage ??
+                  (isCanalPost ? widget.post.canal?.urlImage : null),
+            );
+          }
+          await _sendMentionNotifications(textComment);
+          authProvider.checkAndRefreshPostDates(widget.post.id!);
+        } catch (e) {
+          debugPrint('[Comments] notification error: $e');
         }
-        await _sendMentionNotifications(textComment);
-        authProvider.checkAndRefreshPostDates(widget.post.id!);
       }
 
       setState(() {
@@ -1396,6 +1409,8 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
         _isLoading = false;
       });
     } catch (_) {
+      // Seul l'échec réel d'envoi (postProvider.newComment / updateComment)
+      // affiche un toast d'erreur.
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -659,96 +659,61 @@ class _MesNotificationState extends State<MesNotification> {
     }
   }
 
+  /// Récupère un post directement par son ID (lecture unique, sans filtre type).
+  Future<Post?> _fetchPostById(String postId) async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('Posts')
+          .doc(postId)
+          .get();
+      if (!doc.exists) return null;
+      final post = Post.fromJson(doc.data()!);
+      post.id = doc.id;
+      return post;
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> _handlePostNotification(NotificationData notification) async {
     printVm("notification data : ${notification.toJson()}");
+    final postId = notification.post_id;
+    if (postId == null || postId.isEmpty) {
+      _hideLoadingOverlay();
+      _showErrorSnackBar(_l10n.notifPostNotFound);
+      setState(() => _isHandlingNotification = false);
+      return;
+    }
     try {
-      switch (notification.post_data_type) {
-        case "VIDEO":
-          final videos = await _postProvider.getPostsVideosById(notification.post_id!);
-          if (videos.isNotEmpty) {
-            _hideLoadingOverlay();
-            Navigator.push(context, MaterialPageRoute(
-              builder: (context) => VideoYoutubePageDetails(initialPost: videos.first),
-            )).then((_) {
-              setState(() {
-                _isHandlingNotification = false;
-              });
-            });
-          } else {
-            _hideLoadingOverlay();
-            _showErrorSnackBar(_l10n.notifVideoNotFound);
-            setState(() {
-              _isHandlingNotification = false;
-            });
-          }
-          break;
-        case "IMAGE":
-        case "TEXT":
-          final posts = await _postProvider.getPostsImagesById(notification.post_id!);
-          if (posts.isNotEmpty) {
-            _hideLoadingOverlay();
-            Navigator.push(context, MaterialPageRoute(
-              builder: (context) => DetailsPost(post: posts.first),
-            )).then((_) {
-              setState(() {
-                _isHandlingNotification = false;
-              });
-            });
-          } else {
-            _hideLoadingOverlay();
-            _showErrorSnackBar(_l10n.notifPostNotFound);
-            setState(() {
-              _isHandlingNotification = false;
-            });
-          }
-          break;
-        case 'COMMENT':
-          final posts = await _postProvider.getPostsImagesById(notification.post_id!);
-          if (posts.isNotEmpty) {
-            _hideLoadingOverlay();
-            Navigator.push(context, MaterialPageRoute(
-              builder: (context) => PostComments(post: posts.first),
-            )).then((_) {
-              setState(() {
-                _isHandlingNotification = false;
-              });
-            });
-          } else {
-            _hideLoadingOverlay();
-            _showErrorSnackBar(_l10n.notifPostNotFound);
-            setState(() {
-              _isHandlingNotification = false;
-            });
-          }
-          break;
-        default:
-        // Pour les favoris, essayer de récupérer le post
-          try {
-            final posts = await _postProvider.getPostsImagesById(notification.post_id!);
-            if (posts.isNotEmpty) {
-              _hideLoadingOverlay();
-              Navigator.push(context, MaterialPageRoute(
-                builder: (context) => DetailsPost(post: posts.first),
-              )).then((_) {
-                setState(() {
-                  _isHandlingNotification = false;
-                });
-              });
-            } else {
-              _hideLoadingOverlay();
-              _showErrorSnackBar(_l10n.notifPostNotFound);
-              setState(() {
-                _isHandlingNotification = false;
-              });
-            }
-          } catch (e) {
-            _hideLoadingOverlay();
-            _showErrorSnackBar(_l10n.notifErrorLoading);
-            setState(() {
-              _isHandlingNotification = false;
-            });
-          }
-          break;
+      // Fetch unique par doc ID — rapide, indépendant du type
+      final post = await _fetchPostById(postId);
+      if (post == null) {
+        _hideLoadingOverlay();
+        _showErrorSnackBar(_l10n.notifPostNotFound);
+        setState(() => _isHandlingNotification = false);
+        return;
+      }
+
+      _hideLoadingOverlay();
+      final isVideo = post.dataType == PostDataType.VIDEO.name ||
+          (post.url_media?.contains('.mp4') == true) ||
+          (post.url_media?.contains('.mov') == true);
+      final isComment = notification.post_data_type == 'COMMENT' ||
+          notification.type == 'COMMENT' ||
+          notification.type == 'COMMENTAIRE';
+
+      if (isComment) {
+        Navigator.push(context, MaterialPageRoute(
+          builder: (_) => PostComments(post: post),
+        )).then((_) => setState(() => _isHandlingNotification = false));
+      } else if (isVideo) {
+        Navigator.push(context, MaterialPageRoute(
+          builder: (_) => VideoYoutubePageDetails(initialPost: post),
+        )).then((_) => setState(() => _isHandlingNotification = false));
+      } else {
+        Navigator.push(context, MaterialPageRoute(
+          builder: (_) => DetailsPost(post: post),
+        )).then((_) => setState(() => _isHandlingNotification = false));
       }
     } catch (e) {
       _hideLoadingOverlay();

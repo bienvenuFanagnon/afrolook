@@ -292,7 +292,11 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   @override
   void initState() {
     super.initState();
-    printVm("index du post: ${widget.index}");
+    final swInit = Stopwatch()..start();
+    final postId = widget.post.id ?? '?';
+    final isCanalPost = widget.post.canal_id != null && widget.post.canal_id!.isNotEmpty;
+    printVm('⏱️ [POST-WIDGET] id=$postId canal=$isCanalPost — initState start');
+
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     _coinProvider = Provider.of<CoinGiftUserProvider>(context, listen: false);
 
@@ -300,6 +304,11 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     userProvider = Provider.of<UserProvider>(context, listen: false);
     appDefaultData = authProvider.appDefaultData;
     _initLikeState();
+    _initFromSnapshot();
+    final snapMs = swInit.elapsedMilliseconds;
+    final hadSnapshot = isCanalPost ? widget.post.canalSnapshot != null : widget.post.creatorSnapshot != null;
+    printVm('⏱️ [POST-WIDGET] id=$postId — snapshot=${hadSnapshot ? "✅ ${snapMs}ms (affichage immédiat)" : "❌ pas de snapshot → fetch Firestore"}');
+
     _loadUserData();
     _loadCanalData();
     _generateVideoThumbnail();
@@ -315,6 +324,32 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     _isLikedLocally = widget.post.users_love_id?.contains(userId) ?? false;
     _localLovesCount = widget.post.loves ?? 0;
     _localCommentsCount = widget.post.comments ?? 0;
+  }
+
+  /// Charge créateur/canal depuis le snapshot dénormalisé stocké dans le post.
+  /// Synchrone — appelé avant _loadUserData/_loadCanalData pour un affichage immédiat.
+  void _initFromSnapshot() {
+    final post = widget.post;
+    final isCanalPost = post.canal_id != null && post.canal_id!.isNotEmpty;
+    if (isCanalPost) {
+      if (post.canal != null) { _currentCanal = post.canal; return; }
+      final snap = post.canalSnapshot;
+      if (snap != null) {
+        _currentCanal = Canal()
+          ..titre = snap['titre'] as String?
+          ..urlImage = snap['urlImage'] as String?
+          ..suivi = snap['suivi'] as int? ?? 0;
+      }
+    } else {
+      if (post.user != null) { _currentUser = post.user; return; }
+      final snap = post.creatorSnapshot;
+      if (snap != null) {
+        _currentUser = UserData()
+          ..pseudo = snap['pseudo'] as String?
+          ..imageUrl = snap['imageUrl'] as String?
+          ..abonnes = snap['abonnes'] as int? ?? 0;
+      }
+    }
   }
 
   @override
@@ -782,9 +817,11 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     if (widget.post.user_id == null) return;
     if (!mounted) return;
 
-    setState(() {
-      _isLoadingUser = true;
-    });
+    // Ne montre le squelette que si on n'a pas encore de données (pas de snapshot dispo)
+    final hasData = _currentUser != null || widget.post.user != null;
+    if (!hasData) {
+      setState(() { _isLoadingUser = true; });
+    }
 
     try {
       final userDoc = await firestore.collection('Users').doc(widget.post.user_id!).get();
@@ -797,10 +834,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     } catch (e) {
       printVm('Erreur lors du chargement de l\'utilisateur: $e');
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoadingUser = false;
-        });
+      if (mounted && _isLoadingUser) {
+        setState(() { _isLoadingUser = false; });
       }
     }
   }
@@ -809,9 +844,11 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     if (widget.post.canal_id == null || widget.post.canal_id!.isEmpty) return;
     if (!mounted) return;
 
-    setState(() {
-      _isLoadingCanal = true;
-    });
+    // Ne montre le squelette que si on n'a pas encore de données (pas de snapshot dispo)
+    final hasData = _currentCanal != null || widget.post.canal != null;
+    if (!hasData) {
+      setState(() { _isLoadingCanal = true; });
+    }
 
     try {
       final canalDoc = await firestore.collection('Canaux').doc(widget.post.canal_id!).get();
@@ -825,10 +862,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     } catch (e) {
       printVm('Erreur lors du chargement du canal: $e');
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoadingCanal = false;
-        });
+      if (mounted && _isLoadingCanal) {
+        setState(() { _isLoadingCanal = false; });
       }
     }
   }
@@ -1065,7 +1100,12 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     final dynamic postOwner = isCanalPost ? currentCanal : currentUser;
     final isCurrentUser = currentUserId == currentUser?.id;
 
-    // Vérifier si déjà abonné
+    // Vérifier si déjà abonné — uniquement si la liste est chargée (non null).
+    // Si null = données pas encore chargées → on masque le bouton pour éviter
+    // d'afficher "Suivre/S'abonner" à tort à quelqu'un qui suit déjà.
+    final subscriptionLoaded = isCanalPost
+        ? currentCanal?.usersSuiviId != null
+        : currentUser?.userAbonnesIds != null;
     final isAbonne = isCanalPost
         ? currentCanal?.usersSuiviId?.contains(currentUserId) ?? false
         : currentUser?.userAbonnesIds?.contains(currentUserId) ?? false;
@@ -1143,21 +1183,23 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                     ),
                   ),
 
-                  // Bouton S'abonner ou menu
-                  if (!isCurrentUser && !isAbonne && postOwner != null)
+                  // Bouton S'abonner uniquement si le statut est confirmé chargé
+                  if (!isCurrentUser && subscriptionLoaded && !isAbonne && postOwner != null)
                     _buildFollowButton(isCanalPost, postOwner!, isAbonne),
                   SizedBox(width: 5),
                   _buildCountryBadge(widget.post)
                 ],
               ),
-              SizedBox(height: 2),
-              Text(
-                _getFollowerCount(),
-                style: TextStyle(
-                  color: colors.textSecondary,
-                  fontSize: 12,
+              if (_getFollowerCount().isNotEmpty) ...[
+                SizedBox(height: 2),
+                Text(
+                  _getFollowerCount(),
+                  style: TextStyle(
+                    color: colors.textSecondary,
+                    fontSize: 12,
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ),
@@ -1171,7 +1213,10 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     final dynamic postOwner = isCanalPost ? currentCanal : currentUser;
     final isCurrentUser = currentUserId == currentUser?.id;
 
-    // Vérifier si déjà abonné
+    // Vérifier si déjà abonné — uniquement si la liste est chargée (non null)
+    final subscriptionLoaded2 = isCanalPost
+        ? currentCanal?.usersSuiviId != null
+        : currentUser?.userAbonnesIds != null;
     final isAbonne = isCanalPost
         ? currentCanal?.usersSuiviId?.contains(currentUserId) ?? false
         : currentUser?.userAbonnesIds?.contains(currentUserId) ?? false;
@@ -1249,8 +1294,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                     ),
                   ),
 
-                  // Bouton S'abonner ou menu
-                  if (!isCurrentUser && !isAbonne && postOwner != null)
+                  // Bouton S'abonner uniquement si statut confirmé chargé
+                  if (!isCurrentUser && subscriptionLoaded2 && !isAbonne && postOwner != null)
                     _buildFollowButton(isCanalPost, postOwner!, isAbonne),
                   SizedBox(width: 5),
                   _buildCountryBadge(widget.post),
@@ -1263,14 +1308,16 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   ),
                 ],
               ),
-              SizedBox(height: 2),
-              Text(
-                _getFollowerCount(),
-                style: TextStyle(
-                  color: colors.textSecondary,
-                  fontSize: 12,
+              if (_getFollowerCount().isNotEmpty) ...[
+                SizedBox(height: 2),
+                Text(
+                  _getFollowerCount(),
+                  style: TextStyle(
+                    color: colors.textSecondary,
+                    fontSize: 12,
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ),
@@ -2751,12 +2798,16 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
 
   String _getFollowerCount() {
+    int count;
     if (currentCanal != null) {
-      return "${currentCanal!.usersSuiviId?.length ?? 0} abonné(s)";
+      count = currentCanal!.usersSuiviId?.length ?? currentCanal!.suivi ?? 0;
     } else if (currentUser != null) {
-      return "${currentUser!.userAbonnesIds?.length ?? 0} abonné(s)";
+      count = currentUser!.userAbonnesIds?.length ?? currentUser!.abonnes ?? 0;
+    } else {
+      return "";
     }
-    return "0 abonné(s)";
+    if (count == 0) return "";
+    return "${_formatCount(count)} abonné(s)";
   }
 
   bool _isVerified() {

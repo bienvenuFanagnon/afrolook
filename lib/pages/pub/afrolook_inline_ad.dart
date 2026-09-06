@@ -395,23 +395,24 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
     }
   }
 
-  Future<void> _navigateToAdOwner(BuildContext context, Advertisement ad) async {
+  void _navigateToAdOwner(BuildContext context, Advertisement ad) {
     final id = ad.ownerId;
     if (id == null || id.isEmpty) return;
+    if (!context.mounted) return;
     try {
-      final fs = FirebaseFirestore.instance;
       switch (ad.ownerType) {
         case 'canal':
-          final doc = await fs.collection('Canaux').doc(id).get();
-          if (!doc.exists || !context.mounted) return;
-          final data = Map<String, dynamic>.from(doc.data()!);
-          data['id'] = doc.id;
+          final canal = Canal(
+            id: id,
+            titre: ad.ownerName,
+            urlImage: ad.ownerAvatar,
+            suivi: ad.ownerFollowers ?? 0,
+          );
           Navigator.push(context, MaterialPageRoute(
-            builder: (_) => CanalDetails(canal: Canal.fromJson(data)),
+            builder: (_) => CanalDetails(canal: canal),
           ));
           break;
         case 'group':
-          if (!context.mounted) return;
           Navigator.push(context, MaterialPageRoute(
             builder: (_) => GroupChatPage(
               groupId: id,
@@ -422,12 +423,12 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
           break;
         case 'user':
         default:
-          final doc = await fs.collection('Users').doc(id).get();
-          if (!doc.exists || !context.mounted) return;
-          final data = Map<String, dynamic>.from(doc.data()!);
-          data['id'] = doc.id;
+          final user = UserData()
+            ..id = id
+            ..pseudo = ad.ownerName
+            ..imageUrl = ad.ownerAvatar;
           Navigator.push(context, MaterialPageRoute(
-            builder: (_) => OtherUserPage(otherUser: UserData.fromJson(data)),
+            builder: (_) => OtherUserPage(otherUser: user),
           ));
       }
     } catch (e) {
@@ -462,11 +463,10 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
       mainAxisSize: MainAxisSize.min,
       children: [
         GestureDetector(
-          onTap: _isCtaLoading ? null : () async {
+          onTap: _isCtaLoading ? null : () {
+            _navigateToAdOwner(context, ad);
             setState(() => _isCtaLoading = true);
-            await _recordClick(ad);
-            if (context.mounted) await _navigateToAdOwner(context, ad);
-            if (mounted) setState(() => _isCtaLoading = false);
+            _recordClick(ad).whenComplete(() { if (mounted) setState(() => _isCtaLoading = false); });
           },
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -537,11 +537,10 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
                 const SizedBox(width: 8),
                 // CTA
                 GestureDetector(
-                  onTap: _isCtaLoading ? null : () async {
+                  onTap: _isCtaLoading ? null : () {
+                    _navigateToAdOwner(context, ad);
                     setState(() => _isCtaLoading = true);
-                    await _recordClick(ad);
-                    if (context.mounted) await _navigateToAdOwner(context, ad);
-                    if (mounted) setState(() => _isCtaLoading = false);
+                    _recordClick(ad).whenComplete(() { if (mounted) setState(() => _isCtaLoading = false); });
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
@@ -822,11 +821,10 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
         );
       },
       child: GestureDetector(
-        onTap: _isCtaLoading ? null : () async {
+        onTap: _isCtaLoading ? null : () {
+          _navigateToAdOwner(context, ad);
           setState(() => _isCtaLoading = true);
-          await _recordClick(ad);
-          if (context.mounted) await _navigateToAdOwner(context, ad);
-          if (mounted) setState(() => _isCtaLoading = false);
+          _recordClick(ad).whenComplete(() { if (mounted) setState(() => _isCtaLoading = false); });
         },
         child: Container(
           width: double.infinity,
@@ -861,11 +859,7 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
       mainAxisSize: MainAxisSize.min,
       children: [
         GestureDetector(
-          onTap: _isCtaLoading ? null : () async {
-            setState(() => _isCtaLoading = true);
-            await _navigateToAdOwner(context, ad);
-            if (mounted) setState(() => _isCtaLoading = false);
-          },
+          onTap: () => _navigateToAdOwner(context, ad),
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
@@ -1092,11 +1086,10 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
               ),
               const SizedBox(width: 6),
               GestureDetector(
-                onTap: _isCtaLoading ? null : () async {
+                onTap: _isCtaLoading ? null : () {
+                  _navigateToAdOwner(context, ad);
                   setState(() => _isCtaLoading = true);
-                  await _recordClick(ad);
-                  if (context.mounted) await _navigateToAdOwner(context, ad);
-                  if (mounted) setState(() => _isCtaLoading = false);
+                  _recordClick(ad).whenComplete(() { if (mounted) setState(() => _isCtaLoading = false); });
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),

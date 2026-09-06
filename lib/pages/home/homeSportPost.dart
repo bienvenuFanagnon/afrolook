@@ -1,4 +1,5 @@
 import 'package:afrotok/utils/responsive_sheet.dart';
+import '../../widgets/feed/sections/feed_sport_discovery_section.dart';
 import 'dart:async';
 import 'dart:math';
 import 'package:afrotok/layout/centered_content.dart';
@@ -72,9 +73,9 @@ const Color accentYellow = Color(0xFFFFD700);
 
 // Types disponibles basés sur votre enum TabBarType
 const List<String> availablePostTypes = [
+  'SPORT',
   'ACTUALITES',
   'LOOKS',
-  'SPORT',
   'EVENEMENT',
   'OFFRES',
   'GAMER'
@@ -897,14 +898,15 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       await _loadMorePostsByFilter(loadedIds, newPosts, _backgroundLoadLimit);
 
       if (newPosts.isNotEmpty) {
+        final spread = _spreadCreatorsWithContext(newPosts, _posts);
         setState(() {
-          _posts.addAll(newPosts);
+          _posts.addAll(spread);
           _loadedPostIds.addAll(newPosts.map((p) => p.id!));
-          _totalPostsLoaded += newPosts.length;
-          _backgroundPostsLoaded += newPosts.length;
+          _totalPostsLoaded += spread.length;
+          _backgroundPostsLoaded += spread.length;
         });
 
-        printVm('✅ ${newPosts.length} posts chargés en background');
+        printVm('✅ ${spread.length} posts chargés en background (spread)');
       }
 
       _hasMorePosts = newPosts.length >= (_backgroundLoadLimit ~/ 2);
@@ -2024,6 +2026,44 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     return result;
   }
 
+  /// Comme _spreadCreators mais tient compte des [existingPosts] déjà
+  /// affichés pour calculer le gap (évite les rafales lors de la pagination).
+  List<Post> _spreadCreatorsWithContext(
+      List<Post> newPosts, List<Post> existingPosts) {
+    if (newPosts.isEmpty) return newPosts;
+    const int minGap = 3;
+    // Construire le tableau de position des dernières apparitions
+    final lastSeen = <String, int>{};
+    for (int i = 0; i < existingPosts.length; i++) {
+      final id = existingPosts[i].user_id ?? '';
+      if (id.isNotEmpty) lastSeen[id] = i;
+    }
+    final baseOffset = existingPosts.length;
+    final result = <Post>[];
+    final pending = List<Post>.from(newPosts);
+    while (pending.isNotEmpty) {
+      final currentPos = baseOffset + result.length;
+      bool placed = false;
+      for (int i = 0; i < pending.length; i++) {
+        final creatorId = pending[i].user_id ?? '';
+        final last = lastSeen[creatorId];
+        if (last == null || currentPos - last > minGap) {
+          result.add(pending.removeAt(i));
+          if (creatorId.isNotEmpty) lastSeen[creatorId] = currentPos;
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        final post = pending.removeAt(0);
+        result.add(post);
+        final creatorId = post.user_id ?? '';
+        if (creatorId.isNotEmpty) lastSeen[creatorId] = baseOffset + result.length - 1;
+      }
+    }
+    return result;
+  }
+
   void _addFetchedToList(
       List<Post> fetched, Set<String> loadedIds, List<Post> newPosts, int limit) {
     int added = 0;
@@ -2106,17 +2146,18 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       await _loadMorePostsByFilter(loadedIds, newPosts, _manualLoadLimit);
 
       if (newPosts.isNotEmpty) {
+        final spread = _spreadCreatorsWithContext(newPosts, _posts);
         setState(() {
-          _posts.addAll(newPosts);
+          _posts.addAll(spread);
           _loadedPostIds.addAll(newPosts.map((p) => p.id!));
-          _totalPostsLoaded += newPosts.length;
+          _totalPostsLoaded += spread.length;
           // Fenêtre mémoire : max 40 posts
           if (_posts.length > 40) {
             _posts.removeRange(0, 8);
           }
         });
 
-        printVm('📱 ${newPosts.length} posts chargés manuellement');
+        printVm('📱 ${spread.length} posts chargés manuellement (spread)');
       }
 
       _hasMorePosts = newPosts.length >= (_manualLoadLimit ~/ 2);
@@ -2803,9 +2844,10 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       contentWidgets.add(_buildShimmerPost());
       contentWidgets.add(_buildShimmerPost());
     } else if (!_hasMorePosts) {
+      contentWidgets.add(const FeedSportDiscoverySection());
       contentWidgets.add(
         Container(
-          padding: const EdgeInsets.symmetric(vertical: 30),
+          padding: const EdgeInsets.symmetric(vertical: 20),
           child: Center(
             child: Column(
               children: [
