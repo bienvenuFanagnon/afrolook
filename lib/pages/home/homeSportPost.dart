@@ -175,6 +175,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   // ── Système Tier badges (Nouveau / Découverte / Tendance) ─────────────────
   final _seenTier1PostIds = <String>{};   // posts chargés comme Tier 1 → badge Nouveau
   final _tier2PostIds     = <String>{};   // posts chargés comme Tier 2 → badge Découverte
+  final _t2FillPostIds   = <String>{};   // sous-ensemble T2 comblant le gap T1 (T1 insuffisant)
   final _flushingIds      = <String>{};   // posts en cours de flush Firestore
   final Map<String, int>   _visibleSince  = {};  // timestamp entrée viewport
   final Map<String, Timer> _seenTimers    = {};
@@ -636,6 +637,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       _loadedPostIds.clear();
       _seenTier1PostIds.clear();
       _tier2PostIds.clear();
+      _t2FillPostIds.clear();
       _flushingIds.clear();
       _seenTimers.forEach((_, t) => t.cancel());
       _seenTimers.clear();
@@ -1804,7 +1806,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       // Charger Tier 1 (non vus abonnements) et Tier 2 (intérêts) en parallèle
       await Future.wait([
         _loadTier1Posts(loadedIds, newPosts, limit),
-        _loadTier2InterestPosts(loadedIds, newPosts, limit),
+        _loadTier2InterestPosts(loadedIds, newPosts, 22), // assez pour remplir le gap T1 (16) + régulier (6)
       ]);
 
       setState(() {
@@ -1959,10 +1961,24 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       if (_tier2PostIds.contains(pid)) { t2.add(p); continue; }
       t3.add(p);
     }
-    final s1 = _spreadCreators(t1.take(16).toList());
-    final s2 = _spreadCreatorsWithContext(t2.take(6).toList(), s1);
-    final s3 = _spreadCreatorsWithContext(t3.take(3).toList(), [...s1, ...s2]);
-    return [...s1, ...s2, ...s3];
+    t2.shuffle(); // différent à chaque affichage
+
+    const kMaxT1 = 16, kMaxT2Regular = 6, kMaxT3 = 3;
+    final s1 = _spreadCreators(t1.take(kMaxT1).toList());
+    final t1Gap = kMaxT1 - s1.length;
+    final t2Fill = t1Gap > 0 ? t2.take(t1Gap).toList() : <Post>[];
+    final t2Regular = t2.skip(t2Fill.length).take(kMaxT2Regular).toList();
+
+    _t2FillPostIds
+      ..clear()
+      ..addAll(t2Fill.where((p) => p.id != null).map((p) => p.id!));
+
+    final s2Fill    = _spreadCreatorsWithContext(t2Fill, s1);
+    final s2Regular = _spreadCreatorsWithContext(t2Regular, [...s1, ...s2Fill]);
+    final s3        = _spreadCreatorsWithContext(t3.take(kMaxT3).toList(), [...s1, ...s2Fill, ...s2Regular]);
+
+    printVm('🏗️ [SPORT][FEED] T1=${s1.length} gap=$t1Gap fill=${s2Fill.length} T2=${s2Regular.length} T3=${s3.length}');
+    return [...s1, ...s2Fill, ...s2Regular, ...s3];
   }
 
   // ── Marquage des posts vus ─────────────────────────────────────────────────
@@ -2807,6 +2823,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
 
     final bool _showShopPromo = _articles.isNotEmpty;
 
+    int _t2FillShown = 0;
     for (int i = 0; i < finalPosts.length; i++) {
       final post = finalPosts[i];
 
@@ -2818,6 +2835,15 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
           ),
         ),
       );
+
+      // Suggestions "à suivre" toutes les 2 posts T2 fill (max 3 fois)
+      final pid = post.id ?? '';
+      if (_t2FillPostIds.isNotEmpty && _t2FillPostIds.contains(pid)) {
+        _t2FillShown++;
+        if (_t2FillShown % 2 == 0 && _t2FillShown <= 6) {
+          contentWidgets.add(const FeedSportDiscoverySection());
+        }
+      }
 
       // Après le 2ème post : classement hebdo commentateurs + promo AfroShop (lun/jeu)
       if (i == 1) {

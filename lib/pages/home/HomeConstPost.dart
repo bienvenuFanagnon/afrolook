@@ -218,6 +218,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   final _viewedUnreadIds = <String>{};
   // Tier 2 : posts chargés par intérêts (pour badge "Découverte")
   final _tier2PostIds = <String>{};
+  // Sous-ensemble T2 comblant le gap T1 quand T1 est insuffisant
+  final _t2FillPostIds = <String>{};
   // Découverte créateur : posts injectés depuis créateurs non suivis (badge "Découverte · Créateur")
   final _localDiscoveryIds = <String>{};
   // Pool de posts réguliers de créateurs non suivis (rempli en arrière-plan)
@@ -944,6 +946,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       _isLoadingPosts = true; // évite l'écran vide pendant le rechargement
       _seenTier1PostIds.clear();
       _tier2PostIds.clear();
+      _t2FillPostIds.clear();
       _localDiscoveryIds.clear();
       _regularDiscoveryPool = [];
       _leadDiscoveryWithT1 = (_leadDiscoveryCounter % 3 == 0);
@@ -2243,12 +2246,24 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     }
 
     // Spread par tier avec contexte cross-tier pour éviter 3+ consécutifs
-    final s1 = _spreadCreators(t1.take(16).toList());
-    final s2 = _spreadCreatorsWithContext(t2.take(6).toList(), s1);
-    final s3 = _spreadCreatorsWithContext(t3.take(3).toList(), [...s1, ...s2]);
-    final ordered = [...s1, ...s2, ...s3];
+    t2.shuffle(); // différent à chaque affichage
 
-    printVm('🏗️ [FEED] _buildTieredFeed → T1=${t1.length} | T2=${t2.length} | T3=${t3.length} | total=${ordered.length}');
+    const kMaxT1 = 16, kMaxT2Regular = 6, kMaxT3 = 3;
+    final s1 = _spreadCreators(t1.take(kMaxT1).toList());
+    final t1Gap = kMaxT1 - s1.length;
+    final t2Fill = t1Gap > 0 ? t2.take(t1Gap).toList() : <Post>[];
+    final t2Regular = t2.skip(t2Fill.length).take(kMaxT2Regular).toList();
+
+    _t2FillPostIds
+      ..clear()
+      ..addAll(t2Fill.where((p) => p.id != null).map((p) => p.id!));
+
+    final s2Fill    = _spreadCreatorsWithContext(t2Fill, s1);
+    final s2Regular = _spreadCreatorsWithContext(t2Regular, [...s1, ...s2Fill]);
+    final s3        = _spreadCreatorsWithContext(t3.take(kMaxT3).toList(), [...s1, ...s2Fill, ...s2Regular]);
+    final ordered = [...s1, ...s2Fill, ...s2Regular, ...s3];
+
+    printVm('🏗️ [FEED] _buildTieredFeed → T1=${s1.length} gap=$t1Gap fill=${s2Fill.length} | T2=${s2Regular.length} | T3=${s3.length} | total=${ordered.length}');
 
     // ── Injection découverte : 3 posts toutes les 10 posts T1 ───────────────
     final me = authProvider.loginUserData;
@@ -3529,6 +3544,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     const int _t3CutoffCount = 3;
     int _t3Shown = 0;
     bool _t3CutoffReached = false;
+    int _t2FillShown = 0;
 
     for (int i = 0; i < finalPosts.length; i++) {
       final post = finalPosts[i];
@@ -3559,6 +3575,14 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                 ),
         ),
       );
+
+      // Suggestions "à suivre" toutes les 2 posts T2 fill (max 3 fois)
+      if (_t2FillPostIds.isNotEmpty && _t2FillPostIds.contains(pid)) {
+        _t2FillShown++;
+        if (_t2FillShown % 2 == 0 && _t2FillShown <= 6) {
+          contentWidgets.add(FeedEndDiscoverySection(pageType: widget.type.isNotEmpty ? widget.type : null));
+        }
+      }
 
       // Après le 1er post : section créateurs actifs
       if (i == 0) {
