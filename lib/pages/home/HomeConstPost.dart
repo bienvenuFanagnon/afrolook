@@ -3341,37 +3341,39 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       // Bouton "Nouvelle chronique" quand aucune chronique n'existe encore
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: GestureDetector(
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => AddChroniquePage()),
-          ).then((_) {
-            // Relancer le chargement des chroniques au retour
-            if (!mounted) return;
-            setState(() { _hasStartedLoadChroniques = false; });
-            _loadChroniquesInBackground();
-          }),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              border: Border.all(color: AppColors.of(context).primary.withOpacity(0.5)),
-              borderRadius: BorderRadius.circular(30),
-              color: AppColors.of(context).primary.withOpacity(0.07),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.add_circle_outline, size: 18, color: AppColors.of(context).primary),
-                const SizedBox(width: 8),
-                Text(
-                  'Nouvelle chronique',
-                  style: TextStyle(
-                    color: AppColors.of(context).primary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => AddChroniquePage()),
+            ).then((_) {
+              if (!mounted) return;
+              setState(() { _hasStartedLoadChroniques = false; });
+              _loadChroniquesInBackground();
+            }),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                border: Border.all(color: AppColors.of(context).primary.withOpacity(0.5)),
+                borderRadius: BorderRadius.circular(30),
+                color: AppColors.of(context).primary.withOpacity(0.07),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.add_circle_outline, size: 18, color: AppColors.of(context).primary),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Nouvelle chronique',
+                    style: TextStyle(
+                      color: AppColors.of(context).primary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
