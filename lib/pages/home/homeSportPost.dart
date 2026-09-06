@@ -1,5 +1,6 @@
 import 'package:afrotok/utils/responsive_sheet.dart';
 import '../../widgets/feed/sections/feed_sport_discovery_section.dart';
+import '../../widgets/feed/sections/feed_live_section.dart';
 import 'dart:async';
 import 'dart:math';
 import 'package:afrotok/layout/centered_content.dart';
@@ -2816,6 +2817,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
 
     final chroniquesSection = _buildChroniquesSection();
     if (chroniquesSection is! SizedBox) contentWidgets.add(chroniquesSection);
+    contentWidgets.add(const FeedLiveSection());
 
     if (finalPosts.isNotEmpty) {
       contentWidgets.add(const PronosticsCarouselWidget());

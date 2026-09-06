@@ -179,6 +179,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     printVm("🎬 Initialisation LivePage - Live ${widget.postLive.isPaidLive ? 'PAYANT' : 'GRATUIT'}");
 
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    _isFollowing = authProvider.loginUserData.followingIds?.contains(widget.postLive.hostId) == true;
 
     // Vérification de la session Firebase avant toute connexion Agora/Firestore
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -2225,7 +2226,21 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
               if (!widget.isHost) ...[
                 SizedBox(width: 10),
                 GestureDetector(
-                  onTap: () => setState(() => _isFollowing = !_isFollowing),
+                  onTap: () async {
+                    if (_isFollowing) return;
+                    setState(() => _isFollowing = true);
+                    try {
+                      final host = (_hostData.id != null && _hostData.id!.isNotEmpty)
+                          ? _hostData
+                          : (UserData()
+                            ..id = widget.postLive.hostId
+                            ..pseudo = widget.postLive.hostName
+                            ..imageUrl = widget.postLive.hostImage);
+                      await authProvider.abonner(host, context);
+                    } catch (_) {
+                      if (mounted) setState(() => _isFollowing = false);
+                    }
+                  },
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
