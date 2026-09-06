@@ -116,6 +116,7 @@ class UserAuthProvider extends ChangeNotifier {
     }
   }
   Future<void> loadAdvertisements() async {
+    final _swAds = Stopwatch()..start();
     final prefs = await SharedPreferences.getInstance();
 
     // ── Compteur de sessions ──────────────────────────────────────────────────
@@ -136,7 +137,7 @@ class UserAuthProvider extends ChangeNotifier {
           await AdRotationService.instance.init();
           AdRotationService.instance.onAdsReloaded();
           AdPreloadService.instance.preload();
-          printVm('📦 [Pub] session $sessionCount/$_kAdRefreshEvery — cache local (${list.length} pubs, re-shuffled)');
+          printVm('📦 [Pub] session $sessionCount/$_kAdRefreshEvery — cache local (${list.length} pubs, re-shuffled) [${_swAds.elapsedMilliseconds}ms]');
           return;
         } catch (_) {
           // Cache corrompu → on re-fetch quand même
@@ -212,7 +213,7 @@ class UserAuthProvider extends ChangeNotifier {
       AdRotationService.instance.onAdsReloaded();
       AdPreloadService.instance.invalidate();
       AdPreloadService.instance.preload();
-      printVm('✅ [Pub] ${tempAds.length} pubs chargées depuis Firestore et mises en cache');
+      printVm('✅ [Pub] ${tempAds.length} pubs chargées depuis Firestore [${_swAds.elapsedMilliseconds}ms]');
     } catch (e) {
       printVm('Erreur chargement pubs: $e');
     }

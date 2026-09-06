@@ -1745,6 +1745,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   // CHARGEMENT DES POSTS
   // ===========================================================================
   Future<void> _loadInitialPosts() async {
+    final _sw = Stopwatch()..start();
+    printVm('⏱️ [PERF] _loadInitialPosts démarré');
     try {
       if (authProvider.loginUserData.countryData?["countryCode"] == null &&
           authProvider.loginUserData.countryData?["country"] == null) {
@@ -1778,6 +1780,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       } else {
         // Tier 1 : posts non vus des abonnements (toujours en priorité)
         await _loadTier1Posts(loadedIds, newPosts, 15);
+        printVm('⏱️ [PERF] après T1: ${_sw.elapsedMilliseconds}ms — ${newPosts.length} posts');
         // Affichage immédiat des posts Tier 1 pour éviter l'attente de 5 secondes.
         if (newPosts.isNotEmpty && mounted) {
           setState(() {
@@ -1788,6 +1791,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
             _isFirstLoad = false;
           });
           printVm('⚡ [STATE] setState intermédiaire Tier1 → _isFirstLoad=false, posts=${_posts.length}');
+          printVm('⏱️ [PERF] 1er affichage (T1): ${_sw.elapsedMilliseconds}ms');
           _logBadgeSummary();
         } else {
           printVm('⚡ [STATE] Tier1 vide ou unmounted → pas de setState intermédiaire');
@@ -1799,6 +1803,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           final t2Limit = t1Count == 0 ? 30 : (newPosts.length < limit ? limit - newPosts.length : 0);
           if (t2Limit > 0) {
             await _loadTier2InterestPosts(loadedIds, newPosts, t2Limit);
+            printVm('⏱️ [PERF] après T2: ${_sw.elapsedMilliseconds}ms — ${newPosts.length} posts');
           }
         }
         // Affichage immédiat si Tier 1 était vide mais Tier 2 a des résultats
@@ -1811,6 +1816,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
             _isFirstLoad = false;
           });
           printVm('⚡ [STATE] setState intermédiaire Tier2 → _isFirstLoad=false, posts=${_posts.length}');
+          printVm('⏱️ [PERF] 1er affichage (T2 fallback): ${_sw.elapsedMilliseconds}ms');
           _logBadgeSummary();
         }
       }
@@ -1918,6 +1924,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       // Toujours remplacer par la liste finale Tier 1→2→3 ordonnée.
       // (Plus de cache post : pas de merge avec d'anciens posts persistés.)
       printVm('🏁 [FINAL] Avant setState final: newPosts=${newPosts.length}, seenT1=${_seenTier1PostIds.length}, tier2=${_tier2PostIds.length}, _isFirstLoad=$_isFirstLoad, filtre=$_currentFilter');
+      printVm('⏱️ [PERF] avant setState final: ${_sw.elapsedMilliseconds}ms');
       setState(() {
         _posts = _buildTieredFeed(newPosts);
         _loadedPostIds.addAll(loadedIds);
@@ -1926,9 +1933,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       });
       _logBadgeSummary();
       printVm('✅ [FINAL] ${_posts.length} posts affichés, filtre=$_currentFilter');
+      printVm('⏱️ [PERF] _loadInitialPosts terminé: ${_sw.elapsedMilliseconds}ms TOTAL');
 
     } catch (e) {
-      printVm('❌ Erreur chargement posts: $e');
+      printVm('❌ Erreur chargement posts: $e [${_sw.elapsedMilliseconds}ms]');
       setState(() {
         _hasErrorPosts = true;
       });
