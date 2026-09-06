@@ -3995,6 +3995,57 @@
                                 "order":  "DESCENDING"
                             }
                         ]
+                    },
+                    {
+                        "collectionGroup":  "Posts",
+                        "queryScope":  "COLLECTION",
+                        "fields":  [
+                                       { "fieldPath": "dataType", "order": "ASCENDING" },
+                                       { "fieldPath": "status", "order": "ASCENDING" },
+                                       { "fieldPath": "popularity", "order": "ASCENDING" }
+                                   ]
+                    },
+                    {
+                        "collectionGroup":  "dating_profiles",
+                        "queryScope":  "COLLECTION",
+                        "fields":  [
+                                       { "fieldPath": "isActive", "order": "ASCENDING" },
+                                       { "fieldPath": "popularityScore", "order": "DESCENDING" }
+                                   ]
+                    },
+                    {
+                        "collectionGroup":  "Notifications",
+                        "queryScope":  "COLLECTION",
+                        "fields":  [
+                                       { "fieldPath": "is_open", "order": "ASCENDING" },
+                                       { "fieldPath": "receiver_id", "order": "ASCENDING" },
+                                       { "fieldPath": "createdAt", "order": "DESCENDING" }
+                                   ]
+                    },
+                    {
+                        "collectionGroup":  "dating_profiles",
+                        "queryScope":  "COLLECTION",
+                        "fields":  [
+                                       { "fieldPath": "pays", "order": "ASCENDING" },
+                                       { "fieldPath": "sexe", "order": "ASCENDING" },
+                                       { "fieldPath": "popularityScore", "order": "DESCENDING" }
+                                   ]
+                    },
+                    {
+                        "collectionGroup":  "dating_profiles",
+                        "queryScope":  "COLLECTION",
+                        "fields":  [
+                                       { "fieldPath": "popularityScore", "order": "DESCENDING" }
+                                   ]
+                    },
+                    {
+                        "collectionGroup":  "dating_profiles",
+                        "queryScope":  "COLLECTION",
+                        "fields":  [
+                                       { "fieldPath": "isActive", "order": "ASCENDING" },
+                                       { "fieldPath": "sexe", "order": "ASCENDING" },
+                                       { "fieldPath": "popularityScore", "order": "DESCENDING" }
+                                   ]
                     }
                 ],
     "fieldOverrides":  [
