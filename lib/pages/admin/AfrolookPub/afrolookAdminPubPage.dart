@@ -225,14 +225,25 @@ class _AdvertisementManagementPageState
       if (newStatus == 'rejected' && ad.status == 'pending') {
         await _refundUser(ad);
       }
+      final now = DateTime.now().microsecondsSinceEpoch;
+      final Map<String, dynamic> updates = {
+        'status': newStatus,
+        'rejectionReason': reason,
+        'updatedAt': now,
+      };
+      // Quand l'admin approuve une pub en attente, les dates partent du moment
+      // de l'approbation (pas de la soumission) pour que le décompte soit juste.
+      if (newStatus == 'active' && ad.status == 'pending') {
+        final days = ad.durationDays ?? 0;
+        updates['startDate'] = now;
+        if (days > 0) {
+          updates['endDate'] = now + days * 24 * 60 * 60 * 1000000;
+        }
+      }
       await FirebaseFirestore.instance
           .collection('Advertisements')
           .doc(ad.id)
-          .update({
-        'status': newStatus,
-        'rejectionReason': reason,
-        'updatedAt': DateTime.now().microsecondsSinceEpoch,
-      });
+          .update(updates);
       if (mounted) {
         final label = newStatus == 'active'
             ? 'activée'
