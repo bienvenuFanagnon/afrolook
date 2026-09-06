@@ -140,9 +140,8 @@ class _AdvertisementCarouselWidgetState extends State<AdvertisementCarouselWidge
                       ),
                       ...List.generate(ads.length, (index) {
                         return GestureDetector(
-                          onTap: () async {
+                          onTap: () {
                             setState(() => _currentIndex = index);
-                            await _carouselService.setCurrentIndex(index);
                           },
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
