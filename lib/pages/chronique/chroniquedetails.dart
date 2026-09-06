@@ -1210,11 +1210,6 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
                   Text(ad.ownerName ?? '', maxLines: 1, overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                  if (followers > 0) ...[
-                    const SizedBox(height: 4),
-                    Text('$followers $followersLabel',
-                      style: const TextStyle(color: Color(0xFFFFD700), fontSize: 13, fontWeight: FontWeight.w500)),
-                  ],
                   if (adDescription.isNotEmpty) ...[
                     const SizedBox(height: 10),
                     Text(adDescription, maxLines: 3, overflow: TextOverflow.ellipsis,

@@ -994,15 +994,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
                                                       decoration: TextDecoration.none,
                                                     ),
                                                   )
-                                                else if (ad!.ownerFollowers != null && ad!.ownerFollowers! > 0)
-                                                  Text(
-                                                    '${ad!.ownerFollowers} abonnés',
-                                                    style: const TextStyle(
-                                                      color: Colors.white54,
-                                                      fontSize: 11,
-                                                      decoration: TextDecoration.none,
-                                                    ),
-                                                  ),
+,
                                               ],
                                             ),
                                           ),

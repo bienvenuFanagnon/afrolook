@@ -1181,11 +1181,6 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
                       Text(ad.ownerName ?? '', maxLines: 1, overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,
                         style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold, decoration: TextDecoration.none)),
-                      if ((ad.ownerFollowers ?? 0) > 0) ...[
-                        const SizedBox(height: 4),
-                        Text('${ad.ownerFollowers} ${ad.ownerType == 'group' ? 'membres' : 'abonnés'}',
-                          style: const TextStyle(color: Color(0xFFFFD700), fontSize: 13, fontWeight: FontWeight.w500, decoration: TextDecoration.none)),
-                      ],
                       if (caption.isNotEmpty) ...[
                         const SizedBox(height: 12),
                         Text(caption, maxLines: 3, overflow: TextOverflow.ellipsis,
@@ -1400,9 +1395,6 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
                                                 if (ad!.ownerDescription?.isNotEmpty == true)
                                                   Text(ad!.ownerDescription!, maxLines: 1, overflow: TextOverflow.ellipsis,
                                                     style: const TextStyle(color: Colors.white54, fontSize: 11, decoration: TextDecoration.none))
-                                                else if ((ad!.ownerFollowers ?? 0) > 0)
-                                                  Text('${ad!.ownerFollowers} abonnés',
-                                                    style: const TextStyle(color: Colors.white54, fontSize: 11, decoration: TextDecoration.none)),
                                               ],
                                             ),
                                           ),

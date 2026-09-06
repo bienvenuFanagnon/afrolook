@@ -912,14 +912,6 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
                           color: colors.textPrimary, decoration: TextDecoration.none,
                         ),
                       ),
-                      if (followers > 0) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          '$followers $followersLabel',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 12, color: colors.textSecondary, decoration: TextDecoration.none),
-                        ),
-                      ],
                       // Description publicitaire
                       if (adDescription.isNotEmpty) ...[
                         const SizedBox(height: 5),
