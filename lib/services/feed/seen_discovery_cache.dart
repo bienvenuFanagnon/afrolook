@@ -37,6 +37,9 @@ class SeenDiscoveryCache {
     if (_ids.length > maxSize) _ids.removeRange(0, _ids.length - maxSize);
   }
 
+  /// Vide complètement l'historique (utilisé quand le pool discovery est épuisé).
+  void clear() => _ids.clear();
+
   Future<void> save() async {
     if (_userId == null) return;
     try {

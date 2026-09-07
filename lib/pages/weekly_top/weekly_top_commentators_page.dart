@@ -79,10 +79,12 @@ class _WeeklyTopCommentatorsPageState extends State<WeeklyTopCommentatorsPage> {
       const months = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
           'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 
-      final weekOfMonth = ((monday.day - 1) ~/ 7) + 1;
+      // ISO : la semaine appartient au mois du jeudi (point milieu de la semaine)
+      final thursday = monday.add(const Duration(days: 3));
+      final weekOfMonth = ((thursday.day - 1) ~/ 7) + 1;
       final ordinal = weekOfMonth == 1 ? '1re' : '${weekOfMonth}e';
 
-      return '${months[monday.month]} ${monday.year} — $ordinal semaine du mois';
+      return '${months[thursday.month]} ${thursday.year} — $ordinal semaine du mois';
     } catch (_) {
       return weekId;
     }

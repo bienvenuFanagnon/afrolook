@@ -65,11 +65,36 @@ class DiscoveryPostsCache {
   }
 
   /// Prend [n] posts du pool (mélangés), les retire et sauvegarde.
+  /// Garantit au plus 1 post par créateur (user_id) et par canal (canal_id).
   /// Retourne une liste vide si le pool est vide.
   List<Post> take(int n) {
     if (_pool.isEmpty) return [];
     _pool.shuffle(Random());
-    final taken = _pool.take(n).toList();
+
+    final seenCreators = <String>{};
+    final seenCanals = <String>{};
+    final taken = <Post>[];
+
+    for (final p in _pool) {
+      if (taken.length >= n) break;
+      final creator = p.user_id ?? '';
+      final canal = p.canal_id ?? '';
+      // Exclure si même créateur OU même canal déjà pris (sauf si vide)
+      if (creator.isNotEmpty && seenCreators.contains(creator)) continue;
+      if (canal.isNotEmpty && seenCanals.contains(canal)) continue;
+      taken.add(p);
+      if (creator.isNotEmpty) seenCreators.add(creator);
+      if (canal.isNotEmpty) seenCanals.add(canal);
+    }
+
+    // Si la déduplication a trop réduit le lot, compléter sans contrainte
+    if (taken.length < n ~/ 2 && _pool.length > taken.length) {
+      for (final p in _pool) {
+        if (taken.length >= n) break;
+        if (!taken.any((t) => t.id == p.id)) taken.add(p);
+      }
+    }
+
     _pool.removeWhere((p) => taken.any((t) => t.id == p.id));
     _saveAsync();
     return taken;

@@ -1936,12 +1936,27 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         ...SeenDiscoveryCache.instance.seenIds,
         ...dpc.poolIds,
       };
-      final posts = await FeedRepository().fetchInterestPosts(
+      var posts = await FeedRepository().fetchInterestPosts(
         interests,
         excluded,
         countryCode: countryCode,
         limit: DiscoveryPostsCache.maxPoolSize,
       );
+
+      // Épuisement total : tout a été vu → reset du cache pour recycler les posts
+      if (posts.isEmpty && SeenDiscoveryCache.instance.seenIds.length > 30) {
+        printVm('🔄 [TIER2] Épuisement discovery — reset SeenDiscoveryCache et retry');
+        SeenDiscoveryCache.instance.clear();
+        await SeenDiscoveryCache.instance.save();
+        final excluded2 = {...alreadyShown, ...dpc.poolIds};
+        posts = await FeedRepository().fetchInterestPosts(
+          interests,
+          excluded2,
+          countryCode: countryCode,
+          limit: DiscoveryPostsCache.maxPoolSize,
+        );
+      }
+
       dpc.replenish(posts);
       final taken = dpc.take(limit);
       final filtered = taken.where((p) => !alreadyShown.contains(p.id)).toList();

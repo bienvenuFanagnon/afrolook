@@ -350,7 +350,7 @@ async function runCommentatorsReward(
   }
 
   const userIds = Array.from(scoreMap.keys());
-  const eligibleScores: Array<{ userId: string; score: number }> = [];
+  const eligibleScores: Array<{ userId: string; score: number; commentCount: number }> = [];
 
   for (let i = 0; i < userIds.length; i += 30) {
     const chunk = userIds.slice(i, i + 30);
@@ -360,11 +360,15 @@ async function runCommentatorsReward(
       const accountDate = new Date(createdAt / 1000);
       if (accountDate > minAccountDate) continue;
       const score = scoreMap.get(userDoc.id) ?? 0;
-      if (score > 0) eligibleScores.push({ userId: userDoc.id, score });
+      if (score > 0) {
+        const commentCount = postCommentsMap.get(userDoc.id)?.size ?? 0;
+        eligibleScores.push({ userId: userDoc.id, score, commentCount });
+      }
     }
   }
 
-  eligibleScores.sort((a, b) => b.score - a.score);
+  // Tri par nombre de posts distincts commentés (critère principal), score qualité (départage)
+  eligibleScores.sort((a, b) => b.commentCount - a.commentCount || b.score - a.score);
   const top5 = eligibleScores.slice(0, 5);
 
   if (top5.length === 0) {
@@ -384,13 +388,14 @@ async function runCommentatorsReward(
     const paidMap = new Map(existingRankings.map((r) => [r.userId, { paid: r.paid, coins: r.rewardedCoins }]));
 
     for (let i = 0; i < eligibleScores.length; i++) {
-      const { userId, score } = eligibleScores[i];
+      const { userId, score, commentCount } = eligibleScores[i];
       const rank = i + 1;
       const existing = paidMap.get(userId);
       const coins = rank <= 5 ? (COMMENTATOR_REWARDS[rank - 1] ?? 0) : 0;
       rankings.push({
         rank,
         userId,
+        commentCount,
         qualityScore: Math.round(score * 100) / 100,
         rewardedCoins: existing?.coins ?? coins,
         paid: existing?.paid ?? false,
@@ -400,24 +405,24 @@ async function runCommentatorsReward(
   } else {
     // Mode normal : récompenser le top 5
     for (let i = 0; i < top5.length; i++) {
-      const { userId, score } = top5[i];
+      const { userId, score, commentCount } = top5[i];
       const coins = COMMENTATOR_REWARDS[i] ?? 0;
       const rank = i + 1;
       try {
         await rewardUser({ userId, coins, rank, weekId, subType: "top_commentator" });
         await sendWeeklyRewardNotification({ userId, coins, rank, weekId, subType: "top_commentator" });
-        rankings.push({ rank, userId, qualityScore: Math.round(score * 100) / 100, rewardedCoins: coins, paid: true });
-        console.log(`[weeklyCommentators] Rang ${rank} — user ${userId} — score ${score.toFixed(2)} — ${coins} pièces`);
+        rankings.push({ rank, userId, commentCount, qualityScore: Math.round(score * 100) / 100, rewardedCoins: coins, paid: true });
+        console.log(`[weeklyCommentators] Rang ${rank} — user ${userId} — ${commentCount} posts — score ${score.toFixed(2)} — ${coins} pièces`);
       } catch (err) {
         console.error(`[weeklyCommentators] Erreur rang ${rank}:`, err);
-        rankings.push({ rank, userId, qualityScore: Math.round(score * 100) / 100, rewardedCoins: coins, paid: false, error: String(err) });
+        rankings.push({ rank, userId, commentCount, qualityScore: Math.round(score * 100) / 100, rewardedCoins: coins, paid: false, error: String(err) });
       }
     }
 
     // Ajouter les autres utilisateurs éligibles (sans récompense)
     for (let i = 5; i < eligibleScores.length; i++) {
-      const { userId, score } = eligibleScores[i];
-      rankings.push({ rank: i + 1, userId, qualityScore: Math.round(score * 100) / 100, rewardedCoins: 0, paid: false });
+      const { userId, score, commentCount } = eligibleScores[i];
+      rankings.push({ rank: i + 1, userId, commentCount, qualityScore: Math.round(score * 100) / 100, rewardedCoins: 0, paid: false });
     }
   }
 
