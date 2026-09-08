@@ -110,40 +110,39 @@ class DiscoveryBoostService {
         .removeWhere((id) => _cachedPosts.every((p) => p.id != id));
   }
 
-  /// Posts récents de créateurs non suivis, sans filtre de taille (tous créateurs).
+  /// Posts les mieux scorés de créateurs non suivis.
   /// Utilisé pour remplir les slots 2 & 3 de chaque batch découverte.
+  /// Trié par postScore desc : on montre le meilleur contenu, pas le plus récent.
   Future<List<Post>> fetchRegularDiscovery({
     required Set<String> followedSet,
     required String currentUserId,
     required String? userCountry,
     int limit = 18,
   }) async {
-    final sinceUs = DateTime.now()
-        .subtract(const Duration(days: 30))
-        .microsecondsSinceEpoch;
     try {
       final snap = await _db
           .collection('Posts')
-          .where('created_at', isGreaterThan: sinceUs)
-          .orderBy('created_at', descending: true)
+          .orderBy('postScore', descending: true)
           .limit(limit * 8)
           .get();
 
-      final latestByCreator = <String, Post>{};
+      // Un seul post par créateur : celui avec le meilleur score (le premier rencontré)
+      final bestByCreator = <String, Post>{};
       for (final doc in snap.docs) {
         final data = doc.data();
         final uid = data['user_id'] as String? ?? '';
         if (uid.isEmpty || uid == currentUserId || followedSet.contains(uid)) continue;
-        if (latestByCreator.containsKey(uid)) continue;
+        if (bestByCreator.containsKey(uid)) continue;
         final postData = Map<String, dynamic>.from(data);
         postData['id'] = doc.id;
         final post = Post.fromJson(postData);
         if (_passesCountryFilter(post, userCountry)) {
-          latestByCreator[uid] = post;
+          bestByCreator[uid] = post;
         }
       }
 
-      final eligible = latestByCreator.values.toList()..shuffle(Random());
+      // Légère randomisation dans le top pour varier les suggestions à chaque ouverture
+      final eligible = bestByCreator.values.toList()..shuffle(Random());
       return eligible.take(limit).toList();
     } catch (_) {
       return [];
