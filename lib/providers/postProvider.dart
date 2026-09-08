@@ -2647,7 +2647,7 @@ class PostProvider extends ChangeNotifier {
       FirebaseFirestore.instance.collection('Canaux');
       // Get docs from collection reference
       QuerySnapshot querySnapshotUser = await userCollect
-          .orderBy('updatedAt', descending: true)
+          .orderBy('canalScore', descending: true)
           .limit(8)
           .get();
 

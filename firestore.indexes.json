@@ -4053,6 +4053,23 @@
                             { "fieldPath": "created_at", "order": "ASCENDING" },
                             { "fieldPath": "postScore", "order": "DESCENDING" }
                         ]
+                    },
+                    {
+                        "collectionGroup": "Users",
+                        "queryScope": "COLLECTION",
+                        "fields": [
+                            { "fieldPath": "status", "order": "ASCENDING" },
+                            { "fieldPath": "interests", "arrayConfig": "CONTAINS" },
+                            { "fieldPath": "creatorScore", "order": "DESCENDING" }
+                        ]
+                    },
+                    {
+                        "collectionGroup": "Canaux",
+                        "queryScope": "COLLECTION",
+                        "fields": [
+                            { "fieldPath": "categories", "arrayConfig": "CONTAINS" },
+                            { "fieldPath": "canalScore", "order": "DESCENDING" }
+                        ]
                     }
                 ],
     "fieldOverrides":  [

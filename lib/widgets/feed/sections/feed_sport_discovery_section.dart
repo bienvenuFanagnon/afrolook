@@ -65,11 +65,12 @@ class _FeedSportDiscoverySectionState
   }
 
   Future<List<UserData>> _fetchSportUsers(Set<String> exclude) async {
-    // arrayContainsAny accepte max 30 valeurs — nos codes sport sont 9
+    // Tri par creatorScore desc : les créateurs sport les mieux notés en premier
     final snap = await FirebaseFirestore.instance
         .collection('Users')
         .where('status', isEqualTo: 'VALIDE')
         .where('interests', arrayContainsAny: _sportInterestCodes)
+        .orderBy('creatorScore', descending: true)
         .limit(30)
         .get();
 
@@ -85,18 +86,17 @@ class _FeedSportDiscoverySectionState
         .where((u) => u.id != null && !exclude.contains(u.id))
         .toList();
 
-    all.sort((a, b) =>
-        (b.userAbonnesIds?.length ?? b.abonnes ?? 0)
-            .compareTo(a.userAbonnesIds?.length ?? a.abonnes ?? 0));
-
-    all.shuffle(Random());
-    return all.take(5).toList();
+    // Légère randomisation dans le top pour varier les suggestions
+    final top = all.take(15).toList()..shuffle(Random());
+    return top.take(5).toList();
   }
 
   Future<List<Canal>> _fetchSportCanaux(String myId) async {
+    // Tri par canalScore desc : les canaux sport les plus actifs et appréciés en premier
     final snap = await FirebaseFirestore.instance
         .collection('Canaux')
         .where('categories', arrayContains: 'SPORT')
+        .orderBy('canalScore', descending: true)
         .limit(20)
         .get();
 
@@ -112,12 +112,8 @@ class _FeedSportDiscoverySectionState
         .where((c) => !(c.usersSuiviId?.contains(myId) ?? false))
         .toList();
 
-    all.sort((a, b) =>
-        (b.usersSuiviId?.length ?? b.suivi ?? 0)
-            .compareTo(a.usersSuiviId?.length ?? a.suivi ?? 0));
-
-    all.shuffle(Random());
-    return all.take(3).toList();
+    final top = all.take(10).toList()..shuffle(Random());
+    return top.take(3).toList();
   }
 
   // ── Actions ─────────────────────────────────────────────────────────────
