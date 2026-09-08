@@ -979,6 +979,9 @@ class UserData {
   // Catégorie principale du créateur (id de UserInterests.categories, ex: 'sport', 'music')
   String? mainCategory;
 
+  // Score créateur — moyenne pondérée des postScores de ses 30 derniers posts (CRON 6h)
+  double? creatorScore = 0.0;
+
   // ── Suspension de compte ─────────────────────────────────────────────────
   int? suspendedUntil;         // timestamp ms, null = non suspendu
   bool? suspendedPermanently;  // true = suspension définitive
@@ -1361,6 +1364,7 @@ class UserData {
     todayCommentedPostIds = List<String>.from(json['todayCommentedPostIds'] ?? []);
     interests = (json['interests'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
     mainCategory = json['mainCategory'] as String?;
+    creatorScore = (json['creatorScore'] as num?)?.toDouble() ?? 0.0;
   }
 
   Map<String, dynamic> toJson() {
@@ -1424,6 +1428,7 @@ class UserData {
     // todayCommentedPostIds reste local (SharedPreferences), ne pas envoyer en Firestore
     data['interests'] = interests ?? [];
     if (mainCategory != null) data['mainCategory'] = mainCategory;
+    // creatorScore est read-only depuis le client (mis à jour par le CRON CF)
     if (unreadPosts != null && unreadPosts!.isNotEmpty) {
       data['unreadPosts'] = unreadPosts;
     }
@@ -1524,6 +1529,17 @@ class Post {
 
   int? adSupportCount = 0; // nombre de fois que la pub de soutien a été vue pour ce post
   bool? isPortrait;
+
+  // ── Score système ────────────────────────────────────────────────────────────
+  // rawScore : accumulé en temps réel (likes +1, loves +2, comments +3)
+  // postScore: CRON 6h → rawScore / (âge_jours + 2)^1.5
+  int? rawScore = 0;
+  double? postScore = 0.0;
+
+  // Signalements — chaque utilisateur ne peut signaler qu'une fois
+  List<String>? reporterIds = [];
+  List<String>? wrongCategoryReporterIds = [];
+  int? reportCount = 0;
 
   String? challengeMonth; // Format "YYYY-MM" du challenge associé (ex: "2026-04")
   int? giftCount;                  // 🔥 NOUVEAU : compteur de cadeaux
@@ -1743,6 +1759,14 @@ class Post {
     canalSnapshot = json['canalSnapshot'] != null
         ? Map<String, dynamic>.from(json['canalSnapshot'] as Map)
         : null;
+
+    rawScore = json['rawScore'] as int? ?? 0;
+    postScore = (json['postScore'] as num?)?.toDouble() ?? 0.0;
+    reporterIds = json['reporterIds'] != null ? List<String>.from(json['reporterIds']) : [];
+    wrongCategoryReporterIds = json['wrongCategoryReporterIds'] != null
+        ? List<String>.from(json['wrongCategoryReporterIds'])
+        : [];
+    reportCount = json['reportCount'] as int? ?? 0;
   }
 
   /// Normalise un champ timestamp Firestore en **microsecondes** (unité attendue
@@ -3092,6 +3116,9 @@ class Canal {
   // Timestamp (ms) du dernier changement de mainCategory — cooldown 7j
   int? categoryUpdatedAt;
 
+  // Score du canal — moyenne pondérée des postScores de ses 30 derniers posts (CRON 6h)
+  double? canalScore = 0.0;
+
   Canal({
     this.user,
     this.titre,
@@ -3119,6 +3146,7 @@ class Canal {
     this.categories,
     this.mainCategory,
     this.categoryUpdatedAt,
+    this.canalScore = 0.0,
   });
   factory Canal.fromJson(Map<String, dynamic> json) {
     final isPrivate = json['isPrivate'] ?? false;
@@ -3154,6 +3182,7 @@ class Canal {
       categories: json['categories'] != null ? List<String>.from(json['categories']) : null,
       mainCategory: json['mainCategory'],
       categoryUpdatedAt: json['categoryUpdatedAt'],
+      canalScore: (json['canalScore'] as num?)?.toDouble() ?? 0.0,
     );
   }
 

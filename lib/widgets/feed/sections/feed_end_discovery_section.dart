@@ -78,7 +78,7 @@ class _FeedEndDiscoverySectionState extends State<FeedEndDiscoverySection> {
       snap = await FirebaseFirestore.instance
           .collection('Users')
           .where('status', isEqualTo: 'VALIDE')
-          .orderBy('abonnes', descending: true)
+          .orderBy('creatorScore', descending: true)
           .limit(20)
           .get();
     }
@@ -102,7 +102,7 @@ class _FeedEndDiscoverySectionState extends State<FeedEndDiscoverySection> {
   Future<List<Canal>> _fetchCanaux(String myId) async {
     final snap = await FirebaseFirestore.instance
         .collection('Canaux')
-        .orderBy('suivi', descending: true)
+        .orderBy('canalScore', descending: true)
         .limit(30)
         .get();
 

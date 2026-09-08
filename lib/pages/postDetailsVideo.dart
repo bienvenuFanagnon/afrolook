@@ -3,6 +3,7 @@ import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
 import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 import 'dart:math';
 
@@ -1972,12 +1973,21 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
         return Container(
           padding: EdgeInsets.all(16),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            if (_currentPost.user_id != authProvider.loginUserData.id)
-              _buildMenuOption(Icons.flag, 'Signaler', sheetColors.textPrimary, () async {
-                _currentPost.status = PostStatus.SIGNALER.name;
-                await postProvider.updateVuePost(_currentPost, context);
-                Navigator.pop(context);
-              }),
+            if (_currentPost.user_id != authProvider.loginUserData.id) ...[
+              if (authProvider.loginUserData.role == UserRole.ADM.name) ...[
+                _buildMenuOption(Icons.gavel, 'Modérer ce post', Colors.orange.shade700,
+                    () => _reportPostWithScore(_currentPost, isAdmin: true, reportType: 'standard', sheetContext: context)),
+                _buildMenuOption(Icons.category_outlined, 'Contenu hors catégorie (admin)', Colors.deepOrange.shade700,
+                    () => _reportPostWithScore(_currentPost, isAdmin: true, reportType: 'wrong_category', sheetContext: context)),
+              ] else ...[
+                if (!(_currentPost.reporterIds?.contains(authProvider.loginUserData.id) ?? false))
+                  _buildMenuOption(Icons.flag_outlined, 'Signaler', sheetColors.textPrimary,
+                      () => _reportPostWithScore(_currentPost, isAdmin: false, reportType: 'standard', sheetContext: context)),
+                if (!(_currentPost.wrongCategoryReporterIds?.contains(authProvider.loginUserData.id) ?? false))
+                  _buildMenuOption(Icons.category_outlined, 'Contenu hors catégorie', sheetColors.textSecondary,
+                      () => _reportPostWithScore(_currentPost, isAdmin: false, reportType: 'wrong_category', sheetContext: context)),
+              ],
+            ],
             if (_currentPost.user_id == authProvider.loginUserData.id || authProvider.loginUserData.role == UserRole.ADM.name)
               _buildMenuOption(Icons.delete, 'Supprimer', Colors.red, () {
                 Navigator.pop(context);
@@ -1991,6 +2001,33 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
         );
       },
     );
+  }
+
+  Future<void> _reportPostWithScore(
+    Post post, {
+    required bool isAdmin,
+    required String reportType,
+    required BuildContext sheetContext,
+  }) async {
+    Navigator.pop(sheetContext);
+    try {
+      final callable = FirebaseFunctions.instance.httpsCallable('reportPost');
+      await callable.call({'postId': post.id, 'isAdminReport': isAdmin, 'reportType': reportType});
+      if (mounted) {
+        final msg = isAdmin
+            ? (reportType == 'wrong_category' ? 'Post modéré — hors catégorie.' : 'Post modéré.')
+            : (reportType == 'wrong_category' ? 'Signalé comme hors catégorie.' : 'Post signalé.');
+        final colors = AppColors.of(context);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(msg, textAlign: TextAlign.center, style: TextStyle(color: colors.success)),
+        ));
+      }
+    } on FirebaseFunctionsException catch (e) {
+      if (mounted) {
+        final msg = e.code == 'already-exists' ? 'Tu as déjà signalé ce post.' : (e.message ?? 'Erreur.');
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
+      }
+    }
   }
 
   Widget _buildMenuOption(IconData icon, String text, Color color, VoidCallback onTap) {
@@ -2625,6 +2662,26 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     ]);
   }
 
+  Widget _buildPostScoreBadge() {
+    final score = _currentPost.postScore ?? 0.0;
+    if (score <= 0) return const SizedBox.shrink();
+    final colors = AppColors.of(context);
+    final color = score >= 50
+        ? const Color(0xFF4CAF50)
+        : score >= 20
+            ? const Color(0xFFFFD700)
+            : colors.textSecondary;
+    return Padding(
+      padding: const EdgeInsets.only(top: 6, left: 4),
+      child: Row(children: [
+        Icon(Icons.trending_up_rounded, size: 13, color: color),
+        const SizedBox(width: 4),
+        Text('Score : ${score.toStringAsFixed(1)}',
+            style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+      ]),
+    );
+  }
+
   Widget _buildChallengeSection() {
     if (!_isLookChallenge || _challenge == null) return SizedBox.shrink();
     return Container(
@@ -2981,6 +3038,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
                   compactLevel: CompactLevel.light,
                   maxDisplayItems: 10,
                 ),
+                _buildPostScoreBadge(),
                 _buildChallengeSection(),
                 _buildSuggestedVideos(),
                 SizedBox(height: 20),

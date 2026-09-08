@@ -92,6 +92,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
     _loadInitialPosts();
     _scrollController.addListener(_scrollListener);
     _loadFollowingStats();
+    _refreshUserData();
   }
 
   Future<void> _loadFollowingStats() async {
@@ -355,18 +356,25 @@ class _OtherUserPageState extends State<OtherUserPage> {
   }
 
   Future<void> _refreshUserData() async {
+    if (widget.otherUser.id == null) return;
     try {
-      // Recharger les données de l'utilisateur depuis Firestore
       final docSnapshot = await FirebaseFirestore.instance
           .collection('Users')
           .doc(widget.otherUser.id)
           .get();
 
-      if (docSnapshot.exists) {
+      if (docSnapshot.exists && mounted) {
         final updatedUser = UserData.fromJson(docSnapshot.data()!);
         setState(() {
           widget.otherUser.userAbonnesIds = updatedUser.userAbonnesIds;
           widget.otherUser.abonnes = updatedUser.abonnes;
+          widget.otherUser.followingIds = updatedUser.followingIds;
+          widget.otherUser.pointContribution = updatedUser.pointContribution;
+          widget.otherUser.codeParrainage = updatedUser.codeParrainage;
+          widget.otherUser.usersParrainer = updatedUser.usersParrainer;
+          widget.otherUser.usersParrainerActifs = updatedUser.usersParrainerActifs;
+          widget.otherUser.userlikes = updatedUser.userlikes;
+          _profileLikes = updatedUser.userlikes ?? _profileLikes;
         });
       }
     } catch (e) {
@@ -649,6 +657,31 @@ class _OtherUserPageState extends State<OtherUserPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildCreatorScoreBadge(double score, dynamic colors) {
+    final color = score >= 50
+        ? const Color(0xFF4CAF50)
+        : score >= 15
+            ? const Color(0xFFFFD700)
+            : colors.textSecondary;
+    final label = score >= 50 ? 'Top créateur' : score >= 15 ? 'Créateur actif' : 'Créateur';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.4)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(Icons.trending_up_rounded, size: 13, color: color),
+        const SizedBox(width: 5),
+        Text(
+          '$label · ${score.toStringAsFixed(1)} pts',
+          style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700),
+        ),
+      ]),
     );
   }
 
@@ -1470,6 +1503,10 @@ class _OtherUserPageState extends State<OtherUserPage> {
                             ),
                         ],
                       ),
+                    if ((widget.otherUser.creatorScore ?? 0) > 0) ...[
+                      const SizedBox(height: 8),
+                      _buildCreatorScoreBadge(widget.otherUser.creatorScore!, colors),
+                    ],
                     const SizedBox(height: 12),
                     Row(
                       children: [

@@ -4013,6 +4013,46 @@
                                        { "fieldPath": "receiver_id", "order": "ASCENDING" },
                                        { "fieldPath": "createdAt", "order": "DESCENDING" }
                                    ]
+                    },
+                    {
+                        "collectionGroup": "Users",
+                        "queryScope": "COLLECTION",
+                        "fields": [
+                            { "fieldPath": "status", "order": "ASCENDING" },
+                            { "fieldPath": "creatorScore", "order": "DESCENDING" }
+                        ]
+                    },
+                    {
+                        "collectionGroup": "Users",
+                        "queryScope": "COLLECTION",
+                        "fields": [
+                            { "fieldPath": "status", "order": "ASCENDING" },
+                            { "fieldPath": "mainCategory", "order": "ASCENDING" },
+                            { "fieldPath": "creatorScore", "order": "DESCENDING" }
+                        ]
+                    },
+                    {
+                        "collectionGroup": "Canaux",
+                        "queryScope": "COLLECTION",
+                        "fields": [
+                            { "fieldPath": "canalScore", "order": "DESCENDING" }
+                        ]
+                    },
+                    {
+                        "collectionGroup": "Posts",
+                        "queryScope": "COLLECTION",
+                        "fields": [
+                            { "fieldPath": "typeTabbar", "order": "ASCENDING" },
+                            { "fieldPath": "postScore", "order": "DESCENDING" }
+                        ]
+                    },
+                    {
+                        "collectionGroup": "Posts",
+                        "queryScope": "COLLECTION",
+                        "fields": [
+                            { "fieldPath": "created_at", "order": "ASCENDING" },
+                            { "fieldPath": "postScore", "order": "DESCENDING" }
+                        ]
                     }
                 ],
     "fieldOverrides":  [

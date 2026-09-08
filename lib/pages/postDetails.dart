@@ -2,6 +2,7 @@ import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
+import 'package:cloud_functions/cloud_functions.dart';
 
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
@@ -4506,27 +4507,37 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (post.user_id != authProvider.loginUserData.id)
-              _buildMenuOption(
-                Icons.flag,
-                "Signaler",
-                _colors.textPrimary,
-                () async {
-                  post.status = PostStatus.SIGNALER.name;
-                  final value = await postProvider.updateVuePost(post, context);
-                  Navigator.pop(context);
-
-                  final snackBar = SnackBar(
-                    content: Text(
-                      value ? 'Post signalé !' : 'Échec du signalement !',
-                      textAlign: TextAlign.center,
-                      style:
-                          TextStyle(color: value ? _colors.success : _colors.danger),
-                    ),
-                  );
-                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                },
-              ),
+            if (post.user_id != authProvider.loginUserData.id) ...[
+              if (authProvider.loginUserData.role == UserRole.ADM.name) ...[
+                _buildMenuOption(
+                  Icons.gavel,
+                  "Modérer ce post",
+                  Colors.orange.shade700,
+                  () => _reportPostWithScore(post, isAdmin: true, reportType: 'standard'),
+                ),
+                _buildMenuOption(
+                  Icons.category_outlined,
+                  "Contenu hors catégorie (admin)",
+                  Colors.deepOrange.shade700,
+                  () => _reportPostWithScore(post, isAdmin: true, reportType: 'wrong_category'),
+                ),
+              ] else ...[
+                if (!(post.reporterIds?.contains(authProvider.loginUserData.id) ?? false))
+                  _buildMenuOption(
+                    Icons.flag_outlined,
+                    "Signaler",
+                    _colors.textPrimary,
+                    () => _reportPostWithScore(post, isAdmin: false, reportType: 'standard'),
+                  ),
+                if (!(post.wrongCategoryReporterIds?.contains(authProvider.loginUserData.id) ?? false))
+                  _buildMenuOption(
+                    Icons.category_outlined,
+                    "Contenu hors catégorie",
+                    _colors.textSecondary,
+                    () => _reportPostWithScore(post, isAdmin: false, reportType: 'wrong_category'),
+                  ),
+              ],
+            ],
             if (post.user!.id == authProvider.loginUserData.id ||
                 authProvider.loginUserData.role == UserRole.ADM.name)
               _buildMenuOption(
@@ -4570,6 +4581,64 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         ),
       ),
     );
+  }
+
+  Widget _buildPostScoreBadge(Post post) {
+    final score = post.postScore ?? 0.0;
+    if (score <= 0) return const SizedBox.shrink();
+    final color = score >= 50
+        ? const Color(0xFF4CAF50)
+        : score >= 20
+            ? const Color(0xFFFFD700)
+            : _colors.textSecondary;
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, left: 16, right: 16),
+      child: Row(children: [
+        Icon(Icons.trending_up_rounded, size: 14, color: color),
+        const SizedBox(width: 4),
+        Text(
+          'Score : ${score.toStringAsFixed(1)}',
+          style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600),
+        ),
+      ]),
+    );
+  }
+
+  Future<void> _reportPostWithScore(
+    Post post, {
+    required bool isAdmin,
+    required String reportType,
+  }) async {
+    Navigator.pop(context);
+    try {
+      final callable = FirebaseFunctions.instance.httpsCallable('reportPost');
+      await callable.call({
+        'postId': post.id,
+        'isAdminReport': isAdmin,
+        'reportType': reportType,
+      });
+      if (mounted) {
+        final msg = isAdmin
+            ? (reportType == 'wrong_category'
+                ? 'Post modéré — hors catégorie, score à 5 %.'
+                : 'Post modéré — score réduit à 10 %.')
+            : (reportType == 'wrong_category'
+                ? 'Signalé comme hors catégorie.'
+                : 'Post signalé.');
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(msg, textAlign: TextAlign.center,
+              style: TextStyle(color: _colors.success)),
+        ));
+      }
+    } on FirebaseFunctionsException catch (e) {
+      if (mounted) {
+        final msg = e.code == 'already-exists'
+            ? 'Tu as déjà signalé ce post.'
+            : (e.message ?? 'Erreur lors du signalement.');
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
+      }
+    }
   }
 
   Widget _buildPostContent(Post post) {
@@ -6639,6 +6708,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                       Divider(color: _colors.divider),
                       _buildCommentPreview(_hasAccessToContent()),
                       _buildStatsRow(updatedPost),
+                      _buildPostScoreBadge(updatedPost),
                       // _buildAdMrec(key: 'ad_details_post'),
 
                       PostGiftsList(

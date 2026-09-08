@@ -3,6 +3,7 @@ import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 import 'dart:math';
 import 'dart:typed_data';
@@ -2788,15 +2789,33 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
               },
             ).animate().fadeIn(duration: 200.ms, delay: 20.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
 
-            if (post.user_id != authProvider.loginUserData.id)
-              ListTile(
-                leading: Icon(Icons.flag, color: colors.textPrimary),
-                title: Text('Signaler', style: TextStyle(color: colors.textPrimary)),
-                onTap: () async {
-                  Navigator.pop(context);
-                  await postProvider.updateVuePost(post, context);
-                },
-              ).animate().fadeIn(duration: 200.ms, delay: 40.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
+            if (post.user_id != authProvider.loginUserData.id) ...[
+              if (authProvider.loginUserData.role == UserRole.ADM.name) ...[
+                ListTile(
+                  leading: Icon(Icons.gavel, color: Colors.orange.shade700),
+                  title: Text('Modérer ce post', style: TextStyle(color: Colors.orange.shade700)),
+                  onTap: () => _reportPostWithScore(post, isAdmin: true, reportType: 'standard'),
+                ).animate().fadeIn(duration: 200.ms, delay: 40.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
+                ListTile(
+                  leading: Icon(Icons.category_outlined, color: Colors.deepOrange.shade700),
+                  title: Text('Hors catégorie (admin)', style: TextStyle(color: Colors.deepOrange.shade700)),
+                  onTap: () => _reportPostWithScore(post, isAdmin: true, reportType: 'wrong_category'),
+                ).animate().fadeIn(duration: 200.ms, delay: 60.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
+              ] else ...[
+                if (!(post.reporterIds?.contains(authProvider.loginUserData.id) ?? false))
+                  ListTile(
+                    leading: Icon(Icons.flag_outlined, color: colors.textPrimary),
+                    title: Text('Signaler', style: TextStyle(color: colors.textPrimary)),
+                    onTap: () => _reportPostWithScore(post, isAdmin: false, reportType: 'standard'),
+                  ).animate().fadeIn(duration: 200.ms, delay: 40.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
+                if (!(post.wrongCategoryReporterIds?.contains(authProvider.loginUserData.id) ?? false))
+                  ListTile(
+                    leading: Icon(Icons.category_outlined, color: colors.textSecondary),
+                    title: Text('Contenu hors catégorie', style: TextStyle(color: colors.textSecondary)),
+                    onTap: () => _reportPostWithScore(post, isAdmin: false, reportType: 'wrong_category'),
+                  ).animate().fadeIn(duration: 200.ms, delay: 60.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
+              ],
+            ],
 
             if (post.user_id == authProvider.loginUserData.id ||
                 authProvider.loginUserData.role == UserRole.ADM.name)
@@ -2840,6 +2859,28 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
       ),
     );
   }
+  Future<void> _reportPostWithScore(Post post, {required bool isAdmin, required String reportType}) async {
+    Navigator.pop(context);
+    try {
+      final callable = FirebaseFunctions.instance.httpsCallable('reportPost');
+      await callable.call({'postId': post.id, 'isAdminReport': isAdmin, 'reportType': reportType});
+      if (mounted) {
+        final msg = isAdmin
+            ? (reportType == 'wrong_category' ? 'Post modéré — hors catégorie.' : 'Post modéré.')
+            : (reportType == 'wrong_category' ? 'Signalé comme hors catégorie.' : 'Post signalé.');
+        final c = AppColors.of(context);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(msg, style: TextStyle(color: c.success)),
+        ));
+      }
+    } on FirebaseFunctionsException catch (e) {
+      if (mounted) {
+        final msg = e.code == 'already-exists' ? 'Tu as déjà signalé ce post.' : (e.message ?? 'Erreur.');
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
+      }
+    }
+  }
+
   Future<void> _confirmAndDeletePost(Post post) async {
     if (!mounted) return;
     final colors = AppColors.of(context);

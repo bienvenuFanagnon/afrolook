@@ -1154,6 +1154,10 @@ class _CanalDetailsState extends State<CanalDetails> {
                           ],
                         ],
                       ),
+                      if ((widget.canal.canalScore ?? 0) > 0) ...[
+                        SizedBox(height: 8),
+                        _buildCanalScoreBadge(widget.canal.canalScore!),
+                      ],
                     ],
                   ),
                 ),
@@ -1606,6 +1610,31 @@ class _CanalDetailsState extends State<CanalDetails> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildCanalScoreBadge(double score) {
+    final color = score >= 50
+        ? const Color(0xFF4CAF50)
+        : score >= 15
+            ? const Color(0xFFFFD700)
+            : _colors.textSecondary;
+    final label = score >= 50 ? 'Canal populaire' : score >= 15 ? 'Canal actif' : 'Canal';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.4)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(Icons.trending_up_rounded, size: 13, color: color),
+        const SizedBox(width: 5),
+        Text(
+          '$label · ${score.toStringAsFixed(1)} pts',
+          style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700),
+        ),
+      ]),
     );
   }
 

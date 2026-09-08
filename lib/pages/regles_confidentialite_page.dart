@@ -113,6 +113,27 @@ class ReglesConfidentialitePage extends StatelessWidget {
           ),
           _section(
             colors,
+            icon: Icons.trending_up_rounded,
+            title: 'Système de score & Recommandations',
+            items: [
+              _rule('Score du post',
+                  'Chaque publication reçoit un score calculé automatiquement toutes les 6 heures. Ce score tient compte du nombre de likes (×1), de loves (×2) et de commentaires (×3), divisé par l\'âge du post. Plus un post est récent et engageant, plus son score est élevé.'),
+              _rule('Décroissance dans le temps',
+                  'Les anciens posts perdent progressivement du score même si leur engagement reste constant. Cette mécanique garantit que du contenu frais et de qualité est régulièrement mis en avant, au lieu de favoriser indéfiniment les publications déjà populaires.'),
+              _rule('Score créateur',
+                  'Chaque créateur reçoit un score basé sur la moyenne des scores de ses 30 dernières publications. Ce score reflète la qualité et la régularité de son contenu. Il est visible sur son profil.'),
+              _rule('Score canal',
+                  'Les canaux disposent également d\'un score, calculé de la même façon à partir des posts publiés dans le canal. Il reflète la vitalité et la qualité du canal. Visible dans les détails du canal.'),
+              _rule('Impact sur les recommandations',
+                  'Les créateurs et canaux ayant les meilleurs scores apparaissent en priorité dans la section "À découvrir" du feed. Le score post détermine les publications proposées dans les recommandations T3 (découverte de contenu).'),
+              _rule('Impact du signalement',
+                  'Signaler un post déclenche une pénalité automatique sur son score (−5 points par signalement). Si plusieurs utilisateurs signalent le même post, il est progressivement enterré dans les recommandations. Un post modéré par l\'équipe Afrolook perd 90 % de son score immédiatement.'),
+              _rule('Transparence',
+                  'Le score de tes posts, de ton profil créateur et de tes canaux est visible par tous. Il n\'est pas possible de l\'acheter ou de le manipuler artificiellement — tout comportement frauduleux entraîne une suspension.'),
+            ],
+          ),
+          _section(
+            colors,
             icon: Icons.gavel,
             title: 'Règles d\'utilisation',
             items: [
