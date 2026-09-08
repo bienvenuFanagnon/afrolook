@@ -85,6 +85,9 @@ class _MonetisationPageState extends State<MonetisationPage> {
           final double soldePrincipal = user.votre_solde_principal ?? 0;
           final double soldeDepot = user.votre_solde_depot ?? 0;
           final int giftCoinsBalance = user.giftCoinsBalance ?? 0;
+          final double creatorScore = user.creatorScore ?? 0.0;
+          final int totalViews = user.totalPostUniqueViews ?? 0;
+          final int creditedViews = user.totalViewsEarningsCredited ?? 0;
 
           return CenteredContent(child: SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
@@ -94,6 +97,8 @@ class _MonetisationPageState extends State<MonetisationPage> {
                 _buildSoldePrincipalCard(soldePrincipal, colors, t),
                 const SizedBox(height: 16),
                 _buildSoldeDepotCard(soldeDepot, colors),
+                const SizedBox(height: 16),
+                _buildViewEarningsCard(creatorScore, totalViews, creditedViews, colors),
                 const SizedBox(height: 16),
                 _buildCoinsCard(giftCoinsBalance, colors, t),
                 const SizedBox(height: 16),
@@ -107,6 +112,280 @@ class _MonetisationPageState extends State<MonetisationPage> {
           ));
         },
       ),
+    );
+  }
+
+  // ── Carte Revenus des vues ────────────────────────────────────────────────
+
+  static const _scoreTiers = [
+    {'minScore': 80.0, 'multiplier': 1.00, 'label': 'Élite',    'color': 0xFF22C55E},
+    {'minScore': 50.0, 'multiplier': 0.80, 'label': 'Expert',   'color': 0xFF3B82F6},
+    {'minScore': 25.0, 'multiplier': 0.60, 'label': 'Avancé',   'color': 0xFFF97316},
+    {'minScore': 10.0, 'multiplier': 0.40, 'label': 'Standard', 'color': 0xFFF59E0B},
+    {'minScore':  0.0, 'multiplier': 0.20, 'label': 'Débutant', 'color': 0xFF94A3B8},
+  ];
+
+  Map<String, dynamic> _getTier(double score) {
+    for (final t in _scoreTiers) {
+      if (score >= (t['minScore'] as double)) return t;
+    }
+    return _scoreTiers.last;
+  }
+
+  Widget _buildViewEarningsCard(
+    double creatorScore,
+    int totalViews,
+    int creditedViews,
+    AppColors colors,
+  ) {
+    const double baseRate = 1.0; // FCFA max (taux de base actuel)
+    final tier = _getTier(creatorScore);
+    final double multiplier = tier['multiplier'] as double;
+    final String tierLabel = tier['label'] as String;
+    final Color tierColor = Color(tier['color'] as int);
+    final double myRate = baseRate * multiplier;
+    final int pendingViews = (totalViews - creditedViews).clamp(0, totalViews);
+    final double pendingEarnings = pendingViews * myRate;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: tierColor.withOpacity(0.35)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.07),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // En-tête
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: tierColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(Icons.play_circle_outline, color: tierColor, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'REVENUS DES VUES',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: colors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: tierColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  tierLabel,
+                  style: TextStyle(
+                    color: tierColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Taux actuel
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '${myRate.toStringAsFixed(2)} FCFA',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: tierColor,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  '/ vue',
+                  style: TextStyle(fontSize: 13, color: colors.textSecondary),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Score créateur : ${creatorScore.toStringAsFixed(1)} pts  ·  ${(multiplier * 100).toStringAsFixed(0)}% du taux de base (${baseRate.toStringAsFixed(0)} FCFA max)',
+            style: TextStyle(fontSize: 11, color: colors.textSecondary),
+          ),
+
+          const SizedBox(height: 14),
+          Divider(color: colors.divider, height: 1),
+          const SizedBox(height: 14),
+
+          // Statistiques vues
+          Row(
+            children: [
+              Expanded(
+                child: _viewStat(
+                  icon: Icons.remove_red_eye_outlined,
+                  label: 'Vues totales',
+                  value: totalViews.toString(),
+                  color: colors.textSecondary,
+                  colors: colors,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _viewStat(
+                  icon: Icons.schedule_outlined,
+                  label: 'En attente',
+                  value: pendingViews.toString(),
+                  color: tierColor,
+                  colors: colors,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _viewStat(
+                  icon: Icons.trending_up,
+                  label: 'Prochain crédit',
+                  value: '${pendingEarnings.toStringAsFixed(2)} F',
+                  color: tierColor,
+                  colors: colors,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 14),
+
+          // Paliers
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: colors.surfaceVariant,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Paliers de rémunération',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: colors.textSecondary,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ..._scoreTiers.map((t) {
+                  final tColor = Color(t['color'] as int);
+                  final tMulti = t['multiplier'] as double;
+                  final tLabel = t['label'] as String;
+                  final tMin = t['minScore'] as double;
+                  final isActive = tierLabel == tLabel;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 8, height: 8,
+                          decoration: BoxDecoration(
+                            color: isActive ? tColor : tColor.withOpacity(0.4),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '$tLabel  (score ≥ ${tMin.toStringAsFixed(0)})',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: isActive ? colors.textPrimary : colors.textSecondary,
+                              fontWeight: isActive ? FontWeight.w700 : FontWeight.normal,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          '${(tMulti * baseRate).toStringAsFixed(2)} FCFA/vue',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: isActive ? tColor : colors.textSecondary,
+                            fontWeight: isActive ? FontWeight.w700 : FontWeight.normal,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.info_outline, size: 13, color: colors.textSecondary),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Les gains sont crédités automatiquement chaque jour sur ton solde principal. '
+                  'Le taux de base (actuellement ${baseRate.toStringAsFixed(0)} FCFA/vue) peut être ajusté à tout moment par Afrolook. '
+                  'Améliore ton score en publiant du contenu apprécié et engage ta communauté.',
+                  style: TextStyle(fontSize: 10, color: colors.textSecondary, height: 1.4),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _viewStat({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+    required AppColors colors,
+  }) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 18),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(fontSize: 10, color: colors.textSecondary),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 

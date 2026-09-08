@@ -1,5 +1,6 @@
 export { translatePostDescription } from "./translatePost";
 export * from "./posts/scoreEngine";
+export * from "./posts/viewEarnings";
 export * from "./payments/cinetpay";
 export * from "./payments/paygate";
 export * from "./payments/feexpay";

@@ -955,6 +955,7 @@ class UserData {
 
   // Monétisation par vues de posts
   int? totalPostUniqueViews = 0;          // Total cumulé de vues uniques sur ses posts normaux
+  int? totalViewsEarningsCredited = 0;   // Nb de vues déjà converties en gains (CRON quotidien)
   double? postViewsAvailable = 0.0;       // FCFA disponible à encaisser
   double? postViewsTotalCashed = 0.0;     // Total déjà encaissé (historique)
   Map<String, int>? postViewsMonthly = {}; // {"2026-06": 1500, ...} — affichage uniquement
@@ -1130,6 +1131,7 @@ class UserData {
     this.totalGiftCoinsSpent = 0,
     this.totalGiftCoinsConverted = 0,
     this.totalPostUniqueViews = 0,
+    this.totalViewsEarningsCredited = 0,
     this.postViewsAvailable = 0.0,
     this.postViewsTotalCashed = 0.0,
     this.postViewsMonthly,
@@ -1314,6 +1316,7 @@ class UserData {
     totalGiftCoinsConverted = json['totalGiftCoinsConverted'] ?? 0;
 
     totalPostUniqueViews = json['totalPostUniqueViews'] ?? 0;
+    totalViewsEarningsCredited = json['totalViewsEarningsCredited'] ?? 0;
     postViewsAvailable = (json['postViewsAvailable'] as num?)?.toDouble() ?? 0.0;
     postViewsTotalCashed = (json['postViewsTotalCashed'] as num?)?.toDouble() ?? 0.0;
     postViewsMonthly = (json['postViewsMonthly'] as Map<String, dynamic>?)

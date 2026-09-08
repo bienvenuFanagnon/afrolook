@@ -43,6 +43,25 @@ class ReglesConfidentialitePage extends StatelessWidget {
           ),
           _section(
             colors,
+            icon: Icons.monetization_on_outlined,
+            title: 'Taux de monétisation par vue',
+            items: [
+              _rule('Principe de la part',
+                  'Chaque vue d\'un abonné te rapporte une fraction du taux de base fixé par Afrolook. Cette fraction — ta "part" — est déterminée par ton score créateur. Plus ton score est élevé, plus ta part est grande et plus chaque vue te rapporte.'),
+              _rule('Taux de base (modifiable à tout moment)',
+                  'Le taux de base actuel est de 1 FCFA par vue. Ce montant est le maximum qu\'un créateur peut recevoir pour une vue. Il peut être ajusté par Afrolook à la hausse ou à la baisse selon l\'économie de la plateforme. Ton niveau de rémunération réel est toujours calculé à partir du taux en vigueur au moment du crédit.'),
+              _rule('Paliers selon le score',
+                  'Débutant (score < 10) → 20 % du taux de base. Standard (10–24) → 40 %. Avancé (25–49) → 60 %. Expert (50–79) → 80 %. Élite (80+) → 100 %. Ton palier actuel est visible dans ta page de monétisation.'),
+              _rule('Crédit quotidien automatique',
+                  'Les gains accumulés depuis le dernier crédit sont calculés chaque jour et ajoutés automatiquement à ton solde principal. Tu n\'as rien à faire.'),
+              _rule('Augmente ton score pour gagner plus',
+                  'Publie du contenu de qualité, régulièrement apprécié par ta communauté (likes, loves, commentaires). Plus tes posts génèrent d\'engagement, plus ton score créateur monte — et plus ta part par vue augmente.'),
+              _rule('Impact des signalements sur tes revenus',
+                  'Si tes posts sont signalés ou jugés inappropriés, leur score chute. Ce déclin du score post entraîne une baisse du score créateur, ce qui peut faire descendre ton palier et donc ton taux par vue. Maintenir un contenu de qualité protège directement tes revenus.'),
+            ],
+          ),
+          _section(
+            colors,
             icon: Icons.chat_bubble_outline,
             title: 'Récompenses commentaires',
             items: [
