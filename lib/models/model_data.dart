@@ -1534,9 +1534,9 @@ class Post {
   bool? isPortrait;
 
   // ── Score système ────────────────────────────────────────────────────────────
-  // rawScore : accumulé en temps réel (likes +1, loves +2, comments +3)
-  // postScore: CRON 6h → rawScore / (âge_jours + 2)^1.5
-  int? rawScore = 0;
+  // rawScore : accumulé en temps réel (loves*2 + comments*3 + totalInteractions*0.5)
+  // postScore: rawScore / (âge_jours + 2)^1.5
+  double? rawScore = 0.0;
   double? postScore = 0.0;
 
   // Signalements — chaque utilisateur ne peut signaler qu'une fois
@@ -1763,7 +1763,7 @@ class Post {
         ? Map<String, dynamic>.from(json['canalSnapshot'] as Map)
         : null;
 
-    rawScore = json['rawScore'] as int? ?? 0;
+    rawScore = (json['rawScore'] as num?)?.toDouble() ?? 0.0;
     postScore = (json['postScore'] as num?)?.toDouble() ?? 0.0;
     reporterIds = json['reporterIds'] != null ? List<String>.from(json['reporterIds']) : [];
     wrongCategoryReporterIds = json['wrongCategoryReporterIds'] != null
@@ -4008,7 +4008,8 @@ class NotificationData {
   bool? is_open;
   String? description;
   List<String>? users_id_view = [];
-  String? canal_id; // 🔹 Nouveau champ pour canal
+  String? canal_id;
+  String? post_thumbnail; // URL media du post (image/vidéo preview)
 
   int? createdAt;
   int? updatedAt;
@@ -4025,7 +4026,8 @@ class NotificationData {
     this.post_id = '',
     this.user_id = '',
     this.receiver_id = '',
-    this.canal_id, // 🔹 Initialise
+    this.canal_id,
+    this.post_thumbnail,
     this.createdAt = 0,
     this.updatedAt = 0,
     this.users_id_view,
@@ -4066,10 +4068,11 @@ class NotificationData {
     post_data_type = json['post_data_type'] ?? "";
     post_id = json['post_id'] ?? "";
     users_id_view = json['users_id_view']?.cast<String>() ?? [];
-    canal_id = json['canal_id']; // 🔹 Lire canal_id
+    canal_id = json['canal_id'];
     description = json['description'];
     titre = json['titre'];
     media_url = json['media_url'];
+    post_thumbnail = json['post_thumbnail'] as String?;
   }
 
   Map<String, dynamic> toJson() {

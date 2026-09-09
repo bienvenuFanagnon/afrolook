@@ -110,40 +110,89 @@ class DiscoveryBoostService {
         .removeWhere((id) => _cachedPosts.every((p) => p.id != id));
   }
 
-  /// Posts les mieux scorés de créateurs non suivis.
-  /// Utilisé pour remplir les slots 2 & 3 de chaque batch découverte.
-  /// Trié par postScore desc : on montre le meilleur contenu, pas le plus récent.
+  /// Posts découverte : mix 2/3 meilleurs scores + 1/3 nouveaux posts (< 72h).
+  /// Exclut les posts déjà vus ([seenIds]) et les créateurs suivis ([followedSet]).
+  /// Les nouveaux posts sans score bénéficient d'une fenêtre de visibilité
+  /// pour accumuler leurs premières interactions.
   Future<List<Post>> fetchRegularDiscovery({
     required Set<String> followedSet,
     required String currentUserId,
     required String? userCountry,
+    Set<String> seenIds = const {},
     int limit = 18,
   }) async {
+    final freshCutoffUs = DateTime.now()
+        .subtract(const Duration(hours: 72))
+        .microsecondsSinceEpoch;
+
     try {
-      final snap = await _db
+      // Pool A : meilleurs scores (contenu établi)
+      final topSnap = await _db
           .collection('Posts')
           .orderBy('postScore', descending: true)
-          .limit(limit * 8)
+          .limit(limit * 6)
           .get();
 
-      // Un seul post par créateur : celui avec le meilleur score (le premier rencontré)
-      final bestByCreator = <String, Post>{};
-      for (final doc in snap.docs) {
-        final data = doc.data();
-        final uid = data['user_id'] as String? ?? '';
-        if (uid.isEmpty || uid == currentUserId || followedSet.contains(uid)) continue;
-        if (bestByCreator.containsKey(uid)) continue;
-        final postData = Map<String, dynamic>.from(data);
-        postData['id'] = doc.id;
-        final post = Post.fromJson(postData);
-        if (_passesCountryFilter(post, userCountry)) {
-          bestByCreator[uid] = post;
-        }
+      // Pool B : nouveaux posts < 72h (cold start)
+      final freshSnap = await _db
+          .collection('Posts')
+          .where('created_at', isGreaterThan: freshCutoffUs)
+          .orderBy('created_at', descending: true)
+          .limit(limit * 4)
+          .get();
+
+      bool _isEligible(String docId, String uid) {
+        if (docId.isEmpty || seenIds.contains(docId)) return false;
+        if (uid.isEmpty || uid == currentUserId || followedSet.contains(uid)) return false;
+        return true;
       }
 
-      // Légère randomisation dans le top pour varier les suggestions à chaque ouverture
-      final eligible = bestByCreator.values.toList()..shuffle(Random());
-      return eligible.take(limit).toList();
+      Post? _toPost(Map<String, dynamic> data, String id) {
+        final postData = Map<String, dynamic>.from(data);
+        postData['id'] = id;
+        final post = Post.fromJson(postData);
+        return _passesCountryFilter(post, userCountry) ? post : null;
+      }
+
+      // Un seul post par créateur dans chaque pool
+      final topByCreator = <String, Post>{};
+      for (final doc in topSnap.docs) {
+        final uid = doc.data()['user_id'] as String? ?? '';
+        if (!_isEligible(doc.id, uid)) continue;
+        if (topByCreator.containsKey(uid)) continue;
+        final post = _toPost(doc.data(), doc.id);
+        if (post != null) topByCreator[uid] = post;
+      }
+
+      final freshByCreator = <String, Post>{};
+      for (final doc in freshSnap.docs) {
+        final uid = doc.data()['user_id'] as String? ?? '';
+        if (!_isEligible(doc.id, uid)) continue;
+        if (freshByCreator.containsKey(uid)) continue;
+        final post = _toPost(doc.data(), doc.id);
+        if (post != null) freshByCreator[uid] = post;
+      }
+
+      // Quota : 2/3 populaires + 1/3 frais
+      final topCount   = (limit * 2 / 3).ceil();
+      final freshCount = limit - topCount;
+
+      final topList   = (topByCreator.values.toList()..shuffle(Random())).take(topCount).toList();
+      final freshList = (freshByCreator.values.toList()..shuffle(Random()))
+          .where((p) => p.user_id != null && !topByCreator.containsKey(p.user_id))
+          .take(freshCount)
+          .toList();
+
+      // Intercaler : top, top, fresh, top, top, fresh …
+      final result = <Post>[];
+      int ti = 0, fi = 0;
+      while (ti < topList.length || fi < freshList.length) {
+        if (ti < topList.length) result.add(topList[ti++]);
+        if (ti < topList.length) result.add(topList[ti++]);
+        if (fi < freshList.length) result.add(freshList[fi++]);
+      }
+
+      return result.take(limit).toList();
     } catch (_) {
       return [];
     }

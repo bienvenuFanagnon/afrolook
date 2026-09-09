@@ -76,6 +76,8 @@ import '../../widgets/feed/sections/weekly_top_posts_section_widget.dart';
 import '../../widgets/feed/sections/weekly_top_commentators_widget.dart';
 import '../../widgets/feed/sections/comment_level_widget.dart';
 import '../../widgets/flame_streak_banner.dart';
+import '../../widgets/feed/sections/affiliation_feed_widget.dart';
+import '../../widgets/feed/sections/feed_recommended_profiles_widget.dart';
 
 
 // Constantes de couleur
@@ -2798,6 +2800,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       followedSet: followedSet,
       currentUserId: me.id!,
       userCountry: userCountry,
+      seenIds: SeenDiscoveryCache.instance.seenIds,
     );
     if (!mounted) return;
     setState(() {
@@ -3162,8 +3165,29 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     }
   }
 
+  // Slot pub unifié : alterne bannière et grand selon FeedUnifiedAdSlot.
   Widget _buildUnifiedAdSlot({required String key}) =>
       FeedUnifiedAdSlot(adKey: key);
+
+  // Slot de contenu pur — pas de fallback pub (pool seulement).
+  Widget _buildPoolContent(String name, String poolKey) {
+    switch (name) {
+      case 'Articles':
+        if (_articles.isEmpty) return const SizedBox.shrink();
+        return _buildArticlesSection();
+      case 'Canaux':
+        if (_canaux.isEmpty) return const SizedBox.shrink();
+        return _buildCanauxSection();
+      case 'WeeklyTopCreators':
+        return const WeeklyTopCreatorsWidget();
+      case 'BoostedContent':
+        return const BoostedContentStripWidget();
+      case 'VIPContent':
+        return const RecentVIPContentWidget();
+      default:
+        return const SizedBox.shrink();
+    }
+  }
 
   Widget _buildPostWidget(Post post, double width, double height, int index) {
     final pid = post.id;
@@ -3625,6 +3649,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     int _t3Shown = 0;
     bool _t3CutoffReached = false;
     int _t2FillShown = 0;
+    // Garde-fou : index du dernier insert non-organique (pub ou pool).
+    // Empêche deux inserts à moins de 5 posts d'intervalle.
+    int _lastInsertedAt = -10;
 
     for (int i = 0; i < finalPosts.length; i++) {
       final post = finalPosts[i];
@@ -3664,39 +3691,62 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         }
       }
 
-      // Après le 1er post : section créateurs actifs + lives si chroniques présentes
-      if (i == 0) {
-        contentWidgets.add(_buildProfilesSection());
+      // Post 6 : widget Affiliation (1×/jour — géré en interne par le widget)
+      if (i == 5) {
+        contentWidgets.add(const AffiliationFeedWidget());
+      }
+
+      // Post 10 : Lives si chroniques présentes, sinon Profils recommandés
+      if (i == 9) {
         if (_hasChroniques) {
           contentWidgets.add(const FeedLiveSection());
+        } else {
+          contentWidgets.add(_buildProfilesSection());
         }
       }
 
-      // Après le 2ème post : niveau de commentaire — toujours visible
-      if (i == 1) {
-        contentWidgets.add(const CommentLevelWidget());
+      // Post 15 : Profils recommandés si Lives occupait le post 10
+      if (i == 14 && _hasChroniques) {
+        contentWidgets.add(_buildProfilesSection());
       }
 
-      // Après le 3ème post : classement hebdo commentateurs + articles
-      if (i == 2) {
-        contentWidgets.add(const WeeklyTopCommentatorsWidget());
-        if (_showShopPromo) {
-          contentWidgets.add(ShopPromoFeedWidget(articles: _articles, isFirstPosition: false));
+      // Post 20 : Canaux recommandés
+      if (i == 19) {
+        if (_canaux.isNotEmpty) {
+          contentWidgets.add(_buildCanauxSection());
         }
       }
 
-      // Pub toutes les 3 posts, première après le 2ème post (i=1, 4, 7, 10...)
-      // Pattern : i >= 1 && (i - 1) % 3 == 0
+      // Post 21 : Profils créateurs recommandés (par score)
+      if (i == 20) {
+        contentWidgets.add(const FeedRecommendedProfilesWidget());
+      }
+
       final postNumber = i + 1;
-      if (i >= 1 && (i - 1) % 3 == 0) {
-        final slotN = (i - 1) ~/ 3;
-        contentWidgets.add(_buildUnifiedAdSlot(key: 'ad_slot_$slotN'));
+
+      // Pub : première après le 2ème post (i=1), puis toutes les 8 posts (i=9, 17, 25...).
+      // Ignoré si un post isAdvertisement est dans les ±2 adjacents,
+      // ou si un autre insert (pub ou pool) a été ajouté dans les 5 derniers posts.
+      final isAdSlot = i == 1 || (i > 1 && (i - 1) % 8 == 0);
+      if (isAdSlot && (i - _lastInsertedAt) >= 5) {
+        final ws = (i - 1).clamp(0, finalPosts.length - 1);
+        final we = (i + 2).clamp(0, finalPosts.length - 1);
+        final hasGrandNearby = finalPosts
+            .sublist(ws, we + 1)
+            .any((p) => p.isAdvertisement == true);
+        if (!hasGrandNearby) {
+          final slotN = i == 1 ? 0 : (i - 1) ~/ 8;
+          contentWidgets.add(_buildUnifiedAdSlot(key: 'ad_slot_$slotN'));
+          _lastInsertedAt = i;
+        }
       }
-      // Slot découverte toutes les 9 posts
-      if (postNumber % 9 == 0) {
-        final poolCount = postNumber ~/ 9 - 1;
+
+      // Contenu découverte toutes les 16 posts — ignoré si trop proche d'un insert.
+      if (postNumber % 16 == 0 && (i - _lastInsertedAt) >= 5) {
+        final poolCount = postNumber ~/ 16 - 1;
         final poolIdx = poolCount % _kPoolOrder.length;
-        contentWidgets.add(_buildPoolOrAd(_kPoolOrder[poolIdx], 'pool_slot_$poolCount'));
+        contentWidgets.add(_buildPoolContent(_kPoolOrder[poolIdx], 'pool_slot_$poolCount'));
+        _lastInsertedAt = i;
       }
 
       // ── 2 sections catégorie inline toutes les 8 posts ──

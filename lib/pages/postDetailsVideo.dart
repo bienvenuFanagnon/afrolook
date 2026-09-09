@@ -2664,7 +2664,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
 
   Widget _buildPostScoreBadge() {
     final score = _currentPost.postScore ?? 0.0;
-    if (score <= 0) return const SizedBox.shrink();
+    if (score <= 0 || score.isNaN || score.isInfinite) return const SizedBox.shrink();
     final colors = AppColors.of(context);
     final color = score >= 50
         ? const Color(0xFF4CAF50)
@@ -2676,7 +2676,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       child: Row(children: [
         Icon(Icons.trending_up_rounded, size: 13, color: color),
         const SizedBox(width: 4),
-        Text('Score : ${score.toStringAsFixed(1)}',
+        Text('Score : ${score >= 10 ? score.round() : score.toStringAsFixed(1)}',
             style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
       ]),
     );

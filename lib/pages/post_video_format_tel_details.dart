@@ -3227,8 +3227,29 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
               ),
             ),
           PostGiftsList(postId: post.id!, compactLevel: CompactLevel.light, maxDisplayItems: 10),
+          _buildPostScoreBadge(post),
         ],
       ).animate().fadeIn(duration: 400.ms).slideX(begin: -0.08, end: 0, duration: 400.ms, curve: Curves.easeOut),
+    );
+  }
+
+  Widget _buildPostScoreBadge(Post post) {
+    final score = post.postScore ?? 0.0;
+    if (score <= 0 || score.isNaN || score.isInfinite) return const SizedBox.shrink();
+    final colors = AppColors.of(context);
+    final color = score >= 50
+        ? const Color(0xFF4CAF50)
+        : score >= 20
+            ? const Color(0xFFFFD700)
+            : colors.textSecondary;
+    return Padding(
+      padding: const EdgeInsets.only(top: 6, left: 4),
+      child: Row(children: [
+        Icon(Icons.trending_up_rounded, size: 13, color: color),
+        const SizedBox(width: 4),
+        Text('Score : ${score >= 10 ? score.round() : score.toStringAsFixed(1)}',
+            style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+      ]),
     );
   }
 

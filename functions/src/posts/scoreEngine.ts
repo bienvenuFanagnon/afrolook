@@ -1,109 +1,175 @@
 /**
  * scoreEngine.ts
- * – CRON toutes les 6h : calcule postScore pour les posts récents,
- *   puis agrège creatorScore et canalScore.
+ * – Trigger temps réel (onDocumentUpdated Posts) : recalcule postScore, creatorScore, canalScore
+ *   à chaque changement de loves, comments ou totalInteractions sur un post.
  * – reportPost (callable) : applique la pénalité de signalement sur postScore.
  *   Utilisateur normal → -5 pts ; Admin → × 0.10 (−90 %).
+ *
+ * Formule postScore : raw = loves*2 + comments*3 + totalInteractions*0.5 ; score = raw / (ageDays+2)^1.5
+ * Note : "likes" n'est jamais incrémenté côté Flutter — "loves" est utilisé pour les réactions.
+ * totalInteractions : compteur global incrémenté à chaque vue/like/commentaire/favori/partage.
  */
 
 import { onSchedule } from "firebase-functions/v2/scheduler";
+import { onDocumentUpdated } from "firebase-functions/v2/firestore";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { FieldValue } from "firebase-admin/firestore";
 import { db } from "../shared/firebase";
 
-const POSTS_COLLECTION = "Posts";
-const USERS_COLLECTION = "Users";
+// ─── Recalcul en temps réel à chaque love ou commentaire ────────────────────
+
+export const recalculateScoresOnInteraction = onDocumentUpdated(
+  { document: "Posts/{postId}", region: "europe-west1" },
+  async (event) => {
+    if (!event.data) return;
+    const before = event.data.before.data();
+    const after  = event.data.after.data();
+
+    // Déclencher si loves, comments ou totalInteractions ont changé
+    const lovesChanged        = (before.loves             ?? 0) !== (after.loves             ?? 0);
+    const commentsChanged     = (before.comments          ?? 0) !== (after.comments          ?? 0);
+    const interactionsChanged = (before.totalInteractions ?? 0) !== (after.totalInteractions ?? 0);
+    if (!lovesChanged && !commentsChanged && !interactionsChanged) return;
+
+    const loves             = (after.loves             ?? 0) as number;
+    const comments          = (after.comments          ?? 0) as number;
+    const totalInteractions = (after.totalInteractions ?? 0) as number;
+    // Flutter stocke created_at en microsecondes — convertir en ms pour le calcul
+    const createdAtRaw = (after.created_at ?? Date.now()) as number;
+    const createdAtMs  = createdAtRaw > 1e13 ? createdAtRaw / 1000 : createdAtRaw;
+    const diffMs       = Date.now() - createdAtMs;
+    const ageDays      = Number.isFinite(diffMs) ? Math.max(0, diffMs / 86_400_000) : 0;
+    // loves*2 : réaction forte ; comments*3 : engagement le plus fort ;
+    // totalInteractions*0.5 : vues, partages, favoris (poids léger pour éviter le double comptage)
+    const raw   = loves * 2 + comments * 3 + totalInteractions * 0.5;
+    const score = Math.round((raw / Math.pow(ageDays + 2, 1.5)) * 100) / 100;
+
+    // Éviter une boucle infinie : ne pas mettre à jour si les valeurs sont déjà correctes
+    if ((after.postScore ?? 0) === score && (after.rawScore ?? 0) === raw) return;
+
+    await event.data!.after.ref.update({ rawScore: raw, postScore: score });
+
+    // Propager vers creatorScore
+    const uid = after.user_id as string | undefined;
+    if (uid) {
+      try {
+        const creatorPosts = await db.collection(POSTS_COLLECTION)
+          .where("user_id", "==", uid)
+          .orderBy("created_at", "desc")
+          .limit(SNAPSHOT_SIZE)
+          .select("postScore")
+          .get();
+        const scores = creatorPosts.docs.map(d => (d.data().postScore ?? 0) as number);
+        // Remplacer le score du post courant par la valeur fraîche
+        const postId = event.params.postId;
+        const idx = creatorPosts.docs.findIndex(d => d.id === postId);
+        if (idx >= 0) scores[idx] = score;
+        const avg = scores.reduce((a, b) => a + b, 0) / (scores.length || 1);
+        await db.collection(USERS_COLLECTION).doc(uid).update({
+          creatorScore: Math.round(avg * 100) / 100,
+        });
+      } catch (e) {
+        console.error("[scoreEngine] creatorScore update failed:", e);
+      }
+    }
+
+    // Propager vers canalScore
+    const cid = after.canal_id as string | undefined;
+    if (cid && cid.trim() !== "") {
+      try {
+        const canalPosts = await db.collection(POSTS_COLLECTION)
+          .where("canal_id", "==", cid)
+          .orderBy("created_at", "desc")
+          .limit(SNAPSHOT_SIZE)
+          .select("postScore")
+          .get();
+        const scores = canalPosts.docs.map(d => (d.data().postScore ?? 0) as number);
+        const postId = event.params.postId;
+        const idx = canalPosts.docs.findIndex(d => d.id === postId);
+        if (idx >= 0) scores[idx] = score;
+        const avg = scores.reduce((a, b) => a + b, 0) / (scores.length || 1);
+        await db.collection(CANAUX_COLLECTION).doc(cid).update({
+          canalScore: Math.round(avg * 100) / 100,
+        });
+      } catch (e) {
+        console.error("[scoreEngine] canalScore update failed:", e);
+      }
+    }
+
+    console.log(`[scoreEngine] Post ${event.params.postId} → postScore=${score} rawScore=${raw}`);
+  }
+);
+
+const POSTS_COLLECTION  = "Posts";
+const USERS_COLLECTION  = "Users";
 const CANAUX_COLLECTION = "Canaux";
-const MAX_AGE_DAYS = 30; // ne recalcule que les posts < 30 jours
-const SNAPSHOT_SIZE = 30; // top N posts pour l'agrégation créateur/canal
+const SNAPSHOT_SIZE     = 30;   // top N posts pour l'agrégation créateur/canal
+const DECAY_DAYS        = 90;   // inactivité totale après 90 jours → score plancher
+const ACTIVITY_FLOOR    = 0.30; // score minimum (30%) même sans activité
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
+// ─── CRON hebdomadaire : multiplicateur d'activité ──────────────────────────
+// Lit les posts des 90 derniers jours, recalcule creatorScore avec le
+// multiplicateur d'inactivité. ~5 000 lectures + ~200 écritures par semaine.
 
-function ageDays(createdAtMs: number): number {
-  return (Date.now() - createdAtMs) / 86_400_000;
-}
-
-function decayedScore(rawScore: number, createdAtMs: number): number {
-  const age = ageDays(createdAtMs);
-  return rawScore / Math.pow(age + 2, 1.5);
-}
-
-// ─── CRON toutes les 6h ─────────────────────────────────────────────────────
-
-export const computePostScores = onSchedule(
-  { schedule: "every 6 hours", region: "europe-west1" },
+export const applyActivityDecay = onSchedule(
+  { schedule: "every monday 04:00", region: "europe-west1", timeZone: "UTC" },
   async () => {
-    const cutoff = Date.now() - MAX_AGE_DAYS * 86_400_000;
+    const nowMs        = Date.now();
+    const cutoffMicros = (nowMs - DECAY_DAYS * 86_400_000) * 1000;
 
-    // 1. Recalculer postScore pour les posts récents
-    // rawScore est calculé ici depuis les compteurs existants (likes, loves, comments)
+    // 1. Lire les posts récents (90 jours) — select minimal pour limiter les coûts
     const postSnap = await db
       .collection(POSTS_COLLECTION)
-      .where("created_at", ">=", cutoff)
-      .select("likes", "loves", "comments", "created_at", "user_id", "canal_id")
+      .where("created_at", ">=", cutoffMicros)
+      .select("postScore", "user_id", "created_at")
       .get();
 
-    const batch = db.batch();
-    const creatorAccum: Record<string, number[]> = {};
-    const canalAccum: Record<string, number[]> = {};
+    // 2. Grouper par créateur : scores + date du post le plus récent
+    const creatorData: Record<string, { scores: number[]; lastPostMs: number }> = {};
 
     for (const doc of postSnap.docs) {
-      const data = doc.data();
-      // rawScore = likes*1 + loves*2 + comments*3
-      const raw: number =
-        (data.likes ?? 0) * 1 +
-        (data.loves ?? 0) * 2 +
-        (data.comments ?? 0) * 3;
-      const createdAt: number = data.created_at ?? Date.now();
-      const score = decayedScore(raw, createdAt);
+      const data       = doc.data();
+      const uid        = data.user_id as string | undefined;
+      if (!uid) continue;
 
-      batch.update(doc.ref, { rawScore: raw, postScore: score });
+      const ps: number = data.postScore ?? 0;
+      if (!Number.isFinite(ps)) continue;
 
-      const uid: string | null = data.user_id ?? null;
-      if (uid) {
-        creatorAccum[uid] = creatorAccum[uid] ?? [];
-        creatorAccum[uid].push(score);
+      const createdRaw: number = data.created_at ?? 0;
+      const createdMs          = createdRaw > 1e13 ? createdRaw / 1000 : createdRaw;
+
+      if (!creatorData[uid]) creatorData[uid] = { scores: [], lastPostMs: 0 };
+      creatorData[uid].scores.push(ps);
+      if (createdMs > creatorData[uid].lastPostMs) creatorData[uid].lastPostMs = createdMs;
+    }
+
+    // 3. Calculer creatorScore pondéré et écrire en batch
+    let batch    = db.batch();
+    let count    = 0;
+    let updated  = 0;
+
+    for (const [uid, { scores, lastPostMs }] of Object.entries(creatorData)) {
+      const top  = scores.sort((a, b) => b - a).slice(0, SNAPSHOT_SIZE);
+      const base = top.reduce((s, v) => s + v, 0) / (top.length || 1);
+
+      const daysSincePost  = Math.max(0, (nowMs - lastPostMs) / 86_400_000);
+      const multiplier     = Math.max(ACTIVITY_FLOOR, 1 - daysSincePost / DECAY_DAYS);
+      const creatorScore   = Math.round(base * multiplier * 100) / 100;
+
+      batch.update(db.collection(USERS_COLLECTION).doc(uid), { creatorScore });
+      count++;
+      updated++;
+
+      if (count >= 400) {
+        await batch.commit();
+        batch = db.batch();
+        count = 0;
       }
-
-      const cid: string | null = data.canal_id ?? null;
-      if (cid && cid !== "") {
-        canalAccum[cid] = canalAccum[cid] ?? [];
-        canalAccum[cid].push(score);
-      }
     }
-
-    await batch.commit();
-
-    // 2. Agréger creatorScore
-    const creatorBatch = db.batch();
-    for (const [uid, scores] of Object.entries(creatorAccum)) {
-      const top = scores
-        .sort((a, b) => b - a)
-        .slice(0, SNAPSHOT_SIZE);
-      const avg = top.reduce((s, v) => s + v, 0) / (top.length || 1);
-      creatorBatch.update(db.collection(USERS_COLLECTION).doc(uid), {
-        creatorScore: Math.round(avg * 100) / 100,
-      });
-    }
-    await creatorBatch.commit();
-
-    // 3. Agréger canalScore
-    const canalBatch = db.batch();
-    for (const [cid, scores] of Object.entries(canalAccum)) {
-      const top = scores
-        .sort((a, b) => b - a)
-        .slice(0, SNAPSHOT_SIZE);
-      const avg = top.reduce((s, v) => s + v, 0) / (top.length || 1);
-      canalBatch.update(db.collection(CANAUX_COLLECTION).doc(cid), {
-        canalScore: Math.round(avg * 100) / 100,
-      });
-    }
-    await canalBatch.commit();
+    if (count > 0) await batch.commit();
 
     console.log(
-      `[scoreEngine] Posts mis à jour : ${postSnap.size} | ` +
-      `Créateurs : ${Object.keys(creatorAccum).length} | ` +
-      `Canaux : ${Object.keys(canalAccum).length}`
+      `[activityDecay] ${updated} créateurs mis à jour sur ${postSnap.size} posts lus`
     );
   }
 );

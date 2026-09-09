@@ -119,14 +119,31 @@ export const moderatePostLifecycle = onDocumentCreated(
   "Posts/{postId}",
   async (event) => {
     const post = event.data?.data();
-    if (!post || post.statut !== "PENDING") return;
+    if (!post) return;
 
-    const isValid = post.dataType && ["IMAGE", "VIDEO", "AUDIO", "TEXT"].includes(post.dataType);
+    // Initialiser postScore et rawScore à 0 sur tous les nouveaux posts.
+    // Le CRON les recalculera à la prochaine exécution (6h).
+    // Sans ça, le champ est absent et l'app affiche rien au lieu de 0.
+    const initUpdates: Record<string, unknown> = {
+      postScore: FieldValue.increment(0),
+      rawScore: FieldValue.increment(0),
+    };
 
-    await event.data!.ref.update({
-      statut: isValid ? "VALIDE" : "NONVALIDE",
-      moderatedAt: FieldValue.serverTimestamp(),
-    });
+    if (post.statut === "PENDING") {
+      const isValid = post.dataType && ["IMAGE", "VIDEO", "AUDIO", "TEXT"].includes(post.dataType);
+      initUpdates.statut = isValid ? "VALIDE" : "NONVALIDE";
+      initUpdates.moderatedAt = FieldValue.serverTimestamp();
+    }
+
+    await event.data!.ref.update(initUpdates);
+
+    // Mettre à jour lastPostAt sur le créateur pour le calcul d'activité hebdomadaire
+    const uid = post.user_id as string | undefined;
+    if (uid) {
+      await db.collection("Users").doc(uid).update({
+        lastPostAt: FieldValue.serverTimestamp(),
+      }).catch(() => {/* utilisateur introuvable — ignorer */});
+    }
   }
 );
 

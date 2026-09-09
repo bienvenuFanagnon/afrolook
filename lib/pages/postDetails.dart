@@ -4585,7 +4585,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
 
   Widget _buildPostScoreBadge(Post post) {
     final score = post.postScore ?? 0.0;
-    if (score <= 0) return const SizedBox.shrink();
+    if (score <= 0 || score.isNaN || score.isInfinite) return const SizedBox.shrink();
     final color = score >= 50
         ? const Color(0xFF4CAF50)
         : score >= 20
@@ -4597,7 +4597,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         Icon(Icons.trending_up_rounded, size: 14, color: color),
         const SizedBox(width: 4),
         Text(
-          'Score : ${score.toStringAsFixed(1)}',
+          'Score : ${score >= 10 ? score.round() : score.toStringAsFixed(1)}',
           style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600),
         ),
       ]),
