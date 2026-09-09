@@ -409,6 +409,7 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
   }
 
   Widget _buildVideoSection(double screenWidth) {
+    final videoHeight = widget.height ?? screenWidth * 9 / 16;
     return GestureDetector(
       onTap: _navigateToDetails,
       child: Stack(
@@ -418,14 +419,20 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
               topLeft: Radius.circular(16),
               topRight: Radius.circular(16),
             ),
-            child: _isVideoInitialized && _videoController != null
-                ? AspectRatio(
-                    aspectRatio: _videoController!.value.aspectRatio > 0
-                        ? _videoController!.value.aspectRatio
-                        : 16 / 9,
-                    child: VideoPlayer(_videoController!),
-                  )
-                : _buildVideoPlaceholder(),
+            child: SizedBox(
+              width: double.infinity,
+              height: videoHeight,
+              child: _isVideoInitialized && _videoController != null
+                  ? FittedBox(
+                      fit: BoxFit.cover,
+                      child: SizedBox(
+                        width: _videoController!.value.size.width,
+                        height: _videoController!.value.size.height,
+                        child: VideoPlayer(_videoController!),
+                      ),
+                    )
+                  : _buildVideoPlaceholderFixed(videoHeight),
+            ),
           ),
           if (_isVideoLoading)
             Positioned(
@@ -477,6 +484,20 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
       );
     }
     return _buildFallback();
+  }
+
+  Widget _buildVideoPlaceholderFixed(double height) {
+    final thumb = widget.post.thumbnail;
+    return SizedBox(
+      width: double.infinity,
+      height: height,
+      child: thumb != null && thumb.isNotEmpty
+          ? Image.network(thumb, fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(color: Colors.black,
+                child: const Center(child: Icon(Icons.videocam, color: Colors.grey, size: 40))))
+          : Container(color: Colors.black,
+              child: const Center(child: Icon(Icons.videocam, color: Colors.grey, size: 40))),
+    );
   }
 
   Widget _buildFallback() {

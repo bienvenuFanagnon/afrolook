@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../pages/admin/AfrolookPub/advertisementCarouselWidget.dart';
+import '../../../models/model_data.dart';
+import '../../../pages/admin/AfrolookPub/advertisementPostImageWidget.dart';
+import '../../../pages/admin/AfrolookPub/advertisement_video_widget.dart';
 import '../../../pages/pub/afrolook_inline_ad.dart';
 import '../../../providers/authProvider.dart';
+import '../../../services/ad_rotation_service.dart';
 
 /// Bannière désactivée — Appodeal n'est plus utilisé.
 class FeedAdBanner extends StatelessWidget {
@@ -22,33 +25,80 @@ class FeedAdMrec extends StatelessWidget {
   Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
-/// Carrousel de publicités Afrolook — s'affiche comme un post normal dans le feed
-/// (image + stats + boutons d'action + extras pub), avec une bordure de séparation.
-class FeedAdCarousel extends StatelessWidget {
+/// Grand format pub Afrolook — affiche UNE seule pub sélectionnée par rotation.
+/// Pas de boutons de navigation, pas d'indicateurs.
+class FeedAdCarousel extends StatefulWidget {
   final String adKey;
   const FeedAdCarousel({Key? key, required this.adKey}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    const hMargin = 12.0;
-    final cardWidth = screenWidth - hMargin * 2;
-    // Hauteur image : ratio 4:3 pour s'aligner avec les posts normaux du feed
-    final imageHeight = cardWidth * 0.65;
+  State<FeedAdCarousel> createState() => _FeedAdCarouselState();
+}
 
-    return Container(
-      key: ValueKey(adKey),
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: hMargin),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Theme.of(context).dividerColor, width: 0.5),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: AdvertisementCarouselWidget(
-        height: imageHeight,
-        width: cardWidth,
-        showIndicators: true,
-      ),
+class _FeedAdCarouselState extends State<FeedAdCarousel> {
+  int? _adIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final auth = context.read<UserAuthProvider>();
+      final ads = auth.advertisements
+          .where((a) => a['isEntityBoost'] != true && a['post'] != null)
+          .toList();
+      if (ads.isNotEmpty) {
+        setState(() => _adIndex = AdRotationService.instance.claimNext(ads.length));
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<UserAuthProvider>(
+      builder: (context, auth, _) {
+        final ads = auth.advertisements
+            .where((a) => a['isEntityBoost'] != true && a['post'] != null)
+            .toList();
+        if (ads.isEmpty) return const AfrolookInlineAd();
+
+        final idx = (_adIndex ?? 0) % ads.length;
+        final currentAdData = ads[idx];
+        final post = Post.fromJson(currentAdData['post']);
+        final ad = Advertisement.fromJson(currentAdData['ad']);
+
+        final screenWidth = MediaQuery.of(context).size.width;
+        const hMargin = 12.0;
+        final cardWidth = screenWidth - hMargin * 2;
+        final imageHeight = cardWidth * 1.06;
+
+        final bool isVideo = post.dataType == PostDataType.VIDEO.name ||
+            (post.url_media?.contains('.mp4') ?? false) ||
+            (post.url_media?.contains('.mov') ?? false);
+
+        return Container(
+          key: ValueKey(widget.adKey),
+          margin: const EdgeInsets.symmetric(vertical: 8, horizontal: hMargin),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Theme.of(context).dividerColor, width: 0.5),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: isVideo
+              ? AdvertisementVideoWidget(
+                  post: post,
+                  ad: ad,
+                  width: cardWidth,
+                  height: imageHeight,
+                )
+              : AdvertisementPostImageWidget(
+                  post: post,
+                  ad: ad,
+                  width: cardWidth,
+                  height: imageHeight,
+                ),
+        );
+      },
     );
   }
 }
