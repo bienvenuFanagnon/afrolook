@@ -180,6 +180,7 @@ class _UserProfileBoostPageState extends State<UserProfileBoostPage> {
       final String? ownerId;
       final String ownerName;
       final String? ownerAvatar;
+      String? ownerCoverImage;
       final int ownerFollowers;
       final String ownerDesc;
 
@@ -196,6 +197,7 @@ class _UserProfileBoostPageState extends State<UserProfileBoostPage> {
         ownerId = widget.canal!.id;
         ownerName = widget.canal!.titre ?? '';
         ownerAvatar = widget.canal!.urlImage;
+        ownerCoverImage = widget.canal!.urlCouverture?.isNotEmpty == true ? widget.canal!.urlCouverture : null;
         ownerFollowers = widget.canal!.suivi ?? 0;
         ownerDesc = (widget.canal!.description ?? '').substring(0, (widget.canal!.description ?? '').length.clamp(0, 120));
       } else {
@@ -231,8 +233,12 @@ class _UserProfileBoostPageState extends State<UserProfileBoostPage> {
         ownerId: ownerId,
         ownerName: ownerName.isEmpty ? null : ownerName,
         ownerAvatar: ownerAvatar?.isEmpty == false ? ownerAvatar : null,
+        ownerCoverImage: ownerCoverImage?.isEmpty == false ? ownerCoverImage : null,
         ownerFollowers: ownerFollowers > 0 ? ownerFollowers : null,
         ownerDescription: ownerDesc.isNotEmpty ? ownerDesc : null,
+        ownerCategory: _isCanal
+            ? (widget.canal!.mainCategory?.isNotEmpty == true ? widget.canal!.mainCategory : null)
+            : (_isGroup ? null : (userData.mainCategory?.isNotEmpty == true ? userData.mainCategory : null)),
         ownerRecentPosts: ownerRecentPosts.isNotEmpty ? ownerRecentPosts : null,
       );
       final adJson = ad.toJson();

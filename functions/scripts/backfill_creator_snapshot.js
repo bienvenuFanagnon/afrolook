@@ -1,20 +1,21 @@
 /**
- * Migration : backfill creatorSnapshot / canalSnapshot sur tous les posts.
- * Lance avec : node functions/scripts/backfill_creator_snapshot.js
- * Nécessite : firebase login (Application Default Credentials)
+ * Migration : met à jour creatorSnapshot.abonnes dans chaque Post
+ * avec userAbonnesIds.length du créateur (source de vérité),
+ * et canalSnapshot.suivi avec usersSuiviId.length du canal.
  *
- * Stratégie :
- *  - Skip les posts déjà migrés (creatorSnapshot présent)
- *  - Cache user/canal en mémoire (1 fetch par créateur, pas 1 par post)
- *  - Batches Firestore de 400 writes max
+ * Règle : mise à jour si creatorSnapshot.abonnes est absent OU inférieur
+ *          au vrai nombre d'abonnés. Ne diminue jamais.
+ *
+ * Lance avec : node functions/scripts/backfill_creator_snapshot.js
+ * Nécessite  : firebase login (Application Default Credentials)
  */
 
 const admin = require("firebase-admin");
 
-const PROJECT_ID = "afrolooki";
-const WRITE_BATCH_SIZE = 400;   // max Firestore batch = 500, on garde une marge
-const READ_PAGE_SIZE  = 400;    // posts lus par page (cursor pagination)
-const DRY_RUN = false;          // true = log seulement, false = écrit en base
+const PROJECT_ID       = "afrolooki";
+const READ_PAGE_SIZE   = 200;
+const WRITE_BATCH_SIZE = 400;
+const DRY_RUN          = false;
 
 async function main() {
   admin.initializeApp({
@@ -23,156 +24,140 @@ async function main() {
   });
 
   const db = admin.firestore();
-  console.log(`🔄 Migration creatorSnapshot — DRY_RUN=${DRY_RUN}`);
+  console.log(`🔄 Migration creatorSnapshot.abonnes — DRY_RUN=${DRY_RUN}`);
 
   let totalProcessed = 0;
-  let totalSkipped   = 0;  // déjà migrés
+  let totalSkipped   = 0;
   let totalUpdated   = 0;
   let totalErrors    = 0;
 
-  // Cache userId → snapshot et canalId → canalSnapshot
-  const userCache  = {};   // userId → { pseudo, imageUrl, abonnes }
-  const canalCache = {};   // canalId → { titre, urlImage, suivi }
+  // Cache en mémoire pour éviter de relire le même créateur plusieurs fois
+  const userCache  = new Map(); // userId → realAbonnes (number)
+  const canalCache = new Map(); // canalId → realSuivi (number)
 
-  // ── Pagination sur tous les posts ───────────────────────────────────────────
-  let lastDoc = null;
-  let page = 0;
+  let lastDocId = null;
+  let page      = 0;
 
   while (true) {
     page++;
-    let query = db.collection("Posts").orderBy("created_at", "desc").limit(READ_PAGE_SIZE);
-    if (lastDoc) query = query.startAfter(lastDoc);
+    let query = db.collection("Posts")
+      .orderBy(admin.firestore.FieldPath.documentId())
+      .limit(READ_PAGE_SIZE);
+
+    if (lastDocId) {
+      query = query.startAfter(lastDocId);
+    }
 
     const snap = await query.get();
     if (snap.empty) break;
 
-    lastDoc = snap.docs[snap.docs.length - 1];
+    lastDocId = snap.docs[snap.docs.length - 1].id;
     console.log(`\n📄 Page ${page} — ${snap.docs.length} posts`);
 
-    // ── Collecte des IDs à résoudre ────────────────────────────────────────
-    const postsToUpdate = [];
-    const unknownUserIds  = new Set();
-    const unknownCanalIds = new Set();
-
-    for (const doc of snap.docs) {
-      const data = doc.data();
-
-      // Skip si déjà migré
-      if (data.creatorSnapshot || data.canalSnapshot) {
-        totalSkipped++;
-        continue;
-      }
-
-      const isCanalPost = data.canal_id && data.canal_id !== "";
-      postsToUpdate.push({ doc, data, isCanalPost });
-
-      if (isCanalPost) {
-        if (!canalCache[data.canal_id]) unknownCanalIds.add(data.canal_id);
-      } else {
-        if (data.user_id && !userCache[data.user_id]) unknownUserIds.add(data.user_id);
-      }
-    }
-
-    // ── Résolution par batch (whereIn max 30 en Admin SDK) ──────────────────
-    await resolveUsers(db, [...unknownUserIds], userCache);
-    await resolveCanaux(db, [...unknownCanalIds], canalCache);
-
-    // ── Écriture Firestore ──────────────────────────────────────────────────
     let writeBatch = db.batch();
     let batchCount = 0;
 
-    for (const { doc, data, isCanalPost } of postsToUpdate) {
+    for (const doc of snap.docs) {
       totalProcessed++;
-      let snapshot = null;
+      const data = doc.data();
 
-      if (isCanalPost) {
-        snapshot = canalCache[data.canal_id];
-        if (!snapshot) {
-          console.warn(`  ⚠️  Canal introuvable: ${data.canal_id} (post ${doc.id})`);
-          totalErrors++;
-          continue;
-        }
-        if (!DRY_RUN) {
-          writeBatch.update(doc.ref, { canalSnapshot: snapshot });
-        }
-      } else {
-        if (!data.user_id) { totalErrors++; continue; }
-        snapshot = userCache[data.user_id];
-        if (!snapshot) {
-          console.warn(`  ⚠️  User introuvable: ${data.user_id} (post ${doc.id})`);
-          totalErrors++;
-          continue;
-        }
-        if (!DRY_RUN) {
-          writeBatch.update(doc.ref, { creatorSnapshot: snapshot });
-        }
-      }
+      const canalId   = data.canal_id;
+      const userId    = data.user_id;
+      const isCanalPost = typeof canalId === "string" && canalId.length > 0;
 
-      totalUpdated++;
-      batchCount++;
+      try {
+        if (isCanalPost) {
+          // ── Canal post : mise à jour de canalSnapshot.suivi ──────────────
+          const currentSuivi = data.canalSnapshot?.suivi;
 
-      if (batchCount >= WRITE_BATCH_SIZE) {
-        if (!DRY_RUN) await writeBatch.commit();
-        console.log(`  ✅ Batch commité (${batchCount} writes)`);
-        writeBatch = db.batch();
-        batchCount = 0;
+          let realSuivi;
+          if (canalCache.has(canalId)) {
+            realSuivi = canalCache.get(canalId);
+          } else {
+            const canalDoc = await db.collection("Canaux").doc(canalId).get();
+            const canalData = canalDoc.exists ? canalDoc.data() : null;
+            realSuivi = Array.isArray(canalData?.usersSuiviId)
+              ? canalData.usersSuiviId.length
+              : (typeof canalData?.suivi === "number" ? canalData.suivi : 0);
+            canalCache.set(canalId, realSuivi);
+          }
+
+          const stored = typeof currentSuivi === "number" ? currentSuivi : null;
+          const needsUpdate = stored === null || stored < realSuivi;
+
+          if (!needsUpdate) { totalSkipped++; continue; }
+
+          console.log(
+            `  📺 [CANAL] post=${doc.id.slice(0, 8)} canal=${canalId.slice(0, 8)} — suivi ${stored ?? "null"} → ${realSuivi}`
+          );
+
+          if (!DRY_RUN) {
+            writeBatch.update(doc.ref, { "canalSnapshot.suivi": realSuivi });
+          }
+
+        } else {
+          // ── User post : mise à jour de creatorSnapshot.abonnes ───────────
+          if (!userId) { totalSkipped++; continue; }
+
+          const currentAbonnes = data.creatorSnapshot?.abonnes;
+
+          let realAbonnes;
+          if (userCache.has(userId)) {
+            realAbonnes = userCache.get(userId);
+          } else {
+            const userDoc = await db.collection("Users").doc(userId).get();
+            const userData = userDoc.exists ? userDoc.data() : null;
+            realAbonnes = Array.isArray(userData?.userAbonnesIds)
+              ? userData.userAbonnesIds.length
+              : (typeof userData?.abonnes === "number" ? userData.abonnes : 0);
+            userCache.set(userId, realAbonnes);
+          }
+
+          const stored = typeof currentAbonnes === "number" ? currentAbonnes : null;
+          const needsUpdate = stored === null || stored < realAbonnes;
+
+          if (!needsUpdate) { totalSkipped++; continue; }
+
+          console.log(
+            `  👤 post=${doc.id.slice(0, 8)} user=${userId.slice(0, 8)} — abonnes ${stored ?? "null"} → ${realAbonnes}`
+          );
+
+          if (!DRY_RUN) {
+            writeBatch.update(doc.ref, { "creatorSnapshot.abonnes": realAbonnes });
+          }
+        }
+
+        totalUpdated++;
+        batchCount++;
+
+        if (batchCount >= WRITE_BATCH_SIZE) {
+          if (!DRY_RUN) await writeBatch.commit();
+          console.log(`  ✅ Batch commité (${batchCount} writes)`);
+          writeBatch = db.batch();
+          batchCount = 0;
+        }
+
+      } catch (e) {
+        totalErrors++;
+        console.error(`  ⚠️ Erreur post=${doc.id}: ${e.message}`);
       }
     }
 
-    if (batchCount > 0 && !DRY_RUN) {
-      await writeBatch.commit();
-      console.log(`  ✅ Batch final commité (${batchCount} writes)`);
+    if (batchCount > 0) {
+      if (!DRY_RUN) await writeBatch.commit();
+      if (!DRY_RUN) console.log(`  ✅ Batch final commité (${batchCount} writes)`);
+      else           console.log(`  [DRY] ${batchCount} mises à jour simulées`);
     }
 
-    // Stop si on a lu moins que la page complète (dernière page)
     if (snap.docs.length < READ_PAGE_SIZE) break;
   }
 
   console.log(`\n🏁 Migration terminée`);
-  console.log(`   Traités  : ${totalProcessed}`);
-  console.log(`   Skippés  : ${totalSkipped} (déjà migrés)`);
+  console.log(`   Traités   : ${totalProcessed}`);
+  console.log(`   Skippés   : ${totalSkipped}`);
   console.log(`   Mis à jour: ${totalUpdated}`);
-  console.log(`   Erreurs  : ${totalErrors}`);
-}
-
-/** Charge les Users par batch de 30 et remplit userCache. */
-async function resolveUsers(db, userIds, cache) {
-  for (let i = 0; i < userIds.length; i += 30) {
-    const chunk = userIds.slice(i, i + 30);
-    try {
-      const snap = await db.collection("Users").where(admin.firestore.FieldPath.documentId(), "in", chunk).get();
-      for (const doc of snap.docs) {
-        const d = doc.data();
-        cache[doc.id] = {
-          pseudo   : d.pseudo      ?? null,
-          imageUrl : d.imageUrl    ?? null,
-          abonnes  : d.abonnes     ?? 0,
-        };
-      }
-    } catch (e) {
-      console.error(`  ⚠️  Erreur fetch users: ${e.message}`);
-    }
-  }
-}
-
-/** Charge les Canaux par batch de 30 et remplit canalCache. */
-async function resolveCanaux(db, canalIds, cache) {
-  for (let i = 0; i < canalIds.length; i += 30) {
-    const chunk = canalIds.slice(i, i + 30);
-    try {
-      const snap = await db.collection("Canaux").where(admin.firestore.FieldPath.documentId(), "in", chunk).get();
-      for (const doc of snap.docs) {
-        const d = doc.data();
-        cache[doc.id] = {
-          titre    : d.titre    ?? null,
-          urlImage : d.urlImage ?? null,
-          suivi    : d.suivi    ?? 0,
-        };
-      }
-    } catch (e) {
-      console.error(`  ⚠️  Erreur fetch canaux: ${e.message}`);
-    }
-  }
+  console.log(`   Erreurs   : ${totalErrors}`);
+  if (DRY_RUN) console.log(`\n⚠️  DRY_RUN=true — aucune écriture effectuée. Passer DRY_RUN=false pour appliquer.`);
 }
 
 main().catch(err => {

@@ -63,13 +63,12 @@ class FeedRepository {
           fetchDiscoveryPosts(query.subscriptionPostIds.toSet(), excluded, limit: (target * 0.15).round()),
           fetchResurgencePosts(excluded, limit: (target * 0.10).round()),
         ]);
-        // Déduplication par ordre de priorité (seau 0 = plus prioritaire)
+        // Déduplication : abonnements (seau 0) prioritaires, tendances (seaux 1-4) mélangées
         final seen = <String>{...excluded};
-        for (final bucket in buckets) {
-          for (final post in bucket) {
-            if (post.id != null && seen.add(post.id!)) {
-              results.add(post);
-            }
+        final trendPosts = buckets.sublist(1).expand((b) => b).toList()..shuffle();
+        for (final post in [...buckets[0], ...trendPosts]) {
+          if (post.id != null && seen.add(post.id!)) {
+            results.add(post);
           }
         }
         break;
@@ -125,9 +124,12 @@ class FeedRepository {
         q1 = q1.where('typeTabbar', isEqualTo: tabbarType);
         q2 = q2.where('typeTabbar', isEqualTo: tabbarType);
       }
-      final byCountry = await q1.limit(limit * 2).get();
-      final byAll = await q2.limit(limit).get();
-      final allDocs = {...byCountry.docs, ...byAll.docs}.toList();
+      final results = await Future.wait([
+        q1.limit(limit * 2).get().timeout(const Duration(seconds: 20)),
+        q2.limit(limit).get().timeout(const Duration(seconds: 20)),
+      ]).catchError((_) => <QuerySnapshot<Map<String, dynamic>>>[]);
+      if (results.isEmpty) return [];
+      final allDocs = {...results[0].docs, ...results[1].docs}.toList();
       return _parsePosts(allDocs, excluded, limit);
     } catch (e) {
       printVm('⚠️ [FeedRepository] fetchCountryPosts: $e');
@@ -143,7 +145,8 @@ class FeedRepository {
           .where('feedScore', isGreaterThanOrEqualTo: 0.3)
           .orderBy('feedScore', descending: true)
           .limit(limit * 3)
-          .get();
+          .get()
+          .timeout(const Duration(seconds: 20));
       return _parsePosts(snap.docs, excluded, limit);
     } catch (e) {
       printVm('⚠️ [FeedRepository] fetchScorePosts: $e');
@@ -162,7 +165,8 @@ class FeedRepository {
           .collection('Posts')
           .orderBy('created_at', descending: true)
           .limit(limit * 5)
-          .get();
+          .get()
+          .timeout(const Duration(seconds: 20));
       return _parsePosts(
         snap.docs.where((d) => !followedPostIds.contains(d.id)).toList(),
         excluded,
@@ -180,15 +184,20 @@ class FeedRepository {
       final now = DateTime.now();
       final twoMonthsAgo = now.subtract(const Duration(days: 60)).millisecondsSinceEpoch;
       final sixMonthsAgo = now.subtract(const Duration(days: 180)).millisecondsSinceEpoch;
+      // Un seul champ en filtre de plage (created_at) pour éviter le timeout Firestore.
+      // Le filtre feedScore >= 0.5 est appliqué côté client.
       final snap = await _db
           .collection('Posts')
-          .where('feedScore', isGreaterThanOrEqualTo: 0.5)
           .where('created_at', isGreaterThanOrEqualTo: sixMonthsAgo)
           .where('created_at', isLessThanOrEqualTo: twoMonthsAgo)
-          .orderBy('feedScore', descending: true)
-          .limit(limit * 3)
-          .get();
-      return _parsePosts(snap.docs, excluded, limit);
+          .orderBy('created_at', descending: true)
+          .limit(limit * 6)
+          .get()
+          .timeout(const Duration(seconds: 20));
+      final qualityDocs = snap.docs
+          .where((d) => (d.data()['feedScore'] as num? ?? 0) >= 0.3)
+          .toList();
+      return _parsePosts(qualityDocs, excluded, limit);
     } catch (e) {
       printVm('⚠️ [FeedRepository] fetchResurgencePosts: $e');
       return [];
@@ -607,12 +616,14 @@ class FeedRepository {
 
   /// Tier 1 — posts non vus des abonnements.
   /// [unreadMap] = {postId: createdAtMs} depuis UserData.unreadPosts.
+  /// [repostMeta] = {postId: {ts, reposterUserId, reposterPseudo, reposterImageUrl}} depuis UserData.repostMeta.
   /// Retourne les [limit] posts les plus récents, en excluant [excluded].
   Future<List<Post>> fetchUnreadSubscriptionPosts(
     Map<String, int> unreadMap,
     Set<String> excluded, {
     int limit = 25,
     String? tabbarType,
+    Map<String, Map<String, dynamic>> repostMeta = const {},
   }) async {
     if (unreadMap.isEmpty) return [];
     final _swT1 = Stopwatch()..start();
@@ -627,6 +638,19 @@ class FeedRepository {
     printVm('⏱️ [T1] fetchUnreadSubscriptionPosts: ${unreadMap.length} unread → ${ids.length} IDs sélectionnés (tri: ${_swT1.elapsedMilliseconds}ms)');
     if (ids.isEmpty) return [];
     final result = await loadPostsByIds(ids, tabbarType: tabbarType);
+    // Injecter les métadonnées reposter sur les posts republié
+    if (repostMeta.isNotEmpty) {
+      for (final post in result) {
+        final meta = repostMeta[post.id];
+        if (meta != null) {
+          post.isRepost = true;
+          post.reposterUserId = meta['reposterUserId'] as String?;
+          post.reposterPseudo = meta['reposterPseudo'] as String?;
+          post.reposterImageUrl = meta['reposterImageUrl'] as String?;
+          post.originalPostId = post.id;
+        }
+      }
+    }
     printVm('⏱️ [T1] fetchUnreadSubscriptionPosts: terminé — ${result.length} posts — ${_swT1.elapsedMilliseconds}ms total');
     return result;
   }

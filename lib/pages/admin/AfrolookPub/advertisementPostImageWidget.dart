@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:afrotok/models/model_data.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -11,6 +12,7 @@ import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../../providers/authProvider.dart';
 import '../../../theme/app_colors.dart';
+import '../../../widgets/gifts/quick_gift_bar.dart' show CadeauBadge;
 import '../../postComments.dart';
 import '../../userPosts/postWidgets/postWidgetPage.dart';
 
@@ -250,67 +252,130 @@ class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWid
     );
   }
 
-  Widget _buildAdExtras() {
+  Widget _buildActionRow() {
+    final myId = authProvider.loginUserData.id;
+    final postOwnerId = widget.post.user_id ?? '';
+    final giftCount = widget.post.totalGiftCoinsSentOnThisPost ?? 0;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: Row(
         children: [
-          // Stats pub : vues + clics sur une ligne
-          Row(
-            children: [
-              Icon(Icons.remove_red_eye_outlined, color: _colors.textSecondary, size: 13),
-              const SizedBox(width: 4),
-              Text(
-                '${_formatCount(widget.ad.views ?? 0)} vues',
-                style: TextStyle(color: _colors.textSecondary, fontSize: 11),
-              ),
-              if ((widget.ad.clicks ?? 0) > 0) ...[
-                const SizedBox(width: 12),
-                Icon(Icons.touch_app_outlined, color: _colors.textSecondary, size: 13),
-                const SizedBox(width: 4),
-                Text(
-                  '${_formatCount(widget.ad.clicks ?? 0)} clics',
-                  style: TextStyle(color: _colors.textSecondary, fontSize: 11),
-                ),
-              ],
-              if ((widget.ad.views ?? 0) > 0 && (widget.ad.clicks ?? 0) > 0) ...[
-                const SizedBox(width: 12),
-                Icon(Icons.ads_click, color: _primaryColor, size: 13),
-                const SizedBox(width: 4),
-                Text(
-                  'CTR ${widget.ad.ctr.toStringAsFixed(1)}%',
-                  style: const TextStyle(color: _primaryColor, fontSize: 11, fontWeight: FontWeight.w500),
-                ),
-              ],
-            ],
+          // Commentaire
+          _buildActionButton(
+            icon: FontAwesome.comment_o,
+            count: widget.post.comments ?? 0,
+            color: _colors.textSecondary,
+            onPressed: _openComments,
           ),
-          const SizedBox(height: 8),
-          InkWell(
+          const SizedBox(width: 4),
+          // Like
+          _buildActionButton(
+            icon: _isLiked ? FontAwesome.heart : FontAwesome.heart_o,
+            count: _likesCount,
+            color: _isLiked ? _primaryColor : _colors.textSecondary,
+            onPressed: _isLiking ? null : _handleLike,
+          ),
+          const SizedBox(width: 4),
+          // Cadeau
+          if (myId != null && myId != postOwnerId)
+            CadeauBadge(
+              receiverId: postOwnerId,
+              receiverName: widget.post.user?.pseudo ?? 'Créateur',
+              receiverAvatar: widget.post.user?.imageUrl ?? '',
+              post: widget.post,
+              giftCount: giftCount,
+            )
+          else
+            CadeauBadge(
+              receiverId: postOwnerId,
+              receiverName: widget.post.user?.pseudo ?? 'Créateur',
+              receiverAvatar: widget.post.user?.imageUrl ?? '',
+              post: widget.post,
+              giftCount: giftCount,
+            ),
+          const Spacer(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required int count,
+    required Color color,
+    VoidCallback? onPressed,
+  }) {
+    final effectiveColor = onPressed != null ? color : _colors.textSecondary.withOpacity(0.3);
+    return GestureDetector(
+      onTap: onPressed,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: effectiveColor),
+          const SizedBox(width: 4),
+          Text(
+            count >= 1000 ? '${(count / 1000).toStringAsFixed(1)}k' : '$count',
+            style: TextStyle(color: effectiveColor, fontSize: 12, fontWeight: FontWeight.w400),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAdExtras() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+      child: Row(
+        children: [
+          // Stats pub : vues + clics
+          Icon(Icons.remove_red_eye_outlined, color: _colors.textSecondary, size: 13),
+          const SizedBox(width: 4),
+          Text(
+            '${_formatCount(widget.ad.views ?? 0)} vues',
+            style: TextStyle(color: _colors.textSecondary, fontSize: 11),
+          ),
+          if ((widget.ad.clicks ?? 0) > 0) ...[
+            const SizedBox(width: 10),
+            Icon(Icons.touch_app_outlined, color: _colors.textSecondary, size: 13),
+            const SizedBox(width: 3),
+            Text(
+              '${_formatCount(widget.ad.clicks ?? 0)} clics',
+              style: TextStyle(color: _colors.textSecondary, fontSize: 11),
+            ),
+          ],
+          if ((widget.ad.views ?? 0) > 0 && (widget.ad.clicks ?? 0) > 0) ...[
+            const SizedBox(width: 10),
+            Text(
+              'CTR ${widget.ad.ctr.toStringAsFixed(1)}%',
+              style: const TextStyle(color: _primaryColor, fontSize: 11, fontWeight: FontWeight.w500),
+            ),
+          ],
+          const Spacer(),
+          // Bouton action compact
+          GestureDetector(
             onTap: _handleActionButtonClick,
-            borderRadius: BorderRadius.circular(10),
             child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(colors: [_primaryColor, Color(0xFFFF5252)]),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(widget.ad.getActionIcon(), color: Colors.white, size: 15),
-                  const SizedBox(width: 6),
+                  Icon(widget.ad.getActionIcon(), color: Colors.white, size: 13),
+                  const SizedBox(width: 5),
                   Text(
                     widget.ad.getActionButtonText().toUpperCase(),
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
                   ),
                   const SizedBox(width: 4),
-                  const Icon(Icons.arrow_forward, color: Colors.white, size: 13),
+                  const Icon(Icons.arrow_forward, color: Colors.white, size: 12),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 4),
         ],
       ),
     );
@@ -343,6 +408,7 @@ class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWid
               ),
             ],
           ),
+          _buildActionRow(),
           _buildAdExtras(),
         ],
       ),

@@ -718,7 +718,9 @@ class _LookChallengePostWidgetState extends State<LookChallengePostWidget>
   }
 
   Widget _buildPostContent() {
-    final text = widget.post.description ?? "";
+    final text = (widget.post.description ?? '')
+        .replaceAll(RegExp(r'[ \t]+\n'), '\n')
+        .replaceAll(RegExp(r'\n{3,}'), '\n\n');
     final words = text.split(' ');
     final isLong = words.length > 50;
 

@@ -71,6 +71,7 @@ import '../../layout/centered_content.dart';
 import '../user/creator_unseen_posts_page.dart';
 import '../user/following_unseen_feed_page.dart';
 import 'home_boot_cache.dart';
+import 'discovery_feed_page.dart';
 import '../../widgets/feed/weekly_top_creators_widget.dart';
 import '../../widgets/feed/sections/weekly_top_posts_section_widget.dart';
 import '../../widgets/feed/sections/weekly_top_commentators_widget.dart';
@@ -78,6 +79,7 @@ import '../../widgets/feed/sections/comment_level_widget.dart';
 import '../../widgets/flame_streak_banner.dart';
 import '../../widgets/feed/sections/affiliation_feed_widget.dart';
 import '../../widgets/feed/sections/feed_recommended_profiles_widget.dart';
+import '../../services/feed/end_of_feed_cache.dart';
 
 
 // Constantes de couleur
@@ -119,6 +121,7 @@ Future<void> flushSeenPostsAndCleanMemory(
     await FirebaseFirestore.instance.collection('Users').doc(userId).update(updates);
     for (final id in toFlush) {
       userData.unreadPosts?.remove(id);
+      userData.repostMeta?.remove(id);
     }
     final remaining = pending.length > 500 ? pending.sublist(500) : <String>[];
     await prefs.setStringList(_kSeenPostsPrefKey, remaining);
@@ -164,7 +167,13 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   bool _hasErrorPosts = false;
   bool _isLoadingMorePosts = false;
   bool _hasMorePosts = true;
+  // true dès que l'utilisateur s'est abonné à au moins un créateur/canal depuis FeedEndDiscoverySection
+  bool _hasSubscribedFromEndFeed = false;
+  bool _isReloadingAfterSubscribe = false;
+  // true une fois que T2+T3 a été auto-déclenché (évite les doublons)
+  bool _t2AutoTriggered = false;
   bool _isLoadingBackground = false;
+  bool _showScrollToTop = false;
 
   // Curseur DocumentSnapshot pour le mode récent (startAfterDocument — unit-agnostic)
   QueryDocumentSnapshot? _recentLastDoc;
@@ -617,10 +626,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
             .collection('Users')
             .doc(userId)
             .get();
-        final fresh = ((userDoc.data()?['unreadPosts'] as Map<String, dynamic>?) ?? {})
-            .map((k, v) => MapEntry(k, (v as num).toInt()));
-        authProvider.loginUserData.unreadPosts = fresh;
-        printVm('🔄 Tier 1 — unreadPosts rafraîchi : ${fresh.length} posts non vus');
+        final _rawUnread = (userDoc.data()?['unreadPosts'] as Map<String, dynamic>?) ?? {};
+        authProvider.loginUserData.unreadPosts = UserData.parseUnreadTimestamps(_rawUnread);
+        authProvider.loginUserData.repostMeta = UserData.parseUnreadRepostMeta(_rawUnread);
+        printVm('🔄 Tier 1 — unreadPosts rafraîchi : ${_rawUnread.length} posts non vus');
       } catch (e) {
         printVm('⚠️ Impossible de rafraîchir unreadPosts : $e');
       }
@@ -969,6 +978,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     _isLoadingMorePosts = false;
     _isLoadingBackground = false;
     _recentLastDoc = null;
+    _t2AutoTriggered = false;
   }
 
   // ===========================================================================
@@ -976,6 +986,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   // ===========================================================================
 
   void _startBackgroundLoading() {
+    // Désactivé : T3 (découverte/pays/résurgence) uniquement sur demande utilisateur.
+    return;
+    // ignore: dead_code
     if (!_useBackgroundLoading) return;
 
     // Arrêter tout timer existant
@@ -1629,11 +1642,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
         final t1Future = unread.isEmpty
             ? Future.value(<Post>[])
-            : FeedRepository().fetchUnreadSubscriptionPosts(unread, excludedSnapshot, limit: 5);
-        // T2 skippé si l'utilisateur n'a pas configuré ses intérêts (évite 3-4s pour 0 résultats)
-        final t2Future = hasRealInterests
-            ? FeedRepository().fetchInterestPosts(interests, excludedSnapshot, countryCode: countryCode, limit: 25)
-            : Future.value(<Post>[]);
+            : FeedRepository().fetchUnreadSubscriptionPosts(unread, excludedSnapshot, limit: 5, repostMeta: authProvider.loginUserData.repostMeta ?? {});
+        // T2 (Découverte/Tendance) jamais chargé automatiquement — uniquement sur demande utilisateur.
+        final t2Future = Future.value(<Post>[]);
 
         final parallelResults = await Future.wait([t1Future, t2Future]);
         final t1Posts = parallelResults[0];
@@ -1684,54 +1695,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           printVm('⏱️ [PERF] phase3 (${newPosts.length} posts total): ${_sw.elapsedMilliseconds}ms');
         }
       }
-      if (widget.sortType != 'recent') switch (_currentFilter) {
-        case 'ALL':
-          await _loadAllCountriesMixed(loadedIds, newPosts, limit);
-          break;
-
-        case 'COUNTRY':
-          if (_selectedCountryCode != null) {
-            await _loadCountrySpecificPosts(
-              loadedIds,
-              newPosts,
-              _selectedCountryCode!,
-              isInitialLoad: true,
-              limit: limit,
-            );
-
-            // 🔥 Pour EVENEMENT: ne pas compléter avec d'autres posts
-            if (widget.type != TabBarType.EVENEMENT.name) {
-              // Compléter avec posts ALL si pas assez (comportement normal)
-              if (newPosts.length < limit) {
-                await _loadAllCountriesPosts(
-                  loadedIds,
-                  newPosts,
-                  isInitialLoad: true,
-                  limit: limit - newPosts.length,
-                );
-              }
-            }
-          }
-          break;
-
-        case 'MIXED':
-          if (_selectedCountryCode != null) {
-            await _loadMixedPostsSmart(loadedIds, newPosts, _selectedCountryCode!, limit);
-          }
-          break;
-
-        case 'CUSTOM':
-          if (_selectedCountryCode != null) {
-            await _loadCountrySpecificPosts(
-              loadedIds,
-              newPosts,
-              _selectedCountryCode!,
-              isInitialLoad: true,
-              limit: limit,
-            );
-          }
-          break;
-      }
+      // T3 (découverte par pays/score/résurgence) uniquement sur demande explicite
+      // de l'utilisateur via le bouton "À découvrir & Tendances".
+      // On stoppe ici : quand T1 est épuisé → fin de feed immédiate.
 
       // En mode "Récent" : aucun algorithme, l'ordre created_at desc de Firestore est conservé tel quel.
       if (widget.sortType != 'recent') {
@@ -1794,9 +1760,17 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         _loadedPostIds.addAll(loadedIds);
         _totalPostsLoaded = _posts.length;
         _isFirstLoad = false;
-        if (_posts.length >= 25) _hasMorePosts = false;
+        // T1 épuisé → fin de feed, T2+T3 se chargent automatiquement
+        _hasMorePosts = false;
       });
       _logBadgeSummary();
+      // Auto-déclencher T2+T3 une seule fois quand T1 est épuisé
+      if (!_t2AutoTriggered) {
+        _t2AutoTriggered = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _loadDiscoveryAndTrends();
+        });
+      }
       printVm('✅ [FINAL] ${_posts.length} posts affichés, filtre=$_currentFilter');
       printVm('⏱️ [PERF] _loadInitialPosts terminé: ${_sw.elapsedMilliseconds}ms TOTAL');
 
@@ -1893,6 +1867,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         unread,
         {...loadedIds, ..._loadedPostIds},
         limit: limit,
+        repostMeta: authProvider.loginUserData.repostMeta ?? {},
       );
       printVm('📌 [TIER1] fetchUnreadSubscriptionPosts retourné: ${posts.length} posts (limit=$limit)');
       _addFetchedToList(posts, loadedIds, newPosts, limit);
@@ -2020,10 +1995,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           .collection('Users')
           .doc(userId)
           .get();
-      final fresh = ((userDoc.data()?['unreadPosts'] as Map<String, dynamic>?) ?? {})
-          .map((k, v) => MapEntry(k, (v as num).toInt()));
-      authProvider.loginUserData.unreadPosts = fresh;
-      printVm('🔄 [UNREAD] unreadPosts mis à jour : ${fresh.length} posts non vus');
+      final _rawUnread = (userDoc.data()?['unreadPosts'] as Map<String, dynamic>?) ?? {};
+      authProvider.loginUserData.unreadPosts = UserData.parseUnreadTimestamps(_rawUnread);
+      authProvider.loginUserData.repostMeta = UserData.parseUnreadRepostMeta(_rawUnread);
+      printVm('🔄 [UNREAD] unreadPosts mis à jour : ${_rawUnread.length} posts non vus');
     } catch (e) {
       printVm('⚠️ [UNREAD] Impossible de rafraîchir unreadPosts : $e');
     }
@@ -2082,6 +2057,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
     // Retrait en mémoire immédiat → le prochain rechargement ne verra plus ce post en Tier 1
     authProvider.loginUserData.unreadPosts?.remove(postId);
+    authProvider.loginUserData.repostMeta?.remove(postId);
 
     // Sauvegarde locale en backup (au cas où l'écriture réseau échoue)
     _persistSeenLocally({postId});
@@ -2303,64 +2279,22 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   /// Répartit les posts en maintenant l'ordre Tier 1 → Tier 2 → Tier 3.
   /// Spread créateurs appliqué en tenant compte des frontières inter-tiers
   /// (jamais 3 posts consécutifs du même créateur/canal).
-  /// Injecte 3 posts découverte toutes les 10 posts T1.
+  /// Feed T1 uniquement — seuls les posts des abonnements sont affichés.
+  /// Quand ils sont épuisés → FeedEndDiscoverySection (profils/canaux à suivre).
   List<Post> _buildTieredFeed(List<Post> posts) {
     final t1 = <Post>[];
-    final t2 = <Post>[];
-    final t3 = <Post>[];
     for (final p in posts) {
       final pid = p.id;
-      if (pid == null) { t3.add(p); continue; }
-      if (_seenTier1PostIds.contains(pid)) { t1.add(p); continue; }
-      if (_tier2PostIds.contains(pid)) { t2.add(p); continue; }
-      t3.add(p);
+      if (pid != null && _seenTier1PostIds.contains(pid)) t1.add(p);
     }
 
-    // Spread par tier avec contexte cross-tier pour éviter 3+ consécutifs
-    t2.shuffle(); // différent à chaque affichage
+    _t2FillPostIds.clear();
 
-    const kMaxT1 = 16, kMaxT2Regular = 6, kMaxT3 = 3;
+    const kMaxT1 = 25;
     final s1 = _spreadCreators(t1.take(kMaxT1).toList());
-    final t1Gap = kMaxT1 - s1.length;
-    final t2Fill = t1Gap > 0 ? t2.take(t1Gap).toList() : <Post>[];
-    final t2Regular = t2.skip(t2Fill.length).take(kMaxT2Regular).toList();
 
-    _t2FillPostIds
-      ..clear()
-      ..addAll(t2Fill.where((p) => p.id != null).map((p) => p.id!));
-
-    final s2Fill    = _spreadCreatorsWithContext(t2Fill, s1);
-    final s2Regular = _spreadCreatorsWithContext(t2Regular, [...s1, ...s2Fill]);
-    final s3        = _spreadCreatorsWithContext(t3.take(kMaxT3).toList(), [...s1, ...s2Fill, ...s2Regular]);
-    final ordered = [...s1, ...s2Fill, ...s2Regular, ...s3];
-
-    printVm('🏗️ [FEED] _buildTieredFeed → T1=${s1.length} gap=$t1Gap fill=${s2Fill.length} | T2=${s2Regular.length} | T3=${s3.length} | total=${ordered.length}');
-
-    // ── Injection découverte : 3 posts toutes les 10 posts T1 ───────────────
-    final me = authProvider.loginUserData;
-    final followedSet = _followingIds.isNotEmpty
-        ? Set<String>.from(_followingIds)
-        : Set<String>.from(me.followingIds ?? []);
-    followedSet.add(me.id ?? '');
-
-    final alreadyInjected = DiscoveryBoostService.instance.discoveryPostIds;
-    final boostPool = DiscoveryBoostService.instance.getBoostPosts(
-      followedSet: followedSet,
-      currentUserId: me.id ?? '',
-      userCountry: me.countryData?['countryCode']?.toString().toUpperCase(),
-    ).where((p) => p.id != null
-        && !_loadedPostIds.contains(p.id)
-        && !alreadyInjected.contains(p.id)).toList();
-
-    final regularPool = _regularDiscoveryPool
-        .where((p) => p.id != null
-            && !_loadedPostIds.contains(p.id)
-            && !_localDiscoveryIds.contains(p.id))
-        .toList();
-
-    if (boostPool.isEmpty && regularPool.isEmpty) return ordered;
-    return _injectDiscoveryPosts(ordered, boostPool, regularPool,
-        leadWithDiscovery: _leadDiscoveryWithT1);
+    printVm('🏗️ [FEED] _buildTieredFeed → T1=${s1.length} | total=${s1.length}');
+    return s1;
   }
 
   /// Injecte 3 posts découverte toutes les 10 posts T1.
@@ -2520,8 +2454,13 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       _isScrollActive = false;
     });
 
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 1500 &&
+    final pixels = _scrollController.position.pixels;
+    final shouldShow = pixels > 300;
+    if (shouldShow != _showScrollToTop) {
+      setState(() => _showScrollToTop = shouldShow);
+    }
+
+    if (pixels >= _scrollController.position.maxScrollExtent - 1500 &&
         !_isLoadingMorePosts &&
         !_isLoadingBackground &&
         _hasMorePosts &&
@@ -2824,6 +2763,14 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     if (mounted) {
       context.read<LiveProvider>().fetchActiveLives();
     }
+    // Précharger le cache fin de feed (créateurs + canaux) en arrière-plan
+    final me = authProvider.loginUserData;
+    EndOfFeedCache.instance.prefetch(
+      myId: me.id ?? '',
+      alreadyFollowing: Set<String>.from(me.followingIds ?? []),
+      alreadySubscribedCanalIds: Set<String>.from(me.canauxSuivisIds ?? []),
+      pageType: widget.type.isNotEmpty ? widget.type : null,
+    );
   }
 
   Future<void> _loadFollowedCanalIdsInBackground() async {
@@ -3108,15 +3055,53 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   }
 
   Widget _buildShimmerPost() {
+    final colors = AppColors.of(context);
     return Shimmer.fromColors(
-      baseColor: Colors.grey[850]!,
-      highlightColor: Colors.grey[700]!,
+      baseColor: colors.shimmerBase,
+      highlightColor: colors.shimmerHighlight,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-        height: 280,
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.grey[850],
+          color: colors.shimmerBase,
           borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 44, height: 44,
+                  decoration: BoxDecoration(color: colors.shimmerHighlight, shape: BoxShape.circle),
+                ),
+                const SizedBox(width: 10),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(width: 120, height: 12, decoration: BoxDecoration(color: colors.shimmerHighlight, borderRadius: BorderRadius.circular(6))),
+                    const SizedBox(height: 6),
+                    Container(width: 80, height: 10, decoration: BoxDecoration(color: colors.shimmerHighlight, borderRadius: BorderRadius.circular(6))),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity, height: 200,
+              decoration: BoxDecoration(color: colors.shimmerHighlight, borderRadius: BorderRadius.circular(10)),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Container(width: 48, height: 12, decoration: BoxDecoration(color: colors.shimmerHighlight, borderRadius: BorderRadius.circular(6))),
+                const SizedBox(width: 16),
+                Container(width: 48, height: 12, decoration: BoxDecoration(color: colors.shimmerHighlight, borderRadius: BorderRadius.circular(6))),
+                const SizedBox(width: 16),
+                Container(width: 48, height: 12, decoration: BoxDecoration(color: colors.shimmerHighlight, borderRadius: BorderRadius.circular(6))),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -3232,8 +3217,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
               children: [
                 post.type == PostType.PRONOSTIC.name
                     ? SizedBox.shrink()
-                    : post.type == PostType.CHALLENGEPARTICIPATION.name
-                    ? LookChallengePostWidget(post: post, height: height, width: width)
                     : (post.type == PostType.POST.name && post.dataType == PostDataType.VIDEO.name)
                     ? YouTubeVideoCard(
                   key: ValueKey('ytcard_${post.id}'),
@@ -3574,22 +3557,25 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     if (_isLoadingPosts && _posts.isEmpty) return _buildLoadingShimmer(width, height);
     if (_hasErrorPosts && _posts.isEmpty) return _buildErrorWidget();
     if (_posts.isEmpty) {
-      // Sur une page typée (sport, evenement...) sans posts, afficher la section
-      // découverte de fin de feed au lieu du widget vide centré.
-      if (widget.type.isNotEmpty) {
-        return CustomScrollView(
-          controller: _scrollController,
-          slivers: [
-            SliverList(
-              delegate: SliverChildListDelegate([
-                FeedEndDiscoverySection(pageType: widget.type.isNotEmpty ? widget.type : null),
-                _buildT3RefreshWidget(),
-              ]),
-            ),
-          ],
-        );
-      }
-      return _buildEmptyWidget();
+      // Feed vide (typé ou accueil) : section découverte + message approprié
+      return CustomScrollView(
+        controller: _scrollController,
+        slivers: [
+          SliverList(
+            delegate: SliverChildListDelegate([
+              if (widget.type.isEmpty) _buildNoNewPostsBanner(),
+              FeedEndDiscoverySection(
+                pageType: widget.type.isNotEmpty ? widget.type : null,
+                onSubscribed: () {
+                  if (!mounted) return;
+                  setState(() => _hasSubscribedFromEndFeed = true);
+                },
+              ),
+              _buildEndOfFeedWidget(),
+            ]),
+          ),
+        ],
+      );
     }
 
     // L'ordre Tier 1 → Tier 2 → Tier 3 est déjà assuré par _buildTieredFeed.
@@ -3644,32 +3630,16 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     // Index rotatif pour la 2ème catégorie (hors SPORT)
     int _inlineCatIdx = 0;
 
-    // Nombre de posts T3 (Tendance) affichés avant de proposer le rafraîchissement
-    const int _t3CutoffCount = 3;
-    int _t3Shown = 0;
-    bool _t3CutoffReached = false;
     int _t2FillShown = 0;
     // Garde-fou : index du dernier insert non-organique (pub ou pool).
     // Empêche deux inserts à moins de 5 posts d'intervalle.
     int _lastInsertedAt = -10;
+    bool _profilesInLoop = false;
+    bool _canauxInLoop = false;
 
     for (int i = 0; i < finalPosts.length; i++) {
       final post = finalPosts[i];
       final pid = post.id ?? '';
-
-      // Détecter les posts T3 (ni T1 ni T2)
-      final isT1 = _seenTier1PostIds.contains(pid);
-      final isT2 = _tier2PostIds.contains(pid) && !isT1;
-      final isT3 = !isT1 && !isT2 && pid.isNotEmpty && !_isFirstLoad;
-
-      if (isT3) {
-        _t3Shown++;
-        if (_t3Shown > _t3CutoffCount) {
-          // Couper ici et injecter le bouton de rafraîchissement
-          _t3CutoffReached = true;
-          break;
-        }
-      }
 
       final _isVideoPost = post.type == PostType.POST.name && post.dataType == PostDataType.VIDEO.name;
       contentWidgets.add(
@@ -3683,12 +3653,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         ),
       );
 
-      // Suggestions "à suivre" toutes les 2 posts T2 fill (max 3 fois)
+      // T2 fill counter
       if (_t2FillPostIds.isNotEmpty && _t2FillPostIds.contains(pid)) {
         _t2FillShown++;
-        if (_t2FillShown % 2 == 0 && _t2FillShown <= 6) {
-          contentWidgets.add(FeedEndDiscoverySection(pageType: widget.type.isNotEmpty ? widget.type : null));
-        }
       }
 
       // Post 6 : widget Affiliation (1×/jour — géré en interne par le widget)
@@ -3714,12 +3681,17 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       if (i == 19) {
         if (_canaux.isNotEmpty) {
           contentWidgets.add(_buildCanauxSection());
+          _canauxInLoop = true;
         }
       }
 
-      // Post 21 : Profils créateurs recommandés (par score)
+      // Post 21 : Boost entité (pub profil/canal) si disponible, sinon profils recommandés
       if (i == 20) {
-        contentWidgets.add(const FeedRecommendedProfilesWidget());
+        contentWidgets.add(FeedEntityBoostSlot(
+          adKey: 'entity_boost_21',
+          fallback: const FeedRecommendedProfilesWidget(),
+        ));
+        _profilesInLoop = true;
       }
 
       final postNumber = i + 1;
@@ -3773,29 +3745,20 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       }
     }
 
-    // ── Section "À suivre pour plus de posts" en fin de feed ────────────────
-    // Affichée avant le bouton refresh T3 et avant "Fin du feed".
-    // Encourage l'utilisateur à suivre des créateurs/canaux pour enrichir son T1.
-    final bool _showEndDiscovery = _t3CutoffReached ||
-        (!_isLoadingMorePosts && !_hasMorePosts);
-    if (_showEndDiscovery) {
-      contentWidgets.add(FeedEndDiscoverySection(pageType: widget.type.isNotEmpty ? widget.type : null));
-    }
-
-    // Bouton de rafraîchissement après le seuil de posts Tendance
-    if (_t3CutoffReached) {
-      contentWidgets.add(_buildT3RefreshWidget());
-    }
-
-    // Indicateurs de chargement / fin de feed
-    if (!_t3CutoffReached) {
-      if (_isLoadingMorePosts) {
-        contentWidgets.add(_buildShimmerPost());
-        contentWidgets.add(_buildShimmerPost());
-        contentWidgets.add(_buildShimmerPost());
-      } else if (!_hasMorePosts) {
-        contentWidgets.add(_buildEndOfFeedWidget());
-      }
+    // ── Section "À suivre pour plus de posts" + fin de feed ─────────────────
+    if (_isLoadingMorePosts) {
+      contentWidgets.add(_buildShimmerPost());
+      contentWidgets.add(_buildShimmerPost());
+      contentWidgets.add(_buildShimmerPost());
+    } else if (!_hasMorePosts) {
+      contentWidgets.add(FeedEndDiscoverySection(
+        pageType: widget.type.isNotEmpty ? widget.type : null,
+        onSubscribed: () {
+          if (!mounted) return;
+          setState(() => _hasSubscribedFromEndFeed = true);
+        },
+      ));
+      contentWidgets.add(_buildEndOfFeedWidget());
     }
 
     return CustomScrollView(
@@ -3830,108 +3793,109 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     }
   }
 
-  Widget _buildT3RefreshWidget() {
+  Widget _buildEndOfFeedWidget() {
     final colors = AppColors.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 24),
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
       child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: colors.primary.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.auto_awesome, color: colors.primary, size: 30),
-          ),
-          const SizedBox(height: 12),
+          Icon(Icons.flag, color: colors.primary, size: 32),
+          const SizedBox(height: 8),
           Text(
-            'Vous avez vu les Tendances',
-            style: TextStyle(
-              color: colors.textPrimary,
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Rechargez pour voir de nouveaux posts et des créateurs à découvrir',
-            style: TextStyle(color: colors.textSecondary, fontSize: 13),
+            'Tu as tout vu !',
+            style: TextStyle(color: colors.textSecondary, fontSize: 14),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 18),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _refreshData,
-              icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('Voir les nouveautés'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colors.primary,
-                foregroundColor: colors.onPrimary,
-                padding: const EdgeInsets.symmetric(vertical: 13),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
-                elevation: 0,
-              ),
-            ),
-          ),
+          const SizedBox(height: 16),
+          ..._buildEndFeedButtons(colors),
         ],
       ),
     );
   }
 
-  Widget _buildEndOfFeedWidget() {
-    final colors2 = AppColors.of(context);
-    // Détermine le prochain filtre à proposer
-    final String? nextFilter = _currentFilter == 'COUNTRY'
-        ? 'MIXED'
-        : _currentFilter == 'MIXED'
-            ? 'ALL'
-            : null;
-    final String? nextLabel = _currentFilter == 'COUNTRY'
-        ? 'Voir des créateurs d\'autres pays'
-        : _currentFilter == 'MIXED'
-            ? 'Voir tous les contenus'
-            : null;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 24),
-      child: Column(
-        children: [
-          Icon(Icons.flag, color: colors2.primary, size: 36),
-          const SizedBox(height: 10),
-          Text(
-            _getEndMessage(),
-            style: TextStyle(color: colors2.textSecondary, fontSize: 14),
-            textAlign: TextAlign.center,
-          ),
-          if (nextFilter != null && nextLabel != null) ...[
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => _applyFilter(filterType: nextFilter, countryCode: _selectedCountryCode),
-                icon: const Icon(Icons.explore_outlined, size: 18),
-                label: Text(nextLabel),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: colors2.primary,
-                  side: BorderSide(color: colors2.primary.withOpacity(0.5)),
+  /// Deux boutons de fin de feed :
+  /// 1. "Voir de nouveaux posts" — disabled jusqu'à un abonnement depuis FeedEndDiscoverySection
+  /// 2. "À découvrir & Tendances" — charge T2+T3 sur demande
+  List<Widget> _buildEndFeedButtons(AppColors colors) {
+    return [
+      // Bouton 1 : Voir les nouveaux posts (activé après abonnement)
+      SizedBox(
+        width: double.infinity,
+        child: _isReloadingAfterSubscribe
+            ? Center(child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                child: CircularProgressIndicator(color: colors.primary, strokeWidth: 2),
+              ))
+            : ElevatedButton.icon(
+                onPressed: _hasSubscribedFromEndFeed
+                    ? () async {
+                        setState(() => _isReloadingAfterSubscribe = true);
+                        // Refresh unreadPosts depuis Firestore pour inclure les nouveaux abonnements
+                        final userId = authProvider.loginUserData.id;
+                        if (userId != null) {
+                          try {
+                            final doc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
+                            final _rawUnread = (doc.data()?['unreadPosts'] as Map<String, dynamic>?) ?? {};
+                            authProvider.loginUserData.unreadPosts = UserData.parseUnreadTimestamps(_rawUnread);
+                            authProvider.loginUserData.repostMeta = UserData.parseUnreadRepostMeta(_rawUnread);
+                          } catch (_) {}
+                        }
+                        _resetPagination();
+                        await _loadInitialPosts();
+                        if (mounted) setState(() {
+                          _hasSubscribedFromEndFeed = false;
+                          _isReloadingAfterSubscribe = false;
+                        });
+                      }
+                    : null,
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('Voir de nouveaux posts'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _hasSubscribedFromEndFeed ? colors.primary : colors.border,
+                  foregroundColor: _hasSubscribedFromEndFeed ? colors.onPrimary : colors.textSecondary,
+                  disabledBackgroundColor: colors.surface,
+                  disabledForegroundColor: colors.textSecondary,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
                 ),
               ),
-            ),
-          ] else ...[
-            const SizedBox(height: 5),
-            Text(
-              'Revenez plus tard pour de nouveaux contenus',
-              style: TextStyle(color: colors2.textSecondary, fontSize: 11),
-            ),
-          ],
-        ],
       ),
-    );
+      if (!_hasSubscribedFromEndFeed) ...[
+        const SizedBox(height: 6),
+        Text(
+          'Abonne-toi à un créateur ou canal ci-dessus pour activer ce bouton',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: colors.textSecondary, fontSize: 11),
+        ),
+      ],
+    ];
+  }
+
+  Future<void> _loadDiscoveryAndTrends() async {
+    final countryCode = authProvider.loginUserData.countryData?['countryCode'] as String? ?? '';
+    final excluded = Set<String>.from(_loadedPostIds);
+    setState(() => _isLoadingMorePosts = true);
+    try {
+      final newPosts = await FeedRepository().fetchFeed(FeedQuery(
+        type: FeedType.home,
+        userId: authProvider.loginUserData.id ?? '',
+        countryCode: countryCode,
+        excludeIds: excluded,
+        targetCount: 30,
+      ));
+      if (newPosts.isNotEmpty && mounted) {
+        // Mélange supplémentaire côté widget pour varier l'ordre à chaque session
+        final shuffled = List<Post>.from(newPosts)..shuffle();
+        setState(() {
+          _posts.addAll(shuffled);
+          _loadedPostIds.addAll(shuffled.map((p) => p.id ?? '').where((id) => id.isNotEmpty));
+          _totalPostsLoaded = _posts.length;
+          _hasMorePosts = false;
+        });
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _isLoadingMorePosts = false);
   }
 
   // ===========================================================================
@@ -3939,6 +3903,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   // ===========================================================================
 
   Widget _buildLoadingShimmer(double width, double height) {
+    final colors = AppColors.of(context);
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(
@@ -3948,18 +3913,27 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: 5,
-              itemBuilder: (context, index) {
+              itemBuilder: (ctx, index) {
+                final c = AppColors.of(ctx);
                 return Container(
                   width: width * 0.2,
                   margin: EdgeInsets.all(4),
                   child: Shimmer.fromColors(
-                    baseColor: Colors.grey[800]!,
-                    highlightColor: Colors.grey[700]!,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.grey[800],
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                    baseColor: c.shimmerBase,
+                    highlightColor: c.shimmerHighlight,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 52, height: 52,
+                          decoration: BoxDecoration(color: c.shimmerHighlight, shape: BoxShape.circle),
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          width: 44, height: 9,
+                          decoration: BoxDecoration(color: c.shimmerHighlight, borderRadius: BorderRadius.circular(4)),
+                        ),
+                      ],
                     ),
                   ),
                 );
@@ -3969,17 +3943,43 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         ),
         SliverList(
           delegate: SliverChildBuilderDelegate(
-                (context, index) {
+                (ctx, index) {
+              final c = AppColors.of(ctx);
               return Container(
                 margin: EdgeInsets.all(8),
                 child: Shimmer.fromColors(
-                  baseColor: Colors.grey[800]!,
-                  highlightColor: Colors.grey[700]!,
+                  baseColor: c.shimmerBase,
+                  highlightColor: c.shimmerHighlight,
                   child: Container(
+                    padding: const EdgeInsets.all(12),
                     height: 350,
                     decoration: BoxDecoration(
-                      color: Colors.grey[800],
+                      color: c.shimmerBase,
                       borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(children: [
+                          Container(width: 44, height: 44, decoration: BoxDecoration(color: c.shimmerHighlight, shape: BoxShape.circle)),
+                          const SizedBox(width: 10),
+                          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Container(width: 110, height: 12, decoration: BoxDecoration(color: c.shimmerHighlight, borderRadius: BorderRadius.circular(6))),
+                            const SizedBox(height: 6),
+                            Container(width: 70, height: 10, decoration: BoxDecoration(color: c.shimmerHighlight, borderRadius: BorderRadius.circular(6))),
+                          ]),
+                        ]),
+                        const SizedBox(height: 12),
+                        Expanded(child: Container(decoration: BoxDecoration(color: c.shimmerHighlight, borderRadius: BorderRadius.circular(8)))),
+                        const SizedBox(height: 10),
+                        Row(children: [
+                          Container(width: 44, height: 11, decoration: BoxDecoration(color: c.shimmerHighlight, borderRadius: BorderRadius.circular(6))),
+                          const SizedBox(width: 16),
+                          Container(width: 44, height: 11, decoration: BoxDecoration(color: c.shimmerHighlight, borderRadius: BorderRadius.circular(6))),
+                          const SizedBox(width: 16),
+                          Container(width: 44, height: 11, decoration: BoxDecoration(color: c.shimmerHighlight, borderRadius: BorderRadius.circular(6))),
+                        ]),
+                      ],
                     ),
                   ),
                 ),
@@ -4010,23 +4010,33 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     );
   }
 
-  Widget _buildEmptyWidget() {
-    return Center(
+  Widget _buildNoNewPostsBanner() {
+    final colors = AppColors.of(context);
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.border.withOpacity(0.4)),
+      ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.feed, color: Colors.grey, size: 40),
-          SizedBox(height: 12),
+          Icon(Icons.notifications_none_outlined, color: colors.textSecondary, size: 44),
+          const SizedBox(height: 12),
           Text(
-            _getEmptyMessage(),
-            style: TextStyle(color: Colors.grey, fontSize: 14),
+            'Pas de nouveaux posts de tes abonnements',
             textAlign: TextAlign.center,
+            style: TextStyle(color: colors.textPrimary, fontSize: 15, fontWeight: FontWeight.w700),
           ),
-          SizedBox(height: 8),
-          ElevatedButton(
-            onPressed: _refreshData,
-            child: Text('Actualiser', style: TextStyle(fontSize: 12)),
+          const SizedBox(height: 6),
+          Text(
+            'Abonne-toi à des créateurs ou canaux ci-dessous pour voir leurs posts ici.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: colors.textSecondary, fontSize: 13),
           ),
+          const SizedBox(height: 16),
+          ..._buildEndFeedButtons(colors),
         ],
       ),
     );
@@ -4565,6 +4575,27 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       child: Scaffold(
         key: _scaffoldKey,
         backgroundColor: colors.background,
+        floatingActionButton: AnimatedSlide(
+          duration: const Duration(milliseconds: 250),
+          offset: _showScrollToTop ? Offset.zero : const Offset(0, 2),
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 250),
+            opacity: _showScrollToTop ? 1.0 : 0.0,
+            child: FloatingActionButton.small(
+              onPressed: _showScrollToTop
+                  ? () => _scrollController.animateTo(
+                        0,
+                        duration: const Duration(milliseconds: 400),
+                        curve: Curves.easeOutCubic,
+                      )
+                  : null,
+              backgroundColor: colors.primary,
+              foregroundColor: colors.onPrimary,
+              elevation: 4,
+              child: const Icon(Icons.keyboard_arrow_up, size: 22),
+            ),
+          ),
+        ),
         appBar: widget.isVideoPage
             ? AppBar(
                 automaticallyImplyLeading: true,

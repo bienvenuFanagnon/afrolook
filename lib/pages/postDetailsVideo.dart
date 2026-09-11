@@ -26,6 +26,7 @@ import 'package:afrotok/services/utils/abonnement_utils.dart';
 import 'package:afrotok/pages/pub/afrolook_inline_ad.dart';
 
 import 'package:afrotok/pages/pub/rewarded_ad_widget.dart';
+import 'package:afrotok/pages/user/userPubs/user_create_advertisement_page.dart';
 
 import 'package:afrotok/pages/widgetGlobal.dart';
 
@@ -45,6 +46,7 @@ import '../widgets/gifts/quick_gift_bar.dart';
 import '../providers/locale_provider.dart';
 
 import 'userPosts/postWidgets/translatable_description.dart';
+import 'userPosts/postWidgets/postWidgetPage.dart';
 
 import 'package:intl/intl.dart';
 
@@ -1796,6 +1798,38 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     }
   }
 
+  Future<void> _handleRepost(Post post) async {
+    final me = authProvider.loginUserData;
+    if (me.id == null) return;
+    if (me.id == post.user_id) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tu ne peux pas republier ton propre post'), duration: Duration(seconds: 2)),
+      );
+      return;
+    }
+    post.users_republier_id ??= [];
+    if (post.users_republier_id!.contains(me.id)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tu as déjà republié ce post'), duration: Duration(seconds: 2)),
+      );
+      return;
+    }
+    final originalId = post.isRepost == true ? (post.originalPostId ?? post.id!) : post.id!;
+    setState(() => post.users_republier_id!.add(me.id!));
+    try {
+      await _firestore.collection('Posts').doc(originalId).update({
+        'users_republier_id': FieldValue.arrayUnion([me.id]),
+        'partage': FieldValue.increment(1),
+        'popularity': FieldValue.increment(3),
+      });
+      FirebaseFunctions.instance.httpsCallable('repostFanOut').call({'postId': originalId}).ignore();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Post republié ✓'), duration: Duration(seconds: 2)));
+    } catch (_) {
+      setState(() => post.users_republier_id!.remove(me.id));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erreur : impossible de republier'), duration: Duration(seconds: 2)));
+    }
+  }
+
   void _showShareOptions(Post post) {
     final colors = AppColors.of(context);
     showResponsiveBottomSheet(
@@ -1821,6 +1855,12 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
               title: Text('Partager', style: TextStyle(color: colors.textPrimary)),
               onTap: () { Navigator.pop(ctx); _sharePost(post); },
             ),
+            if (post.user_id != authProvider.loginUserData.id)
+              ListTile(
+                leading: Icon(Icons.repeat, color: colors.success),
+                title: Text('Republier', style: TextStyle(color: colors.textPrimary)),
+                onTap: () { Navigator.pop(ctx); _handleRepost(post); },
+              ),
             ListTile(
               leading: Icon(Icons.send_rounded, color: colors.primary),
               title: Text('Envoyer dans un chat',
@@ -2011,7 +2051,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
   }) async {
     Navigator.pop(sheetContext);
     try {
-      final callable = FirebaseFunctions.instance.httpsCallable('reportPost');
+      final callable = FirebaseFunctions.instanceFor(region: 'europe-west1').httpsCallable('reportPost');
       await callable.call({'postId': post.id, 'isAdminReport': isAdmin, 'reportType': reportType});
       if (mounted) {
         final msg = isAdmin
@@ -2051,12 +2091,13 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
 
     if (suggestions.isEmpty) return const SizedBox.shrink();
 
-    // Construire la liste mixte : pub avant chaque groupe de 3 posts
-    // Structure : [pub, p0, p1, p2, pub, p3, p4, p5, pub, ...]
+    final screenSize = MediaQuery.of(context).size;
+
+    // Structure : pub en 2ème position (après le 1er post), puis toutes les 3 suggestions
     final items = <dynamic>[];
     for (int i = 0; i < suggestions.length; i++) {
-      if (i % 3 == 0) items.add('ad_$i');
       items.add(suggestions[i]);
+      if (i == 0 || (i > 0 && i % 3 == 0)) items.add('ad_$i');
     }
 
     return Column(
@@ -2086,9 +2127,14 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
               );
             }
             final post = item as Post;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _buildYouTubeCard(post),
+            return HomePostUsersWidget(
+              key: ValueKey('sugg-${post.id}'),
+              post: post,
+              height: screenSize.height * 0.6,
+              width: screenSize.width,
+              isPreview: true,
+              suppressInlineAd: true,
+              onOpenPost: _onSuggestedPostSelected,
             );
           },
         ),
@@ -2330,13 +2376,39 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
   }
 
 
-  Widget _buildStatItem(IconData icon, int count, String label) {
+  Widget _buildInteractionsBadge(int total, AppColors colors) {
+    final isDark = colors.isDark;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isDark ? Colors.white.withOpacity(0.09) : Colors.black.withOpacity(0.07),
+          width: 0.8,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.bar_chart_rounded, size: 13, color: colors.textSecondary),
+          const SizedBox(width: 3),
+          Text(
+            _formatCount(total),
+            style: TextStyle(color: colors.textSecondary, fontSize: 11, fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(IconData icon, int count, String label, {double iconSize = 20}) {
     final colors = AppColors.of(context);
     return Column(children: [
-      Icon(icon, color: _afroYellow, size: 24),
-      SizedBox(height: 4),
-      Text(_formatCount(count), style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold)),
-      Text(label, style: TextStyle(color: colors.textSecondary, fontSize: 12)),
+      Icon(icon, color: _afroYellow, size: iconSize),
+      SizedBox(height: 2),
+      Text(_formatCount(count), style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 12)),
+      Text(label, style: TextStyle(color: colors.textSecondary, fontSize: 11)),
     ]);
   }
 
@@ -2611,55 +2683,71 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     final isLiked = _currentPost.users_love_id?.contains(authProvider.loginUserData.id) ?? false;
     final hasAccess = !_isLockedContent();
     final isOwner = authProvider.loginUserData.id == _currentPost.user_id;
-    return Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-      GestureDetector(
-        onTap: (hasAccess && !_isLiking) ? _handleLike : null,
-        child: _isLiking
-            ? Column(children: [
-                const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFFD600)),
-                ),
-                const SizedBox(height: 4),
-                Text(_formatCount(_currentPost.loves ?? 0), style: TextStyle(color: AppColors.of(context).textPrimary, fontWeight: FontWeight.bold)),
-                Text('J\'aime', style: TextStyle(color: AppColors.of(context).textSecondary, fontSize: 12)),
-              ])
-            : _buildStatItem(
-                isLiked ? Icons.favorite : Icons.favorite_border,
-                _currentPost.loves ?? 0,
-                'J\'aime',
+    final colors = AppColors.of(context);
+    return Row(
+      children: [
+        // ── Actions interactives ─────────────────────────────────────────
+        GestureDetector(
+          onTap: (hasAccess && !_isLiking) ? _handleLike : null,
+          child: _isLiking
+              ? Column(children: [
+                  const SizedBox(width: 20, height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFFD600))),
+                  const SizedBox(height: 2),
+                  Text(_formatCount(_currentPost.loves ?? 0),
+                      style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 12)),
+                  Text('J\'aime', style: TextStyle(color: colors.textSecondary, fontSize: 11)),
+                ])
+              : _buildStatItem(
+                  isLiked ? Icons.favorite : Icons.favorite_border,
+                  _currentPost.loves ?? 0, 'J\'aime'),
+        ),
+        const SizedBox(width: 16),
+        GestureDetector(
+          onTap: hasAccess ? _showCommentsModal : null,
+          child: _buildStatItem(Icons.chat_bubble_outline, _currentPost.comments ?? 0, 'Comm.'),
+        ),
+        const SizedBox(width: 16),
+        _isSharing
+            ? const SizedBox(width: 20, height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2))
+            : GestureDetector(
+                onTap: hasAccess ? () => _showShareOptions(_currentPost) : null,
+                child: _buildStatItem(Icons.repeat, _currentPost.users_republier_id?.length ?? 0, 'Republier'),
               ),
-      ),
-      GestureDetector(
-        onTap: hasAccess ? _showCommentsModal : null,
-        child: _buildStatItem(Icons.chat_bubble_outline, _currentPost.comments ?? 0, 'Commentaires'),
-      ),
-      GestureDetector(
-        onTap: hasAccess ? _toggleFavorite : null,
-        child: _buildStatItem(
-          _isFavorite ? Icons.bookmark : Icons.bookmark_border,
-          _currentPost.favoritesCount ?? 0,
-          'Favoris',
+        const SizedBox(width: 16),
+        if (!isOwner && hasAccess)
+          CadeauBadge(
+            receiverId: _currentPost.user_id!,
+            receiverName: _currentPost.user?.pseudo ?? 'Créateur',
+            receiverAvatar: _currentPost.user?.imageUrl ?? '',
+            post: _currentPost,
+          )
+        else
+          _buildStatItem(Icons.card_giftcard, _currentPost.totalGiftCoinsSentOnThisPost ?? 0, 'Cadeau'),
+        const SizedBox(width: 16),
+        GestureDetector(
+          onTap: _isProcessingFavorite ? null : _toggleFavorite,
+          child: _isProcessingFavorite
+              ? Column(children: [
+                  const SizedBox(width: 20, height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFFD600))),
+                  const SizedBox(height: 2),
+                  Text('Favoris', style: TextStyle(color: AppColors.of(context).textSecondary, fontSize: 11)),
+                ])
+              : _buildStatItem(
+                  _isFavorite ? Icons.bookmark : Icons.bookmark_border,
+                  _currentPost.favoritesCount ?? 0,
+                  'Favoris',
+                ),
         ),
-      ),
-      if (isOwner || !hasAccess)
-        _buildStatItem(Icons.card_giftcard, _currentPost.totalGiftCoinsSentOnThisPost ?? 0, 'Cadeaux')
-      else
-        QuickGiftBar(
-          receiverId: _currentPost.user_id!,
-          receiverName: _currentPost.user?.pseudo ?? 'Créateur',
-          receiverAvatar: _currentPost.user?.imageUrl ?? '',
-          post: _currentPost,
-          giftCount: _currentPost.totalGiftCoinsSentOnThisPost ?? 0,
-        ),
-      _isSharing
-          ? const SizedBox(width: 28, height: 28, child: CircularProgressIndicator(strokeWidth: 2))
-          : GestureDetector(
-              onTap: hasAccess ? () => _showShareOptions(_currentPost) : null,
-              child: _buildStatItem(Icons.share, _currentPost.partage ?? 0, 'Partage'),
-            ),
-    ]);
+
+        // ── Stat passive (loin, discrète) ────────────────────────────────
+        const Spacer(),
+        if ((_currentPost.totalInteractions ?? 0) > 0)
+          _buildInteractionsBadge(_currentPost.totalInteractions!, colors),
+      ],
+    );
   }
 
   Widget _buildPostScoreBadge() {
@@ -2926,7 +3014,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
             ),
             ElevatedButton(
               onPressed: () => Navigator.push(context, MaterialPageRoute(
-                builder: (_) => const SizedBox.shrink(), // remplacé à la session suivante par UserCreateAdvertisementPage(existingPost: _currentPost)
+                builder: (_) => UserCreateAdvertisementPage(existingPost: _currentPost),
               )),
               style: ElevatedButton.styleFrom(backgroundColor: colors.primary, foregroundColor: colors.onPrimary, padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
               child: const Text('Booster', style: TextStyle(fontSize: 12)),

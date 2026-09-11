@@ -1310,6 +1310,11 @@ class _UserPubVibeState extends State<UserPubVibe> {
         post.creatorSnapshot = Post.buildCreatorSnapshot(authProvider.loginUserData);
 
         await FirebaseFirestore.instance.collection('Posts').doc(postId).set(post.toJson());
+        if (widget.canal != null) {
+          FirebaseFirestore.instance.collection('Canaux').doc(widget.canal!.id!).update({
+            'categories': FieldValue.arrayUnion(['VIBE']),
+          }).catchError((_) {});
+        }
         await PostCooldownService.markPosted();
 
         String? thumbnailUrl;

@@ -14,6 +14,7 @@ import 'dart:math';
 import 'package:afrotok/pages/user/monetisation.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 import 'package:hashtagable_v3/widgets/hashtag_text.dart';
 
@@ -55,6 +56,7 @@ import '../../component/showUserDetails.dart';
 import '../../postComments.dart';
 import '../../postDetails.dart';
 import '../../postDetailsVideo.dart';
+import '../../post_video_format_tel_details.dart';
 import '../../pub/afrolook_inline_ad.dart';
 import '../../pub/rewarded_ad_widget.dart';
 import '../../widgetGlobal.dart';
@@ -91,6 +93,8 @@ class HomePostUsersWidget extends StatefulWidget {
   final bool isAdContext;
   final bool suppressInlineAd;
   final String? feedTier;
+  // Si fourni, surcharge la navigation par défaut (utilisé dans les suggestions des pages de détails)
+  final void Function(Post)? onOpenPost;
 
   HomePostUsersWidget({
     required this.post,
@@ -111,6 +115,7 @@ class HomePostUsersWidget extends StatefulWidget {
     this.isAdContext = false,
     this.suppressInlineAd = false,
     this.feedTier,
+    this.onOpenPost,
   }) : super(key: key);
 
   @override
@@ -166,6 +171,9 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   VideoPlayerController? _previewController;
   Timer? _previewTimer;
   bool _showCanalLockCta = false;
+  // url → isPortrait détecté depuis les dimensions réelles de l'image
+  final Map<String, bool> _imageOrientations = {};
+
   bool get _shouldShowAd {
     // 1 pub tous les 5 posts
     return (widget.index + 1) % 5 == 0;
@@ -316,6 +324,31 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     _checkIfFavorite();
     _loadSupportModalSeen();
     _loadLastComment();
+    // Détection orientation pour toutes les images du post
+    for (final img in widget.post.images ?? []) {
+      if (img.isNotEmpty) _detectImageOrientation(img);
+    }
+  }
+
+  void _detectImageOrientation(String rawUrl) {
+    final url = _optimizeUrl(rawUrl);
+    if (_imageOrientations.containsKey(url)) return;
+    final provider = NetworkImage(url);
+    provider.resolve(const ImageConfiguration()).addListener(
+      ImageStreamListener(
+        (ImageInfo info, bool _) {
+          if (!mounted) return;
+          setState(() {
+            _imageOrientations[url] = info.image.height > info.image.width;
+          });
+        },
+        onError: (_, __) {
+          if (!mounted) return;
+          // En cas d'erreur, on suppose portrait
+          setState(() { _imageOrientations[url] = true; });
+        },
+      ),
+    );
   }
 
 
@@ -336,6 +369,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       final snap = post.canalSnapshot;
       if (snap != null) {
         _currentCanal = Canal()
+          ..id = post.canal_id
           ..titre = snap['titre'] as String?
           ..urlImage = snap['urlImage'] as String?
           ..suivi = snap['suivi'] as int? ?? 0;
@@ -931,83 +965,93 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     final isLocked = _isLockedContent();
     final hasAccess = _hasAccessToContent();
 
+    // ── Layout Threads : avatar + fil à gauche, contenu à droite ──────────────
     return Container(
       color: colors.background,
-      child: Column(
+      child: Stack(
         children: [
-          // Ligne de séparation supérieure
-          Container(
-            height: 0.5,
-            color: colors.divider,
+          // Fil vertical sous l'avatar (connecte les posts visuellement)
+          Positioned(
+            left: 29, // 12 padding + 18 (centre du cercle 36px)
+            top: 56,  // 12 padding + 36 avatar + 8 gap
+            bottom: 0,
+            child: Container(width: 2, color: colors.divider),
           ),
-
-          // Contenu du post
+          // Contenu principal
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Column(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // En-tête du post
-                _buildPostHeader(w, h),
-                SizedBox(height: 8),
-
-                // Contenu texte (avec limitation si contenu verrouillé)
-                _buildPostContent(isLocked),
-                SizedBox(height: 12),
-
-                // Médias (images/vidéos) - verrouillés si pas d'accès
-
-              if (widget.post.dataType == PostDataType.AUDIO.name)
-    AudioPostCard(post: widget.post, isLocked: isLocked),
-        if (widget.post.dataType == PostDataType.AUDIO.name)
-
-    SizedBox(height: 12),
-
-                if ((widget.post.images?.isNotEmpty ?? false)&&widget.post.dataType != PostDataType.AUDIO.name)
-                  _buildMediaContent(h, isLocked),
-
-                if (_isVideoPost(widget.post))
-                  _buildVideoContent(h, isLocked),
-
-
-
-                // Bouton d'abonnement — visible seulement après les 10s de preview
-                if (isLocked && _showCanalLockCta) _buildSubscribeButton(),
-
-                // Actions du post (masquées en contexte pub)
-                if (!widget.isAdContext) ...[
-                  SizedBox(height: 12),
-                  _buildPostActions(hasAccess),
-                  _buildCommentPreview(hasAccess),
-                  PostGiftsList(
-                    postId: widget.post.id!,
-                    compactLevel: CompactLevel.light,
-                    maxDisplayItems: 10,
+                // Colonne gauche : avatar
+                _buildAvatarWidget(w, h),
+                const SizedBox(width: 9),
+                // Colonne droite : tout le contenu du post
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (widget.post.isRepost == true)
+                        _buildRepostBanner(),
+                      _buildPostHeaderInfo(w, h),
+                      const SizedBox(height: 4),
+                      _buildPostContent(isLocked),
+                      if (widget.post.dataType == PostDataType.AUDIO.name) ...[
+                        const SizedBox(height: 8),
+                        AudioPostCard(post: widget.post, isLocked: isLocked),
+                        const SizedBox(height: 8),
+                      ],
+                      if ((widget.post.images?.isNotEmpty ?? false) &&
+                          widget.post.dataType != PostDataType.AUDIO.name) ...[
+                        const SizedBox(height: 8),
+                        _buildMediaContent(h, isLocked),
+                      ],
+                      if (_isVideoPost(widget.post)) ...[
+                        const SizedBox(height: 8),
+                        _buildVideoContent(h, isLocked),
+                      ],
+                      if (isLocked && _showCanalLockCta) _buildSubscribeButton(),
+                      if (!widget.isAdContext) ...[
+                        const SizedBox(height: 10),
+                        _buildPostActions(hasAccess),
+                        _buildCommentPreview(hasAccess),
+                        PostGiftsList(
+                          postId: widget.post.id!,
+                          compactLevel: CompactLevel.light,
+                          maxDisplayItems: 10,
+                        ),
+                      ],
+                      if (!widget.isAdContext && !widget.suppressInlineAd &&
+                          _shouldShowAd && widget.post.isAdvertisement != true) ...[
+                        const SizedBox(height: 12),
+                        const AfrolookInlineAd(),
+                        const SizedBox(height: 8),
+                      ],
+                      if (_showRewardedAd)
+                        RewardedAdWidget(
+                          key: _rewardedAdKey,
+                          onUserEarnedReward: (amount, name) async {
+                            await _onSupportAdRewarded();
+                          },
+                          onAdDismissed: () {
+                            setState(() {
+                              _showRewardedAd = false;
+                              _isSupporting = false;
+                            });
+                          },
+                          child: const SizedBox.shrink(),
+                        ),
+                      const SizedBox(height: 12),
+                    ],
                   ),
-                ],
-                // 🆕 AFFICHAGE DE LA PUB APRÈS LE POST SI CONDITION REMPLIE
-                if (!widget.isAdContext && !widget.suppressInlineAd && _shouldShowAd && widget.post.isAdvertisement != true) ...[
-                  const SizedBox(height: 12),
-                  const AfrolookInlineAd(),
-                  const SizedBox(height: 8),
-                ],
-
-                if (_showRewardedAd)
-                  RewardedAdWidget(
-                    key: _rewardedAdKey,
-                    onUserEarnedReward:(amount, name) async {
-                      await _onSupportAdRewarded();
-                    },
-                    onAdDismissed: () {
-                      setState(() {
-                        _showRewardedAd = false;
-                        _isSupporting = false;
-                      });
-                    },
-                    child: SizedBox.shrink(),
-                  ),
+                ),
               ],
             ),
+          ),
+          // Ligne de séparation basse entre les posts
+          Positioned(
+            left: 0, right: 0, bottom: 0,
+            child: Container(height: 0.5, color: colors.divider),
           ),
         ],
       ),
@@ -1093,6 +1137,206 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       ),
     );
   }
+  // ── Mention de republication ─────────────────────────────────────────────────
+  Widget _buildRepostBanner() {
+    final colors = AppColors.of(context);
+    final reposterPseudo = widget.post.reposterPseudo ?? '';
+    final reposterImageUrl = widget.post.reposterImageUrl;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          if (reposterImageUrl != null && reposterImageUrl.isNotEmpty)
+            ClipOval(
+              child: Image.network(reposterImageUrl, width: 16, height: 16, fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Icon(Icons.repeat, size: 14, color: colors.textSecondary)),
+            )
+          else
+            Icon(Icons.repeat, size: 14, color: colors.textSecondary),
+          const SizedBox(width: 5),
+          Text(
+            '@$reposterPseudo a republié',
+            style: TextStyle(fontSize: 12, color: colors.textSecondary, fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Logique de republication ─────────────────────────────────────────────────
+  Future<void> _handleRepost() async {
+    final auth = context.read<UserAuthProvider>();
+    final me = auth.loginUserData;
+    if (me.id == null) return;
+
+    final originalPost = widget.post;
+    if (originalPost.id == null) return;
+
+    if (me.id == originalPost.user_id) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tu ne peux pas republier ton propre post'), duration: Duration(seconds: 2)),
+        );
+      }
+      return;
+    }
+
+    // Un utilisateur ne peut republier qu'une seule fois
+    originalPost.users_republier_id ??= [];
+    if (originalPost.users_republier_id!.contains(me.id)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tu as déjà republié ce post'), duration: Duration(seconds: 2)),
+        );
+      }
+      return;
+    }
+
+    // Feedback optimiste immédiat
+    setState(() => originalPost.users_republier_id!.add(me.id!));
+
+    try {
+      // Le post partagé est toujours le post original (pas de doublon si c'est déjà un repost)
+      final originalId = originalPost.isRepost == true
+          ? (originalPost.originalPostId ?? originalPost.id!)
+          : originalPost.id!;
+
+      final fs = FirebaseFirestore.instance;
+
+      // 1. Incrémenter partage + popularité sur le post original
+      await fs.collection('Posts').doc(originalId).update({
+        'users_republier_id': FieldValue.arrayUnion([me.id]),
+        'partage': FieldValue.increment(1),
+        'popularity': FieldValue.increment(3),
+      });
+
+      // 2. Fan-out : les abonnés verront le post original dans T1
+      //    avec les métadonnées reposter stockées dans la valeur unreadPosts (objet)
+      FirebaseFunctions.instance
+          .httpsCallable('repostFanOut')
+          .call({'postId': originalId}).ignore();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Post republié avec succès ✓'), duration: Duration(seconds: 2)),
+        );
+      }
+    } catch (e) {
+      // Rollback optimiste
+      setState(() => originalPost.users_republier_id!.remove(me.id));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Erreur : impossible de republier'), duration: Duration(seconds: 2)),
+        );
+      }
+    }
+  }
+
+  // ── Avatar seul (36px) pour la colonne gauche du layout Threads ─────────────
+  Widget _buildAvatarWidget(double w, double h) {
+    final colors = AppColors.of(context);
+    final isCanalPost = currentCanal != null;
+    return GestureDetector(
+      onTap: () {
+        if (isCanalPost) {
+          Navigator.push(context, MaterialPageRoute(
+            builder: (_) => CanalDetails(canal: currentCanal!),
+          ));
+        } else if (currentUser != null) {
+          showUserDetailsModalDialog(currentUser!, w, h, context);
+        }
+      },
+      child: isCanalPost
+          ? Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.rectangle,
+                borderRadius: BorderRadius.circular(8),
+                color: colors.primary,
+                border: Border.all(color: colors.primary, width: 1.5),
+                image: _getProfileImage() != null
+                    ? DecorationImage(image: _getProfileImage()!, fit: BoxFit.cover)
+                    : null,
+              ),
+              child: _getProfileImage() == null
+                  ? Icon(Icons.group, color: colors.onPrimary, size: 16)
+                  : null,
+            )
+          : CircleAvatar(
+              radius: 18,
+              backgroundColor: colors.primary,
+              backgroundImage: _getProfileImage(),
+              child: _getProfileImage() == null
+                  ? Icon(Icons.person, color: colors.onPrimary, size: 16)
+                  : null,
+            ),
+    );
+  }
+
+  // ── En-tête (nom + badges + follow + menu) sans avatar ────────────────────
+  Widget _buildPostHeaderInfo(double w, double h) {
+    final colors = AppColors.of(context);
+    final currentUserId = authProvider.loginUserData.id;
+    final isCanalPost = currentCanal != null;
+    final dynamic postOwner = isCanalPost ? currentCanal : currentUser;
+    final isCurrentUser = currentUserId == currentUser?.id;
+    final subscriptionLoaded = isCanalPost
+        ? currentCanal?.usersSuiviId != null
+        : currentUser?.userAbonnesIds != null;
+    final isAbonne = isCanalPost
+        ? currentCanal?.usersSuiviId?.contains(currentUserId) ?? false
+        : currentUser?.userAbonnesIds?.contains(currentUserId) ?? false;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      _getDisplayName(),
+                      style: TextStyle(
+                        color: colors.textPrimary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13.5,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 3),
+                  UserBadgeWidget(user: widget.post.user, size: 13),
+                  if (currentCanal == null && (widget.post.user?.commentStreak ?? 0) >= 1)
+                    _buildFlameStreakBadge(widget.post.user!.commentStreak),
+                ],
+              ),
+              if (_getFollowerCount().isNotEmpty)
+                Text(
+                  _getFollowerCount(),
+                  style: TextStyle(color: colors.textSecondary, fontSize: 11),
+                ),
+            ],
+          ),
+        ),
+        if (!isCurrentUser && subscriptionLoaded && !isAbonne && postOwner != null)
+          _buildFollowButton(isCanalPost, postOwner!, isAbonne),
+        const SizedBox(width: 4),
+        _buildCountryBadge(widget.post),
+        GestureDetector(
+          onTap: () => _showPostMenu(widget.post),
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: Icon(Icons.more_horiz, color: colors.textSecondary, size: 20),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildPostHeader(double w, double h) {
     final colors = AppColors.of(context);
     final currentUserId = authProvider.loginUserData.id;
@@ -1374,80 +1618,39 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       }
     }
 
-    // Choisir la couleur selon le type
-    Color backgroundColor;
-    Color textColor;
-    IconData? icon;
-
-    if (isAllCountries) {
-      backgroundColor = colors.accent.withOpacity(0.9);
-      textColor = colors.onAccent;
-      icon = Icons.public;
-    } else if (countryCodes.isNotEmpty) {
-      backgroundColor = colors.danger.withOpacity(0.9);
-      textColor = Colors.white;
-    } else {
-      // Par défaut : gris
-      backgroundColor = Colors.grey[800]!.withOpacity(0.9);
-      textColor = Colors.white;
-    }
+    // Badge discret : fond légèrement teinté, pas de couleur vive
+    final isDark = colors.isDark;
+    final pillBg = isDark
+        ? Colors.white.withOpacity(0.07)
+        : Colors.black.withOpacity(0.05);
+    final labelColor = isDark
+        ? Colors.white.withOpacity(0.55)
+        : Colors.black.withOpacity(0.40);
+    final borderColor = isDark
+        ? Colors.white.withOpacity(0.10)
+        : Colors.black.withOpacity(0.08);
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.3),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 3,
-            offset: Offset(0, 1),
-          ),
-        ],
+        color: pillBg,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: borderColor, width: 0.8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Icône/drapeau
-          Container(
-            width: 18,
-            height: 18,
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(9),
-            ),
-            child: Center(
-              child: Text(
-                flagEmoji,
-                style: TextStyle(fontSize: 10),
+          Text(flagEmoji, style: const TextStyle(fontSize: 10)),
+          if (displayText.isNotEmpty) ...[
+            const SizedBox(width: 3),
+            Text(
+              displayText,
+              style: TextStyle(
+                color: labelColor,
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0.3,
               ),
-            ),
-          ),
-
-          SizedBox(width: 6),
-
-          // Texte
-          Text(
-            displayText,
-            style: TextStyle(
-              color: textColor,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-            ),
-          ),
-
-          // Indicateur multi-pays
-          if (countryCodes.length > 1) ...[
-            SizedBox(width: 2),
-            Icon(
-              Icons.add,
-              color: textColor,
-              size: 10,
             ),
           ],
         ],
@@ -1566,7 +1769,9 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
   Widget _buildPostContent(bool isLocked) {
     final colors = AppColors.of(context);
-    final text = widget.post.description ?? "";
+    final text = (widget.post.description ?? '')
+        .replaceAll(RegExp(r'[ \t]+\n'), '\n')  // lignes vides avec espaces → vraie ligne vide
+        .replaceAll(RegExp(r'\n{3,}'), '\n\n'); // max 2 sauts de ligne consécutifs
 
     if (isLocked) {
       // Contenu verrouillé - afficher seulement 2 lignes
@@ -1608,42 +1813,37 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       );
     }
 
-    // Description sur l'image (overlay) — ici on affiche seulement l'event badge
-    // pour les posts avec images. Pour les posts texte, on affiche la description.
-    final hasMedia = (widget.post.images?.isNotEmpty == true);
-
-    if (hasMedia) {
-      return _buildEventBadge(widget.post);
-    }
-
-    // Post texte uniquement — afficher la description normalement
     final words = text.split(' ');
     final isLong = words.length > 25;
     final displayedText = _isExpanded || !isLong
         ? text
         : words.take(25).join(' ') + '...';
 
+    // Posts avec images ou vidéos : affiche la description au-dessus du média
+    // Posts texte uniquement : affiche la description seule
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        GestureDetector(
-          onTap: _openDetailsPage,
-          child: HashTagText(
-            text: displayedText,
-            decoratedStyle: TextStyle(fontSize: 15, color: colors.info, fontWeight: FontWeight.w400, height: 1.4),
-            basicStyle: TextStyle(fontSize: 15, color: colors.textPrimary, fontWeight: FontWeight.w400, height: 1.4),
-            onTap: (_) {},
-          ),
-        ),
-        if (isLong)
+        if (text.isNotEmpty) ...[
           GestureDetector(
             onTap: _openDetailsPage,
-            child: Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text('Voir plus',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: colors.info)),
+            child: HashTagText(
+              text: displayedText,
+              decoratedStyle: TextStyle(fontSize: 15, color: colors.info, fontWeight: FontWeight.w400, height: 1.4),
+              basicStyle: TextStyle(fontSize: 15, color: colors.textPrimary, fontWeight: FontWeight.w400, height: 1.4),
+              onTap: (_) {},
             ),
           ),
+          if (isLong)
+            GestureDetector(
+              onTap: _openDetailsPage,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text('Voir plus',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: colors.info)),
+              ),
+            ),
+        ],
         _buildEventBadge(widget.post),
       ],
     );
@@ -1654,151 +1854,179 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     final images = widget.post.images!;
     final imageCount = images.length;
 
-    // Définir la hauteur en fonction du nombre d'images
-    double contentHeight;
     if (imageCount == 1) {
-      contentHeight = h * 0.55;
-    } else if (imageCount == 2) {
-      contentHeight = h * 0.55;
-    } else if (imageCount == 3) {
-      contentHeight = h * 0.55;
-    } else {
-      contentHeight = h * 0.55;
+      // ── Image unique : aspect ratio selon orientation détectée ─────────────
+      final imgUrl = _optimizeUrl(images[0]);
+      final isPortrait = _imageOrientations[imgUrl] ?? true; // défaut portrait
+      final aspectRatio = isPortrait ? (4.0 / 5.0) : (16.0 / 9.0);
+
+      return Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: colors.textSecondary.withOpacity(0.18), width: 0.8),
+        ),
+        child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: AspectRatio(
+          aspectRatio: aspectRatio,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Opacity(
+                opacity: isLocked ? 0.15 : 1.0,
+                child: DoubleTapLike(
+                  alreadyLiked: _isLikedLocally,
+                  onDoubleTap: () { if (!_isLikedLocally) _handleLike(); },
+                  child: GestureDetector(
+                    onTap: _openDetailsPage,
+                    child: CachedNetworkImage(
+                      imageUrl: imgUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(color: colors.shimmerBase),
+                      errorWidget: (context, url, error) => Container(
+                        color: colors.shimmerBase,
+                        child: Icon(Icons.broken_image, color: colors.textSecondary),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              if (!isLocked && (widget.post.description ?? '').trim().isNotEmpty)
+                Positioned(
+                  bottom: 0, left: 0, right: 0,
+                  child: GestureDetector(
+                    onTap: _openDetailsPage,
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(12, 40, 12, 10),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Colors.transparent, Colors.black.withOpacity(0.78)],
+                        ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              widget.post.description!,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                height: 1.35,
+                                decoration: TextDecoration.none,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text('Voir plus', style: TextStyle(
+                            color: Colors.white70, fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            decoration: TextDecoration.none,
+                          )),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              if (isLocked)
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.black.withOpacity(0.6),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.lock, color: colors.accent, size: 50),
+                          const SizedBox(height: 8),
+                          Text('Contenu verrouillé', style: TextStyle(
+                            color: colors.accent, fontSize: 16, fontWeight: FontWeight.bold,
+                          )),
+                          const SizedBox(height: 4),
+                          const Text('Abonnez-vous pour voir ce contenu',
+                              style: TextStyle(color: Colors.white70, fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
     }
 
+    // ── 2+ images : grille avec cellules carrées ─────────────────────────────
+    final double gridHeight = imageCount == 2 ? 152.0 : 190.0;
     return Container(
-      height: contentHeight, // 🔥 HAUTEUR EXPLICITE POUR ÉVITER L'ERREUR
-      child: Stack(
-        children: [
-          // Conteneur principal pour le grid d'images
-          Container(
-            width: double.infinity,
-            height: contentHeight,
-            color: colors.shimmerBase,
-            child: Opacity(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.textSecondary.withOpacity(0.18), width: 0.8),
+      ),
+      child: ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: SizedBox(
+        height: gridHeight,
+        child: Stack(
+          children: [
+            Opacity(
               opacity: isLocked ? 0.15 : 1.0,
               child: DoubleTapLike(
                 alreadyLiked: _isLikedLocally,
-                onDoubleTap: () {
-                  if (!_isLikedLocally) _handleLike();
-                },
-                child: _buildImageGrid(contentHeight, imageCount),
+                onDoubleTap: () { if (!_isLikedLocally) _handleLike(); },
+                child: _buildImageGrid(gridHeight, imageCount),
               ),
             ),
-          ),
-
-          // Description overlay en bas du media (contenu déverrouillé)
-          if (!isLocked && (widget.post.description ?? '').trim().isNotEmpty)
-            Positioned(
-              bottom: 0, left: 0, right: 0,
-              child: GestureDetector(
-                onTap: _openDetailsPage,
+            if (isLocked)
+              Positioned.fill(
                 child: Container(
-                  padding: const EdgeInsets.fromLTRB(12, 40, 12, 10),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [Colors.transparent, Colors.black.withOpacity(0.78)],
+                  color: Colors.black.withOpacity(0.6),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.lock, color: colors.accent, size: 50),
+                        const SizedBox(height: 8),
+                        Text('Contenu verrouillé', style: TextStyle(
+                          color: colors.accent, fontSize: 16, fontWeight: FontWeight.bold,
+                        )),
+                        const SizedBox(height: 4),
+                        const Text('Abonnez-vous pour voir ce contenu',
+                            style: TextStyle(color: Colors.white70, fontSize: 12)),
+                      ],
                     ),
+                  ),
+                ),
+              ),
+            if (imageCount > 1 && !isLocked)
+              Positioned(
+                top: 8, right: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.7),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Expanded(
-                        child: Text(
-                          widget.post.description!,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            height: 1.35,
-                            decoration: TextDecoration.none,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Voir plus',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          decoration: TextDecoration.none,
-                        ),
-                      ),
+                      const Icon(Icons.photo_library, color: Colors.white, size: 14),
+                      const SizedBox(width: 5),
+                      Text('$imageCount', style: const TextStyle(
+                        color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold,
+                      )),
                     ],
                   ),
                 ),
               ),
-            ),
-
-          // Overlay pour contenu verrouillé
-          if (isLocked)
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.6),
-                ),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.lock, color: colors.accent, size: 50),
-                      SizedBox(height: 8),
-                      Text(
-                        'Contenu verrouillé',
-                        style: TextStyle(
-                          color: colors.accent,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Abonnez-vous pour voir ce contenu',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-          // Badge indiquant le nombre d'images (si plus de 1)
-          if (imageCount > 1 && !isLocked)
-            Positioned(
-              top: 8,
-              right: 8,
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.7),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.photo_library, color: Colors.white, size: 14),
-                    SizedBox(width: 5),
-                    Text(
-                      '$imageCount',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-        ],
+          ],
+        ),
       ),
+    ),
     );
   }
 
@@ -2060,47 +2288,68 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         _previewController != null &&
         _previewController!.value.isInitialized;
 
-    return Stack(
-      children: [
-        // Thumbnail, preview en cours, ou fallback
-        ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: _isGeneratingThumbnail
-              ? Center(child: CircularProgressIndicator(color: colors.info))
-              : previewReady
-                  ? SizedBox(
-                      width: double.infinity,
-                      height: h * 0.55,
-                      child: FittedBox(
+    // Portrait : 72% de la largeur écran (même traitement que pub video) pour éviter trop de hauteur
+    // Paysage : largeur colonne contenu standard
+    final bool isVideoPortrait = widget.post.isPortrait ?? true;
+    final double screenW = MediaQuery.of(context).size.width;
+    final double videoW = isVideoPortrait
+        ? screenW * 0.72
+        : screenW - 12 - 36 - 9 - 12;
+    final double videoH = isVideoPortrait
+        ? (videoW * 16.0 / 9.0 * 0.75).clamp(0.0, (screenW * 0.52))
+        : (videoW * 9.0 / 16.0);
+
+    final Widget videoContainer = Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.textSecondary.withOpacity(0.18), width: 0.8),
+      ),
+      child: ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: _isGeneratingThumbnail
+          ? Container(
+              width: videoW, height: videoH,
+              color: colors.shimmerBase,
+              child: Center(child: CircularProgressIndicator(color: colors.info)),
+            )
+          : previewReady
+              ? SizedBox(
+                  width: videoW,
+                  height: videoH,
+                  child: FittedBox(
+                    fit: BoxFit.cover,
+                    child: SizedBox(
+                      width: _previewController!.value.size.width,
+                      height: _previewController!.value.size.height,
+                      child: VideoPlayer(_previewController!),
+                    ),
+                  ),
+                )
+              : (_videoThumbnailPath != null && File(_videoThumbnailPath!).existsSync())
+                  ? GestureDetector(
+                      onTap: () {
+                        if (widget.post.dataType == PostDataType.VIDEO.name) {
+                          _startVideoPreview();
+                        } else {
+                          _openDetailsPage();
+                        }
+                      },
+                      child: Image.file(
+                        File(_videoThumbnailPath!),
                         fit: BoxFit.cover,
-                        child: SizedBox(
-                          width: _previewController!.value.size.width,
-                          height: _previewController!.value.size.height,
-                          child: VideoPlayer(_previewController!),
-                        ),
+                        width: videoW,
+                        height: videoH,
                       ),
                     )
-                  : (_videoThumbnailPath != null && File(_videoThumbnailPath!).existsSync())
-                      ? GestureDetector(
-                          onTap: () {
-                            if (widget.post.dataType == PostDataType.VIDEO.name) {
-                              _startVideoPreview();
-                            } else {
-                              _openDetailsPage();
-                            }
-                          },
-                          child: Opacity(
-                            opacity: 1.0,
-                            child: Image.file(
-                              File(_videoThumbnailPath!),
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              height: h * 0.55,
-                            ),
-                          ),
-                        )
-                      : _buildFallbackThumbnail(),
+                  : SizedBox(width: videoW, height: videoH, child: _buildFallbackThumbnail()),
         ),
+        );
+
+    return Stack(
+      children: [
+        isVideoPortrait
+            ? Align(alignment: Alignment.centerLeft, child: videoContainer)
+            : videoContainer,
 
         // Overlay verrou canal — s'affiche après 10s de lecture
         if (_showCanalLockCta)
@@ -2321,38 +2570,20 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     final isLiked = _isLikedLocally;
 
     return Container(
-      margin: EdgeInsets.only(top: 8),
+      margin: const EdgeInsets.only(top: 8),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Commentaire
+          // ── Actions interactives (proches des doigts) ────────────────────
           _buildActionButton(
             icon: FontAwesome.comment_o,
             count: _localCommentsCount,
             color: colors.textSecondary,
             onPressed: hasAccess ? () {
               _showCommentsModal(widget.post);
-
               recordUniquePostView();
-              // 🔥 APPEL DU CALLBACK
               widget.onCommented?.call();
             } : null,
           ),
-
-          // Vues
-          _buildActionButton(
-            icon:  Icons.bar_chart,
-            count: widget.post.totalInteractions ?? 0,
-            color: colors.textSecondary,
-            onPressed: hasAccess ? () {
-              _handleRepost();
-              recordUniquePostView();
-              // 🔥 APPEL DU CALLBACK
-              widget.onViewed?.call();
-            } : null,
-          ),
-
-          // Like
           _buildActionButton(
             icon: isLiked ? FontAwesome.heart : FontAwesome.heart_o,
             count: _localLovesCount,
@@ -2363,13 +2594,24 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
               widget.onLiked?.call();
             } : null,
           ),
-          // FAVORIS (NOUVEAU)
-          _buildFavoriteButton(hasAccess),
-
-          // Cadeau (masqué pour les pubs)
+          if (widget.post.isAdvertisement != true &&
+              authProvider.loginUserData.id != widget.post.user_id)
+            _buildActionButton(
+              icon: Icons.repeat,
+              count: widget.post.users_republier_id?.length ?? 0,
+              color: (widget.post.users_republier_id?.contains(authProvider.loginUserData.id) ?? false)
+                  ? colors.primary
+                  : colors.textSecondary,
+              onPressed: hasAccess ? () {
+                _handleRepost();
+                recordUniquePostView();
+                widget.onViewed?.call();
+              } : null,
+            ),
           if (widget.post.isAdvertisement != true) ...[
+            const SizedBox(width: 4),
             if (hasAccess && authProvider.loginUserData.id != widget.post.user_id)
-              QuickGiftBar(
+              CadeauBadge(
                 receiverId: widget.post.user_id!,
                 receiverName: widget.post.user?.pseudo ?? 'Créateur',
                 receiverAvatar: widget.post.user?.imageUrl ?? '',
@@ -2382,7 +2624,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                       widget.post.users_cadeau_id!.add(authProvider.loginUserData.id!);
                     }
                   });
-                  await  _coinProvider.refreshBalance(authProvider.loginUserData.id!);
+                  await _coinProvider.refreshBalance(authProvider.loginUserData.id!);
                 },
               )
             else
@@ -2394,30 +2636,51 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
               ),
           ],
 
-          // Partager
-          // _isSharing
-          //     ? SizedBox(
-          //   width: 40, // Ajustez selon la taille de vos boutons
-          //   height: 40,
-          //   child: Padding(
-          //     padding: const EdgeInsets.all(8.0),
-          //     child: CircularProgressIndicator(strokeWidth: 2, color: colors.textSecondary),
-          //   ),
-          // )
-          //     : _buildActionButton(
-          //   icon: Icons.share,
-          //   count: widget.post.partage ?? 0,
-          //   color: colors.textSecondary,
-          //   onPressed: hasAccess ? () {
-          //     _handleShare();
-          //     recordUniquePostView();
-          //     // Le callback est déjà appelé dans _handleShare ou ici
-          //   } : null,
-          // ),
+          // ── Stat passive (loin, discrète) ────────────────────────────────
+          const Spacer(),
+          if ((widget.post.totalInteractions ?? 0) > 0)
+            _buildInteractionsTotalBadge(widget.post.totalInteractions!, colors),
         ],
       ),
     );
   }
+  Widget _buildInteractionsTotalBadge(int total, AppColors colors) {
+    final isDark = colors.isDark;
+    final bg = isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.04);
+    final border = isDark ? Colors.white.withOpacity(0.09) : Colors.black.withOpacity(0.07);
+    final textC = colors.textSecondary;
+
+    String fmt(int n) {
+      if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
+      if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}k';
+      return '$n';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: border, width: 0.8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.bar_chart_rounded, size: 13, color: textC),
+          const SizedBox(width: 3),
+          Text(
+            fmt(total),
+            style: TextStyle(
+              color: textC,
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildFavoriteButton(bool hasAccess) {
     final colors = AppColors.of(context);
     return Material(
@@ -2680,54 +2943,6 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                 },
               ),
             ),
-          const SizedBox(height: 5),
-
-          // Vrai champ de saisie
-          Container(
-            height: 34,
-            decoration: BoxDecoration(
-              color: colors.surfaceVariant,
-              borderRadius: BorderRadius.circular(17),
-              border: Border.all(color: colors.border),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _quickCommentController,
-                    enabled: !_isSendingQuickComment,
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: (v) => _sendQuickComment(v),
-                    style: TextStyle(fontSize: 12, color: colors.textPrimary),
-                    decoration: InputDecoration(
-                      hintText: 'Ajouter un commentaire…',
-                      hintStyle: TextStyle(
-                          color: colors.textSecondary.withOpacity(0.55), fontSize: 12),
-                      border: InputBorder.none,
-                      contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      isDense: true,
-                    ),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () => _sendQuickComment(_quickCommentController.text),
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: 10),
-                    child: _isSendingQuickComment
-                        ? SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 1.5, color: colors.primary),
-                          )
-                        : Icon(Icons.send_outlined,
-                            size: 14, color: colors.textSecondary.withOpacity(0.6)),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
@@ -3415,14 +3630,28 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
 
   void _openDetailsPage() {
+    if (widget.onOpenPost != null) {
+      widget.onOpenPost!(widget.post);
+      return;
+    }
+    final isVideoPost = widget.post.dataType == PostDataType.VIDEO.name;
+    final isPortrait = widget.post.isPortrait ?? true;
+    if (isVideoPost && isPortrait) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PostDetailsVideoFormatTel(
+            initialPost: widget.post,
+            isIn: false,
+          ),
+        ),
+      ).then((_) => _refreshPostStats());
+      return;
+    }
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => DetailsPost(post: widget.post, feedTier: widget.feedTier)),
     ).then((_) => _refreshPostStats());
-  }
-
-  void _handleRepost() {
-    _openDetailsPage();
   }
 
   void _handleGift2() {

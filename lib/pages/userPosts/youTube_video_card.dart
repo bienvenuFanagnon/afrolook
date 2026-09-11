@@ -37,7 +37,7 @@ import '../../providers/coin_gift_provider.dart';
 import '../../services/linkService.dart';
 import '../coins/coin_gift_dialog.dart';
 import '../coins/coin_recharge_screen.dart';
-import '../../widgets/gifts/quick_gift_bar.dart';
+import '../../widgets/gifts/quick_gift_bar.dart' show QuickGiftBar, CadeauBadge;
 import '../component/showUserDetails.dart';
 import '../postComments.dart';
 import '../postDetailsVideo.dart';
@@ -1405,26 +1405,41 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       displayText = countryCodes.length == 1 ? firstCountryCode : '+${countryCodes.length - 1}';
     }
 
-    final backgroundColor = isAllCountries ? const Color(0xFFFFD700).withOpacity(0.9) : const Color(0xFFE21221).withOpacity(0.9);
-    final textColor = isAllCountries ? Colors.black : Colors.white;
+    final colors = AppColors.of(context);
+    final isDark = colors.isDark;
+    final pillBg = isDark
+        ? Colors.white.withOpacity(0.07)
+        : Colors.black.withOpacity(0.05);
+    final labelColor = isDark
+        ? Colors.white.withOpacity(0.55)
+        : Colors.black.withOpacity(0.40);
+    final borderColor = isDark
+        ? Colors.white.withOpacity(0.10)
+        : Colors.black.withOpacity(0.08);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
+        color: pillBg,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: borderColor, width: 0.8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 18, height: 18,
-            decoration: BoxDecoration(color: Colors.black.withOpacity(0.2), borderRadius: BorderRadius.circular(9)),
-            child: Center(child: Text(flagEmoji, style: const TextStyle(fontSize: 10))),
-          ),
-          const SizedBox(width: 6),
-          Text(displayText, style: TextStyle(color: textColor, fontSize: 11, fontWeight: FontWeight.w600)),
+          Text(flagEmoji, style: const TextStyle(fontSize: 10)),
+          if (displayText.isNotEmpty) ...[
+            const SizedBox(width: 3),
+            Text(
+              displayText,
+              style: TextStyle(
+                color: labelColor,
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1570,19 +1585,120 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                   ),
                 ],
               ),
-              const SizedBox(height: 2),
-              Text(
-                isCanalPost
-                    ? '${_creatorCanal?.usersSuiviId?.length ?? 0} abonné(s)'
-                    : '${_creatorUser?.userAbonnesIds?.length ?? 0} abonné(s)',
-                style: TextStyle(color: colors.textSecondary, fontSize: 12),
-              ),
+              Builder(builder: (_) {
+                final count = isCanalPost
+                    ? (_creatorCanal?.usersSuiviId?.length ?? _creatorCanal?.suivi ?? 0)
+                    : (_creatorUser?.userAbonnesIds?.length ?? _creatorUser?.abonnes ?? 0);
+                if (count == 0) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    '$count abonné${count > 1 ? 's' : ''}',
+                    style: TextStyle(color: colors.textSecondary, fontSize: 12),
+                  ),
+                );
+              }),
             ],
           ),
         ),
       ],
     );
   }
+  Widget _buildAvatarWidget() {
+    final colors = AppColors.of(context);
+    final isCanalPost = _creatorCanal != null;
+    ImageProvider? profileImage;
+    if (isCanalPost && _creatorCanal?.urlImage != null) {
+      profileImage = NetworkImage(_creatorCanal!.urlImage!);
+    } else if (_creatorUser?.imageUrl != null) {
+      profileImage = NetworkImage(_creatorUser!.imageUrl!);
+    }
+    return GestureDetector(
+      onTap: () {
+        if (isCanalPost && _creatorCanal != null) {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => CanalDetails(canal: _creatorCanal!)));
+        } else if (_creatorUser != null) {
+          showUserDetailsModalDialog(_creatorUser!, MediaQuery.of(context).size.width, MediaQuery.of(context).size.height, context);
+        }
+      },
+      child: isCanalPost
+          ? Container(
+              width: 36, height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.rectangle,
+                borderRadius: BorderRadius.circular(8),
+                color: colors.primary,
+                border: Border.all(color: colors.primary, width: 1.5),
+                image: profileImage != null ? DecorationImage(image: profileImage, fit: BoxFit.cover) : null,
+              ),
+              child: profileImage == null ? Icon(Icons.group, color: colors.onPrimary, size: 16) : null,
+            )
+          : CircleAvatar(
+              radius: 18,
+              backgroundColor: colors.primary,
+              backgroundImage: profileImage,
+              child: profileImage == null ? Icon(Icons.person, color: colors.onPrimary, size: 16) : null,
+            ),
+    );
+  }
+
+  Widget _buildPostHeaderInfo() {
+    final colors = AppColors.of(context);
+    final isCanalPost = _creatorCanal != null;
+    if (!isCanalPost && _creatorUser == null) {
+      return Text(
+        '@${widget.post.user?.pseudo ?? 'utilisateur'}',
+        style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14),
+      );
+    }
+    final postOwner = isCanalPost ? _creatorCanal! : _creatorUser!;
+    final isCurrentUser = _authProvider.loginUserData.id == widget.post.user_id;
+    final isAbonne = isCanalPost
+        ? (_creatorCanal?.usersSuiviId?.contains(_authProvider.loginUserData.id) ?? false)
+        : (_authProvider.loginUserData.followingIds?.contains(widget.post.user_id) ?? false);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      isCanalPost ? '#${_creatorCanal?.titre ?? ''}' : '@${_creatorUser?.pseudo ?? ''}',
+                      style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  if (_creatorUser != null) UserBadgeWidget(user: _creatorUser, size: 13),
+                ],
+              ),
+              Builder(builder: (_) {
+                final count = isCanalPost
+                    ? (_creatorCanal?.usersSuiviId?.length ?? _creatorCanal?.suivi ?? 0)
+                    : (_creatorUser?.userAbonnesIds?.length ?? _creatorUser?.abonnes ?? 0);
+                if (count == 0) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    '$count abonné${count > 1 ? 's' : ''}',
+                    style: TextStyle(color: colors.textSecondary, fontSize: 12),
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+        if (!isCurrentUser && !isAbonne) _buildFollowButton(isCanalPost, postOwner),
+        const SizedBox(width: 5),
+        GestureDetector(onTap: _showCountriesModal, child: _buildCountryBadge()),
+      ],
+    );
+  }
+
   Widget _buildPlaceholderHeader() {
     final colors = AppColors.of(context);
     return Row(
@@ -1608,11 +1724,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                   ),
                 ],
               ),
-              const SizedBox(height: 2),
-              Text(
-                '0 abonné(s)',
-                style: TextStyle(color: colors.textSecondary, fontSize: 12),
-              ),
+              const SizedBox.shrink(),
             ],
           ),
         ),
@@ -1657,7 +1769,9 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
 
   Widget _buildPostContent() {
     final colors = AppColors.of(context);
-    final text = widget.post.description ?? "";
+    final text = (widget.post.description ?? '')
+        .replaceAll(RegExp(r'[ \t]+\n'), '\n')
+        .replaceAll(RegExp(r'\n{3,}'), '\n\n');
     final isLocked = _isLockedContent;
 
     if (isLocked) {
@@ -1827,12 +1941,190 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     final isLocked = _isLockedContent;
     final screenWidth = MediaQuery.of(context).size.width;
     final isAd = widget.post.isAdvertisement == true;
+    final bool isVideoPortrait = widget.post.isPortrait ?? true;
 
-    // Pubs vidéo : 16:9 paysage (pas de déformation, pas de boîtes noires)
-    // Vidéos normales : portrait ~1.3x
+    // ── Posts portrait (non-pub) : rendu identique à AdvertisementVideoWidget ──
+    if (isVideoPortrait && !isAd) {
+      final double pW = screenWidth * 0.72;
+      final double maxH = MediaQuery.of(context).size.height * 0.52;
+      double pH;
+      if (_isVideoInitialized && _videoController != null) {
+        final size = _videoController!.value.size;
+        if (size.width > 0 && size.height > 0) {
+          pH = (pW * (size.height / size.width) * 0.75).clamp(0.0, maxH);
+        } else {
+          pH = (pW * 16.0 / 9.0 * 0.75).clamp(0.0, maxH);
+        }
+      } else {
+        pH = (pW * 16.0 / 9.0 * 0.75).clamp(0.0, maxH);
+      }
+
+      final Widget portraitPlayer = Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: colors.textSecondary.withOpacity(0.18), width: 0.8),
+        ),
+        child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: SizedBox(
+          width: pW,
+          height: pH,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Container(
+                color: Colors.black,
+                child: _isVideoInitialized && _videoController != null
+                    ? FittedBox(
+                        fit: BoxFit.cover,
+                        child: SizedBox(
+                          width: _videoController!.value.size.width,
+                          height: _videoController!.value.size.height,
+                          child: VideoPlayer(_videoController!),
+                        ),
+                      )
+                    : _thumbnailUrl != null
+                        ? Image.network(_thumbnailUrl!, fit: BoxFit.cover,
+                            width: pW, height: pH,
+                            errorBuilder: (_, __, ___) => Icon(
+                                Icons.videocam, size: 40, color: colors.textSecondary))
+                        : Center(child: Icon(Icons.videocam,
+                            size: 40, color: colors.textSecondary)),
+              ),
+              if (_isVideoLoading)
+                Container(
+                  color: Colors.black.withOpacity(0.5),
+                  child: Center(child: CircularProgressIndicator(color: colors.primary)),
+                ),
+              if (_showCanalLockCta) _buildCanalLockOverlay(colors),
+              if (_showSeeMoreCta && !_showCanalLockCta)
+                Positioned.fill(
+                  child: GestureDetector(
+                    onTap: _navigateToDetails,
+                    child: Container(
+                      color: Colors.black.withOpacity(0.65),
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: colors.accent,
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.play_circle_fill, color: Colors.white, size: 20),
+                              SizedBox(width: 6),
+                              Text('Voir la suite',
+                                style: TextStyle(color: Colors.white,
+                                    fontWeight: FontWeight.bold, fontSize: 14,
+                                    decoration: TextDecoration.none)),
+                            ],
+                          ),
+                        ).animate(onPlay: (c) => c.repeat(reverse: true))
+                            .scaleXY(begin: 1.0, end: 1.08, duration: 600.ms),
+                      ),
+                    ),
+                  ),
+                ),
+              Positioned(
+                bottom: 8, right: 8,
+                child: Container(
+                  decoration: BoxDecoration(color: Colors.black.withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(20)),
+                  child: Consumer<SoundProvider>(
+                    builder: (_, sp, __) => IconButton(
+                      icon: Icon(sp.isMuted ? Icons.volume_off : Icons.volume_up,
+                          color: Colors.white, size: 20),
+                      onPressed: _toggleSound,
+                      padding: const EdgeInsets.all(8),
+                      constraints: const BoxConstraints(),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      );
+
+      return VisibilityDetector(
+        key: Key('video_${widget.post.id}'),
+        onVisibilityChanged: (info) => onVisibilityChanged(info.visibleFraction),
+        child: GestureDetector(
+          onTap: _showCanalLockCta ? null : _navigateToDetails,
+          child: Align(alignment: Alignment.centerLeft, child: portraitPlayer),
+        ),
+      );
+    }
+
+    // ── Paysage / pubs : rendu Chewie classique ───────────────────────────────
+    final double columnW = screenWidth - 69.0;
+    final double videoW = isAd ? screenWidth : columnW;
     final double videoHeight = isAd
         ? (screenWidth * (9.0 / 16.0)).clamp(200.0, 320.0)
-        : (screenWidth * 1.3).clamp(380.0, 620.0);
+        : (videoW * 9.0 / 16.0);
+
+    final Widget videoContainer = ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: kIsWeb && widget.post.url_media != null
+          ? isAd
+              ? AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: SmartVideoPlayer(
+                    url: _authProvider.convertToCdnUrl(widget.post.url_media!, _authProvider.appDefaultData),
+                    autoPlay: false,
+                    showControls: true,
+                  ),
+                )
+              : SizedBox(
+                  width: videoW,
+                  height: videoHeight,
+                  child: SmartVideoPlayer(
+                    url: _authProvider.convertToCdnUrl(widget.post.url_media!, _authProvider.appDefaultData),
+                    autoPlay: false,
+                    showControls: true,
+                  ),
+                )
+          : _isVideoInitialized && _chewieController != null
+          ? isAd
+              ? AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: Chewie(controller: _chewieController!),
+                )
+              : SizedBox(
+                  width: videoW,
+                  height: videoHeight,
+                  child: Chewie(controller: _chewieController!),
+                )
+          : _isGeneratingThumbnail
+          ? Container(
+              height: videoHeight,
+              width: videoW,
+              color: colors.shimmerBase,
+              child: const Center(child: CircularProgressIndicator()),
+            )
+          : _thumbnailUrl != null
+          ? Image.network(
+              _thumbnailUrl!,
+              fit: BoxFit.cover,
+              height: videoHeight,
+              width: videoW,
+              errorBuilder: (context, error, stackTrace) => Container(
+                height: videoHeight,
+                width: videoW,
+                color: colors.shimmerBase,
+                child: Icon(Icons.videocam, size: 50, color: colors.textSecondary),
+              ),
+            )
+          : Container(
+              height: videoHeight,
+              width: videoW,
+              color: colors.shimmerBase,
+              child: Icon(Icons.videocam, size: 50, color: colors.textSecondary),
+            ),
+    );
 
     return VisibilityDetector(
       key: Key('video_${widget.post.id}'),
@@ -1842,70 +2134,12 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
         child: Stack(
           children: [
             // --- Conteneur vidéo ---
-            ClipRRect(
-              borderRadius: BorderRadius.zero,
-              child: kIsWeb && widget.post.url_media != null
-                  ? isAd
-                      ? AspectRatio(
-                          aspectRatio: 16 / 9,
-                          child: SmartVideoPlayer(
-                            url: _authProvider.convertToCdnUrl(widget.post.url_media!, _authProvider.appDefaultData),
-                            autoPlay: false,
-                            showControls: true,
-                          ),
-                        )
-                      : SizedBox(
-                          width: double.infinity,
-                          height: videoHeight,
-                          child: SmartVideoPlayer(
-                            url: _authProvider.convertToCdnUrl(widget.post.url_media!, _authProvider.appDefaultData),
-                            autoPlay: false,
-                            showControls: true,
-                          ),
-                        )
-                  : _isVideoInitialized && _chewieController != null
-                  ? isAd
-                      ? AspectRatio(
-                          aspectRatio: 16 / 9,
-                          child: Chewie(controller: _chewieController!),
-                        )
-                      : SizedBox(
-                          width: double.infinity,
-                          height: videoHeight,
-                          child: Chewie(controller: _chewieController!),
-                        )
-                  : _isGeneratingThumbnail
-                  ? Container(
-                      height: videoHeight,
-                      width: double.infinity,
-                      color: colors.shimmerBase,
-                      child: const Center(child: CircularProgressIndicator()),
-                    )
-                  : _thumbnailUrl != null
-                  ? Image.network(
-                      _thumbnailUrl!,
-                      fit: BoxFit.cover,
-                      height: videoHeight,
-                      width: double.infinity,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        height: videoHeight,
-                        width: double.infinity,
-                        color: colors.shimmerBase,
-                        child: Icon(Icons.videocam, size: 50, color: colors.textSecondary),
-                      ),
-                    )
-                  : Container(
-                      height: videoHeight,
-                      width: double.infinity,
-                      color: colors.shimmerBase,
-                      child: Icon(Icons.videocam, size: 50, color: colors.textSecondary),
-                    ),
-            ),
+            videoContainer,
             // --- Indicateur de chargement ---
             if (_isVideoLoading)
               Container(
                 height: videoHeight,
-                width: double.infinity,
+                width: videoW,
                 color: Colors.black.withOpacity(0.7),
                 child: Center(child: CircularProgressIndicator(color: colors.primary)),
               ),
@@ -2029,27 +2263,80 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     );
   }
 
+  Future<void> _handleRepost() async {
+    final me = _authProvider.loginUserData;
+    if (me.id == null) return;
+    final originalPost = widget.post;
+    if (originalPost.id == null) return;
+    if (me.id == originalPost.user_id) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tu ne peux pas republier ton propre post'), duration: Duration(seconds: 2)),
+      );
+      return;
+    }
+    originalPost.users_republier_id ??= [];
+    if (originalPost.users_republier_id!.contains(me.id)) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tu as déjà republié ce post'), duration: Duration(seconds: 2)),
+      );
+      return;
+    }
+    setState(() => originalPost.users_republier_id!.add(me.id!));
+    try {
+      final originalId = originalPost.isRepost == true
+          ? (originalPost.originalPostId ?? originalPost.id!)
+          : originalPost.id!;
+      final fs = FirebaseFirestore.instance;
+      await fs.collection('Posts').doc(originalId).update({
+        'users_republier_id': FieldValue.arrayUnion([me.id]),
+        'partage': FieldValue.increment(1),
+        'popularity': FieldValue.increment(3),
+      });
+    } catch (_) {
+      setState(() => originalPost.users_republier_id!.remove(me.id));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Erreur : impossible de republier'), duration: Duration(seconds: 2)),
+      );
+    }
+  }
+
   Widget _buildPostActions() {
     final colors = AppColors.of(context);
     final isLiked = widget.post.users_love_id?.contains(_authProvider.loginUserData.id) ?? false;
     final hasAccess = !_isLockedContent;
+    final myId = _authProvider.loginUserData.id;
+    final totalInteractions = widget.post.totalInteractions ?? 0;
+    final isAd = widget.post.isAdvertisement == true;
+    final hasReposted = widget.post.users_republier_id?.contains(myId) ?? false;
 
     return Container(
       margin: const EdgeInsets.only(top: 8),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _buildActionButton(icon: FontAwesome.comment_o, count: _localCommentsCount, color: colors.textSecondary, onPressed: hasAccess ? () => _showCommentsModal() : null),
-          _buildActionButton(icon: Icons.bar_chart, count: _localInteractionsCount, color: colors.textSecondary, onPressed: hasAccess ? _navigateToDetails : null),
+          _buildActionButton(
+            icon: FontAwesome.comment_o,
+            count: _localCommentsCount,
+            color: colors.textSecondary,
+            onPressed: hasAccess ? () => _showCommentsModal() : null,
+          ),
+          const SizedBox(width: 4),
           _buildActionButton(
             icon: isLiked ? FontAwesome.heart : FontAwesome.heart_o,
             count: widget.post.loves ?? 0,
             color: isLiked ? colors.danger : colors.textSecondary,
             onPressed: (hasAccess && !_isLiking) ? _handleLike : null,
           ),
-          _buildFavoriteButton(hasAccess),
-          if (hasAccess && _authProvider.loginUserData.id != widget.post.user_id)
-            QuickGiftBar(
+          const SizedBox(width: 4),
+          if (!isAd && myId != null && myId != widget.post.user_id)
+            _buildActionButton(
+              icon: Icons.repeat,
+              count: widget.post.users_republier_id?.length ?? 0,
+              color: hasReposted ? colors.primary : colors.textSecondary,
+              onPressed: hasAccess ? _handleRepost : null,
+            ),
+          const SizedBox(width: 4),
+          if (hasAccess && myId != null && myId != widget.post.user_id)
+            CadeauBadge(
               receiverId: widget.post.user_id!,
               receiverName: widget.post.user?.pseudo ?? 'Créateur',
               receiverAvatar: widget.post.user?.imageUrl ?? '',
@@ -2058,20 +2345,42 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
               onGiftSuccess: () async {
                 setState(() {
                   widget.post.users_cadeau_id ??= [];
-                  if (!widget.post.users_cadeau_id!.contains(_authProvider.loginUserData.id!)) {
-                    widget.post.users_cadeau_id!.add(_authProvider.loginUserData.id!);
+                  if (!widget.post.users_cadeau_id!.contains(myId)) {
+                    widget.post.users_cadeau_id!.add(myId);
                   }
                 });
-                await _coinProvider.refreshBalance(_authProvider.loginUserData.id!);
+                await _coinProvider.refreshBalance(myId);
               },
             )
           else
-            _buildActionButton(icon: FontAwesome.gift, count: widget.post.totalGiftCoinsSentOnThisPost ?? 0, color: colors.textSecondary, onPressed: null),
-        //   _isSharing
-        //       ? const SizedBox(width: 40, height: 40, child: Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator(strokeWidth: 2)))
-        //       : _buildActionButton(icon: Icons.share, count: widget.post.partage ?? 0, color: colors.textSecondary, onPressed: hasAccess ? _handleShare : null),
-         ],
+            CadeauBadge(
+              receiverId: widget.post.user_id ?? '',
+              receiverName: widget.post.user?.pseudo ?? 'Créateur',
+              receiverAvatar: widget.post.user?.imageUrl ?? '',
+              post: widget.post,
+              giftCount: widget.post.totalGiftCoinsSentOnThisPost ?? 0,
+            ),
+          const Spacer(),
+          if (totalInteractions > 0)
+            _buildInteractionsBadge(totalInteractions, colors),
+        ],
       ),
+    );
+  }
+
+  Widget _buildInteractionsBadge(int total, AppColors colors) {
+    final label = total >= 1000 ? '${(total / 1000).toStringAsFixed(1)}k' : '$total';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: colors.textSecondary.withOpacity(0.07),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(Icons.bar_chart_rounded, size: 12, color: colors.textSecondary.withOpacity(0.5)),
+        const SizedBox(width: 3),
+        Text(label, style: TextStyle(color: colors.textSecondary.withOpacity(0.5), fontSize: 11, fontWeight: FontWeight.w500)),
+      ]),
     );
   }
 
@@ -2239,10 +2548,6 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   Widget _buildCommentPreview() {
     if (_isLockedContent) return const SizedBox.shrink();
     final colors = AppColors.of(context);
-    final rawMsg = _preloadedComments.isNotEmpty ? _preloadedComments.first.message : null;
-    final msg = rawMsg != null && rawMsg.trim().isNotEmpty
-        ? _capitalizeComment(rawMsg.trim())
-        : null;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(0, 4, 0, 4),
@@ -2290,54 +2595,6 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                 },
               ),
             ),
-          const SizedBox(height: 5),
-
-          // Vrai champ de saisie
-          Container(
-            height: 34,
-            decoration: BoxDecoration(
-              color: colors.surfaceVariant,
-              borderRadius: BorderRadius.circular(17),
-              border: Border.all(color: colors.border),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _quickCommentController,
-                    enabled: !_isSendingQuickComment,
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: (v) => _sendQuickComment(v),
-                    style: TextStyle(fontSize: 12, color: colors.textPrimary),
-                    decoration: InputDecoration(
-                      hintText: 'Ajouter un commentaire…',
-                      hintStyle: TextStyle(
-                          color: colors.textSecondary.withOpacity(0.55), fontSize: 12),
-                      border: InputBorder.none,
-                      contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      isDense: true,
-                    ),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () => _sendQuickComment(_quickCommentController.text),
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: 10),
-                    child: _isSendingQuickComment
-                        ? SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 1.5, color: colors.primary),
-                          )
-                        : Icon(Icons.send_outlined,
-                            size: 14, color: colors.textSecondary.withOpacity(0.6)),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
@@ -2449,43 +2706,96 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   Widget build(BuildContext context) {
     super.build(context);
     final colors = AppColors.of(context);
-    final h = MediaQuery.of(context).size.height;
-
     final isAdCard = widget.post.isAdvertisement == true;
+
+    // Pubs : format carte classique
+    if (isAdCard) {
+      return Container(
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: colors.surface,
+          border: Border.all(color: colors.border, width: 0.5),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+              child: _buildPostHeader(),
+            ),
+            _buildVideoContent(),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (_isLockedContent) _buildPostContent() else _buildEventBadge(),
+                  const SizedBox(height: 12),
+                  _buildPostActions(),
+                  _buildCommentPreview(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      )
+          .animate()
+          .fadeIn(duration: 350.ms)
+          .slideY(begin: 0.04, end: 0, duration: 350.ms, curve: Curves.easeOut);
+    }
+
+    // Posts normaux : layout Threads
+    final bool isPortraitVideoPost = widget.post.dataType == PostDataType.VIDEO.name &&
+        (widget.post.isPortrait ?? true);
+
     return Container(
-      margin: isAdCard
-          ? const EdgeInsets.symmetric(vertical: 8)
-          : const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: isAdCard ? BorderRadius.zero : BorderRadius.circular(16),
-        border: Border.all(color: colors.border, width: 0.5),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      color: colors.background,
+      child: Stack(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
-            child: _buildPostHeader(),
+          Positioned(
+            left: 29,
+            top: 56,
+            bottom: 0,
+            child: Container(width: 2, color: colors.divider),
           ),
-          _buildVideoContent(),
           Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Description montrée en overlay sur la vidéo — ici on garde uniquement contenu verrouillé et badge
-                if (_isLockedContent) _buildPostContent() else _buildEventBadge(),
-                const SizedBox(height: 12),
-                _buildPostActions(),
-                _buildCommentPreview(),
-                if (!widget.suppressInlineAd && _shouldShowAd && widget.post.isAdvertisement != true) ...[
-                  const SizedBox(height: 12),
-                  const AfrolookInlineAd(),
-                ],
+                _buildAvatarWidget(),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildPostHeaderInfo(),
+                      const SizedBox(height: 8),
+                      // Portrait : description au-dessus de la vidéo (comme posts image)
+                      if (isPortraitVideoPost && !_isLockedContent) ...[
+                        _buildPostContent(),
+                        const SizedBox(height: 8),
+                      ],
+                      _buildVideoContent(),
+                      const SizedBox(height: 10),
+                      _buildPostActions(),
+                      _buildCommentPreview(),
+                      if (_isLockedContent) _buildPostContent() else _buildEventBadge(),
+                      if (!widget.suppressInlineAd && _shouldShowAd) ...[
+                        const SizedBox(height: 12),
+                        const AfrolookInlineAd(),
+                      ],
+                      const SizedBox(height: 12),
+                    ],
+                  ),
+                ),
               ],
             ),
+          ),
+          Positioned(
+            left: 0, right: 0, bottom: 0,
+            child: Container(height: 0.5, color: colors.divider),
           ),
         ],
       ),

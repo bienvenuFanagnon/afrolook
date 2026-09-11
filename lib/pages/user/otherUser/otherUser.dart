@@ -661,12 +661,24 @@ class _OtherUserPageState extends State<OtherUserPage> {
   }
 
   Widget _buildCreatorScoreBadge(double score, dynamic colors) {
-    final color = score >= 50
-        ? const Color(0xFF4CAF50)
-        : score >= 15
-            ? const Color(0xFFFFD700)
-            : colors.textSecondary;
-    final label = score >= 50 ? 'Top créateur' : score >= 15 ? 'Créateur actif' : 'Créateur';
+    final String tierLabel;
+    final Color color;
+    if (score >= 80) {
+      tierLabel = 'Élite';
+      color = const Color(0xFF22C55E);
+    } else if (score >= 50) {
+      tierLabel = 'Expert';
+      color = const Color(0xFF3B82F6);
+    } else if (score >= 25) {
+      tierLabel = 'Avancé';
+      color = const Color(0xFFF97316);
+    } else if (score >= 10) {
+      tierLabel = 'Standard';
+      color = const Color(0xFFF59E0B);
+    } else {
+      tierLabel = 'Débutant';
+      color = colors.textSecondary as Color;
+    }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
       decoration: BoxDecoration(
@@ -678,7 +690,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
         Icon(Icons.trending_up_rounded, size: 13, color: color),
         const SizedBox(width: 5),
         Text(
-          '$label · ${score.toStringAsFixed(1)} pts',
+          'Créateur $tierLabel',
           style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700),
         ),
       ]),
@@ -1367,7 +1379,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            "@${widget.otherUser.pseudo!}",
+                            "@${widget.otherUser.pseudo ?? ''}",
                             style: TextStyle(
                               color: colors.textPrimary,
                               fontSize: 24,
@@ -1443,8 +1455,8 @@ class _OtherUserPageState extends State<OtherUserPage> {
                   children: [
                     NumbersWidget(
                       followers: widget.otherUser.userAbonnesIds?.length ?? 0,
-                      taux: widget.otherUser.popularite!,
-                      points: widget.otherUser.pointContribution!,
+                      taux: widget.otherUser.popularite ?? 0,
+                      creatorScore: widget.otherUser.creatorScore ?? 0,
                     ),
                     const SizedBox(height: 10),
                     // Abonnements : créateurs + canaux suivis
@@ -1505,7 +1517,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
                       ),
                     if ((widget.otherUser.creatorScore ?? 0) > 0) ...[
                       const SizedBox(height: 8),
-                      _buildCreatorScoreBadge(widget.otherUser.creatorScore!, colors),
+                      _buildCreatorScoreBadge(widget.otherUser.creatorScore ?? 0, colors),
                     ],
                     const SizedBox(height: 12),
                     Row(
@@ -1750,7 +1762,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
             Icon(Icons.group, color: Colors.blue, size: 16),
             SizedBox(width: 4),
             Text(
-              "${widget.otherUser.usersParrainer!.length} parrainages",
+              "${widget.otherUser.usersParrainer?.length ?? 0} parrainages",
               style: TextStyle(
                 color: Colors.blue,
                 fontSize: 12,

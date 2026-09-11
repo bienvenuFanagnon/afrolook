@@ -12,6 +12,125 @@ import '../../providers/coin_gift_provider.dart';
 import '../../services/quick_gift_service.dart';
 import '../../theme/app_colors.dart';
 
+// ── Badge "Cadeau" visible et clair ─────────────────────────────────────────
+
+/// Bouton-badge pilule "🏆 Cadeau" adapté clair/sombre.
+/// Au tap : ouvre le CoinGiftDialog.
+class CadeauBadge extends StatelessWidget {
+  final String receiverId;
+  final String receiverName;
+  final String receiverAvatar;
+  final Post post;
+  final int giftCount;
+  final VoidCallback? onGiftSuccess;
+
+  const CadeauBadge({
+    Key? key,
+    required this.receiverId,
+    required this.receiverName,
+    required this.receiverAvatar,
+    required this.post,
+    this.giftCount = 0,
+    this.onGiftSuccess,
+  }) : super(key: key);
+
+  String _fmt(int n) {
+    if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
+    if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}k';
+    return '$n';
+  }
+
+  void _open(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => CoinGiftDialog(
+        receiverId: receiverId,
+        receiverName: receiverName,
+        receiverAvatar: receiverAvatar,
+        post: post,
+        onGiftSuccess: onGiftSuccess,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final isDark = colors.isDark;
+
+    // Fond de la pilule : sombre en dark, blanc avec bordure subtile en light
+    final pillBg = isDark ? const Color(0xFF1E1E1E) : const Color(0xFFFFFFFF);
+    final pillBorder = isDark
+        ? const Color(0xFFFF6A00).withOpacity(0.35)
+        : const Color(0xFFFF6A00).withOpacity(0.25);
+    final labelColor = isDark ? const Color(0xFFFFFFFF) : const Color(0xFF1A1A1A);
+
+    // Même padding vertical que les autres boutons d'action (6px top/bottom)
+    return GestureDetector(
+      onTap: () => _open(context),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: pillBg,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: pillBorder, width: 0.8),
+          boxShadow: isDark
+              ? [BoxShadow(color: const Color(0xFFFF6A00).withOpacity(0.12), blurRadius: 6, offset: const Offset(0, 1))]
+              : [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 4, offset: const Offset(0, 1))],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Cercle gradient avec trophée
+            Container(
+              width: 19,
+              height: 19,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [Color(0xFFFF4500), Color(0xFFFFAA00)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: const Center(
+                child: Text('🏆', style: TextStyle(fontSize: 10)),
+              ),
+            ),
+            const SizedBox(width: 5),
+            Text(
+              'Cadeau',
+              style: TextStyle(
+                color: labelColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.1,
+              ),
+            ),
+            // Séparateur fin + count sur la même ligne
+            Container(
+              width: 1,
+              height: 12,
+              margin: const EdgeInsets.symmetric(horizontal: 6),
+              color: pillBorder,
+            ),
+            Text(
+              _fmt(giftCount),
+              style: TextStyle(
+                color: colors.textSecondary,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class QuickGiftBar extends StatefulWidget {
   final String receiverId;
   final String receiverName;

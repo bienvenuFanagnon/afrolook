@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../models/model_data.dart';
+import 'mes_gains_post_page.dart';
 import '../coins/coin_recharge_screen.dart';
 import '../paiement/newDepot.dart';
 import '../paiement/feexpay/pendingTransactionsScreen.dart';
@@ -212,7 +213,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '${myRate.toStringAsFixed(2)} FCFA',
+                '${(myRate * 1000).toInt()} FCFA',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -223,7 +224,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Text(
-                  '/ vue',
+                  'RPM',
                   style: TextStyle(fontSize: 13, color: colors.textSecondary),
                 ),
               ),
@@ -231,7 +232,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Score créateur : ${creatorScore.toStringAsFixed(1)} pts  ·  ${(multiplier * 100).toStringAsFixed(0)}% du taux de base (${baseRate.toStringAsFixed(0)} FCFA max)',
+            'Score créateur : ${creatorScore.toStringAsFixed(1)} pts  ·  ${(multiplier * 100).toStringAsFixed(0)}% du taux de base (RPM max : 1 000 FCFA)',
             style: TextStyle(fontSize: 11, color: colors.textSecondary),
           ),
 
@@ -255,7 +256,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
               Expanded(
                 child: _viewStat(
                   icon: Icons.schedule_outlined,
-                  label: 'En attente',
+                  label: 'Non encaissées',
                   value: pendingViews.toString(),
                   color: tierColor,
                   colors: colors,
@@ -264,8 +265,8 @@ class _MonetisationPageState extends State<MonetisationPage> {
               const SizedBox(width: 12),
               Expanded(
                 child: _viewStat(
-                  icon: Icons.trending_up,
-                  label: 'Prochain crédit',
+                  icon: Icons.account_balance_wallet_outlined,
+                  label: 'À encaisser',
                   value: '${pendingEarnings.toStringAsFixed(2)} F',
                   color: tierColor,
                   colors: colors,
@@ -325,7 +326,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
                           ),
                         ),
                         Text(
-                          '${(tMulti * baseRate).toStringAsFixed(2)} FCFA/vue',
+                          '${((tMulti * baseRate) * 1000).toInt()} FCFA RPM',
                           style: TextStyle(
                             fontSize: 11,
                             color: isActive ? tColor : colors.textSecondary,
@@ -340,7 +341,29 @@ class _MonetisationPageState extends State<MonetisationPage> {
             ),
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => MesGainsPage(userId: Provider.of<UserAuthProvider>(context, listen: false).loginUserData.id!),
+                ),
+              ),
+              icon: Icon(Icons.account_balance_wallet_outlined, size: 16, color: tierColor),
+              label: Text(
+                'Voir mes gains & encaisser',
+                style: TextStyle(color: tierColor, fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: tierColor.withOpacity(0.5)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -348,9 +371,9 @@ class _MonetisationPageState extends State<MonetisationPage> {
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  'Les gains sont crédités automatiquement chaque jour sur ton solde principal. '
-                  'Le taux de base (actuellement ${baseRate.toStringAsFixed(0)} FCFA/vue) peut être ajusté à tout moment par Afrolook. '
-                  'Améliore ton score en publiant du contenu apprécié et engage ta communauté.',
+                  'Tes gains s\'accumulent selon tes vues et ton palier. Encaisse-les quand tu veux depuis la page ci-dessus. '
+                  'Le RPM maximum est de 1 000 FCFA (pour 1 000 vues) et peut être ajusté par Afrolook. '
+                  'Améliore ton score en publiant du contenu apprécié.',
                   style: TextStyle(fontSize: 10, color: colors.textSecondary, height: 1.4),
                 ),
               ),

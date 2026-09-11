@@ -10,8 +10,8 @@ class ChroniqueProvider with ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
-  // Publier une chronique
-  Future<void> publishChronique({
+  // Publier une chronique — retourne l'URL du média uploadé (null pour texte)
+  Future<String?> publishChronique({
     required String userId,
     required String userPseudo,
     required String userImageUrl,
@@ -63,6 +63,7 @@ class ChroniqueProvider with ChangeNotifier {
       await _firestore.collection('chroniques').add(chronique.toMap());
       await _updateUserChroniqueCount(userId);
 
+      return mediaUrl;
     } catch (error) {
       throw Exception('Erreur lors de la publication: $error');
     }

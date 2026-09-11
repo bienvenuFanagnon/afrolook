@@ -1,5 +1,7 @@
 import 'package:afrotok/utils/responsive_sheet.dart';
+import 'discovery_feed_page.dart';
 import '../../widgets/feed/sections/feed_sport_discovery_section.dart';
+import '../../widgets/feed/sections/feed_end_discovery_section.dart';
 import '../../widgets/feed/sections/feed_live_section.dart';
 import '../LiveAgora/livesAgora.dart';
 import 'dart:async';
@@ -64,6 +66,8 @@ import 'HomeConstPost.dart' show flushSeenPostsAndCleanMemory;
 import '../../widgets/feed/weekly_top_creators_widget.dart';
 import '../../widgets/feed/sections/weekly_top_commentators_widget.dart';
 import '../../widgets/feed/sections/weekly_top_posts_section_widget.dart';
+import '../../widgets/feed/sections/affiliation_feed_widget.dart';
+import '../../widgets/feed/sections/feed_recommended_profiles_widget.dart';
 
 import '../dating/widgets/top_dating_profiles_widget.dart';
 
@@ -82,7 +86,8 @@ const List<String> availablePostTypes = [
   'LOOKS',
   'EVENEMENT',
   'OFFRES',
-  'GAMER'
+  'GAMER',
+  'DECOUVERTE',
 ];
 
 // Clé SharedPreferences partagée avec HomeConstPost (même bucket de flush)
@@ -129,6 +134,10 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   bool _isLoadingMorePosts = false;
   bool _hasMorePosts = true;
   bool _isLoadingBackground = false;
+  bool _hasSubscribedFromEndFeed = false;
+  bool _isReloadingAfterSubscribe = false;
+  bool _t2AutoTriggered = false;
+  bool _showScrollToTop = false;
 
   // Système hybride de chargement
   Set<String> _loadedPostIds = Set();
@@ -657,6 +666,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     _hasMorePosts = true;
     _isLoadingMorePosts = false;
     _isLoadingBackground = false;
+    _t2AutoTriggered = false;
   }
 
   // ===========================================================================
@@ -847,6 +857,9 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   // ===========================================================================
 
   void _startBackgroundLoading() {
+    // Désactivé : T3 (découverte/pays/résurgence) uniquement sur demande utilisateur.
+    return;
+    // ignore: dead_code
     if (!_useBackgroundLoading) return;
 
     _backgroundLoadTimer?.cancel();
@@ -1740,61 +1753,9 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
 
       int limit = _initialLimit;
 
-      switch (_currentFilter) {
-        case 'ALL':
-          await _loadPostsWithTypeAndCountry(
-            loadedIds,
-            newPosts,
-            postType: _selectedPostType,
-            countryCode: null, // Tous les pays
-            isInitialLoad: true,
-            limit: limit,
-          );
-          break;
-
-        case 'COUNTRY':
-          if (_selectedCountryCode != null) {
-            await _loadPostsWithTypeAndCountry(
-              loadedIds,
-              newPosts,
-              postType: _selectedPostType,
-              countryCode: _selectedCountryCode,
-              isInitialLoad: true,
-              limit: limit,
-            );
-            // Compléter avec les autres pays si pas assez de posts (Session 11)
-            if (newPosts.length < limit) {
-              await _loadPostsWithTypeAndCountry(
-                loadedIds,
-                newPosts,
-                postType: _selectedPostType,
-                countryCode: null,
-                isInitialLoad: true,
-                limit: limit - newPosts.length,
-              );
-            }
-          }
-          break;
-
-        case 'MIXED':
-          if (_selectedCountryCode != null) {
-            await _loadMixedPostsWithType(loadedIds, newPosts, limit);
-          }
-          break;
-
-        case 'CUSTOM':
-          if (_selectedCountryCode != null) {
-            await _loadPostsWithTypeAndCountry(
-              loadedIds,
-              newPosts,
-              postType: _selectedPostType,
-              countryCode: _selectedCountryCode,
-              isInitialLoad: true,
-              limit: limit,
-            );
-          }
-          break;
-      }
+      // Découverte sport par pays/type (ALL/COUNTRY/MIXED/CUSTOM) — uniquement sur demande
+      // explicite via "À découvrir & Tendances". On ne charge que T1 au lancement.
+      // switch (_currentFilter) { … } désactivé.
 
       // ── Posts non vus en priorité (cursor de session) ───────────────────────
       {
@@ -1813,22 +1774,28 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         }
       }
 
-      // Charger Tier 1 (non vus abonnements) et Tier 2 (intérêts) en parallèle
-      await Future.wait([
-        _loadTier1Posts(loadedIds, newPosts, limit),
-        _loadTier2InterestPosts(loadedIds, newPosts, 22), // assez pour remplir le gap T1 (16) + régulier (6)
-      ]);
+      // T1 uniquement — T2 (Découverte/Tendance) jamais chargé automatiquement, uniquement sur demande utilisateur.
+      await _loadTier1Posts(loadedIds, newPosts, limit);
 
       setState(() {
         _posts = _buildTieredFeed(newPosts);
         _loadedPostIds.addAll(loadedIds);
         _totalPostsLoaded = _posts.length;
         _isFirstLoad = false;
-        if (_posts.length >= 25) _hasMorePosts = false;
+        // T1 épuisé → fin de feed, T2 se charge automatiquement
+        _hasMorePosts = false;
       });
 
       if (newPosts.isNotEmpty) {
         _saveFeedToCache();
+      }
+
+      // Auto-déclencher T2+T3 une seule fois quand T1 est épuisé
+      if (!_t2AutoTriggered) {
+        _t2AutoTriggered = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _loadDiscoveryAndTrends();
+        });
       }
 
       printVm('✅ ${newPosts.length} posts chargés avec filtre: $_currentFilter - Type: $_selectedPostType');
@@ -1885,10 +1852,10 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     await flushSeenPostsAndCleanMemory(userId, authProvider.loginUserData);
     try {
       final userDoc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
-      final fresh = ((userDoc.data()?['unreadPosts'] as Map<String, dynamic>?) ?? {})
-          .map((k, v) => MapEntry(k, (v as num).toInt()));
-      authProvider.loginUserData.unreadPosts = fresh;
-      printVm('🔄 [SPORT][UNREAD] unreadPosts mis à jour : ${fresh.length} posts non vus');
+      final _rawUnread = (userDoc.data()?['unreadPosts'] as Map<String, dynamic>?) ?? {};
+      authProvider.loginUserData.unreadPosts = UserData.parseUnreadTimestamps(_rawUnread);
+      authProvider.loginUserData.repostMeta = UserData.parseUnreadRepostMeta(_rawUnread);
+      printVm('🔄 [SPORT][UNREAD] unreadPosts mis à jour : ${_rawUnread.length} posts non vus');
     } catch (e) {
       printVm('⚠️ [SPORT][UNREAD] Impossible de rafraîchir unreadPosts : $e');
     }
@@ -1926,13 +1893,17 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     }
 
     try {
+      // DECOUVERTE = pas de filtre catégorie (tous les posts non vus),
+      // autres types (SPORT, LOOKS…) = filtrer par leur typeTabbar
+      final String? t1TabbarType = (widget.type == 'DECOUVERTE') ? null : widget.type;
       final posts = await FeedRepository().fetchUnreadSubscriptionPosts(
         unread,
         {...loadedIds, ..._loadedPostIds},
         limit: limit,
-        tabbarType: 'SPORT',
+        tabbarType: t1TabbarType,
+        repostMeta: authProvider.loginUserData.repostMeta ?? {},
       );
-      printVm('📌 [SPORT][TIER1] ${posts.length} posts SPORT chargés (filtré Firebase)');
+      printVm('📌 [${widget.type}][TIER1] ${posts.length} posts chargés (tabbarType=$t1TabbarType)');
       _addFetchedToList(posts, loadedIds, newPosts, limit);
       for (final p in posts) { if (p.id != null) _seenTier1PostIds.add(p.id!); }
     } catch (e) {
@@ -1966,12 +1937,13 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         ...SeenDiscoveryCache.instance.seenIds,
         ...dpc.poolIds,
       };
+      final String? t2TabbarType = (widget.type == 'DECOUVERTE') ? null : widget.type;
       final posts = await FeedRepository().fetchInterestPosts(
         interests,
         excluded,
         countryCode: countryCode,
         limit: DiscoveryPostsCache.maxPoolSize,
-        tabbarType: 'SPORT',
+        tabbarType: t2TabbarType,
       );
       dpc.replenish(posts);
       final taken = dpc.take(limit);
@@ -2065,6 +2037,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     if (_flushingIds.contains(postId)) return;
     _flushingIds.add(postId);
     authProvider.loginUserData.unreadPosts?.remove(postId);
+    authProvider.loginUserData.repostMeta?.remove(postId);
     _persistSeenSport({postId});
     final userId = authProvider.loginUserData.id;
     if (userId != null && userId.isNotEmpty) {
@@ -2199,8 +2172,14 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   // ===========================================================================
 
   void _scrollListener() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 1500 &&
+    final pixels = _scrollController.position.pixels;
+
+    final shouldShow = pixels > 300;
+    if (shouldShow != _showScrollToTop) {
+      setState(() => _showScrollToTop = shouldShow);
+    }
+
+    if (pixels >= _scrollController.position.maxScrollExtent - 1500 &&
         !_isLoadingMorePosts &&
         !_isLoadingBackground &&
         _hasMorePosts &&
@@ -2416,15 +2395,53 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   // ===========================================================================
 
   Widget _buildShimmerPost() {
+    final colors = AppColors.of(context);
     return Shimmer.fromColors(
-      baseColor: Colors.grey[850]!,
-      highlightColor: Colors.grey[700]!,
+      baseColor: colors.shimmerBase,
+      highlightColor: colors.shimmerHighlight,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-        height: 280,
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.grey[850],
+          color: colors.shimmerBase,
           borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 44, height: 44,
+                  decoration: BoxDecoration(color: colors.shimmerHighlight, shape: BoxShape.circle),
+                ),
+                const SizedBox(width: 10),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(width: 120, height: 12, decoration: BoxDecoration(color: colors.shimmerHighlight, borderRadius: BorderRadius.circular(6))),
+                    const SizedBox(height: 6),
+                    Container(width: 80, height: 10, decoration: BoxDecoration(color: colors.shimmerHighlight, borderRadius: BorderRadius.circular(6))),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity, height: 200,
+              decoration: BoxDecoration(color: colors.shimmerHighlight, borderRadius: BorderRadius.circular(10)),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Container(width: 48, height: 12, decoration: BoxDecoration(color: colors.shimmerHighlight, borderRadius: BorderRadius.circular(6))),
+                const SizedBox(width: 16),
+                Container(width: 48, height: 12, decoration: BoxDecoration(color: colors.shimmerHighlight, borderRadius: BorderRadius.circular(6))),
+                const SizedBox(width: 16),
+                Container(width: 48, height: 12, decoration: BoxDecoration(color: colors.shimmerHighlight, borderRadius: BorderRadius.circular(6))),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -2472,6 +2489,26 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   Widget _buildUnifiedAdSlot({required String key}) =>
       FeedUnifiedAdSlot(adKey: key);
 
+  // Slot de contenu pur — pas de fallback pub.
+  Widget _buildPoolContent(String name, String poolKey) {
+    switch (name) {
+      case 'Articles':
+        if (_articles.isEmpty) return const SizedBox.shrink();
+        return _buildArticlesSection();
+      case 'Canaux':
+        if (_canaux.isEmpty) return const SizedBox.shrink();
+        return _buildCanauxSection();
+      case 'WeeklyTopCreators':
+        return const WeeklyTopCreatorsWidget();
+      case 'BoostedContent':
+        return const BoostedContentStripWidget();
+      case 'VIPContent':
+        return const RecentVIPContentWidget();
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
   Widget _buildPostWidget(Post post, double width, double height, int index) {
     final pid = post.id;
     final isTier1 = pid != null && _seenTier1PostIds.contains(pid);
@@ -2498,9 +2535,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
           // ── Contenu du post ──────────────────────────────────────────────
           post.type == PostType.PRONOSTIC.name
               ? SizedBox.shrink()
-              : post.type == PostType.CHALLENGEPARTICIPATION.name
-              ? LookChallengePostWidget(post: post, height: height, width: width)
-              : (post.type == PostType.POST.name && post.dataType == PostDataType.VIDEO.name)
+             : (post.type == PostType.POST.name && post.dataType == PostDataType.VIDEO.name)
               ? YouTubeVideoCard(
                   key: ValueKey('ytcard_${post.id}'),
                   post: post,
@@ -2888,6 +2923,9 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     final bool _showShopPromo = _articles.isNotEmpty;
 
     int _t2FillShown = 0;
+    int _lastInsertedAt = -10;
+    bool _profilesInLoop = false;
+    bool _canauxInLoop = false;
     for (int i = 0; i < finalPosts.length; i++) {
       final post = finalPosts[i];
 
@@ -2900,39 +2938,64 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         ),
       );
 
-      // Suggestions "à suivre" toutes les 2 posts T2 fill (max 3 fois)
+      // T2 fill counter (plus de section découverte en plein feed)
       final pid = post.id ?? '';
       if (_t2FillPostIds.isNotEmpty && _t2FillPostIds.contains(pid)) {
         _t2FillShown++;
-        if (_t2FillShown % 2 == 0 && _t2FillShown <= 6) {
-          contentWidgets.add(const FeedSportDiscoverySection());
-        }
       }
 
-      // Après le 1er post : lives si chroniques présentes
-      if (i == 0 && _hasChroniques) {
+      // Post 6 : widget Affiliation (1×/jour — géré en interne par le widget)
+      if (i == 5) {
+        contentWidgets.add(const AffiliationFeedWidget());
+      }
+
+      // Post 10 : Lives si chroniques présentes
+      if (i == 9 && _hasChroniques) {
         contentWidgets.add(const FeedLiveSection());
       }
 
-      // Après le 2ème post : classement hebdo commentateurs + promo AfroShop (lun/jeu)
-      if (i == 1) {
-        contentWidgets.add(const WeeklyTopCommentatorsWidget());
-        if (_showShopPromo) {
-          contentWidgets.add(ShopPromoFeedWidget(articles: _articles, isFirstPosition: false));
+      // Post 20 : Canaux recommandés
+      if (i == 19) {
+        if (_canaux.isNotEmpty) {
+          contentWidgets.add(_buildCanauxSection());
+          _canauxInLoop = true;
         }
       }
 
-      // Pub toutes les 4 posts — toujours affichée
-      final postNumber = i + 1;
-      if (postNumber % 4 == 0) {
-        final slotN = postNumber ~/ 4 - 1;
-        contentWidgets.add(_buildUnifiedAdSlot(key: 'ad_slot_$slotN'));
+      // Post 21 : Boost entité (pub profil/canal) si disponible, sinon profils recommandés
+      if (i == 20) {
+        contentWidgets.add(FeedEntityBoostSlot(
+          adKey: 'entity_boost_sport_21',
+          fallback: const FeedRecommendedProfilesWidget(),
+        ));
+        _profilesInLoop = true;
       }
-      // Slot découverte toutes les 6 posts — fallback pub si le widget est vide
-      if (postNumber % 6 == 0) {
-        final poolCount = postNumber ~/ 6 - 1;
+
+      final postNumber = i + 1;
+
+      // Pub : première après le 2ème post (i=1), puis toutes les 8 posts (i=9, 17, 25...).
+      // Ignoré si un post isAdvertisement est dans les ±2 adjacents,
+      // ou si un autre insert a été ajouté dans les 5 derniers posts.
+      final isAdSlot = i == 1 || (i > 1 && (i - 1) % 8 == 0);
+      if (isAdSlot && (i - _lastInsertedAt) >= 5) {
+        final ws = (i - 1).clamp(0, finalPosts.length - 1);
+        final we = (i + 2).clamp(0, finalPosts.length - 1);
+        final hasGrandNearby = finalPosts
+            .sublist(ws, we + 1)
+            .any((p) => p.isAdvertisement == true);
+        if (!hasGrandNearby) {
+          final slotN = i == 1 ? 0 : (i - 1) ~/ 8;
+          contentWidgets.add(_buildUnifiedAdSlot(key: 'ad_slot_$slotN'));
+          _lastInsertedAt = i;
+        }
+      }
+
+      // Contenu découverte toutes les 16 posts — ignoré si trop proche d'un insert.
+      if (postNumber % 16 == 0 && (i - _lastInsertedAt) >= 5) {
+        final poolCount = postNumber ~/ 16 - 1;
         final poolIdx = poolCount % _kPoolOrder.length;
-        contentWidgets.add(_buildPoolOrAd(_kPoolOrder[poolIdx], 'pool_slot_$poolCount'));
+        contentWidgets.add(_buildPoolContent(_kPoolOrder[poolIdx], 'pool_slot_$poolCount'));
+        _lastInsertedAt = i;
       }
     }
 
@@ -2941,29 +3004,26 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       contentWidgets.add(_buildShimmerPost());
       contentWidgets.add(_buildShimmerPost());
     } else if (!_hasMorePosts) {
-      contentWidgets.add(const FeedSportDiscoverySection());
+      // Fin du feed T1 : widget de découverte + boutons d'action
       contentWidgets.add(
-        Container(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          child: Center(
-            child: Column(
-              children: [
-                const Icon(Icons.flag, color: Colors.green, size: 36),
-                const SizedBox(height: 10),
-                Text(
-                  _getEndMessage(),
-                  style: const TextStyle(color: Colors.grey, fontSize: 14),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 5),
-                const Text(
-                  'Revenez plus tard pour de nouveaux contenus',
-                  style: TextStyle(color: Colors.grey, fontSize: 11),
-                ),
-              ],
-            ),
-          ),
+        FeedEndDiscoverySection(
+          pageType: widget.type.isNotEmpty ? widget.type : null,
+          onSubscribed: () {
+            if (!mounted) return;
+            setState(() => _hasSubscribedFromEndFeed = true);
+          },
         ),
+      );
+      contentWidgets.add(
+        Builder(builder: (ctx) {
+          final colors = AppColors.of(ctx);
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Column(
+              children: _buildEndFeedButtons(colors),
+            ),
+          );
+        }),
       );
     }
 
@@ -2981,6 +3041,102 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   }
 
   // ===========================================================================
+  // FIN DE FEED — BOUTONS D'ACTION
+  // ===========================================================================
+
+  List<Widget> _buildEndFeedButtons(AppColors colors) {
+    return [
+      SizedBox(
+        width: double.infinity,
+        child: _isReloadingAfterSubscribe
+            ? Center(
+                child: CircularProgressIndicator(
+                  color: colors.primary,
+                  strokeWidth: 2,
+                ),
+              )
+            : ElevatedButton.icon(
+                onPressed: _hasSubscribedFromEndFeed
+                    ? () async {
+                        setState(() => _isReloadingAfterSubscribe = true);
+                        final userId = authProvider.loginUserData.id;
+                        if (userId != null) {
+                          try {
+                            final doc = await FirebaseFirestore.instance
+                                .collection('Users')
+                                .doc(userId)
+                                .get();
+                            final _rawUnread = (doc.data()?['unreadPosts'] as Map<String, dynamic>?) ?? {};
+                            authProvider.loginUserData.unreadPosts = UserData.parseUnreadTimestamps(_rawUnread);
+                            authProvider.loginUserData.repostMeta = UserData.parseUnreadRepostMeta(_rawUnread);
+                          } catch (_) {}
+                        }
+                        _resetPagination(clearPosts: true);
+                        await _loadInitialPosts();
+                        if (mounted) {
+                          setState(() {
+                            _hasSubscribedFromEndFeed = false;
+                            _isReloadingAfterSubscribe = false;
+                          });
+                        }
+                      }
+                    : null,
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('Voir de nouveaux posts'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _hasSubscribedFromEndFeed
+                      ? colors.primary
+                      : colors.primary.withOpacity(0.3),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
+              ),
+      ),
+      if (!_hasSubscribedFromEndFeed)
+        Padding(
+          padding: const EdgeInsets.only(top: 6, bottom: 8),
+          child: Text(
+            'Abonne-toi à un créateur ou canal ci-dessus pour activer ce bouton',
+            style: TextStyle(color: colors.textSecondary, fontSize: 11),
+            textAlign: TextAlign.center,
+          ),
+        ),
+    ];
+  }
+
+  Future<void> _loadDiscoveryAndTrends() async {
+    final excluded = Set<String>.from(_loadedPostIds);
+    if (mounted) setState(() => _isLoadingMorePosts = true);
+    try {
+      // Charger les posts sport par filtre pays/type (ce qui était dans le switch)
+      final List<Post> newPosts = [];
+      final Set<String> loadedIds = Set<String>.from(excluded);
+      final int limit = _initialLimit;
+      await _loadPostsWithTypeAndCountry(
+        loadedIds,
+        newPosts,
+        postType: _selectedPostType,
+        countryCode: null,
+        isInitialLoad: false,
+        limit: limit,
+      );
+      if (newPosts.isNotEmpty && mounted) {
+        setState(() {
+          _posts.addAll(newPosts);
+          _loadedPostIds.addAll(
+              newPosts.map((p) => p.id ?? '').where((id) => id.isNotEmpty));
+          _totalPostsLoaded = _posts.length;
+          _hasMorePosts = false;
+        });
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _isLoadingMorePosts = false);
+  }
+
+  // ===========================================================================
   // WIDGETS D'ÉTAT
   // ===========================================================================
 
@@ -2994,18 +3150,27 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: 5,
-              itemBuilder: (context, index) {
+              itemBuilder: (ctx, index) {
+                final c = AppColors.of(ctx);
                 return Container(
                   width: width * 0.2,
                   margin: EdgeInsets.all(4),
                   child: Shimmer.fromColors(
-                    baseColor: Colors.grey[800]!,
-                    highlightColor: Colors.grey[700]!,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.grey[800],
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                    baseColor: c.shimmerBase,
+                    highlightColor: c.shimmerHighlight,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 52, height: 52,
+                          decoration: BoxDecoration(color: c.shimmerHighlight, shape: BoxShape.circle),
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          width: 44, height: 9,
+                          decoration: BoxDecoration(color: c.shimmerHighlight, borderRadius: BorderRadius.circular(4)),
+                        ),
+                      ],
                     ),
                   ),
                 );
@@ -3015,17 +3180,43 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         ),
         SliverList(
           delegate: SliverChildBuilderDelegate(
-                (context, index) {
+                (ctx, index) {
+              final c = AppColors.of(ctx);
               return Container(
                 margin: EdgeInsets.all(8),
                 child: Shimmer.fromColors(
-                  baseColor: Colors.grey[800]!,
-                  highlightColor: Colors.grey[700]!,
+                  baseColor: c.shimmerBase,
+                  highlightColor: c.shimmerHighlight,
                   child: Container(
+                    padding: const EdgeInsets.all(12),
                     height: 350,
                     decoration: BoxDecoration(
-                      color: Colors.grey[800],
+                      color: c.shimmerBase,
                       borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(children: [
+                          Container(width: 44, height: 44, decoration: BoxDecoration(color: c.shimmerHighlight, shape: BoxShape.circle)),
+                          const SizedBox(width: 10),
+                          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Container(width: 110, height: 12, decoration: BoxDecoration(color: c.shimmerHighlight, borderRadius: BorderRadius.circular(6))),
+                            const SizedBox(height: 6),
+                            Container(width: 70, height: 10, decoration: BoxDecoration(color: c.shimmerHighlight, borderRadius: BorderRadius.circular(6))),
+                          ]),
+                        ]),
+                        const SizedBox(height: 12),
+                        Expanded(child: Container(decoration: BoxDecoration(color: c.shimmerHighlight, borderRadius: BorderRadius.circular(8)))),
+                        const SizedBox(height: 10),
+                        Row(children: [
+                          Container(width: 44, height: 11, decoration: BoxDecoration(color: c.shimmerHighlight, borderRadius: BorderRadius.circular(6))),
+                          const SizedBox(width: 16),
+                          Container(width: 44, height: 11, decoration: BoxDecoration(color: c.shimmerHighlight, borderRadius: BorderRadius.circular(6))),
+                          const SizedBox(width: 16),
+                          Container(width: 44, height: 11, decoration: BoxDecoration(color: c.shimmerHighlight, borderRadius: BorderRadius.circular(6))),
+                        ]),
+                      ],
                     ),
                   ),
                 ),
@@ -3567,6 +3758,27 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       child: Scaffold(
         key: _scaffoldKey,
         backgroundColor: colors.surface,
+        floatingActionButton: AnimatedSlide(
+          duration: const Duration(milliseconds: 250),
+          offset: _showScrollToTop ? Offset.zero : const Offset(0, 2),
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 250),
+            opacity: _showScrollToTop ? 1.0 : 0.0,
+            child: FloatingActionButton.small(
+              onPressed: _showScrollToTop
+                  ? () => _scrollController.animateTo(
+                        0,
+                        duration: const Duration(milliseconds: 400),
+                        curve: Curves.easeOutCubic,
+                      )
+                  : null,
+              backgroundColor: colors.primary,
+              foregroundColor: colors.onPrimary,
+              elevation: 4,
+              child: const Icon(Icons.keyboard_arrow_up, size: 22),
+            ),
+          ),
+        ),
         body: SafeArea(
           child: Column(
             children: [

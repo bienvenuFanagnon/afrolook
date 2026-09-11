@@ -50,9 +50,9 @@ const Color accentYellow = Color(0xFFFFD700);
 
 // Types disponibles basés sur votre enum TabBarType
 const List<String> availablePostTypes = [
+  'SPORT',
   'ACTUALITES',
   'LOOKS',
-  'SPORT',
   'EVENEMENT',
   'OFFRES',
   'GAMER'
@@ -2185,10 +2185,12 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
       contentWidgets.add(chroniquesSection);
     }
 
-    final profilesSection = _buildProfilesSection();
-    if (profilesSection is! SizedBox) {
-      contentWidgets.add(profilesSection);
-      contentWidgets.add(SizedBox(height: 16));
+    if (widget.type != TabBarType.EVENEMENT.name) {
+      final profilesSection = _buildProfilesSection();
+      if (profilesSection is! SizedBox) {
+        contentWidgets.add(profilesSection);
+        contentWidgets.add(SizedBox(height: 16));
+      }
     }
 
     contentWidgets.add(const BoostedContentStripWidget());

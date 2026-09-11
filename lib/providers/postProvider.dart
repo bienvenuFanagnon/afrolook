@@ -2646,29 +2646,28 @@ class PostProvider extends ChangeNotifier {
       CollectionReference userCollect =
       FirebaseFirestore.instance.collection('Canaux');
       // Get docs from collection reference
+      // orderBy('canalScore') exclut les canaux sans ce champ — on trie client-side
       QuerySnapshot querySnapshotUser = await userCollect
-          .orderBy('canalScore', descending: true)
-          .limit(8)
+          .limit(20)
           .get();
 
-      // Afficher la liste
+      // Tri client-side par canalScore (descend) — les canaux sans ce champ passent en dernier
       listArticles = querySnapshotUser.docs.map((doc) =>
           Canal.fromJson(doc.data() as Map<String, dynamic>)).toList();
+      listArticles.sort((a, b) {
+        final sa = (a.toJson()['canalScore'] as num?)?.toDouble() ?? 0.0;
+        final sb = (b.toJson()['canalScore'] as num?)?.toDouble() ?? 0.0;
+        return sb.compareTo(sa);
+      });
+      listArticles = listArticles.take(8).toList();
       for (var article in listArticles) {
         DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.userId).get();
         UserData user=UserData.fromJson(userSnapshot.data() as Map<String, dynamic>);
-        // printVm(' UserServices user ${user.toJson()}');
-
         article.user = user;
       }
-      listArticles.shuffle();
-      listArticles.shuffle();
-
-
 
       printVm('list UserServices ${listArticles.length}');
       hasData=true;
-      // teams.shuffle();
 
 
 

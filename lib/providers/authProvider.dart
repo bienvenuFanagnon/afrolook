@@ -49,7 +49,7 @@ class UserAuthProvider extends ChangeNotifier {
   String _kLastDatingWidgetShown = "last_dating_widget_shown";
 
   // late String? userId = "";
-  late int app_version_code = 226;
+  late int app_version_code = 230;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();
@@ -2453,6 +2453,11 @@ if(actionType == 'comment'){
                     );
                     ScaffoldMessenger.of(context).showSnackBar(snackBar);
 
+                    // Backfill 50 posts récents du créateur suivi
+                    FirebaseFunctions.instance
+                        .httpsCallable('backfillPostsOnFollow')
+                        .call({'followedUserId': updateUserData.id}).ignore();
+
                   },);
 
 
@@ -2487,78 +2492,69 @@ if(actionType == 'comment'){
 
   Future<bool> abonner(UserData updateUserData, BuildContext context) async {
     try {
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
       final currentUserId = loginUserData.id!;
+      final creatorId = updateUserData.id!;
+      final fs = FirebaseFirestore.instance;
 
-      // Vérification client-side de l'abonnement
-      if (isUserAbonne(updateUserData.userAbonnesIds!, currentUserId)) {
+      // Transaction atomique : vérifie + écrit en une seule opération.
+      // arrayUnion est idempotent, increment ne l'est pas → on vérifie d'abord.
+      bool alreadySubscribed = false;
+      await fs.runTransaction((txn) async {
+        final creatorSnap = await txn.get(fs.collection('Users').doc(creatorId));
+        final ids = List<String>.from(creatorSnap.data()?['userAbonnesIds'] ?? []);
+        if (ids.contains(currentUserId)) {
+          alreadySubscribed = true;
+          return;
+        }
+        txn.update(creatorSnap.reference, {
+          'userAbonnesIds': FieldValue.arrayUnion([currentUserId]),
+          'abonnes': FieldValue.increment(1),
+        });
+        txn.update(fs.collection('Users').doc(currentUserId), {
+          'followingIds': FieldValue.arrayUnion([creatorId]),
+        });
+      });
+
+      if (alreadySubscribed) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Vous êtes déjà abonné.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.red))),
+          SnackBar(content: Text('Vous êtes déjà abonné.', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))),
         );
         return true;
       }
 
-      // Création de la relation d'abonnement
+      // Créer le doc de relation dans Abonnements (hors transaction — pas critique)
+      final abonneId = fs.collection('Abonnements').doc().id;
       final userAbonne = UserAbonnes()
+        ..id = abonneId
         ..compteUserId = currentUserId
-        ..abonneUserId = updateUserData.id
+        ..abonneUserId = creatorId
         ..createdAt = DateTime.now().millisecondsSinceEpoch
         ..updatedAt = DateTime.now().millisecondsSinceEpoch;
-
-      // Envoi de la demande d'abonnement
-      final success = await userProvider.sendAbonnementRequest(
-          userAbonne, updateUserData, context);
-
-      if (!success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Erreur lors de l\'abonnement',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.red))),
-        );
-        return false;
-      }
-
-      // Mise à jour atomique dans Firestore
-      await Future.wait([
-        // Doc du créateur : +1 abonné
-        FirebaseFirestore.instance
-            .collection('Users')
-            .doc(updateUserData.id)
-            .update({
-          'userAbonnesIds': FieldValue.arrayUnion([currentUserId]),
-          'abonnes': FieldValue.increment(1),
-        }),
-        // Doc de l'utilisateur courant : +1 following
-        FirebaseFirestore.instance
-            .collection('Users')
-            .doc(currentUserId)
-            .update({
-          'followingIds': FieldValue.arrayUnion([updateUserData.id!]),
-        }),
-      ]);
+      fs.collection('Abonnements').doc(abonneId).set(userAbonne.toJson());
 
       // Mise à jour locale
+      loginUserData.userAbonnes ??= [];
       loginUserData.userAbonnes!.add(userAbonne);
       loginUserData.followingIds ??= [];
-      if (!loginUserData.followingIds!.contains(updateUserData.id!)) {
-        loginUserData.followingIds!.add(updateUserData.id!);
+      if (!loginUserData.followingIds!.contains(creatorId)) {
+        loginUserData.followingIds!.add(creatorId);
       }
-      updateUserData.userAbonnesIds!.add(currentUserId);
+      updateUserData.userAbonnesIds ??= [];
+      if (!updateUserData.userAbonnesIds!.contains(currentUserId)) {
+        updateUserData.userAbonnesIds!.add(currentUserId);
+      }
       updateUserData.abonnes = (updateUserData.abonnes ?? 0) + 1;
+
       addPointsForAction(UserAction.abonne);
-      addPointsForOtherUserAction(updateUserData.id!, UserAction.autre);
+      addPointsForOtherUserAction(creatorId, UserAction.autre);
+
       // Envoi de notification
-      if (updateUserData.oneIgnalUserid != null &&
-          updateUserData.oneIgnalUserid!.length > 5) {
+      if (updateUserData.oneIgnalUserid != null && updateUserData.oneIgnalUserid!.length > 5) {
         await sendNotification(
           userIds: [updateUserData.oneIgnalUserid!],
           smallImage: loginUserData.imageUrl!,
           send_user_id: currentUserId,
-          recever_user_id: updateUserData.id!,
+          recever_user_id: creatorId,
           message: "📢 @${loginUserData.pseudo!} s'est abonné(e) à votre compte !",
           type_notif: NotificationType.ABONNER.name,
           post_id: '',
@@ -2567,39 +2563,27 @@ if(actionType == 'comment'){
         );
 
         final notif = NotificationData()
-          ..id = FirebaseFirestore.instance.collection('Notifications').doc().id
+          ..id = fs.collection('Notifications').doc().id
           ..titre = "Nouvel Abonnement ✅"
           ..media_url = loginUserData.imageUrl
           ..type = NotificationType.ABONNER.name
           ..description = "@${loginUserData.pseudo!} s'est abonné(e) à votre compte"
           ..user_id = currentUserId
-          ..receiver_id = updateUserData.id
+          ..receiver_id = creatorId
           ..updatedAt = DateTime.now().microsecondsSinceEpoch
           ..createdAt = DateTime.now().microsecondsSinceEpoch
           ..status = PostStatus.VALIDE.name;
-
-        await FirebaseFirestore.instance
-            .collection('Notifications')
-            .doc(notif.id)
-            .set(notif.toJson());
+        await fs.collection('Notifications').doc(notif.id).set(notif.toJson());
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Abonné, Bravo ! Vous avez gagné 4 points.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.green)),
-        ),
+        SnackBar(content: Text('Abonné, Bravo ! Vous avez gagné 4 points.', textAlign: TextAlign.center, style: TextStyle(color: Colors.green))),
       );
-
       return true;
     } catch (e) {
       printVm("Erreur lors de l'abonnement : $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text('Erreur technique',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.red))),
+        SnackBar(content: Text('Erreur technique', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))),
       );
       return false;
     }

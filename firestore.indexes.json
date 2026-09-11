@@ -4032,13 +4032,6 @@
                         ]
                     },
                     {
-                        "collectionGroup": "Canaux",
-                        "queryScope": "COLLECTION",
-                        "fields": [
-                            { "fieldPath": "canalScore", "order": "DESCENDING" }
-                        ]
-                    },
-                    {
                         "collectionGroup": "Posts",
                         "queryScope": "COLLECTION",
                         "fields": [

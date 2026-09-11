@@ -79,7 +79,8 @@ class _MesNotificationState extends State<MesNotification> {
       for (final n in items) {
         if (n.canal_id != null && n.canal_id!.isNotEmpty) {
           _loadCanalData(n.canal_id!);
-        } else if (n.user_id != null && n.user_id!.isNotEmpty) {
+        }
+        if (n.user_id != null && n.user_id!.isNotEmpty) {
           _loadUserData(n.user_id!);
         }
       }
@@ -130,7 +131,8 @@ class _MesNotificationState extends State<MesNotification> {
       for (final n in items) {
         if (n.canal_id != null && n.canal_id!.isNotEmpty) {
           _loadCanalData(n.canal_id!);
-        } else if (n.user_id != null && n.user_id!.isNotEmpty) {
+        }
+        if (n.user_id != null && n.user_id!.isNotEmpty) {
           _loadUserData(n.user_id!);
         }
       }
@@ -437,7 +439,7 @@ class _MesNotificationState extends State<MesNotification> {
         await _firestore.collection('Notifications').doc(notification.id).update({
           'is_open': true,
           'users_id_view': FieldValue.arrayUnion([_authProvider.loginUserData.id!])
-        });
+        }).timeout(const Duration(seconds: 5));
 
         // Mettre à jour localement
         setState(() {
@@ -665,10 +667,25 @@ class _MesNotificationState extends State<MesNotification> {
       final doc = await FirebaseFirestore.instance
           .collection('Posts')
           .doc(postId)
-          .get();
+          .get()
+          .timeout(const Duration(seconds: 8));
       if (!doc.exists) return null;
       final post = Post.fromJson(doc.data()!);
       post.id = doc.id;
+      // Charger les données utilisateur si elles ne sont pas intégrées dans le document
+      if (post.user == null) {
+        final userId = (doc.data()!['user_id'] as String?) ?? '';
+        if (userId.isNotEmpty) {
+          try {
+            final userDoc = await FirebaseFirestore.instance
+                .collection('Users')
+                .doc(userId)
+                .get()
+                .timeout(const Duration(seconds: 5));
+            if (userDoc.exists) post.user = UserData.fromJson(userDoc.data()!);
+          } catch (_) {}
+        }
+      }
       return post;
     } catch (_) {
       return null;
@@ -765,164 +782,160 @@ class _MesNotificationState extends State<MesNotification> {
 
   Widget _buildProfileAvatar(NotificationData notification) {
     final isUnread = !notification.is_open!;
+    final isCanalNotification = notification.canal_id != null && notification.canal_id!.isNotEmpty;
+    // Toujours afficher l'avatar de l'acteur (qui a aimé/commenté), pas le canal
+    final user = _userCache[notification.user_id];
 
-    // Vérifier si c'est une notification d'un canal
-    if (notification.canal_id != null && notification.canal_id!.isNotEmpty) {
-      final canal = _canalCache[notification.canal_id];
-
-      return GestureDetector(
-        onTap: () {
-          if (canal != null) {
-            _navigateToCanal(notification.canal_id!);
-          }
-        },
-        child: Stack(
-          children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isUnread ? _colors.danger : _colors.info,
-                  width: isUnread ? 2 : 1,
-                ),
-              ),
-              child: CircleAvatar(
-                radius: 22,
-                backgroundColor: _colors.info.withOpacity(0.1),
-                backgroundImage: canal?.urlImage != null && canal!.urlImage!.isNotEmpty
-                    ? NetworkImage(canal.urlImage!)
-                    : null,
-                child: canal?.urlImage == null || canal!.urlImage!.isEmpty
-                    ? Icon(Icons.group, color: _colors.info)
-                    : null,
-              ),
-            ),
-            if (canal?.isVerify ?? false)
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  padding: EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: _colors.surface,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: _colors.info),
-                  ),
-                  child: Icon(
-                    Icons.verified,
-                    color: _colors.info,
-                    size: 14,
-                  ),
-                ),
-              ),
-            // Badge spécial pour les favoris
-            if (notification.type == 'FAVORITE')
-              Positioned(
-                top: 0,
-                right: 0,
-                child: Container(
-                  padding: EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: _colors.surface,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.favorite,
-                    color: _colors.danger,
-                    size: 12,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      );
+    Color borderColor;
+    if (isUnread) {
+      if (notification.type == 'FAVORITE' || notification.type == 'LIKE') {
+        borderColor = _colors.danger;
+      } else if (isCanalNotification || notification.type == 'COMMENT' || notification.type == 'COMMENTAIRE') {
+        borderColor = _colors.info;
+      } else {
+        borderColor = _colors.danger;
+      }
     } else {
-      // C'est une notification d'un utilisateur
-      final user = _userCache[notification.user_id];
+      borderColor = _colors.border;
+    }
 
-      return GestureDetector(
-        onTap: () {
-          if (user != null) {
-            _showUserProfile(notification.user_id!);
-          }
-        },
-        child: Stack(
-          children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isUnread ? _colors.danger : _colors.border,
-                  width: isUnread ? 2 : 1,
+    return GestureDetector(
+      onTap: () {
+        if (user != null && notification.user_id != null) {
+          _showUserProfile(notification.user_id!);
+        }
+      },
+      child: Stack(
+        children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: borderColor, width: isUnread ? 2 : 1),
+            ),
+            child: CircleAvatar(
+              radius: 22,
+              backgroundColor: _colors.surfaceVariant,
+              backgroundImage: user?.imageUrl != null && user!.imageUrl!.isNotEmpty
+                  ? NetworkImage(user.imageUrl!)
+                  : null,
+              child: user?.imageUrl == null || user!.imageUrl!.isEmpty
+                  ? Icon(Icons.person, color: _colors.textSecondary)
+                  : null,
+            ),
+          ),
+          // Badge canal (remplace le badge vérifié si c'est un post de canal)
+          if (isCanalNotification)
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: Container(
+                padding: EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color: _colors.surface,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: _colors.info),
                 ),
+                child: Icon(Icons.group, color: _colors.info, size: 14),
               ),
-              child: CircleAvatar(
-                radius: 22,
-                backgroundColor: _colors.surfaceVariant,
-                backgroundImage: user?.imageUrl != null && user!.imageUrl!.isNotEmpty
-                    ? NetworkImage(user.imageUrl!)
-                    : null,
-                child: user?.imageUrl == null || user!.imageUrl!.isEmpty
-                    ? Icon(Icons.person, color: _colors.textSecondary)
-                    : null,
+            )
+          else if (user?.isVerify ?? false)
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: Container(
+                padding: EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color: _colors.surface,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: _colors.border),
+                ),
+                child: Icon(Icons.verified, color: _colors.info, size: 14),
               ),
             ),
-            if (user?.isVerify ?? false)
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  padding: EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: _colors.surface,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: _colors.border),
-                  ),
-                  child: Icon(
-                    Icons.verified,
-                    color: _colors.info,
-                    size: 14,
-                  ),
-                ),
+          // Badge type d'action
+          if (notification.type == 'FAVORITE' || notification.type == 'LIKE')
+            Positioned(
+              top: 0,
+              right: 0,
+              child: Container(
+                padding: EdgeInsets.all(2),
+                decoration: BoxDecoration(color: _colors.surface, shape: BoxShape.circle),
+                child: Icon(Icons.favorite, color: _colors.danger, size: 12),
               ),
-            // Badge spécial pour les favoris
-            if (notification.type == 'FAVORITE')
-              Positioned(
-                top: 0,
-                right: 0,
-                child: Container(
-                  padding: EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: _colors.surface,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.favorite,
-                    color: _colors.danger,
-                    size: 12,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      );
-    }
+            ),
+        ],
+      ),
+    );
   }
 
   String _getSenderName(NotificationData notification) {
-    // Vérifier si c'est une notification d'un canal
-    if (notification.canal_id != null && notification.canal_id!.isNotEmpty) {
-      final canal = _canalCache[notification.canal_id];
-      return canal?.titre ?? _l10n.notifChannelLabel;
-    } else {
-      // C'est une notification d'un utilisateur
-      final user = _userCache[notification.user_id];
-      return user?.prenom ?? _l10n.profileDefaultUser;
+    // Toujours afficher le nom de l'acteur (qui a aimé/commenté)
+    final user = _userCache[notification.user_id];
+    return user?.pseudo ?? user?.prenom ?? _l10n.profileDefaultUser;
+  }
+
+  Widget _buildNotificationTrailing(NotificationData notification, bool isUnread, Color unreadColor) {
+    final hasThumbnail = (notification.post_thumbnail?.isNotEmpty ?? false) &&
+        (notification.post_id?.isNotEmpty ?? false);
+
+    if (!hasThumbnail) {
+      return isUnread
+          ? Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: unreadColor,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(color: unreadColor.withOpacity(0.5), blurRadius: 4, spreadRadius: 1),
+                ],
+              ),
+            )
+          : const SizedBox.shrink();
     }
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Image.network(
+            notification.post_thumbnail!,
+            width: 48,
+            height: 48,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: _colors.surfaceVariant,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.image, color: _colors.textSecondary, size: 20),
+            ),
+          ),
+        ),
+        if (isUnread)
+          Positioned(
+            top: -4,
+            right: -4,
+            child: Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: unreadColor,
+                shape: BoxShape.circle,
+                border: Border.all(color: _colors.surface, width: 1.5),
+                boxShadow: [
+                  BoxShadow(color: unreadColor.withOpacity(0.5), blurRadius: 4, spreadRadius: 1),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
   }
 
   Widget _buildNotificationItem(NotificationData notification) {
@@ -1090,23 +1103,7 @@ class _MesNotificationState extends State<MesNotification> {
               ],
             ),
           ),
-          trailing: isUnread
-              ? Container(
-            width: 10,
-            height: 10,
-            decoration: BoxDecoration(
-              color: getUnreadColor(),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: getUnreadColor().withOpacity(0.5),
-                  blurRadius: 4,
-                  spreadRadius: 1,
-                ),
-              ],
-            ),
-          )
-              : null,
+          trailing: _buildNotificationTrailing(notification, isUnread, getUnreadColor()),
         ),
       ),
     );

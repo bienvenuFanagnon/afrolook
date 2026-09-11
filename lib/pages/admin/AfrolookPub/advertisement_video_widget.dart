@@ -10,6 +10,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
+import 'package:cached_network_image/cached_network_image.dart';
+
 import '../../../providers/authProvider.dart';
 import '../../../services/ad_preload_service.dart';
 import '../../../theme/app_colors.dart';
@@ -270,6 +272,51 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
     }
   }
 
+  Widget _buildCreatorHeader() {
+    final user = widget.post.user;
+    final pseudo = user?.pseudo ?? widget.ad.ownerName ?? '';
+    final imageUrl = user?.imageUrl ?? '';
+    final isDark = _colors.isDark;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+      child: Row(
+        children: [
+          // Avatar
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: _colors.shimmerBase,
+              border: Border.all(color: _primaryColor.withOpacity(0.6), width: 1.5),
+            ),
+            child: ClipOval(
+              child: imageUrl.isNotEmpty
+                  ? CachedNetworkImage(imageUrl: imageUrl, fit: BoxFit.cover,
+                      errorWidget: (_, __, ___) => Icon(Icons.person, color: _colors.textSecondary, size: 18))
+                  : Icon(Icons.person, color: _colors.textSecondary, size: 18),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (pseudo.isNotEmpty)
+                  Text(pseudo,
+                      style: TextStyle(color: _colors.textPrimary, fontSize: 13, fontWeight: FontWeight.w600),
+                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text('Publicité', style: TextStyle(color: _colors.textSecondary, fontSize: 10)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSponsoredBadge() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -309,84 +356,71 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
   Widget _buildAdExtras() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Interactions : like + commentaire
-          Row(
-            children: [
-              GestureDetector(
-                onTap: _handleLike,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      _isLiked ? Icons.favorite : Icons.favorite_border,
-                      color: _isLiked ? Colors.red : _colors.textSecondary,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 3),
-                    Text(
-                      _formatCount(_likesCount),
-                      style: TextStyle(color: _colors.textSecondary, fontSize: 12),
-                    ),
-                  ],
+          // Like
+          GestureDetector(
+            onTap: _handleLike,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _isLiked ? Icons.favorite : Icons.favorite_border,
+                  color: _isLiked ? Colors.red : _colors.textSecondary,
+                  size: 18,
                 ),
-              ),
-              const SizedBox(width: 16),
-              GestureDetector(
-                onTap: _openComments,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.chat_bubble_outline, color: _colors.textSecondary, size: 18),
-                    const SizedBox(width: 3),
-                    Text(
-                      _formatCount(widget.post.comments ?? 0),
-                      style: TextStyle(color: _colors.textSecondary, fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-              const Spacer(),
-              Icon(Icons.remove_red_eye, color: _colors.textSecondary, size: 13),
-              const SizedBox(width: 3),
-              Text(
-                '${_formatCount(widget.ad.views ?? 0)} vues',
-                style: TextStyle(color: _colors.textSecondary, fontSize: 11),
-              ),
-              if ((widget.ad.views ?? 0) > 0) ...[
-                const SizedBox(width: 8),
-                const Icon(Icons.ads_click, color: _primaryColor, size: 13),
                 const SizedBox(width: 3),
                 Text(
-                  '${widget.ad.ctr.toStringAsFixed(1)}%',
-                  style: const TextStyle(color: _primaryColor, fontSize: 11, fontWeight: FontWeight.w500),
+                  _formatCount(_likesCount),
+                  style: TextStyle(color: _colors.textSecondary, fontSize: 12),
                 ),
               ],
-            ],
+            ),
           ),
-          const SizedBox(height: 8),
-          InkWell(
+          const SizedBox(width: 14),
+          // Commentaire
+          GestureDetector(
+            onTap: _openComments,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.chat_bubble_outline, color: _colors.textSecondary, size: 18),
+                const SizedBox(width: 3),
+                Text(
+                  _formatCount(widget.post.comments ?? 0),
+                  style: TextStyle(color: _colors.textSecondary, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          // Vues
+          Icon(Icons.remove_red_eye, color: _colors.textSecondary, size: 12),
+          const SizedBox(width: 2),
+          Text(
+            _formatCount(widget.ad.views ?? 0),
+            style: TextStyle(color: _colors.textSecondary, fontSize: 11),
+          ),
+          const Spacer(),
+          // Bouton d'action — compact, aligné à droite
+          GestureDetector(
             onTap: _handleActionButtonClick,
-            borderRadius: BorderRadius.circular(10),
             child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(colors: [_primaryColor, Color(0xFFFF5252)]),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(widget.ad.getActionIcon(), color: Colors.white, size: 15),
-                  const SizedBox(width: 6),
+                  Icon(widget.ad.getActionIcon(), color: Colors.white, size: 13),
+                  const SizedBox(width: 5),
                   Text(
-                    widget.ad.getActionButtonText().toUpperCase(),
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                    widget.ad.getActionButtonText(),
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
                   ),
-                  const SizedBox(width: 4),
-                  const Icon(Icons.arrow_forward, color: Colors.white, size: 13),
                 ],
               ),
             ),
@@ -409,19 +443,47 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
   }
 
   Widget _buildVideoSection(double screenWidth) {
-    final videoHeight = widget.height ?? screenWidth * 9 / 16;
-    return GestureDetector(
-      onTap: _navigateToDetails,
-      child: Stack(
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(16),
-              topRight: Radius.circular(16),
-            ),
-            child: SizedBox(
-              width: double.infinity,
-              height: videoHeight,
+    // Utiliser post.isPortrait en priorité pour éviter le saut de layout au chargement
+    final isPortraitVideo = widget.post.isPortrait ??
+        (_isVideoInitialized && _videoController != null &&
+            _videoController!.value.size.height > _videoController!.value.size.width);
+
+    // Portrait : colonne plus étroite (~72% de l'écran), ratio naturel, pas de barres noires
+    // Paysage : pleine largeur, ratio 16:9
+    final double videoWidth = isPortraitVideo ? screenWidth * 0.72 : screenWidth;
+    double videoHeight;
+    if (_isVideoInitialized && _videoController != null) {
+      final size = _videoController!.value.size;
+      if (isPortraitVideo) {
+        videoHeight = videoWidth * (size.height / size.width) * 0.75; // -1/4
+        final maxH = MediaQuery.of(context).size.height * 0.52;
+        if (videoHeight > maxH) videoHeight = maxH;
+      } else {
+        videoHeight = widget.height ?? videoWidth * (size.height / size.width.clamp(1, double.infinity));
+      }
+    } else {
+      // Avant init vidéo : déjà calculer la bonne hauteur selon isPortrait
+      if (isPortraitVideo) {
+        videoHeight = (videoWidth * 16.0 / 9.0 * 0.75).clamp(0.0, MediaQuery.of(context).size.height * 0.52);
+      } else {
+        videoHeight = widget.height ?? screenWidth * 9 / 16;
+      }
+    }
+
+    // Tout dans un seul bloc borné par videoWidth x videoHeight
+    final videoWidget = ClipRRect(
+      borderRadius: const BorderRadius.only(
+        topLeft: Radius.circular(16),
+        topRight: Radius.circular(16),
+      ),
+      child: SizedBox(
+        width: videoWidth,
+        height: videoHeight,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Container(
+              color: Colors.black,
               child: _isVideoInitialized && _videoController != null
                   ? FittedBox(
                       fit: BoxFit.cover,
@@ -433,40 +495,44 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
                     )
                   : _buildVideoPlaceholderFixed(videoHeight),
             ),
-          ),
-          if (_isVideoLoading)
-            Positioned(
-              left: 0, right: 0, top: 0, bottom: 0,
-              child: Container(
+            if (_isVideoLoading)
+              Container(
                 color: Colors.black.withOpacity(0.4),
                 child: Center(child: CircularProgressIndicator(color: _primaryColor)),
               ),
-            ),
-          Positioned(top: 8, right: 8, child: _buildSponsoredBadge()),
-          Positioned(
-            bottom: 8,
-            right: 8,
-            child: GestureDetector(
-              onTap: () {
-                setState(() => _adVideoMuted = !_adVideoMuted);
-                _videoController?.setVolume(_adVideoMuted ? 0 : 1);
-              },
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.6),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                padding: const EdgeInsets.all(8),
-                child: Icon(
-                  _adVideoMuted ? Icons.volume_off : Icons.volume_up,
-                  color: Colors.white,
-                  size: 20,
+            Positioned(top: 8, right: 8, child: _buildSponsoredBadge()),
+            Positioned(
+              bottom: 8,
+              right: 8,
+              child: GestureDetector(
+                onTap: () {
+                  setState(() => _adVideoMuted = !_adVideoMuted);
+                  _videoController?.setVolume(_adVideoMuted ? 0 : 1);
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  padding: const EdgeInsets.all(8),
+                  child: Icon(
+                    _adVideoMuted ? Icons.volume_off : Icons.volume_up,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
+    );
+
+    return GestureDetector(
+      onTap: _navigateToDetails,
+      child: isPortraitVideo
+          ? Align(alignment: Alignment.centerLeft, child: videoWidget)
+          : videoWidget,
     );
   }
 
@@ -515,26 +581,37 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
   Widget build(BuildContext context) {
     _colors = AppColors.of(context);
     final screenWidth = MediaQuery.of(context).size.width;
+    final isPortrait = widget.post.isPortrait ?? false;
+    // Pour portrait : card + marge = 72% écran + 2*12 de marge
+    final double cardOuterWidth = isPortrait ? screenWidth * 0.72 + 24 : double.infinity;
+
+    final card = Container(
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      decoration: BoxDecoration(
+        color: _colors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _colors.border, width: 0.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildCreatorHeader(),
+          _buildVideoSection(screenWidth),
+          _buildAdExtras(),
+        ],
+      ),
+    );
 
     return VisibilityDetector(
       key: Key('ad-video-${widget.post.id}'),
       onVisibilityChanged: _handleVisibilityChanged,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-        decoration: BoxDecoration(
-          color: _colors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _colors.border, width: 0.5),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildVideoSection(screenWidth),
-            _buildAdExtras(),
-          ],
-        ),
-      ),
+      child: isPortrait
+          ? Align(
+              alignment: Alignment.centerLeft,
+              child: SizedBox(width: cardOuterWidth, child: card),
+            )
+          : card,
     );
   }
 }

@@ -50,13 +50,19 @@ class FeedFilterBar extends StatelessWidget {
                 onTap: () => onApplyFilter(
                     filterType: 'COUNTRY', countryCode: selectedCountryCode),
               ),
+            ],
+            if (onShowCountryModal != null) ...[
               const SizedBox(width: 6),
-              FeedFilterChip(
-                label: '🔄 Mix',
-                isSelected: currentFilter == 'MIXED',
-                color: Colors.purple,
-                onTap: () => onApplyFilter(
-                    filterType: 'MIXED', countryCode: selectedCountryCode),
+              GestureDetector(
+                onTap: onShowCountryModal,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[800],
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(Icons.tune_rounded, size: 14, color: Colors.grey[300]),
+                ),
               ),
             ],
           ],

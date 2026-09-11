@@ -1106,7 +1106,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     NumbersWidget(
                       followers: authProvider.loginUserData.userAbonnesIds?.length ?? 0,
                       taux: (authProvider.loginUserData.popularite ?? 0.0) * 100,
-                      points: authProvider.loginUserData.pointContribution ?? 0,
+                      creatorScore: authProvider.loginUserData.creatorScore ?? 0,
                     ),
                     SizedBox(height: 15),
                     Container(

@@ -886,6 +886,7 @@ class UserData {
   List<UserAbonnes>? userAbonnes = [];
   List<String>? userAbonnesIds = [];
   List<String>? followingIds = []; // créateurs que CET utilisateur suit (abonnements)
+  List<String>? canauxSuivisIds = []; // canaux que CET utilisateur suit
   List<String>? usersParrainer = [];
   List<String>? friendsIds = [];
   List<Friends>? friends = [];
@@ -973,6 +974,11 @@ class UserData {
   // Alimenté par Cloud Function à chaque nouveau post d'un créateur suivi.
   // Vidé progressivement quand l'user voit les posts (markPostsSeen CF).
   Map<String, int>? unreadPosts = {};
+
+  // Métadonnées reposter pour les posts republié dans T1 — {postId: {ts, reposterUserId, reposterPseudo, reposterImageUrl}}
+  // Stocké dans le même champ Firestore que unreadPosts (valeur objet au lieu de nombre).
+  // Utilisé pour injecter le bandeau "@pseudo a republié" dans le feed.
+  Map<String, Map<String, dynamic>>? repostMeta = {};
 
   // Centres d'intérêt (codes de UserInterests.all)
   List<String>? interests = [];
@@ -1087,6 +1093,7 @@ class UserData {
     this.viewedVideos = const [],
     this.userAbonnesIds = const [],
     this.followingIds = const [],
+    this.canauxSuivisIds = const [],
     this.newPostsFromSubscriptions = const [],
     this.viewedPostIds = const [],
     this.lastFeedUpdate = 0,
@@ -1159,6 +1166,29 @@ class UserData {
   }) {
     abonnement ??= AfrolookAbonnement.gratuit();
     liveStats ??= LiveStats.defaultForUser(id ?? '');
+  }
+
+  // Helpers — parse unreadPosts depuis Firestore (valeur = int OU objet repost)
+  static Map<String, int> parseUnreadTimestamps(Map<String, dynamic> raw) {
+    final result = <String, int>{};
+    for (final e in raw.entries) {
+      if (e.value is Map) {
+        result[e.key] = ((e.value as Map)['ts'] as num?)?.toInt() ?? 0;
+      } else if (e.value is num) {
+        result[e.key] = (e.value as num).toInt();
+      }
+    }
+    return result;
+  }
+
+  static Map<String, Map<String, dynamic>> parseUnreadRepostMeta(Map<String, dynamic> raw) {
+    final result = <String, Map<String, dynamic>>{};
+    for (final e in raw.entries) {
+      if (e.value is Map) {
+        result[e.key] = Map<String, dynamic>.from(e.value as Map);
+      }
+    }
+    return result;
   }
 
   // fromJson
@@ -1241,6 +1271,10 @@ class UserData {
         .toList() ?? [];
 
     followingIds = (json['followingIds'] as List<dynamic>?)
+        ?.map((v) => v.toString())
+        .toList() ?? [];
+
+    canauxSuivisIds = (json['canauxSuivisIds'] as List<dynamic>?)
         ?.map((v) => v.toString())
         .toList() ?? [];
 
@@ -1334,8 +1368,9 @@ class UserData {
           .where((e) => (e.value as num).toInt() > 0)
           .map((e) => MapEntry(e.key, (e.value as num).toInt())),
     );
-    unreadPosts = ((json['unreadPosts'] as Map<String, dynamic>?) ?? {})
-        .map((k, v) => MapEntry(k, (v as num).toInt()));
+    final _rawUnread = (json['unreadPosts'] as Map<String, dynamic>?) ?? {};
+    unreadPosts = UserData.parseUnreadTimestamps(_rawUnread);
+    repostMeta = UserData.parseUnreadRepostMeta(_rawUnread);
 
     suspendedUntil = parseTimestamp(json['suspendedUntil']);
     suspendedPermanently = json['suspendedPermanently'] as bool?;
@@ -1533,6 +1568,13 @@ class Post {
   int? adSupportCount = 0; // nombre de fois que la pub de soutien a été vue pour ce post
   bool? isPortrait;
 
+  // ── Repost ───────────────────────────────────────────────────────────────────
+  bool? isRepost;             // true si ce post est une republication
+  String? reposterUserId;     // ID de l'utilisateur qui a republié
+  String? reposterPseudo;     // Pseudo du reposter (stocké pour éviter re-fetch)
+  String? reposterImageUrl;   // Avatar du reposter (stocké pour éviter re-fetch)
+  String? originalPostId;     // ID du post original (pour référence)
+
   // ── Score système ────────────────────────────────────────────────────────────
   // rawScore : accumulé en temps réel (loves*2 + comments*3 + totalInteractions*0.5)
   // postScore: rawScore / (âge_jours + 2)^1.5
@@ -1629,8 +1671,12 @@ class Post {
     this.advertisementId,
     this.challengeMonth,
     this.isAdvertisement = false,
-  // Dans le constructeur
   this.isPortrait,
+  this.isRepost,
+  this.reposterUserId,
+  this.reposterPseudo,
+  this.reposterImageUrl,
+  this.originalPostId,
   });
 
   int compareTo(Post other) {
@@ -1743,8 +1789,12 @@ class Post {
     } else {
       totalInteractions = interactions;
     }
-    // Dans fromJson
     isPortrait = json['isPortrait']??true;
+    isRepost = json['isRepost'] as bool?;
+    reposterUserId = json['reposterUserId'] as String?;
+    reposterPseudo = json['reposterPseudo'] as String?;
+    reposterImageUrl = json['reposterImageUrl'] as String?;
+    originalPostId = json['originalPostId'] as String?;
     challengeMonth = json['challengeMonth']??null;
     commentSuggestions = json['commentSuggestions'] != null
         ? List<String>.from(json['commentSuggestions'])
@@ -1856,8 +1906,12 @@ class Post {
     data['advertisementId'] = advertisementId;
     data['isAdvertisement'] = isAdvertisement;
     data['adSupportCount'] = adSupportCount;
-    // Dans toJson
     data['isPortrait'] = isPortrait;
+    if (isRepost == true) data['isRepost'] = isRepost;
+    if (reposterUserId != null) data['reposterUserId'] = reposterUserId;
+    if (reposterPseudo != null) data['reposterPseudo'] = reposterPseudo;
+    if (reposterImageUrl != null) data['reposterImageUrl'] = reposterImageUrl;
+    if (originalPostId != null) data['originalPostId'] = originalPostId;
     if (eventDate != null) data['eventDate'] = _tsToMs(eventDate);
     if (postInterests != null) data['postInterests'] = postInterests;
     if (creatorSnapshot != null) data['creatorSnapshot'] = creatorSnapshot;
@@ -1950,8 +2004,10 @@ class Advertisement {
   String? ownerId;
   String? ownerName;
   String? ownerAvatar;
+  String? ownerCoverImage; // Image de couverture (canaux uniquement)
   int? ownerFollowers;
   String? ownerDescription; // Bio, description courte (≤ 120 chars)
+  String? ownerCategory; // Catégorie principale (ex: 'SPORT', 'ACTUALITES')
   // Snapshot des 3 derniers posts du créateur au moment de la soumission
   // Chaque map contient : { 'thumb': String, 'isVideo': bool, 'postId': String }
   List<Map<String, dynamic>>? ownerRecentPosts;
@@ -1985,8 +2041,10 @@ class Advertisement {
     this.ownerId,
     this.ownerName,
     this.ownerAvatar,
+    this.ownerCoverImage,
     this.ownerFollowers,
     this.ownerDescription,
+    this.ownerCategory,
     this.ownerRecentPosts,
   });
 
@@ -2020,8 +2078,10 @@ class Advertisement {
       'ownerId': ownerId,
       'ownerName': ownerName,
       'ownerAvatar': ownerAvatar,
+      'ownerCoverImage': ownerCoverImage,
       'ownerFollowers': ownerFollowers,
       'ownerDescription': ownerDescription,
+      'ownerCategory': ownerCategory,
       'ownerRecentPosts': ownerRecentPosts,
     };
   }
@@ -2071,8 +2131,10 @@ class Advertisement {
       ownerId: json['ownerId'],
       ownerName: json['ownerName'],
       ownerAvatar: json['ownerAvatar'],
+      ownerCoverImage: json['ownerCoverImage'],
       ownerFollowers: (json['ownerFollowers'] as num?)?.toInt(),
       ownerDescription: json['ownerDescription'],
+      ownerCategory: json['ownerCategory'] as String?,
       ownerRecentPosts: (json['ownerRecentPosts'] as List<dynamic>?)
           ?.map((e) => Map<String, dynamic>.from(e as Map))
           .toList(),
@@ -5198,6 +5260,7 @@ enum TabBarType {
   EVENEMENT,
   OFFRES,
   GAMER,
+  DECOUVERTE,
 }
 
 // models/transaction_retrait_model.dart

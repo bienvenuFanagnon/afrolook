@@ -13,6 +13,7 @@ import 'package:auto_animated/auto_animated.dart';
 import 'package:flutter/material.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 import 'package:provider/provider.dart';
 
@@ -67,6 +68,7 @@ class _CanalDetailsState extends State<CanalDetails> {
   bool _hasMorePosts = true;
 
   bool isFollowing = false;
+  bool _followCheckDone = false; // true dès que Firestore a confirmé l'état d'abonnement
   bool _isProcessingSubscription = false;
   bool _isProcessingUnfollow = false;
   bool _monthlySubscriptionExpired = false;
@@ -83,6 +85,48 @@ class _CanalDetailsState extends State<CanalDetails> {
     _checkMonthlyExpiry();
     _loadInitialPosts();
     _scrollController.addListener(_scrollListener);
+    // Recharger depuis Firestore si le canal passé est incomplet (ex: depuis le feed)
+    _reloadCanalIfIncomplete();
+  }
+
+  Future<void> _reloadCanalIfIncomplete() async {
+    final canalId = widget.canal.id;
+    if (canalId == null || canalId.isEmpty) return;
+    // Toujours recharger depuis Firestore pour avoir les données complètes et à jour
+    try {
+      final doc = await firestore.collection('Canaux').doc(canalId).get()
+          .timeout(const Duration(seconds: 8));
+      if (!doc.exists || !mounted) return;
+      final full = Canal.fromJson(doc.data()!);
+      setState(() {
+        widget.canal.titre = full.titre ?? widget.canal.titre;
+        widget.canal.urlImage = full.urlImage ?? widget.canal.urlImage;
+        widget.canal.urlCouverture = full.urlCouverture ?? widget.canal.urlCouverture;
+        widget.canal.description = full.description;
+        widget.canal.usersSuiviId = full.usersSuiviId ?? [];
+        widget.canal.subscribersId = full.subscribersId;
+        widget.canal.suivi = full.suivi ?? widget.canal.suivi;
+        widget.canal.isPrivate = full.isPrivate;
+        widget.canal.isVerify = full.isVerify;
+        widget.canal.subscriptionPrice = full.subscriptionPrice;
+        widget.canal.subscriptionType = full.subscriptionType;
+        widget.canal.monthlySubscriptions = full.monthlySubscriptions;
+        widget.canal.adminIds = full.adminIds;
+        widget.canal.allowedPostersIds = full.allowedPostersIds;
+        widget.canal.allowAllMembersToPost = full.allowAllMembersToPost;
+        widget.canal.userId = full.userId ?? widget.canal.userId;
+        widget.canal.publication = full.publication ?? widget.canal.publication;
+        widget.canal.categories = full.categories;
+        widget.canal.mainCategory = full.mainCategory;
+      });
+      checkIfFollowing();
+      _checkMonthlyExpiry();
+      if (mounted) setState(() => _followCheckDone = true);
+    } catch (e) {
+      printVm('Erreur rechargement canal depuis Firestore: $e');
+      // Même en cas d'erreur, déverrouiller le bouton pour ne pas bloquer l'UI
+      if (mounted) setState(() => _followCheckDone = true);
+    }
   }
 
   @override
@@ -149,7 +193,7 @@ class _CanalDetailsState extends State<CanalDetails> {
   }
 
   void checkIfFollowing() {
-    if (widget.canal.usersSuiviId!.contains(authProvider.loginUserData.id)) {
+    if (widget.canal.usersSuiviId?.contains(authProvider.loginUserData.id) == true) {
       setState(() {
         isFollowing = true;
       });
@@ -579,7 +623,7 @@ class _CanalDetailsState extends State<CanalDetails> {
     final subscriptionPrice = widget.canal.subscriptionPrice ?? 0;
     final subType = widget.canal.subscriptionType;
     final isMensuel = subType == 'mensuel';
-    final isAlreadySubscribed = widget.canal.usersSuiviId!.contains(authProvider.loginUserData.id);
+    final isAlreadySubscribed = widget.canal.usersSuiviId?.contains(authProvider.loginUserData.id) == true;
 
     // Abonné unique déjà inscrit → accès maintenu
     if (isAlreadySubscribed && !isMensuel && !_requirePaymentForExistingSubscribers) {
@@ -865,6 +909,11 @@ class _CanalDetailsState extends State<CanalDetails> {
       );
     }
 
+    // Backfill 50 posts récents du canal dans unreadPosts du nouvel abonné
+    FirebaseFunctions.instance
+        .httpsCallable('backfillPostsOnFollow')
+        .call({'followedCanalId': widget.canal.id}).ignore();
+
     setState(() {
       isFollowing = true;
     });
@@ -991,7 +1040,7 @@ class _CanalDetailsState extends State<CanalDetails> {
                 width: double.infinity,
                 decoration: BoxDecoration(
                   image: DecorationImage(
-                    image: widget.canal.urlCouverture != null
+                    image: (widget.canal.urlCouverture?.isNotEmpty == true)
                         ? NetworkImage(widget.canal.urlCouverture!)
                         : AssetImage('assets/default_cover.png') as ImageProvider,
                     fit: BoxFit.cover,
@@ -1034,7 +1083,7 @@ class _CanalDetailsState extends State<CanalDetails> {
                       ),
                       child: CircleAvatar(
                         radius: 45,
-                        backgroundImage: widget.canal.urlImage != null
+                        backgroundImage: (widget.canal.urlImage?.isNotEmpty == true)
                             ? NetworkImage(widget.canal.urlImage!)
                             : AssetImage('assets/default_profile.png') as ImageProvider,
                       ),
@@ -1169,40 +1218,55 @@ class _CanalDetailsState extends State<CanalDetails> {
             // Ligne principale : Follow/Unfollow + menu 3-points
             Row(
               children: [
-                // Bouton Follow/Unfollow (non-propriétaire uniquement)
+                // Bouton Follow/Unfollow — affiché uniquement après vérification Firestore
                 if (!isOwner)
                   Expanded(
                     child: SizedBox(
                       height: 45,
-                      child: ElevatedButton(
-                        onPressed: (_isProcessingSubscription || _isProcessingUnfollow) ? null : _handleFollowAction,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: isFollowing
-                              ? _colors.danger
-                              : (isPrivate ? _colors.accent : _colors.primary),
-                          foregroundColor: isFollowing
-                              ? _colors.onPrimary
-                              : (isPrivate ? _colors.onAccent : _colors.onPrimary),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(25),
-                          ),
-                        ),
-                        child: (_isProcessingSubscription || _isProcessingUnfollow)
-                            ? SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: isFollowing ? _colors.onPrimary : (isPrivate ? _colors.onAccent : _colors.onPrimary),
-                                ),
-                              )
-                            : Text(
-                                isFollowing
-                                    ? AppLocalizations.of(context).canalUnsubscribeBtn
-                                    : (isPrivate ? AppLocalizations.of(context).canalSubscribeBtn : AppLocalizations.of(context).canalFollowBtn),
-                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                      child: !_followCheckDone
+                          // Placeholder pendant le check — même taille que le bouton
+                          ? Container(
+                              decoration: BoxDecoration(
+                                color: _colors.shimmerBase,
+                                borderRadius: BorderRadius.circular(25),
                               ),
-                      ),
+                              child: Center(
+                                child: SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: _colors.textSecondary),
+                                ),
+                              ),
+                            )
+                          : ElevatedButton(
+                              onPressed: (_isProcessingSubscription || _isProcessingUnfollow) ? null : _handleFollowAction,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: isFollowing
+                                    ? _colors.danger
+                                    : (isPrivate ? _colors.accent : _colors.primary),
+                                foregroundColor: isFollowing
+                                    ? _colors.onPrimary
+                                    : (isPrivate ? _colors.onAccent : _colors.onPrimary),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(25),
+                                ),
+                              ),
+                              child: (_isProcessingSubscription || _isProcessingUnfollow)
+                                  ? SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: isFollowing ? _colors.onPrimary : (isPrivate ? _colors.onAccent : _colors.onPrimary),
+                                      ),
+                                    )
+                                  : Text(
+                                      isFollowing
+                                          ? AppLocalizations.of(context).canalUnsubscribeBtn
+                                          : (isPrivate ? AppLocalizations.of(context).canalSubscribeBtn : AppLocalizations.of(context).canalFollowBtn),
+                                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                    ),
+                            ),
                     ),
                   ),
 
@@ -1507,7 +1571,7 @@ class _CanalDetailsState extends State<CanalDetails> {
                         'Admin — Propriétaire : ',
                         style: TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.w700),
                       ),
-                      if (widget.canal.user?.imageUrl != null) ...[
+                      if (widget.canal.user?.imageUrl?.isNotEmpty == true) ...[
                         CircleAvatar(
                           radius: 12,
                           backgroundImage: NetworkImage(widget.canal.user!.imageUrl!),

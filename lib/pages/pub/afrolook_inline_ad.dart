@@ -408,6 +408,7 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
             urlImage: ad.ownerAvatar,
             suivi: ad.ownerFollowers ?? 0,
           );
+          canal.usersSuiviId ??= [];
           Navigator.push(context, MaterialPageRoute(
             builder: (_) => CanalDetails(canal: canal),
           ));
@@ -425,8 +426,8 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
         default:
           final user = UserData()
             ..id = id
-            ..pseudo = ad.ownerName
-            ..imageUrl = ad.ownerAvatar;
+            ..pseudo = ad.ownerName ?? ''
+            ..imageUrl = ad.ownerAvatar ?? '';
           Navigator.push(context, MaterialPageRoute(
             builder: (_) => OtherUserPage(otherUser: user),
           ));
@@ -586,46 +587,77 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
       disableAnim: disableAnim,
       ctaLabel: 'Suivre',
       ctaIcon: Icons.person_add,
-      visualZone: Stack(
-        children: [
-          // Fond dégradé violet profil
-          Container(
-            width: double.infinity,
-            height: 100,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF7A5A9E), Color(0xFF5A3A7E)],
-              ),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(14)),
-            ),
-          ),
-          // Avatar centré
-          Positioned.fill(
-            child: Center(
-              child: Container(
-                width: 76, height: 76,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: const Border.fromBorderSide(BorderSide(color: Color(0xFFFFD700), width: 3)),
-                  color: const Color(0xFF7A5A9E),
+      visualZone: ad.ownerAvatar?.isNotEmpty == true
+          ? ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+              child: SizedBox(
+                width: double.infinity,
+                height: 110,
+                child: Stack(
+                  children: [
+                    // Image profil en grand (full-width, légèrement floutée en fond)
+                    Positioned.fill(
+                      child: CachedNetworkImage(
+                        imageUrl: ad.ownerAvatar!,
+                        fit: BoxFit.cover,
+                        errorWidget: (_, __, ___) => Container(
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Color(0xFF7A5A9E), Color(0xFF5A3A7E)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Overlay léger pour lisibilité
+                    Positioned.fill(
+                      child: Container(color: Colors.black.withOpacity(0.25)),
+                    ),
+                    // Avatar centré net (cercle)
+                    Positioned.fill(
+                      child: Center(
+                        child: Container(
+                          width: 80, height: 80,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.fromBorderSide(BorderSide(color: Color(0xFFFFD700), width: 3)),
+                          ),
+                          child: ClipOval(
+                            child: CachedNetworkImage(imageUrl: ad.ownerAvatar!, fit: BoxFit.cover,
+                                errorWidget: (_, __, ___) => _profileAvatarFallback()),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(top: 8, right: 12,
+                      child: const Icon(Icons.info_outline, size: 16, color: Colors.white54)),
+                  ],
                 ),
-                child: ClipOval(
-                  child: ad.ownerAvatar?.isNotEmpty == true
-                      ? CachedNetworkImage(imageUrl: ad.ownerAvatar!, fit: BoxFit.cover,
-                          errorWidget: (_, __, ___) => _profileAvatarFallback())
-                      : _profileAvatarFallback(),
-                ),
               ),
+            )
+          : Stack(
+              children: [
+                Container(
+                  width: double.infinity,
+                  height: 100,
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFF7A5A9E), Color(0xFF5A3A7E)],
+                    ),
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(14)),
+                  ),
+                ),
+                Positioned.fill(
+                  child: Center(child: _profileAvatarFallback()),
+                ),
+                Positioned(top: 8, right: 12,
+                  child: const Icon(Icons.info_outline, size: 16, color: Colors.white54)),
+              ],
             ),
-          ),
-          // Badge info
-          Positioned(top: 8, right: 12,
-            child: Icon(Icons.info_outline, size: 16, color: Colors.white54)),
-          // Badges sponsorisé + type (inline, pas de bandeau)
-        ],
-      ),
       badgesInline: true,
       typeLabel: 'Créateur',
       posts: posts,
@@ -643,6 +675,7 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
     final colors = AppColors.of(context);
     final posts = ad.ownerRecentPosts ?? [];
     final disableAnim = MediaQuery.of(context).disableAnimations;
+    final hasCover = ad.ownerCoverImage?.isNotEmpty == true;
 
     return _buildEntityCardShell(
       context: context,
@@ -651,23 +684,40 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
       disableAnim: disableAnim,
       ctaLabel: "S'abonner",
       ctaIcon: Icons.notifications_none,
-      visualZone: _buildCoverWithLogo(
-        coverColor: const Color(0xFF1C4A6E),
-        logo: ClipRRect(
-          borderRadius: BorderRadius.circular(11),
-          child: SizedBox(
-            width: 52, height: 52,
-            child: ad.ownerAvatar?.isNotEmpty == true
-                ? CachedNetworkImage(imageUrl: ad.ownerAvatar!, fit: BoxFit.cover,
-                    errorWidget: (_, __, ___) => _canalLogoFallback())
-                : _canalLogoFallback(),
-          ),
-        ),
-        logoShape: BoxShape.rectangle,
-        logoRadius: 11,
-        badgeTypeLabel: 'Canal',
-        borderColor: colors.surface,
-      ),
+      visualZone: hasCover
+          ? _buildCoverWithLogoFromUrl(
+              coverUrl: ad.ownerCoverImage!,
+              logo: ClipRRect(
+                borderRadius: BorderRadius.circular(11),
+                child: SizedBox(
+                  width: 52, height: 52,
+                  child: ad.ownerAvatar?.isNotEmpty == true
+                      ? CachedNetworkImage(imageUrl: ad.ownerAvatar!, fit: BoxFit.cover,
+                          errorWidget: (_, __, ___) => _canalLogoFallback())
+                      : _canalLogoFallback(),
+                ),
+              ),
+              logoShape: BoxShape.rectangle,
+              logoRadius: 11,
+              borderColor: colors.surface,
+            )
+          : _buildCoverWithLogo(
+              coverColor: const Color(0xFF1C4A6E),
+              logo: ClipRRect(
+                borderRadius: BorderRadius.circular(11),
+                child: SizedBox(
+                  width: 52, height: 52,
+                  child: ad.ownerAvatar?.isNotEmpty == true
+                      ? CachedNetworkImage(imageUrl: ad.ownerAvatar!, fit: BoxFit.cover,
+                          errorWidget: (_, __, ___) => _canalLogoFallback())
+                      : _canalLogoFallback(),
+                ),
+              ),
+              logoShape: BoxShape.rectangle,
+              logoRadius: 11,
+              badgeTypeLabel: 'Canal',
+              borderColor: colors.surface,
+            ),
       badgesInline: false,
       typeLabel: 'Canal',
       posts: posts,
@@ -764,6 +814,57 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
             ]),
           ),
           // Logo chevauchant
+          Positioned(
+            bottom: 4,
+            left: 0, right: 0,
+            child: Center(
+              child: Container(
+                width: 52 + 6, height: 52 + 6,
+                decoration: BoxDecoration(
+                  shape: logoShape,
+                  borderRadius: logoShape == BoxShape.rectangle ? BorderRadius.circular(logoRadius + 3) : null,
+                  color: borderColor,
+                ),
+                padding: const EdgeInsets.all(3),
+                child: logo,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Cover depuis URL réelle (canal avec image de couverture) ──────────
+  Widget _buildCoverWithLogoFromUrl({
+    required String coverUrl,
+    required Widget logo,
+    required BoxShape logoShape,
+    required double logoRadius,
+    required Color borderColor,
+  }) {
+    return SizedBox(
+      height: 78 + 24 + 4,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+            child: SizedBox(
+              width: double.infinity,
+              height: 78,
+              child: CachedNetworkImage(
+                imageUrl: coverUrl,
+                fit: BoxFit.cover,
+                errorWidget: (_, __, ___) => Container(
+                  color: const Color(0xFF1C4A6E),
+                  child: const Icon(Icons.podcasts, color: Colors.white24, size: 32),
+                ),
+              ),
+            ),
+          ),
+          Positioned(top: 8, right: 12,
+            child: const Icon(Icons.info_outline, size: 16, color: Colors.white54)),
           Positioned(
             bottom: 4,
             left: 0, right: 0,
@@ -956,50 +1057,86 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
                   ),
                 ],
 
-                // Stats pub (vues toujours, clics uniquement admin/propriétaire)
-                if ((ad.views ?? 0) > 0 || (showClicks && (ad.clicks ?? 0) > 0))
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
+                // Stats + CTA sur la même ligne
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Stats (vues + clics admin)
+                      if ((ad.views ?? 0) > 0) ...[
                         Icon(Icons.remove_red_eye_outlined, size: 11, color: colors.textSecondary),
                         const SizedBox(width: 3),
                         Text('${ad.views ?? 0}',
                             style: TextStyle(fontSize: 10, color: colors.textSecondary,
                                 decoration: TextDecoration.none)),
-                        if (showClicks && (ad.clicks ?? 0) > 0) ...[
-                          const SizedBox(width: 10),
-                          Icon(Icons.touch_app_outlined, size: 11, color: colors.textSecondary),
-                          const SizedBox(width: 3),
-                          Text('${ad.clicks ?? 0}',
-                              style: TextStyle(fontSize: 10, color: colors.textSecondary,
-                                  decoration: TextDecoration.none)),
-                        ],
                       ],
-                    ),
-                  ),
-
-                // CTA bounce + "Ne plus voir" inline
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
-                  child: Row(
-                    children: [
-                      Expanded(child: ctaButton),
-                      const SizedBox(width: 8),
+                      if (showClicks && (ad.clicks ?? 0) > 0) ...[
+                        const SizedBox(width: 8),
+                        Icon(Icons.touch_app_outlined, size: 11, color: colors.textSecondary),
+                        const SizedBox(width: 3),
+                        Text('${ad.clicks ?? 0}',
+                            style: TextStyle(fontSize: 10, color: colors.textSecondary,
+                                decoration: TextDecoration.none)),
+                      ],
+                      const Spacer(),
+                      // "Ne plus voir"
                       GestureDetector(
                         onTap: () => _showPremiumModal(context),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                        child: const Padding(
+                          padding: EdgeInsets.only(right: 8),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Icon(Icons.workspace_premium, size: 11, color: Colors.grey),
+                            children: [
+                              Icon(Icons.workspace_premium, size: 10, color: Colors.grey),
                               SizedBox(width: 3),
                               Text('Ne plus voir',
                                 style: TextStyle(fontSize: 10, color: Colors.grey,
                                   decoration: TextDecoration.none, fontWeight: FontWeight.w500)),
                             ],
+                          ),
+                        ),
+                      ),
+                      // CTA compact à droite (bounce gardé)
+                      AnimatedBuilder(
+                        animation: _bounceCtrl,
+                        builder: (_, child) {
+                          final offset = MediaQuery.of(context).disableAnimations ? 0.0 : _bounceOffset.value;
+                          final scale  = MediaQuery.of(context).disableAnimations ? 1.0 : _bounceScale.value;
+                          return Transform.translate(
+                            offset: Offset(0, offset),
+                            child: Transform.scale(scale: scale, child: child),
+                          );
+                        },
+                        child: GestureDetector(
+                          onTap: _isCtaLoading ? null : () {
+                            _navigateToAdOwner(context, ad);
+                            setState(() => _isCtaLoading = true);
+                            _recordClick(ad).whenComplete(() { if (mounted) setState(() => _isCtaLoading = false); });
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFD700),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: _isCtaLoading
+                                ? const SizedBox(
+                                    height: 16, width: 16,
+                                    child: CircularProgressIndicator(strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation(Color(0xFF5a3d00))))
+                                : Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(ctaIcon, size: 14, color: const Color(0xFF5a3d00)),
+                                      const SizedBox(width: 5),
+                                      Text(ctaLabel,
+                                        style: const TextStyle(
+                                          fontSize: 12, fontWeight: FontWeight.w800,
+                                          color: Color(0xFF5a3d00), decoration: TextDecoration.none,
+                                        )),
+                                    ],
+                                  ),
                           ),
                         ),
                       ),

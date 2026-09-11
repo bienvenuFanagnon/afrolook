@@ -42,6 +42,18 @@ class _NewCanalState extends State<NewCanal> {
   bool _isPrivate = false;
   // 'gratuit' | 'unique' | 'mensuel'
   String _subscriptionType = 'unique';
+  String? _selectedMainCategory;
+
+  static const _mainCategoryOptions = [
+    {'value': 'SPORT',      'label': 'Sport',       'emoji': '⚽'},
+    {'value': 'ACTUALITES', 'label': 'Actualités',  'emoji': '📰'},
+    {'value': 'LOOKS',      'label': 'Looks',       'emoji': '👗'},
+    {'value': 'EVENEMENT',  'label': 'Événement',   'emoji': '🎉'},
+    {'value': 'OFFRES',     'label': 'Offres',      'emoji': '🛍️'},
+    {'value': 'GAMER',      'label': 'Gaming',      'emoji': '🎮'},
+    {'value': 'VIBE',       'label': 'Vibe',        'emoji': '🎵'},
+    {'value': 'GENERAL',    'label': 'Général',     'emoji': '📌'},
+  ];
 
   late AppColors _colors;
   late AppLocalizations _l10n;
@@ -444,10 +456,77 @@ class _NewCanalState extends State<NewCanal> {
               return null;
             },
           ),
+          SizedBox(height: 20),
+          _buildMainCategoryPicker(),
         ],
       ),
     );
   }
+
+  Widget _buildMainCategoryPicker({bool locked = false, DateTime? unlocksAt}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: [
+          Icon(Icons.category_outlined, color: _colors.primary, size: 18),
+          SizedBox(width: 6),
+          Text(
+            'Catégorie principale',
+            style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w600, fontSize: 14),
+          ),
+          if (locked && unlocksAt != null) ...[
+            SizedBox(width: 8),
+            Icon(Icons.lock_outline, color: Colors.orange, size: 14),
+            SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                'Modifiable le ${_formatDate(unlocksAt)}',
+                style: TextStyle(color: Colors.orange, fontSize: 11),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ]),
+        SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _mainCategoryOptions.map((opt) {
+            final val = opt['value'] as String;
+            final selected = _selectedMainCategory == val;
+            return GestureDetector(
+              onTap: locked ? null : () => setState(() => _selectedMainCategory = val),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: selected ? _colors.primary.withOpacity(0.15) : _colors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: selected ? _colors.primary : _colors.border,
+                    width: selected ? 2 : 1,
+                  ),
+                ),
+                child: Text(
+                  '${opt['emoji']} ${opt['label']}',
+                  style: TextStyle(
+                    color: locked
+                        ? _colors.textSecondary.withOpacity(0.5)
+                        : (selected ? _colors.primary : _colors.textSecondary),
+                    fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  String _formatDate(DateTime dt) =>
+      '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
 
   Widget _buildCreateButton() {
     return Container(
@@ -543,7 +622,10 @@ class _NewCanalState extends State<NewCanal> {
             adminIds: [authProvider.loginUserData.id!],
             allowedPostersIds: [authProvider.loginUserData.id!],
             allowAllMembersToPost: false,
-
+            mainCategory: _selectedMainCategory,
+            categoryUpdatedAt: _selectedMainCategory != null
+                ? DateTime.now().millisecondsSinceEpoch
+                : null,
           );
 
           // Upload image de profil

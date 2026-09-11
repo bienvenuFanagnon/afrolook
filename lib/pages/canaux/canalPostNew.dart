@@ -1,7 +1,6 @@
 import 'package:afrotok/models/model_data.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:contained_tab_bar_view_with_custom_page_navigator/contained_tab_bar_view_with_custom_page_navigator.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -272,106 +271,55 @@ class _CanalPostFormState extends State<CanalPostForm> {
 
                     // Onglets de contenu
                     Expanded(
-                      child: ContainedTabBarView(
-                        tabs: [
-                          Tab(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.audiotrack, size: 20, color: colors.textPrimary),
-                                SizedBox(width: 8),
-                                Text(
-                                  "Audio",
-                                  style: TextStyle(
-                                    color: colors.textPrimary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
+                      child: DefaultTabController(
+                        length: 4,
+                        child: Column(
+                          children: [
+                            Container(
+                              color: colors.surface,
+                              child: TabBar(
+                                isScrollable: true,
+                                tabAlignment: TabAlignment.start,
+                                indicatorColor: colors.primary,
+                                indicatorWeight: 3.0,
+                                labelColor: colors.textPrimary,
+                                unselectedLabelColor: colors.textSecondary,
+                                tabs: [
+                                  Tab(child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                    Icon(Icons.audiotrack, size: 18),
+                                    SizedBox(width: 6),
+                                    Text("Audio", style: TextStyle(fontWeight: FontWeight.w600)),
+                                  ])),
+                                  Tab(child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                    Icon(Icons.text_fields, size: 18),
+                                    SizedBox(width: 6),
+                                    Text("Texte", style: TextStyle(fontWeight: FontWeight.w600)),
+                                  ])),
+                                  Tab(child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                    Icon(Icons.photo, size: 18),
+                                    SizedBox(width: 6),
+                                    Text("Image", style: TextStyle(fontWeight: FontWeight.w600)),
+                                  ])),
+                                  Tab(child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                    Icon(Icons.videocam, size: 18),
+                                    SizedBox(width: 6),
+                                    Text("Vidéo", style: TextStyle(fontWeight: FontWeight.w600)),
+                                  ])),
+                                ],
+                              ),
                             ),
-                          ),
-
-                          Tab(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.text_fields, size: 20, color: colors.textPrimary),
-                                SizedBox(width: 8),
-                                Text(
-                                  "Texte",
-                                  style: TextStyle(
-                                    color: colors.textPrimary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
+                            Expanded(
+                              child: TabBarView(
+                                children: [
+                                  Container(padding: EdgeInsets.all(8), child: UserPostLookAudioTab(canal: widget.canal)),
+                                  Container(padding: EdgeInsets.all(8), child: UserPubText(canal: widget.canal)),
+                                  Container(padding: EdgeInsets.all(8), child: UserPostLookImageTab(canal: widget.canal)),
+                                  Container(padding: EdgeInsets.all(8), child: UserPubVideo(canal: widget.canal)),
+                                ],
+                              ),
                             ),
-                          ),
-                          Tab(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.photo, size: 20, color: colors.textPrimary),
-                                SizedBox(width: 8),
-                                Text(
-                                  "Image",
-                                  style: TextStyle(
-                                    color: colors.textPrimary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Tab(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.videocam, size: 20, color: colors.textPrimary),
-                                SizedBox(width: 8),
-                                Text(
-                                  "Vidéo",
-                                  style: TextStyle(
-                                    color: colors.textPrimary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                        tabBarProperties: TabBarProperties(
-                          height: 50.0,
-                          indicatorColor: colors.primary,
-                          indicatorWeight: 3.0,
-                          labelColor: colors.textPrimary,
-                          unselectedLabelColor: colors.textSecondary,
-                          background: Container(
-                            color: colors.surface,
-                          ),
+                          ],
                         ),
-                        views: [
-                          // Onglet Texte
-                          Container(
-                            padding: EdgeInsets.all(8),
-                            child: UserPostLookAudioTab(canal: widget.canal),
-                          ),
-                          Container(
-                            padding: EdgeInsets.all(8),
-                            child: UserPubText(canal: widget.canal),
-                          ),
-                          // Onglet Image
-                          Container(
-                            padding: EdgeInsets.all(8),
-                            child: UserPostLookImageTab(canal: widget.canal),
-                          ),
-                          // Onglet Vidéo
-                          Container(
-                            padding: EdgeInsets.all(8),
-                            child: UserPubVideo(canal: widget.canal),
-                          ),
-                        ],
-                        onChange: (index) => printVm(index),
                       ),
                     ),
                   ],

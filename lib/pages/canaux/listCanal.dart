@@ -417,9 +417,14 @@ class _CanalListPageState extends State<CanalListPage> {
 
     // Ajouter l'utilisateur aux abonnés
     canal.usersSuiviId!.add(userId);
-    await firestore.collection('Canaux').doc(canal.id).update({
-      'usersSuiviId': canal.usersSuiviId,
-    });
+    await Future.wait([
+      firestore.collection('Canaux').doc(canal.id).update({
+        'usersSuiviId': canal.usersSuiviId,
+      }),
+      firestore.collection('Users').doc(userId).update({
+        'canauxSuivisIds': FieldValue.arrayUnion([canal.id]),
+      }),
+    ]);
 
     // Créer la notification
     final NotificationData notif = NotificationData(

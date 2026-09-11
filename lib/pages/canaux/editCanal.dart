@@ -52,6 +52,18 @@ class _EditCanalState extends State<EditCanal> {
   bool _isPrivate = false;
   // 'gratuit' | 'unique' | 'mensuel'
   String _subscriptionType = 'unique';
+  String? _selectedMainCategory;
+
+  static const _mainCategoryOptions = [
+    {'value': 'SPORT',      'label': 'Sport',       'emoji': '⚽'},
+    {'value': 'ACTUALITES', 'label': 'Actualités',  'emoji': '📰'},
+    {'value': 'LOOKS',      'label': 'Looks',       'emoji': '👗'},
+    {'value': 'EVENEMENT',  'label': 'Événement',   'emoji': '🎉'},
+    {'value': 'OFFRES',     'label': 'Offres',      'emoji': '🛍️'},
+    {'value': 'GAMER',      'label': 'Gaming',      'emoji': '🎮'},
+    {'value': 'VIBE',       'label': 'Vibe',        'emoji': '🎵'},
+    {'value': 'GENERAL',    'label': 'Général',     'emoji': '📌'},
+  ];
 
   final ImagePicker picker = ImagePicker();
 
@@ -62,10 +74,27 @@ class _EditCanalState extends State<EditCanal> {
     _descriptionController.text = widget.canal.description!;
     _isPrivate = widget.canal.isPrivate ?? false;
     _subscriptionType = widget.canal.subscriptionType;
+    _selectedMainCategory = widget.canal.mainCategory;
     if (_isPrivate) {
       _priceController.text = widget.canal.subscriptionPrice?.toString() ?? '0';
     }
   }
+
+  bool get _categoryLocked {
+    final ts = widget.canal.categoryUpdatedAt;
+    if (ts == null) return false;
+    final lastChange = DateTime.fromMillisecondsSinceEpoch(ts);
+    return DateTime.now().difference(lastChange).inDays < 7;
+  }
+
+  DateTime? get _categoryUnlocksAt {
+    final ts = widget.canal.categoryUpdatedAt;
+    if (ts == null) return null;
+    return DateTime.fromMillisecondsSinceEpoch(ts).add(const Duration(days: 7));
+  }
+
+  String _formatDate(DateTime dt) =>
+      '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
 
   Future<void> _getImageProfile() async {
     final image = await picker.pickImage(source: ImageSource.gallery);
@@ -524,8 +553,74 @@ class _EditCanalState extends State<EditCanal> {
               return null;
             },
           ),
+          SizedBox(height: 20),
+          _buildMainCategoryPicker(),
         ],
       ),
+    );
+  }
+
+  Widget _buildMainCategoryPicker() {
+    final locked = _categoryLocked;
+    final unlocksAt = _categoryUnlocksAt;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: [
+          Icon(Icons.category_outlined, color: _colors.primary, size: 18),
+          SizedBox(width: 6),
+          Text(
+            'Catégorie principale',
+            style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w600, fontSize: 14),
+          ),
+          if (locked && unlocksAt != null) ...[
+            SizedBox(width: 8),
+            Icon(Icons.lock_outline, color: Colors.orange, size: 14),
+            SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                'Modifiable le ${_formatDate(unlocksAt)}',
+                style: TextStyle(color: Colors.orange, fontSize: 11),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ]),
+        SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _mainCategoryOptions.map((opt) {
+            final val = opt['value'] as String;
+            final selected = _selectedMainCategory == val;
+            return GestureDetector(
+              onTap: locked ? null : () => setState(() => _selectedMainCategory = val),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: selected ? _colors.primary.withOpacity(0.15) : _colors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: selected ? _colors.primary : _colors.border,
+                    width: selected ? 2 : 1,
+                  ),
+                ),
+                child: Text(
+                  '${opt['emoji']} ${opt['label']}',
+                  style: TextStyle(
+                    color: locked
+                        ? _colors.textSecondary.withOpacity(0.5)
+                        : (selected ? _colors.primary : _colors.textSecondary),
+                    fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 
@@ -699,6 +794,13 @@ class _EditCanalState extends State<EditCanal> {
         widget.canal.subscriptionPrice = _isPrivate ? double.parse(_priceController.text) : 0.0;
         widget.canal.subscriptionType = _isPrivate ? _subscriptionType : 'gratuit';
         widget.canal.updatedAt = DateTime.now().microsecondsSinceEpoch;
+        // Mettre à jour mainCategory seulement si le cooldown est passé et valeur changée
+        if (!_categoryLocked && _selectedMainCategory != widget.canal.mainCategory) {
+          widget.canal.mainCategory = _selectedMainCategory;
+          if (_selectedMainCategory != null) {
+            widget.canal.categoryUpdatedAt = DateTime.now().millisecondsSinceEpoch;
+          }
+        }
 
         // Si le canal devient public, on garde les abonnés existants mais sans frais
         if (!_isPrivate) {

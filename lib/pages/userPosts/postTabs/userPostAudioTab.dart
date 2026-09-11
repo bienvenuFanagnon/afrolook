@@ -1664,6 +1664,11 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
       post.creatorSnapshot = Post.buildCreatorSnapshot(authProvider.loginUserData);
 
       await FirebaseFirestore.instance.collection('Posts').doc(postId).set(post.toJson());
+      if (widget.canal != null && (_selectedPostType ?? '').isNotEmpty) {
+        FirebaseFirestore.instance.collection('Canaux').doc(widget.canal!.id!).update({
+          'categories': FieldValue.arrayUnion([_selectedPostType!]),
+        }).catchError((_) {});
+      }
       await PostCooldownService.markPosted();
 
       // Nettoyage

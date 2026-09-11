@@ -1749,6 +1749,11 @@ class _UserPubTextState extends State<UserPubText> {
 
         // Sauvegarder le post dans Firestore
         await FirebaseFirestore.instance.collection('Posts').doc(postId).set(post.toJson());
+        if (widget.canal != null && (_selectedPostType ?? '').isNotEmpty) {
+          FirebaseFirestore.instance.collection('Canaux').doc(widget.canal!.id!).update({
+            'categories': FieldValue.arrayUnion([_selectedPostType!]),
+          }).catchError((_) {});
+        }
         await PostCooldownService.markPosted();
 
         printVm('✅ Post texte créé avec ID: $postId, ${_selectAllCountries ? 'Tous pays' : '${_selectedCountries.length} pays'}');

@@ -6,6 +6,7 @@ import '../../../pages/admin/AfrolookPub/advertisement_video_widget.dart';
 import '../../../pages/pub/afrolook_inline_ad.dart';
 import '../../../providers/authProvider.dart';
 import '../../../services/ad_rotation_service.dart';
+import 'feed_creator_posts_card.dart';
 
 /// Bannière désactivée — Appodeal n'est plus utilisé.
 class FeedAdBanner extends StatelessWidget {
@@ -76,14 +77,8 @@ class _FeedAdCarouselState extends State<FeedAdCarousel> {
             (post.url_media?.contains('.mp4') ?? false) ||
             (post.url_media?.contains('.mov') ?? false);
 
-        return Container(
+        return KeyedSubtree(
           key: ValueKey(widget.adKey),
-          margin: const EdgeInsets.symmetric(vertical: 8, horizontal: hMargin),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Theme.of(context).dividerColor, width: 0.5),
-          ),
-          clipBehavior: Clip.antiAlias,
           child: isVideo
               ? AdvertisementVideoWidget(
                   post: post,
@@ -146,6 +141,59 @@ class _FeedUnifiedAdSlotState extends State<FeedUnifiedAdSlot> {
         return _showCarousel == true
             ? FeedAdCarousel(adKey: widget.adKey)
             : const AfrolookInlineAd();
+      },
+    );
+  }
+}
+
+/// Slot boost entité (profil / canal) — affiche UNE pub entité comme FeedCreatorPostsCard.
+/// Si aucun boost entité disponible, affiche [fallback] (ou rien si null).
+class FeedEntityBoostSlot extends StatefulWidget {
+  final String adKey;
+  final Widget? fallback;
+  const FeedEntityBoostSlot({Key? key, required this.adKey, this.fallback})
+      : super(key: key);
+
+  @override
+  State<FeedEntityBoostSlot> createState() => _FeedEntityBoostSlotState();
+}
+
+class _FeedEntityBoostSlotState extends State<FeedEntityBoostSlot> {
+  int? _adIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final auth = context.read<UserAuthProvider>();
+      final boosts = auth.advertisements
+          .where((a) => a['isEntityBoost'] == true)
+          .toList();
+      if (boosts.isNotEmpty) {
+        setState(() =>
+            _adIndex = AdRotationService.instance.claimNext(boosts.length));
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<UserAuthProvider>(
+      builder: (context, auth, _) {
+        final boosts = auth.advertisements
+            .where((a) => a['isEntityBoost'] == true)
+            .toList();
+        if (boosts.isEmpty) return widget.fallback ?? const SizedBox.shrink();
+        final idx = (_adIndex ?? 0) % boosts.length;
+        try {
+          final adMap = boosts[idx]['ad'] as Map<String, dynamic>?;
+          if (adMap == null) return widget.fallback ?? const SizedBox.shrink();
+          final ad = Advertisement.fromJson(adMap);
+          return FeedCreatorPostsCard(key: ValueKey(widget.adKey), ad: ad);
+        } catch (_) {
+          return widget.fallback ?? const SizedBox.shrink();
+        }
       },
     );
   }

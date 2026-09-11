@@ -87,6 +87,7 @@ import 'coins/post_gifts_list.dart';
 import '../theme/app_colors.dart';
 
 import '../services/feed/feed_repository.dart';
+import '../widgets/feed/sections/feed_end_discovery_section.dart';
 import '../services/postService/feed_interaction_service.dart';
 import '../services/streak_service.dart';
 import '../providers/streakProvider.dart';
@@ -151,6 +152,10 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
   bool _isLoadingFeed = true;
   bool _isLoadingMore = false;
   final int _batchSize = 10;
+  bool _t1Exhausted = false;
+  bool _hasSubscribedFromEndFeed = false;
+  bool _hasLoadedDiscovery = false;
+  bool _isReloadingAfterSubscribe = false;
   final int _preloadThreshold = 2;
   DocumentSnapshot? _lastDocument;
 
@@ -1491,10 +1496,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
       if (mounted) setState(() {});
     }
 
-    // 🚀 Priorité haute : charger un petit lot (3 posts) en premier pour
-    // garantir que les posts #2 et #3 soient disponibles très rapidement,
-    // avant le post #1 ne soit même terminé de s'afficher/jouer.
-    await _loadMoreVideos(isInitial: true, limit: 3);
+    // T1 uniquement au lancement : vidéos non vues des abonnements.
+    // T3 (suggestions/découverte) uniquement via "À découvrir & Tendances".
+    await _loadTier1Videos();
 
     if (mounted) {
       setState(() {
@@ -1502,16 +1506,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
       });
     }
 
-    // Précharger immédiatement les voisins (posts #2/#3) pour que leurs
-    // VideoPlayerController soient prêts pendant la lecture du post #1.
+    // Précharger immédiatement les voisins (posts #2/#3).
     _preloadNeighborhood(0);
-
-    // Charger le reste du lot suggéré + les anciennes vidéos en arrière-plan,
-    // sans bloquer/retarder l'affichage déjà effectué ci-dessus.
-    await _loadMoreVideos(isInitial: true, limit: _batchSize - 3);
-
-    // Charger les anciennes vidéos
-    await _loadOldVideosInBackground();
 
     // Reconstruire le feed avec les nouvelles vidéos ajoutées, sans toucher
     // à la position de lecture courante (_rebuildFeedItems reconstruit la
@@ -1687,6 +1683,11 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
       }
     }
 
+    // Fin de feed T1 : widget de découverte (uniquement si T3 pas encore chargé)
+    if (_t1Exhausted && !_hasLoadedDiscovery) {
+      _feedItems.add(const _EndOfFeedSentinel());
+    }
+
     // Charger les articles promo si pas encore fait
     if (_promoArticles.isEmpty) _loadPromoArticles();
   }
@@ -1791,6 +1792,204 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
     }
     if (mounted) setState(() {});
     printVm('⏱️ [DETAILS-CARD] id=$postId — total=${_sw.elapsedMilliseconds}ms');
+  }
+
+  // ── T1 : vidéos non vues des abonnements ──────────────────────────────────
+  Future<void> _loadTier1Videos() async {
+    final unread = authProvider.loginUserData.unreadPosts ?? {};
+    final ids = unread.keys.where((id) => !_loadedPostIds.contains(id)).toList();
+
+    if (ids.isEmpty) {
+      if (mounted) setState(() => _t1Exhausted = true);
+      return;
+    }
+
+    const batchSize = 30;
+    final List<Post> t1Posts = [];
+
+    for (int i = 0; i < ids.length; i += batchSize) {
+      final batch = ids.sublist(i, min(i + batchSize, ids.length));
+      try {
+        final snap = await _firestore
+            .collection('Posts')
+            .where(FieldPath.documentId, whereIn: batch)
+            .where('dataType', isEqualTo: PostDataType.VIDEO.name)
+            .where('status', isEqualTo: PostStatus.VALIDE.name)
+            .get();
+        for (final doc in snap.docs) {
+          final p = Post.fromJson(doc.data() as Map<String, dynamic>);
+          p.id = doc.id;
+          if (!_loadedPostIds.contains(p.id)) t1Posts.add(p);
+        }
+      } catch (_) {}
+    }
+
+    // Trier par timestamp décroissant (plus récent en premier)
+    t1Posts.sort((a, b) {
+      final ta = unread[a.id] ?? 0;
+      final tb = unread[b.id] ?? 0;
+      return tb.compareTo(ta);
+    });
+
+    for (final p in t1Posts) {
+      if (p.id != null && !_loadedPostIds.contains(p.id)) {
+        _loadedPostIds.add(p.id!);
+        _videoPosts.add(p);
+        _loadPostRelations(p).ignore();
+        _subscribeToPostUpdates(p);
+      }
+    }
+
+    if (mounted) setState(() => _t1Exhausted = true);
+  }
+
+  // ── T3 : découverte et tendances (sur demande explicite) ──────────────────
+  Future<void> _loadDiscoveryVideos() async {
+    if (!mounted || _isLoadingMore) return;
+    setState(() => _hasLoadedDiscovery = true);
+    // Note : _loadMoreVideos gère lui-même _isLoadingMore.
+    await _loadMoreVideos();
+    await _loadOldVideosInBackground();
+    if (!mounted) return;
+    setState(() => _rebuildFeedItems());
+    // Auto-scroll vers le premier post T3 (juste après la page sentinel)
+    final sentinelIndex = _feedItems.indexWhere((e) => e is _EndOfFeedSentinel);
+    if (sentinelIndex >= 0 && _pageController.hasClients) {
+      final nextIndex = sentinelIndex + 1;
+      if (nextIndex < _feedItems.length) {
+        _pageController.animateToPage(
+          nextIndex,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut,
+        );
+      }
+    }
+  }
+
+  // ── Page de fin de feed T1 ─────────────────────────────────────────────────
+  Widget _buildEndOfFeedPage() {
+    return Builder(builder: (ctx) {
+      final colors = AppColors.of(ctx);
+      return Container(
+        color: Colors.black,
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                const SizedBox(height: 24),
+                Icon(Icons.check_circle_outline, color: colors.primary, size: 40),
+                const SizedBox(height: 10),
+                const Text(
+                  'Tu as tout vu !',
+                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Abonne-toi à de nouveaux créateurs pour voir plus de vidéos',
+                  style: TextStyle(color: Colors.grey[400], fontSize: 13),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                FeedEndDiscoverySection(
+                  pageType: 'VIDEO',
+                  onSubscribed: () {
+                    if (!mounted) return;
+                    setState(() => _hasSubscribedFromEndFeed = true);
+                  },
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        child: _isReloadingAfterSubscribe
+                            ? Center(child: CircularProgressIndicator(color: colors.primary, strokeWidth: 2))
+                            : ElevatedButton.icon(
+                                onPressed: _hasSubscribedFromEndFeed
+                                    ? () async {
+                                        setState(() => _isReloadingAfterSubscribe = true);
+                                        final userId = authProvider.loginUserData.id;
+                                        if (userId != null) {
+                                          try {
+                                            final doc = await _firestore.collection('Users').doc(userId).get();
+                                            final _rawUnread = (doc.data()?['unreadPosts'] as Map<String, dynamic>?) ?? {};
+                                            authProvider.loginUserData.unreadPosts = UserData.parseUnreadTimestamps(_rawUnread);
+                                            authProvider.loginUserData.repostMeta = UserData.parseUnreadRepostMeta(_rawUnread);
+                                          } catch (_) {}
+                                        }
+                                        // Réinitialiser et recharger T1
+                                        _videoPosts.clear();
+                                        _loadedPostIds.clear();
+                                        if (widget.initialPost?.id != null) {
+                                          _loadedPostIds.add(widget.initialPost!.id!);
+                                          _videoPosts.add(widget.initialPost!);
+                                        }
+                                        setState(() {
+                                          _t1Exhausted = false;
+                                          _hasSubscribedFromEndFeed = false;
+                                          _hasLoadedDiscovery = false;
+                                        });
+                                        await _loadTier1Videos();
+                                        if (mounted) {
+                                          setState(() {
+                                            _rebuildFeedItems();
+                                            _isReloadingAfterSubscribe = false;
+                                          });
+                                          _pageController.jumpToPage(0);
+                                        }
+                                      }
+                                    : null,
+                                icon: const Icon(Icons.refresh_rounded, size: 18),
+                                label: const Text('Voir de nouveaux posts'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: _hasSubscribedFromEndFeed
+                                      ? colors.primary
+                                      : colors.primary.withOpacity(0.3),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  elevation: 0,
+                                ),
+                              ),
+                      ),
+                      if (!_hasSubscribedFromEndFeed)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text(
+                            'Abonne-toi à un créateur ou canal ci-dessus pour activer ce bouton',
+                            style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _isLoadingMore ? null : _loadDiscoveryVideos,
+                          icon: _isLoadingMore
+                              ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: colors.primary, strokeWidth: 2))
+                              : const Icon(Icons.explore_outlined, size: 18),
+                          label: const Text('À découvrir & Tendances'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: colors.primary,
+                            side: BorderSide(color: colors.primary),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    });
   }
 
   Future<void> _loadMoreVideos({bool isInitial = false, int? limit}) async {
@@ -2731,6 +2930,38 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
     await _firestore.collection('TransactionSoldes').doc(transaction.id).set(transaction.toJson());
   }
 
+  Future<void> _handleRepost(Post post) async {
+    final me = authProvider.loginUserData;
+    if (me.id == null) return;
+    if (me.id == post.user_id) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tu ne peux pas republier ton propre post'), duration: Duration(seconds: 2)),
+      );
+      return;
+    }
+    post.users_republier_id ??= [];
+    if (post.users_republier_id!.contains(me.id)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tu as déjà republié ce post'), duration: Duration(seconds: 2)),
+      );
+      return;
+    }
+    final originalId = post.isRepost == true ? (post.originalPostId ?? post.id!) : post.id!;
+    setState(() => post.users_republier_id!.add(me.id!));
+    try {
+      await _firestore.collection('Posts').doc(originalId).update({
+        'users_republier_id': FieldValue.arrayUnion([me.id]),
+        'partage': FieldValue.increment(1),
+        'popularity': FieldValue.increment(3),
+      });
+      FirebaseFunctions.instance.httpsCallable('repostFanOut').call({'postId': originalId}).ignore();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Post republié ✓'), duration: Duration(seconds: 2)));
+    } catch (_) {
+      setState(() => post.users_republier_id!.remove(me.id));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erreur : impossible de republier'), duration: Duration(seconds: 2)));
+    }
+  }
+
   void _sharePost(Post post) async {
     setState(() => _isSharing = true);
     try {
@@ -2774,6 +3005,13 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
               },
             ).animate().fadeIn(duration: 200.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
 
+            if (post.user_id != authProvider.loginUserData.id)
+              ListTile(
+                leading: Icon(Icons.repeat, color: colors.success),
+                title: Text('Republier', style: TextStyle(color: colors.textPrimary)),
+                onTap: () { Navigator.pop(context); _handleRepost(post); },
+              ).animate().fadeIn(duration: 200.ms, delay: 20.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
+
             // Bouton Envoyer dans le chat
             ListTile(
               leading: Icon(Icons.send_rounded, color: colors.primary),
@@ -2787,7 +3025,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
                   builder: (_) => PostShareSheet(post: post),
                 );
               },
-            ).animate().fadeIn(duration: 200.ms, delay: 20.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
+            ).animate().fadeIn(duration: 200.ms, delay: 40.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
 
             if (post.user_id != authProvider.loginUserData.id) ...[
               if (authProvider.loginUserData.role == UserRole.ADM.name) ...[
@@ -2862,7 +3100,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
   Future<void> _reportPostWithScore(Post post, {required bool isAdmin, required String reportType}) async {
     Navigator.pop(context);
     try {
-      final callable = FirebaseFunctions.instance.httpsCallable('reportPost');
+      final callable = FirebaseFunctions.instanceFor(region: 'europe-west1').httpsCallable('reportPost');
       await callable.call({'postId': post.id, 'isAdminReport': isAdmin, 'reportType': reportType});
       if (mounted) {
         final msg = isAdmin
@@ -3175,6 +3413,26 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (post.isRepost == true)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                children: [
+                  if (post.reposterImageUrl != null && post.reposterImageUrl!.isNotEmpty)
+                    ClipOval(
+                      child: Image.network(post.reposterImageUrl!, width: 14, height: 14, fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Icon(Icons.repeat, size: 12, color: Colors.white70)),
+                    )
+                  else
+                    const Icon(Icons.repeat, size: 12, color: Colors.white70),
+                  const SizedBox(width: 4),
+                  Text(
+                    '@${post.reposterPseudo ?? post.reposterUserId ?? 'quelqu\'un'} a republié',
+                    style: const TextStyle(fontSize: 11, color: Colors.white70, fontWeight: FontWeight.w500),
+                  ),
+                ],
+              ),
+            ),
           const SizedBox(height: 4),
           if (post.description != null)
             Container(
@@ -4342,7 +4600,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
                 _showOverlay = true; // rétablir les overlays à chaque changement de vidéo
               });
               _itemsSinceLastLoad++;
-              if (_itemsSinceLastLoad >= 3 && !_isLoadingMore) {
+              // Auto-load uniquement si T3 (découverte) a été activé par l'utilisateur.
+              if (_itemsSinceLastLoad >= 3 && !_isLoadingMore && _hasLoadedDiscovery) {
                 _itemsSinceLastLoad = 0;
                 await _loadMoreVideos();
                 if (!mounted) return;
@@ -4363,6 +4622,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
               final item = _feedItems[index];
               if (item is Post) {
                 return _buildVideoPage(item, index);
+              } else if (item is _EndOfFeedSentinel) {
+                return _buildEndOfFeedPage();
               } else if (item is _ShopPromoSentinel) {
                 return ShopPromoVideoItem(articles: _promoArticles);
               } else if (item is Map<String, dynamic>) {
@@ -4413,6 +4674,11 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
 /// Sentinel inséré dans _feedItems pour déclencher l'affichage de la promo AfroShop.
 class _ShopPromoSentinel {
   const _ShopPromoSentinel();
+}
+
+/// Sentinel inséré en fin de T1 pour afficher la page de découverte.
+class _EndOfFeedSentinel {
+  const _EndOfFeedSentinel();
 }
 
 // Remplacer la classe FlyingHeart par celle-ci

@@ -209,7 +209,8 @@ export const reportPost = onCall(
       throw new HttpsError("already-exists", "Tu as déjà signalé ce post.");
     }
 
-    const currentScore: number = (data.postScore as number) ?? 0;
+    const rawScore = data.postScore as number;
+    const currentScore: number = Number.isFinite(rawScore) ? rawScore : 0;
     const userId: string | null = data.user_id ?? null;
     const canalId: string | null = data.canal_id ?? null;
 

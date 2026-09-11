@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'package:afrotok/services/linkService.dart';
 import 'package:afrotok/services/nav_cache_service.dart';
 import '../user/otherUser/otherUser.dart';
+import '../search/creator_canal_search_page.dart';
 import 'package:afrotok/pages/canaux/listCanal.dart';
 import 'package:afrotok/pages/canaux/detailsCanal.dart';
 import 'package:afrotok/pages/challengeMonth/challenge_month_page.dart';
@@ -345,6 +346,11 @@ class _MyHomePageState extends State<MyHomePage>
     final currentUserId = authProvider.loginUserData?.id;
     if (currentUserId == null) return;
 
+    // Réinitialiser l'état statique du toast (important après hot-reload)
+    NotificationToast.reset();
+
+    bool _firstEvent = true;
+
     firestore
         .collection('Notifications')
         .where('receiver_id', isEqualTo: currentUserId)
@@ -363,8 +369,20 @@ class _MyHomePageState extends State<MyHomePage>
         _unreadNotificationsCount = count;
         _latestUnreadNotifs = latest;
       });
-      if (count > 0 && _lastToastTime == null) {
-        _showNotificationToastIfNeeded();
+
+      if (count > 0) {
+        if (_firstEvent) {
+          // Premier événement au démarrage : délai 2s pour que l'Overlay soit prêt
+          _firstEvent = false;
+          Future.delayed(const Duration(seconds: 2), () {
+            if (mounted) _showNotificationToastIfNeeded();
+          });
+        } else if (_lastToastTime == null) {
+          // Nouvelle notif arrivée pendant la session
+          _showNotificationToastIfNeeded();
+        }
+      } else {
+        _firstEvent = false;
       }
     }, onError: (e) {
       printVm('❌ Erreur dans le stream des notifications: $e');
@@ -1482,7 +1500,7 @@ class _MyHomePageState extends State<MyHomePage>
 
 
     // _tabController = TabController(length: _tabs.length, vsync: this);
-    _tabController = TabController(length: 7, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     // Écouter le changement d'onglet
     _tabController!.addListener(() {
       if (_tabController!.indexIsChanging) return;
@@ -1499,13 +1517,13 @@ class _MyHomePageState extends State<MyHomePage>
           _tabController!.animateTo(0);
         });
       }
-      // index 3 → VIP (push + retour à 0)
+      // index 3 → Découverte (push + retour à 0)
       if (_tabController!.index == 3) {
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) =>
-                DashboardContentScreen(),
+                HomeSportPostPage(type: TabBarType.DECOUVERTE.name),
           ),
         ).then((_) {
           _tabController!.animateTo(0);
@@ -1858,7 +1876,7 @@ class _MyHomePageState extends State<MyHomePage>
 
     // Icônes réduites et centrées
     const double navIconSize = 24;
-    const double actionIconSize = 18;
+    const double actionIconSize = 22;
 
     // ── Layout Wide (Tablette / Desktop ≥ 576 px) ────────────────────────
     if (AppLayout.isWide(context)) {
@@ -1909,7 +1927,7 @@ class _MyHomePageState extends State<MyHomePage>
                       builder: (context, snap) {
                         int n = snap.hasData ? snap.data!.length : 0;
                         return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
                           child: badges.Badge(
                             showBadge: n > 0,
                             badgeStyle: badges.BadgeStyle(badgeColor: colors.accent),
@@ -1920,18 +1938,22 @@ class _MyHomePageState extends State<MyHomePage>
                       },
                     ),
                   ),
+                  // Search rapide créateurs / canaux
                   GestureDetector(
-                    onTap: _onTopBarFilterTap,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const CreatorCanalSearchPage()),
+                    ),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      child: Icon(Icons.filter_alt_outlined, color: colors.primary, size: actionIconSize),
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Icon(Icons.search_rounded, color: colors.textPrimary, size: actionIconSize),
                     ),
                   ),
                   Consumer<SoundProvider>(
                     builder: (context, soundProvider, _) => GestureDetector(
                       onTap: () => soundProvider.toggleSound(),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
                         child: Icon(
                           soundProvider.isMuted ? Icons.volume_off : Icons.volume_up,
                           color: colors.primary,
@@ -1943,32 +1965,8 @@ class _MyHomePageState extends State<MyHomePage>
                   GestureDetector(
                     onTap: _onTopBarRefreshTap,
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      child: Icon(Icons.refresh, color: colors.primary, size: actionIconSize),
-                    ),
-                  ),
-                  Consumer<LocaleProvider>(
-                    builder: (context, localeProvider, _) => GestureDetector(
-                      onTap: () => _showLanguagePicker(context, localeProvider),
-                      onLongPress: () => localeProvider.cycleLocale(),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6),
-                        child: Text(
-                          (kSupportedLocales[localeProvider.locale.languageCode] ?? '🇫🇷').substring(0, 2),
-                          style: const TextStyle(fontSize: 15),
-                        ),
-                      ),
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () => Provider.of<ThemeProvider>(context, listen: false).toggleTheme(),
-                    child: Padding(
                       padding: const EdgeInsets.only(left: 6, right: 10),
-                      child: Icon(
-                        colors.isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
-                        color: colors.primary,
-                        size: actionIconSize,
-                      ),
+                      child: Icon(Icons.refresh, color: colors.primary, size: actionIconSize),
                     ),
                   ),
                 ],
@@ -2153,10 +2151,7 @@ class _MyHomePageState extends State<MyHomePage>
                         Tab(text: l10n.tabHome),
                         Tab(text: l10n.tabSport),
                         Tab(text: l10n.tabEvents),
-                        Tab(text: l10n.tabVip),
-                        Tab(text: l10n.tabChallenges),
-                        Tab(text: l10n.tabChroniques),
-                        Tab(text: l10n.tabPopular),
+                        Tab(text: l10n.tabDiscovery),
                       ],
                     ),
                   ),
@@ -2522,12 +2517,9 @@ class _MyHomePageState extends State<MyHomePage>
   /// Enfants du TabBarView — partagés par le layout mobile et wide.
   List<Widget> get _tabViewChildren => [
     LooksPage(type: TabBarType.LOOKS.name, feedKey: _looksRecentKey),
-    const SizedBox.shrink(), // Sport → push
+    const SizedBox.shrink(), // Sport → push page dédiée
     HomeConstPostTypePage(key: _discoverKey, type: TabBarType.EVENEMENT.name, sortType: 'recent'),
-    const SizedBox.shrink(), // VIP → push
-    ChallengesListPage(),
-    ChroniqueHomePage(),
-    LooksPage(type: TabBarType.LOOKS.name, sortType: 'popular', feedKey: _looksPopularKey),
+    const SizedBox.shrink(), // Découverte → push page dédiée
   ];
 
   /// Scaffold principal pour tablette et desktop.
@@ -3017,10 +3009,7 @@ class _MyHomePageState extends State<MyHomePage>
           Tab(text: l10n.tabHome),
           Tab(text: l10n.tabSport),
           Tab(text: l10n.tabEvents),
-          Tab(text: l10n.tabVip),
-          Tab(text: l10n.tabChallenges),
-          Tab(text: l10n.tabChroniques),
-          Tab(text: l10n.tabPopular),
+          Tab(text: l10n.tabDiscovery),
         ],
       ),
     );

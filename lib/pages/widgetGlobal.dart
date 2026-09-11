@@ -1116,7 +1116,14 @@ class _CreatorCategoryOnboardingModal extends StatelessWidget {
                     spacing: 6,
                     runSpacing: 6,
                     alignment: WrapAlignment.center,
-                    children: UserInterests.categories.take(6).map((cat) {
+                    children: const [
+                      {'e': '⚽', 'l': 'Sport'},
+                      {'e': '📰', 'l': 'Actualités'},
+                      {'e': '👗', 'l': 'Looks'},
+                      {'e': '🎉', 'l': 'Événement'},
+                      {'e': '🎮', 'l': 'Gaming'},
+                      {'e': '🎵', 'l': 'Vibe'},
+                    ].map((cat) {
                       return Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
@@ -1125,7 +1132,7 @@ class _CreatorCategoryOnboardingModal extends StatelessWidget {
                           border: Border.all(color: Colors.white24),
                         ),
                         child: Text(
-                          '${cat.emoji} ${cat.labelFr}',
+                          '${cat['e']} ${cat['l']}',
                           style: const TextStyle(color: Colors.white70, fontSize: 11),
                         ),
                       );

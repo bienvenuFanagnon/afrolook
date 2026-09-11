@@ -215,8 +215,7 @@ class _DetailsPostState extends State<DetailsPost>
     return result;
   }
 
-  // Widget d'affichage des suggestions — style YouTube
-  // Structure : pub, p0, p1, p2, pub, p3, p4, p5, ...
+  // Widget d'affichage des suggestions — composant feed standard
   Widget _buildSuggestedPosts() {
     final suggestions = getFilteredSuggestions();
     final isLoading = postProvider.isLoadingSuggestions;
@@ -232,11 +231,13 @@ class _DetailsPostState extends State<DetailsPost>
 
     if (suggestions.isEmpty) return const SizedBox.shrink();
 
-    // Construire la liste mixte : pub avant chaque groupe de 3
+    final screenSize = MediaQuery.of(context).size;
+
+    // Structure : pub en 2ème position (après le 1er post), puis toutes les 3 suggestions
     final items = <dynamic>[];
     for (int i = 0; i < suggestions.length; i++) {
-      if (i % 3 == 0) items.add('ad_$i');
       items.add(suggestions[i]);
+      if (i == 0 || (i > 0 && i % 3 == 0)) items.add('ad_$i');
     }
 
     return Column(
@@ -260,19 +261,21 @@ class _DetailsPostState extends State<DetailsPost>
           itemBuilder: (context, index) {
             final item = items[index];
             if (item is String) {
-              // Bannière pub conditionnelle (masquée pour Premium/Gold/Admin)
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: _buildAdBannerSuggestion(key: 'ad_suggestion_$index'),
               );
             }
             final post = item as Post;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _buildYouTubeCard(post),
-            ).animate()
-              .fadeIn(duration: 300.ms, delay: (50 * index).ms)
-              .slideY(begin: 0.04, end: 0, duration: 300.ms, curve: Curves.easeOut);
+            return HomePostUsersWidget(
+              key: ValueKey('sugg-${post.id}'),
+              post: post,
+              height: screenSize.height * 0.6,
+              width: screenSize.width,
+              isPreview: true,
+              suppressInlineAd: true,
+              onOpenPost: _onSuggestedPostSelected,
+            );
           },
         ),
       ],
@@ -2114,6 +2117,33 @@ class _DetailsPostState extends State<DetailsPost>
   void _stopCarouselAutoPlay() {
     _carouselTimer?.cancel();
     _carouselTimer = null;
+  }
+
+  Widget _buildRepostBanner(Post post) {
+    final reposterPseudo = post.reposterPseudo ?? post.reposterUserId ?? 'quelqu\'un';
+    final reposterImageUrl = post.reposterImageUrl;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          if (reposterImageUrl != null && reposterImageUrl.isNotEmpty)
+            ClipOval(
+              child: CachedNetworkImage(
+                imageUrl: reposterImageUrl,
+                width: 16, height: 16, fit: BoxFit.cover,
+                errorWidget: (_, __, ___) => Icon(Icons.repeat, size: 14, color: _colors.textSecondary),
+              ),
+            )
+          else
+            Icon(Icons.repeat, size: 14, color: _colors.textSecondary),
+          const SizedBox(width: 5),
+          Text(
+            '@$reposterPseudo a republié',
+            style: TextStyle(fontSize: 12, color: _colors.textSecondary, fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildSupportButton() {
@@ -4611,7 +4641,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
   }) async {
     Navigator.pop(context);
     try {
-      final callable = FirebaseFunctions.instance.httpsCallable('reportPost');
+      final callable = FirebaseFunctions.instanceFor(region: 'europe-west1').httpsCallable('reportPost');
       await callable.call({
         'postId': post.id,
         'isAdminReport': isAdmin,
@@ -4634,16 +4664,29 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       if (mounted) {
         final msg = e.code == 'already-exists'
             ? 'Tu as déjà signalé ce post.'
-            : (e.message ?? 'Erreur lors du signalement.');
+            : e.code == 'unauthenticated'
+                ? 'Connecte-toi pour signaler ce post.'
+                : e.code == 'not-found'
+                    ? 'Post introuvable.'
+                    : 'Erreur lors du signalement. Réessaie plus tard.';
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Erreur lors du signalement. Réessaie plus tard.'),
+          backgroundColor: Colors.red,
+        ));
       }
     }
   }
 
   Widget _buildPostContent(Post post) {
     final isLocked = _isLockedContent();
-    final text = _translatedDescription ?? post.description ?? "";
+    final text = (_translatedDescription ?? post.description ?? '')
+        .replaceAll(RegExp(r'[ \t]+\n'), '\n')
+        .replaceAll(RegExp(r'\n{3,}'), '\n\n');
 
     // Pour le contenu verrouillé, limiter l'affichage
     if (isLocked) {
@@ -6118,6 +6161,40 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
     }
   }
 
+  Future<void> _handleRepost() async {
+    final me = authProvider.loginUserData;
+    if (me.id == null) return;
+    if (me.id == widget.post.user_id) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tu ne peux pas republier ton propre post'), duration: Duration(seconds: 2)),
+      );
+      return;
+    }
+    widget.post.users_republier_id ??= [];
+    if (widget.post.users_republier_id!.contains(me.id)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tu as déjà republié ce post'), duration: Duration(seconds: 2)),
+      );
+      return;
+    }
+    final originalId = widget.post.isRepost == true
+        ? (widget.post.originalPostId ?? widget.post.id!)
+        : widget.post.id!;
+    setState(() => widget.post.users_republier_id!.add(me.id!));
+    try {
+      await firestore.collection('Posts').doc(originalId).update({
+        'users_republier_id': FieldValue.arrayUnion([me.id]),
+        'partage': FieldValue.increment(1),
+        'popularity': FieldValue.increment(3),
+      });
+      FirebaseFunctions.instance.httpsCallable('repostFanOut').call({'postId': originalId}).ignore();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Post republié ✓'), duration: Duration(seconds: 2)));
+    } catch (_) {
+      setState(() => widget.post.users_republier_id!.remove(me.id));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erreur : impossible de republier'), duration: Duration(seconds: 2)));
+    }
+  }
+
   void _showShareOptions() {
     showResponsiveBottomSheet(
       context: context,
@@ -6145,6 +6222,12 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                   style: TextStyle(color: _colors.textPrimary)),
               onTap: () { Navigator.pop(ctx); _handleShare(); },
             ),
+            if (widget.post.user_id != authProvider.loginUserData.id)
+              ListTile(
+                leading: Icon(Icons.repeat, color: _colors.success),
+                title: Text('Republier', style: TextStyle(color: _colors.textPrimary)),
+                onTap: () { Navigator.pop(ctx); _handleRepost(); },
+              ),
             ListTile(
               leading: Icon(Icons.send_rounded, color: _colors.primary),
               title: Text('Envoyer dans un chat',
@@ -6535,7 +6618,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
               isLocked: !hasAccess,
             );
           }
-          return QuickGiftBar(
+          return CadeauBadge(
             receiverId: post.user_id!,
             receiverName: post.user?.pseudo ?? 'Créateur',
             receiverAvatar: post.user?.imageUrl ?? '',
@@ -6691,6 +6774,8 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _PostDetailBadgesRow(post: updatedPost, feedTier: widget.feedTier),
+                      if (updatedPost.isRepost == true)
+                        _buildRepostBanner(updatedPost),
                       _buildUserHeader(updatedPost),
                       SizedBox(height: 5),
 

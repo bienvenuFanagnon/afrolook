@@ -12,6 +12,13 @@ import 'authProvider.dart';
 
 class ContentProvider with ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  bool _isDisposed = false;
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
+  }
   // UserData? currentUser;
 
   List<ContentPaie> _featuredContentPaies = [];
@@ -207,10 +214,7 @@ class ContentProvider with ChangeNotifier {
   List<Episode> get episodes => _episodes;
   final UserAuthProvider? _authProvider; // Référence vers le provider auth
 
-  ContentProvider({required UserAuthProvider authProvider}) : _authProvider = authProvider {
-    // Charger les données initiales dès la création du provider
-    loadInitialData();
-  }
+  ContentProvider({required UserAuthProvider authProvider}) : _authProvider = authProvider;
   List<ContentPaie> _allContentPaies = [];
 
   List<ContentPaie> get allContentPaies => _allContentPaies;
@@ -622,19 +626,20 @@ class ContentProvider with ChangeNotifier {
       final snapshot = await _firestore
           .collection('ContentPaies')
           .orderBy('createdAt', descending: true)
-          .get(); // On ne met pas de limit pour récupérer tout
+          .get();
 
+      if (_isDisposed) return;
       _allContentPaies = snapshot.docs
           .map((doc) => ContentPaie.fromJson({
         ...doc.data(),
-        'id': doc.id, // Assure que l'id du document est inclus
+        'id': doc.id,
       }))
           .toList();
 
       notifyListeners();
       printVm("All ContentPaies loaded: ${_allContentPaies.length}");
     } catch (e) {
-      printVm('Error loading all ContentPaies: $e');
+      if (!_isDisposed) printVm('Error loading all ContentPaies: $e');
     }
   }
 
@@ -664,17 +669,18 @@ class ContentProvider with ChangeNotifier {
     try {
       final snapshot = await _firestore
           .collection('ContentPaies')
-          .orderBy('createdAt', descending: true) // Trier par date de création
+          .orderBy('createdAt', descending: true)
           .limit(10)
           .get();
 
+      if (_isDisposed) return;
       _featuredContentPaies = snapshot.docs
           .map((doc) => ContentPaie.fromJson({...doc.data(), 'id': doc.id}))
           .toList();
 
       notifyListeners();
     } catch (e) {
-      printVm('Error loading featured ContentPaies: $e');
+      if (!_isDisposed) printVm('Error loading featured ContentPaies: $e');
     }
   }
   Future<void> loadFeaturedContentPaies2() async {

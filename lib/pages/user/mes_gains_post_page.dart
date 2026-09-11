@@ -14,8 +14,28 @@ import '../../theme/app_colors.dart';
 import '../postDetails.dart';
 import '../postDetailsVideo.dart';
 
-const double _fcfaPerView = 1.0;
 const double _minEncaissement = 1000.0;
+const double _baseViewRate = 1.0;
+
+const _scoreTiers = [
+  {'minScore': 80.0, 'multiplier': 1.00, 'label': 'Élite',    'color': 0xFF22C55E},
+  {'minScore': 50.0, 'multiplier': 0.80, 'label': 'Expert',   'color': 0xFF3B82F6},
+  {'minScore': 25.0, 'multiplier': 0.60, 'label': 'Avancé',   'color': 0xFFF97316},
+  {'minScore': 10.0, 'multiplier': 0.40, 'label': 'Standard', 'color': 0xFFF59E0B},
+  {'minScore':  0.0, 'multiplier': 0.20, 'label': 'Débutant', 'color': 0xFF94A3B8},
+];
+
+Map<String, dynamic> _getTier(double score) {
+  for (final t in _scoreTiers) {
+    if (score >= (t['minScore'] as double)) return t;
+  }
+  return _scoreTiers.last;
+}
+
+double _fcfaPerView(double creatorScore) {
+  final t = _getTier(creatorScore);
+  return _baseViewRate * (t['multiplier'] as double);
+}
 
 class MesGainsPage extends StatefulWidget {
   final String userId;
@@ -36,6 +56,7 @@ class _MesGainsPageState extends State<MesGainsPage> {
   bool _isLoadingHistory = false;
   bool _showAllMonths = false;
   bool _isLoadingViewedUser = false;
+  bool _tierInfoExpanded = false;
 
   UserData? _viewedUser;
 
@@ -141,7 +162,8 @@ class _MesGainsPageState extends State<MesGainsPage> {
     final input = double.tryParse(_amountController.text.trim()) ?? 0;
     final totalViews = user.totalPostUniqueViews ?? 0;
     final cashed     = user.postViewsTotalCashed  ?? 0;
-    final available  = ((totalViews * _fcfaPerView) - cashed).clamp(0.0, double.infinity);
+    final rate       = _fcfaPerView(user.creatorScore ?? 0);
+    final available  = ((totalViews * rate) - cashed).clamp(0.0, double.infinity);
 
     if (input < _minEncaissement) { _snack(t.gainsErrMin, colors.danger); return; }
     if (input > available)        { _snack(t.gainsErrMax, colors.danger); return; }
@@ -156,7 +178,9 @@ class _MesGainsPageState extends State<MesGainsPage> {
         final snap = await tx.get(ref);
         final views = (snap.data()?['totalPostUniqueViews'] as num?)?.toInt() ?? 0;
         final cur   = (snap.data()?['postViewsTotalCashed'] as num?)?.toDouble() ?? 0;
-        final curAvailable = ((views * _fcfaPerView) - cur).clamp(0.0, double.infinity);
+        final score = (snap.data()?['creatorScore'] as num?)?.toDouble() ?? 0;
+        final curRate = _fcfaPerView(score);
+        final curAvailable = ((views * curRate) - cur).clamp(0.0, double.infinity);
         if (input > curAvailable) throw Exception('solde_insuffisant');
         tx.update(ref, {
           'postViewsTotalCashed':  FieldValue.increment(input),
@@ -224,6 +248,8 @@ class _MesGainsPageState extends State<MesGainsPage> {
                 children: [
                   _statsCard(user, colors, t),
                   const SizedBox(height: 16),
+                  _tierInfoCard(user, colors),
+                  const SizedBox(height: 16),
                   if (!widget.isAdminView) ...[
                     _encaissCard(user, colors, t),
                     const SizedBox(height: 16),
@@ -261,11 +287,199 @@ class _MesGainsPageState extends State<MesGainsPage> {
     );
   }
 
+  // ── Carte niveau créateur & paliers ──────────────────────
+  Widget _tierInfoCard(UserData user, AppColors colors) {
+    final score     = user.creatorScore ?? 0.0;
+    final tier      = _getTier(score);
+    final tierLabel = tier['label'] as String;
+    final tierColor = Color(tier['color'] as int);
+    final myRate    = _fcfaPerView(score);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: tierColor.withOpacity(0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // En-tête — cliquable pour tout ouvrir
+          GestureDetector(
+            onTap: () => setState(() => _tierInfoExpanded = !_tierInfoExpanded),
+            behavior: HitTestBehavior.opaque,
+            child: Row(children: [
+              Icon(Icons.emoji_events_outlined, color: tierColor, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('Votre niveau créateur',
+                    style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 15)),
+              ),
+              Icon(
+                _tierInfoExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                color: colors.textSecondary, size: 22,
+              ),
+            ]),
+          ),
+          const SizedBox(height: 14),
+
+          // Badge niveau actuel (toujours visible)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+            decoration: BoxDecoration(
+              color: tierColor.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: tierColor.withOpacity(0.35)),
+            ),
+            child: Row(children: [
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Niveau actuel',
+                    style: TextStyle(color: colors.textSecondary, fontSize: 11)),
+                const SizedBox(height: 2),
+                Text(tierLabel,
+                    style: TextStyle(color: tierColor, fontWeight: FontWeight.w800, fontSize: 22)),
+              ]),
+              const Spacer(),
+              Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                Text('Votre RPM',
+                    style: TextStyle(color: colors.textSecondary, fontSize: 11)),
+                const SizedBox(height: 2),
+                Text('${(myRate * 1000).toInt()} FCFA',
+                    style: TextStyle(color: tierColor, fontWeight: FontWeight.bold, fontSize: 20)),
+                Text('pour 1 000 vues',
+                    style: TextStyle(color: tierColor.withOpacity(0.7), fontSize: 10)),
+              ]),
+            ]),
+          ),
+
+          // Contenu dépliable
+          if (_tierInfoExpanded) ...[
+            const SizedBox(height: 14),
+            Divider(color: colors.divider, height: 1),
+            const SizedBox(height: 14),
+
+            // Tableau des paliers
+            Text('Tous les paliers',
+                style: TextStyle(color: colors.textSecondary, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+            const SizedBox(height: 10),
+            ..._scoreTiers.map((t) {
+              final tColor  = Color(t['color'] as int);
+              final tLabel  = t['label'] as String;
+              final tMulti  = t['multiplier'] as double;
+              final tMin    = t['minScore'] as double;
+              final isActive = tierLabel == tLabel;
+              final tRate   = _baseViewRate * tMulti;
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                decoration: BoxDecoration(
+                  color: isActive ? tColor.withOpacity(0.12) : colors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isActive ? tColor.withOpacity(0.5) : Colors.transparent,
+                    width: isActive ? 1.5 : 1,
+                  ),
+                ),
+                child: Row(children: [
+                  Container(
+                    width: 8, height: 8,
+                    decoration: BoxDecoration(
+                      color: isActive ? tColor : tColor.withOpacity(0.4),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      '$tLabel  (score ≥ ${tMin.toStringAsFixed(0)})',
+                      style: TextStyle(
+                        color: isActive ? colors.textPrimary : colors.textSecondary,
+                        fontWeight: isActive ? FontWeight.w700 : FontWeight.normal,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '${(tRate * 1000).toInt()} FCFA RPM',
+                    style: TextStyle(
+                      color: isActive ? tColor : colors.textSecondary,
+                      fontWeight: isActive ? FontWeight.w700 : FontWeight.normal,
+                      fontSize: 12,
+                    ),
+                  ),
+                  if (isActive) ...[
+                    const SizedBox(width: 6),
+                    Icon(Icons.check_circle, color: tColor, size: 14),
+                  ],
+                ]),
+              );
+            }),
+
+            const SizedBox(height: 14),
+            Divider(color: colors.divider, height: 1),
+            const SizedBox(height: 12),
+
+            // Comment progresser
+            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Icon(Icons.lightbulb_outline, color: colors.warning, size: 16),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Comment progresser ?',
+                      style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 12)),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Publie régulièrement du contenu de qualité. Plus tes posts reçoivent de likes, loves et commentaires de ta communauté, plus ton score créateur monte — et plus ton RPM augmente.',
+                    style: TextStyle(color: colors.textSecondary, fontSize: 11.5, height: 1.5),
+                  ),
+                ]),
+              ),
+            ]),
+
+            const SizedBox(height: 12),
+
+            // Message motivant
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [const Color(0xFF22C55E).withOpacity(0.1), const Color(0xFF3B82F6).withOpacity(0.1)],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFF22C55E).withOpacity(0.25)),
+              ),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('🚀', style: TextStyle(fontSize: 16)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Certains créateurs Élite touchent déjà plus de 5 000 FCFA RPM. Comment ? Le RPM de base augmente avec la croissance de la plateforme — et les créateurs avec le meilleur score en bénéficient en premier. Plus tôt tu montes de palier, plus tu en profites.',
+                    style: TextStyle(color: colors.textPrimary, fontSize: 11.5, height: 1.5),
+                  ),
+                ),
+              ]),
+            ),
+          ], // fin section dépliable
+        ],
+      ),
+    );
+  }
+
   // ── Carte statistiques ────────────────────────────────────
   Widget _statsCard(UserData user, AppColors colors, AppLocalizations t) {
+    final score      = user.creatorScore ?? 0.0;
+    final tier       = _getTier(score);
+    final rate       = _fcfaPerView(score);
+    final tierLabel  = tier['label'] as String;
+    final tierColor  = Color(tier['color'] as int);
     final totalViews = user.totalPostUniqueViews ?? 0;
     final cashed     = user.postViewsTotalCashed  ?? 0;
-    final available  = ((totalViews * _fcfaPerView) - cashed).clamp(0.0, double.infinity);
+    final available  = ((totalViews * rate) - cashed).clamp(0.0, double.infinity);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -276,26 +490,47 @@ class _MesGainsPageState extends State<MesGainsPage> {
           colors: [colors.surface, colors.surfaceVariant],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colors.accent.withOpacity(0.35)),
+        border: Border.all(color: tierColor.withOpacity(0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // En-tête avec palier
           Row(children: [
-            Icon(Icons.bar_chart_rounded, color: colors.accent, size: 20),
+            Icon(Icons.bar_chart_rounded, color: tierColor, size: 20),
             const SizedBox(width: 8),
             Text(t.gainsStats,
                 style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 15)),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+              decoration: BoxDecoration(
+                color: tierColor.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: tierColor.withOpacity(0.4)),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.trending_up_rounded, size: 12, color: tierColor),
+                const SizedBox(width: 4),
+                Text(tierLabel,
+                    style: TextStyle(color: tierColor, fontSize: 11, fontWeight: FontWeight.w700)),
+              ]),
+            ),
           ]),
-          const SizedBox(height: 16),
+          const SizedBox(height: 4),
+          Text(
+            '${(rate * 1000).toInt()} FCFA RPM  ·  ${((tier['multiplier'] as double) * 100).toStringAsFixed(0)}% du taux de base (1 000 FCFA RPM max)',
+            style: TextStyle(color: colors.textSecondary, fontSize: 11),
+          ),
+          const SizedBox(height: 14),
           Row(children: [
             Expanded(child: _statChip(t.gainsTotalViews, '$totalViews', Icons.visibility_outlined, colors.info, colors)),
             const SizedBox(width: 12),
-            Expanded(child: _statChip(t.gainsPerView, t.gainsPerViewRate, Icons.attach_money, colors.primary, colors)),
+            Expanded(child: _statChip(t.gainsPerView, '${(rate * 1000).toInt()} FCFA RPM', Icons.attach_money, tierColor, colors)),
           ]),
           const SizedBox(height: 12),
           Row(children: [
-            Expanded(child: _statChip(t.gainsAvailable, '${available.toInt()} FCFA', Icons.account_balance_wallet_outlined, colors.accent, colors,
+            Expanded(child: _statChip(t.gainsAvailable, '${available.toInt()} FCFA', Icons.account_balance_wallet_outlined, tierColor, colors,
                 subtitle: '$totalViews vues')),
             const SizedBox(width: 12),
             Expanded(child: _statChip(t.gainsTotalCashed, '${cashed.toInt()} FCFA', Icons.check_circle_outline, colors.primary, colors)),
@@ -335,9 +570,10 @@ class _MesGainsPageState extends State<MesGainsPage> {
 
   // ── Carte encaissement ────────────────────────────────────
   Widget _encaissCard(UserData user, AppColors colors, AppLocalizations t) {
+    final rate       = _fcfaPerView(user.creatorScore ?? 0);
     final totalViews = user.totalPostUniqueViews ?? 0;
     final cashed     = user.postViewsTotalCashed  ?? 0;
-    final available  = ((totalViews * _fcfaPerView) - cashed).clamp(0.0, double.infinity);
+    final available  = ((totalViews * rate) - cashed).clamp(0.0, double.infinity);
     final canEncash = available >= _minEncaissement;
 
     return Container(
@@ -480,9 +716,10 @@ class _MesGainsPageState extends State<MesGainsPage> {
           const SizedBox(height: 12),
           ...visible.map((e) {
             final views = e.value;
-            final fcfa  = (views * _fcfaPerView).toInt();
+            final rate  = _fcfaPerView(user.creatorScore ?? 0);
+            final fcfa  = (views * rate).toInt();
             return GestureDetector(
-              onTap: () => _showMonthPostsBottomSheet(widget.userId, e.key),
+              onTap: () => _showMonthPostsBottomSheet(widget.userId, e.key, rate),
               child: Container(
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -526,7 +763,7 @@ class _MesGainsPageState extends State<MesGainsPage> {
     );
   }
 
-  void _showMonthPostsBottomSheet(String userId, String monthKey) {
+  void _showMonthPostsBottomSheet(String userId, String monthKey, double rate) {
     showResponsiveBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -534,6 +771,7 @@ class _MesGainsPageState extends State<MesGainsPage> {
       builder: (_) => _MonthPostsSheet(
         userId: userId,
         monthKey: monthKey,
+        fcfaPerView: rate,
         firestore: _firestore,
         onPostTap: _openPostDetail,
         formatMonth: _formatMonth,
@@ -654,6 +892,7 @@ class _MesGainsPageState extends State<MesGainsPage> {
 class _MonthPostsSheet extends StatefulWidget {
   final String userId;
   final String monthKey;
+  final double fcfaPerView;
   final FirebaseFirestore firestore;
   final void Function(Post) onPostTap;
   final String Function(String) formatMonth;
@@ -661,6 +900,7 @@ class _MonthPostsSheet extends StatefulWidget {
   const _MonthPostsSheet({
     required this.userId,
     required this.monthKey,
+    required this.fcfaPerView,
     required this.firestore,
     required this.onPostTap,
     required this.formatMonth,
@@ -922,7 +1162,7 @@ class _MonthPostsSheetState extends State<_MonthPostsSheet> {
               ]),
             ),
             const SizedBox(height: 4),
-            Text('${(views * _fcfaPerView).toInt()} FCFA',
+            Text('${(views * widget.fcfaPerView).toInt()} FCFA',
                 style: TextStyle(
                     color: colors.accent, fontWeight: FontWeight.bold, fontSize: 12)),
           ]),

@@ -138,6 +138,11 @@ export const onPostInteraction = onDocumentCreated(
           notifTitre = `${interactorName} a aimé votre publication`;
           notifDescription = `${interactorName} a aimé votre publication`;
           break;
+        case "love":
+          notifType = "LIKE";
+          notifTitre = `${interactorName} adore votre publication`;
+          notifDescription = `${interactorName} adore votre publication`;
+          break;
         case "comment":
           notifType = "COMMENT";
           notifTitre = `${interactorName} a commenté`;
@@ -164,6 +169,7 @@ export const onPostInteraction = onDocumentCreated(
         post_id: postId,
         post_data_type: postData?.dataType || "",
         media_url: interactorData?.imageUrl || "",
+        post_thumbnail: postData?.thumbnail || postData?.url_media || "",
         is_open: false,
         users_id_view: [],
         status: "VALIDE",
@@ -172,6 +178,26 @@ export const onPostInteraction = onDocumentCreated(
         createdAt: nowMs,
         updatedAt: nowMs,
       });
+
+      // ── Recalcul postScore en temps réel ─────────────────────────────────
+      // On utilise les compteurs actuels du post + la correction pour l'action courante.
+      // Les compteurs côté client sont parfois mis à jour avant/après le trigger,
+      // donc on ajoute +1 manuellement pour l'action qui vient de se produire.
+      try {
+        const likes   = ((postData?.likes   ?? 0) as number) + (type === "like"    ? 1 : 0);
+        const loves   = ((postData?.loves   ?? 0) as number);
+        const comments = ((postData?.comments ?? 0) as number) + (type === "comment" ? 1 : 0);
+        const createdAt = (postData?.created_at ?? Date.now()) as number;
+        const ageDays = (Date.now() - createdAt) / 86_400_000;
+        const raw = likes * 1 + loves * 2 + comments * 3;
+        const score = Math.round((raw / Math.pow(ageDays + 2, 1.5)) * 100) / 100;
+        await db.collection("Posts").doc(postId).update({
+          rawScore: raw,
+          postScore: score,
+        });
+      } catch (scoreErr) {
+        console.error("[scoreEngine] Recalcul postScore échoué:", scoreErr);
+      }
 
       // ── Email (uniquement si l'utilisateur n'a pas désactivé les emails) ──
       const emailNotifications = postOwnerData?.emailNotifications;

@@ -1,5 +1,7 @@
 ﻿// pages/chronique/add_chronique_page.dart
 
+import 'dart:async';
+
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -12,6 +14,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/chroniqueProvider.dart';
+import '../../theme/app_colors.dart';
 
 enum ChroniqueType { TEXT, IMAGE, VIDEO }
 class Chronique {
@@ -207,21 +210,34 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
   final ImagePicker _picker = ImagePicker();
 
   ChroniqueType _selectedType = ChroniqueType.TEXT;
-  Color _selectedColor = Colors.black;
+  Color _selectedColor = const Color(0xFF1A1A2E);
   File? _selectedMedia;
   VideoPlayerController? _videoController;
   bool _isUploading = false;
   double _uploadProgress = 0.0;
 
-  // Couleurs Afro
+  // Palette riche — toutes lisibles avec texte blanc
   final List<Color> _afroColors = [
-    Colors.black,
-    Color(0xFF8B0000), // Rouge foncé
+    Color(0xFF000000), // Noir pur
+    Color(0xFF0D1117), // Nuit
+    Color(0xFF1A1A2E), // Marine nuit
+    Color(0xFF16213E), // Bleu nuit
+    Color(0xFF0F3460), // Bleu royal
+    Color(0xFF1E3A5F), // Bleu acier
+    Color(0xFF533483), // Violet profond
+    Color(0xFF2D1B69), // Indigo
+    Color(0xFF4C1D95), // Violet intense
+    Color(0xFF4A1942), // Prune
+    Color(0xFF4A0E0E), // Bordeaux nuit
+    Color(0xFF8B0000), // Rouge grenat
     Color(0xFFB22222), // Rouge brique
-    Color(0xFFFFD700), // Jaune or
-    Color(0xFFDAA520), // Jaune doré
-    Color(0xFF8B4513), // Marron
-    Color(0xFF2F4F4F), // Gris ardoise foncé
+    Color(0xFF78350F), // Ambre sombre
+    Color(0xFF8B4513), // Brun terra
+    Color(0xFF1B4332), // Vert forêt
+    Color(0xFF134E4A), // Teal profond
+    Color(0xFF2D4A22), // Olive
+    Color(0xFF374151), // Ardoise
+    Color(0xFF2F4F4F), // Gris ardoise
   ];
 
   @override
@@ -268,7 +284,6 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
         return;
       }
 
-      // Vérifier la durée
       final duration = await _getVideoDuration(file);
       if (duration > 30) {
         _showErrorDialog('La vidéo est trop longue (${duration.toStringAsFixed(1)}s). Maximum 30 secondes.');
@@ -288,7 +303,7 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
 
   Future<double> _getFileSize(File file) async {
     final stat = await file.stat();
-    return stat.size / (1024 * 1024); // Convertir en MB
+    return stat.size / (1024 * 1024);
   }
 
   Future<double> _getVideoDuration(File file) async {
@@ -300,16 +315,17 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
   }
 
   void _showErrorDialog(String message) {
+    final colors = AppColors.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.black,
-        title: Text('Erreur', style: TextStyle(color: Color(0xFFFFD700))),
-        content: Text(message, style: TextStyle(color: Colors.white)),
+        backgroundColor: colors.surface,
+        title: Text('Erreur', style: TextStyle(color: colors.accent, fontWeight: FontWeight.bold)),
+        content: Text(message, style: TextStyle(color: colors.textPrimary)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('OK', style: TextStyle(color: Color(0xFFFFD700))),
+            child: Text('OK', style: TextStyle(color: colors.primary, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -341,13 +357,11 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
     final chroniqueProvider = Provider.of<ChroniqueProvider>(context, listen: false);
 
     try {
-      // Vérifier le nombre de chroniques actives
       final activeCount = await chroniqueProvider.getUserActiveChroniquesCount(authProvider.loginUserData.id!);
       final abonnement = authProvider.loginUserData.abonnement;
       final isPremium = abonnement?.estPremium == true;
 
       if (activeCount >= 2 && !isPremium) {
-        // Utilisateur gratuit au-delà de 2 chroniques → proposer 10 pièces
         final coins = authProvider.loginUserData.coinsBalance ?? 0;
         if (coins < 10) {
           _showErrorDialog(
@@ -357,7 +371,6 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
           setState(() => _isUploading = false);
           return;
         }
-        // L'utilisateur a assez de pièces → demander confirmation
         final confirmed = await showDialog<bool>(
           context: context,
           builder: (_) => AlertDialog(
@@ -382,7 +395,6 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
           setState(() => _isUploading = false);
           return;
         }
-        // Déduire 10 pièces de coinsBalance
         await FirebaseFirestore.instance
             .collection('Users')
             .doc(authProvider.loginUserData.id!)
@@ -394,8 +406,7 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
         return;
       }
 
-      // Créer et publier la chronique
-      await chroniqueProvider.publishChronique(
+      final uploadedMediaUrl = await chroniqueProvider.publishChronique(
         userId: authProvider.loginUserData.id!,
         userPseudo: authProvider.loginUserData.pseudo!,
         userImageUrl: authProvider.loginUserData.imageUrl!,
@@ -408,45 +419,44 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
         },
       );
       addPointsForAction(UserAction.post);
-      // Envoyer notification
-      await _sendNotification(authProvider);
+      // Notification fire-and-forget via Cloud Function (abonnés uniquement, comme les posts)
+      unawaited(_sendNotification(authProvider, mediaUrl: uploadedMediaUrl));
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: Color(0xFF8B0000),
-          content: Text(
-            '🎉 Chronique publiée avec succès !',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            textAlign: TextAlign.center,
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: const Color(0xFF1B4332),
+            content: const Text(
+              '🎉 Chronique publiée avec succès !',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
           ),
-        ),
-      );
-
-      Navigator.pop(context);
+        );
+        Navigator.pop(context);
+      }
     } catch (e) {
       printVm("Erreur chronique form : $e");
       _showErrorDialog('Erreur lors de la publication: $e');
     } finally {
-      setState(() => _isUploading = false);
+      if (mounted) setState(() => _isUploading = false);
     }
   }
 
-  Future<void> _sendNotification(UserAuthProvider authProvider) async {
-    final userIds = await authProvider.getAllUsersOneSignaUserId();
-    if (userIds.isNotEmpty) {
-      await authProvider.sendNotification(
-        appName: '@${authProvider.loginUserData.pseudo!}',
-        userIds: userIds,
-        smallImage: authProvider.loginUserData.imageUrl!,
-        send_user_id: authProvider.loginUserData.id!,
-        recever_user_id: "",
-        message: "📢 ${authProvider.loginUserData.pseudo!} a partagé une chronique: ${_getNotificationText()}",
-        type_notif: 'CHRONIQUE',
-        post_id: "",
-        post_type: _selectedType.toString(),
-        chat_id: '',
-      );
-    }
+  Future<void> _sendNotification(UserAuthProvider authProvider, {String? mediaUrl}) async {
+    // Pour image/vidéo : utiliser la miniature du média uploadé.
+    // Pour texte : utiliser la photo de profil de l'auteur.
+    final notifImage = (_selectedType != ChroniqueType.TEXT && mediaUrl != null && mediaUrl.isNotEmpty)
+        ? mediaUrl
+        : authProvider.loginUserData.imageUrl!;
+
+    await authProvider.sendPushNotificationToUsers(
+      sender: authProvider.loginUserData,
+      message: "📢 ${authProvider.loginUserData.pseudo!} a partagé une chronique: ${_getNotificationText()}",
+      typeNotif: 'CHRONIQUE',
+      smallImage: notifImage,
+      postType: _selectedType.toString(),
+    );
   }
 
   String _getNotificationText() {
@@ -456,305 +466,81 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
             ? '${_textController.text.substring(0, 100)}...'
             : _textController.text;
       case ChroniqueType.IMAGE:
-        return '📷 ${_textController.text }';
+        return '📷 ${_textController.text}';
       case ChroniqueType.VIDEO:
-        return '🎥 ${_textController.text }';
+        return '🎥 ${_textController.text}';
       default:
         return 'Nouvelle chronique';
     }
   }
 
-  Widget _buildMediaPreview() {
-    if (_selectedMedia == null) return SizedBox();
-
-    switch (_selectedType) {
-      case ChroniqueType.IMAGE:
-        return Container(
-          width: double.infinity,
-          height: 200,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: Color(0xFFFFD700), width: 2),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(13),
-            child: Image.file(_selectedMedia!, fit: BoxFit.cover),
-          ),
-        );
-      case ChroniqueType.VIDEO:
-        return Container(
-          width: double.infinity,
-          height: 200,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: Color(0xFFFFD700), width: 2),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(13),
-            child: _videoController != null && _videoController!.value.isInitialized
-                ? VideoPlayer(_videoController!)
-                : Center(child: CircularProgressIndicator(color: Color(0xFFFFD700))),
-          ),
-        );
-      default:
-        return SizedBox();
-    }
-  }
-
-  Widget _buildTextPreview() {
-    if (_selectedType != ChroniqueType.TEXT || _textController.text.isEmpty) {
-      return SizedBox();
-    }
-
-    return Container(
-      width: double.infinity,
-      height: 200,
-      decoration: BoxDecoration(
-        color: _selectedColor,
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Color(0xFFFFD700), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text(
-            _textController.text,
-            style: TextStyle(
-              fontSize: 24,
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-              fontFamily: 'AfroFont', // Remplacez par votre police Afro
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colors.background,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: colors.background,
         elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: colors.textPrimary, size: 20),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Text(
-          'Nouvelle Chronique Afro',
+          'Nouvelle chronique',
           style: TextStyle(
-            color: Color(0xFFFFD700),
+            color: colors.textPrimary,
             fontWeight: FontWeight.bold,
-            fontSize: 20,
+            fontSize: 18,
           ),
         ),
         centerTitle: true,
-        iconTheme: IconThemeData(color: Color(0xFFFFD700)),
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Sélection du type
-            Container(
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Color(0xFF1A1A1A),
-                borderRadius: BorderRadius.circular(15),
-                border: Border.all(color: Color(0xFFFFD700)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Type de Chronique',
-                    style: TextStyle(color: Color(0xFFFFD700), fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 10),
-                  Row(
-                    children: [
-                      _buildTypeOption(ChroniqueType.TEXT, Icons.text_fields, 'Texte'),
-                      SizedBox(width: 10),
-                      _buildTypeOption(ChroniqueType.IMAGE, Icons.photo, 'Image'),
-                      SizedBox(width: 10),
-                      _buildTypeOption(ChroniqueType.VIDEO, Icons.videocam, 'Vidéo'),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+            // Type selector
+            _buildTypeSelector(colors),
+            const SizedBox(height: 20),
 
-            SizedBox(height: 20),
+            // Contenu selon le type
+            if (_selectedType == ChroniqueType.TEXT) _buildTextContent(colors),
+            if (_selectedType != ChroniqueType.TEXT) _buildMediaContent(colors),
 
-            // Champ texte
-            if (_selectedType != ChroniqueType.TEXT)
-              TextField(
-                controller: _textController,
-                maxLines: 2,
-                maxLength: 100,
-                decoration: InputDecoration(
-                  hintText: 'Description (optionnelle - max 100 caractères)',
-                  hintStyle: TextStyle(color: Colors.grey),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: Color(0xFFFFD700)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: Color(0xFFFFD700), width: 2),
-                  ),
-                  filled: true,
-                  fillColor: Color(0xFF1A1A1A),
-                  counterStyle: TextStyle(color: Colors.grey),
-                ),
-                style: TextStyle(color: Colors.white),
-              ),
-
-            if (_selectedType == ChroniqueType.TEXT) ...[
-              TextField(
-                controller: _textController,
-                maxLines: 4,
-                decoration: InputDecoration(
-                  hintText: 'Écrivez votre chronique...',
-                  hintStyle: TextStyle(color: Colors.grey),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: Color(0xFFFFD700)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: Color(0xFFFFD700), width: 2),
-                  ),
-                  filled: true,
-                  fillColor: Color(0xFF1A1A1A),
-                ),
-                style: TextStyle(color: Colors.white),
-              ),
-
-              SizedBox(height: 20),
-
-              // Sélection couleur
-              Container(
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Color(0xFF1A1A1A),
-                  borderRadius: BorderRadius.circular(15),
-                  border: Border.all(color: Color(0xFFFFD700)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Couleur du fond',
-                      style: TextStyle(color: Color(0xFFFFD700), fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(height: 10),
-                    SizedBox(
-                      height: 50,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        children: _afroColors.map((color) => _buildColorOption(color)).toList(),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-
-            // Boutons média
-            if (_selectedType != ChroniqueType.TEXT) ...[
-              SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: _pickImage,
-                      icon: Icon(Icons.photo_library, color: Colors.white),
-                      label: Text('Galerie', style: TextStyle(color: Colors.white)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF8B0000),
-                        padding: EdgeInsets.symmetric(vertical: 15),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 10),
-                  if (_selectedType == ChroniqueType.VIDEO)
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: _pickVideo,
-                        icon: Icon(Icons.video_library, color: Colors.white),
-                        label: Text('Vidéo', style: TextStyle(color: Colors.white)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFFB22222),
-                          padding: EdgeInsets.symmetric(vertical: 15),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ],
-
-            SizedBox(height: 20),
-
-            // Preview
-            if (_selectedType == ChroniqueType.TEXT) _buildTextPreview(),
-            if (_selectedType != ChroniqueType.TEXT) _buildMediaPreview(),
-
-            SizedBox(height: 20),
+            const SizedBox(height: 24),
 
             // Barre de progression
-            if (_isUploading)
-              Column(
-                children: [
-                  LinearProgressIndicator(
-                    value: _uploadProgress,
-                    backgroundColor: Colors.grey[800],
-                    color: Color(0xFFFFD700),
-                  ),
-                  SizedBox(height: 10),
-                  Text(
-                    '${(_uploadProgress * 100).toStringAsFixed(0)}%',
-                    style: TextStyle(color: Color(0xFFFFD700)),
-                  ),
-                ],
-              ),
-
-            SizedBox(height: 20),
+            if (_isUploading) _buildProgressBar(colors),
+            if (_isUploading) const SizedBox(height: 20),
 
             // Bouton publier
-            ElevatedButton(
-              onPressed: _isUploading || !_isFormValid ? null : _publishChronique,
-              child: Text(
-                'PUBLIER LA CHRONIQUE',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _isFormValid ? Color(0xFFFFD700) : Colors.grey,
-                minimumSize: Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                elevation: 5,
-                shadowColor: Color(0xFFFFD700).withOpacity(0.5),
-              ),
-            ),
+            _buildPublishButton(colors),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTypeOption(ChroniqueType type, IconData icon, String label) {
+  Widget _buildTypeSelector(AppColors colors) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: colors.surfaceVariant,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          _buildTypeTab(ChroniqueType.TEXT, Icons.notes_rounded, 'Texte', colors),
+          _buildTypeTab(ChroniqueType.IMAGE, Icons.image_rounded, 'Image', colors),
+          _buildTypeTab(ChroniqueType.VIDEO, Icons.videocam_rounded, 'Vidéo', colors),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTypeTab(ChroniqueType type, IconData icon, String label, AppColors colors) {
     final isSelected = _selectedType == type;
     return Expanded(
       child: GestureDetector(
@@ -764,24 +550,27 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
             _selectedMedia = null;
             _videoController?.dispose();
             _videoController = null;
+            _textController.clear();
           });
         },
-        child: Container(
-          padding: EdgeInsets.symmetric(vertical: 12),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? Color(0xFFFFD700) : Color(0xFF2A2A2A),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: isSelected ? Color(0xFFFFD700) : Colors.grey),
+            color: isSelected ? colors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(11),
           ),
-          child: Column(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: isSelected ? Colors.black : Color(0xFFFFD700)),
-              SizedBox(height: 5),
+              Icon(icon, color: isSelected ? Colors.white : colors.textPrimary.withOpacity(0.5), size: 16),
+              const SizedBox(width: 5),
               Text(
                 label,
                 style: TextStyle(
-                  color: isSelected ? Colors.black : Color(0xFFFFD700),
-                  fontWeight: FontWeight.bold,
+                  color: isSelected ? Colors.white : colors.textPrimary.withOpacity(0.5),
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  fontSize: 13,
                 ),
               ),
             ],
@@ -791,29 +580,289 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
     );
   }
 
-  Widget _buildColorOption(Color color) {
-    final isSelected = _selectedColor == color;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedColor = color),
-      child: Container(
-        width: 40,
-        height: 40,
-        margin: EdgeInsets.only(right: 10),
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: isSelected ? Color(0xFFFFD700) : Colors.transparent,
-            width: 3,
+  Widget _buildTextContent(AppColors colors) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Champ texte
+        Container(
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: colors.border),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 5,
-              offset: Offset(0, 2),
+          child: TextField(
+            controller: _textController,
+            maxLines: 5,
+            style: TextStyle(color: colors.textPrimary, fontSize: 15),
+            decoration: InputDecoration(
+              hintText: 'Écrivez votre chronique...',
+              hintStyle: TextStyle(color: colors.textPrimary.withOpacity(0.35)),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.all(16),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Prévisualisation
+        if (_textController.text.trim().isNotEmpty) ...[
+          Text(
+            'Aperçu',
+            style: TextStyle(color: colors.textPrimary.withOpacity(0.6), fontSize: 12, fontWeight: FontWeight.w500),
+          ),
+          const SizedBox(height: 8),
+          _buildTextPreviewCard(),
+          const SizedBox(height: 16),
+        ],
+
+        // Couleur de fond
+        Text(
+          'Couleur de fond',
+          style: TextStyle(color: colors.textPrimary, fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 10),
+        _buildColorPicker(colors),
+      ],
+    );
+  }
+
+  Widget _buildTextPreviewCard() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: AspectRatio(
+        aspectRatio: 9 / 16,
+        child: Container(
+          color: _selectedColor,
+          alignment: Alignment.center,
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            _textController.text,
+            style: const TextStyle(
+              fontSize: 22,
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              height: 1.4,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildColorPicker(AppColors colors) {
+    return SizedBox(
+      height: 48,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: _afroColors.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          final color = _afroColors[i];
+          final isSelected = _selectedColor == color;
+          return GestureDetector(
+            onTap: () => setState(() => _selectedColor = color),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              width: isSelected ? 44 : 40,
+              height: isSelected ? 44 : 40,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected ? colors.accent : Colors.transparent,
+                  width: isSelected ? 3 : 0,
+                ),
+                boxShadow: isSelected
+                    ? [BoxShadow(color: colors.accent.withOpacity(0.4), blurRadius: 8)]
+                    : [],
+              ),
+              child: isSelected
+                  ? const Icon(Icons.check_rounded, color: Colors.white, size: 16)
+                  : null,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildMediaContent(AppColors colors) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Prévisualisation ou zone de sélection
+        ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: AspectRatio(
+            aspectRatio: 9 / 16,
+            child: _selectedMedia == null
+                ? _buildMediaPlaceholder(colors)
+                : _selectedType == ChroniqueType.IMAGE
+                    ? Image.file(_selectedMedia!, fit: BoxFit.cover)
+                    : (_videoController != null && _videoController!.value.isInitialized
+                        ? VideoPlayer(_videoController!)
+                        : Container(
+                            color: colors.surfaceVariant,
+                            child: Center(child: CircularProgressIndicator(color: colors.primary)),
+                          )),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Boutons de sélection
+        Row(
+          children: [
+            Expanded(
+              child: _buildMediaButton(
+                icon: Icons.photo_library_rounded,
+                label: 'Galerie',
+                onTap: _pickImage,
+                color: const Color(0xFF0F3460),
+              ),
+            ),
+            if (_selectedType == ChroniqueType.VIDEO) ...[
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildMediaButton(
+                  icon: Icons.video_library_rounded,
+                  label: 'Vidéo',
+                  onTap: _pickVideo,
+                  color: const Color(0xFF4A0E0E),
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 14),
+
+        // Description optionnelle
+        Container(
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: colors.border),
+          ),
+          child: TextField(
+            controller: _textController,
+            maxLines: 2,
+            maxLength: 100,
+            style: TextStyle(color: colors.textPrimary, fontSize: 14),
+            decoration: InputDecoration(
+              hintText: 'Description (optionnelle)',
+              hintStyle: TextStyle(color: colors.textPrimary.withOpacity(0.35)),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              counterStyle: TextStyle(color: colors.textPrimary.withOpacity(0.4), fontSize: 11),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMediaPlaceholder(AppColors colors) {
+    return GestureDetector(
+      onTap: _selectedType == ChroniqueType.IMAGE ? _pickImage : _pickVideo,
+      child: Container(
+        color: colors.surfaceVariant,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              _selectedType == ChroniqueType.IMAGE ? Icons.add_photo_alternate_rounded : Icons.video_call_rounded,
+              size: 48,
+              color: colors.textPrimary.withOpacity(0.3),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              _selectedType == ChroniqueType.IMAGE ? 'Appuyez pour choisir une image' : 'Appuyez pour choisir une vidéo',
+              style: TextStyle(color: colors.textPrimary.withOpacity(0.4), fontSize: 14),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildMediaButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    required Color color,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 13),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white, size: 18),
+            const SizedBox(width: 8),
+            Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProgressBar(AppColors colors) {
+    return Column(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: _uploadProgress,
+            minHeight: 6,
+            backgroundColor: colors.surfaceVariant,
+            color: colors.primary,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          '${(_uploadProgress * 100).toStringAsFixed(0)}%',
+          style: TextStyle(color: colors.textPrimary.withOpacity(0.6), fontSize: 12),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPublishButton(AppColors colors) {
+    final canPublish = !_isUploading && _isFormValid;
+    return GestureDetector(
+      onTap: canPublish ? _publishChronique : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        height: 52,
+        decoration: BoxDecoration(
+          color: canPublish ? colors.accent : colors.surfaceVariant,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: canPublish
+              ? [BoxShadow(color: colors.accent.withOpacity(0.35), blurRadius: 12, offset: const Offset(0, 4))]
+              : [],
+        ),
+        alignment: Alignment.center,
+        child: _isUploading
+            ? SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.black),
+              )
+            : Text(
+                'Publier la chronique',
+                style: TextStyle(
+                  color: canPublish ? Colors.black : colors.textPrimary.withOpacity(0.3),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
+              ),
       ),
     );
   }
