@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
+import '../../../layout/responsive_layout.dart';
 import '../../../models/model_data.dart';
 import '../../../pages/afroshop/marketPlace/acceuil/home_afroshop.dart';
 import '../../../theme/app_colors.dart';
@@ -193,6 +194,7 @@ class ShopPromoVideoItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final picks = _picks;
     final size = MediaQuery.of(context).size;
+    final contentW = AppLayout.effectiveContentWidth(context);
 
     return Container(
       color: Colors.black,
@@ -266,16 +268,16 @@ class ShopPromoVideoItem extends StatelessWidget {
                               child: imgUrl != null
                                   ? CachedNetworkImage(
                                       imageUrl: imgUrl,
-                                      height: size.width * 0.28,
+                                      height: contentW * 0.28,
                                       width: double.infinity,
                                       fit: BoxFit.cover,
                                       errorWidget: (_, __, ___) => Container(
-                                        height: size.width * 0.28,
+                                        height: contentW * 0.28,
                                         color: const Color(0xFF1A1A1A),
                                       ),
                                     )
                                   : Container(
-                                      height: size.width * 0.28,
+                                      height: contentW * 0.28,
                                       color: const Color(0xFF1A1A1A),
                                     ),
                             ),

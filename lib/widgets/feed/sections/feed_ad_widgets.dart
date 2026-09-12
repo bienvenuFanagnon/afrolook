@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../layout/responsive_layout.dart';
 import '../../../models/model_data.dart';
 import '../../../pages/admin/AfrolookPub/advertisementPostImageWidget.dart';
 import '../../../pages/admin/AfrolookPub/advertisement_video_widget.dart';
@@ -68,7 +69,7 @@ class _FeedAdCarouselState extends State<FeedAdCarousel> {
         final post = Post.fromJson(currentAdData['post']);
         final ad = Advertisement.fromJson(currentAdData['ad']);
 
-        final screenWidth = MediaQuery.of(context).size.width;
+        final screenWidth = AppLayout.effectiveContentWidth(context);
         const hMargin = 12.0;
         final cardWidth = screenWidth - hMargin * 2;
         final imageHeight = cardWidth * 1.06;

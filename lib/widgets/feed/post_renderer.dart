@@ -34,43 +34,48 @@ class PostRenderer extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    // Participation à un challenge
-    if (post.type == PostType.CHALLENGEPARTICIPATION.name) {
-      return LookChallengePostWidget(
-        post: post,
-        height: size.height,
-        width: size.width,
-      );
-    }
+    return LayoutBuilder(builder: (context, constraints) {
+      // Largeur réelle du conteneur (tient compte du CenteredContent sur wide)
+      final double w = constraints.maxWidth.isFinite ? constraints.maxWidth : size.width;
 
-    // Post vidéo (YouTube / local)
-    if (post.type == PostType.POST.name &&
-        post.dataType == PostDataType.VIDEO.name) {
-      return YouTubeVideoCard(
-        key: ValueKey('video_${post.id}'),
+      // Participation à un challenge
+      if (post.type == PostType.CHALLENGEPARTICIPATION.name) {
+        return LookChallengePostWidget(
+          post: post,
+          height: size.height,
+          width: w,
+        );
+      }
+
+      // Post vidéo (YouTube / local)
+      if (post.type == PostType.POST.name &&
+          post.dataType == PostDataType.VIDEO.name) {
+        return YouTubeVideoCard(
+          key: ValueKey('video_${post.id}'),
+          post: post,
+          index: index,
+          currentFilterCountry: filterCountry,
+          onTap: () => _openVideoDetails(context),
+        );
+      }
+
+      // Post audio
+      if (post.type == PostType.POST.name &&
+          post.dataType == PostDataType.AUDIO.name) {
+        return AudioPostCard(post: post);
+      }
+
+      // Cas général (image, texte, article, service…)
+      return HomePostUsersWidget(
+        key: ValueKey('post_${post.id}'),
         post: post,
         index: index,
+        height: size.height * 0.6,
+        width: w,
+        isDegrade: true,
         currentFilterCountry: filterCountry,
-        onTap: () => _openVideoDetails(context),
       );
-    }
-
-    // Post audio
-    if (post.type == PostType.POST.name &&
-        post.dataType == PostDataType.AUDIO.name) {
-      return AudioPostCard(post: post);
-    }
-
-    // Cas général (image, texte, article, service…)
-    return HomePostUsersWidget(
-      key: ValueKey('post_${post.id}'),
-      post: post,
-      index: index,
-      height: size.height * 0.6,
-      width: size.width,
-      isDegrade: true,
-      currentFilterCountry: filterCountry,
-    );
+    });
   }
 
   void _openVideoDetails(BuildContext context) {

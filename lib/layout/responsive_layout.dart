@@ -47,4 +47,11 @@ class AppLayout {
 
   /// Affiche le panneau droit uniquement sur desktop (> 992px).
   static bool showRightPanel(BuildContext context) => isDesktop(context);
+
+  /// Largeur effective du contenu feed, tenant compte du CenteredContent (max 680px).
+  /// Sur mobile : largeur réelle. Sur tablette/desktop : plafonnée à [maxFeedWidth].
+  static double effectiveContentWidth(BuildContext context) {
+    final w = MediaQuery.of(context).size.width;
+    return isWide(context) ? w.clamp(0.0, maxFeedWidth) : w;
+  }
 }

@@ -956,7 +956,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     super.build(context);
     final colors = AppColors.of(context);
     final h = MediaQuery.of(context).size.height;
-    final w = MediaQuery.of(context).size.width;
+    final w = widget.width;
 
     if (_isLoadingUser || _isLoadingCanal) {
       return _buildSkeletonLoader();
@@ -2219,7 +2219,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   Widget _buildMultipleImages(List<String> images, double height) {
     final colors = AppColors.of(context);
     final displayedImages = images.take(4).toList();
-    final screenWidth = MediaQuery.of(context).size.width;
+    final screenWidth = widget.width;
     final itemWidth = (screenWidth / 2).toInt();
 
     return GestureDetector(

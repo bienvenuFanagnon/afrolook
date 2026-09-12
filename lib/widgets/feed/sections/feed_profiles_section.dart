@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../../layout/responsive_layout.dart';
 import '../../../models/model_data.dart';
 import '../../../pages/canaux/detailsCanal.dart';
 import '../../../pages/listeUserLikepage.dart';
@@ -597,7 +598,7 @@ class _RectList extends StatelessWidget {
           final unseen = unseenCounts[user.id] ?? 0;
           return Container(
             margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            width: size.width * 0.35,
+            width: AppLayout.effectiveContentWidth(context) * 0.35,
             child: _RectCard(
               user: user,
               size: size,

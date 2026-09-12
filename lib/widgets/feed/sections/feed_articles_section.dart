@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../layout/responsive_layout.dart';
 import '../../../models/model_data.dart';
 import '../../../pages/afroshop/marketPlace/component.dart';
 import '../../../pages/afroshop/marketPlace/acceuil/home_afroshop.dart';
@@ -25,6 +26,7 @@ class FeedArticlesSection extends StatelessWidget {
 
     final size = MediaQuery.of(context).size;
     final colors = AppColors.of(context);
+    final contentW = AppLayout.effectiveContentWidth(context);
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -49,10 +51,10 @@ class FeedArticlesSection extends StatelessWidget {
               itemCount: articles.length,
               itemBuilder: (_, i) => Container(
                 margin: const EdgeInsets.symmetric(horizontal: 8),
-                width: size.width * 0.55,
+                width: contentW * 0.55,
                 child: ProductWidget(
                   article: articles[i],
-                  width: size.width * 0.55,
+                  width: contentW * 0.55,
                   height: size.height * 0.22,
                   isOtherPage: true,
                 ),

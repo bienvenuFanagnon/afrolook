@@ -1,4 +1,5 @@
 import 'package:afrotok/utils/responsive_sheet.dart';
+import 'package:afrotok/layout/responsive_layout.dart';
 import 'dart:ui';
 
 import 'package:cross_file/cross_file.dart';
@@ -1939,7 +1940,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   Widget _buildVideoContent() {
     final colors = AppColors.of(context);
     final isLocked = _isLockedContent;
-    final screenWidth = MediaQuery.of(context).size.width;
+    final screenWidth = AppLayout.effectiveContentWidth(context);
     final isAd = widget.post.isAdvertisement == true;
     final bool isVideoPortrait = widget.post.isPortrait ?? true;
 
