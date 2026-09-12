@@ -1,5 +1,4 @@
-﻿import 'package:android_id/android_id.dart';
-import 'package:afrotok/pages/component/consoleWidget.dart';
+﻿import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'dart:io';
@@ -15,16 +14,8 @@ class DeviceInfoService {
       String deviceId = 'unknown_device';
 
       if (Platform.isAndroid) {
-        // Utilisation de android_id pour un ID stable sur Android
-        const androidId = AndroidId();
-        deviceId = (await androidId.getId()) ?? 'unknown_android_id';
-
-        // Fallback avec device_info_plus si nécessaire
-        if (deviceId == 'unknown_android_id' || deviceId.isEmpty) {
-          final androidInfo = await deviceInfo.androidInfo;
-          deviceId = androidInfo.id;
-        }
-
+        final androidInfo = await deviceInfo.androidInfo;
+        deviceId = androidInfo.id.isNotEmpty ? androidInfo.id : 'unknown_android_id';
       } else if (Platform.isIOS) {
         final iosInfo = await deviceInfo.iosInfo;
         // identifierForVendor persiste après réinstallation sur iOS

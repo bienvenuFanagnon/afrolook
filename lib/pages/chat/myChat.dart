@@ -61,8 +61,8 @@ import '../LiveAgora/livesAgora.dart';
 import '../LiveAgora/livePage.dart';
 import '../LiveAgora/live_ended_page.dart';
 import '../../services/chat_sound_service.dart';
-import 'package:flutter_windowmanager/flutter_windowmanager.dart';
 import 'package:universal_platform/universal_platform.dart';
+// flutter_windowmanager supprimé — Android-only, fonctionnalité non critique sur iOS
 import 'package:confetti/confetti.dart';
 
 class MyChat extends StatefulWidget {
@@ -225,9 +225,6 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     _chatStream = _userProvider.getStreamChat(widget.chat.id!).asBroadcastStream();
 
     _markActiveInChat(true);
-    if (UniversalPlatform.isAndroid) {
-      FlutterWindowManager.addFlags(FlutterWindowManager.FLAG_SECURE);
-    }
 
     _audioRecorder = AudioRecorder();
     _initializeChat();
@@ -750,9 +747,6 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   @override
   void dispose() {
     _markActiveInChat(false);
-    if (UniversalPlatform.isAndroid) {
-      FlutterWindowManager.clearFlags(FlutterWindowManager.FLAG_SECURE);
-    }
     WidgetsBinding.instance.removeObserver(this);
     _audioPlayer.dispose();
     _audioRecorder?.dispose();

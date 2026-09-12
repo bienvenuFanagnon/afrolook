@@ -1,0 +1,27 @@
+workflows:
+  ios-debug-build:
+    name: iOS Debug Build (no signing)
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Get Flutter packages
+        script: flutter pub get
+      - name: Pod install
+        script: |
+          cd ios
+          pod install --repo-update
+      - name: Build iOS (no code sign)
+        script: |
+          flutter build ios --debug --no-codesign
+    artifacts:
+      - build/ios/iphoneos/Runner.app
+    publishing:
+      email:
+        recipients:
+          - kfanagnon@togoanvt.org
+        notify:
+          success: true
+          failure: true

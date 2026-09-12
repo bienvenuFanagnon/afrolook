@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Afrotok</string>
+	<string>Afrolook</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -47,5 +47,30 @@
 	<true/>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Afrolook utilise Face ID pour protéger votre messagerie.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Afrolook utilise la caméra pour créer des photos, vidéos et lives.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Afrolook utilise le microphone pour les messages audio et les lives.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Afrolook accède à votre galerie pour partager des photos et vidéos.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Afrolook enregistre des médias dans votre galerie.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Afrolook utilise votre position pour afficher du contenu local.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>Afrolook accède à vos contacts pour vous aider à trouver vos amis.</string>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>Afrolook vous envoie des notifications pour les nouveaux messages et likes.</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>Afrolook utilise votre identifiant publicitaire pour afficher des publicités pertinentes et mesurer leur efficacité.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>processing</string>
+	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>afrolookTask</string>
+	</array>
 </dict>
 </plist>
