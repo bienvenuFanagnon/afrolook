@@ -1,6 +1,5 @@
 import UIKit
 import Flutter
-import workmanager_apple
 
 @UIApplicationMain
 @objc class AppDelegate: FlutterAppDelegate {
@@ -9,9 +8,6 @@ import workmanager_apple
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
     GeneratedPluginRegistrant.register(with: self)
-    // BGTask handlers must be registered before applicationDidFinishLaunching returns
-    WorkmanagerPlugin.registerTask(withIdentifier: "afrolookTask")
-    WorkmanagerPlugin.registerTask(withIdentifier: "afrolookTestTask")
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 

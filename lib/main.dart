@@ -171,8 +171,8 @@ Future<void> main() async {
 
   if (!kIsWeb) initLocalNotifications();
 
-  // Workmanager
-  if (!kIsWeb) {
+  // Workmanager — Android uniquement (iOS : BGTaskScheduler nécessite enregistrement natif non supporté)
+  if (!kIsWeb && Platform.isAndroid) {
     await Workmanager().initialize(
       callbackDispatcher,
       isInDebugMode: false,
