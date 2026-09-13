@@ -14,6 +14,8 @@ workflows:
     scripts:
       - name: Set up Xcode signing
         script: xcode-project use-profiles
+      - name: Disable Flutter Swift Package Manager
+        script: flutter config --no-enable-swift-package-manager
       - name: Get Flutter packages
         script: flutter pub get
       - name: Pod install
