@@ -43,8 +43,25 @@ post_install do |installer|
     flutter_additional_ios_build_settings(target)
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '17.0'
-      # Nécessaire pour Agora RTC Engine
       config.build_settings['ENABLE_BITCODE'] = 'NO'
+    end
+  end
+
+  # Fix: aosl.xcframework est inclus par agora_rtc_engine ET agora_rtm.
+  # Xcode refuse les doublons — on supprime les copies en trop.
+  seen_paths = {}
+  installer.pods_project.targets.each do |target|
+    target.build_phases.each do |phase|
+      next unless phase.is_a?(Xcodeproj::Project::Object::PBXCopyFilesBuildPhase)
+      phase.files.each do |build_file|
+        path = build_file.file_ref&.path
+        next unless path&.include?('aosl')
+        if seen_paths[path]
+          build_file.remove_from_project
+        else
+          seen_paths[path] = true
+        end
+      end
     end
   end
 end
