@@ -59,6 +59,8 @@
 	<string>Afrolook enregistre des médias dans votre galerie.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Afrolook utilise votre position pour afficher du contenu local.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Afrolook utilise votre position pour afficher du contenu local.</string>
 	<key>NSContactsUsageDescription</key>
 	<string>Afrolook accède à vos contacts pour vous aider à trouver vos amis.</string>
 	<key>NSUserNotificationsUsageDescription</key>
