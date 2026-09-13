@@ -1,4 +1,48 @@
 workflows:
+  ios-testflight:
+    name: iOS TestFlight Build
+    max_build_duration: 90
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.afrotok.afrotok
+    integrations:
+      app_store_connect: Afrolook
+    scripts:
+      - name: Get Flutter packages
+        script: flutter pub get
+      - name: Pod install
+        script: |
+          cd ios
+          pod install --repo-update
+      - name: Set build number
+        script: |
+          BUILD_NUMBER=$(($(app-store-connect get-latest-testflight-build-number "6811423047") + 1))
+          cd ios
+          agvtool new-version -all $BUILD_NUMBER
+      - name: Build iOS release
+        script: |
+          flutter build ipa --release \
+            --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        beta_groups:
+          - Afrolook Testers
+      email:
+        recipients:
+          - kfanagnon@togoanvt.org
+        notify:
+          success: true
+          failure: true
+
   ios-debug-build:
     name: iOS Debug Build (no signing)
     max_build_duration: 60
