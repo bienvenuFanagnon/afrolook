@@ -47,21 +47,25 @@ post_install do |installer|
     end
   end
 
-  # Fix: aosl.xcframework est inclus par agora_rtc_engine ET agora_rtm.
-  # Xcode refuse les doublons — on supprime les copies en trop.
-  seen_paths = {}
-  installer.pods_project.targets.each do |target|
-    target.build_phases.each do |phase|
-      next unless phase.is_a?(Xcodeproj::Project::Object::PBXCopyFilesBuildPhase)
-      phase.files.each do |build_file|
-        path = build_file.file_ref&.path
-        next unless path&.include?('aosl')
-        if seen_paths[path]
-          build_file.remove_from_project
-        else
-          seen_paths[path] = true
-        end
+  # Fix: aosl.xcframework inclus par agora_rtc_engine ET agora_rtm.
+  # CocoaPods génère des .xcfilelist listant les frameworks à embedder.
+  # Si aosl apparaît deux fois → Xcode "Multiple commands produce".
+  # On déduplique directement dans les xcfilelists après pod install.
+  support_files = "#{installer.sandbox.root}/Target Support Files"
+  Dir.glob("#{support_files}/**/*.xcfilelist").each do |xcfilelist|
+    next unless File.exist?(xcfilelist)
+    lines = File.readlines(xcfilelist, chomp: true)
+    next unless lines.any? { |l| l.include?('aosl') }
+    seen_aosl = false
+    deduped = lines.reject do |line|
+      if line.include?('aosl')
+        dup = seen_aosl
+        seen_aosl = true
+        dup
+      else
+        false
       end
     end
+    File.write(xcfilelist, deduped.join("\n") + "\n") if deduped.size < lines.size
   end
 end
