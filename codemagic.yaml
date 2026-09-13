@@ -39,7 +39,7 @@ workflows:
         auth: integration
         submit_to_testflight: true
         beta_groups:
-          - Afrolook Testers
+          - Testeurs
       email:
         recipients:
           - kfanagnon@togoanvt.org
