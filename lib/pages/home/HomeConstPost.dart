@@ -395,7 +395,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
     bool shouldStart = await _shouldStartTimer();
     if (!shouldStart) return;
-    _checkAndShowSupportPopup();
+    // _checkAndShowSupportPopup();
 
   }
   void _stopStayTimer() {
@@ -1570,6 +1570,97 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     printVm('✅ Filtre appliqué: $_currentFilter - Pays: $_selectedCountryCode');
   }
 
+
+  void _showAddressUpdateModal() {
+    final colors = AppColors.of(context);
+
+    showDialog(
+      context: context,
+      barrierDismissible: true, // Permet de fermer en cliquant en dehors ou sur fermer
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: colors.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              Icon(Icons.location_on, color: primaryGreen, size: 24),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  "Mise à jour d'adresse",
+                  style: TextStyle(color: colors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            "Mets à jour ton pays pour voir plus de posts destinés à ta région et profiter d'une meilleure expérience !",
+            style: TextStyle(color: colors.textSecondary, fontSize: 14, height: 1.4),
+          ),
+          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          actions: [
+            // Bouton pour fermer (refuser / ignorer) -> Applique le Togo par défaut
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await _setDefaultCountryToTogo();
+              },
+              child: Text("Plus tard", style: TextStyle(color: colors.textSecondary)),
+            ),
+            // Bouton pour aller mettre à jour
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => UpdateUserData(title: "Mise à jour d'adresse"),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryGreen,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: const Text("Mettre à jour"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Méthode pour assigner le Togo par défaut si l'utilisateur ferme le modal
+  Future<void> _setDefaultCountryToTogo() async {
+    final userId = authProvider.loginUserData.id;
+    if (userId == null || userId.isEmpty) return;
+
+    final defaultCountryData = {
+      "country": "Togo",
+      "state": "",
+      "city": "",
+      "countryCode": "TG",
+      "realCountry": "Togo",
+    };
+
+    // Mise à jour locale dans le provider
+    authProvider.loginUserData.countryData = defaultCountryData;
+    _selectedCountryCode = "TG";
+    _currentFilter = 'COUNTRY';
+
+    try {
+      // Enregistrement silencieux dans Firestore
+      await FirebaseFirestore.instance.collection('Users').doc(userId).update({
+        'countryData': defaultCountryData,
+      });
+      printVm("✅ Pays par défaut (Togo) appliqué suite à la fermeture du modal.");
+      // Relancer le chargement des posts avec le filtre Togo
+      _refreshData();
+    } catch (e) {
+      printVm("❌ Erreur lors de l'application du pays par défaut: $e");
+    }
+  }
   // ===========================================================================
   // CHARGEMENT DES POSTS
   // ===========================================================================
@@ -1579,12 +1670,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     try {
       if (authProvider.loginUserData.countryData?["countryCode"] == null &&
           authProvider.loginUserData.countryData?["country"] == null) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => UpdateUserData(title: "Mise à jour d'adresse"),
-          ),
-        );
+// Utilisation d'un post-frame callback pour s'assurer que le widget est bien construit avant d'afficher le dialogue
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _showAddressUpdateModal();
+        });
       }
 
       setState(() {

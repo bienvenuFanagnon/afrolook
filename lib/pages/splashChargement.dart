@@ -498,14 +498,14 @@ class _SplashChargementState extends State<SplashChargement> {
             .catchError((_) {}),
       );
 
-      final countryCode = cachedUser.countryData?["countryCode"]?.toString();
-      if (countryCode == null || countryCode.isEmpty) {
-        if (mounted && !_hasNavigated) {
-          _hasNavigated = true;
-          Navigator.push(context, MaterialPageRoute(builder: (_) => UpdateUserData(title: "Mise à jour d'adresse")));
-        }
-        return;
-      }
+      // final countryCode = cachedUser.countryData?["countryCode"]?.toString();
+      // if (countryCode == null || countryCode.isEmpty) {
+      //   if (mounted && !_hasNavigated) {
+      //     _hasNavigated = true;
+      //     Navigator.push(context, MaterialPageRoute(builder: (_) => UpdateUserData(title: "Mise à jour d'adresse")));
+      //   }
+      //   return;
+      // }
 
       setState(() => _isAuthCompleted = true);
       await _prepareDestination();
@@ -533,14 +533,14 @@ class _SplashChargementState extends State<SplashChargement> {
       unawaited(StartupCacheService.saveUserData(authProvider.loginUserData));
       unawaited(StartupCacheService.saveAppData(authProvider.appDefaultData));
 
-      final countryCode = authProvider.loginUserData.countryData?["countryCode"]?.toString();
-      if (countryCode == null || countryCode.isEmpty) {
-        if (mounted && !_hasNavigated) {
-          _hasNavigated = true;
-          Navigator.push(context, MaterialPageRoute(builder: (_) => UpdateUserData(title: "Mise à jour d'adresse")));
-        }
-        return;
-      }
+      // final countryCode = authProvider.loginUserData.countryData?["countryCode"]?.toString();
+      // if (countryCode == null || countryCode.isEmpty) {
+      //   if (mounted && !_hasNavigated) {
+      //     _hasNavigated = true;
+      //     Navigator.push(context, MaterialPageRoute(builder: (_) => UpdateUserData(title: "Mise à jour d'adresse")));
+      //   }
+      //   return;
+      // }
 
       unawaited(_autoJoinAfrolookGroup(userId));
       setState(() => _isAuthCompleted = true);
