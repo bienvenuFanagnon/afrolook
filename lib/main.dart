@@ -111,6 +111,7 @@ import 'theme/theme_provider.dart';
 import 'providers/locale_provider.dart';
 import 'l10n/app_localizations.dart';
 import 'models/chatmodels/message.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:workmanager/workmanager.dart';
 
@@ -155,6 +156,18 @@ Future<void> main() async {
   // Initialisation Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // App Check — active l'attestation pour protéger Firestore/Functions
+  // Android : Play Integrity (prod) / Debug (dev)
+  // iOS     : App Attest (prod, iOS 14+) / Debug (dev)
+  await FirebaseAppCheck.instance.activate(
+    androidProvider: kReleaseMode
+        ? AndroidProvider.playIntegrity
+        : AndroidProvider.debug,
+    appleProvider: kReleaseMode
+        ? AppleProvider.appAttest
+        : AppleProvider.debug,
   );
 
   // Remote Config
