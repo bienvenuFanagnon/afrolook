@@ -2990,84 +2990,42 @@ if(actionType == 'comment'){
         onSuccess();
         return;
       }
-      if (!appDefaultData.googleVerification!) {
+      // Bypass pendant la review Google Play ou Apple App Store
+      final isInStoreReview = Platform.isIOS
+          ? (appDefaultData.appleVerification ?? false)
+          : (appDefaultData.googleVerification ?? false);
+
+      if (!isInStoreReview) {
         // Mise à jour requise uniquement si la version en ligne est SUPÉRIEURE à celle de l'utilisateur
         final onlineVersion = appDefaultData.app_version_code ?? app_version_code;
         if (app_version_code >= onlineVersion) {
           onSuccess();
         } else {
-
           _showUpdateModal(context);
-          // showModalBottomSheet(
-          //   context: context,
-          //   builder: (BuildContext context) {
-          //     return Container(
-          //       height: 300,
-          //       child: Center(
-          //         child: Padding(
-          //           padding: const EdgeInsets.all(20.0),
-          //           child: Column(
-          //             mainAxisAlignment: MainAxisAlignment.center,
-          //             crossAxisAlignment: CrossAxisAlignment.center,
-          //             children: [
-          //               Icon(Icons.info, color: Colors.red),
-          //               Text(
-          //                 'Nouvelle mise à jour disponible!',
-          //                 style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
-          //               ),
-          //               SizedBox(height: 10.0),
-          //               Text(
-          //                 'Une nouvelle version de l\'application est disponible. Veuillez télécharger la mise à jour pour profiter des dernières fonctionnalités et améliorations.',
-          //                 style: TextStyle(fontSize: 16.0),
-          //               ),
-          //               SizedBox(height: 20.0),
-          //               ElevatedButton(
-          //                 style: ElevatedButton.styleFrom(
-          //                   backgroundColor: Colors.green,
-          //                 ),
-          //                 onPressed: () {
-          //                   _launchUrl(Uri.parse('${appDefaultData.app_link}'));
-          //                 },
-          //                 child: Row(
-          //                   mainAxisAlignment: MainAxisAlignment.center,
-          //                   children: [
-          //                     Icon(Ionicons.ios_logo_google_playstore, color: Colors.white),
-          //                     SizedBox(width: 5),
-          //                     Text(
-          //                       'Télécharger sur le play store',
-          //                       style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          //                     ),
-          //                   ],
-          //                 ),
-          //               ),
-          //             ],
-          //           ),
-          //         ),
-          //       ),
-          //     );
-          //   },
-          // );
         }
-
-      }else{
+      } else {
         onSuccess();
-
       }
 
     });
   }
   void _showUpdateModal(BuildContext context) {
+    final isIOS = Platform.isIOS;
+    const iosAppStoreUrl = ‘https://apps.apple.com/app/id6811423047’;
+    final storeUrl = isIOS
+        ? (appDefaultData.ios_link?.isNotEmpty == true ? appDefaultData.ios_link! : iosAppStoreUrl)
+        : (appDefaultData.app_link ?? ‘’);
+    final storeLabel = isIOS ? ‘Mettre à jour sur App Store’ : ‘Mettre à jour sur Play Store’;
+    final storeIcon = isIOS ? Icons.apple : Icons.play_arrow;
+
     showModalBottomSheet(
       context: context,
-      isDismissible: false, // ❌ Empêche de fermer en cliquant dehors
-      enableDrag: false,    // ❌ Empêche de glisser pour fermer
-      backgroundColor: Colors.transparent, // Pour avoir un fond arrondi stylé
+      isDismissible: false,
+      enableDrag: false,
+      backgroundColor: Colors.transparent,
       builder: (BuildContext context) {
         return WillPopScope(
-          onWillPop: () async {
-            // Retourne false pour empêcher la fermeture
-            return false;
-          },
+          onWillPop: () async => false,
           child: Container(
             decoration: BoxDecoration(
               color: Colors.black,
@@ -3087,7 +3045,6 @@ if(actionType == 'comment'){
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Barre décorative verte
                 Container(
                   width: 60,
                   height: 5,
@@ -3097,8 +3054,6 @@ if(actionType == 'comment'){
                   ),
                 ),
                 const SizedBox(height: 20),
-
-                // Icône principale 🟡
                 Container(
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
@@ -3118,10 +3073,8 @@ if(actionType == 'comment'){
                   ),
                 ),
                 const SizedBox(height: 20),
-
-                // Titre 💚
                 Text(
-                  'Mise à jour disponible !',
+                  ‘Mise à jour disponible !’,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.greenAccent.shade400,
@@ -3130,29 +3083,25 @@ if(actionType == 'comment'){
                   ),
                 ),
                 const SizedBox(height: 12),
-
-                // Description 🖤
                 Text(
-                  'Une nouvelle version d’AfroLook est disponible.\n\n'
-                      'Téléchargez-la maintenant pour profiter des dernières fonctionnalités, d’une meilleure sécurité et d’une expérience encore plus fluide !',
+                  ‘Une nouvelle version d’AfroLook est disponible.\n\n’
+                  ‘Téléchargez-la maintenant pour profiter des dernières fonctionnalités, d’une meilleure sécurité et d’une expérience encore plus fluide !’,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 15,
                     height: 1.5,
                   ),
                 ),
                 const SizedBox(height: 25),
-
-                // Bouton principal 💛
                 ElevatedButton.icon(
                   onPressed: () {
-                    _launchUrl(Uri.parse('${appDefaultData.app_link}'));
+                    if (storeUrl.isNotEmpty) _launchUrl(Uri.parse(storeUrl));
                   },
-                  icon: const Icon(Icons.play_arrow, color: Colors.black),
-                  label: const Text(
-                    'Mettre à jour sur Play Store',
-                    style: TextStyle(
+                  icon: Icon(storeIcon, color: Colors.black),
+                  label: Text(
+                    storeLabel,
+                    style: const TextStyle(
                       color: Colors.black,
                       fontWeight: FontWeight.bold,
                     ),
@@ -3167,15 +3116,10 @@ if(actionType == 'comment'){
                   ),
                 ),
                 const SizedBox(height: 10),
-
-                // Bouton secondaire (désactivé ou non selon ton besoin)
                 TextButton(
-                  onPressed: () {
-                    // 👇 Si tu veux le rendre 100% obligatoire, commente cette ligne :
-                    // Navigator.of(context).pop();
-                  },
+                  onPressed: () {},
                   child: Text(
-                    'Plus tard',
+                    ‘Plus tard’,
                     style: TextStyle(
                       color: Colors.grey.shade600,
                       fontWeight: FontWeight.w500,

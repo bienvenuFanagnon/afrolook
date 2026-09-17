@@ -407,6 +407,8 @@ class UserPseudo {
 class AppDefaultData {
   String? id;
   String? app_link;
+  String? ios_link;
+  bool? appleVerification = false;
   String? geminiapiKey;
   List<String>? users_id = [];
   int? nbr_abonnes = 0;
@@ -462,6 +464,8 @@ class AppDefaultData {
     nbr_comments = json['nbr_comments'];
     nbr_likes = json['nbr_likes'];
     app_link = json['app_link'];
+    ios_link = json['ios_link'];
+    appleVerification = json['appleVerification'] ?? false;
     geminiapiKey = json['geminiapiKey'];
     ia_instruction = json['ia_instruction'];
     app_version_code_officiel = json['app_version_code_officiel'];
@@ -519,7 +523,9 @@ class AppDefaultData {
       "tarifjour": tarifjour,
       "tarifPubliCash_to_xof": tarifPubliCash_to_xof,
       "googleVerification": googleVerification,
+      "appleVerification": appleVerification,
       "app_link": app_link,
+      "ios_link": ios_link,
       "solde_principal": solde_principal,
       "solde_gain": solde_gain,
       "solde_commission_crypto": solde_commission_crypto,
