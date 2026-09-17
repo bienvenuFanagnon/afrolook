@@ -317,20 +317,9 @@ class _ShareButtonState extends State<_ShareButton> {
     try {
       final appLinkService = AppLinkService();
 
-      // Message attractif pour inviter des amis
-      final String shareMessage =
-          "🚀 @${widget.currentUser.pseudo} t'invite sur Afrolook !\n"
-          "👥 ${widget.currentUser.userAbonnesIds?.length ?? 0} followers, "
-          "❤️ ${widget.currentUser.userlikes ?? 0} likes.\n"
-          "💰 Dès 100 vues, tu es rémunéré (+25 000 FCFA/mois) !\n"
-          "🎁 Utilise MON CODE à l'inscription : ${widget.currentUser.codeParrainage}\n"
-          "📱 Afrolook - Le réseau social qui paie ton talent";
-
       await appLinkService.shareProfil(
         type: AppLinkType.profil,
         id: widget.currentUser.id!,
-        message: shareMessage,
-        mediaUrl: widget.currentUser.imageUrl ?? '',
       );
     } catch (e) {
       if (mounted) {

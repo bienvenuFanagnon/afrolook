@@ -199,21 +199,7 @@ class AppLinkService {
   })
   async {
     final link = generateLink(type, id, params: params);
-
-    final fullMessage = "${_getTypeMessage(type)}\n$link";
-    // final fullMessage = "${_getTypeMessage(type)}: ${message ?? ''}\n\n$link";
-
-    if (mediaUrl != null && mediaUrl.isNotEmpty) {
-      // Cas avec image/vidéo en local OU téléchargée
-      // ⚠️ SharePlus partage des fichiers locaux, pas directement des URLs
-      // Si ton mediaUrl est une URL, il faut le télécharger d’abord
-      await Share.share(fullMessage, subject: "AfroLook");
-
-    } else {
-      // Cas simple : juste message + lien
-      await Share.share(fullMessage, subject: "AfroLook");
-      // await Share.share(fullMessage, subject: "AfroLook");
-    }
+    await Share.share(link, subject: "AfroLook");
   }
 
 
@@ -226,21 +212,7 @@ class AppLinkService {
   })
   async {
     final link = generateLink(type, id, params: params);
-
-    // final fullMessage = "${_getTypeMessage(type)}\n$link";
-    final fullMessage = "${message ?? ''}\n$link";
-
-    if (mediaUrl != null && mediaUrl.isNotEmpty) {
-      // Cas avec image/vidéo en local OU téléchargée
-      // ⚠️ SharePlus partage des fichiers locaux, pas directement des URLs
-      // Si ton mediaUrl est une URL, il faut le télécharger d’abord
-      await Share.share(fullMessage, subject: "AfroLook");
-
-    } else {
-      // Cas simple : juste message + lien
-      await Share.share(fullMessage, subject: "AfroLook");
-      // await Share.share(fullMessage, subject: "AfroLook");
-    }
+    await Share.share(link, subject: "AfroLook");
   }
   String _getTypeMessage(AppLinkType type) {
     switch (type) {
