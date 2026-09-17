@@ -65,6 +65,115 @@ class _UserManagementPageState extends State<UserManagementPage> {
     }
   }
 
+  // ── Certification ─────────────────────────────────────────────────────────
+
+  Future<void> _toggleVerification() async {
+    if (_userData == null) return;
+    final newValue = !(_userData!.isVerify == true);
+    final pseudo = _userData!.pseudo ?? widget.userId;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _card,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text(
+          newValue ? 'Certifier ce compte ?' : 'Retirer la certification ?',
+          style: const TextStyle(color: _textP, fontWeight: FontWeight.w700),
+        ),
+        content: Text(
+          newValue
+              ? 'Le compte @$pseudo sera certifié. Un badge ✓ apparaîtra sur son profil et une notification lui sera envoyée.'
+              : 'Le badge de vérification du compte @$pseudo sera retiré. Une notification lui sera envoyée.',
+          style: const TextStyle(color: _textS, height: 1.5, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annuler', style: TextStyle(color: _textS)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: newValue ? _green : _red,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              newValue ? 'Certifier' : 'Retirer',
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+    setState(() => _isUpdating = true);
+
+    try {
+      final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+      final adminId = authProvider.userId ?? '';
+
+      // 1. Mise à jour Firestore
+      await _firestore.collection('Users').doc(widget.userId).update({
+        'isVerify': newValue,
+        'verifiedAt': newValue ? DateTime.now().millisecondsSinceEpoch : null,
+        'verifiedBy': adminId,
+      });
+
+      // 2. Notification in-app (collection Notifications)
+      final notifId = _firestore.collection('Notifications').doc().id;
+      final notif = NotificationData(
+        id: notifId,
+        titre: newValue ? '✅ Compte certifié !' : 'Certification retirée',
+        media_url: _userData!.imageUrl ?? '',
+        type: NotificationType.CERTIFICATION.name,
+        description: newValue
+            ? 'Félicitations ! Votre compte Afrolook a été certifié. Le badge de vérification ✓ est maintenant visible sur votre profil.'
+            : 'La certification de votre compte a été retirée par l\'administration Afrolook.',
+        users_id_view: [],
+        user_id: adminId,
+        receiver_id: widget.userId,
+        post_id: '',
+        createdAt: DateTime.now().millisecondsSinceEpoch,
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
+      );
+      await _firestore.collection('Notifications').doc(notifId).set(notif.toJson());
+
+      // 3. Push notification OneSignal
+      final osId = _userData!.oneIgnalUserid ?? '';
+      if (osId.length > 5) {
+        await authProvider.sendNotification(
+          appName: 'Afrolook',
+          userIds: [osId],
+          smallImage: _userData!.imageUrl ?? '',
+          send_user_id: adminId,
+          recever_user_id: widget.userId,
+          message: newValue
+              ? '✅ Votre compte Afrolook a été certifié !'
+              : 'La certification de votre compte a été retirée.',
+          type_notif: NotificationType.CERTIFICATION.name,
+          post_id: '',
+          post_type: '',
+          chat_id: '',
+        );
+      }
+
+      setState(() {
+        _userData!.isVerify = newValue;
+        _isUpdating = false;
+      });
+      _showSnack(
+        newValue ? '✅ Compte @$pseudo certifié' : 'Certification retirée pour @$pseudo',
+        newValue ? _green : _amber,
+      );
+    } catch (e) {
+      printVm('Erreur certification: $e');
+      setState(() => _isUpdating = false);
+      _showSnack('Erreur lors de la mise à jour', _red);
+    }
+  }
+
   // ── Opérations solde FCFA ─────────────────────────────────────────────────
 
   Future<void> _updateUserBalance(
@@ -260,6 +369,8 @@ class _UserManagementPageState extends State<UserManagementPage> {
                 children: [
                   _buildProfileCard(),
                   const SizedBox(height: 16),
+                  _buildCertificationSection(),
+                  const SizedBox(height: 16),
                   _buildBalancesSection(),
                   const SizedBox(height: 16),
                   _buildStatsRow(),
@@ -413,6 +524,97 @@ class _UserManagementPageState extends State<UserManagementPage> {
           ),
         ],
       ),
+    );
+  }
+
+  // ── Section certification ─────────────────────────────────────────────────
+
+  Widget _buildCertificationSection() {
+    final isVerified = _userData!.isVerify == true;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionLabel('CERTIFICATION'),
+        const SizedBox(height: 10),
+        Container(
+          decoration: BoxDecoration(
+            color: _card,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isVerified ? _green.withOpacity(0.45) : _border,
+              width: 1.3,
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: isVerified
+                      ? _green.withOpacity(0.15)
+                      : const Color(0xFF2A2A3A),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isVerified ? Icons.verified_rounded : Icons.help_outline_rounded,
+                  color: isVerified ? _green : _textS,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isVerified ? 'Compte certifié' : 'Non certifié',
+                      style: TextStyle(
+                        color: isVerified ? _green : _textP,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      isVerified
+                          ? 'Badge ✓ visible sur le profil public'
+                          : 'Aucun badge de vérification',
+                      style: const TextStyle(color: _textS, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              GestureDetector(
+                onTap: _toggleVerification,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                  decoration: BoxDecoration(
+                    color: isVerified
+                        ? _red.withOpacity(0.12)
+                        : _green.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isVerified ? _red : _green,
+                      width: 1.2,
+                    ),
+                  ),
+                  child: Text(
+                    isVerified ? 'Retirer' : 'Certifier',
+                    style: TextStyle(
+                      color: isVerified ? _red : _green,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

@@ -5253,6 +5253,7 @@ enum NotificationType {
   SERVICE,
   USER, GAIN,
   COMPTE_OFFICIEL,
+  CERTIFICATION,
 }
 
 enum TypeEntreprise { personnel, partenaire }
