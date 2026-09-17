@@ -3958,6 +3958,31 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           style: TextStyle(color: colors.textSecondary, fontSize: 11),
         ),
       ],
+      const SizedBox(height: 10),
+      // Bouton 2 : Voir les posts Découvrir — toujours disponible
+      SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => DiscoveryFeedPage(
+                pageType: widget.type.isNotEmpty ? widget.type : null,
+              ),
+            ),
+          ),
+          icon: Icon(Icons.explore_rounded, size: 18, color: colors.primary),
+          label: Text(
+            'Voir les posts Découvrir',
+            style: TextStyle(color: colors.primary, fontWeight: FontWeight.w600),
+          ),
+          style: OutlinedButton.styleFrom(
+            side: BorderSide(color: colors.primary.withOpacity(0.6)),
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+      ),
     ];
   }
 

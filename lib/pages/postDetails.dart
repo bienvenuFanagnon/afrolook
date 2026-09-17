@@ -4414,8 +4414,10 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
     if (canal != null) {
       final isOwner = canal.userId == myId;
       if (isOwner) return const SizedBox.shrink();
+      // Vérifier dans les données locales de l'utilisateur (plus fiable que
+      // canal.usersSuiviId qui peut être null/vide si le post vient d'un lien ou notif)
       final alreadySubscribed = _localIsFollowing ??
-          (canal.usersSuiviId?.contains(myId) ?? false);
+          (authProvider.loginUserData.canauxSuivisIds?.contains(canal.id) ?? false);
       if (alreadySubscribed) return const SizedBox.shrink();
       return Padding(
         padding: const EdgeInsets.only(right: 8),

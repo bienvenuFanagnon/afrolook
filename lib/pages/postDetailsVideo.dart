@@ -2243,7 +2243,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     if (canal != null) {
       final isOwner = canal.userId == myId;
       if (isOwner) return const SizedBox.shrink();
-      final alreadySubscribed = _localIsFollowing ?? (canal.usersSuiviId?.contains(myId) ?? false);
+      final alreadySubscribed = _localIsFollowing ??
+          (authProvider.loginUserData.canauxSuivisIds?.contains(canal.id) ?? false);
       if (alreadySubscribed) return const SizedBox.shrink();
       return Padding(
         padding: const EdgeInsets.only(right: 4),
