@@ -830,7 +830,9 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                 Row(
                   children: [
                     Text(
-                      "@${rpc.user_pseudo ?? ''}",
+                      rpc.canal_name != null && rpc.canal_name!.isNotEmpty
+                          ? "#${rpc.canal_name}"
+                          : "@${rpc.user_pseudo ?? ''}",
                       style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, color: _colors.textPrimary),
                     ),
                     if (rpc.user_reply_pseudo != null && rpc.user_reply_pseudo!.isNotEmpty) ...[
@@ -1281,15 +1283,34 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
       String? _canalImage;
 
       if (replying) {
+        // Même logique que pour les commentaires simples : si l'utilisateur est
+        // owner/admin du canal auquel appartient le post, la réponse s'affiche
+        // au nom du canal plutôt qu'au nom de la personne.
+        String? _replyCanalName;
+        String? _replyCanalImage;
+        final replyUserId = authProvider.loginUserData.id;
+        final replyCanal = widget.post.canal;
+        final replyCanalId = widget.post.canal_id;
+        if (replyCanalId != null && replyCanalId.isNotEmpty && replyCanal != null) {
+          final isOwner = replyCanal.userId == replyUserId;
+          final isAdmin = replyCanal.adminIds?.contains(replyUserId) == true;
+          if (isOwner || isAdmin) {
+            _replyCanalName = replyCanal.titre;
+            _replyCanalImage = replyCanal.urlImage;
+          }
+        }
+
         final response = ResponsePostComment(
-          user_id: authProvider.loginUserData.id,
-          user_logo_url: authProvider.loginUserData.imageUrl,
-          user_pseudo: authProvider.loginUserData.pseudo,
+          user_id: replyUserId,
+          user_logo_url: _replyCanalImage ?? authProvider.loginUserData.imageUrl,
+          user_pseudo: _replyCanalName ?? authProvider.loginUserData.pseudo,
           post_comment_id: commentSelectedToReply.id,
           user_reply_pseudo: replyUser_pseudo,
           message: textComment,
           createdAt: DateTime.now().microsecondsSinceEpoch,
           updatedAt: DateTime.now().microsecondsSinceEpoch,
+          canal_name: _replyCanalName,
+          canal_image: _replyCanalImage,
         );
         commentSelectedToReply.responseComments ??= [];
         commentSelectedToReply.responseComments!.add(response);

@@ -65,7 +65,7 @@ export async function getCanalImage(canalId?: string): Promise<string | null> {
   if (!canalId) return null;
 
   try {
-    const canalDoc = await db.collection("Canals").doc(canalId).get();
+    const canalDoc = await db.collection("Canaux").doc(canalId).get();
     return canalDoc.data()?.urlImage || null;
   } catch {
     return null;

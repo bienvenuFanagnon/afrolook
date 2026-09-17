@@ -3894,6 +3894,9 @@ class ResponsePostComment {
   int? likes = 0; // Ajouté pour le compteur de likes
   int? createdAt;
   int? updatedAt;
+  // Identité canal — renseigné quand la réponse est postée par un owner/admin de canal
+  String? canal_name;
+  String? canal_image;
 
   ResponsePostComment({
     this.id = '',
@@ -3908,6 +3911,8 @@ class ResponsePostComment {
     this.likes = 0,
     this.createdAt = 0,
     this.updatedAt = 0,
+    this.canal_name,
+    this.canal_image,
   });
 
   ResponsePostComment.fromJson(Map<String, dynamic> json) {
@@ -3923,6 +3928,8 @@ class ResponsePostComment {
     status = json['status'] == null ? "" : json['status'];
     users_like_id = json['users_like_id'] == null ? [] : json['users_like_id'].cast<String>();
     likes = json['likes'] ?? 0;
+    canal_name = json['canal_name'];
+    canal_image = json['canal_image'];
   }
 
   Map<String, dynamic> toJson() {
@@ -3939,6 +3946,8 @@ class ResponsePostComment {
     data['user_id'] = this.user_id;
     data['users_like_id'] = this.users_like_id;
     data['likes'] = this.likes;
+    if (canal_name != null) data['canal_name'] = canal_name;
+    if (canal_image != null) data['canal_image'] = canal_image;
 
     return data;
   }

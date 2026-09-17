@@ -567,6 +567,46 @@ class _MesNotificationState extends State<MesNotification> {
             });
           });
           break;
+        case 'ABONNER':
+          // Si l'abonnement concerne un canal, ouvrir la page du canal.
+          // Sinon, ouvrir le profil de l'abonné.
+          final abonnerCanalId = notification.canal_id;
+          if (abonnerCanalId != null && abonnerCanalId.isNotEmpty) {
+            final canalDoc = await _firestore.collection('Canaux').doc(abonnerCanalId).get();
+            _hideLoadingOverlay();
+            if (!mounted) return;
+            if (canalDoc.exists) {
+              final canal = Canal.fromJson({...canalDoc.data()!, 'id': canalDoc.id});
+              Navigator.push(context, MaterialPageRoute(
+                builder: (_) => CanalDetails(canal: canal),
+              )).then((_) => setState(() => _isHandlingNotification = false));
+            } else {
+              setState(() => _isHandlingNotification = false);
+            }
+          } else {
+            final subscriberUserId = notification.user_id;
+            if (subscriberUserId != null && subscriberUserId.isNotEmpty) {
+              // Récupérer depuis le cache ou Firestore
+              if (!_userCache.containsKey(subscriberUserId)) {
+                final userSnap = await _firestore.collection('Users')
+                    .where('id', isEqualTo: subscriberUserId)
+                    .limit(1)
+                    .get();
+                if (userSnap.docs.isNotEmpty) {
+                  _userCache[subscriberUserId] = UserData.fromJson(
+                    userSnap.docs.first.data() as Map<String, dynamic>,
+                  );
+                }
+              }
+              _hideLoadingOverlay();
+              if (!mounted) return;
+              _showUserProfile(subscriberUserId);
+            } else {
+              _hideLoadingOverlay();
+            }
+            setState(() => _isHandlingNotification = false);
+          }
+          break;
         case 'FOLLOW_CANAL':
           final canalId = notification.canal_id;
           if (canalId != null && canalId.isNotEmpty) {

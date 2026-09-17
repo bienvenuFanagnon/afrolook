@@ -79,7 +79,7 @@ export const sendBulkNotification = onCall(
       } else if (targetType === "subscribers") {
         targetUserIds = senderData?.userAbonnesIds || [];
       } else if (targetType === "channel" && canalId) {
-        const canalDoc = await db.collection("Canals").doc(canalId).get();
+        const canalDoc = await db.collection("Canaux").doc(canalId).get();
         if (canalDoc.exists) {
           const canalData = canalDoc.data();
           targetUserIds = [
@@ -107,6 +107,12 @@ export const sendBulkNotification = onCall(
         ? `#${channelTitle}`
         : `@${senderData?.pseudo}`;
 
+      // Pré-charger l'image du canal une seule fois
+      let canalImageUrl: string | null = null;
+      if (isChannel && canalId) {
+        canalImageUrl = await getCanalImage(canalId);
+      }
+
       const currentTimeMicroseconds = Date.now() * 1000;
 
       const allOneSignalIds: string[] = [];
@@ -128,11 +134,7 @@ export const sendBulkNotification = onCall(
 
           const notifId = db.collection("Notifications").doc().id;
 
-          let mediaUrl = smallImage || senderData?.imageUrl;
-          if (isChannel && canalId) {
-            const canalImage = await getCanalImage(canalId);
-            if (canalImage) mediaUrl = canalImage;
-          }
+          const mediaUrl = canalImageUrl || smallImage || senderData?.imageUrl;
 
           notificationsToSave.push({
             id: notifId,
@@ -193,7 +195,7 @@ export const sendBulkNotification = onCall(
             batchIds,
             message,
             appName,
-            smallImage || senderData?.imageUrl || appConfig.app_logo,
+            canalImageUrl || smallImage || senderData?.imageUrl || appConfig.app_logo,
             appConfig.one_signal_app_id,
             appConfig.one_signal_api_key,
             {
