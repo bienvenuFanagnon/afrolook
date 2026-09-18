@@ -23,6 +23,7 @@ class DatingNotificationsPage extends StatefulWidget {
 class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
   String? _currentUserId;
   int _unreadCount = 0;
+  bool _isMarkingAllRead = false;
 
   final List<String> _datingTypes = [
     'DATING_LIKE',
@@ -53,6 +54,44 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
       });
     } catch (e) {
       printVm('❌ Erreur chargement compteur notifications: $e');
+    }
+  }
+
+  /// Marque toutes les notifications dating non lues comme lues.
+  /// Utilise une query receiver_id + type (sans is_open) pour éviter un 3e index composite.
+  Future<void> _markAllAsRead() async {
+    if (_currentUserId == null || _isMarkingAllRead) return;
+    setState(() => _isMarkingAllRead = true);
+    try {
+      DocumentSnapshot? lastDoc;
+      do {
+        Query q = FirebaseFirestore.instance
+            .collection('Notifications')
+            .where('receiver_id', isEqualTo: _currentUserId)
+            .where('type', whereIn: _datingTypes)
+            .limit(500);
+        if (lastDoc != null) q = q.startAfterDocument(lastDoc);
+        final snap = await q.get();
+        if (snap.docs.isEmpty) break;
+
+        final batch = FirebaseFirestore.instance.batch();
+        int updates = 0;
+        for (final doc in snap.docs) {
+          final isOpen = (doc.data() as Map<String, dynamic>?)?['is_open'] as bool? ?? false;
+          if (!isOpen) {
+            batch.update(doc.reference, {'is_open': true});
+            updates++;
+          }
+        }
+        if (updates > 0) await batch.commit();
+        if (snap.docs.length < 500) break;
+        lastDoc = snap.docs.last;
+      } while (true);
+
+      if (mounted) setState(() { _unreadCount = 0; _isMarkingAllRead = false; });
+    } catch (e) {
+      printVm('❌ Erreur tout marquer lu: $e');
+      if (mounted) setState(() => _isMarkingAllRead = false);
     }
   }
 
@@ -308,6 +347,19 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          if (_unreadCount > 0)
+            _isMarkingAllRead
+                ? const Padding(
+                    padding: EdgeInsets.all(14),
+                    child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+                  )
+                : IconButton(
+                    icon: const Icon(Icons.done_all, color: Colors.white),
+                    tooltip: 'Tout marquer comme lu',
+                    onPressed: _markAllAsRead,
+                  ),
+        ],
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance

@@ -61,7 +61,8 @@ class _FeedEndDiscoverySectionState extends State<FeedEndDiscoverySection> {
       setState(() {
         _allUsers = cached.$1.where((u) => !alreadyFollowing.contains(u.id)).take(30).toList();
         _allCanaux = cached.$2
-            .where((c) => !subscribedCanalIds.contains(c.id))
+            .where((c) => !subscribedCanalIds.contains(c.id) &&
+                c.usersSuiviId?.contains(myId) != true)
             .take(30)
             .toList();
         _loading = false;
@@ -76,7 +77,22 @@ class _FeedEndDiscoverySectionState extends State<FeedEndDiscoverySection> {
     final myId = me.id ?? '';
     final alreadyFollowing = Set<String>.from(me.followingIds ?? []);
     alreadyFollowing.add(myId);
-    final subscribedCanalIds = Set<String>.from(me.canauxSuivisIds ?? []);
+
+    // Re-lire canauxSuivisIds depuis Firestore : le provider peut être périmé
+    // si l'utilisateur s'est abonné à un canal depuis une autre page.
+    Set<String> subscribedCanalIds = Set<String>.from(me.canauxSuivisIds ?? []);
+    if (myId.isNotEmpty) {
+      try {
+        final userSnap = await FirebaseFirestore.instance
+            .collection('Users')
+            .doc(myId)
+            .get()
+            .timeout(const Duration(seconds: 10));
+        final freshIds = List<String>.from(userSnap.data()?['canauxSuivisIds'] ?? []);
+        subscribedCanalIds = Set<String>.from(freshIds);
+        auth.loginUserData.canauxSuivisIds = freshIds;
+      } catch (_) {}
+    }
 
     final usersFuture = _fetchUsers(alreadyFollowing).catchError((_) => <UserData>[]);
     final canauxFuture = _fetchCanaux(subscribedCanalIds).catchError((_) => <Canal>[]);
@@ -171,7 +187,14 @@ class _FeedEndDiscoverySectionState extends State<FeedEndDiscoverySection> {
           try { return Canal.fromJson(d.data())..id = d.id; } catch (_) { return null; }
         })
         .whereType<Canal>()
-        .where((c) => c.id != null && !alreadySubscribed.contains(c.id))
+        .where((c) {
+          if (c.id == null) return false;
+          // Vérifier aussi usersSuiviId pour les anciens abonnements
+          // (canauxSuivisIds sur User est récent et peut être absent)
+          final inUserList = alreadySubscribed.contains(c.id);
+          final inCanalList = c.usersSuiviId?.contains(myId) == true;
+          return !inUserList && !inCanalList;
+        })
         .toList();
 
     all.sort((a, b) => (b.suivi ?? 0).compareTo(a.suivi ?? 0));
@@ -297,8 +320,11 @@ class _FeedEndDiscoverySectionState extends State<FeedEndDiscoverySection> {
       if (_allUsers.isNotEmpty) items.add(const SizedBox(height: 16));
       items.add(_SubTitle(label: 'CANAUX', colors: colors));
       items.add(const SizedBox(height: 8));
+      final myId = auth.loginUserData.id ?? '';
       for (final c in canauxToShow) {
-        final alreadySubscribed = _subscribedCanalIds.contains(c.id) || mySubscribedCanalIds.contains(c.id);
+        final alreadySubscribed = _subscribedCanalIds.contains(c.id) ||
+            mySubscribedCanalIds.contains(c.id) ||
+            c.usersSuiviId?.contains(myId) == true;
         final isPrivate = c.isPrivate == true;
         items.add(_CanalCard(
           canal: c,

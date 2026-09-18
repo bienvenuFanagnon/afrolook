@@ -59,15 +59,16 @@ class _DiscoveryFeedPageState extends State<DiscoveryFeedPage> {
   Future<void> _fetchFromFirestore({bool reset = false}) async {
     if (!_hasMore && !reset) return;
     try {
+      // Note: on filtre status côté client pour éviter l'index composite
+      // (where status + orderBy postScore nécessiterait un index Firestore manuel).
       Query query = FirebaseFirestore.instance
           .collection('Posts')
-          .where('status', isEqualTo: 'active');
+          .orderBy('postScore', descending: true)
+          .limit(_pageSize * 2);
 
       if (widget.pageType != null) {
         query = query.where('pageType', isEqualTo: widget.pageType);
       }
-
-      query = query.orderBy('postScore', descending: true).limit(_pageSize);
 
       if (!reset && _lastDoc != null) {
         query = query.startAfterDocument(_lastDoc!);
@@ -80,7 +81,10 @@ class _DiscoveryFeedPageState extends State<DiscoveryFeedPage> {
         } catch (_) {
           return null;
         }
-      }).whereType<Post>().toList();
+      }).whereType<Post>()
+          .where((p) => p.status == null || p.status == 'active')
+          .take(_pageSize)
+          .toList();
 
       if (!mounted) return;
       setState(() {

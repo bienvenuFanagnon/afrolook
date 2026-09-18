@@ -1183,25 +1183,34 @@ class _MesNotificationState extends State<MesNotification> {
     if (mounted) setState(() => _isMarkingAllRead = true);
     final userId = _authProvider.loginUserData.id!;
     try {
+      // Query par receiver_id seul (index single-field auto) pour éviter
+      // l'index composite receiver_id+is_open qui peut être absent.
       QuerySnapshot snap;
+      DocumentSnapshot? lastDoc;
       do {
-        snap = await _firestore
+        Query q = _firestore
             .collection('Notifications')
             .where('receiver_id', isEqualTo: userId)
-            .where('is_open', isEqualTo: false)
-            .limit(500)
-            .get();
+            .limit(500);
+        if (lastDoc != null) q = q.startAfterDocument(lastDoc);
+        snap = await q.get();
 
         if (snap.docs.isEmpty) break;
 
         final batch = _firestore.batch();
         for (final doc in snap.docs) {
-          batch.update(doc.reference, {
-            'is_open': true,
-            'users_id_view': FieldValue.arrayUnion([userId]),
-          });
+          final data = doc.data() as Map<String, dynamic>?;
+          final isOpen = data?['is_open'] as bool? ?? false;
+          final views = List<String>.from(data?['users_id_view'] ?? []);
+          if (!isOpen || !views.contains(userId)) {
+            batch.update(doc.reference, {
+              'is_open': true,
+              'users_id_view': FieldValue.arrayUnion([userId]),
+            });
+          }
         }
         await batch.commit();
+        lastDoc = snap.docs.last;
       } while (snap.docs.length == 500);
 
       if (mounted) {
