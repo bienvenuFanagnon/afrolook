@@ -181,6 +181,7 @@ class _MyHomePageState extends State<MyHomePage>
   Color _color =Colors.blue;
   TabController? _tabController;
   int _unreadNotificationsCount = 0;
+  int _unreadDatingCount = 0;
   DateTime? _lastToastTime;
   List<NotificationData> _latestUnreadNotifs = [];
   String _appVersion = '';
@@ -359,14 +360,23 @@ class _MyHomePageState extends State<MyHomePage>
         .snapshots()
         .listen((snapshot) {
       if (!mounted) return;
-      final count = snapshot.docs.length;
-      final latest = snapshot.docs.take(2).map((d) {
+      const datingTypes = {'DATING_LIKE', 'DATING_MATCH', 'DATING_SUPER_LIKE', 'DATING_MESSAGE'};
+      final datingDocs = snapshot.docs.where((d) {
+        final type = (d.data() as Map<String, dynamic>)['type'] as String? ?? '';
+        return datingTypes.contains(type);
+      }).toList();
+      final nonDatingDocs = snapshot.docs.where((d) {
+        final type = (d.data() as Map<String, dynamic>)['type'] as String? ?? '';
+        return !datingTypes.contains(type);
+      }).toList();
+      final latest = nonDatingDocs.take(2).map((d) {
         final data = Map<String, dynamic>.from(d.data());
         data['id'] = d.id;
         return NotificationData.fromJson(data);
       }).toList();
       setState(() {
-        _unreadNotificationsCount = count;
+        _unreadNotificationsCount = nonDatingDocs.length;
+        _unreadDatingCount = datingDocs.length;
         _latestUnreadNotifs = latest;
       });
 
@@ -2095,13 +2105,13 @@ class _MyHomePageState extends State<MyHomePage>
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               badges.Badge(
-                                showBadge: _unreadNotificationsCount > 0,
+                                showBadge: _unreadDatingCount > 0,
                                 badgeStyle: badges.BadgeStyle(
                                   badgeColor: colors.accent,
                                   padding: const EdgeInsets.all(3),
                                 ),
                                 badgeContent: Text(
-                                  _unreadNotificationsCount > 9 ? '9+' : '$_unreadNotificationsCount',
+                                  _unreadDatingCount > 9 ? '9+' : '$_unreadDatingCount',
                                   style: TextStyle(fontSize: 8, color: colors.onAccent),
                                 ),
                                 child: Icon(Fontisto.tinder, color: Colors.red, size: navIconSize),
@@ -2741,7 +2751,7 @@ class _MyHomePageState extends State<MyHomePage>
                     wide: wide,
                     colors: colors,
                     iconColor: Colors.red,
-                    badge: _unreadNotificationsCount,
+                    badge: _unreadDatingCount,
                   ),
                   // Lives
                   StreamBuilder<int>(
