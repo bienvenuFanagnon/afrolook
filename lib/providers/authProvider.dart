@@ -1631,7 +1631,7 @@ class UserAuthProvider extends ChangeNotifier {
 
       printVm('✅ Post $postId: +1 adSupport, Créateur $creatorId: +1 coin, Spectateur $currentUserId: +1 vue');
     } catch (e, stack) {
-      printVm('❌ Erreur lors de l'incrémentation des coins/compteurs: $e');
+      printVm("❌ Erreur lors de l'incrémentation des coins/compteurs: $e");
       printVm(stack);
     }
   }
