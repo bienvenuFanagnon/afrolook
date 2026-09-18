@@ -687,10 +687,12 @@ class _UserProfileModalState extends State<UserProfileModal> {
   }
 
   bool isMyFriend(UserData otherUser, UserData currentUser) {
+    if (otherUser.id == null) return false;
     return currentUser.friendsIds?.contains(otherUser.id!) == true;
   }
 
   bool isInvite(UserData otherUser, UserData currentUser) {
+    if (otherUser.id == null) return false;
     return currentUser.mesInvitationsEnvoyerId?.contains(otherUser.id!) == true;
   }
 
@@ -1123,10 +1125,10 @@ class _UserProfileModalState extends State<UserProfileModal> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    double taux = widget.user.popularite!;
+    double taux = widget.user.popularite ?? 0.0;
     bool isFriend = isMyFriend(widget.user, authProvider.loginUserData);
     bool isInvited = isInvite(widget.user, authProvider.loginUserData);
-    bool isAbonne = isUserAbonne(widget.user.userAbonnesIds!, authProvider.loginUserData.id!);
+    bool isAbonne = isUserAbonne(widget.user.userAbonnesIds ?? [], authProvider.loginUserData?.id ?? '');
     bool isOwnProfile = authProvider.loginUserData.id == widget.user.id;
     return Container(
       decoration: const BoxDecoration(
