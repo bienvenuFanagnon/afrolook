@@ -42,6 +42,7 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
   String? _selectedCountry;
   String? _selectedOperator;
   final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _otpController = TextEditingController();
   bool _isLoading = false;
   String? _currentUserId;
 
@@ -60,6 +61,11 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
     'free_sn': 2.0,
     'wave_sn': 2.0,
     'mtn_cg': 3.0,
+    'moov_bf': 3.2,
+    'orange_bf': 3.2,
+    'wave_bf': 3.2,
+    'orange_ml': 3.2,
+    'mobicash_ml': 3.2,
   };
 
   final Map<String, Map<String, String>> _operators = {
@@ -87,10 +93,25 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
       'WAVE Sénégal': 'wave_sn',
       'FREE Sénégal': 'free_sn',
     },
+    'Burkina Faso': {
+      'Moov BF': 'moov_bf',
+      'Orange BF': 'orange_bf',
+      'Wave BF': 'wave_bf',
+    },
+    'Mali': {
+      'Orange Mali': 'orange_ml',
+      'Mobicash Mali': 'mobicash_ml',
+    },
   };
 
+  // Opérateurs retournant une payment_url à ouvrir dans le navigateur
   final Set<String> _operatorsNeedingReturnUrl = {
-    'wave_sn', 'free_sn', 'wave_ci',
+    'wave_sn', 'free_sn', 'wave_ci', 'wave_bf',
+  };
+
+  // Opérateurs nécessitant un code OTP généré par l'utilisateur
+  final Set<String> _operatorsNeedingOtp = {
+    'orange_bf',
   };
 
   final Map<String, String> _phonePrefixes = {
@@ -99,6 +120,8 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
     'Côte d\'Ivoire': '225',
     'Congo Brazzaville': '242',
     'Sénégal': '221',
+    'Burkina Faso': '226',
+    'Mali': '223',
   };
 
   @override
@@ -110,6 +133,7 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
   @override
   void dispose() {
     _phoneController.dispose();
+    _otpController.dispose();
     super.dispose();
   }
 
@@ -208,13 +232,23 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
       phone = prefix + phone;
     }
 
+    final operatorCode = _operators[_selectedCountry]![_selectedOperator];
+    final needsOtp = _operatorsNeedingOtp.contains(operatorCode);
+
+    if (needsOtp) {
+      final otp = _otpController.text.trim();
+      if (otp.isEmpty) {
+        _showErrorDialog('Veuillez entrer le code OTP généré via USSD');
+        return;
+      }
+    }
+
     setState(() => _isLoading = true);
 
     try {
       final functions = FirebaseFunctions.instance;
       final callable = functions.httpsCallable('executeAfrolookFeexpayPayment');
 
-      final operatorCode = _operators[_selectedCountry]![_selectedOperator];
       final needsReturnUrl = _operatorsNeedingReturnUrl.contains(operatorCode);
       final feexpayFeePercent = _feexpayFees[operatorCode] ?? 0;
 
@@ -227,8 +261,6 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
       printVm('Montant à payer: $userPays FCFA');
       printVm('Montant à envoyer: $amountToSendToFeexPay FCFA');
 
-      // ✅ Gestion sécurisée de callback_info
-
       final params = {
         'token': widget.token,
         'shopId': widget.shopId,
@@ -237,14 +269,15 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
         'operatorCode': operatorCode,
         'operatorName': _selectedOperator,
         'country': _selectedCountry,
-        // 'callbackInfo': widget.callbackInfo,  // ← Envoyer comme string
-        'callbackInfo': jsonEncode(widget.callbackInfo),  // ← Envoyer comme string
-
-        // 'callbackInfo': callbackInfoMap,  // ← Envoie le Map directement
+        'callbackInfo': jsonEncode(widget.callbackInfo),
       };
 
       if (needsReturnUrl) {
         params['returnUrl'] = widget.redirectUrl;
+      }
+
+      if (needsOtp) {
+        params['otp'] = _otpController.text.trim();
       }
 
       final result = await callable(params);
@@ -355,10 +388,20 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
                 label: 'Opérateur',
                 value: _selectedOperator,
                 items: _operators[_selectedCountry]!.keys.toList(),
-                onChanged: (value) => setState(() => _selectedOperator = value),
+                onChanged: (value) => setState(() {
+                  _selectedOperator = value;
+                  _otpController.clear();
+                }),
               ),
               SizedBox(height: 20),
               _buildPhoneField(),
+              // Champ OTP — uniquement pour Orange BF
+              if (_selectedOperator != null &&
+                  _operatorsNeedingOtp.contains(
+                      _operators[_selectedCountry]?[_selectedOperator])) ...[
+                SizedBox(height: 16),
+                _buildOtpField(),
+              ],
               SizedBox(height: 30),
               ElevatedButton(
                 onPressed: _isLoading ? null : _processPayment,
@@ -397,6 +440,56 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
               prefixText: '+${_phonePrefixes[_selectedCountry]} ',
               border: InputBorder.none,
               contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOtpField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.orange.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.orange.shade200),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.info_outline, color: Colors.orange.shade700, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Orange BF requiert un code OTP.\nComposez #144*4*6*${widget.amount}# sur votre téléphone Orange BF, puis entrez le code reçu ci-dessous.',
+                  style: TextStyle(fontSize: 12, color: Colors.orange.shade800, height: 1.4),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text('Code OTP', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey[300]!),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: TextFormField(
+            controller: _otpController,
+            keyboardType: TextInputType.number,
+            maxLength: 6,
+            decoration: const InputDecoration(
+              hintText: 'Ex: 123456',
+              prefixIcon: Icon(Icons.lock_outline),
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              counterText: '',
             ),
           ),
         ),

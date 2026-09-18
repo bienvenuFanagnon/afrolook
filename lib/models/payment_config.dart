@@ -68,9 +68,36 @@ class PaymentConfig {
     ],
   );
 
+  // Configuration pour le BURKINA FASO
+  static PaymentConfig get burkinaFaso => PaymentConfig(
+    countryCode: 'BF',
+    countryName: 'Burkina Faso',
+    phoneCode: '226',
+    phoneLength: 8,
+    paymentMethods: [
+      PaymentMethod(code: 'moov_bf',   name: 'Moov BF',   icon: Icons.phone_android),
+      PaymentMethod(code: 'orange_bf', name: 'Orange BF', icon: Icons.phone_iphone),
+      PaymentMethod(code: 'wave_bf',   name: 'Wave BF',   icon: Icons.waves),
+    ],
+  );
+
+  // Configuration pour le MALI
+  static PaymentConfig get mali => PaymentConfig(
+    countryCode: 'ML',
+    countryName: 'Mali',
+    phoneCode: '223',
+    phoneLength: 8,
+    paymentMethods: [
+      PaymentMethod(code: 'orange_ml',   name: 'Orange Mali',   icon: Icons.phone_android),
+      PaymentMethod(code: 'mobicash_ml', name: 'Mobicash Mali', icon: Icons.phone_iphone),
+    ],
+  );
+
   // Liste de tous les pays actifs
   static List<PaymentConfig> get activeCountries => [
     togo,
+    burkinaFaso,
+    mali,
     // Décommentez pour activer d'autres pays
     // coteIvoire,
     // senegal,

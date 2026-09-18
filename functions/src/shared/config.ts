@@ -32,6 +32,13 @@ export const FEEXPAY_FEES_CONFIG_AFROLOOK: Record<string, { payin: number; payou
   'wave_sn': { payin: 2.0, payout: 2.0, total: 4.0 },
   // Congo
   'mtn_cg': { payin: 3.0, payout: 2.0, total: 5.0 },
+  // Burkina Faso
+  'moov_bf':   { payin: 3.2, payout: 3.2, total: 6.4 },
+  'orange_bf': { payin: 3.2, payout: 3.2, total: 6.4 },
+  'wave_bf':   { payin: 3.2, payout: 3.2, total: 6.4 },
+  // Mali
+  'orange_ml':   { payin: 3.2, payout: 3.2, total: 6.4 },
+  'mobicash_ml': { payin: 3.2, payout: 3.2, total: 6.4 },
 };
 
 export const APP_FEE_RATE_AFROLOOK = 5.6;

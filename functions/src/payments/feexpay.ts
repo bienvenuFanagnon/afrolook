@@ -110,7 +110,7 @@ export const executeAfrolookFeexpayPayment = onCall(
         throw new HttpsError("unauthenticated", "Authentification requise");
       }
 
-      const { amount, phoneNumber, operatorCode, operatorName, country, callbackInfo } = request.data;
+      const { amount, phoneNumber, operatorCode, operatorName, country, callbackInfo, otp } = request.data;
       const token = FEEXPAY_API_KEY_AFROLOOK;
       const shopId = FEEXPAY_SHOP_ID_AFROLOOK;
 
@@ -119,9 +119,14 @@ export const executeAfrolookFeexpayPayment = onCall(
       console.log("Phone:", phoneNumber);
       console.log("Amount:", amount);
 
+      // Orange BF exige un OTP généré côté client via USSD #144*4*6*montant#
+      if (operatorCode === "orange_bf" && !otp) {
+        throw new HttpsError("invalid-argument", "Code OTP requis pour Orange BF");
+      }
+
       const apiUrl = `https://api-v2.feexpay.me/api/transactions/public/requesttopay/${operatorCode}`;
 
-      const payload = {
+      const payload: Record<string, unknown> = {
         shop: shopId,
         amount: amount,
         phoneNumber: phoneNumber,
@@ -130,6 +135,8 @@ export const executeAfrolookFeexpayPayment = onCall(
         description: "Recharge portefeuille Afrolook",
         callback_info: callbackInfo,
       };
+
+      if (otp) payload.otp = otp;
 
       const response = await axios.post(apiUrl, payload, {
         headers: {
