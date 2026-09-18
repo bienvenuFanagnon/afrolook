@@ -30,41 +30,55 @@ class PaymentConfig {
     ],
   );
 
-  // Configuration pour la CÔTE D'IVOIRE (exemple)
+  // Configuration pour le BÉNIN
+  static PaymentConfig get benin => PaymentConfig(
+    countryCode: 'BJ',
+    countryName: 'Bénin',
+    phoneCode: '229',
+    phoneLength: 8,
+    paymentMethods: [
+      PaymentMethod(code: 'mtn',        name: 'MTN Bénin',     icon: Icons.phone_android),
+      PaymentMethod(code: 'moov',       name: 'MOOV Bénin',    icon: Icons.phone_iphone),
+      PaymentMethod(code: 'celtiis_bj', name: 'CELTIIS Bénin', icon: Icons.phone_android),
+      PaymentMethod(code: 'coris',      name: 'CORIS Bénin',   icon: Icons.account_balance),
+    ],
+  );
+
+  // Configuration pour la CÔTE D'IVOIRE
   static PaymentConfig get coteIvoire => PaymentConfig(
     countryCode: 'CI',
     countryName: 'Côte d\'Ivoire',
     phoneCode: '225',
-    phoneLength: 8,
+    phoneLength: 10,
     paymentMethods: [
-      PaymentMethod(code: 'ORANGE_MONEY_CI', name: 'Orange Money CI', icon: Icons.phone_android),
-      PaymentMethod(code: 'MTN_MONEY_CI', name: 'MTN Money CI', icon: Icons.phone_iphone),
-      PaymentMethod(code: 'WAVE_CI', name: 'Wave CI', icon: Icons.waves),
+      PaymentMethod(code: 'mtn_ci',    name: 'MTN CI',    icon: Icons.phone_android),
+      PaymentMethod(code: 'moov_ci',   name: 'MOOV CI',   icon: Icons.phone_iphone),
+      PaymentMethod(code: 'wave_ci',   name: 'WAVE CI',   icon: Icons.waves),
+      PaymentMethod(code: 'orange_ci', name: 'ORANGE CI', icon: Icons.phone_android),
     ],
   );
 
-  // Configuration pour le SÉNÉGAL (exemple)
+  // Configuration pour le CONGO BRAZZAVILLE
+  static PaymentConfig get congo => PaymentConfig(
+    countryCode: 'CG',
+    countryName: 'Congo Brazzaville',
+    phoneCode: '242',
+    phoneLength: 9,
+    paymentMethods: [
+      PaymentMethod(code: 'mtn_cg', name: 'MTN Congo', icon: Icons.phone_android),
+    ],
+  );
+
+  // Configuration pour le SÉNÉGAL
   static PaymentConfig get senegal => PaymentConfig(
     countryCode: 'SN',
     countryName: 'Sénégal',
     phoneCode: '221',
     phoneLength: 9,
     paymentMethods: [
-      PaymentMethod(code: 'ORANGE_MONEY_SN', name: 'Orange Money SN', icon: Icons.phone_android),
-      PaymentMethod(code: 'FREE_MONEY_SN', name: 'Free Money SN', icon: Icons.phone_iphone),
-      PaymentMethod(code: 'WAVE_SN', name: 'Wave SN', icon: Icons.waves),
-    ],
-  );
-
-  // Configuration pour le CAMEROUN (exemple)
-  static PaymentConfig get cameroun => PaymentConfig(
-    countryCode: 'CM',
-    countryName: 'Cameroun',
-    phoneCode: '237',
-    phoneLength: 9,
-    paymentMethods: [
-      PaymentMethod(code: 'ORANGE_MONEY_CM', name: 'Orange Money CM', icon: Icons.phone_android),
-      PaymentMethod(code: 'MTN_MONEY_CM', name: 'MTN Money CM', icon: Icons.phone_iphone),
+      PaymentMethod(code: 'orange_sn', name: 'ORANGE SN', icon: Icons.phone_android),
+      PaymentMethod(code: 'wave_sn',   name: 'WAVE SN',   icon: Icons.waves),
+      PaymentMethod(code: 'free_sn',   name: 'FREE SN',   icon: Icons.phone_iphone),
     ],
   );
 
@@ -93,15 +107,16 @@ class PaymentConfig {
     ],
   );
 
-  // Liste de tous les pays actifs
+  // Liste de tous les pays actifs pour dépôt et retrait.
+  // L'admin contrôle opérateur par opérateur ce qui est activé (isPayinEnabled / isPayoutEnabled).
   static List<PaymentConfig> get activeCountries => [
     togo,
     burkinaFaso,
     mali,
-    // Décommentez pour activer d'autres pays
-    // coteIvoire,
-    // senegal,
-    // cameroun,
+    benin,
+    coteIvoire,
+    congo,
+    senegal,
   ];
 
   // Validation du numéro selon le pays

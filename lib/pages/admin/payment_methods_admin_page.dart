@@ -24,8 +24,6 @@ const _operators = [
   {'country': 'Mali',             'name': 'Mobicash Mali',  'code': 'mobicash_ml'},
 ];
 
-// Pays qui apparaissent dans le formulaire de retrait
-const _retraitCountries = {'Togo', 'Burkina Faso', 'Mali'};
 
 class PaymentMethodsAdminPage extends StatefulWidget {
   const PaymentMethodsAdminPage({super.key});
@@ -132,7 +130,6 @@ class _PaymentMethodsAdminPageState extends State<PaymentMethodsAdminPage> {
   }
 
   Widget _buildCountrySection(String country, List<Map<String, String>> ops) {
-    final hasRetrait = _retraitCountries.contains(country);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -151,17 +148,6 @@ class _PaymentMethodsAdminPageState extends State<PaymentMethodsAdminPage> {
                 const Icon(Icons.flag_rounded, size: 18, color: Color(0xFFD8A868)),
                 const SizedBox(width: 8),
                 Text(country, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                if (!hasRetrait) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text('retrait non disponible', style: TextStyle(color: Colors.grey.shade600, fontSize: 10)),
-                  ),
-                ],
               ],
             ),
           ),
@@ -185,14 +171,14 @@ class _PaymentMethodsAdminPageState extends State<PaymentMethodsAdminPage> {
           const Divider(height: 1),
           ...ops.asMap().entries.map((e) {
             final isLast = e.key == ops.length - 1;
-            return _buildOperatorRow(e.value, hasRetrait, isLast);
+            return _buildOperatorRow(e.value, isLast);
           }),
         ],
       ),
     );
   }
 
-  Widget _buildOperatorRow(Map<String, String> op, bool hasRetrait, bool isLast) {
+  Widget _buildOperatorRow(Map<String, String> op, bool isLast) {
     final code = op['code']!;
     final payin = _local[code]?['payin'] ?? true;
     final payout = _local[code]?['payout'] ?? true;
@@ -234,14 +220,12 @@ class _PaymentMethodsAdminPageState extends State<PaymentMethodsAdminPage> {
               SizedBox(
                 width: 70,
                 child: Center(
-                  child: hasRetrait
-                      ? Switch(
-                          value: payout,
-                          onChanged: (v) => _togglePayout(code, v),
-                          activeColor: Colors.green,
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        )
-                      : Icon(Icons.remove, color: Colors.grey.shade300, size: 20),
+                  child: Switch(
+                    value: payout,
+                    onChanged: (v) => _togglePayout(code, v),
+                    activeColor: Colors.green,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
                 ),
               ),
             ],
