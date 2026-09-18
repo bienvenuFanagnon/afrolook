@@ -1631,7 +1631,7 @@ class UserAuthProvider extends ChangeNotifier {
 
       printVm('✅ Post $postId: +1 adSupport, Créateur $creatorId: +1 coin, Spectateur $currentUserId: +1 vue');
     } catch (e, stack) {
-      printVm('❌ Erreur lors de l’incrémentation des coins/compteurs: $e');
+      printVm('❌ Erreur lors de l'incrémentation des coins/compteurs: $e');
       printVm(stack);
     }
   }
@@ -1748,7 +1748,7 @@ class UserAuthProvider extends ChangeNotifier {
       printVm("✅ Notifications traitées pour ${targetUserIds.length} utilisateurs !");
 
     } catch (e) {
-      printVm("❌ Erreur lors de l’envoi de la notification : $e");
+      printVm("❌ Erreur lors de l'envoi de la notification : $e");
     }
   }
   Future<int> notifySubscribersOfInteraction({
@@ -2285,7 +2285,7 @@ if(actionType == 'comment'){
     return snapshot.docs.map((doc) => UserData.fromJson(doc.data())).toList();
   }
 
-// Récupère uniquement les utilisateurs dont l’ID est dans la liste
+// Récupère uniquement les utilisateurs dont l'ID est dans la liste
   Future<List<UserData>> getUsersByIds(List<String> ids) async {
     // ⚠️ Firebase limite les requêtes whereIn à 10 éléments max
     final List<UserData> users = [];
@@ -2326,7 +2326,7 @@ if(actionType == 'comment'){
     }
 
     if (receiver.oneIgnalUserid == null || receiver.oneIgnalUserid!.length < 5) {
-      printVm("⚠️ Pas d’ID OneSignal valide pour ${receiver.pseudo}");
+      printVm("⚠️ Pas d'ID OneSignal valide pour ${receiver.pseudo}");
       return;
     }
 
@@ -3011,11 +3011,11 @@ if(actionType == 'comment'){
   }
   void _showUpdateModal(BuildContext context) {
     final isIOS = Platform.isIOS;
-    const iosAppStoreUrl = ‘https://apps.apple.com/app/id6811423047’;
+    const iosAppStoreUrl = 'https://apps.apple.com/app/id6811423047';
     final storeUrl = isIOS
         ? (appDefaultData.ios_link?.isNotEmpty == true ? appDefaultData.ios_link! : iosAppStoreUrl)
-        : (appDefaultData.app_link ?? ‘’);
-    final storeLabel = isIOS ? ‘Mettre à jour sur App Store’ : ‘Mettre à jour sur Play Store’;
+        : (appDefaultData.app_link ?? '');
+    final storeLabel = isIOS ? 'Mettre à jour sur App Store' : 'Mettre à jour sur Play Store';
     final storeIcon = isIOS ? Icons.apple : Icons.play_arrow;
 
     showModalBottomSheet(
@@ -3074,7 +3074,7 @@ if(actionType == 'comment'){
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  ‘Mise à jour disponible !’,
+                  'Mise à jour disponible !',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.greenAccent.shade400,
@@ -3084,8 +3084,8 @@ if(actionType == 'comment'){
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  ‘Une nouvelle version d’AfroLook est disponible.\n\n’
-                  ‘Téléchargez-la maintenant pour profiter des dernières fonctionnalités, d’une meilleure sécurité et d’une expérience encore plus fluide !’,
+                  "Une nouvelle version d'AfroLook est disponible.\n\n"
+                  "Téléchargez-la maintenant pour profiter des dernières fonctionnalités, d'une meilleure sécurité et d'une expérience encore plus fluide !",
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: Colors.white70,
@@ -3119,7 +3119,7 @@ if(actionType == 'comment'){
                 TextButton(
                   onPressed: () {},
                   child: Text(
-                    ‘Plus tard’,
+                    'Plus tard',
                     style: TextStyle(
                       color: Colors.grey.shade600,
                       fontWeight: FontWeight.w500,

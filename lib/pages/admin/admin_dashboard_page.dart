@@ -1,4 +1,4 @@
-import 'package:afrotok/layout/centered_content.dart';
+﻿import 'package:afrotok/layout/centered_content.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
@@ -18,7 +18,7 @@ import '../challenge/challengeDashbord.dart';
 import '../contenuPayant/admin_content_page.dart';
 import '../pronostics/admin_pronostics_page.dart';
 import '../weekly_top/weekly_top_commentators_page.dart';
-import 'payment_methods_admin_page.dart';;
+import 'payment_methods_admin_page.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
@@ -32,7 +32,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   bool _forcingReward = false;
   bool _rankingOnlyMode = false;
 
-  // Stats chargées une fois
+  // Stats chargÃ©es une fois
   int _totalUsers = 0;
   int _officialPending = 0;
   int _officialApproved = 0;
@@ -45,7 +45,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   int _activeUsers90d = 0;
   bool _loading = true;
 
-  // Activité récente
+  // ActivitÃ© rÃ©cente
   List<_RecentEvent> _recentEvents = [];
 
   @override
@@ -60,7 +60,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       final now = DateTime.now();
       final startOfMonth = DateTime(now.year, now.month, 1).millisecondsSinceEpoch;
       final startOfDay  = DateTime(now.year, now.month, now.day).millisecondsSinceEpoch;
-      // Borne supérieure pour exclure les anciens docs dont createdAt est en microsecondes
+      // Borne supÃ©rieure pour exclure les anciens docs dont createdAt est en microsecondes
       // (valeurs ~1000x plus grandes que les ms actuels, ils passeraient sinon le filtre >= startOfDay)
       final endOfDay    = DateTime(now.year, now.month, now.day, 23, 59, 59).millisecondsSinceEpoch;
       final startOfWeek   = now.subtract(const Duration(days: 7)).millisecondsSinceEpoch;
@@ -80,7 +80,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         _db.collection('Users')
             .where('createdAt', isGreaterThanOrEqualTo: startOfDay)
             .where('createdAt', isLessThanOrEqualTo: endOfDay).count().get(),
-        // Connexions : last_time_active en ms, pas de problème microsecondes
+        // Connexions : last_time_active en ms, pas de problÃ¨me microsecondes
         _db.collection('Users')
             .where('last_time_active', isGreaterThanOrEqualTo: startOfDay).count().get(),
         _db.collection('Users')
@@ -91,7 +91,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             .where('last_time_active', isGreaterThanOrEqualTo: startOf90Days).count().get(),
       ]);
 
-      // Activité récente : 5 dernières actions sur comptes officiels
+      // ActivitÃ© rÃ©cente : 5 derniÃ¨res actions sur comptes officiels
       final recentSnap = await _db
           .collection('OfficialAccountRequests')
           .orderBy('updatedAt', descending: true)
@@ -183,7 +183,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   children: [
                     const Icon(Icons.access_time, color: Color(0xFFE21221), size: 16),
                     const SizedBox(width: 8),
-                    Expanded(child: Text('Validez les boosts dès que possible.', style: TextStyle(color: colors.textPrimary, fontSize: 12))),
+                    Expanded(child: Text('Validez les boosts dÃ¨s que possible.', style: TextStyle(color: colors.textPrimary, fontSize: 12))),
                   ],
                 ),
               ),
@@ -244,15 +244,15 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             : CenteredContent(child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
                 children: [
-                  // ── Identité admin ─────────────────────────────────────────
+                  // â”€â”€ IdentitÃ© admin â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   _AdminHeader(me: me, colors: colors),
                   const SizedBox(height: 12),
 
-                  // ── AppData ─────────────────────────────────────────────────
+                  // â”€â”€ AppData â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   _AppDataButton(onTap: () => _push(AdminHubPage())),
                   const SizedBox(height: 20),
 
-                  // ── Stats ──────────────────────────────────────────────────
+                  // â”€â”€ Stats â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   _SectionLabel('Vue d\'ensemble', colors),
                   const SizedBox(height: 10),
                   _StatsGrid(
@@ -266,7 +266,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   ),
                   const SizedBox(height: 20),
 
-                  // ── Connexions actives ─────────────────────────────────────
+                  // â”€â”€ Connexions actives â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   _SectionLabel('Connexions', colors),
                   const SizedBox(height: 10),
                   _ActiveUsersCard(
@@ -278,14 +278,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   ),
                   const SizedBox(height: 20),
 
-                  // ── Alertes ────────────────────────────────────────────────
+                  // â”€â”€ Alertes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   if (_officialPending > 0 || _influencerPending > 0) ...[
                     _SectionLabel('Alertes', colors),
                     const SizedBox(height: 10),
                     if (_officialPending > 0)
                       _AlertBanner(
                         icon: Icons.verified_rounded,
-                        label: 'Comptes officiels à traiter',
+                        label: 'Comptes officiels Ã  traiter',
                         count: _officialPending,
                         color: const Color(0xFFFF9800),
                         onTap: () => _push(const OfficialAccountsPage()),
@@ -303,7 +303,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     const SizedBox(height: 20),
                   ],
 
-                  // ── Modules ────────────────────────────────────────────────
+                  // â”€â”€ Modules â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   _SectionLabel('Modules', colors),
                   const SizedBox(height: 10),
                   _ModulesGrid(
@@ -316,7 +316,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   ),
                   const SizedBox(height: 20),
 
-                  // ── Actions rapides ────────────────────────────────────────
+                  // â”€â”€ Actions rapides â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   _SectionLabel('Actions rapides', colors),
                   const SizedBox(height: 10),
                   _AdminActionCard(
@@ -324,7 +324,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     iconBg: const Color(0xFFFFF8E1),
                     iconColor: const Color(0xFFFFD700),
                     label: 'Forcer le classement commentateurs',
-                    desc: 'Recalcule et récompense le Top 5 de la semaine précédente',
+                    desc: 'Recalcule et rÃ©compense le Top 5 de la semaine prÃ©cÃ©dente',
                     loading: _forcingReward,
                     onTap: _forceWeeklyCommentatorsReward,
                     colors: colors,
@@ -341,9 +341,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   ),
                   const SizedBox(height: 20),
 
-                  // ── Activité récente ───────────────────────────────────────
+                  // â”€â”€ ActivitÃ© rÃ©cente â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   if (_recentEvents.isNotEmpty) ...[
-                    _SectionLabel('Activité récente', colors),
+                    _SectionLabel('ActivitÃ© rÃ©cente', colors),
                     const SizedBox(height: 10),
                     _RecentActivity(events: _recentEvents, colors: colors),
                   ],
@@ -368,7 +368,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         options: HttpsCallableOptions(timeout: const Duration(seconds: 10)),
       );
 
-      // Première vérification : déjà traité ?
+      // PremiÃ¨re vÃ©rification : dÃ©jÃ  traitÃ© ?
       final checkResult = await callable.call({'confirm': false});
       final checkData = checkResult.data as Map<String, dynamic>? ?? {};
       if (!mounted) return;
@@ -382,7 +382,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             ? DateTime.fromMillisecondsSinceEpoch(processedAtMs)
             : null;
         final dateStr = processedAt != null
-            ? '${processedAt.day.toString().padLeft(2, '0')}/${processedAt.month.toString().padLeft(2, '0')} à ${processedAt.hour.toString().padLeft(2, '0')}h${processedAt.minute.toString().padLeft(2, '0')}'
+            ? '${processedAt.day.toString().padLeft(2, '0')}/${processedAt.month.toString().padLeft(2, '0')} Ã  ${processedAt.hour.toString().padLeft(2, '0')}h${processedAt.minute.toString().padLeft(2, '0')}'
             : 'date inconnue';
 
         setState(() => _forcingReward = false);
@@ -395,21 +395,21 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             title: Row(children: [
               const Icon(Icons.warning_amber_rounded, color: Color(0xFFFFD700)),
               const SizedBox(width: 8),
-              const Text('Déjà calculé', style: TextStyle(color: Colors.white, fontSize: 16)),
+              const Text('DÃ©jÃ  calculÃ©', style: TextStyle(color: Colors.white, fontSize: 16)),
             ]),
             content: Text(
-              'Ce classement a déjà été exécuté le $dateStr.\n$existingCount gagnant(s) récompensé(s).\n\nQue veux-tu faire ?',
+              'Ce classement a dÃ©jÃ  Ã©tÃ© exÃ©cutÃ© le $dateStr.\n$existingCount gagnant(s) rÃ©compensÃ©(s).\n\nQue veux-tu faire ?',
               style: const TextStyle(color: Colors.white70),
             ),
             actions: [
               TextButton(onPressed: () => Navigator.pop(ctx, null), child: const Text('Annuler')),
               TextButton(
                 onPressed: () => Navigator.pop(ctx, 'rankingOnly'),
-                child: const Text('Mettre à jour le classement\n(sans re-récompenser)', style: TextStyle(color: Color(0xFF5B9CFA), fontSize: 12)),
+                child: const Text('Mettre Ã  jour le classement\n(sans re-rÃ©compenser)', style: TextStyle(color: Color(0xFF5B9CFA), fontSize: 12)),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(ctx, 'full'),
-                child: const Text('Relancer complet\n(re-crédite les pièces ⚠️)', style: TextStyle(color: Color(0xFFE53935), fontSize: 12)),
+                child: const Text('Relancer complet\n(re-crÃ©dite les piÃ¨ces âš ï¸)', style: TextStyle(color: Color(0xFFE53935), fontSize: 12)),
               ),
             ],
           ),
@@ -418,7 +418,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         _rankingOnlyMode = choice == 'rankingOnly';
         setState(() => _forcingReward = true);
       } else {
-        // Première exécution : confirmation simple
+        // PremiÃ¨re exÃ©cution : confirmation simple
         setState(() => _forcingReward = false);
         final confirm = await showDialog<bool>(
           context: context,
@@ -426,7 +426,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             backgroundColor: Colors.grey[900],
             title: const Text('Lancer le classement commentateurs', style: TextStyle(color: Colors.white)),
             content: const Text(
-                'Cela va calculer le Top Commentateurs de la semaine précédente et envoyer les récompenses + notifications.',
+                'Cela va calculer le Top Commentateurs de la semaine prÃ©cÃ©dente et envoyer les rÃ©compenses + notifications.',
                 style: TextStyle(color: Colors.white70)),
             actions: [
               TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
@@ -441,7 +441,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         setState(() => _forcingReward = true);
       }
 
-      // Lancement réel avec confirm: true
+      // Lancement rÃ©el avec confirm: true
       final runResult = await callable.call({'confirm': true, 'rankingOnly': _rankingOnlyMode});
       final runData = runResult.data as Map<String, dynamic>? ?? {};
       if (!mounted) return;
@@ -452,16 +452,16 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       String msg;
       Color bg;
       if (count > 0) {
-        msg = '✅ Terminé — $count gagnant(s) récompensé(s).';
+        msg = 'âœ… TerminÃ© â€” $count gagnant(s) rÃ©compensÃ©(s).';
         bg = const Color(0xFF0F6E56);
       } else if (note == 'no_eligible_comments') {
-        msg = '⚠️ Aucun commentaire éligible trouvé (min. 10 caractères) pour la semaine.';
+        msg = 'âš ï¸ Aucun commentaire Ã©ligible trouvÃ© (min. 10 caractÃ¨res) pour la semaine.';
         bg = const Color(0xFFE65100);
       } else if (note == 'no_eligible_users') {
-        msg = '⚠️ Commentaires trouvés mais aucun utilisateur éligible (compte < 7 jours).';
+        msg = 'âš ï¸ Commentaires trouvÃ©s mais aucun utilisateur Ã©ligible (compte < 7 jours).';
         bg = const Color(0xFFE65100);
       } else {
-        msg = '⚠️ Terminé — 0 gagnant. Note : $note';
+        msg = 'âš ï¸ TerminÃ© â€” 0 gagnant. Note : $note';
         bg = const Color(0xFFE65100);
       }
 
@@ -479,7 +479,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 }
 
-// ── Header ─────────────────────────────────────────────────────────────────────
+// â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _AdminHeader extends StatelessWidget {
   final dynamic me;
@@ -560,19 +560,19 @@ class _AdminHeader extends StatelessWidget {
   String _greet() {
     final h = DateTime.now().hour;
     if (h < 12) return 'Bonjour';
-    if (h < 18) return 'Bonne après-midi';
+    if (h < 18) return 'Bonne aprÃ¨s-midi';
     return 'Bonsoir';
   }
 
   String _dateLabel() {
     final d = DateTime.now();
-    const months = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin',
-                    'juil', 'août', 'sep', 'oct', 'nov', 'déc'];
+    const months = ['jan', 'fÃ©v', 'mar', 'avr', 'mai', 'juin',
+                    'juil', 'aoÃ»t', 'sep', 'oct', 'nov', 'dÃ©c'];
     return '${d.day} ${months[d.month - 1]}. ${d.year}';
   }
 }
 
-// ── AppData button ─────────────────────────────────────────────────────────────
+// â”€â”€ AppData button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _AppDataButton extends StatelessWidget {
   final VoidCallback onTap;
@@ -622,7 +622,7 @@ class _AppDataButton extends StatelessWidget {
                           fontSize: 15,
                           letterSpacing: 0.3)),
                   SizedBox(height: 2),
-                  Text('Statistiques globales & opérations',
+                  Text('Statistiques globales & opÃ©rations',
                       style: TextStyle(
                           color: Colors.white70,
                           fontSize: 12)),
@@ -645,7 +645,7 @@ class _AppDataButton extends StatelessWidget {
   }
 }
 
-// ── Stats grid ─────────────────────────────────────────────────────────────────
+// â”€â”€ Stats grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _StatsGrid extends StatelessWidget {
   final int totalUsers, officialApproved, officialPending,
@@ -724,7 +724,7 @@ class _StatsGrid extends StatelessWidget {
   String _fmt(int n) => '$n';
 }
 
-// ── Active users card ──────────────────────────────────────────────────────────
+// â”€â”€ Active users card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _ActiveUsersCard extends StatelessWidget {
   final int today, week, days30, days90;
@@ -843,7 +843,7 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-// ── Alertes ────────────────────────────────────────────────────────────────────
+// â”€â”€ Alertes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _AlertBanner extends StatelessWidget {
   final IconData icon;
@@ -902,7 +902,7 @@ class _AlertBanner extends StatelessWidget {
   }
 }
 
-// ── Modules grid ───────────────────────────────────────────────────────────────
+// â”€â”€ Modules grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _ModulesGrid extends StatelessWidget {
   final Map<String, int> pending;
@@ -921,7 +921,7 @@ class _ModulesGrid extends StatelessWidget {
       _ModuleItem(
         icon: Icons.groups_rounded,
         label: 'Groupe Afrolook',
-        desc: 'Créer & migrer le groupe officiel',
+        desc: 'CrÃ©er & migrer le groupe officiel',
         iconBg: const Color(0xFFE6F1FB),
         iconColor: Colors.blue,
         page: const AfrolookGroupMigrationPage(),
@@ -929,7 +929,7 @@ class _ModulesGrid extends StatelessWidget {
       _ModuleItem(
         icon: Icons.verified_rounded,
         label: 'Comptes officiels',
-        desc: 'Valider et gérer les demandes',
+        desc: 'Valider et gÃ©rer les demandes',
         iconBg: const Color(0xFFE6F1FB),
         iconColor: const Color(0xFF185FA5),
         badge: pending['official'] ?? 0,
@@ -946,15 +946,15 @@ class _ModulesGrid extends StatelessWidget {
       ),
       _ModuleItem(
         icon: Icons.campaign_rounded,
-        label: 'Publicités',
-        desc: 'Gérer les campagnes pub',
+        label: 'PublicitÃ©s',
+        desc: 'GÃ©rer les campagnes pub',
         iconBg: const Color(0xFFEEEDFE),
         iconColor: const Color(0xFF534AB7),
         page: AdvertisementManagementPage(),
       ),
       _ModuleItem(
         icon: Icons.account_balance_wallet_rounded,
-        label: 'Rémunération',
+        label: 'RÃ©munÃ©ration',
         desc: 'Suivi des paiements',
         iconBg: const Color(0xFFE1F5EE),
         iconColor: const Color(0xFF0F6E56),
@@ -963,7 +963,7 @@ class _ModulesGrid extends StatelessWidget {
       _ModuleItem(
         icon: Icons.emoji_events_rounded,
         label: 'Challenge',
-        desc: 'Gérer les défis',
+        desc: 'GÃ©rer les dÃ©fis',
         iconBg: const Color(0xFFEAF3DE),
         iconColor: const Color(0xFF3B6D11),
         page: ChallengeDashboardPage(),
@@ -995,7 +995,7 @@ class _ModulesGrid extends StatelessWidget {
       _ModuleItem(
         icon: Icons.storefront_rounded,
         label: 'Contenus payants',
-        desc: 'Boosts, modération, stats',
+        desc: 'Boosts, modÃ©ration, stats',
         iconBg: const Color(0xFFFFF8E1),
         iconColor: const Color(0xFFFFD400),
         page: const AdminContentPage(),
@@ -1003,7 +1003,7 @@ class _ModulesGrid extends StatelessWidget {
       _ModuleItem(
         icon: Icons.payment_rounded,
         label: 'Moyens de paiement',
-        desc: 'Activer / désactiver par opérateur',
+        desc: 'Activer / dÃ©sactiver par opÃ©rateur',
         iconBg: const Color(0xFFE8F5E9),
         iconColor: const Color(0xFF2E7D32),
         page: const PaymentMethodsAdminPage(),
@@ -1121,7 +1121,7 @@ class _ModuleCard extends StatelessWidget {
   }
 }
 
-// ── Activité récente ───────────────────────────────────────────────────────────
+// â”€â”€ ActivitÃ© rÃ©cente â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _RecentActivity extends StatelessWidget {
   final List<_RecentEvent> events;
@@ -1197,12 +1197,12 @@ class _RecentActivity extends StatelessWidget {
       };
 
   String _statusLabel(String status) => switch (status) {
-        'approved' => '— demande acceptée',
-        'rejected' => '— demande refusée',
-        'underReview' => '— en cours d\'analyse',
-        'moreInfoNeeded' => '— infos demandées',
-        'suspended' => '— compte suspendu',
-        _ => '— en attente de traitement',
+        'approved' => 'â€” demande acceptÃ©e',
+        'rejected' => 'â€” demande refusÃ©e',
+        'underReview' => 'â€” en cours d\'analyse',
+        'moreInfoNeeded' => 'â€” infos demandÃ©es',
+        'suspended' => 'â€” compte suspendu',
+        _ => 'â€” en attente de traitement',
       };
 
   String _timeAgo(int ts) {
@@ -1222,7 +1222,7 @@ class _RecentEvent {
       {required this.pseudo, required this.status, required this.timestamp});
 }
 
-// ── Action rapide ─────────────────────────────────────────────────────────────
+// â”€â”€ Action rapide â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _AdminActionCard extends StatelessWidget {
   final IconData icon;
@@ -1314,7 +1314,7 @@ class _AdminActionCard extends StatelessWidget {
   }
 }
 
-// ── Utilitaires ───────────────────────────────────────────────────────────────
+// â”€â”€ Utilitaires â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _SectionLabel extends StatelessWidget {
   final String text;
@@ -1331,3 +1331,4 @@ class _SectionLabel extends StatelessWidget {
             letterSpacing: 0.8),
       );
 }
+
