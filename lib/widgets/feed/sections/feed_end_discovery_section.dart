@@ -95,7 +95,7 @@ class _FeedEndDiscoverySectionState extends State<FeedEndDiscoverySection> {
     }
 
     final usersFuture = _fetchUsers(alreadyFollowing).catchError((_) => <UserData>[]);
-    final canauxFuture = _fetchCanaux(subscribedCanalIds).catchError((_) => <Canal>[]);
+    final canauxFuture = _fetchCanaux(subscribedCanalIds, myId).catchError((_) => <Canal>[]);
     final results = await Future.wait([usersFuture, canauxFuture]);
 
     if (!mounted) return;
@@ -157,7 +157,7 @@ class _FeedEndDiscoverySectionState extends State<FeedEndDiscoverySection> {
     return top;
   }
 
-  Future<List<Canal>> _fetchCanaux(Set<String> alreadySubscribed) async {
+  Future<List<Canal>> _fetchCanaux(Set<String> alreadySubscribed, String myId) async {
     final pageType = widget.pageType;
     QuerySnapshot<Map<String, dynamic>> snap;
     try {
