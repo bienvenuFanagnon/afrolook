@@ -380,7 +380,7 @@ class _MyHomePageState extends State<MyHomePage>
         _latestUnreadNotifs = latest;
       });
 
-      if (count > 0) {
+      if (_unreadNotificationsCount > 0) {
         if (_firstEvent) {
           // Premier événement au démarrage : délai 2s pour que l'Overlay soit prêt
           _firstEvent = false;
