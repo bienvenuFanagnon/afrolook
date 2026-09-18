@@ -161,14 +161,20 @@ Future<void> main() async {
   // App Check — active l'attestation pour protéger Firestore/Functions
   // Android : Play Integrity (prod) / Debug (dev)
   // iOS     : App Attest (prod, iOS 14+) / Debug (dev)
-  await FirebaseAppCheck.instance.activate(
-    androidProvider: kReleaseMode
-        ? AndroidProvider.playIntegrity
-        : AndroidProvider.debug,
-    appleProvider: kReleaseMode
-        ? AppleProvider.appAttest
-        : AppleProvider.debug,
-  );
+  // Non-fatal : si Play Integrity / App Attest échoue (appareil incompatible,
+  // debug build en prod, émulateur…) l'app reste fonctionnelle.
+  try {
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: kReleaseMode
+          ? AndroidProvider.playIntegrity
+          : AndroidProvider.debug,
+      appleProvider: kReleaseMode
+          ? AppleProvider.appAttest
+          : AppleProvider.debug,
+    );
+  } catch (e) {
+    printVm("App Check activation failed (non-fatal): $e");
+  }
 
   // Remote Config
   await RemoteConfigService.instance.initialize();
