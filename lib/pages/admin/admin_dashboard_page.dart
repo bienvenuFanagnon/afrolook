@@ -18,6 +18,7 @@ import '../challenge/challengeDashbord.dart';
 import '../contenuPayant/admin_content_page.dart';
 import '../pronostics/admin_pronostics_page.dart';
 import '../weekly_top/weekly_top_commentators_page.dart';
+import 'payment_methods_admin_page.dart';;
 
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
@@ -998,6 +999,14 @@ class _ModulesGrid extends StatelessWidget {
         iconBg: const Color(0xFFFFF8E1),
         iconColor: const Color(0xFFFFD400),
         page: const AdminContentPage(),
+      ),
+      _ModuleItem(
+        icon: Icons.payment_rounded,
+        label: 'Moyens de paiement',
+        desc: 'Activer / désactiver par opérateur',
+        iconBg: const Color(0xFFE8F5E9),
+        iconColor: const Color(0xFF2E7D32),
+        page: const PaymentMethodsAdminPage(),
       ),
     ];
 

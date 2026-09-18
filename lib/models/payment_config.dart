@@ -25,8 +25,8 @@ class PaymentConfig {
     phoneCode: '228',
     phoneLength: 8,
     paymentMethods: [
-      PaymentMethod(code: 'MOOV_TG', name: 'MOOV TG', icon: Icons.phone_android),
-      PaymentMethod(code: 'TMONEY_TG', name: 'TMONEY TG', icon: Icons.phone_iphone),
+      PaymentMethod(code: 'moov_tg',     name: 'MOOV TG',   icon: Icons.phone_android),
+      PaymentMethod(code: 'togocom_tg', name: 'TOGOCOM',   icon: Icons.phone_iphone),
     ],
   );
 

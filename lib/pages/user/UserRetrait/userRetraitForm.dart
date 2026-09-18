@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../../models/model_data.dart';
 import '../../../models/payment_config.dart';
 import '../../../providers/authProvider.dart';
+import '../../../services/payment_methods_config_service.dart';
 import '../../../services/retraitService.dart';
 
 class UserDemandeRetraitPage extends StatefulWidget {
@@ -24,16 +25,34 @@ class _UserDemandeRetraitPageState extends State<UserDemandeRetraitPage> {
 
   bool _isLoading = false;
   bool _hasAcceptedConditions = false;
-
-  // Liste des pays disponibles (depuis la configuration)
-  List<PaymentConfig> get _availableCountries => PaymentConfig.activeCountries;
+  List<PaymentConfig> _availableCountries = [];
 
   @override
   void initState() {
     super.initState();
-    // Sélectionner le premier pays par défaut
-    if (_availableCountries.isNotEmpty) {
-      _selectedCountry = _availableCountries.first;
+    _loadCountries();
+  }
+
+  Future<void> _loadCountries() async {
+    await PaymentMethodsConfigService.instance.load();
+    final svc = PaymentMethodsConfigService.instance;
+    final countries = PaymentConfig.activeCountries
+        .map((c) => PaymentConfig(
+              countryCode: c.countryCode,
+              countryName: c.countryName,
+              phoneCode: c.phoneCode,
+              phoneLength: c.phoneLength,
+              paymentMethods: c.paymentMethods
+                  .where((m) => svc.isPayoutEnabled(m.code))
+                  .toList(),
+            ))
+        .where((c) => c.paymentMethods.isNotEmpty)
+        .toList();
+    if (mounted) {
+      setState(() {
+        _availableCountries = countries;
+        if (countries.isNotEmpty) _selectedCountry = countries.first;
+      });
     }
   }
 

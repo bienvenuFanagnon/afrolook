@@ -1,5 +1,6 @@
 ﻿import 'dart:convert';
 import 'package:afrotok/pages/component/consoleWidget.dart';
+import 'package:afrotok/services/payment_methods_config_service.dart';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -45,6 +46,9 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
   final TextEditingController _otpController = TextEditingController();
   bool _isLoading = false;
   String? _currentUserId;
+
+  // Opérateurs filtrés selon la config admin (pays -> opérateurs actifs)
+  Map<String, Map<String, String>> _activeOperators = {};
 
   final Map<String, double> _feexpayFees = {
     'togocom_tg': 3.0,
@@ -128,6 +132,20 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
   void initState() {
     super.initState();
     _getCurrentUser();
+    _loadActiveOperators();
+  }
+
+  Future<void> _loadActiveOperators() async {
+    await PaymentMethodsConfigService.instance.load();
+    final svc = PaymentMethodsConfigService.instance;
+    final filtered = <String, Map<String, String>>{};
+    _operators.forEach((country, ops) {
+      final active = Map.fromEntries(
+        ops.entries.where((e) => svc.isPayinEnabled(e.value)),
+      );
+      if (active.isNotEmpty) filtered[country] = active;
+    });
+    if (mounted) setState(() => _activeOperators = filtered);
   }
 
   @override
@@ -232,7 +250,7 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
       phone = prefix + phone;
     }
 
-    final operatorCode = _operators[_selectedCountry]![_selectedOperator];
+    final operatorCode = _activeOperators[_selectedCountry]![_selectedOperator];
     final needsOtp = _operatorsNeedingOtp.contains(operatorCode);
 
     if (needsOtp) {
@@ -373,7 +391,7 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
             _buildDropdown(
               label: 'Pays',
               value: _selectedCountry,
-              items: _operators.keys.toList(),
+              items: _activeOperators.keys.toList(),
               onChanged: (value) {
                 setState(() {
                   _selectedCountry = value;
@@ -383,11 +401,11 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
               },
             ),
             SizedBox(height: 20),
-            if (_selectedCountry != null) ...[
+            if (_selectedCountry != null && _activeOperators.containsKey(_selectedCountry)) ...[
               _buildDropdown(
                 label: 'Opérateur',
                 value: _selectedOperator,
-                items: _operators[_selectedCountry]!.keys.toList(),
+                items: _activeOperators[_selectedCountry]!.keys.toList(),
                 onChanged: (value) => setState(() {
                   _selectedOperator = value;
                   _otpController.clear();
