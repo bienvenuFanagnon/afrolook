@@ -59,16 +59,12 @@ class _DiscoveryFeedPageState extends State<DiscoveryFeedPage> {
   Future<void> _fetchFromFirestore({bool reset = false}) async {
     if (!_hasMore && !reset) return;
     try {
-      // Note: on filtre status côté client pour éviter l'index composite
-      // (where status + orderBy postScore nécessiterait un index Firestore manuel).
+      // orderBy created_at seul = index single-field auto-créé par Firestore,
+      // aucun index composite requis. typeTabbar et status filtrés côté client.
       Query query = FirebaseFirestore.instance
           .collection('Posts')
-          .orderBy('postScore', descending: true)
-          .limit(_pageSize * 2);
-
-      if (widget.pageType != null) {
-        query = query.where('pageType', isEqualTo: widget.pageType);
-      }
+          .orderBy('created_at', descending: true)
+          .limit(_pageSize * 3);
 
       if (!reset && _lastDoc != null) {
         query = query.startAfterDocument(_lastDoc!);
@@ -83,6 +79,7 @@ class _DiscoveryFeedPageState extends State<DiscoveryFeedPage> {
         }
       }).whereType<Post>()
           .where((p) => p.status == null || p.status == 'active')
+          .where((p) => widget.pageType == null || p.typeTabbar == widget.pageType)
           .take(_pageSize)
           .toList();
 
@@ -95,10 +92,11 @@ class _DiscoveryFeedPageState extends State<DiscoveryFeedPage> {
           _posts.addAll(fetched.where((p) => !existingIds.contains(p.id)));
         }
         _lastDoc = snap.docs.isNotEmpty ? snap.docs.last : null;
-        _hasMore = fetched.length == _pageSize;
+        _hasMore = snap.docs.length == _pageSize * 3;
         _loading = false;
       });
-    } catch (_) {
+    } catch (e) {
+      debugPrint('DiscoveryFeed error: $e');
       if (mounted) setState(() => _loading = false);
     }
   }
