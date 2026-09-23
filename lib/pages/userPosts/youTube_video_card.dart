@@ -38,6 +38,7 @@ import '../../providers/coin_gift_provider.dart';
 import '../../services/linkService.dart';
 import '../coins/coin_gift_dialog.dart';
 import '../coins/coin_recharge_screen.dart';
+import '../../widgets/like_coins_helper.dart';
 import '../../widgets/gifts/quick_gift_bar.dart' show QuickGiftBar, CadeauBadge;
 import '../component/showUserDetails.dart';
 import '../postComments.dart';
@@ -1021,6 +1022,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       receiverId: receiverId,
       post: widget.post,
       context: context,
+      onReadyToAnimate: _triggerSupportMessage,
     ).then((success) async {
       if (!success) {
         await _firestore.collection('Posts').doc(postId).update({
@@ -1060,74 +1062,17 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     });
   }
 
+  void _triggerSupportMessage() {
+    if (!mounted) return;
+    showLikeOverlay(context, creatorName: widget.post.user?.pseudo ?? '');
+  }
+
   void _showInsufficientCoinsDialog() {
-    final colors = AppColors.of(context);
-    showDialog(
+    showInsufficientCoinsForLikeDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: colors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          '💡 Soutenez le créateur !',
-          style: TextStyle(color: colors.accent, fontWeight: FontWeight.bold),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Chaque like que vous envoyez offre 1 pièce au créateur du post !',
-              style: TextStyle(color: colors.textSecondary),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: colors.accent.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: colors.accent.withOpacity(0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Text('🪙', style: TextStyle(fontSize: 20)),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Le like coûte 2 pièces :\n• 1 pour soutenir le créateur\n• 1 pour le système',
-                      style: TextStyle(color: colors.textSecondary, fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Rechargez votre compte pour continuer à soutenir vos créateurs préférés !',
-              style: TextStyle(color: colors.textSecondary, fontSize: 12),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Annuler', style: TextStyle(color: colors.textSecondary)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const CoinRechargeScreen()),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: colors.accent,
-              foregroundColor: colors.onAccent,
-            ),
-            child: const Text('Recharger', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
+      user: _authProvider.loginUserData,
+      coinProvider: _coinProvider,
+      authProvider: _authProvider,
     );
   }
 
@@ -2310,9 +2255,13 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     final isAd = widget.post.isAdvertisement == true;
     final hasReposted = widget.post.users_republier_id?.contains(myId) ?? false;
 
-    return Container(
-      margin: const EdgeInsets.only(top: 8),
-      child: Row(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          margin: const EdgeInsets.only(top: 8),
+          child: Row(
         children: [
           _buildActionButton(
             icon: FontAwesome.comment_o,
@@ -2366,6 +2315,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
             _buildInteractionsBadge(totalInteractions, colors),
         ],
       ),
+        ),
+      ],
     );
   }
 

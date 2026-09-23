@@ -340,6 +340,9 @@ class _MesGainsPageState extends State<MesGainsPage> {
                 const SizedBox(height: 2),
                 Text(tierLabel,
                     style: TextStyle(color: tierColor, fontWeight: FontWeight.w800, fontSize: 22)),
+                const SizedBox(height: 2),
+                Text('Score : ${score.toStringAsFixed(1)}',
+                    style: TextStyle(color: colors.textSecondary, fontSize: 11)),
               ]),
               const Spacer(),
               Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
@@ -531,7 +534,7 @@ class _MesGainsPageState extends State<MesGainsPage> {
           const SizedBox(height: 12),
           Row(children: [
             Expanded(child: _statChip(t.gainsAvailable, '${available.toInt()} FCFA', Icons.account_balance_wallet_outlined, tierColor, colors,
-                subtitle: '$totalViews vues')),
+                subtitle: '${rate > 0 ? (available / rate).toInt() : 0} vues dispo')),
             const SizedBox(width: 12),
             Expanded(child: _statChip(t.gainsTotalCashed, '${cashed.toInt()} FCFA', Icons.check_circle_outline, colors.primary, colors)),
           ]),
@@ -942,8 +945,6 @@ class _MonthPostsSheetState extends State<_MonthPostsSheet> {
 
     if (_allPostIds.isNotEmpty) {
       await _loadNextIdBatch();
-    } else {
-      await _loadFallback();
     }
 
     if (mounted) setState(() => _isLoading = false);
@@ -975,29 +976,6 @@ class _MonthPostsSheetState extends State<_MonthPostsSheet> {
     _posts.sort((a, b) => _viewsOf(b).compareTo(_viewsOf(a)));
     _idOffset = end;
     _hasMore = _idOffset < _allPostIds.length;
-  }
-
-  Future<void> _loadFallback() async {
-    final snap = await widget.firestore
-        .collection('Posts')
-        .where('user_id', isEqualTo: widget.userId)
-        .where('type', isEqualTo: PostType.POST.name)
-        .orderBy('created_at', descending: true)
-        .limit(300)
-        .get();
-
-    final loaded = snap.docs.map((d) {
-      final data = Map<String, dynamic>.from(d.data());
-      data['id'] = d.id;
-      return Post.fromJson(data);
-    }).where((p) {
-      if (p.isAdvertisement == true) return false;
-      return _viewsOf(p) >= 1;
-    }).toList()
-      ..sort((a, b) => _viewsOf(b).compareTo(_viewsOf(a)));
-
-    _posts.addAll(loaded);
-    _hasMore = false;
   }
 
   // Vues réelles d'un post : priorité postViewsPerPost du user > champs post

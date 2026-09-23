@@ -9,14 +9,18 @@ import '../../pages/coins/coin_gift_dialog.dart';
 import '../../pages/coins/coin_recharge_screen.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/coin_gift_provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../services/coin_gift_service.dart';
 import '../../services/quick_gift_service.dart';
 import '../../theme/app_colors.dart';
+import 'gift_sent_overlay.dart';
 
-// ── Badge "Cadeau" visible et clair ─────────────────────────────────────────
+// ── Badge "Cadeau" + envoi rapide ────────────────────────────────────────────
 
-/// Bouton-badge pilule "🏆 Cadeau" adapté clair/sombre.
-/// Au tap : ouvre le CoinGiftDialog.
-class CadeauBadge extends StatelessWidget {
+/// Pilule "🏆 Cadeau" + bulle de cadeau rapide à gauche.
+/// - Tap bulle  : envoie le dernier cadeau utilisé (ou 1er par défaut) directement.
+/// - Tap pilule : ouvre le CoinGiftDialog complet.
+class CadeauBadge extends StatefulWidget {
   final String receiverId;
   final String receiverName;
   final String receiverAvatar;
@@ -34,22 +38,139 @@ class CadeauBadge extends StatelessWidget {
     this.onGiftSuccess,
   }) : super(key: key);
 
+  @override
+  State<CadeauBadge> createState() => _CadeauBadgeState();
+}
+
+class _CadeauBadgeState extends State<CadeauBadge> {
+  CoinPack? _quickGift;
+  DateTime? _lastSentAt;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadQuickGift();
+  }
+
+  Future<void> _loadQuickGift() async {
+    final shortcuts = await QuickGiftService.getShortcuts();
+    if (!mounted) return;
+    setState(() {
+      _quickGift = shortcuts.isNotEmpty
+          ? shortcuts.first.pack
+          : CoinPack.defaultPacks.isNotEmpty ? CoinPack.defaultPacks.first : null;
+    });
+  }
+
   String _fmt(int n) {
     if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
     if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}k';
     return '$n';
   }
 
-  void _open(BuildContext context) {
+  void _openFullDialog() {
     showDialog(
       context: context,
       builder: (_) => CoinGiftDialog(
-        receiverId: receiverId,
-        receiverName: receiverName,
-        receiverAvatar: receiverAvatar,
-        post: post,
-        onGiftSuccess: onGiftSuccess,
+        receiverId: widget.receiverId,
+        receiverName: widget.receiverName,
+        receiverAvatar: widget.receiverAvatar,
+        post: widget.post,
+        onGiftSuccess: () {
+          widget.onGiftSuccess?.call();
+          _loadQuickGift(); // recharger l'emoji après envoi depuis le modal
+        },
       ),
+    );
+  }
+
+  void _sendQuickGift() {
+    if (_quickGift == null) return;
+    final now = DateTime.now();
+    if (_lastSentAt != null && now.difference(_lastSentAt!).inMilliseconds < 1500) return;
+    _lastSentAt = now;
+
+    final coinProvider = Provider.of<CoinGiftUserProvider>(context, listen: false);
+    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    final senderId = authProvider.loginUserData?.id;
+    if (senderId == null) return;
+
+    if (coinProvider.giftCoinsBalance < _quickGift!.coins) {
+      _showInsufficientModal(coinProvider.giftCoinsBalance);
+      return;
+    }
+
+    if (mounted) {
+      showGiftSentOverlay(context, _quickGift!, widget.receiverName);
+    }
+    widget.onGiftSuccess?.call();
+    unawaited(QuickGiftService.recordRecentGift(_quickGift!));
+
+    // Commentaire auto optimiste
+    CoinGiftService.postGiftAutoComment(
+      senderId: senderId,
+      senderData: authProvider.loginUserData,
+      postId: widget.post.id!,
+      giftPack: _quickGift!,
+      coinsAmount: _quickGift!.coins,
+      quantity: 1,
+      firestore: FirebaseFirestore.instance,
+    );
+
+    unawaited(coinProvider.sendGift(
+      senderId: senderId,
+      receiverId: widget.receiverId,
+      coinsAmount: _quickGift!.coins,
+      post: widget.post,
+      context: context,
+      giftPack: _quickGift!,
+      onSuccess: () => coinProvider.refreshBalance(senderId),
+    ).then((ok) {
+      if (!ok) coinProvider.refreshBalance(senderId);
+    }).catchError((_) {}));
+  }
+
+  void _showInsufficientModal(int balance) {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final colors = AppColors.of(ctx);
+        return AlertDialog(
+          backgroundColor: colors.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(children: [
+            const Text('🪙', style: TextStyle(fontSize: 20)),
+            const SizedBox(width: 8),
+            Text('Solde insuffisant',
+                style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold)),
+          ]),
+          content: Text(
+            'Il vous faut ${_quickGift!.coins} pièces pour envoyer ce cadeau.\nVotre solde : $balance pièces.',
+            style: TextStyle(color: colors.textSecondary, fontSize: 13),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Annuler', style: TextStyle(color: colors.textSecondary)),
+            ),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.add_circle_outline, color: Colors.white, size: 16),
+              label: const Text('Acheter des pièces',
+                  style: TextStyle(color: Colors.white, fontSize: 13)),
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const CoinRechargeScreen()));
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colors.primary,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -57,76 +178,92 @@ class CadeauBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final isDark = colors.isDark;
-
-    // Fond de la pilule : sombre en dark, blanc avec bordure subtile en light
     final pillBg = isDark ? const Color(0xFF1E1E1E) : const Color(0xFFFFFFFF);
     final pillBorder = isDark
         ? const Color(0xFFFF6A00).withOpacity(0.35)
         : const Color(0xFFFF6A00).withOpacity(0.25);
     final labelColor = isDark ? const Color(0xFFFFFFFF) : const Color(0xFF1A1A1A);
 
-    // Même padding vertical que les autres boutons d'action (6px top/bottom)
-    return GestureDetector(
-      onTap: () => _open(context),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        decoration: BoxDecoration(
-          color: pillBg,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: pillBorder, width: 0.8),
-          boxShadow: isDark
-              ? [BoxShadow(color: const Color(0xFFFF6A00).withOpacity(0.12), blurRadius: 6, offset: const Offset(0, 1))]
-              : [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 4, offset: const Offset(0, 1))],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Cercle gradient avec trophée
-            Container(
-              width: 19,
-              height: 19,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [Color(0xFFFF4500), Color(0xFFFFAA00)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // ── Pilule "🏆 Cadeau" ──
+        GestureDetector(
+          onTap: _openFullDialog,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+            decoration: BoxDecoration(
+              color: pillBg,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: pillBorder, width: 0.8),
+              boxShadow: isDark
+                  ? [BoxShadow(color: const Color(0xFFFF6A00).withOpacity(0.12), blurRadius: 6, offset: const Offset(0, 1))]
+                  : [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 4, offset: const Offset(0, 1))],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  width: 16,
+                  height: 16,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [Color(0xFFFF4500), Color(0xFFFFAA00)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  child: const Center(child: Text('🏆', style: TextStyle(fontSize: 9))),
                 ),
-              ),
-              child: const Center(
-                child: Text('🏆', style: TextStyle(fontSize: 10)),
-              ),
+                const SizedBox(width: 4),
+                Text('Cadeau',
+                    style: TextStyle(
+                        color: labelColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.1)),
+                Container(
+                  width: 1,
+                  height: 10,
+                  margin: const EdgeInsets.symmetric(horizontal: 5),
+                  color: pillBorder,
+                ),
+                Text(_fmt(widget.giftCount),
+                    style: TextStyle(
+                        color: colors.textSecondary,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500)),
+              ],
             ),
-            const SizedBox(width: 5),
-            Text(
-              'Cadeau',
-              style: TextStyle(
-                color: labelColor,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.1,
-              ),
-            ),
-            // Séparateur fin + count sur la même ligne
-            Container(
-              width: 1,
-              height: 12,
-              margin: const EdgeInsets.symmetric(horizontal: 6),
-              color: pillBorder,
-            ),
-            Text(
-              _fmt(giftCount),
-              style: TextStyle(
-                color: colors.textSecondary,
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
+        // ── Bulle envoi rapide (à droite) ──
+        if (_quickGift != null) ...[
+          const SizedBox(width: 5),
+          GestureDetector(
+            onTap: _sendQuickGift,
+            child: Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: pillBg,
+                border: Border.all(color: pillBorder, width: 0.8),
+                boxShadow: isDark
+                    ? [BoxShadow(color: const Color(0xFFFF6A00).withOpacity(0.12), blurRadius: 6, offset: const Offset(0, 1))]
+                    : [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 4, offset: const Offset(0, 1))],
+              ),
+              child: Center(
+                child: Text(_quickGift!.icon, style: const TextStyle(fontSize: 14)),
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
@@ -185,12 +322,23 @@ class _QuickGiftBarState extends State<QuickGiftBar> {
       return;
     }
 
-    // 1. Feedback immédiat — toast avant tout appel réseau
-    _showSuccessToast(pack);
+    // 1. Feedback immédiat — animation avant tout appel réseau
+    if (mounted) showGiftSentOverlay(context, pack, widget.receiverName);
     widget.onGiftSuccess?.call();
 
     // 2. Historique récent en arrière-plan
     unawaited(QuickGiftService.recordRecentGift(pack));
+
+    // Commentaire auto optimiste
+    CoinGiftService.postGiftAutoComment(
+      senderId: senderId,
+      senderData: authProvider.loginUserData,
+      postId: widget.post.id!,
+      giftPack: pack,
+      coinsAmount: pack.coins,
+      quantity: 1,
+      firestore: FirebaseFirestore.instance,
+    );
 
     // 3. Transaction Firestore en arrière-plan total (fire-and-forget)
     unawaited(coinProvider.sendGift(
@@ -210,20 +358,6 @@ class _QuickGiftBarState extends State<QuickGiftBar> {
       coinProvider.refreshBalance(senderId);
       debugPrint('QuickGiftBar sendGift error: $e');
     }));
-  }
-
-  void _showSuccessToast(CoinPack pack) {
-    if (!mounted) return;
-    final overlay = Overlay.of(context);
-    late OverlayEntry entry;
-    entry = OverlayEntry(
-      builder: (_) => _GiftToast(
-        pack: pack,
-        receiverName: widget.receiverName,
-        onDone: () => entry.remove(),
-      ),
-    );
-    overlay.insert(entry);
   }
 
   void _showInsufficientBalanceModal(int required) {
@@ -515,103 +649,3 @@ class _SlotOptionsSheet extends StatelessWidget {
   }
 }
 
-class _GiftToast extends StatefulWidget {
-  final CoinPack pack;
-  final String receiverName;
-  final VoidCallback onDone;
-
-  const _GiftToast({
-    required this.pack,
-    required this.receiverName,
-    required this.onDone,
-  });
-
-  @override
-  State<_GiftToast> createState() => _GiftToastState();
-}
-
-class _GiftToastState extends State<_GiftToast>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-  late Animation<double> _opacity;
-  late Animation<Offset> _slide;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 250));
-    _opacity = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
-    _slide = Tween<Offset>(begin: const Offset(0, -0.3), end: Offset.zero)
-        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
-
-    _ctrl.forward();
-
-    Future.delayed(const Duration(milliseconds: 1400), () {
-      if (mounted) {
-        _ctrl.reverse().then((_) => widget.onDone());
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      top: MediaQuery.of(context).padding.top + 12,
-      left: 16,
-      right: 16,
-      child: Material(
-        color: Colors.transparent,
-        child: FadeTransition(
-          opacity: _opacity,
-          child: SlideTransition(
-            position: _slide,
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                      color: Colors.black.withOpacity(0.25),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3))
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(widget.pack.icon,
-                      style: const TextStyle(fontSize: 20)),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      '${widget.pack.label} envoyé à ${widget.receiverName} !',
-                      style: const TextStyle(
-                          color: Colors.black,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}

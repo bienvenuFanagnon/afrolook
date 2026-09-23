@@ -1,5 +1,6 @@
 ﻿
 
+import 'dart:math';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -24,12 +25,12 @@ class CoinGiftService {
   static const int coinsPerFcfa = 25;   // pour 10 FCFA
   static const int fcfaBase = 10;
 
-  /// Conversion FCFA → pièces (arrondi défavorable à l’utilisateur)
+  /// Conversion FCFA → pièces (arrondi défavorable à l'utilisateur)
   static int fcfaToCoins(double fcfaAmount) {
     return ((fcfaAmount / fcfaBase) * coinsPerFcfa).floor();
   }
 
-  /// Conversion pièces → FCFA (arrondi favorable à l’utilisateur)
+  /// Conversion pièces → FCFA (arrondi favorable à l'utilisateur)
   static double coinsToFcfa(int coins) {
     return ((coins / coinsPerFcfa) * fcfaBase).ceilToDouble();
   }
@@ -409,169 +410,7 @@ class CoinGiftService {
     }
   }
 
-  /// Envoi d’un cadeau en pièces avec toutes les fonctionnalités
-  static Future<void> sendGift2({
-    required String senderId,
-    required String receiverId,
-    required int coinsAmount,
-    required FirebaseFirestore firestore,
-    required UserAuthProvider authProvider,
-    required Post post,
-    required BuildContext context, // Ajout du context pour les notifications
-    VoidCallback? onSuccess,
-  })
-  async {
-    final senderRef = firestore.collection('Users').doc(senderId);
-    final receiverRef = firestore.collection('Users').doc(receiverId);
-    final postRef = firestore.collection('Posts').doc(post.id);
-    final appDataRef = firestore.collection('AppData').doc(authProvider.appDefaultData.id);
-
-    // Récupérer les données du destinataire pour la notification
-    final receiverDoc = await receiverRef.get();
-    final receiverData = receiverDoc.data();
-    final receiverOneSignalId = receiverData?['oneIgnalUserid'] ?? '';
-    final receiverName = receiverData?['pseudo'] ?? 'créateur';
-
-    // Récupérer les codes parrainage
-    final senderDoc = await senderRef.get();
-    final senderData = senderDoc.data();
-    final senderCodeParrain = senderData?['code_parrain'];
-    final receiverCodeParrain = receiverData?['code_parrain'];
-
-    final int receiverCoins = (coinsAmount * 0.7).floor(); // 70% pour le créateur
-    int appCoins = coinsAmount - receiverCoins;            // 30% pour l’application
-    int commissionSenderSponsor = 0;
-    int commissionReceiverSponsor = 0;
-
-    // 🔥 Gestion des commissions de parrainage (2.5% chacun)
-    if (receiverCodeParrain != null && receiverCodeParrain.isNotEmpty) {
-      if (senderCodeParrain != null && senderCodeParrain.isNotEmpty) {
-        // Les deux ont des parrains
-        commissionReceiverSponsor = (coinsAmount * 0.025).ceil();
-        commissionSenderSponsor = (coinsAmount * 0.025).ceil();
-        appCoins = coinsAmount - receiverCoins - commissionReceiverSponsor - commissionSenderSponsor;
-      } else {
-        // Seul le destinataire a un parrain
-        commissionReceiverSponsor = (coinsAmount * 0.025).ceil();
-        appCoins = coinsAmount - receiverCoins - commissionReceiverSponsor;
-      }
-    } else if (senderCodeParrain != null && senderCodeParrain.isNotEmpty) {
-      // Seul l'expéditeur a un parrain
-      commissionSenderSponsor = (coinsAmount * 0.025).ceil();
-      appCoins = coinsAmount - receiverCoins - commissionSenderSponsor;
-    }
-
-    return firestore.runTransaction((tx) async {
-      final senderSnap = await tx.get(senderRef);
-      final receiverSnap = await tx.get(receiverRef);
-
-      if (!senderSnap.exists || !receiverSnap.exists) {
-        throw Exception('Utilisateur introuvable');
-      }
-
-      final senderCoins = (senderSnap.data()?['giftCoinsBalance'] ?? 0) as int;
-      if (senderCoins < coinsAmount) {
-        throw Exception('Pièces insuffisantes');
-      }
-
-      // 1. Débiter l’expéditeur
-      tx.update(senderRef, {
-        'giftCoinsBalance': FieldValue.increment(-coinsAmount),
-        'totalGiftCoinsSpent': FieldValue.increment(coinsAmount),
-        'updatedAt': DateTime.now().millisecondsSinceEpoch,
-      });
-
-      // 2. Créditer le destinataire (créateur)
-      tx.update(receiverRef, {
-        'giftCoinsBalance': FieldValue.increment(receiverCoins),
-        'totalCoinsEarnedFromGifts': FieldValue.increment(receiverCoins),
-        'updatedAt': DateTime.now().millisecondsSinceEpoch,
-      });
-
-      // 3. Gérer les commissions de parrainage
-      if (commissionReceiverSponsor > 0) {
-        await _addSponsorCommission(
-          codeParrainage: receiverCodeParrain!,
-          coinsAmount: coinsAmount,
-          firestore: firestore,
-          authProvider: authProvider,
-        );
-      }
-
-      if (commissionSenderSponsor > 0) {
-        await _addSponsorCommission(
-          codeParrainage: senderCodeParrain!,
-          coinsAmount: coinsAmount,
-          firestore: firestore,
-          authProvider: authProvider,
-        );
-      }
-
-      // 4. Créditer l’application (solde_gain_pieces)
-      tx.update(appDataRef, {
-        'solde_gain_pieces': FieldValue.increment(appCoins),
-      });
-
-      // 5. Mettre à jour le post
-      tx.update(postRef, {
-        'users_cadeau_id': FieldValue.arrayUnion([senderId]),
-        'popularity': FieldValue.increment(5),
-        'giftCount': FieldValue.increment(1),  // 🔥 Incrémente le compteur d'envois
-        'totalGiftCoinsSentOnThisPost': FieldValue.increment(coinsAmount),
-      });
-
-      // 6. Transaction pour l’expéditeur (type CADEAU_PIECES)
-      final txSender = TransactionSolde()
-        ..id = firestore.collection('TransactionSoldes').doc().id
-        ..user_id = senderId
-        ..type = TypeTransaction.CADEAU_PIECES.name
-        ..statut = StatutTransaction.VALIDER.name
-        ..description = "Envoi de $coinsAmount pièces à @$receiverName"
-        ..montant = coinsAmount.toDouble()
-        ..methode_paiement = "pieces"
-        ..createdAt = DateTime.now().millisecondsSinceEpoch;
-
-      // 7. Transaction pour le destinataire (type CADEAU_PIECES_RECU)
-      final txReceiver = TransactionSolde()
-        ..id = firestore.collection('TransactionSoldes').doc().id
-        ..user_id = receiverId
-        ..type = TypeTransaction.CADEAU_PIECES_RECU.name
-        ..statut = StatutTransaction.VALIDER.name
-        ..description = "Réception de $receiverCoins pièces de @${authProvider.loginUserData.pseudo}"
-        ..montant = receiverCoins.toDouble()
-        ..methode_paiement = "pieces"
-        ..createdAt = DateTime.now().millisecondsSinceEpoch;
-
-      tx.set(firestore.collection('TransactionSoldes').doc(txSender.id), txSender.toJson());
-      tx.set(firestore.collection('TransactionSoldes').doc(txReceiver.id), txReceiver.toJson());
-    });
-
-    // 8. Envoyer les notifications (après la transaction)
-    await _sendGiftNotification(
-      receiverId: receiverId,
-      receiverOneSignalId: receiverOneSignalId,
-      senderName: authProvider.loginUserData.pseudo ?? 'Un utilisateur',
-      coinsAmount: coinsAmount,
-      postId: post.id!,
-      postDataType: post.dataType ?? PostDataType.IMAGE.name,
-      authProvider: authProvider,
-      context: context,
-    );
-
-    // 9. Ajouter des points pour l'action
-    if (context.mounted) {
-      // Appeler la méthode addPointsForAction via le provider
-      // Cette méthode doit être accessible depuis le contexte
-      final authProv = Provider.of<UserAuthProvider>(context, listen: false);
-
-    }
-
-    onSuccess?.call();
-  }
-
-  // services/coin_gift_service.dart - Ajouter cette méthode et modifier sendGift
-
-  /// Envoi d’un cadeau en pièces avec toutes les fonctionnalités
+  /// Envoi d'un cadeau en pièces avec toutes les fonctionnalités
   static Future<void> sendGift({
     required String senderId,
     required String receiverId,
@@ -580,7 +419,8 @@ class CoinGiftService {
     required UserAuthProvider authProvider,
     required Post post,
     required BuildContext context,
-    required CoinPack giftPack,  // 🔥 NOUVEAU : le pack de cadeau sélectionné
+    required CoinPack giftPack,
+    int quantity = 1,
     VoidCallback? onSuccess,
   }) async {
     final senderRef = firestore.collection('Users').doc(senderId);
@@ -602,7 +442,7 @@ class CoinGiftService {
     final receiverCodeParrain = receiverData?['code_parrain'];
 
     final int receiverCoins = (coinsAmount * 0.7).floor(); // 70% pour le créateur
-    int appCoins = coinsAmount - receiverCoins;            // 30% pour l’application
+    int appCoins = coinsAmount - receiverCoins;            // 30% pour l'application
     int commissionSenderSponsor = 0;
     int commissionReceiverSponsor = 0;
 
@@ -621,7 +461,7 @@ class CoinGiftService {
       appCoins = coinsAmount - receiverCoins - commissionSenderSponsor;
     }
 
-    return firestore.runTransaction((tx) async {
+    await firestore.runTransaction((tx) async {
       final senderSnap = await tx.get(senderRef);
       final receiverSnap = await tx.get(receiverRef);
 
@@ -634,7 +474,7 @@ class CoinGiftService {
         throw Exception('Pièces insuffisantes');
       }
 
-      // 1. Débiter l’expéditeur
+      // 1. Débiter l'expéditeur
       tx.update(senderRef, {
         'giftCoinsBalance': FieldValue.increment(-coinsAmount),
         'totalGiftCoinsSpent': FieldValue.increment(coinsAmount),
@@ -648,31 +488,12 @@ class CoinGiftService {
         'updatedAt': DateTime.now().millisecondsSinceEpoch,
       });
 
-      // 3. Gérer les commissions de parrainage
-      if (commissionReceiverSponsor > 0) {
-        await _addSponsorCommission(
-          codeParrainage: receiverCodeParrain!,
-          coinsAmount: coinsAmount,
-          firestore: firestore,
-          authProvider: authProvider,
-        );
-      }
-
-      if (commissionSenderSponsor > 0) {
-        await _addSponsorCommission(
-          codeParrainage: senderCodeParrain!,
-          coinsAmount: coinsAmount,
-          firestore: firestore,
-          authProvider: authProvider,
-        );
-      }
-
-      // 4. Créditer l’application (solde_gain_pieces)
+      // 3. Créditer l'application (solde_gain_pieces)
       tx.update(appDataRef, {
         'solde_gain_pieces': FieldValue.increment(appCoins),
       });
 
-      // 5. Mettre à jour le post
+      // 4. Mettre à jour le post
       tx.update(postRef, {
         'users_cadeau_id': FieldValue.arrayUnion([senderId]),
         'popularity': FieldValue.increment(5),
@@ -680,7 +501,7 @@ class CoinGiftService {
         'totalGiftCoinsSentOnThisPost': FieldValue.increment(coinsAmount),
       });
 
-      // 🔥 6. Enregistrer le cadeau dans la collection PostGifts
+      // 5. Enregistrer le cadeau dans la collection PostGifts
       final giftId = firestore.collection('PostGifts').doc().id;
       final postGift = PostGift(
         id: giftId,
@@ -695,7 +516,7 @@ class CoinGiftService {
       );
       tx.set(firestore.collection('PostGifts').doc(giftId), postGift.toJson());
 
-      // 7. Transaction pour l’expéditeur
+      // 6. Transaction pour l'expéditeur
       final txSender = TransactionSolde()
         ..id = firestore.collection('TransactionSoldes').doc().id
         ..user_id = senderId
@@ -706,7 +527,7 @@ class CoinGiftService {
         ..methode_paiement = "pieces"
         ..createdAt = DateTime.now().millisecondsSinceEpoch;
 
-      // 8. Transaction pour le destinataire
+      // 7. Transaction pour le destinataire
       final txReceiver = TransactionSolde()
         ..id = firestore.collection('TransactionSoldes').doc().id
         ..user_id = receiverId
@@ -721,6 +542,24 @@ class CoinGiftService {
       tx.set(firestore.collection('TransactionSoldes').doc(txReceiver.id), txReceiver.toJson());
     });
 
+    // 8. Commissions de parrainage (après transaction — évite failed-precondition)
+    if (commissionReceiverSponsor > 0) {
+      await _addSponsorCommission(
+        codeParrainage: receiverCodeParrain!,
+        coinsAmount: coinsAmount,
+        firestore: firestore,
+        authProvider: authProvider,
+      );
+    }
+    if (commissionSenderSponsor > 0) {
+      await _addSponsorCommission(
+        codeParrainage: senderCodeParrain!,
+        coinsAmount: coinsAmount,
+        firestore: firestore,
+        authProvider: authProvider,
+      );
+    }
+
     // 9. Envoyer les notifications
     await _sendGiftNotification(
       receiverId: receiverId,
@@ -734,6 +573,66 @@ class CoinGiftService {
     );
 
     onSuccess?.call();
+  }
+
+  static const List<String> _giftMessages = [
+    '🎁 Un cadeau pour soutenir ce travail 💪 Merci pour ce contenu !',
+    '🎁 Ce contenu mérite d\'être reconnu — voilà ma contribution !',
+    '🎁 Bravo pour ce post, voilà mon petit soutien 🔥',
+    '🎁 Continuez comme ça, vous méritez ce cadeau 💙',
+    '🎁 Ce contenu est top, je soutiens ✨',
+    '🎁 Merci pour ce que vous créez — voilà pour vous 🙏',
+    '🎁 Un vrai coup de cœur pour ce post 💎',
+    '🎁 Trop bien ce contenu, je vous soutiens 🚀',
+    '🎁 Voilà ma façon de vous encourager — continuez ! 💪',
+    '🎁 Ce post vaut le détour, voilà mon soutien 🌟',
+  ];
+
+  static void postGiftAutoComment({
+    required String senderId,
+    required UserData senderData,
+    required String postId,
+    required CoinPack giftPack,
+    required int coinsAmount,
+    required int quantity,
+    required FirebaseFirestore firestore,
+  }) {
+    Future.microtask(() async {
+      try {
+        final qty = quantity > 1
+            ? quantity
+            : (giftPack.coins > 0 ? (coinsAmount / giftPack.coins).round() : 1);
+        final qtyText = qty > 1 ? ' × $qty' : '';
+        final randomLine = _giftMessages[Random().nextInt(_giftMessages.length)];
+        final message =
+            '$randomLine\n'
+            '${giftPack.icon} ${giftPack.label}$qtyText · $coinsAmount 🪙';
+
+        final commentId = firestore.collection('PostComments').doc().id;
+        final now = DateTime.now().microsecondsSinceEpoch;
+
+        await firestore.collection('PostComments').doc(commentId).set({
+          'id': commentId,
+          'user_id': senderId,
+          'post_id': postId,
+          'message': message,
+          'created_at': now,
+          'updated_at': now,
+          'loves': 0,
+          'likes': 0,
+          'comments': 0,
+          'users_like_id': [],
+          'responseComments': [],
+          'isAutoGiftComment': true,
+        });
+
+        await firestore.collection('Posts').doc(postId).update({
+          'comments': FieldValue.increment(1),
+        });
+      } catch (e) {
+        printVm('⚠️ _postGiftAutoComment: $e');
+      }
+    });
   }
 
   /// Conversion de pièces en FCFA (ajout au solde principal)

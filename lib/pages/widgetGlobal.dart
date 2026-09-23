@@ -21,7 +21,8 @@ final Color _successColor = Color(0xFF4CAF50);
 final Color _audioColor = Color(0xFF2196F3);
 final String appId = 'XgkSxKc10vWsJJ2uBraT';
 
-const _kPlayStoreUrl  = 'https://play.google.com/store/apps/details?id=com.afrotok.afrotok';
+const _kPlayStoreUrl   = 'https://play.google.com/store/apps/details?id=com.afrotok.afrotok';
+const _kTestFlightUrl  = 'https://testflight.apple.com/join/sSeJ22X5';
 const _kPrefNeverShow = 'install_modal_never_show';
 
 Future<void> showInstallModal(BuildContext context) async {
@@ -73,6 +74,11 @@ class _InstallAppModalState extends State<_InstallAppModal>
 
   Future<void> _openPlayStore() async {
     final uri = Uri.parse(_kPlayStoreUrl);
+    if (await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  Future<void> _openTestFlight() async {
+    final uri = Uri.parse(_kTestFlightUrl);
     if (await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
@@ -229,56 +235,68 @@ class _InstallAppModalState extends State<_InstallAppModal>
                       ),
                       const SizedBox(height: 10),
 
-                      // Apple Store — bientôt
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: Colors.white.withOpacity(0.1)),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.apple, color: Colors.white38, size: 26),
-                            const SizedBox(width: 10),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Bientôt sur',
-                                  style: TextStyle(fontSize: 10, color: Colors.white38),
+                      // Apple — TestFlight
+                      GestureDetector(
+                        onTap: _openTestFlight,
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1C1C1E),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: Colors.white.withOpacity(0.15)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.25),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.apple, color: Colors.white, size: 26),
+                              const SizedBox(width: 10),
+                              const Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Tester sur',
+                                    style: TextStyle(fontSize: 10, color: Colors.white60),
+                                  ),
+                                  Text(
+                                    'TestFlight (iOS)',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                      letterSpacing: 0.2,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Spacer(),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF0A84FF).withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: const Color(0xFF0A84FF).withOpacity(0.4)),
                                 ),
-                                Text(
-                                  'App Store',
+                                child: const Text(
+                                  'Bêta',
                                   style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white.withOpacity(0.3),
-                                    letterSpacing: 0.2,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF0A84FF),
                                   ),
                                 ),
-                              ],
-                            ),
-                            const Spacer(),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFFD600).withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: const Color(0xFFFFD600).withOpacity(0.3)),
                               ),
-                              child: const Text(
-                                'Bientôt',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFFFFD600),
-                                ),
-                              ),
-                            ),
-                          ],
+                              const SizedBox(width: 8),
+                              const Icon(Icons.arrow_forward_ios, color: Colors.white60, size: 14),
+                            ],
+                          ),
                         ),
                       ),
                     ],

@@ -24,7 +24,7 @@ import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'coins/post_gifts_list.dart';
-import 'pub/conditional_ad_banner.dart';
+import 'pub/afrolook_inline_ad.dart';
 
 class PostComments extends StatefulWidget {
   final Post post;
@@ -65,7 +65,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
   bool _hasMoreComments = true;
 
   DocumentSnapshot? _lastCommentDocument;
-  final int _commentsPageSize = 6;
+  final int _commentsPageSize = 3;
 
   final Map<String, bool> _commentExpanded = {};
   final Map<String, bool> _replyExpanded = {};
@@ -85,6 +85,9 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
 
   bool _showEmojiPicker = false;
 
+  List<_GifterEntry> _topGifters = [];
+  bool _giftersLoaded = false;
+
   @override
   void initState() {
     super.initState();
@@ -99,6 +102,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     _loadUsers();
     _loadInitialComments();
     _ensureCanalLoaded();
+    _loadTopGifters();
     _textController.addListener(_onTextChanged);
 
     if (widget.initialText != null && widget.initialText!.isNotEmpty) {
@@ -466,6 +470,297 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     );
   }
 
+  // ─── TOP GIFTERS ─────────────────────────────────────────────────────────────
+
+  Future<void> _loadTopGifters() async {
+    if (widget.post.id == null) return;
+    try {
+      final snapshot = await firestore
+          .collection('PostGifts')
+          .where('postId', isEqualTo: widget.post.id!)
+          .get();
+
+      final Map<String, _GifterEntry> byUser = {};
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        final senderId = data['senderId'] as String?;
+        if (senderId == null) continue;
+        final coins = (data['coinsAmount'] as int?) ?? 0;
+        final qty = (data['quantity'] as int?) ?? 1;
+        final icon = (data['giftIcon'] as String?) ?? '🎁';
+        final label = (data['giftLabel'] as String?) ?? 'Cadeau';
+        final total = coins * qty;
+
+        byUser.putIfAbsent(senderId, () => _GifterEntry(senderId: senderId));
+        byUser[senderId]!.totalCoins += total;
+        final existing = byUser[senderId]!.giftBreakdown.indexWhere(
+            (g) => g.icon == icon && g.coins == coins);
+        if (existing >= 0) {
+          final old = byUser[senderId]!.giftBreakdown[existing];
+          byUser[senderId]!.giftBreakdown[existing] =
+              (icon: old.icon, label: old.label, qty: old.qty + qty, coins: old.coins);
+        } else {
+          byUser[senderId]!.giftBreakdown
+              .add((icon: icon, label: label, qty: qty, coins: coins));
+        }
+      }
+
+      final sorted = byUser.values.toList()
+        ..sort((a, b) => b.totalCoins.compareTo(a.totalCoins));
+
+      for (var entry in sorted.take(10)) {
+        try {
+          final userDoc =
+              await firestore.collection('Users').doc(entry.senderId).get();
+          if (userDoc.exists) entry.userData = UserData.fromJson(userDoc.data()!);
+        } catch (_) {}
+      }
+
+      if (mounted) setState(() { _topGifters = sorted; _giftersLoaded = true; });
+    } catch (_) {
+      if (mounted) setState(() => _giftersLoaded = true);
+    }
+  }
+
+  Widget _buildGiftersSection() {
+    if (!_giftersLoaded || _topGifters.isEmpty) return const SizedBox.shrink();
+
+    final medals = ['🥇', '🥈', '🥉'];
+    // Affiche jusqu'à 5 dans la barre ; "Voir tous" ouvre le modal complet
+    final visible = _topGifters.take(5).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── Label + Voir tous ──
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 8, 14, 4),
+          child: Row(
+            children: [
+              Text('🏆 Top donateurs',
+                  style: TextStyle(
+                      color: _colors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11,
+                      letterSpacing: 0.2)),
+              const Spacer(),
+              if (_topGifters.length > 5)
+                GestureDetector(
+                  onTap: _showAllGifters,
+                  child: Text('Voir tous',
+                      style: TextStyle(
+                          color: _colors.primary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600)),
+                ),
+            ],
+          ),
+        ),
+
+        // ── Chips compactes ──
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+          child: Row(
+            children: visible.asMap().entries.map((e) {
+              final i = e.key;
+              final gifter = e.value;
+              final rawPseudo = gifter.userData?.pseudo
+                  ?? gifter.senderId.substring(0, 6);
+              final pseudo = rawPseudo.length > 10
+                  ? rawPseudo.substring(0, 9)
+                  : rawPseudo;
+              final avatar = gifter.userData?.imageUrl;
+              final medal = i < 3 ? medals[i] : null;
+
+              return Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: GestureDetector(
+                  onTap: _showAllGifters,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: _colors.surfaceVariant,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                          color: _colors.border.withOpacity(0.35)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Avatar
+                        Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            CircleAvatar(
+                              radius: 13,
+                              backgroundColor: _colors.border,
+                              backgroundImage: avatar != null
+                                  ? NetworkImage(avatar)
+                                  : null,
+                              child: avatar == null
+                                  ? Text(pseudo[0].toUpperCase(),
+                                      style: TextStyle(
+                                          color: _colors.textPrimary,
+                                          fontSize: 10))
+                                  : null,
+                            ),
+                            if (medal != null)
+                              Positioned(
+                                top: -5,
+                                right: -5,
+                                child: Text(medal,
+                                    style: const TextStyle(fontSize: 10)),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(width: 6),
+                        // Pseudo
+                        Text('@$pseudo',
+                            style: TextStyle(
+                                color: _colors.textPrimary,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600)),
+                        const SizedBox(width: 5),
+                        // Pièces
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 5, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: _colors.primary.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            '${_fmtCoins(gifter.totalCoins)} 🪙',
+                            style: TextStyle(
+                                color: _colors.primary,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+
+        Divider(
+            height: 1,
+            indent: 14,
+            endIndent: 14,
+            color: _colors.divider.withOpacity(0.4)),
+        const SizedBox(height: 4),
+      ],
+    );
+  }
+
+  String _fmtCoins(int n) {
+    if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
+    if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}k';
+    return '$n';
+  }
+
+  void _showAllGifters() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        maxChildSize: 0.9,
+        minChildSize: 0.4,
+        builder: (_, controller) => Container(
+          decoration: BoxDecoration(
+            color: _colors.surface,
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              const SizedBox(height: 8),
+              Container(
+                  width: 36,
+                  height: 3,
+                  decoration: BoxDecoration(
+                      color: _colors.border,
+                      borderRadius: BorderRadius.circular(2))),
+              Padding(
+                padding: const EdgeInsets.all(14),
+                child: Text('🏆 Tous les donateurs',
+                    style: TextStyle(
+                        color: _colors.textPrimary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16)),
+              ),
+              Divider(height: 1, color: _colors.divider),
+              Expanded(
+                child: ListView.builder(
+                  controller: controller,
+                  itemCount: _topGifters.length,
+                  itemBuilder: (_, i) {
+                    final gifter = _topGifters[i];
+                    final pseudo = gifter.userData?.pseudo ??
+                        gifter.senderId.substring(0, 6);
+                    final avatar = gifter.userData?.imageUrl;
+                    final medals = ['🥇', '🥈', '🥉'];
+                    return ListTile(
+                      leading: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          CircleAvatar(
+                            radius: 20,
+                            backgroundColor: _colors.border,
+                            backgroundImage: avatar != null
+                                ? NetworkImage(avatar)
+                                : null,
+                            child: avatar == null
+                                ? Text(pseudo[0].toUpperCase(),
+                                    style: TextStyle(
+                                        color: _colors.textPrimary))
+                                : null,
+                          ),
+                          if (i < 3)
+                            Positioned(
+                              top: -4,
+                              right: -4,
+                              child: Text(medals[i],
+                                  style:
+                                      const TextStyle(fontSize: 12)),
+                            ),
+                        ],
+                      ),
+                      title: Text('@$pseudo',
+                          style: TextStyle(
+                              color: _colors.textPrimary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13)),
+                      subtitle: Text(
+                          gifter.giftBreakdown
+                              .map((g) => '${g.icon}×${g.qty}')
+                              .join(' '),
+                          style: TextStyle(
+                              color: _colors.textSecondary,
+                              fontSize: 11)),
+                      trailing: Text('${_fmtCoins(gifter.totalCoins)} 🪙',
+                          style: TextStyle(
+                              color: _colors.primary,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13)),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   // ─── POST HEADER ────────────────────────────────────────────────────────────
 
   Widget _buildPostHeader() {
@@ -557,12 +852,6 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                         ),
                       ),
                   ],
-                ),
-                const SizedBox(height: 8),
-                PostGiftsList(
-                  postId: widget.post.id!,
-                  compactLevel: CompactLevel.light,
-                  maxDisplayItems: 10,
                 ),
               ],
             ),
@@ -657,8 +946,9 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
       textDirection: ui.TextDirection.ltr,
     )..layout(maxWidth: MediaQuery.of(context).size.width - 80);
 
-    final needsExpandButton = textPainter.didExceedMaxLines;
-    final isExpanded = _commentExpanded[pcm.id!] ?? false;
+    final isAutoGift = pcm.isAutoGiftComment == true;
+    final needsExpandButton = !isAutoGift && textPainter.didExceedMaxLines;
+    final isExpanded = isAutoGift || (_commentExpanded[pcm.id!] ?? false);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -710,12 +1000,25 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                   ),
                   const SizedBox(width: 4),
                   if (pcm.canal_name == null) UserBadgeWidget(user: pcm.user, size: 14),
+                  if (pcm.isAutoGiftComment == true) ...[
+                    const SizedBox(width: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFD700).withOpacity(0.18),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.4)),
+                      ),
+                      child: const Text('🎁 cadeau', style: TextStyle(fontSize: 10, color: Color(0xFFFFD700), fontWeight: FontWeight.w700)),
+                    ),
+                  ],
                   const Spacer(),
                   Text(
                     formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(pcm.createdAt!)),
                     style: TextStyle(color: _colors.textSecondary, fontSize: 11),
                   ),
                   const SizedBox(width: 4),
+                  if (pcm.isAutoGiftComment != true)
                   PopupMenuButton<String>(
                     padding: EdgeInsets.zero,
                     iconSize: 16,
@@ -1644,61 +1947,103 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
           child: Divider(height: 1, color: _colors.divider.withOpacity(0.4)),
         ),
       ),
-      body: CenteredContent(
+      body: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: CenteredContent(
         maxWidth: AppLayout.isDesktop(context) ? 800 : AppLayout.maxFeedWidth,
         child: Column(
         children: [
-          _buildPostHeader(),
           Expanded(
-            child: NotificationListener<ScrollNotification>(
-              onNotification: (info) {
-                if (info.metrics.pixels >= info.metrics.maxScrollExtent - 80) {
-                  _loadMoreComments();
-                }
-                return false;
-              },
-              child: _isLoading && comments.isEmpty
-                  ? Center(child: CircularProgressIndicator(color: _colors.primary, strokeWidth: 2))
-                  : comments.isEmpty
-                      ? _buildEmptyState()
-                      : ListView.builder(
-                          padding: const EdgeInsets.only(top: 8, bottom: 16),
-                          itemCount: comments.length + 1 + (_hasMoreComments ? 1 : 0),
-                          itemBuilder: (_, index) {
-                            // Bannière pub en première position
-                            if (index == 0) {
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 8),
-                                child: const ConditionalAdBanner(),
-                              );
-                            }
-                            final commentIndex = index - 1;
-                            if (commentIndex == comments.length) {
-                              return _isLoadingMore
-                                  ? Padding(
-                                      padding: const EdgeInsets.all(16),
-                                      child: Center(
-                                        child: CircularProgressIndicator(color: _colors.primary, strokeWidth: 2),
-                                      ),
+            child: CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(child: _buildPostHeader()),
+                SliverToBoxAdapter(child: _buildGiftersSection()),
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: AfrolookInlineAd(compact: true),
+                  ),
+                ),
+                if (_isLoading && comments.isEmpty)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                          color: _colors.primary, strokeWidth: 2),
+                    ),
+                  )
+                else if (comments.isEmpty)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: _buildEmptyState(),
+                  )
+                else ...[
+                  SliverPadding(
+                    padding: const EdgeInsets.only(top: 8),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (_, index) => _buildCommentItem(comments[index]),
+                        childCount: comments.length,
+                      ),
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: _hasMoreComments
+                        ? Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            child: Center(
+                              child: _isLoadingMore
+                                  ? SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                          color: _colors.primary,
+                                          strokeWidth: 2),
                                     )
-                                  : const SizedBox.shrink();
-                            }
-                            return _buildCommentItem(comments[commentIndex]);
-                          },
-                        ),
+                                  : OutlinedButton.icon(
+                                      onPressed: _loadMoreComments,
+                                      icon: Icon(Icons.expand_more_rounded,
+                                          size: 18, color: _colors.primary),
+                                      label: Text(
+                                        'Voir plus de commentaires',
+                                        style: TextStyle(
+                                            color: _colors.primary,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600),
+                                      ),
+                                      style: OutlinedButton.styleFrom(
+                                        side: BorderSide(
+                                            color: _colors.primary
+                                                .withOpacity(0.4)),
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(20)),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 20, vertical: 10),
+                                      ),
+                                    ),
+                            ),
+                          )
+                        : const SizedBox(height: 16),
+                  ),
+                ],
+              ],
             ),
           ),
           _buildCommentInput(),
         ],
       ),
       ),
+      ),
     );
   }
 
   Widget _buildEmptyState() {
-    return Center(
+    return SingleChildScrollView(
+      child: Center(
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             width: 72,
@@ -1721,6 +2066,18 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
           ),
         ],
       ),
+      ),
     );
   }
+}
+
+// ─── Gifter data holder ───────────────────────────────────────────────────────
+
+class _GifterEntry {
+  final String senderId;
+  int totalCoins = 0;
+  UserData? userData;
+  List<({String icon, String label, int qty, int coins})> giftBreakdown = [];
+
+  _GifterEntry({required this.senderId});
 }

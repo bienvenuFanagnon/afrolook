@@ -30,6 +30,8 @@ class CoinGiftUserProvider with ChangeNotifier {
 
   UserData? get currentUser => _currentUser;
   int get giftCoinsBalance => _currentUser?.giftCoinsBalance ?? 0;
+  bool get isCurrentUserLoaded =>
+      _currentUser?.id != null && _currentUser!.id!.isNotEmpty;
 
   // Rafraîchir le solde
   Future<void> refreshBalance(String userId) async {
@@ -132,13 +134,43 @@ class CoinGiftUserProvider with ChangeNotifier {
     }
   }
 
+  // Offre one-shot : 10 pièces gratuites (jamais utilisée)
+  Future<bool> claimFreeCoins(String userId) async {
+    try {
+      final ref = _firestore.collection('Users').doc(userId);
+      bool credited = false;
+      await _firestore.runTransaction((tx) async {
+        final snap = await tx.get(ref);
+        final already = snap.data()?['hasClaimedFreeCoins'] as bool? ?? false;
+        if (already) return; // sécurité : déjà réclamé
+        final current = (snap.data()?['giftCoinsBalance'] as num?)?.toInt() ?? 0;
+        tx.update(ref, {
+          'giftCoinsBalance': current + 10,
+          'hasClaimedFreeCoins': true,
+        });
+        credited = true;
+      });
+      if (credited) await refreshBalance(userId);
+      return credited;
+    } catch (e) {
+      debugPrint('claimFreeCoins error: $e');
+      return false;
+    }
+  }
+
   // Envoyer un like avec des pièces
   Future<bool> sendLikeWithCoins({
     required String senderId,
     required String receiverId,
     required Post post,
     required BuildContext context,
+    VoidCallback? onReadyToAnimate,
   }) async {
+    await ensureCurrentUser();
+    // Vérification locale : si solde suffisant, animation immédiate avant la requête Firebase
+    if (giftCoinsBalance >= 2) {
+      onReadyToAnimate?.call();
+    }
     try {
       final result = await CoinGiftService.sendLikeWithCoins(
         senderId: senderId,
@@ -166,6 +198,7 @@ class CoinGiftUserProvider with ChangeNotifier {
     required Post post,
     required BuildContext context,
     required CoinPack giftPack,
+    int quantity = 1,
     VoidCallback? onSuccess,
   }) async {
     try {
@@ -180,6 +213,7 @@ class CoinGiftUserProvider with ChangeNotifier {
         post: post,
         context: context,
         giftPack: giftPack,
+        quantity: quantity,
         onSuccess: onSuccess,
       );
 
@@ -200,6 +234,15 @@ class CoinGiftUserProvider with ChangeNotifier {
       _currentUser = _authProvider!.loginUserData;
       notifyListeners();
     }
+  }
+
+  /// Charge les données utilisateur si elles ne sont pas encore prêtes (app vient de démarrer).
+  Future<void> ensureCurrentUser() async {
+    if (_currentUser?.id != null && _currentUser!.id!.isNotEmpty) return;
+    if (_authProvider == null) return;
+    await _authProvider!.ensureUserDataLoaded();
+    _currentUser = _authProvider!.loginUserData;
+    notifyListeners();
   }
 }
 // class CoinGiftUserProvider with ChangeNotifier {

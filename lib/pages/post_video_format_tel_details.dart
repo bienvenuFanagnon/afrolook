@@ -80,6 +80,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'coins/coin_gift_dialog.dart';
 
 import 'coins/coin_recharge_screen.dart';
+import '../widgets/like_coins_helper.dart';
+import '../models/coin_pack.dart';
+import '../widgets/gifts/gift_sent_overlay.dart';
 import '../widgets/gifts/quick_gift_bar.dart';
 
 import 'coins/post_gifts_list.dart';
@@ -1401,9 +1404,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
         videoPlayerController: _currentVideoController!,
         autoPlay: true,
         looping: true,
-        showControls: true,
-        allowFullScreen: true,
-        allowMuting: true,
+        showControls: false,
+        allowFullScreen: false,
+        allowMuting: false,
         materialProgressColors: ChewieProgressColors(
           playedColor: _afroGreen,
           handleColor: _afroGreen,
@@ -1442,9 +1445,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
         videoPlayerController: _currentVideoController!,
         autoPlay: true,
         looping: true,
-        showControls: true,
-        allowFullScreen: true,
-        allowMuting: true,
+        showControls: false,
+        allowFullScreen: false,
+        allowMuting: false,
         materialProgressColors: ChewieProgressColors(
           playedColor: _afroGreen,
           handleColor: _afroGreen,
@@ -2626,6 +2629,10 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
       receiverId: post.user_id!,
       post: post,
       context: context,
+      onReadyToAnimate: () {
+        if (!mounted) return;
+        showLikeOverlay(context, creatorName: post.user?.pseudo ?? '');
+      },
     ).then((success) {
       if (!mounted) return;
       if (!success) {
@@ -2656,75 +2663,17 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
     });
   }
 
-// Dialog pour solde insuffisant (à ajouter dans la classe)
+  void _triggerSupportMessage() {
+    if (!mounted) return;
+    showLikeOverlay(context);
+  }
+
   void _showInsufficientCoinsForLikeDialog() {
-    final colors = AppColors.of(context);
-    showDialog(
+    showInsufficientCoinsForLikeDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: colors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          '💡 Soutenez le créateur !',
-          style: TextStyle(color: colors.accent, fontWeight: FontWeight.bold),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Chaque like que vous envoyez offre 1 pièce au créateur du post !',
-              style: TextStyle(color: colors.textSecondary),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: colors.accent.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: colors.accent.withOpacity(0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Text('🪙', style: TextStyle(fontSize: 20)),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Le like coûte 2 pièces :\n• Pour soutenir le créateur',
-                      style: TextStyle(color: colors.textSecondary, fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Rechargez votre compte pour continuer à soutenir vos créateurs préférés !',
-              style: TextStyle(color: colors.textSecondary, fontSize: 12),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Annuler', style: TextStyle(color: colors.textSecondary)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const CoinRechargeScreen()),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: colors.accent,
-              foregroundColor: colors.onAccent,
-            ),
-            child: const Text('Recharger', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
+      user: authProvider.loginUserData,
+      coinProvider: Provider.of<CoinGiftUserProvider>(context, listen: false),
+      authProvider: authProvider,
     );
   }
   Future<void> _handleLike3(Post post) async {
@@ -2896,7 +2845,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
       });
       await _createTransaction(TypeTransaction.DEPENSE.name, amount, "Cadeau envoyé à @${post.user!.pseudo}", authProvider.loginUserData.id!);
       await _createTransaction(TypeTransaction.GAIN.name, gainDestinataire, "Cadeau reçu de @${authProvider.loginUserData.pseudo}", post.user_id!);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: AppColors.of(context).primary, content: const Text('🎁 Cadeau envoyé!')));
+      if (mounted) showGiftSentOverlay(context, CoinPack(coins: 0, priceFcfa: 0, icon: '🎁', label: 'Cadeau'), post.user?.pseudo ?? '');
     } catch (e) { printVm('Erreur envoi cadeau: $e'); }
   }
 
@@ -3463,27 +3412,6 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
                 ],
               ),
             ),
-          if (!isOwner)
-            Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: QuickGiftBar(
-                receiverId: post.user_id!,
-                receiverName: post.user?.pseudo ?? 'Créateur',
-                receiverAvatar: post.user?.imageUrl ?? '',
-                post: post,
-                giftCount: post.totalGiftCoinsSentOnThisPost ?? 0,
-                onGiftSuccess: () async {
-                  setState(() {
-                    post.users_cadeau_id ??= [];
-                    if (!post.users_cadeau_id!.contains(authProvider.loginUserData.id!)) {
-                      post.users_cadeau_id!.add(authProvider.loginUserData.id!);
-                    }
-                  });
-                  final coinProvider = Provider.of<CoinGiftUserProvider>(context, listen: false);
-                  await coinProvider.refreshBalance(authProvider.loginUserData.id!);
-                },
-              ),
-            ),
           PostGiftsList(postId: post.id!, compactLevel: CompactLevel.light, maxDisplayItems: 10),
           _buildPostScoreBadge(post),
         ],
@@ -3797,6 +3725,10 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
           } catch (_) {}
         }
       }
+
+      if (success && mounted) {
+        _showCommentsModal(post);
+      }
     } finally {
       if (mounted) setState(() => _isSendingQuickComment = false);
     }
@@ -3999,15 +3931,6 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
               Text('${post.comments ?? 0}', style: const TextStyle(color: Colors.white)),
             ]),
           ),
-          if (post.type != PostType.CHALLENGEPARTICIPATION.name)
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => _showGiftDialog(post),
-              child: Column(children: [
-                const Icon(Icons.card_giftcard, color: _afroYellow, size: 30),
-                Text('${post.totalGiftCoinsSentOnThisPost ?? 0}', style: const TextStyle(color: Colors.white)),
-              ]),
-            ),
           GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () {},
@@ -4464,10 +4387,19 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
         // Vidéo avec son propre détecteur de double tap
         Positioned.fill(
           child: GestureDetector(
+            // translucent : les swipes atteignent le PageView même si le child (Chewie)
+            // aurait normalement absorbé tous les événements tactiles.
+            behavior: HitTestBehavior.translucent,
             onDoubleTap: () {
               _handleLike(post);
             },
-            child: _buildVideoPlayer(post),
+            child: IgnorePointer(
+              // Chewie ajoute ses propres GestureDetectors (opaque) qui bloquent le
+              // VerticalDragRecognizer du PageView sur toute la surface vidéo.
+              // IgnorePointer désactive complètement leur hit-testing ; tous les gestes
+              // sont gérés ici ou par le PageView parent.
+              child: _buildVideoPlayer(post),
+            ),
           ),
         ),
 
@@ -4545,6 +4477,29 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
             top: MediaQuery.of(context).padding.top + (widget.isIn ? 60 : 12),
             left: 12,
             child: _VideoPageBadges(post: post, feedTier: _currentPage == 0 ? widget.feedTier : null),
+          ),
+        // Cadeau rapide + badge — à droite, visible pour les non-propriétaires
+        if (_currentPage == 0 && post.user_id != null && post.user_id != authProvider.loginUserData.id)
+          Positioned(
+            top: MediaQuery.of(context).padding.top + (widget.isIn ? 60 : 12),
+            right: 12,
+            child: CadeauBadge(
+              receiverId: post.user_id!,
+              receiverName: post.user?.pseudo ?? 'Créateur',
+              receiverAvatar: post.user?.imageUrl ?? '',
+              post: post,
+              giftCount: post.totalGiftCoinsSentOnThisPost ?? 0,
+              onGiftSuccess: () {
+                setState(() {
+                  post.users_cadeau_id ??= [];
+                  if (!post.users_cadeau_id!.contains(authProvider.loginUserData.id!)) {
+                    post.users_cadeau_id!.add(authProvider.loginUserData.id!);
+                  }
+                });
+                Provider.of<CoinGiftUserProvider>(context, listen: false)
+                    .refreshBalance(authProvider.loginUserData.id!);
+              },
+            ),
           ),
       ],
     );

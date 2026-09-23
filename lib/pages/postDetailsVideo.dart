@@ -41,6 +41,8 @@ import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../theme/app_colors.dart';
+import '../models/coin_pack.dart';
+import '../widgets/gifts/gift_sent_overlay.dart';
 import '../widgets/gifts/quick_gift_bar.dart';
 
 import '../providers/locale_provider.dart';
@@ -95,6 +97,7 @@ import 'user/otherUser/otherUser.dart';
 import 'coins/coin_gift_dialog.dart';
 
 import 'coins/coin_recharge_screen.dart';
+import '../widgets/like_coins_helper.dart';
 
 import 'coins/post_gifts_list.dart';
 
@@ -1637,6 +1640,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       receiverId: _currentPost.user_id!,
       post: _currentPost,
       context: context,
+      onReadyToAnimate: _triggerSupportMessage,
     ).then((success) async {
       if (!mounted) return;
       if (!success) {
@@ -1684,73 +1688,17 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       printVm("❌ Erreur like background: $e");
     });
   }
+  void _triggerSupportMessage() {
+    if (!mounted) return;
+    showLikeOverlay(context, creatorName: _currentPost.user?.pseudo ?? '');
+  }
+
   void _showInsufficientCoinsForLikeDialog() {
-    showDialog(
+    showInsufficientCoinsForLikeDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          '💡 Soutenez le créateur !',
-          style: TextStyle(color: Color(0xFFFFD700), fontWeight: FontWeight.bold),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Chaque like que vous envoyez offre 1 pièce au créateur du post !',
-              style: TextStyle(color: Colors.white70),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFD700).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3)),
-              ),
-              child: const Row(
-                children: [
-                  Text('🪙', style: TextStyle(fontSize: 20)),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Le like coûte 2 pièces :\n• Pour soutenir le créateur',
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Rechargez votre compte pour continuer à soutenir vos créateurs préférés !',
-              style: TextStyle(color: Colors.white54, fontSize: 12),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Annuler', style: TextStyle(color: Colors.white70)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const CoinRechargeScreen()),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFFD700),
-              foregroundColor: Colors.black,
-            ),
-            child: const Text('Recharger', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
+      user: authProvider.loginUserData,
+      coinProvider: Provider.of<CoinGiftUserProvider>(context, listen: false),
+      authProvider: authProvider,
     );
   }
   void _showCommentsModal() {
@@ -1981,7 +1929,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       await _firestore.collection('Users').doc(_currentPost.user_id).update({'votre_solde_principal': FieldValue.increment(gainDest)});
       await _firestore.collection('AppData').doc(authProvider.appDefaultData.id).update({'solde_gain': FieldValue.increment(gainApp)});
       await _firestore.collection('Posts').doc(_currentPost.id).update({'users_cadeau_id': FieldValue.arrayUnion([authProvider.loginUserData.id])});
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('🎁 Cadeau envoyé avec succès!'), backgroundColor: Colors.green));
+      if (mounted) showGiftSentOverlay(context, CoinPack(coins: 0, priceFcfa: 0, icon: '🎁', label: 'Cadeau'), _currentPost.user?.pseudo ?? '');
     } catch (e) {
       printVm('Erreur envoi cadeau: $e');
     } finally {
@@ -2013,6 +1961,15 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
         return Container(
           padding: EdgeInsets.all(16),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
+            _buildMenuOption(
+              _isFavorite ? Icons.bookmark : Icons.bookmark_border,
+              _isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris',
+              _isFavorite ? const Color(0xFFFFD600) : sheetColors.textPrimary,
+              () {
+                Navigator.pop(context);
+                _toggleFavorite();
+              },
+            ),
             if (_currentPost.user_id != authProvider.loginUserData.id) ...[
               if (authProvider.loginUserData.role == UserRole.ADM.name) ...[
                 _buildMenuOption(Icons.gavel, 'Modérer ce post', Colors.orange.shade700,
@@ -2685,8 +2642,12 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     final hasAccess = !_isLockedContent();
     final isOwner = authProvider.loginUserData.id == _currentPost.user_id;
     final colors = AppColors.of(context);
-    return Row(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Row(
+          children: [
         // ── Actions interactives ─────────────────────────────────────────
         GestureDetector(
           onTap: (hasAccess && !_isLiking) ? _handleLike : null,
@@ -2726,27 +2687,13 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
           )
         else
           _buildStatItem(Icons.card_giftcard, _currentPost.totalGiftCoinsSentOnThisPost ?? 0, 'Cadeau'),
-        const SizedBox(width: 16),
-        GestureDetector(
-          onTap: _isProcessingFavorite ? null : _toggleFavorite,
-          child: _isProcessingFavorite
-              ? Column(children: [
-                  const SizedBox(width: 20, height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFFD600))),
-                  const SizedBox(height: 2),
-                  Text('Favoris', style: TextStyle(color: AppColors.of(context).textSecondary, fontSize: 11)),
-                ])
-              : _buildStatItem(
-                  _isFavorite ? Icons.bookmark : Icons.bookmark_border,
-                  _currentPost.favoritesCount ?? 0,
-                  'Favoris',
-                ),
-        ),
 
         // ── Stat passive (loin, discrète) ────────────────────────────────
         const Spacer(),
         if ((_currentPost.totalInteractions ?? 0) > 0)
           _buildInteractionsBadge(_currentPost.totalInteractions!, colors),
+      ],
+        ),
       ],
     );
   }
@@ -3091,7 +3038,19 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     final colors = AppColors.of(context);
     return Scaffold(
       backgroundColor: colors.background,
-      appBar: AppBar(backgroundColor: colors.surface, elevation: 0, leading: IconButton(icon: Icon(Icons.arrow_back, color: _afroYellow), onPressed: () => Navigator.pop(context)), title: Text('Afrolook Vidéo', style: TextStyle(color: _afroGreen, fontWeight: FontWeight.bold))),
+      appBar: AppBar(
+        backgroundColor: colors.surface,
+        elevation: 0,
+        leading: IconButton(icon: Icon(Icons.arrow_back, color: _afroYellow), onPressed: () => Navigator.pop(context)),
+        title: Text('Afrolook Vidéo', style: TextStyle(color: _afroGreen, fontWeight: FontWeight.bold)),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.refresh_rounded, color: _afroYellow.withOpacity(0.7), size: 22),
+            tooltip: 'Actualiser',
+            onPressed: () => _loadPostRelations(),
+          ),
+        ],
+      ),
       body: Stack(
         children: [
           CenteredContent(

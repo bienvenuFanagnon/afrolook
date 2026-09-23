@@ -279,7 +279,7 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
   }
   @override
   Widget build(BuildContext context) {
-    double taux=widget.user.popularite!*100;
+    double taux=(widget.user.popularite ?? 0)*100;
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
     double w = MediaQuery.of(context).size.width;
@@ -338,7 +338,7 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
                       child: Container(
                         alignment: Alignment.center,
                         child: TextCustomerPostDescription(
-                          titre: "${widget.user.userAbonnesIds!.length}",
+                          titre: "${widget.user.userAbonnesIds?.length ?? 0}",
                           fontSize: 15,
                           couleur: ConstColors.textColors,
                           fontWeight: FontWeight.w600,
@@ -584,7 +584,7 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
 
                   builder: (BuildContext context, void Function(void Function()) setState) {
                     return Container(
-                      child:    isUserAbonne(widget.user.userAbonnesIds!,authProvider.loginUserData.id!)?
+                      child:    isUserAbonne(widget.user.userAbonnesIds ?? [],authProvider.loginUserData.id ?? '')?
                       Container(
                         width: w*0.45,
                         height: 35,
@@ -1288,7 +1288,7 @@ class _UserProfileModalState extends State<UserProfileModal> {
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
                           _buildStatItem(
-                            formatNumber(widget.user.userAbonnesIds!.length),
+                            formatNumber(widget.user.userAbonnesIds?.length ?? 0),
                             l10n.profileFollowers,
                             const Color(0xFFFFD700),
                           ),
@@ -1298,7 +1298,7 @@ class _UserProfileModalState extends State<UserProfileModal> {
                             const Color(0xFF8B0000),
                           ),
                           _buildStatItem(
-                            widget.user.usersParrainer!.length.toString(),
+                            (widget.user.usersParrainer?.length ?? 0).toString(),
                             l10n.profileReferrals,
                             Colors.lightBlue,
                           ),

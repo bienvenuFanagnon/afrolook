@@ -1023,7 +1023,6 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
           });
           final coinProvider = Provider.of<CoinGiftUserProvider>(context, listen: false);
           await coinProvider.refreshBalance(authProvider.loginUserData.id!);
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('🎁 Cadeau envoyé avec succès !'), backgroundColor: Colors.green, duration: Duration(seconds: 2)));
         },
       ),
     );

@@ -71,7 +71,10 @@ class _UserProfilState extends State<UserPostForm> {
         ],
         iconTheme: IconThemeData(color: _colors.textPrimary),
       ),
-      body: CenteredContent(
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        behavior: HitTestBehavior.opaque,
+        child: CenteredContent(
         maxWidth: AppLayout.isDesktop(context) ? 700 : AppLayout.maxFeedWidth,
         child: Padding(
         padding: const EdgeInsets.all(8.0),
@@ -293,6 +296,7 @@ class _UserProfilState extends State<UserPostForm> {
           ),
         ),
         ),
+      ),
       ),
     );
   }

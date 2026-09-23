@@ -25,7 +25,7 @@ class _DiscoveryFeedPageState extends State<DiscoveryFeedPage> {
   bool _loading = true;
   bool _hasMore = true;
   DocumentSnapshot? _lastDoc;
-  static const int _pageSize = 12;
+  static const int _pageSize = 5;
 
   @override
   void initState() {
@@ -64,7 +64,7 @@ class _DiscoveryFeedPageState extends State<DiscoveryFeedPage> {
       Query query = FirebaseFirestore.instance
           .collection('Posts')
           .orderBy('created_at', descending: true)
-          .limit(_pageSize * 3);
+          .limit(_pageSize);
 
       if (!reset && _lastDoc != null) {
         query = query.startAfterDocument(_lastDoc!);
@@ -78,9 +78,7 @@ class _DiscoveryFeedPageState extends State<DiscoveryFeedPage> {
           return null;
         }
       }).whereType<Post>()
-          .where((p) => p.status == null || p.status == 'active')
           .where((p) => widget.pageType == null || p.typeTabbar == widget.pageType)
-          .take(_pageSize)
           .toList();
 
       if (!mounted) return;
@@ -92,7 +90,7 @@ class _DiscoveryFeedPageState extends State<DiscoveryFeedPage> {
           _posts.addAll(fetched.where((p) => !existingIds.contains(p.id)));
         }
         _lastDoc = snap.docs.isNotEmpty ? snap.docs.last : null;
-        _hasMore = snap.docs.length == _pageSize * 3;
+        _hasMore = snap.docs.length == _pageSize;
         _loading = false;
       });
     } catch (e) {

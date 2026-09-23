@@ -608,7 +608,10 @@ class _MyHomePageState extends State<MyHomePage>
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(color: colors.primary.withOpacity(0.4)),
                         ),
-                        child: ListTile(
+                        child: Material(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                          child: ListTile(
                           leading: Icon(Icons.store_mall_directory, size: 28, color: colors.primary),
                           title: TextCustomerMenu(
                             titre: l10n.menuAfroshopMarket,
@@ -638,6 +641,7 @@ class _MyHomePageState extends State<MyHomePage>
                               builder: (context) => HomeAfroshopPage(title: ''),
                             ));
                           },
+                        ),
                         ),
                       ),
                       // Services & Jobs

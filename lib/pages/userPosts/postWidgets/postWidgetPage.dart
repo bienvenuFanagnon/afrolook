@@ -38,6 +38,7 @@ import '../../../services/linkService.dart';
 import '../../../services/utils/abonnement_utils.dart';
 import '../../../widgets/user_badge_widget.dart';
 import '../../../widgets/double_tap_like.dart';
+import '../../../widgets/like_coins_helper.dart';
 import '../../coins/coin_gift_dialog.dart';
 import '../../coins/coin_recharge_screen.dart';
 import '../../../widgets/gifts/quick_gift_bar.dart';
@@ -2569,7 +2570,11 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     final colors = AppColors.of(context);
     final isLiked = _isLikedLocally;
 
-    return Container(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
       margin: const EdgeInsets.only(top: 8),
       child: Row(
         children: [
@@ -2642,6 +2647,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
             _buildInteractionsTotalBadge(widget.post.totalInteractions!, colors),
         ],
       ),
+    ),
+      ],
     );
   }
   Widget _buildInteractionsTotalBadge(int total, AppColors colors) {
@@ -3346,6 +3353,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       receiverId: receiverId,
       post: widget.post,
       context: context,
+      onReadyToAnimate: _triggerSupportMessage,
     ).then((success) async {
       if (!success) {
         await firestore.collection('Posts').doc(postId).update({
@@ -3393,77 +3401,17 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     });
   }
 
-// Nouveau dialog pour solde de pièces insuffisant pour le like
+  void _triggerSupportMessage() {
+    if (!mounted) return;
+    showLikeOverlay(context, creatorName: widget.post.user?.pseudo ?? '');
+  }
+
   void _showInsufficientCoinsForLikeDialog() {
-    showDialog(
+    showInsufficientCoinsForLikeDialog(
       context: context,
-      builder: (ctx) {
-        final dc = AppColors.of(ctx);
-        return AlertDialog(
-          backgroundColor: dc.surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Text(
-            '💡 Soutenez le créateur !',
-            style: TextStyle(color: dc.accent, fontWeight: FontWeight.bold),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Chaque like que vous envoyez offre 1 pièce au créateur du post !',
-                style: TextStyle(color: dc.textSecondary),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: dc.accent.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: dc.accent.withOpacity(0.3)),
-                ),
-                child: Row(
-                  children: [
-                    const Text('🪙', style: TextStyle(fontSize: 20)),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Le like coûte 2 pièces :\n• Pour soutenir le créateur',
-                        style: TextStyle(color: dc.textSecondary, fontSize: 12),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Rechargez votre compte pour continuer à soutenir vos créateurs préférés !',
-                style: TextStyle(color: dc.textSecondary, fontSize: 12),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text('Annuler', style: TextStyle(color: dc.textSecondary)),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const CoinRechargeScreen()),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: dc.accent,
-                foregroundColor: dc.onAccent,
-              ),
-              child: const Text('Recharger', style: TextStyle(fontWeight: FontWeight.bold)),
-            ),
-          ],
-        );
-      },
+      user: authProvider.loginUserData,
+      coinProvider: Provider.of<CoinGiftUserProvider>(context, listen: false),
+      authProvider: authProvider,
     );
   }
 

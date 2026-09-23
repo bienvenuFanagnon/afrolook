@@ -74,6 +74,7 @@ import 'canaux/detailsCanal.dart';
 
 import 'coins/coin_gift_dialog.dart';
 import 'coins/coin_recharge_screen.dart';
+import '../widgets/like_coins_helper.dart';
 import 'coins/post_gifts_list.dart';
 import '../widgets/gifts/quick_gift_bar.dart';
 import '../widgets/chat/post_share_sheet.dart';
@@ -3509,6 +3510,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       receiverId: widget.post.user_id!,
       post: widget.post,
       context: context,
+      onReadyToAnimate: _triggerSupportMessage,
     ).then((success) async {
       if (!mounted) return;
       if (!success) {
@@ -3594,73 +3596,17 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       printVm("❌ Erreur like background: $e");
     });
   }
+  void _triggerSupportMessage() {
+    if (!mounted) return;
+    showLikeOverlay(context, creatorName: widget.post.user?.pseudo ?? '');
+  }
+
   void _showInsufficientCoinsForLikeDialog() {
-    showDialog(
+    showInsufficientCoinsForLikeDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: _colors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          AppLocalizations.of(context).postDetailSupportCreatorTitle,
-          style: TextStyle(color: _colors.accent, fontWeight: FontWeight.bold),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              AppLocalizations.of(context).postDetailLikeGivesCoin,
-              style: TextStyle(color: _colors.textSecondary),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: _colors.accent.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _colors.accent.withOpacity(0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Text('🪙', style: TextStyle(fontSize: 20)),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      AppLocalizations.of(context).postDetailLikeCostsCoins,
-                      style: TextStyle(color: _colors.textSecondary, fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              AppLocalizations.of(context).postDetailRechargeToSupport,
-              style: TextStyle(color: _colors.textSecondary, fontSize: 12),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(AppLocalizations.of(context).postDetailCancel, style: TextStyle(color: _colors.textSecondary)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const CoinRechargeScreen()),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _colors.accent,
-              foregroundColor: _colors.onAccent,
-            ),
-            child: Text(AppLocalizations.of(context).postDetailRecharge, style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
+      user: authProvider.loginUserData,
+      coinProvider: Provider.of<CoinGiftUserProvider>(context, listen: false),
+      authProvider: authProvider,
     );
   }
   Future<void> _createTransaction(
@@ -4539,6 +4485,15 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            _buildMenuOption(
+              _isFavorite ? Icons.bookmark : Icons.bookmark_border,
+              _isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris',
+              _isFavorite ? const Color(0xFFFFD600) : _colors.textPrimary,
+              () {
+                Navigator.pop(context);
+                _toggleFavorite();
+              },
+            ),
             if (post.user_id != authProvider.loginUserData.id) ...[
               if (authProvider.loginUserData.role == UserRole.ADM.name) ...[
                 _buildMenuOption(
@@ -6553,9 +6508,13 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
   Widget _buildStatsRow(Post post) {
     final hasAccess = _hasAccessToContent();
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
         _buildStatItem(
           icon: Icons.bar_chart,
           count: post!.isAdvertisement!
@@ -6598,18 +6557,6 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             isLocked: !hasAccess,
           ),
         ),
-        // NOUVEAU : Compteur de favoris
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: hasAccess && !_isProcessingFavorite ? _toggleFavorite : null,
-          child: _buildStatItem(
-            icon: _isFavorite ? Icons.bookmark : Icons.bookmark_border,
-            count: post.favoritesCount ?? 0,
-            label: 'Favoris',
-            isLiked: _isFavorite,
-            isLocked: !hasAccess,
-          ),
-        ),
         Builder(builder: (ctx) {
           final isOwner = authProvider.loginUserData.id == post.user_id;
           if (isOwner || !hasAccess) {
@@ -6646,6 +6593,8 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             label: 'Partages',
             isLocked: !hasAccess,
           ),
+        ),
+      ],
         ),
       ],
     );
@@ -6730,7 +6679,19 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             'Afrolook',
             style: TextStyle(
                 color: _colors.success, fontWeight: FontWeight.bold, fontSize: 20),
-          )
+          ),
+          IconButton(
+            icon: Icon(Icons.refresh_rounded, color: _colors.textSecondary, size: 22),
+            tooltip: 'Actualiser',
+            onPressed: () {
+              setState(() {
+                _postStream = firestore
+                    .collection('Posts')
+                    .doc(widget.post.id)
+                    .snapshots();
+              });
+            },
+          ),
         ],
         centerTitle: true,
       ),

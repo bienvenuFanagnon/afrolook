@@ -220,6 +220,24 @@ class UserAuthProvider extends ChangeNotifier {
   }
 
   /// Rafraîchit les données de l'utilisateur connecté depuis Firestore
+  bool get isUserDataReady =>
+      loginUserData.id != null && loginUserData.id!.isNotEmpty;
+
+  /// Charge les données utilisateur depuis Firestore si elles ne sont pas encore prêtes.
+  /// Opération légère — uniquement le document utilisateur, sans mise à jour Firestore.
+  Future<void> ensureUserDataLoaded() async {
+    if (isUserDataReady) return;
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return;
+    try {
+      final doc = await FirebaseFirestore.instance.collection('Users').doc(uid).get();
+      if (doc.exists) {
+        loginUserData = UserData.fromJson(doc.data()!);
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
+
   Future<void> refreshUserData() async {
     try {
       // Vérifier si l'utilisateur est connecté

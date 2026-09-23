@@ -959,6 +959,7 @@ class UserData {
   int? totalGiftCoinsPurchased;   // Total des pièces achetées
   int? totalGiftCoinsSpent;       // Total des pièces dépensées (cadeaux envoyés)
   int? totalGiftCoinsConverted;   // Total des pièces converties en FCFA
+  bool? hasClaimedFreeCoins;      // Offre gratuite 10 pièces déjà utilisée (one-shot)
 
   // Monétisation par vues de posts
   int? totalPostUniqueViews = 0;          // Total cumulé de vues uniques sur ses posts normaux
@@ -1354,6 +1355,7 @@ class UserData {
     totalGiftCoinsPurchased = json['totalGiftCoinsPurchased'] ?? 0;
     totalGiftCoinsSpent = json['totalGiftCoinsSpent'] ?? 0;
     totalGiftCoinsConverted = json['totalGiftCoinsConverted'] ?? 0;
+    hasClaimedFreeCoins = json['hasClaimedFreeCoins'] as bool? ?? false;
 
     totalPostUniqueViews = json['totalPostUniqueViews'] ?? 0;
     totalViewsEarningsCredited = json['totalViewsEarningsCredited'] ?? 0;
@@ -4241,6 +4243,9 @@ class PostComment {
   String? canal_name;
   String? canal_image;
 
+  // Commentaire auto-généré lors d'un envoi de cadeau
+  bool? isAutoGiftComment;
+
   PostComment({
     this.id,
     this.comments,
@@ -4258,6 +4263,7 @@ class PostComment {
     this.canal_id,
     this.canal_name,
     this.canal_image,
+    this.isAutoGiftComment,
   });
 
   PostComment.fromJson(Map<String, dynamic> json) {
@@ -4275,6 +4281,7 @@ class PostComment {
     canal_id = json['canal_id'];
     canal_name = json['canal_name'];
     canal_image = json['canal_image'];
+    isAutoGiftComment = json['isAutoGiftComment'] == true;
     if (json['responseComments'] != null) {
       responseComments = <ResponsePostComment>[];
       json['responseComments'].forEach((v) {
@@ -4302,6 +4309,7 @@ class PostComment {
     if (canal_id != null) data['canal_id'] = canal_id;
     if (canal_name != null) data['canal_name'] = canal_name;
     if (canal_image != null) data['canal_image'] = canal_image;
+    if (isAutoGiftComment == true) data['isAutoGiftComment'] = true;
 
     return data;
   }
