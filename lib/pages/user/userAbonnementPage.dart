@@ -1,6 +1,7 @@
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/paiement/newDepot.dart';
+import 'package:afrotok/pages/coins/coin_recharge_screen.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -872,7 +873,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
                 ),
                 ElevatedButton(
                   onPressed: () => Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => DepositScreen())),
+                      MaterialPageRoute(builder: (_) => const CoinRechargeScreen())),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: accentColor,
                     foregroundColor: btnTextColor,

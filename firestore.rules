@@ -234,9 +234,47 @@ service cloud.firestore {
     }
 
     // ─────────────────────────────────────────────────────────────
-    // TOUTES LES AUTRES COLLECTIONS — requièrent auth minimale
+    // POSTS
+    // Les champs DÉFI (participations, votes) sont écrits uniquement par la
+    // Cloud Function handleDefiAction : le client ne peut ni les créer ni les
+    // modifier, ce qui empêche de participer ou voter sans payer.
     // ─────────────────────────────────────────────────────────────
-    match /{document=**} {
+    function defiServerKeys() {
+      return ['defi_response_to_post_id', 'defi_participant_ids', 'defi_participant_count',
+              'defi_votes', 'defi_voter_ids'];
+    }
+
+    match /Posts/{postId} {
+      allow read: if isAuth();
+
+      allow create: if isAuth()
+          && (request.resource.data.user_id == uid() || isAdmin())
+          && !request.resource.data.keys().hasAny(defiServerKeys());
+
+      allow update: if isAuth()
+          && !request.resource.data.diff(resource.data).affectedKeys()
+              .hasAny(defiServerKeys().concat(['user_id']))
+          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['defi_config'])
+              || resource.data.user_id == uid() || isAdmin());
+
+      allow delete: if isAuth() && (resource.data.user_id == uid() || isAdmin());
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // TOUTES LES AUTRES COLLECTIONS — requièrent auth minimale
+    // ATTENTION : les règles Firestore s'additionnent (une seule règle qui
+    // autorise suffit). Cette règle générale autorise donc aussi l'écriture
+    // dans Users, Messages, etc. malgré leurs règles plus strictes ci-dessus.
+    // Seuls les documents Posts en sont exclus pour l'instant.
+    // ─────────────────────────────────────────────────────────────
+    match /{collection}/{docId} {
+      allow read: if isAuth();
+      allow write: if isAuth() && collection != 'Posts';
+    }
+
+    // Sous-collections uniquement ({subCollection} impose au moins un segment de plus,
+    // sinon {x=**} matcherait aussi le document lui-même et rouvrirait Posts).
+    match /{collection}/{docId}/{subCollection}/{subPath=**} {
       allow read, write: if isAuth();
     }
   }

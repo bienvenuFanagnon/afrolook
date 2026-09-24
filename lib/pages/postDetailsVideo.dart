@@ -3,6 +3,7 @@ import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
 import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
+import 'package:afrotok/pages/defi/defi_details_section.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
 import 'dart:math';
@@ -1888,7 +1889,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
               children: [
                 Text('Envoyer un Cadeau', style: TextStyle(color: Colors.yellow, fontWeight: FontWeight.bold, fontSize: 20)),
                 SizedBox(height: 12),
-                Text('Choisissez le montant en FCFA', style: TextStyle(color: Colors.white)),
+                Text('Choisissez le montant en Afrcoins', style: TextStyle(color: Colors.white)),
                 SizedBox(height: 12),
                 Expanded(
                   child: GridView.builder(
@@ -1899,12 +1900,12 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
                       child: Container(
                         padding: EdgeInsets.all(10),
                         decoration: BoxDecoration(color: _selectedGiftIndex == index ? Colors.green : Colors.grey[800], borderRadius: BorderRadius.circular(10), border: Border.all(color: _selectedGiftIndex == index ? Colors.yellow : Colors.transparent)),
-                        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Text(giftIcons[index], style: TextStyle(fontSize: 24)), Text('${giftPrices[index].toInt()} FCFA', style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold))]),
+                        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Text(giftIcons[index], style: TextStyle(fontSize: 24)), Text('${giftPrices[index].toInt()} Afrcoins', style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold))]),
                       ),
                     ),
                   ),
                 ),
-                Text('Votre solde: ${authProvider.loginUserData.votre_solde_principal?.toInt() ?? 0} FCFA', style: TextStyle(color: Colors.yellow, fontWeight: FontWeight.bold)),
+                Text('Votre solde: ${authProvider.loginUserData.votre_solde_principal?.toInt() ?? 0} Afrcoins', style: TextStyle(color: Colors.yellow, fontWeight: FontWeight.bold)),
                 SizedBox(height: 12),
                 Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                   TextButton(onPressed: () => Navigator.pop(context), child: Text('Annuler', style: TextStyle(color: Colors.white))),
@@ -1945,7 +1946,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       content: Text('Votre solde est insuffisant. Veuillez recharger.', style: TextStyle(color: Colors.white)),
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: Text('Annuler', style: TextStyle(color: Colors.white))),
-        ElevatedButton(onPressed: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (context) => DepositScreen())); }, style: ElevatedButton.styleFrom(backgroundColor: Colors.green), child: Text('Recharger', style: TextStyle(color: Colors.black))),
+        ElevatedButton(onPressed: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (context) => const CoinRechargeScreen())); }, style: ElevatedButton.styleFrom(backgroundColor: Colors.green), child: Text('Recharger', style: TextStyle(color: Colors.black))),
       ],
     ));
   }
@@ -2123,12 +2124,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
         child: Center(child: CircularProgressIndicator(color: _afroGreen)),
       );
     }
-    final isLiked = _currentPost.users_love_id?.contains(authProvider.loginUserData.id) ?? false;
-    return DoubleTapLike(
-      alreadyLiked: isLiked,
-      onDoubleTap: _handleLike,
-      child: AspectRatio(aspectRatio: 16 / 9, child: Chewie(controller: _chewieController!)),
-    );
+    return AspectRatio(aspectRatio: 16 / 9, child: Chewie(controller: _chewieController!));
   }
 
   Widget _buildUserHeader() {
@@ -2325,7 +2321,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
             SizedBox(height: 20),
             ElevatedButton(onPressed: () { if (canal != null) Navigator.push(context, MaterialPageRoute(builder: (context) => CanalDetails(canal: canal))); },
               style: ElevatedButton.styleFrom(backgroundColor: _afroYellow, foregroundColor: Colors.black, padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
-              child: Text(isPrivate ? 'S\'ABONNER - ${price.toInt()} FCFA' : 'SUIVRE LE CANAL', style: TextStyle(fontWeight: FontWeight.bold)),
+              child: Text(isPrivate ? 'S\'ABONNER - ${price.toInt()} Afrcoins' : 'SUIVRE LE CANAL', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ]),
         ),
@@ -2741,7 +2737,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     showDialog(context: context, builder: (context) => AlertDialog(
       backgroundColor: AppColors.of(context).surface,
       title: Text('Confirmer le vote', style: TextStyle(color: AppColors.of(context).textPrimary)),
-      content: Text(_challenge!.voteGratuit! ? 'Voter pour ce look est gratuit.' : 'Ce vote vous coûtera ${_challenge!.prixVote} FCFA.', style: TextStyle(color: Colors.grey)),
+      content: Text(_challenge!.voteGratuit! ? 'Voter pour ce look est gratuit.' : 'Ce vote vous coûtera ${_challenge!.prixVote} Afrcoins.', style: TextStyle(color: Colors.grey)),
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: Text('Annuler')),
         ElevatedButton(onPressed: () async { Navigator.pop(context); await _voteForLook(); }, style: ElevatedButton.styleFrom(backgroundColor: _afroGreen), child: Text('VOTER')),
@@ -3042,7 +3038,31 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
         backgroundColor: colors.surface,
         elevation: 0,
         leading: IconButton(icon: Icon(Icons.arrow_back, color: _afroYellow), onPressed: () => Navigator.pop(context)),
-        title: Text('Afrolook Vidéo', style: TextStyle(color: _afroGreen, fontWeight: FontWeight.bold)),
+        title: _currentPost.type == PostType.DEFI.name
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0x33FF9500),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFFF9500).withOpacity(0.6)),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.emoji_events, color: Color(0xFFFF9500), size: 13),
+                        SizedBox(width: 4),
+                        Text('DÉFI', style: TextStyle(color: Color(0xFFFF9500), fontSize: 11, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text('Vidéo', style: TextStyle(color: _afroGreen, fontWeight: FontWeight.bold)),
+                ],
+              )
+            : Text('Afrolook Vidéo', style: TextStyle(color: _afroGreen, fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
             icon: Icon(Icons.refresh_rounded, color: _afroYellow.withOpacity(0.7), size: 22),
@@ -3088,7 +3108,34 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
                 ),
                 _buildPostScoreBadge(),
                 _buildChallengeSection(),
-                _buildSuggestedVideos(),
+
+                // ── Nouvelle section DÉFI ─────────────────────────
+                if (_currentPost.type == PostType.DEFI.name)
+                  DefiDetailsSection(
+                    defiPost: _currentPost,
+                    currentUserId: Provider.of<UserAuthProvider>(context, listen: false).loginUserData?.id ?? '',
+                  ),
+                if (_currentPost.defiResponseToPostId != null)
+                  DefiResponseBanner(
+                    responsePost: _currentPost,
+                    currentUserId: Provider.of<UserAuthProvider>(context, listen: false).loginUserData?.id ?? '',
+                    onTap: (defiPost) => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => DetailsPost(post: defiPost)),
+                    ),
+                  ),
+
+                // ── Participations DÉFI ou suggestions normales ────
+                if (_currentPost.type == PostType.DEFI.name)
+                  DefiResponsesFeed(
+                    defiPostId: _currentPost.id!,
+                    currentUserId: Provider.of<UserAuthProvider>(context, listen: false).loginUserData?.id ?? '',
+                    isDefiOver: (_currentPost.defiConfig?.isTermine ?? false) ||
+                        ((_currentPost.defiConfig?.endDate ?? 0) > 0 &&
+                            DateTime.fromMillisecondsSinceEpoch(_currentPost.defiConfig!.endDate).isBefore(DateTime.now())),
+                  )
+                else
+                  _buildSuggestedVideos(),
                 SizedBox(height: 20),
               ])),
             ]),

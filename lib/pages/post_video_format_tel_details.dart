@@ -3,6 +3,7 @@ import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
+import 'package:afrotok/pages/defi/defi_details_section.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
 import 'dart:math';
@@ -2787,7 +2788,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
                 children: [
                   Text('Envoyer un Cadeau', style: TextStyle(color: colors.accent, fontWeight: FontWeight.bold, fontSize: 20)),
                   const SizedBox(height: 12),
-                  Text('Choisissez le montant en FCFA', style: TextStyle(color: colors.textPrimary)),
+                  Text('Choisissez le montant en Afrcoins', style: TextStyle(color: colors.textPrimary)),
                   const SizedBox(height: 12),
                   Expanded(
                     child: GridView.builder(
@@ -2801,13 +2802,13 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(color: _selectedGiftIndex == index ? colors.accent : Colors.transparent),
                           ),
-                          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Text(giftIcons[index], style: const TextStyle(fontSize: 24)), const SizedBox(height: 5), Text('${giftPrices[index].toInt()} FCFA', style: TextStyle(color: colors.textPrimary))]),
+                          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Text(giftIcons[index], style: const TextStyle(fontSize: 24)), const SizedBox(height: 5), Text('${giftPrices[index].toInt()} Afrcoins', style: TextStyle(color: colors.textPrimary))]),
                         ).animate().fadeIn(duration: 250.ms).scale(begin: const Offset(0.9, 0.9), end: const Offset(1, 1), duration: 250.ms, curve: Curves.easeOut),
                       ),
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Text('Solde: ${authProvider.loginUserData.votre_solde_principal?.toInt() ?? 0} FCFA', style: TextStyle(color: colors.accent)),
+                  Text('Solde: ${authProvider.loginUserData.votre_solde_principal?.toInt() ?? 0} Afrcoins', style: TextStyle(color: colors.accent)),
                   const SizedBox(height: 12),
                   Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                     TextButton(onPressed: () => Navigator.pop(context), child: Text('Annuler', style: TextStyle(color: colors.textPrimary))),
@@ -2859,7 +2860,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
         content: Text('Rechargez votre compte pour envoyer un cadeau.', style: TextStyle(color: colors.textPrimary)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: Text('Annuler', style: TextStyle(color: colors.textPrimary))),
-          ElevatedButton(onPressed: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (context) => DepositScreen())); }, style: ElevatedButton.styleFrom(backgroundColor: colors.primary), child: Text('Recharger', style: TextStyle(color: colors.onPrimary))),
+          ElevatedButton(onPressed: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (context) => const CoinRechargeScreen())); }, style: ElevatedButton.styleFrom(backgroundColor: colors.primary), child: Text('Recharger', style: TextStyle(color: colors.onPrimary))),
         ],
       ),
     );
@@ -3179,7 +3180,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
       builder: (context) => AlertDialog(
         backgroundColor: colors.surface,
         title: Text('Confirmer votre vote', style: TextStyle(color: colors.textPrimary)),
-        content: Text(!_challenge!.voteGratuit! ? 'Ce vote coûtera ${_challenge!.prixVote} FCFA.' : 'Votre vote est gratuit et définitif.', style: TextStyle(color: colors.textSecondary)),
+        content: Text(!_challenge!.voteGratuit! ? 'Ce vote coûtera ${_challenge!.prixVote} Afrcoins.' : 'Votre vote est gratuit et définitif.', style: TextStyle(color: colors.textSecondary)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: Text('Annuler', style: TextStyle(color: colors.textSecondary))),
           ElevatedButton(onPressed: () async { Navigator.pop(context); await _processVoteWithChallenge(user.uid); }, style: ElevatedButton.styleFrom(backgroundColor: colors.primary), child: Text('Voter', style: TextStyle(color: colors.onPrimary))),
@@ -3242,10 +3243,10 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
       builder: (context) => AlertDialog(
         backgroundColor: colors.surface,
         title: Text('Solde insuffisant', style: TextStyle(color: colors.accent)),
-        content: Text('Il manque $manquant FCFA pour voter. Rechargez votre compte.', style: TextStyle(color: colors.textPrimary)),
+        content: Text('Il manque $manquant Afrcoins pour voter. Rechargez votre compte.', style: TextStyle(color: colors.textPrimary)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: Text('Plus tard', style: TextStyle(color: colors.textSecondary))),
-          ElevatedButton(onPressed: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (context) => DepositScreen())); }, style: ElevatedButton.styleFrom(backgroundColor: colors.primary), child: Text('Recharger', style: TextStyle(color: colors.onPrimary))),
+          ElevatedButton(onPressed: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (context) => const CoinRechargeScreen())); }, style: ElevatedButton.styleFrom(backgroundColor: colors.primary), child: Text('Recharger', style: TextStyle(color: colors.onPrimary))),
         ],
       ),
     );
@@ -3414,6 +3415,32 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
             ),
           PostGiftsList(postId: post.id!, compactLevel: CompactLevel.light, maxDisplayItems: 10),
           _buildPostScoreBadge(post),
+
+          // ── Section DÉFI — card info ──────────────────────────────
+          if (post.type == PostType.DEFI.name)
+            DefiDetailsSection(
+              defiPost: post,
+              currentUserId: Provider.of<UserAuthProvider>(context, listen: false).loginUserData?.id ?? '',
+            ),
+          if (post.defiResponseToPostId != null)
+            DefiResponseBanner(
+              responsePost: post,
+              currentUserId: Provider.of<UserAuthProvider>(context, listen: false).loginUserData?.id ?? '',
+              onTap: (defiPost) => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => DetailsPost(post: defiPost)),
+              ),
+            ),
+
+          // ── Participations DÉFI ───────────────────────────────────
+          if (post.type == PostType.DEFI.name)
+            DefiResponsesFeed(
+              defiPostId: post.id!,
+              currentUserId: Provider.of<UserAuthProvider>(context, listen: false).loginUserData?.id ?? '',
+              isDefiOver: (post.defiConfig?.isTermine ?? false) ||
+                  ((post.defiConfig?.endDate ?? 0) > 0 &&
+                      DateTime.fromMillisecondsSinceEpoch(post.defiConfig!.endDate).isBefore(DateTime.now())),
+            ),
         ],
       ).animate().fadeIn(duration: 400.ms).slideX(begin: -0.08, end: 0, duration: 400.ms, curve: Curves.easeOut),
     );
@@ -4461,10 +4488,32 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(children: [
-                  IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.arrow_back, color: Colors.yellow)),
-                  const Text('Vibe vidéos', style: TextStyle(color: _afroGreen, fontSize: 20, fontWeight: FontWeight.bold)),
-                ]),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.arrow_back, color: Colors.yellow)),
+                    if (post.type == PostType.DEFI.name) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0x33FF9500),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: const Color(0xFFFF9500).withOpacity(0.6)),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.emoji_events, color: Color(0xFFFF9500), size: 13),
+                            SizedBox(width: 4),
+                            Text('DÉFI', style: TextStyle(color: Color(0xFFFF9500), fontSize: 11, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    const Text('Vibe vidéos', style: TextStyle(color: _afroGreen, fontSize: 20, fontWeight: FontWeight.bold)),
+                  ],
+                ),
               ],
             ),
           ),

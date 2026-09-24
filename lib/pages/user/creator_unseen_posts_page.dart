@@ -10,7 +10,6 @@ import '../../models/model_data.dart';
 import '../../services/active_creators_service.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/user_badge_widget.dart';
-import '../challenge/postChallengeWidget.dart';
 import '../component/showUserDetails.dart';
 import '../postDetailsVideo.dart';
 import '../userPosts/postWidgets/postWidgetPage.dart';
@@ -296,10 +295,7 @@ class _CreatorUnseenPostsPageState extends State<CreatorUnseenPostsPage> {
       onVisibilityChanged: (info) => _handleVisibilityChanged(post, info),
       child: post.type == PostType.PRONOSTIC.name
           ? const SizedBox.shrink()
-          : post.type == PostType.CHALLENGEPARTICIPATION.name
-              ? LookChallengePostWidget(
-                  post: post, height: height, width: width)
-              : (post.type == PostType.POST.name &&
+          : (post.type == PostType.POST.name &&
                       post.dataType == PostDataType.VIDEO.name)
                   ? YouTubeVideoCard(
                       key: ValueKey('ytcard_${post.id}'),

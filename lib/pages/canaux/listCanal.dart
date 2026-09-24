@@ -17,6 +17,7 @@ import '../../theme/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 
 import '../paiement/newDepot.dart';
+import '../coins/coin_recharge_screen.dart';
 
 import 'detailsCanal.dart';
 
@@ -537,7 +538,7 @@ class _CanalListPageState extends State<CanalListPage> {
                     ElevatedButton(
                       onPressed: () {
                         Navigator.of(context).pop();
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => DepositScreen()));
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => const CoinRechargeScreen()));
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: colors.primary,

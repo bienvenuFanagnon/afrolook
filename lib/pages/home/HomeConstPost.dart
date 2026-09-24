@@ -1,7 +1,6 @@
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:async';
 import 'dart:math';
-import 'package:afrotok/pages/challenge/postChallengeWidget.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/home/unitePostPage/chronique_section.dart';
 import 'package:afrotok/providers/contenuPayantProvider.dart';
@@ -77,7 +76,7 @@ import '../../widgets/feed/sections/weekly_top_posts_section_widget.dart';
 import '../../widgets/feed/sections/weekly_top_commentators_widget.dart';
 import '../../widgets/feed/sections/comment_level_widget.dart';
 import '../../widgets/flame_streak_banner.dart';
-import '../../widgets/feed/sections/affiliation_feed_widget.dart';
+
 import '../../widgets/feed/sections/feed_recommended_profiles_widget.dart';
 import '../../services/feed/end_of_feed_cache.dart';
 
@@ -3745,11 +3744,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       // T2 fill counter
       if (_t2FillPostIds.isNotEmpty && _t2FillPostIds.contains(pid)) {
         _t2FillShown++;
-      }
-
-      // Post 6 : widget Affiliation (1×/jour — géré en interne par le widget)
-      if (i == 5) {
-        contentWidgets.add(const AffiliationFeedWidget());
       }
 
       // Post 10 : Lives si chroniques présentes, sinon Profils recommandés

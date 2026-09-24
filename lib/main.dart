@@ -66,9 +66,6 @@ import 'package:afrotok/providers/streakProvider.dart';
 import 'package:afrotok/providers/chroniqueProvider.dart';
 import 'package:afrotok/providers/coin_gift_provider.dart';
 import 'package:afrotok/providers/contenuPayantProvider.dart';
-import 'package:afrotok/providers/crypto_admin_provider.dart';
-import 'package:afrotok/providers/crypto_market_provider.dart';
-import 'package:afrotok/providers/crypto_portfolio_controller.dart';
 import 'package:afrotok/providers/dating/coin_provider.dart';
 import 'package:afrotok/providers/dating/creator_provider.dart';
 import 'package:afrotok/providers/dating/dating_provider.dart';
@@ -82,7 +79,6 @@ import 'package:afrotok/providers/recent_posts_provider.dart';
 import 'package:afrotok/providers/sound_provider.dart';
 import 'package:afrotok/providers/userProvider.dart';
 import 'package:afrotok/services/ad_service.dart';
-import 'package:afrotok/services/challengeMonh/challenge_month_service.dart';
 import 'package:afrotok/services/remote_config_service.dart';
 import 'package:afrotok/pages/component/maintenance_page.dart';
 import 'package:afrotok/services/linkService.dart';
@@ -93,9 +89,11 @@ import 'package:app_links/app_links.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:camera/camera.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -419,9 +417,6 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (context) => ChroniqueProvider()),
         ChangeNotifierProvider(create: (_) => LiveProvider()),
         ChangeNotifierProvider(create: (_) => ProfileLikeProvider()),
-        ChangeNotifierProvider(create: (_) => CryptoMarketProvider()),
-        ChangeNotifierProvider(create: (_) => CryptoAdminProvider()),
-        ChangeNotifierProvider(create: (_) => CryptoPortfolioProvider()),
         ChangeNotifierProvider(create: (_) => MixedFeedServiceProvider()),
         ChangeNotifierProvider(create: (_) => FeedProvider()),
         ChangeNotifierProvider(create: (_) => GoldGroupsProvider()),

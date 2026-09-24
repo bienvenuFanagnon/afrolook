@@ -27,6 +27,7 @@ import '../../models/model_data.dart';
 import '../../services/linkService.dart';
 import '../../services/sessions/session_checker_service.dart';
 import '../paiement/newDepot.dart';
+import '../coins/coin_recharge_screen.dart';
 import 'live_widgets.dart';
 import 'livesAgora.dart';
 import '../../widgets/chat/generic_share_sheet.dart';
@@ -565,7 +566,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              Navigator.push(context, MaterialPageRoute(builder: (context) => DepositScreen()));
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const CoinRechargeScreen()));
             },
             child: Text('Recharger', style: TextStyle(color: Color(0xFFF9A825))),
           ),
@@ -1440,7 +1441,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       builder: (context) => AlertDialog(
         backgroundColor: Colors.grey[900],
         title: Text('Solde insuffisant', style: TextStyle(color: Colors.white)),
-        content: Text('Vous avez besoin de 100 FCFA pour participer au live.',
+        content: Text('Vous avez besoin de 100 Afrcoins pour participer au live.',
             style: TextStyle(color: Colors.white70)),
         actions: [
           TextButton(
@@ -2809,7 +2810,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
             ),
             SizedBox(height: 12),
             Text(
-              'Payez ${widget.postLive.participationFee.toInt()} FCFA pour continuer à regarder',
+              'Payez ${widget.postLive.participationFee.toInt()} Afrcoins pour continuer à regarder',
               style: TextStyle(color: Colors.white70, fontSize: 16),
               textAlign: TextAlign.center,
             ),
@@ -2821,7 +2822,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
                 padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               ),
               child: Text(
-                'Payer ${widget.postLive.participationFee.toInt()} FCFA',
+                'Payer ${widget.postLive.participationFee.toInt()} Afrcoins',
                 style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
               ),
             ),

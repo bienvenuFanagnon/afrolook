@@ -10,8 +10,8 @@ import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/services/ad_config_service.dart';
 import 'package:afrotok/pages/user/userPubs/user_create_advertisement_page.dart';
 
-import 'package:afrotok/pages/challenge/challengeDetails.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
+import 'package:afrotok/pages/defi/defi_details_section.dart';
 import 'package:afrotok/pages/component/showUserDetails.dart';
 import 'package:afrotok/pages/home/homeWidget.dart';
 import 'package:afrotok/pages/paiement/depotPaiment.dart';
@@ -1238,7 +1238,7 @@ class _DetailsPostState extends State<DetailsPost>
                                   color: sel ? _colors.primary : _colors.textPrimary,
                                   fontWeight: sel ? FontWeight.bold : FontWeight.normal,
                                   fontSize: 13)),
-                          Text('${priceMap[d.weeks] ?? d.price} FCFA',
+                          Text('${priceMap[d.weeks] ?? d.price} Afrcoins',
                               style: TextStyle(color: _colors.textSecondary, fontSize: 11)),
                         ]),
                       ),
@@ -1254,7 +1254,7 @@ class _DetailsPostState extends State<DetailsPost>
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      'Solde actuel : ${authProvider.loginUserData.votre_solde_principal?.toStringAsFixed(0) ?? 0} FCFA',
+                      'Solde actuel : ${authProvider.loginUserData.votre_solde_principal?.toStringAsFixed(0) ?? 0} Afrcoins',
                       style: TextStyle(color: _colors.textSecondary, fontSize: 12),
                     ),
                   ),
@@ -1294,7 +1294,7 @@ class _DetailsPostState extends State<DetailsPost>
     if (!isAdmin && balance < price) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Solde insuffisant ($balance FCFA). Vous avez besoin de $price FCFA.'),
+        content: Text('Solde insuffisant ($balance Afrcoins). Vous avez besoin de $price Afrcoins.'),
         backgroundColor: _colors.danger,
       ));
       return;
@@ -2588,7 +2588,7 @@ class _DetailsPostState extends State<DetailsPost>
                 style: TextStyle(color: _colors.textPrimary)),
             content: Text(
               !_challenge!.voteGratuit!
-                  ? 'Êtes-vous sûr de vouloir voter pour ce look ?\n\nCe vote vous coûtera ${_challenge!.prixVote} FCFA.'
+                  ? 'Êtes-vous sûr de vouloir voter pour ce look ?\n\nCe vote vous coûtera ${_challenge!.prixVote} Afrcoins.'
                   : 'Voulez-vous vraiment voter pour ce look ?\n\nVotre vote est gratuit et ne peut être changé.',
               style: TextStyle(color: _colors.textSecondary),
             ),
@@ -3021,7 +3021,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         title:
             Text('SOLDE INSUFFISANT', style: TextStyle(color: _colors.accent)),
         content: Text(
-          'Il vous manque $montantManquant FCFA pour pouvoir voter.\n\n'
+          'Il vous manque $montantManquant Afrcoins pour pouvoir voter.\n\n'
           'Rechargez votre compte pour soutenir votre look préféré !',
           style: TextStyle(color: _colors.textSecondary),
         ),
@@ -3034,7 +3034,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             onPressed: () {
               Navigator.pop(context);
               Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => DepositScreen()));
+                  MaterialPageRoute(builder: (context) => const CoinRechargeScreen()));
             },
             style: ElevatedButton.styleFrom(backgroundColor: _colors.success),
             child: Text('RECHARGER MAINTENANT',
@@ -3067,7 +3067,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
               textAlign: TextAlign.center,
             ),
             content: Text(
-              'Ce vote vous coûtera ${_challenge!.prixVote} FCFA.\n\n'
+              'Ce vote vous coûtera ${_challenge!.prixVote} Afrcoins.\n\n'
               'Voulez-vous continuer ?',
               style: TextStyle(color: _colors.textPrimary),
               textAlign: TextAlign.center,
@@ -3086,7 +3086,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _colors.primary,
                 ),
-                child: Text('Voter ${_challenge!.prixVote} FCFA',
+                child: Text('Voter ${_challenge!.prixVote} Afrcoins',
                     style: TextStyle(color: _colors.onPrimary)),
               ),
             ],
@@ -3730,7 +3730,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           SnackBar(
             backgroundColor: _colors.success,
             content: Text(
-              '🎁 Cadeau de ${amount.toInt()} FCFA envoyé avec succès!',
+              '🎁 Cadeau de ${amount.toInt()} Afrcoins envoyé avec succès!',
               style: TextStyle(color: _colors.onPrimary),
             ),
           ),
@@ -3740,7 +3740,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           smallImage: "",
           send_user_id: "",
           recever_user_id: "${widget.post.user_id!}",
-          message: "🎁 Vous avez reçu un cadeau de ${amount.toInt()} FCFA !",
+          message: "🎁 Vous avez reçu un cadeau de ${amount.toInt()} Afrcoins !",
           type_notif: NotificationType.POST.name,
           post_id: "${widget.post!.id!}",
           post_type: PostDataType.IMAGE.name,
@@ -3833,7 +3833,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                     ),
                     SizedBox(height: 12),
                     Text(
-                      'Choisissez le montant en FCFA',
+                      'Choisissez le montant en Afrcoins',
                       style: TextStyle(color: _colors.textPrimary),
                     ),
                     SizedBox(height: 12),
@@ -3874,7 +3874,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                                   ),
                                   SizedBox(height: 5),
                                   Text(
-                                    '${giftPrices[index].toInt()} FCFA',
+                                    '${giftPrices[index].toInt()} Afrcoins',
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: _colors.textPrimary,
@@ -3891,7 +3891,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                     ),
                     SizedBox(height: 12),
                     Text(
-                      'Votre solde: ${authProvider.loginUserData.votre_solde_principal?.toInt() ?? 0} FCFA',
+                      'Votre solde: ${authProvider.loginUserData.votre_solde_principal?.toInt() ?? 0} Afrcoins',
                       style: TextStyle(
                         color: _colors.accent,
                         fontWeight: FontWeight.bold,
@@ -4029,7 +4029,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           SnackBar(
             backgroundColor: _colors.success,
             content: Text(
-              '🔝 Post republié pour $_selectedRepostPrice FCFA!',
+              '🔝 Post republié pour $_selectedRepostPrice Afrcoins!',
               style: TextStyle(color: _colors.onPrimary),
             ),
           ),
@@ -4083,7 +4083,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
               onPressed: () {
                 Navigator.pop(context);
                 Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => DepositScreen()));
+                    MaterialPageRoute(builder: (context) => const CoinRechargeScreen()));
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: _colors.success,
@@ -4114,7 +4114,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             ),
           ),
           content: Text(
-            'Republier ce post le mettra en avant dans le fil d\'actualité. Coût: 25 FCFA.',
+            'Republier ce post le mettra en avant dans le fil d\'actualité. Coût: 25 Afrcoins.',
             style: TextStyle(color: _colors.textPrimary),
           ),
           actions: [
@@ -4980,10 +4980,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(15),
-        child: DoubleTapLike(
-          alreadyLiked: _localIsLiked ?? (widget.post.users_love_id?.contains(authProvider.loginUserData.id) ?? false),
-          onDoubleTap: _handleLike,
-          child: Stack(
+        child: Stack(
           children: [
             // 🔥 CAROUSEL D'IMAGES
             PageView.builder(
@@ -5104,7 +5101,6 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
               ),
           ],
         ),
-        ), // DoubleTapLike
       ),
     );
   }
@@ -5577,7 +5573,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                               ),
                               if (!challenge.voteGratuit!)
                                 Text(
-                                  'Coût du vote: ${challenge.prixVote} FCFA',
+                                  'Coût du vote: ${challenge.prixVote} Afrcoins',
                                   style: TextStyle(
                                     color: _colors.accent,
                                     fontSize: 12,
@@ -5677,17 +5673,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                             ),
                           SizedBox(width: 12),
                           ElevatedButton(
-                            onPressed: () {
-                              if (challenge.id != null) {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ChallengeDetailPage(
-                                        challengeId: challenge.id!),
-                                  ),
-                                );
-                              }
-                            },
+                            onPressed: () => Navigator.of(context).pop(),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: _colors.info,
                               shape: RoundedRectangleBorder(
@@ -6669,11 +6655,34 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           icon: Icon(Icons.arrow_back, color: _colors.accent),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
-          _isLookChallenge ? 'Look Challenge' : 'Post',
-          style: TextStyle(
-              color: _colors.accent, fontWeight: FontWeight.bold, fontSize: 18),
-        ),
+        title: widget.post.type == PostType.DEFI.name
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0x33FF9500),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFFF9500).withOpacity(0.6)),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.emoji_events, color: Color(0xFFFF9500), size: 13),
+                        SizedBox(width: 4),
+                        Text('DÉFI', style: TextStyle(color: Color(0xFFFF9500), fontSize: 11, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text('Post', style: TextStyle(color: _colors.accent, fontWeight: FontWeight.bold, fontSize: 18)),
+                ],
+              )
+            : Text(
+                _isLookChallenge ? 'Look Challenge' : 'Post',
+                style: TextStyle(color: _colors.accent, fontWeight: FontWeight.bold, fontSize: 18),
+              ),
         actions: [
           Text(
             'Afrolook',
@@ -6749,6 +6758,18 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                       if (_isLookChallenge)
                         _buildLookChallengeSection(updatedPost),
 
+                      if (updatedPost.defiResponseToPostId != null)
+                        DefiResponseBanner(
+                          responsePost: updatedPost,
+                          currentUserId: authProvider.loginUserData.id ?? '',
+                          onTap: (defiPost) => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => DetailsPost(post: defiPost),
+                            ),
+                          ),
+                        ),
+
                       // Bouton d'abonnement si contenu verrouillé
                       if (isLocked) _buildSubscribeButton(),
 
@@ -6764,6 +6785,13 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                         compactLevel: CompactLevel.light,
                         maxDisplayItems: 10,
                       ),
+
+                      // ── Card info DÉFI — après les stats ──────────────
+                      if (updatedPost.type == PostType.DEFI.name)
+                        DefiDetailsSection(
+                          defiPost: updatedPost,
+                          currentUserId: authProvider.loginUserData.id ?? '',
+                        ),
 
                       // Section des cadeaux récents
                       // if (updatedPost.users_cadeau_id != null &&
@@ -6830,7 +6858,17 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                       //     ),
                       //   ),
 
-                      _buildSuggestedPosts(), // AJOUTER CETTE LIGNE
+                      // ── Participations DÉFI ou suggestions normales ─
+                      if (updatedPost.type == PostType.DEFI.name)
+                        DefiResponsesFeed(
+                          defiPostId: updatedPost.id!,
+                          currentUserId: authProvider.loginUserData.id ?? '',
+                          isDefiOver: (updatedPost.defiConfig?.isTermine ?? false) ||
+                              ((updatedPost.defiConfig?.endDate ?? 0) > 0 &&
+                                  DateTime.fromMillisecondsSinceEpoch(updatedPost.defiConfig!.endDate).isBefore(DateTime.now())),
+                        )
+                      else
+                        _buildSuggestedPosts(),
 
                       if (_showRewardedAd)
                         RewardedAdWidget(
@@ -6889,7 +6927,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             SizedBox(width: 8),
             Text(
               isPrivate
-                  ? 'S\'ABONNER - ${subscriptionPrice.toInt()} FCFA'
+                  ? 'S\'ABONNER - ${subscriptionPrice.toInt()} Afrcoins'
                   : 'SUIVRE LE CANAL',
               style: TextStyle(
                 fontSize: 14,

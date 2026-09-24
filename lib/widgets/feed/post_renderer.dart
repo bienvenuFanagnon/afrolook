@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../models/model_data.dart';
-import '../../pages/challenge/postChallengeWidget.dart';
 import '../../pages/userPosts/postWidgets/audioPostWidget.dart';
 import '../../pages/userPosts/postWidgets/postWidgetPage.dart';
 import '../../pages/userPosts/youTube_video_card.dart';
@@ -8,11 +7,10 @@ import '../../pages/userPosts/youTube_video_card.dart';
 /// Dispatch universel : reçoit un [Post] et rend le bon widget.
 ///
 /// Logique :
-///   CHALLENGEPARTICIPATION → LookChallengePostWidget
-///   POST + VIDEO            → YouTubeVideoCard
-///   POST + AUDIO            → AudioPostCard
-///   PRONOSTIC               → invisible
-///   tout le reste           → HomePostUsersWidget
+///   POST + VIDEO  → YouTubeVideoCard
+///   POST + AUDIO  → AudioPostCard
+///   PRONOSTIC     → invisible
+///   tout le reste → HomePostUsersWidget
 class PostRenderer extends StatelessWidget {
   final Post post;
   final int index;
@@ -37,15 +35,6 @@ class PostRenderer extends StatelessWidget {
     return LayoutBuilder(builder: (context, constraints) {
       // Largeur réelle du conteneur (tient compte du CenteredContent sur wide)
       final double w = constraints.maxWidth.isFinite ? constraints.maxWidth : size.width;
-
-      // Participation à un challenge
-      if (post.type == PostType.CHALLENGEPARTICIPATION.name) {
-        return LookChallengePostWidget(
-          post: post,
-          height: size.height,
-          width: w,
-        );
-      }
 
       // Post vidéo (YouTube / local)
       if (post.type == PostType.POST.name &&

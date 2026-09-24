@@ -609,7 +609,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Prix : ${price.toStringAsFixed(0)} FCFA / mois',
+              'Prix : ${price.toStringAsFixed(0)} Afrcoins / mois',
               style: const TextStyle(color: Color(0xFFFFD700), fontWeight: FontWeight.w700, fontSize: 15),
             ),
             const SizedBox(height: 4),
@@ -657,7 +657,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
         setState(() => _isPaymentProcessing = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Solde insuffisant. Manque ${(price - solde).toStringAsFixed(0)} FCFA'),
+            content: Text('Solde insuffisant. Manque ${(price - solde).toStringAsFixed(0)} Afrcoins'),
             backgroundColor: Colors.red,
           ),
         );

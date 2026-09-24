@@ -2,7 +2,6 @@ import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:async';
 import 'dart:math';
 import 'package:afrotok/pages/canaux/listCanal.dart';
-import 'package:afrotok/pages/challenge/postChallengeWidget.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/home/unitePostPage/chronique_section.dart';
 import 'package:flutter/material.dart';
@@ -1615,9 +1614,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
               child: _buildAvailabilityBadge(post),
             ),
 
-            post.type == PostType.CHALLENGEPARTICIPATION.name
-                ? LookChallengePostWidget(post: post, height: height, width: width)
-                : HomePostUsersWidget(
+            HomePostUsersWidget(
               key: ValueKey('hwp-${post.id}'),
               post: post,
               color: _getRandomColor(),

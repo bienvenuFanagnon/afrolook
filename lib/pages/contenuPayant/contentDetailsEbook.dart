@@ -307,7 +307,7 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
               SizedBox(height: 20),
               Text('Convaincu ? Débloquez l\'intégralité de cet ebook !', style: TextStyle(color: _colors.textPrimary, fontSize: 14, fontWeight: FontWeight.w500), textAlign: TextAlign.center),
               SizedBox(height: 8),
-              Text('💰 ${widget.content.price.toInt()} FCFA seulement', style: TextStyle(color: _colors.accent, fontSize: 20, fontWeight: FontWeight.bold)),
+              Text('💰 ${widget.content.price.toInt()} Afrcoins seulement', style: TextStyle(color: _colors.accent, fontSize: 20, fontWeight: FontWeight.bold)),
               SizedBox(height: 8),
               Text('Votre soutien permet aux auteurs de créer plus de contenu', style: TextStyle(color: _colors.textSecondary, fontSize: 11, fontStyle: FontStyle.italic), textAlign: TextAlign.center),
               SizedBox(height: 24),

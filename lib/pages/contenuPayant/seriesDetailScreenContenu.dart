@@ -214,7 +214,7 @@ class _SeriesDetailScreenState extends State<SeriesDetailScreen> {
             ),
             const SizedBox(height: 4),
             !episode.isFree
-                ? Text('${episode.price} FCFA',
+                ? Text('${episode.price} Afrcoins',
                     style: TextStyle(color: colors.accent, fontWeight: FontWeight.bold))
                 : Text('Gratuit',
                     style: TextStyle(color: colors.primary, fontWeight: FontWeight.bold)),

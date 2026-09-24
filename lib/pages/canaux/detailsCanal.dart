@@ -2,7 +2,7 @@
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'dart:math';
-import 'package:afrotok/pages/canaux/canalPostNew.dart';
+import 'package:afrotok/pages/userPosts/userPostForm.dart';
 
 import 'package:afrotok/pages/canaux/editCanal.dart';
 
@@ -30,6 +30,7 @@ import '../../l10n/app_localizations.dart';
 import '../component/showImage.dart';
 
 import '../paiement/newDepot.dart';
+import '../coins/coin_recharge_screen.dart';
 
 import '../userPosts/postWidgets/postWidgetPage.dart';
 
@@ -259,7 +260,7 @@ class _CanalDetailsState extends State<CanalDetails> {
               SizedBox(height: 8),
               if (isPrivate)
                 Text(
-                  '⚠️ Attention: Si vous vous désabonnez, vous devrez repayer l\'abonnement de ${subscriptionPrice}FCFA pour y accéder à nouveau.',
+                  '⚠️ Attention: Si vous vous désabonnez, vous devrez repayer l\'abonnement de ${subscriptionPrice} Afrcoins pour y accéder à nouveau.',
                   style: TextStyle(
                     color: colors.accent,
                     fontSize: 12,
@@ -654,14 +655,14 @@ class _CanalDetailsState extends State<CanalDetails> {
     if (_monthlySubscriptionExpired) {
       dialogTitle = 'Renouveler l\'abonnement';
       confirmationMessage = 'Votre abonnement mensuel a expiré.\n\n'
-          'Renouvelez pour ${subscriptionPrice.toStringAsFixed(0)} FCFA/mois et continuez à accéder à ce canal.';
+          'Renouvelez pour ${subscriptionPrice.toStringAsFixed(0)} Afrcoins/mois et continuez à accéder à ce canal.';
     } else if (isMensuel) {
       dialogTitle = 'Abonnement Mensuel';
-      confirmationMessage = 'Ce canal est privé — abonnement mensuel à ${subscriptionPrice.toStringAsFixed(0)} FCFA/mois.\n\n'
+      confirmationMessage = 'Ce canal est privé — abonnement mensuel à ${subscriptionPrice.toStringAsFixed(0)} Afrcoins/mois.\n\n'
           'L\'accès est valable 30 jours, puis renouvelable.';
     } else {
       dialogTitle = 'Abonnement Unique';
-      confirmationMessage = 'Ce canal est privé. L\'accès à vie coûte ${subscriptionPrice.toStringAsFixed(0)} FCFA.\n\n'
+      confirmationMessage = 'Ce canal est privé. L\'accès à vie coûte ${subscriptionPrice.toStringAsFixed(0)} Afrcoins.\n\n'
           'Confirmez-vous l\'abonnement ?';
     }
 
@@ -682,7 +683,7 @@ class _CanalDetailsState extends State<CanalDetails> {
               onPressed: () => Navigator.of(context).pop(true),
               style: ElevatedButton.styleFrom(backgroundColor: colors.primary),
               child: Text(
-                isMensuel ? 'S\'abonner — ${subscriptionPrice.toStringAsFixed(0)} FCFA/mois' : 'Confirmer',
+                isMensuel ? 'S\'abonner — ${subscriptionPrice.toStringAsFixed(0)} Afrcoins/mois' : 'Confirmer',
                 style: TextStyle(color: colors.onPrimary),
               ),
             ),
@@ -968,9 +969,9 @@ class _CanalDetailsState extends State<CanalDetails> {
                 const SizedBox(height: 12),
 
                 Text(
-                  'Votre solde actuel est de ${userBalance.toStringAsFixed(0)} FCFA.\n'
-                      'Il vous manque ${missingAmount.toStringAsFixed(0)} FCFA pour vous abonner '
-                      'à ce canal privé coûtant ${subscriptionPrice.toStringAsFixed(0)} FCFA.',
+                  'Votre solde actuel est de ${userBalance.toStringAsFixed(0)} Afrcoins.\n'
+                      'Il vous manque ${missingAmount.toStringAsFixed(0)} Afrcoins pour vous abonner '
+                      'à ce canal privé coûtant ${subscriptionPrice.toStringAsFixed(0)} Afrcoins.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: colors.textSecondary, height: 1.5, fontSize: 15),
                 ),
@@ -989,7 +990,7 @@ class _CanalDetailsState extends State<CanalDetails> {
                     ElevatedButton(
                       onPressed: () {
                         Navigator.of(context).pop();
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => DepositScreen(defaultAmount: missingAmount)));
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => const CoinRechargeScreen()));
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: colors.primary,
@@ -1197,7 +1198,7 @@ class _CanalDetailsState extends State<CanalDetails> {
                             _buildStatItem(
                               icon: Icons.attach_money,
                               value: '${widget.canal.subscriptionPrice?.toStringAsFixed(0) ?? '0'}',
-                              label: 'FCFA',
+                              label: 'Afrcoins',
                               color: _colors.accent,
                             ),
                           ],
@@ -1382,7 +1383,7 @@ class _CanalDetailsState extends State<CanalDetails> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => CanalPostForm(canal: widget.canal)),
+                      MaterialPageRoute(builder: (_) => UserPostForm(canal: widget.canal)),
                     );
                   },
                   style: ElevatedButton.styleFrom(

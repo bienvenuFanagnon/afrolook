@@ -240,28 +240,26 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         style: TextStyle(color: colors.textPrimary),
                         decoration: InputDecoration(
                           border: InputBorder.none,
-                          hintText: l10n.signupGenreLabel,
+                          hintText: '${l10n.signupGenreLabel} (optionnel)',
                           hintStyle: TextStyle(color: colors.textSecondary),
                           prefixIcon: Icon(Icons.person_outline, color: primaryGreen),
                         ),
-                        items: genres.map((genre) {
-                          final label = genre == 'Homme' ? l10n.signupGenreMale : l10n.signupGenreFemale;
-                          return DropdownMenuItem(
-                            value: genre,
-                            child: Text(label, style: TextStyle(color: colors.textPrimary)),
-                          );
-                        }).toList(),
+                        items: [
+                          DropdownMenuItem<String>(value: null, child: Text(l10n.signupGenreLabel, style: TextStyle(color: colors.textSecondary))),
+                          ...genres.map((genre) {
+                            final label = genre == 'Homme' ? l10n.signupGenreMale : l10n.signupGenreFemale;
+                            return DropdownMenuItem(
+                              value: genre,
+                              child: Text(label, style: TextStyle(color: colors.textPrimary)),
+                            );
+                          }),
+                        ],
                         onChanged: (String? newValue) {
                           setState(() {
                             selectedGenre = newValue;
                           });
                         },
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return l10n.signupGenreRequired;
-                          }
-                          return null;
-                        },
+                        validator: null,
                       ),
                     ),
                     SizedBox(height: 15),
@@ -588,16 +586,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
           dropdownColor: colors.surface,
           style: TextStyle(color: colors.textPrimary),
           decoration: InputDecoration(
-            border: InputBorder.none, hintText: l10n.signupGenreLabel,
+            border: InputBorder.none, hintText: '${l10n.signupGenreLabel} (optionnel)',
             hintStyle: TextStyle(color: colors.textSecondary),
             prefixIcon: const Icon(Icons.person_outline, color: primaryGreen),
           ),
-          items: genres.map((g) {
-            final label = g == 'Homme' ? l10n.signupGenreMale : l10n.signupGenreFemale;
-            return DropdownMenuItem(value: g, child: Text(label, style: TextStyle(color: colors.textPrimary)));
-          }).toList(),
+          items: [
+            DropdownMenuItem<String>(value: null, child: Text(l10n.signupGenreLabel, style: TextStyle(color: colors.textSecondary))),
+            ...genres.map((g) {
+              final label = g == 'Homme' ? l10n.signupGenreMale : l10n.signupGenreFemale;
+              return DropdownMenuItem(value: g, child: Text(label, style: TextStyle(color: colors.textPrimary)));
+            }),
+          ],
           onChanged: (v) => setState(() => selectedGenre = v),
-          validator: (v) => (v == null || v.isEmpty) ? l10n.signupGenreRequired : null,
+          validator: null,
         ),
       ),
       const SizedBox(height: 15),

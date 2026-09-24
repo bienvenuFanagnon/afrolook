@@ -4,7 +4,7 @@ import 'dart:async';
 
 import 'package:afrotok/models/model_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:afrotok/pages/contenuPayant/affiliation_marketplace_page.dart';
+
 import 'package:afrotok/pages/contenuPayant/content_detail_page.dart';
 import 'package:afrotok/pages/contenuPayant/contentForm.dart' show ContentFormScreen;
 import 'package:afrotok/pages/contenuPayant/my_purchases_page.dart';
@@ -317,16 +317,6 @@ class _DashboardContentScreenState extends State<DashboardContentScreen>
                 onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const MyPurchasesPage()),
-                ),
-              ),
-              // Affiliation
-              IconButton(
-                tooltip: 'Affiliation',
-                icon: const Icon(Icons.handshake_outlined, color: Color(0xFF25D366)),
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => const AffiliationMarketplacePage()),
                 ),
               ),
               if (isCreator || isAdmin)

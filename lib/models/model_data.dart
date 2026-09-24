@@ -431,7 +431,6 @@ class AppDefaultData {
 
   double? solde_principal = 0.0;
   double? solde_gain = 0.0;
-  double? solde_commission_crypto = 0.0;
 
   int? nbr_loves = 0;
 
@@ -471,7 +470,6 @@ class AppDefaultData {
     app_version_code_officiel = json['app_version_code_officiel'];
     solde_principal = (json['solde_principal'] as num?)?.toDouble() ?? 0.0;
     solde_gain = (json['solde_gain'] as num?)?.toDouble() ?? 0.0;
-    solde_commission_crypto = (json['solde_commission_crypto'] as num?)?.toDouble() ?? 0.0;
     app_version_code = json['app_version_code'];
     googleVerification = json['googleVerification'];
     nbr_loves = json['nbr_loves'];
@@ -528,7 +526,6 @@ class AppDefaultData {
       "ios_link": ios_link,
       "solde_principal": solde_principal,
       "solde_gain": solde_gain,
-      "solde_commission_crypto": solde_commission_crypto,
       "nbr_loves": nbr_loves,
       "default_point_new_user": default_point_new_user,
       "default_point_new_like": default_point_new_like,
@@ -1605,6 +1602,21 @@ class Post {
   List<String>? postInterests;      // Centres d'intérêt du post (hashtags + typeTabbar)
   List<String>? hashtags;           // Hashtags extraits de la description (sans #)
 
+  // ── DÉFI ─────────────────────────────────────────────────────────────────────
+  // Présent sur un post DEFI : configuration du défi
+  Map<String, dynamic>? defiConfigMap;
+  DefiConfig? get defiConfig => defiConfigMap != null ? DefiConfig.fromJson(defiConfigMap!) : null;
+
+  // Présent sur un post-réponse à un DÉFI
+  String? defiResponseToPostId; // ID du post DEFI auquel ce post répond
+
+  // Votes reçus pour ce post-réponse
+  int? defiVotes = 0;
+  List<String>? defiVoterIds = [];
+
+  // Présent sur un post DEFI : utilisateurs ayant déjà participé (écrit par la Cloud Function)
+  List<String>? defiParticipantIds = [];
+
   // Snapshot du créateur/canal stocké à la création du post pour éviter les fetches profil
   Map<String, dynamic>? creatorSnapshot;
   Map<String, dynamic>? canalSnapshot;
@@ -1734,10 +1746,19 @@ class Post {
     nombreImage = json['nombreImage'];
     nombrePersonneParJour = json['nombrePersonneParJour'];
 
-    // Champs challenge
+    // Champs challenge (ancien système)
     votesChallenge = json['votes_challenge'] ?? 0;
     adSupportCount = json['adSupportCount'] ?? 0;
     usersVotesIds = json['users_votes_ids'] == null ? [] : List<String>.from(json['users_votes_ids']);
+
+    // Champs DÉFI
+    defiResponseToPostId = json['defi_response_to_post_id'];
+    defiVotes = json['defi_votes'] ?? 0;
+    defiVoterIds = json['defi_voter_ids'] == null ? [] : List<String>.from(json['defi_voter_ids']);
+    defiParticipantIds = json['defi_participant_ids'] == null ? [] : List<String>.from(json['defi_participant_ids']);
+    if (json['defi_config'] != null) {
+      defiConfigMap = Map<String, dynamic>.from(json['defi_config']);
+    }
 
     seenByUsersCount = json['seen_by_users_count'] ?? 0;
     eventDate= json['eventDate'] as int?;
@@ -1886,9 +1907,16 @@ class Post {
     data['comments'] = comments;
     data['thumbnail'] = thumbnail;
     data['challengeMonth'] = challengeMonth;
-    // Champs challenge
+    // Champs challenge (ancien système)
     data['votes_challenge'] = votesChallenge;
     data['users_votes_ids'] = usersVotesIds;
+
+    // Champs DÉFI
+    // defi_votes, defi_voter_ids et defi_participant_ids sont écrits uniquement par la Cloud
+    // Function : les exclure évite qu'un update(post.toJson()) avec une copie locale périmée
+    // (like, vue…) écrase les votes, et les règles Firestore refusent de les modifier côté client.
+    if (defiResponseToPostId != null) data['defi_response_to_post_id'] = defiResponseToPostId;
+    if (defiConfigMap != null) data['defi_config'] = defiConfigMap;
 
     data['seen_by_users_count'] = seenByUsersCount;
     data['seen_by_users_map'] = seenByUsersMap ?? {};
@@ -2555,7 +2583,54 @@ class ArticleData {
   }
 }
 
-// challenge_model.dart
+// ── DefiConfig ───────────────────────────────────────────────────────────────
+class DefiConfig {
+  final int cagnottePieces;     // Mise initiale du créateur (débitée à la création)
+  final int participationFee;   // 0 = gratuit
+  final int voteFee;            // 0 = gratuit, sinon ≥ 5 Afrcoins
+  final int winnersCount;       // Nombre de gagnants (1-3)
+  final List<int> rewardSplit;  // Répartition en % [70, 20, 10] par ex.
+  final int endDate;            // Timestamp ms de fin du défi
+  final String status;          // 'en_cours' | 'termine'
+
+  const DefiConfig({
+    required this.cagnottePieces,
+    this.participationFee = 0,
+    this.voteFee = 0,
+    this.winnersCount = 1,
+    this.rewardSplit = const [100],
+    required this.endDate,
+    this.status = 'en_cours',
+  });
+
+  factory DefiConfig.fromJson(Map<String, dynamic> json) => DefiConfig(
+        cagnottePieces: (json['cagnotte_pieces'] as num?)?.toInt() ?? 0,
+        participationFee: (json['participation_fee'] as num?)?.toInt() ?? 0,
+        voteFee: (json['vote_fee'] as num?)?.toInt() ?? 0,
+        winnersCount: (json['winners_count'] as num?)?.toInt() ?? 1,
+        rewardSplit: json['reward_split'] != null
+            ? List<int>.from(json['reward_split'])
+            : const [100],
+        endDate: (json['end_date'] as num?)?.toInt() ?? 0,
+        status: json['status'] as String? ?? 'en_cours',
+      );
+
+  Map<String, dynamic> toJson() => {
+        'cagnotte_pieces': cagnottePieces,
+        'participation_fee': participationFee,
+        'vote_fee': voteFee,
+        'winners_count': winnersCount,
+        'reward_split': rewardSplit,
+        'end_date': endDate,
+        'status': status,
+      };
+
+  bool get isPayantParticipation => participationFee > 0;
+  bool get isPayantVote => voteFee > 0;
+  bool get isTermine => status == 'termine';
+}
+
+// challenge_model.dart (ancien système — conservé pour rétrocompatibilité)
 class Challenge {
   String? id;
   String? user_id;
@@ -5239,7 +5314,7 @@ enum UserState { ONLINE, OFFLINE }
 
 enum MessageState { LU, NONLU }
 
-enum PostType { POST, PUB,ARTICLE,CHALLENGE,CHALLENGEPARTICIPATION,SERVICE,PRONOSTIC }
+enum PostType { POST, PUB, ARTICLE, CHALLENGE, CHALLENGEPARTICIPATION, SERVICE, PRONOSTIC, DEFI }
 
 enum PostDataType { IMAGE, VIDEO, TEXT, COMMENT, EBOOK, AUDIO }
 

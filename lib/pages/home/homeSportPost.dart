@@ -8,7 +8,6 @@ import 'dart:async';
 import 'dart:math';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
-import 'package:afrotok/pages/challenge/postChallengeWidget.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/home/unitePostPage/chronique_section.dart';
 import 'package:flutter/material.dart';
@@ -66,7 +65,7 @@ import 'HomeConstPost.dart' show flushSeenPostsAndCleanMemory;
 import '../../widgets/feed/weekly_top_creators_widget.dart';
 import '../../widgets/feed/sections/weekly_top_commentators_widget.dart';
 import '../../widgets/feed/sections/weekly_top_posts_section_widget.dart';
-import '../../widgets/feed/sections/affiliation_feed_widget.dart';
+
 import '../../widgets/feed/sections/feed_recommended_profiles_widget.dart';
 
 import '../dating/widgets/top_dating_profiles_widget.dart';
@@ -2942,11 +2941,6 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       final pid = post.id ?? '';
       if (_t2FillPostIds.isNotEmpty && _t2FillPostIds.contains(pid)) {
         _t2FillShown++;
-      }
-
-      // Post 6 : widget Affiliation (1×/jour — géré en interne par le widget)
-      if (i == 5) {
-        contentWidgets.add(const AffiliationFeedWidget());
       }
 
       // Post 10 : Lives si chroniques présentes

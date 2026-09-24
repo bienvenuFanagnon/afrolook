@@ -2,7 +2,6 @@
 
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
-import 'package:afrotok/models/tiktokModel.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/postDetails.dart';
 import 'package:afrotok/pages/postDetailsVideo.dart';
@@ -14,12 +13,10 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/providers/authProvider.dart';
-import 'package:afrotok/pages/user/profile/profileDetail/widget/numbers_widget.dart';
 import 'package:afrotok/theme/app_colors.dart';
 import 'package:afrotok/l10n/app_localizations.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
-import '../../../providers/userProvider.dart';
 import '../../../services/linkService.dart';
 import '../../../services/chat_service.dart';
 import '../../home/user_presence_widget.dart';
@@ -27,7 +24,6 @@ import '../../widgetGlobal.dart';
 import '../../../widgets/interests_selector_widget.dart';
 import '../userPubs/user_profile_boost_page.dart';
 import '../user_following_page.dart';
-import '../../suspension_screen.dart';
 import '../../chat/myChat.dart';
 import 'package:page_transition/page_transition.dart';
 
@@ -649,265 +645,269 @@ class _OtherUserPageState extends State<OtherUserPage> {
     );
   }
 
-  Widget _buildCreatorScoreBadge(double score, dynamic colors) {
-    final String tierLabel;
-    final Color color;
-    if (score >= 80) {
-      tierLabel = 'Élite';
-      color = const Color(0xFF22C55E);
-    } else if (score >= 50) {
-      tierLabel = 'Expert';
-      color = const Color(0xFF3B82F6);
-    } else if (score >= 25) {
-      tierLabel = 'Avancé';
-      color = const Color(0xFFF97316);
-    } else if (score >= 10) {
-      tierLabel = 'Standard';
-      color = const Color(0xFFF59E0B);
-    } else {
-      tierLabel = 'Débutant';
-      color = colors.textSecondary as Color;
-    }
+  // ── Menu ⋮ ────────────────────────────────────────────────────────────────
+
+  Widget _buildMoreMenu() {
+    final colors = AppColors.of(context);
+    final isOwnProfile = authProvider.loginUserData.id == widget.otherUser.id;
+    final isAdmin = authProvider.loginUserData.role == 'ADM';
+    final isSuspended = widget.otherUser.suspendedPermanently == true ||
+        (widget.otherUser.suspendedUntil != null &&
+            DateTime.now().millisecondsSinceEpoch < widget.otherUser.suspendedUntil!);
+    final t = AppLocalizations.of(context);
+
+    return PopupMenuButton<String>(
+      icon: Icon(Icons.more_vert_rounded, color: colors.textPrimary),
+      color: colors.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      onSelected: (value) async {
+        switch (value) {
+          case 'unfollow': _toggleAbonnement(); break;
+          case 'share':    _shareProfile(); break;
+          case 'report':   _reportUser(); break;
+          case 'chat':     _openDirectChat(); break;
+          case 'email':    _showConfirmReminderDialog(); break;
+          case 'suspend':  isSuspended ? _showLiftSuspensionDialog() : _showSuspendDialog(); break;
+          case 'boost':
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const UserProfileBoostPage()));
+            break;
+        }
+      },
+      itemBuilder: (ctx) => [
+        if (!isOwnProfile) ...[
+          if (_isAbonne)
+            PopupMenuItem(value: 'unfollow', child: _menuItem(Icons.person_remove_outlined, 'Se désabonner', colors)),
+          PopupMenuItem(value: 'share',  child: _menuItem(Icons.share_outlined,       'Partager le profil',       colors)),
+          PopupMenuItem(value: 'report', child: _menuItem(Icons.flag_outlined,         'Signaler ce profil',       colors, danger: true)),
+        ],
+        if (isAdmin) ...[
+          const PopupMenuDivider(),
+          PopupMenuItem(value: 'chat',    child: _menuItem(Icons.chat_bubble_outline,  'Message direct (admin)',   colors)),
+          PopupMenuItem(value: 'email',   child: _menuItem(Icons.email_outlined,       t.otherUserSendReminder,    colors)),
+          PopupMenuItem(value: 'suspend', child: _menuItem(
+            isSuspended ? Icons.lock_open_rounded : Icons.block_rounded,
+            isSuspended ? 'Lever la suspension' : 'Suspendre ce compte',
+            colors, danger: !isSuspended,
+          )),
+        ],
+        if (isOwnProfile)
+          PopupMenuItem(value: 'boost',  child: _menuItem(Icons.rocket_launch_outlined, 'Booster mon profil',     colors)),
+      ],
+    );
+  }
+
+  Widget _menuItem(IconData icon, String label, dynamic colors, {bool danger = false}) {
+    final color = danger ? colors.danger as Color : colors.textPrimary as Color;
+    return Row(children: [
+      Icon(icon, size: 18, color: color),
+      const SizedBox(width: 12),
+      Text(label, style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.w500)),
+    ]);
+  }
+
+  // ── Stats compactes ───────────────────────────────────────────────────────
+
+  Widget _buildStatsRow() {
+    final colors = AppColors.of(context);
+    final followers = widget.otherUser.userAbonnesIds?.length ?? 0;
+    final likes = widget.otherUser.userlikes ?? 0;
+    final score = widget.otherUser.creatorScore ?? 0.0;
+
+    return Row(
+      children: [
+        _statTile(colors, _formatNumber(followers), 'Abonnés', Icons.people_outline),
+        _statDivider(colors),
+        _statTile(colors, _formatNumber(likes), 'Likes reçus', Icons.favorite_outline),
+        if (score > 0) ...[
+          _statDivider(colors),
+          _statTile(colors, score.toStringAsFixed(0), 'Score créateur', Icons.star_outline_rounded),
+        ],
+      ],
+    );
+  }
+
+  Widget _statTile(dynamic colors, String value, String label, IconData icon) {
+    return Expanded(
+      child: Column(
+        children: [
+          Icon(icon, size: 18, color: colors.textSecondary),
+          const SizedBox(height: 4),
+          Text(value, style: TextStyle(color: colors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(label, style: TextStyle(color: colors.textSecondary, fontSize: 11)),
+        ],
+      ),
+    );
+  }
+
+  Widget _statDivider(dynamic colors) => Container(width: 1, height: 36, color: colors.border);
+
+  Widget _chip(dynamic colors, IconData icon, String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: colors.surfaceVariant,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.4)),
+        border: Border.all(color: colors.border),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(Icons.trending_up_rounded, size: 13, color: color),
+        Icon(icon, size: 14, color: colors.textSecondary),
         const SizedBox(width: 5),
-        Text(
-          'Créateur $tierLabel',
-          style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700),
-        ),
+        Text(label, style: TextStyle(color: colors.textPrimary, fontSize: 12, fontWeight: FontWeight.w500)),
       ]),
     );
   }
 
   Widget _buildFollowButton() {
     final isOwnProfile = authProvider.loginUserData.id == widget.otherUser.id;
-    if (isOwnProfile) return const SizedBox();
-    final isAdmin = authProvider.loginUserData.role == 'ADM';
-    final colors = AppColors.of(context);
-    final t = AppLocalizations.of(context);
+    // Bouton S'abonner visible uniquement si pas encore abonné (et pas son propre profil).
+    // "Se désabonner" passe par le menu ⋮.
+    if (isOwnProfile || _isAbonne) return const SizedBox();
 
-    Widget followBtn;
-    if (_isAbonne) {
-      // Se désabonner — discret, outlined
-      followBtn = OutlinedButton(
-        style: OutlinedButton.styleFrom(
-          side: BorderSide(color: colors.textSecondary.withValues(alpha: 0.4), width: 1),
-          foregroundColor: colors.textSecondary,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-        onPressed: _abonneTap ? null : _toggleAbonnement,
-        child: _abonneTap
-            ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: colors.textSecondary, strokeWidth: 2))
-            : Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                Icon(Icons.check_circle_outline, size: 18, color: colors.textSecondary),
-                const SizedBox(width: 6),
-                Text(t.otherUserUnsubscribe,
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: colors.textSecondary)),
-              ]),
-      );
-    } else {
-      // S'abonner — gradient attractif + animation pulse légère
-      final btn = GestureDetector(
-        onTap: _abonneTap ? null : _toggleAbonnement,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFFE21221), Color(0xFFFF5E62)],
-              begin: Alignment.centerLeft, end: Alignment.centerRight,
-            ),
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [BoxShadow(color: const Color(0xFFE21221).withValues(alpha: 0.35), blurRadius: 12, offset: const Offset(0, 4))],
-          ),
-          child: _abonneTap
-              ? const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)))
-              : Row(mainAxisAlignment: MainAxisAlignment.center, children: const [
-                  Icon(Icons.person_add, size: 20, color: Colors.white),
-                  SizedBox(width: 8),
-                  Text("S'ABONNER", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-                ]),
-        ),
-      );
-      followBtn = btn
-          .animate(onPlay: (c) => c.repeat(reverse: true))
-          .scale(begin: const Offset(1.0, 1.0), end: const Offset(1.02, 1.02), duration: 900.ms, curve: Curves.easeInOut);
-    }
-
-    final isSuspended = widget.otherUser.suspendedPermanently == true ||
-        (widget.otherUser.suspendedUntil != null &&
-            DateTime.now().millisecondsSinceEpoch < widget.otherUser.suspendedUntil!);
-
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(flex: isAdmin ? 2 : 1, child: followBtn),
-            if (isAdmin) ...[
-              const SizedBox(width: 8),
-              // Message direct admin
-              Container(
-                decoration: BoxDecoration(
-                  color: colors.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: colors.primary, width: 1),
-                ),
-                child: IconButton(
-                  icon: _isOpeningChat
-                      ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: colors.primary, strokeWidth: 2))
-                      : Icon(Icons.chat_bubble_outline, color: colors.primary, size: 22),
-                  onPressed: _isOpeningChat ? null : _openDirectChat,
-                  tooltip: 'Message direct',
-                ),
-              ),
-              const SizedBox(width: 8),
-              // Email rappel
-              Container(
-                decoration: BoxDecoration(
-                  color: colors.warning.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: colors.warning, width: 1),
-                ),
-                child: IconButton(
-                  icon: _isSendingReminder
-                      ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: colors.warning, strokeWidth: 2))
-                      : Icon(Icons.email, color: colors.warning, size: 22),
-                  onPressed: _isSendingReminder ? null : _showConfirmReminderDialog,
-                  tooltip: t.otherUserSendReminder,
-                ),
-              ),
-            ],
-          ],
-        ),
-        if (isAdmin) ...[
-          const SizedBox(height: 8),
-          // Bouton suspension
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: isSuspended ? Colors.green : Colors.red,
-                side: BorderSide(color: isSuspended ? Colors.green : Colors.red),
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              onPressed: isSuspended ? _showLiftSuspensionDialog : _showSuspendDialog,
-              icon: Icon(isSuspended ? Icons.lock_open : Icons.block, size: 16),
-              label: Text(
-                isSuspended ? 'Lever la suspension' : 'Suspendre ce compte',
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildShareButton() {
-    final colors = AppColors.of(context);
-    return GestureDetector(
-      onTap: _isSharing ? null : _shareProfile,
+    final btn = GestureDetector(
+      onTap: _abonneTap ? null : _toggleAbonnement,
       child: Container(
-        padding: const EdgeInsets.all(12),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: _isSharing ? colors.surfaceVariant : colors.primary,
-          borderRadius: BorderRadius.circular(30),
+          gradient: const LinearGradient(
+            colors: [Color(0xFFE21221), Color(0xFFFF5E62)],
+            begin: Alignment.centerLeft, end: Alignment.centerRight,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [BoxShadow(color: const Color(0xFFE21221).withValues(alpha: 0.35), blurRadius: 12, offset: const Offset(0, 4))],
         ),
-        child: _isSharing
-            ? SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                    color: colors.onPrimary, strokeWidth: 2),
-              )
-            : Icon(Icons.share, color: colors.onPrimary, size: 24),
+        child: _abonneTap
+            ? const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)))
+            : const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Icon(Icons.person_add, size: 20, color: Colors.white),
+                SizedBox(width: 8),
+                Text("S'ABONNER", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+              ]),
       ),
     );
-  }
-  Widget _buildReferralCodeCompact() {
-    final colors = AppColors.of(context);
-    final t = AppLocalizations.of(context);
-    return Container(
+
+    return SizedBox(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: colors.accent.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.accent),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
+      child: btn
+          .animate(onPlay: (c) => c.repeat(reverse: true))
+          .scale(begin: const Offset(1.0, 1.0), end: const Offset(1.02, 1.02), duration: 900.ms, curve: Curves.easeInOut),
+    );
+  }
+
+  Future<void> _reportUser() async {
+    final colors = AppColors.of(context);
+    final reasonCtrl = TextEditingController();
+    final reasons = [
+      'Contenu inapproprié ou offensant',
+      'Faux profil / usurpation d\'identité',
+      'Spam ou arnaque',
+      'Harcèlement ou comportement abusif',
+      'Autre',
+    ];
+    String selectedReason = reasons.first;
+
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) => Container(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom + 20, top: 20, left: 20, right: 20),
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                t.otherUserReferralCode,
-                style: TextStyle(color: colors.textSecondary, fontSize: 12),
+              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: colors.border, borderRadius: BorderRadius.circular(2)))),
+              const SizedBox(height: 16),
+              Row(children: [
+                Icon(Icons.flag_rounded, color: colors.danger, size: 22),
+                const SizedBox(width: 8),
+                Text('Signaler @${widget.otherUser.pseudo}', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
+              ]),
+              const SizedBox(height: 16),
+              ...reasons.map((r) => RadioListTile<String>(
+                value: r,
+                groupValue: selectedReason,
+                title: Text(r, style: TextStyle(color: colors.textPrimary, fontSize: 14)),
+                activeColor: colors.danger,
+                onChanged: (v) => setSheet(() => selectedReason = v ?? r),
+              )),
+              if (selectedReason == 'Autre') ...[
+                const SizedBox(height: 8),
+                TextField(
+                  controller: reasonCtrl,
+                  style: TextStyle(color: colors.textPrimary),
+                  decoration: InputDecoration(
+                    hintText: 'Précisez...',
+                    hintStyle: TextStyle(color: colors.textSecondary),
+                    filled: true,
+                    fillColor: colors.surfaceVariant,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colors.danger,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
+                  ),
+                  child: const Text('Envoyer le signalement', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                "${widget.otherUser.codeParrainage}",
-                style: TextStyle(
-                  color: colors.supportAccent,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: Text('Annuler', style: TextStyle(color: colors.textSecondary)),
                 ),
               ),
             ],
           ),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: colors.info.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.group, color: colors.info, size: 14),
-                    const SizedBox(width: 4),
-                    Text(
-                      "${widget.otherUser.usersParrainer?.length ?? 0}",
-                      style: TextStyle(
-                        color: colors.info,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: () {
-                  Clipboard.setData(ClipboardData(
-                      text: "${widget.otherUser.codeParrainage}"));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(t.otherUserCodeCopied),
-                      backgroundColor: colors.primary,
-                    ),
-                  );
-                },
-                child: Icon(Icons.copy, color: colors.supportAccent, size: 20),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final reason = selectedReason == 'Autre' && reasonCtrl.text.trim().isNotEmpty
+          ? reasonCtrl.text.trim()
+          : selectedReason;
+      await _firestore.collection('UserReports').add({
+        'reportedUserId': widget.otherUser.id,
+        'reportedPseudo': widget.otherUser.pseudo,
+        'reporterUserId': authProvider.loginUserData.id,
+        'reason': reason,
+        'createdAt': DateTime.now().millisecondsSinceEpoch,
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: const Text('Signalement envoyé. Merci.'),
+          backgroundColor: AppColors.of(context).success,
+        ));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Erreur lors du signalement.'),
+          backgroundColor: Colors.red,
+        ));
+      }
+    }
   }
+
   Future<void> _loadInitialPosts() async {
     try {
       setState(() => _loading = true);
@@ -1312,8 +1312,11 @@ class _OtherUserPageState extends State<OtherUserPage> {
           controller: _scrollController,
           slivers: [
             SliverAppBar(
-              expandedHeight: 300,
+              expandedHeight: 260,
+              pinned: true,
               backgroundColor: colors.background,
+              surfaceTintColor: colors.background,
+              actions: [_buildMoreMenu()],
               flexibleSpace: FlexibleSpaceBar(
                 background: Container(
                   decoration: BoxDecoration(
@@ -1321,7 +1324,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        colors.primary.withOpacity(0.3),
+                        colors.primary.withOpacity(0.18),
                         colors.background,
                       ],
                     ),
@@ -1329,63 +1332,41 @@ class _OtherUserPageState extends State<OtherUserPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: colors.primary, width: 3),
-                        ),
-                        child: ClipOval(
-                          child: GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => FullScreenImageViewer(
-                                    imageUrl: widget.otherUser.imageUrl ?? '',
-                                  ),
-                                ),
-                              );
-                            },
-                            child: CachedNetworkImage(
-                              imageUrl: widget.otherUser.imageUrl ?? '',
-                              fit: BoxFit.cover,
-                              placeholder: (context, url) => Container(
-                                color: colors.surfaceVariant,
-                                child: Icon(Icons.person, color: colors.textSecondary),
-                              ),
-                              errorWidget: (context, url, error) => Container(
-                                color: colors.surfaceVariant,
-                                child: Icon(Icons.person, color: colors.textSecondary),
-                              ),
-                            ),
+                      GestureDetector(
+                        onTap: () => Navigator.push(context, MaterialPageRoute(
+                          builder: (_) => FullScreenImageViewer(imageUrl: widget.otherUser.imageUrl ?? ''),
+                        )),
+                        child: Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: colors.primary, width: 3),
+                            boxShadow: [BoxShadow(color: colors.primary.withOpacity(0.2), blurRadius: 12, offset: const Offset(0, 4))],
                           ),
+                          child: ClipOval(child: CachedNetworkImage(
+                            imageUrl: widget.otherUser.imageUrl ?? '',
+                            fit: BoxFit.cover,
+                            placeholder: (_, __) => Container(color: colors.surfaceVariant, child: Icon(Icons.person, color: colors.textSecondary)),
+                            errorWidget: (_, __, ___) => Container(color: colors.surfaceVariant, child: Icon(Icons.person, color: colors.textSecondary)),
+                          )),
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 10),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
                             "@${widget.otherUser.pseudo ?? ''}",
-                            style: TextStyle(
-                              color: colors.textPrimary,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: TextStyle(color: colors.textPrimary, fontSize: 22, fontWeight: FontWeight.bold),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 6),
                           _buildVerificationBadge(),
                         ],
                       ),
                       const SizedBox(height: 4),
-                      UserPresenceWidget(
-                        userId: widget.otherUser.id!,
-                        showTextStatus: true,
-                        isChatHeader: false,
-                      ),
-                      const SizedBox(height: 4),
+                      UserPresenceWidget(userId: widget.otherUser.id!, showTextStatus: true, isChatHeader: false),
+                      const SizedBox(height: 16),
                     ],
                   ),
                 ),
@@ -1439,151 +1420,54 @@ class _OtherUserPageState extends State<OtherUserPage> {
 
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    NumbersWidget(
-                      followers: widget.otherUser.userAbonnesIds?.length ?? 0,
-                      taux: widget.otherUser.popularite ?? 0,
-                      creatorScore: widget.otherUser.creatorScore ?? 0,
-                    ),
-                    const SizedBox(height: 10),
-                    // Abonnements : créateurs + canaux suivis
-                    if (_followingCount > 0 || _canalCount > 0)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          if (_followingCount > 0)
-                            GestureDetector(
-                              onTap: () => Navigator.push(context, MaterialPageRoute(
-                                builder: (_) => UserFollowingPage(
-                                  userId: widget.otherUser.id!,
-                                  displayName: widget.otherUser.pseudo,
-                                  initialTab: 0,
-                                ),
-                              )),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: colors.surfaceVariant,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: colors.primary.withOpacity(0.3)),
-                                ),
-                                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                                  Icon(Icons.person_outline, size: 14, color: colors.primary),
-                                  const SizedBox(width: 4),
-                                  Text('$_followingCount créateur${_followingCount > 1 ? 's' : ''} suivi${_followingCount > 1 ? 's' : ''}',
-                                      style: TextStyle(color: colors.textPrimary, fontSize: 12, fontWeight: FontWeight.w600)),
-                                ]),
-                              ),
-                            ),
-                          if (_followingCount > 0 && _canalCount > 0) const SizedBox(width: 8),
-                          if (_canalCount > 0)
-                            GestureDetector(
-                              onTap: () => Navigator.push(context, MaterialPageRoute(
-                                builder: (_) => UserFollowingPage(
-                                  userId: widget.otherUser.id!,
-                                  displayName: widget.otherUser.pseudo,
-                                  initialTab: 1,
-                                ),
-                              )),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: colors.surfaceVariant,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: colors.primary.withOpacity(0.3)),
-                                ),
-                                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                                  Icon(Icons.campaign_outlined, size: 14, color: colors.primary),
-                                  const SizedBox(width: 4),
-                                  Text('$_canalCount canal${_canalCount > 1 ? 'aux' : ''} suivi${_canalCount > 1 ? 's' : ''}',
-                                      style: TextStyle(color: colors.textPrimary, fontSize: 12, fontWeight: FontWeight.w600)),
-                                ]),
-                              ),
-                            ),
-                        ],
-                      ),
-                    if ((widget.otherUser.creatorScore ?? 0) > 0) ...[
-                      const SizedBox(height: 8),
-                      _buildCreatorScoreBadge(widget.otherUser.creatorScore ?? 0, colors),
+                    // ── Stats ──────────────────────────────────────────────
+                    _buildStatsRow(),
+                    const SizedBox(height: 16),
+
+                    // ── Abonnements créateurs / canaux ─────────────────────
+                    if (_followingCount > 0 || _canalCount > 0) ...[
+                      Wrap(spacing: 8, runSpacing: 6, children: [
+                        if (_followingCount > 0)
+                          GestureDetector(
+                            onTap: () => Navigator.push(context, MaterialPageRoute(
+                              builder: (_) => UserFollowingPage(userId: widget.otherUser.id!, displayName: widget.otherUser.pseudo, initialTab: 0),
+                            )),
+                            child: _chip(colors, Icons.person_outline, '$_followingCount créateur${_followingCount > 1 ? 's' : ''} suivi${_followingCount > 1 ? 's' : ''}'),
+                          ),
+                        if (_canalCount > 0)
+                          GestureDetector(
+                            onTap: () => Navigator.push(context, MaterialPageRoute(
+                              builder: (_) => UserFollowingPage(userId: widget.otherUser.id!, displayName: widget.otherUser.pseudo, initialTab: 1),
+                            )),
+                            child: _chip(colors, Icons.campaign_outlined, '$_canalCount canal${_canalCount > 1 ? 'aux' : ''} suivi${_canalCount > 1 ? 's' : ''}'),
+                          ),
+                      ]),
+                      const SizedBox(height: 16),
                     ],
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          flex: 4,
-                          child: _buildFollowButton(),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          flex: 1,
-                          child: _buildShareButton(),
-                        ),
-                      ],
-                    ),
-                    if (authProvider.loginUserData.id == widget.otherUser.id) ...[
+
+                    // ── Bouton follow / unfollow ────────────────────────────
+                    _buildFollowButton(),
+                    const SizedBox(height: 20),
+
+                    // ── À propos ───────────────────────────────────────────
+                    if ((widget.otherUser.apropos ?? '').trim().isNotEmpty) ...[
+                      _buildAboutSection(),
                       const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const UserProfileBoostPage(),
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.rocket_launch_outlined, color: Colors.black),
-                          label: const Text(
-                            'Booster mon profil',
-                            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFFD700),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
-                      ),
                     ],
-                    const SizedBox(height: 16),
-                    _buildReferralCodeCompact(),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: colors.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: colors.primary),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.favorite, color: colors.danger, size: 20),
-                          const SizedBox(width: 8),
-                          Text(
-                            "${_formatNumber(widget.otherUser.userlikes ?? 0)} ${t.otherUserLikesReceived}",
-                            style: TextStyle(
-                              color: colors.primary,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildAboutSection(),
+
+                    // ── Intérêts ───────────────────────────────────────────
                     if ((widget.otherUser.interests ?? []).isNotEmpty) ...[
-                      const SizedBox(height: 12),
                       _buildInterestsSection(),
+                      const SizedBox(height: 12),
                     ],
-                    const SizedBox(height: 16),
+
+                    // ── Filtres / tabs posts ───────────────────────────────
                     _buildFilterSection(),
+                    const SizedBox(height: 4),
                   ],
                 ),
               ),
@@ -1689,82 +1573,6 @@ class _OtherUserPageState extends State<OtherUserPage> {
     );
   }
 
-  Widget _buildReferralCode() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      mainAxisAlignment: MainAxisAlignment.center,
-      spacing: 5,
-      children: [
-        Row(
-          spacing: 5,
-          children: [
-            Text(
-              "Code de parrainage: ",
-              style: TextStyle(
-                color: Colors.grey[400],
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.yellow.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.yellow),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    "${widget.otherUser.codeParrainage}",
-                    style: TextStyle(
-                      color: Colors.yellow,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: () {
-                      Clipboard.setData(ClipboardData(
-                          text: "${widget.otherUser.codeParrainage}"));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Code de parrainage copié !'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    },
-                    child: Icon(Icons.copy, color: Colors.yellow, size: 16),
-                  ),
-                ],
-              ),
-            ),
-
-          ],
-        ),
-
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.group, color: Colors.blue, size: 16),
-            SizedBox(width: 4),
-            Text(
-              "${widget.otherUser.usersParrainer?.length ?? 0} parrainages",
-              style: TextStyle(
-                color: Colors.blue,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        )
-
-      ],
-    );
-  }
-
   Widget _buildAboutSection() {
     final colors = AppColors.of(context);
     final t = AppLocalizations.of(context);
@@ -1774,7 +1582,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
       decoration: BoxDecoration(
         color: colors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.primary.withOpacity(0.3)),
+        border: Border.all(color: colors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

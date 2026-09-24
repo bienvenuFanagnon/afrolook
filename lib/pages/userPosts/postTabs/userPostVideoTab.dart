@@ -1,10 +1,13 @@
 ﻿import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
+import 'package:afrotok/pages/coins/coin_recharge_screen.dart';
 
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:cloud_functions/cloud_functions.dart';
 
 import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/pages/userPosts/postWidgets/defi_config_section.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -53,7 +56,8 @@ import '../../user/userPubs/user_my_advertisements_page.dart';
 
 class UserPubVideo extends StatefulWidget {
   final Canal? canal;
-  const UserPubVideo({super.key, required this.canal});
+  final String? defiPostId;
+  const UserPubVideo({super.key, required this.canal, this.defiPostId});
 
   @override
   State<UserPubVideo> createState() => _UserPubVideoState();
@@ -114,6 +118,8 @@ class _UserPubVideoState extends State<UserPubVideo> {
   int? _selectedDurationDays;
   final List<int> _durationOptions = [7, 14, 30, 60, 90, 180, 365];
 
+  DefiConfig? _defiConfig;
+
   final Map<String, Map<String, dynamic>> _postTypes = {
     'LOOKS': {'label': 'Looks', 'icon': Icons.style},
     'ACTUALITES': {'label': 'Actualités', 'icon': Icons.article},
@@ -121,6 +127,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
     'EVENEMENT': {'label': 'Événement', 'icon': Icons.event},
     'OFFRES': {'label': 'Offres', 'icon': Icons.local_offer},
     'GAMER': {'label': 'Games story', 'icon': Icons.gamepad},
+    'DEFI': {'label': 'Défi 🏆', 'icon': Icons.emoji_events},
   };
 
   final Map<String, Map<String, dynamic>> _actionTypes = {
@@ -163,6 +170,8 @@ class _UserPubVideoState extends State<UserPubVideo> {
 
     _selectAllCountries = false;
     _selectedCountries.clear();
+
+    if (widget.defiPostId != null) _selectedPostType = 'LOOKS';
   }
 
   @override
@@ -742,7 +751,6 @@ class _UserPubVideoState extends State<UserPubVideo> {
       decoration: BoxDecoration(
         color: _c.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))],
         border: Border.all(color: _selectedCountries.isEmpty && !_selectAllCountries ? _c.warning : Colors.transparent, width: 1),
       ),
       child: Column(
@@ -917,7 +925,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
     return Container(
       padding: EdgeInsets.all(16),
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))]),
+      decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(16),),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1070,51 +1078,29 @@ class _UserPubVideoState extends State<UserPubVideo> {
   }
 
   // 🔥 VERSION MODIFIÉE : Message clair sur la limite temporaire
-  Widget _buildVideoSizeInfo() {
+  Widget _buildVideoCounter() {
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
     final isGold = AbonnementUtils.isGold(authProvider.loginUserData.abonnement);
     final isPremium = !isGold && AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement);
-    String sizeText;
+    String label;
     Color color;
     if (isAdmin) {
-      sizeText = 'Admin: 200 Mo';
+      label = 'Admin • 200 Mo max';
       color = _c.primary;
     } else if (isGold) {
-      sizeText = 'Gold: 50 Mo';
+      label = 'Gold 👑 • 50 Mo max';
       color = const Color(0xFFFFD700);
     } else if (isPremium) {
-      sizeText = 'Premium: 40 Mo';
+      label = 'Premium • 40 Mo max';
       color = const Color(0xFFFDB813);
     } else {
-      sizeText = 'Gratuit: 30 Mo';
-      color = Colors.grey;
+      label = 'Gratuit • 30 Mo max';
+      color = _c.textSecondary;
     }
-    final showGoldHint = !isAdmin && !isGold;
-    final badgeWidget = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(color: color.withOpacity(0.2), borderRadius: BorderRadius.circular(12), border: Border.all(color: color)),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.storage, size: 14, color: color),
-          const SizedBox(width: 6),
-          Text(sizeText, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
-          if (showGoldHint) ...[
-            const SizedBox(width: 6),
-            GestureDetector(
-              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => AbonnementScreen())),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(color: const Color(0xFFFFD700).withOpacity(0.2), borderRadius: BorderRadius.circular(6), border: Border.all(color: const Color(0xFFFFD700))),
-                child: const Text('👑 50 Mo', style: TextStyle(color: Color(0xFFFFD700), fontSize: 11, fontWeight: FontWeight.bold)),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-    return badgeWidget;
+    return Text(label, style: TextStyle(color: color, fontSize: 12));
   }
+
+  Widget _buildVideoSizeInfo() => _buildVideoCounter();
 
   Widget _buildRestrictionsInfo() {
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
@@ -1481,6 +1467,41 @@ class _UserPubVideoState extends State<UserPubVideo> {
     }
   }
 
+  void _showDefiInsufficientDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: _c.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.monetization_on, color: Color(0xFFFF9500)),
+            SizedBox(width: 8),
+            Text('Solde insuffisant', style: TextStyle(color: Color(0xFFFF9500), fontWeight: FontWeight.bold, fontSize: 16)),
+          ],
+        ),
+        content: Text(
+          'Vous n\'avez pas assez de pièces pour participer à ce DÉFI.\nRechargez votre solde pour continuer.',
+          style: TextStyle(color: _c.textSecondary, fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Fermer', style: TextStyle(color: _c.textSecondary)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF9500), foregroundColor: Colors.white, shape: const StadiumBorder()),
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const CoinRechargeScreen()));
+            },
+            child: const Text('Recharger', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _publishVideo() async {
     if (onTap) return;
 
@@ -1631,7 +1652,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
         post.updatedAt = DateTime.now().microsecondsSinceEpoch;
         post.createdAt = DateTime.now().microsecondsSinceEpoch;
         post.status = PostStatus.VALIDE.name;
-        post.type = PostType.POST.name;
+        post.type = _selectedPostType == 'DEFI' ? PostType.DEFI.name : PostType.POST.name;
         post.dataType = PostDataType.VIDEO.name;
         post.typeTabbar = _selectedPostType;
         post.comments = 0;
@@ -1646,16 +1667,49 @@ class _UserPubVideoState extends State<UserPubVideo> {
 
         post.availableCountries = _selectedCountries.map((c) => c.code).toList();
 
+        if (_selectedPostType == 'DEFI' && _defiConfig != null) {
+          post.defiConfigMap = _defiConfig!.toJson();
+        }
+
         if (widget.canal != null) {
           post.canal_id = widget.canal!.id;
           post.categorie = "CANAL";
+        }
+        if (widget.defiPostId != null) {
+          post.defiResponseToPostId = widget.defiPostId;
         }
 
         String fileURL = await _uploadVideo();
         post.url_media = fileURL;
         post.creatorSnapshot = Post.buildCreatorSnapshot(authProvider.loginUserData);
 
-        await FirebaseFirestore.instance.collection('Posts').doc(postId).set(post.toJson());
+        // Participation DÉFI : la Cloud Function paie et crée le post dans une seule transaction
+        if (widget.defiPostId != null) {
+          try {
+            await FirebaseFunctions.instance.httpsCallable('handleDefiAction').call({
+              'action': 'participate',
+              'postId': widget.defiPostId,
+              'post': post.toJson(),
+            });
+          } on FirebaseFunctionsException catch (e) {
+            if (mounted) Navigator.of(context, rootNavigator: true).pop();
+            setState(() => onTap = false);
+            if (mounted) {
+              if (e.code == 'resource-exhausted') {
+                _showDefiInsufficientDialog();
+              } else if (e.code == 'already-exists') {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vous participez déjà à ce DÉFI.')));
+              } else if (e.code == 'failed-precondition') {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ce DÉFI est terminé, les participations sont closes.')));
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erreur de participation. Réessaie plus tard.')));
+              }
+            }
+            return;
+          }
+        } else {
+          await FirebaseFirestore.instance.collection('Posts').doc(postId).set(post.toJson());
+        }
         if (widget.canal != null && (_selectedPostType ?? '').isNotEmpty) {
           FirebaseFirestore.instance.collection('Canaux').doc(widget.canal!.id!).update({
             'categories': FieldValue.arrayUnion([_selectedPostType!]),
@@ -1871,7 +1925,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
           return Container(
             padding: EdgeInsets.all(16),
             margin: EdgeInsets.symmetric(vertical: 8),
-            decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: sizeColor, width: 1), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 8, offset: Offset(0, 2))]),
+            decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: sizeColor, width: 1),),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -2119,15 +2173,21 @@ class _UserPubVideoState extends State<UserPubVideo> {
               children: [
                 Container(
                   padding: EdgeInsets.all(16),
-                  decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20)), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 15, offset: Offset(0, 4))]),
-                  child: Column(
-                    spacing: 5,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20))),
+                  child: Row(
                     children: [
                       Container(padding: EdgeInsets.all(8), decoration: BoxDecoration(color: _c.primary, borderRadius: BorderRadius.circular(12)), child: Icon(Icons.videocam, color: Colors.white, size: 24)),
-                      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Publication Vidéo', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 18)), SizedBox(height: 4), _buildUserStatusBadge()]),
-                      _buildVideoSizeInfo(),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Publication Vidéo', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold, fontSize: 18)),
+                            SizedBox(height: 4),
+                            _buildVideoCounter(),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -2135,14 +2195,18 @@ class _UserPubVideoState extends State<UserPubVideo> {
                 _buildServerMaintenanceBanner(),
                 _buildRestrictionsInfo(),
                 if (!_canPost && _cooldownMinutes > 0) _buildCooldownAlert(),
-                _buildPostTypeSelector(),
-                _buildEventDatePicker(),
+                if (widget.defiPostId == null) _buildPostTypeSelector(),
+                if (widget.defiPostId == null) _buildEventDatePicker(),
+                if (widget.defiPostId == null && _selectedPostType == 'DEFI')
+                  DefiConfigSection(
+                    onChanged: (config) => setState(() => _defiConfig = config),
+                  ),
                 _buildCountrySelectionCard(),
-                _buildAfrolookAdsPromoButton(),
+                if (widget.defiPostId == null) _buildAfrolookAdsPromoButton(),
                 Container(
                   margin: EdgeInsets.all(16),
                   padding: EdgeInsets.all(20),
-                  decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))]),
+                  decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(20),),
                   child: Form(
                     key: _formKey,
                     child: Column(
@@ -2199,7 +2263,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
                         Container(
                           width: double.infinity,
                           height: 55,
-                          decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: _c.accent, width: 2), boxShadow: [BoxShadow(color: _c.accent.withOpacity(0.3), blurRadius: 8, offset: Offset(0, 4))]),
+                          decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: _c.accent, width: 2),),
                           child: Material(
                             color: Colors.transparent,
                             child: InkWell(
@@ -2246,7 +2310,6 @@ class _UserPubVideoState extends State<UserPubVideo> {
                           decoration: BoxDecoration(
                             gradient: LinearGradient(colors: onTap || (!_canPost && _cooldownMinutes > 0) || _controller == null ? [Colors.grey, Colors.grey] : [_c.primary, Color(0xFFFF5252)], begin: Alignment.centerLeft, end: Alignment.centerRight),
                             borderRadius: BorderRadius.circular(25),
-                            boxShadow: [BoxShadow(color: _c.primary.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))],
                           ),
                           child: Material(
                             color: Colors.transparent,
@@ -3040,7 +3103,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //       decoration: BoxDecoration(
 //         color: _c.surface,
 //         borderRadius: BorderRadius.circular(16),
-//         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))],
+//
 //         border: Border.all(color: _selectedCountries.isEmpty && !_selectAllCountries ? _c.warning : Colors.transparent, width: 1),
 //       ),
 //       child: Column(
@@ -3218,7 +3281,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //     return Container(
 //       padding: EdgeInsets.all(16),
 //       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-//       decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))]),
+//       decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(16),),
 //       child: Column(
 //         crossAxisAlignment: CrossAxisAlignment.start,
 //         children: [
@@ -4177,7 +4240,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //           return Container(
 //             padding: EdgeInsets.all(16),
 //             margin: EdgeInsets.symmetric(vertical: 8),
-//             decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: sizeColor, width: 1), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 8, offset: Offset(0, 2))]),
+//             decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: sizeColor, width: 1),),
 //             child: Column(
 //               crossAxisAlignment: CrossAxisAlignment.start,
 //               children: [
@@ -4414,7 +4477,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //               children: [
 //                 Container(
 //                   padding: EdgeInsets.all(16),
-//                   decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20)), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 15, offset: Offset(0, 4))]),
+//                   decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20)),),
 //                   child: Column(
 //                     spacing: 5,
 //                     mainAxisAlignment: MainAxisAlignment.start,
@@ -4435,7 +4498,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //                 Container(
 //                   margin: EdgeInsets.all(16),
 //                   padding: EdgeInsets.all(20),
-//                   decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))]),
+//                   decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(20),),
 //                   child: Form(
 //                     key: _formKey,
 //                     child: Column(
@@ -4507,7 +4570,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //                         Container(
 //                           width: double.infinity,
 //                           height: 55,
-//                           decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: _c.accent, width: 2), boxShadow: [BoxShadow(color: _c.accent.withOpacity(0.3), blurRadius: 8, offset: Offset(0, 4))]),
+//                           decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: _c.accent, width: 2),),
 //                           child: Material(
 //                             color: Colors.transparent,
 //                             child: InkWell(
@@ -4554,7 +4617,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 //                           decoration: BoxDecoration(
 //                             gradient: LinearGradient(colors: onTap || (!_canPost && _cooldownMinutes > 0) || _controller == null ? [Colors.grey, Colors.grey] : [_c.primary, Color(0xFFFF5252)], begin: Alignment.centerLeft, end: Alignment.centerRight),
 //                             borderRadius: BorderRadius.circular(25),
-//                             boxShadow: [BoxShadow(color: _c.primary.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))],
+//
 //                           ),
 //                           child: Material(
 //                             color: Colors.transparent,

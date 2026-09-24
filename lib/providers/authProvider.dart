@@ -317,6 +317,48 @@ class UserAuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Supprime définitivement le compte Firebase Auth + marque le document Firestore
+  /// comme supprimé. Retourne null si succès, sinon un message d'erreur.
+  Future<String?> deleteAccount({
+    required String password,
+  }) async {
+    final firebaseUser = FirebaseAuth.instance.currentUser;
+    if (firebaseUser == null) return 'Utilisateur non connecté';
+
+    try {
+      // Ré-authentification obligatoire avant suppression Firebase
+      final email = firebaseUser.email;
+      if (email != null && email.isNotEmpty) {
+        final credential = EmailAuthProvider.credential(email: email, password: password);
+        await firebaseUser.reauthenticateWithCredential(credential);
+      }
+
+      final userId = loginUserData.id;
+
+      // Marquer le compte comme supprimé dans Firestore (garde la trace pour désactivation des posts)
+      if (userId != null) {
+        await _firestore.collection('Users').doc(userId).update({
+          'deleted': true,
+          'deleted_at': DateTime.now().millisecondsSinceEpoch,
+          'pseudo': '[Compte supprimé]',
+          'email': '',
+        });
+      }
+
+      // Supprimer l'utilisateur Firebase Auth
+      await firebaseUser.delete();
+
+      return null; // succès
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'wrong-password' || e.code == 'invalid-credential') {
+        return 'Mot de passe incorrect. Veuillez réessayer.';
+      }
+      return 'Erreur : ${e.message}';
+    } catch (e) {
+      return 'Erreur inattendue : $e';
+    }
+  }
+
   Future<void> logout(BuildContext context) async {
     try {
       // 1️⃣ Afficher un indicateur de chargement

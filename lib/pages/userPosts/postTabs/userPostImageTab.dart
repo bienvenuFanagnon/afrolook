@@ -1,10 +1,13 @@
 ﻿import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
+import 'package:afrotok/pages/coins/coin_recharge_screen.dart';
 
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:cloud_functions/cloud_functions.dart';
 
 import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/pages/userPosts/postWidgets/defi_config_section.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -52,9 +55,11 @@ import '../../user/userPubs/user_my_advertisements_page.dart';
 class UserPostLookImageTab extends StatefulWidget {
 
   final Canal? canal;
+  final String? defiPostId;
   const UserPostLookImageTab({
     super.key,
     required this.canal,
+    this.defiPostId,
   });
 
   @override
@@ -100,7 +105,10 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
     'EVENEMENT': {'label': 'Événement', 'icon': Icons.event},
     'OFFRES': {'label': 'Offres', 'icon': Icons.local_offer},
     'GAMER': {'label': 'Games story', 'icon': Icons.gamepad},
+    'DEFI': {'label': 'Défi 🏆', 'icon': Icons.emoji_events},
   };
+
+  DefiConfig? _defiConfig;
 
   final Map<String, Map<String, dynamic>> _actionTypes = {
     'download': {'label': 'Télécharger', 'icon': Icons.download, 'hint': 'https://play.google.com/...'},
@@ -131,6 +139,11 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
     _checkPostCooldown();
 
     _countrySearchController.addListener(_filterCountries);
+
+    // Pour une réponse DÉFI, forcer le type LOOKS
+    if (widget.defiPostId != null) {
+      _selectedPostType = 'LOOKS';
+    }
   }
 
   @override
@@ -820,7 +833,6 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
       decoration: BoxDecoration(
         color: _c.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))],
         border: Border.all(color: _selectedCountries.isEmpty && !_selectAllCountries ? _c.warning : Colors.transparent, width: 1),
       ),
       child: Column(
@@ -1030,7 +1042,6 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
       decoration: BoxDecoration(
         color: _c.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1273,6 +1284,41 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
     );
   }
 
+  void _showDefiInsufficientDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: _c.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.monetization_on, color: Color(0xFFFF9500)),
+            SizedBox(width: 8),
+            Text('Solde insuffisant', style: TextStyle(color: Color(0xFFFF9500), fontWeight: FontWeight.bold, fontSize: 16)),
+          ],
+        ),
+        content: Text(
+          'Vous n\'avez pas assez de pièces pour participer à ce DÉFI.\nRechargez votre solde pour continuer.',
+          style: TextStyle(color: _c.textSecondary, fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Fermer', style: TextStyle(color: _c.textSecondary)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF9500), foregroundColor: Colors.white, shape: const StadiumBorder()),
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const CoinRechargeScreen()));
+            },
+            child: const Text('Recharger', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _publishPost() async {
     // Protection double-tap : bloquer immédiatement avant tout await
     if (onTap) return;
@@ -1431,7 +1477,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
           ..updatedAt = DateTime.now().microsecondsSinceEpoch
           ..createdAt = DateTime.now().microsecondsSinceEpoch
           ..status = PostStatus.VALIDE.name
-          ..type = PostType.POST.name
+          ..type = _selectedPostType == 'DEFI' ? PostType.DEFI.name : PostType.POST.name
           ..comments = 0
           ..typeTabbar = _selectedPostType
           ..nombrePersonneParJour = 60
@@ -1451,9 +1497,16 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
         // }
         post.availableCountries = _selectedCountries.map((c) => c.code).toList();
 
+        if (_selectedPostType == 'DEFI' && _defiConfig != null) {
+          post.defiConfigMap = _defiConfig!.toJson();
+        }
+
         if (widget.canal != null) {
           post.canal_id = widget.canal!.id;
           post.categorie = "CANAL";
+        }
+        if (widget.defiPostId != null) {
+          post.defiResponseToPostId = widget.defiPostId;
         }
 
         List<String> imageUrls = [];
@@ -1473,8 +1526,33 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
         post.images = imageUrls;
         post.creatorSnapshot = Post.buildCreatorSnapshot(authProvider.loginUserData);
 
-        // Sauvegarder le post
-        await FirebaseFirestore.instance.collection('Posts').doc(postId).set(post.toJson());
+        // Participation DÉFI : la Cloud Function paie et crée le post dans une seule transaction
+        if (widget.defiPostId != null) {
+          try {
+            await FirebaseFunctions.instance.httpsCallable('handleDefiAction').call({
+              'action': 'participate',
+              'postId': widget.defiPostId,
+              'post': post.toJson(),
+            });
+          } on FirebaseFunctionsException catch (e) {
+            if (mounted) Navigator.of(context, rootNavigator: true).pop();
+            setState(() => onTap = false);
+            if (mounted) {
+              if (e.code == 'resource-exhausted') {
+                _showDefiInsufficientDialog();
+              } else if (e.code == 'already-exists') {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vous participez déjà à ce DÉFI.')));
+              } else if (e.code == 'failed-precondition') {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ce DÉFI est terminé, les participations sont closes.')));
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erreur de participation. Réessaie plus tard.')));
+              }
+            }
+            return;
+          }
+        } else {
+          await FirebaseFirestore.instance.collection('Posts').doc(postId).set(post.toJson());
+        }
         if (widget.canal != null && (_selectedPostType ?? '').isNotEmpty) {
           FirebaseFirestore.instance.collection('Canaux').doc(widget.canal!.id!).update({
             'categories': FieldValue.arrayUnion([_selectedPostType!]),
@@ -1765,7 +1843,6 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                   decoration: BoxDecoration(
                     color: _c.surface,
                     borderRadius: BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20)),
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 15, offset: Offset(0, 4))],
                   ),
                   child: Row(
                     children: [
@@ -1790,18 +1867,20 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                 ),
                 SizedBox(height: 16),
                 if (!_canPost && _cooldownMinutes > 0) _buildCooldownAlert(),
-                _buildPostTypeSelector(),
-                _buildEventDatePicker(),
+                if (widget.defiPostId == null) _buildPostTypeSelector(),
+                if (widget.defiPostId == null) _buildEventDatePicker(),
+                if (widget.defiPostId == null && _selectedPostType == 'DEFI')
+                  DefiConfigSection(
+                    onChanged: (config) => setState(() => _defiConfig = config),
+                  ),
                 _buildCountrySelectionCard(),
-                // NOUVEAU: Section publicité
-                _buildAfrolookAdsPromoButton(),
+                if (widget.defiPostId == null) _buildAfrolookAdsPromoButton(),
                 Container(
                   margin: EdgeInsets.all(16),
                   padding: EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: _c.surface,
                     borderRadius: BorderRadius.circular(20),
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))],
                   ),
                   child: Form(
                     key: _formKey,
@@ -1933,7 +2012,6 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                               end: Alignment.centerRight,
                             ),
                             borderRadius: BorderRadius.circular(25),
-                            boxShadow: [BoxShadow(color: _c.primary.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))],
                           ),
                           child: Material(
                             color: Colors.transparent,

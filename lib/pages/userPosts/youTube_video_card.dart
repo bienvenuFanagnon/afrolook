@@ -42,7 +42,9 @@ import '../../widgets/like_coins_helper.dart';
 import '../../widgets/gifts/quick_gift_bar.dart' show QuickGiftBar, CadeauBadge;
 import '../component/showUserDetails.dart';
 import '../postComments.dart';
+import '../postDetails.dart';
 import '../postDetailsVideo.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 import '../../services/utils/abonnement_utils.dart';
 import '../../services/postService/feed_interaction_service.dart';
@@ -52,6 +54,7 @@ import '../../widgets/user_badge_widget.dart';
 import '../../theme/app_colors.dart';
 import '../../providers/locale_provider.dart';
 import 'postWidgets/translatable_description.dart';
+import 'userPostForm.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'video_preload_manager.dart';
 import '../../services/media_cache_service.dart';
@@ -262,7 +265,7 @@ class YouTubeVideoCard extends StatefulWidget {
 }
 
 class _YouTubeVideoCardState extends State<YouTubeVideoCard>
-    with WidgetsBindingObserver, AutomaticKeepAliveClientMixin {
+    with WidgetsBindingObserver, AutomaticKeepAliveClientMixin, TickerProviderStateMixin {
 
   @override
   bool get wantKeepAlive => true;
@@ -300,6 +303,11 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   String? _translatedDescription;
   bool _isLoading = false;
   bool _isLiking = false;
+  bool _isVoting = false;
+  int _localDefiVotes = 0;
+  bool _hasVotedLocally = false;
+  late AnimationController _voteAnimController;
+  late Animation<double> _voteScaleAnim;
   int _localCommentsCount = 0;
   int _localInteractionsCount = 0;
   List<PostComment> _preloadedComments = [];
@@ -344,6 +352,13 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   @override
   void initState() {
     super.initState();
+    _voteAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _voteScaleAnim = Tween<double>(begin: 1.0, end: 1.4).animate(
+      CurvedAnimation(parent: _voteAnimController, curve: Curves.elasticOut),
+    );
     WidgetsBinding.instance.addObserver(this);
 
     _authProvider = Provider.of<UserAuthProvider>(context, listen: false);
@@ -353,6 +368,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     _localInteractionsCount = widget.post.totalInteractions ?? 0;
     _coinProvider = Provider.of<CoinGiftUserProvider>(context, listen: false);
     _soundProvider = Provider.of<SoundProvider>(context, listen: false);
+    _localDefiVotes = widget.post.defiVotes ?? 0;
+    _hasVotedLocally = widget.post.defiVoterIds?.contains(_authProvider.loginUserData.id) ?? false;
 
     if (!_soundProvider.isMuted) {
       _soundProvider.setMuted(true);
@@ -2129,54 +2146,6 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                   ),
                 ),
               ),
-            // --- Description overlay en bas (masquée quand "Voir la suite" ou verrou) ---
-            if (!isLocked && !_showSeeMoreCta && !_showCanalLockCta && !isAd &&
-                (widget.post.description ?? '').trim().isNotEmpty)
-              Positioned(
-                bottom: 0, left: 0, right: 0,
-                child: GestureDetector(
-                  onTap: _navigateToDetails,
-                  child: Container(
-                    padding: const EdgeInsets.fromLTRB(12, 36, 48, 10),
-                    decoration: BoxDecoration(
-                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Colors.transparent, Colors.black.withOpacity(0.78)],
-                      ),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            widget.post.description!,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                              height: 1.35,
-                              decoration: TextDecoration.none,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        const Text(
-                          'Voir plus',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            decoration: TextDecoration.none,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
             // --- 🎵 Bouton de contrôle du son (remplace le badge "VIDÉO") ---
             if (!isLocked)
               Positioned(
@@ -2246,6 +2215,193 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     }
   }
 
+  static const Color _defiYellow = Color(0xFFFF9500);
+
+  Future<void> _handleDefiVote() async {
+    if (_isVoting || _hasVotedLocally) return;
+    final userId = _authProvider.loginUserData.id;
+    if (userId == null) return;
+    final postId = widget.post.id;
+    if (postId == null) return;
+
+    setState(() {
+      _isVoting = true;
+      _hasVotedLocally = true;
+      _localDefiVotes++;
+    });
+    _voteAnimController.forward().then((_) => _voteAnimController.reverse());
+
+    try {
+      await FirebaseFunctions.instance.httpsCallable('handleDefiAction').call({
+        'action': 'vote',
+        'postId': postId,
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _hasVotedLocally = false;
+          _localDefiVotes = (_localDefiVotes - 1).clamp(0, 999999);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur vote : $e'), duration: const Duration(seconds: 2)),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isVoting = false);
+    }
+  }
+
+  Widget _buildDefiMiniBanner() {
+    final colors = AppColors.of(context);
+    final post = widget.post;
+    final isDefiResponse = post.defiResponseToPostId != null;
+    final isDefi = post.type == PostType.DEFI.name;
+    if (!isDefi && !isDefiResponse) return const SizedBox.shrink();
+
+    return GestureDetector(
+      onTap: isDefiResponse ? () {
+        FirebaseFirestore.instance
+            .collection('Posts')
+            .doc(post.defiResponseToPostId)
+            .get()
+            .then((doc) {
+          if (doc.exists && mounted) {
+            final defiPost = Post.fromJson(doc.data()!);
+            Navigator.push(context, MaterialPageRoute(builder: (_) => DetailsPost(post: defiPost)));
+          }
+        });
+      } : null,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0x22FFE14D),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: _defiYellow.withOpacity(0.45)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.emoji_events, color: _defiYellow, size: 14),
+            const SizedBox(width: 6),
+            Text(
+              isDefiResponse
+                  ? 'Réponse à un Défi  •  $_localDefiVotes votes'
+                  : 'Défi  •  $_localDefiVotes votes',
+              style: const TextStyle(color: _defiYellow, fontSize: 11, fontWeight: FontWeight.w600),
+            ),
+            if (isDefiResponse) ...[
+              const SizedBox(width: 4),
+              const Icon(Icons.chevron_right, color: _defiYellow, size: 14),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVoteButton(bool hasAccess) {
+    final post = widget.post;
+    final isDefi = post.type == PostType.DEFI.name;
+    final isDefiResponse = post.defiResponseToPostId != null;
+    if (!isDefi && !isDefiResponse) return const SizedBox.shrink();
+
+    // Post DÉFI original → bouton "Participer"
+    if (isDefi) {
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: hasAccess ? () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => UserPostForm(defiPostId: post.id!),
+              ),
+            );
+          } : null,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: hasAccess ? _defiYellow : _defiYellow.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: hasAccess ? _defiYellow : _defiYellow.withOpacity(0.2),
+                width: 1,
+              ),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.sports_score, size: 14, color: Colors.white),
+                SizedBox(width: 4),
+                Text('Participer',
+                  style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Réponse DÉFI → bouton Vote
+    final canVote = hasAccess && !_hasVotedLocally && !_isVoting;
+
+    return ScaleTransition(
+      scale: _voteScaleAnim,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: canVote ? _handleDefiVote : null,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: canVote
+                  ? _defiYellow
+                  : _hasVotedLocally
+                      ? _defiYellow.withOpacity(0.2)
+                      : _defiYellow.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+              border: _hasVotedLocally
+                  ? Border.all(color: _defiYellow, width: 1)
+                  : null,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _isVoting
+                    ? const SizedBox(
+                        width: 14, height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : Icon(
+                        _hasVotedLocally ? Icons.how_to_vote : Icons.how_to_vote_outlined,
+                        size: 14,
+                        color: canVote ? Colors.white
+                            : _hasVotedLocally ? _defiYellow
+                            : _defiYellow.withOpacity(0.5),
+                      ),
+                const SizedBox(width: 4),
+                Text(
+                  _localDefiVotes >= 1000
+                      ? '${(_localDefiVotes / 1000).toStringAsFixed(1)}k'
+                      : '$_localDefiVotes',
+                  style: TextStyle(
+                    color: canVote ? Colors.white
+                        : _hasVotedLocally ? _defiYellow
+                        : _defiYellow.withOpacity(0.5),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildPostActions() {
     final colors = AppColors.of(context);
     final isLiked = widget.post.users_love_id?.contains(_authProvider.loginUserData.id) ?? false;
@@ -2255,12 +2411,27 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     final isAd = widget.post.isAdvertisement == true;
     final hasReposted = widget.post.users_republier_id?.contains(myId) ?? false;
 
+    final isDefi = widget.post.type == PostType.DEFI.name;
+    final isDefiResponse = widget.post.defiResponseToPostId != null;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // ── Banner DÉFI + bouton Participer/Vote sur la même ligne ──────
+        if (isDefi || isDefiResponse)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6, top: 4),
+            child: Row(
+              children: [
+                _buildDefiMiniBanner(),
+                const SizedBox(width: 8),
+                _buildVoteButton(hasAccess),
+              ],
+            ),
+          ),
         Container(
-          margin: const EdgeInsets.only(top: 8),
+          margin: const EdgeInsets.only(top: 4),
           child: Row(
         children: [
           _buildActionButton(
@@ -2641,6 +2812,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
 
   @override
   void dispose() {
+    _voteAnimController.dispose();
     _quickCommentController.dispose();
     _visibilityTimer?.cancel();
     _seeMoreTimer?.cancel();

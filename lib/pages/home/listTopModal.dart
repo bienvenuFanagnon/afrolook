@@ -2,7 +2,6 @@
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/pages/afroshop/marketPlace/acceuil/home_afroshop.dart';
-import 'package:afrotok/pages/challenge/challengeDetails.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -2367,50 +2366,32 @@ class ChallengeModal {
     if (challenge.isEnAttente) {
       if (isInscrit) {
         buttonText = "✅ DÉJÀ INSCRIT";
-        onPressed = () {
-          Navigator.of(context).pop();
-          _navigateToChallengeDetails(context, challenge);
-        };
+        onPressed = () => Navigator.of(context).pop();
         backgroundColor = Colors.green;
       } else {
         buttonText = "🎯 S'INSCRIRE AU CHALLENGE";
-        onPressed = () {
-          Navigator.of(context).pop();
-          _navigateToChallengeDetails(context, challenge);
-        };
+        onPressed = () => Navigator.of(context).pop();
         backgroundColor = Colors.purple;
       }
     } else if (challenge.isEnCours) {
       if (isInscrit) {
         if (aVote) {
           buttonText = "📊 VOIR LES VOTES";
-          onPressed = () {
-            Navigator.of(context).pop();
-            _navigateToChallengeDetails(context, challenge);
-          };
+          onPressed = () => Navigator.of(context).pop();
           backgroundColor = Colors.blue;
         } else {
           buttonText = "🗳️ ALLER VOTER";
-          onPressed = () {
-            Navigator.of(context).pop();
-            _navigateToChallengeDetails(context, challenge);
-          };
+          onPressed = () => Navigator.of(context).pop();
           backgroundColor = Colors.orange;
         }
       } else {
         buttonText = "👀 VOTER POUR LES PARTICIPANTS";
-        onPressed = () {
-          Navigator.of(context).pop();
-          _navigateToChallengeDetails(context, challenge);
-        };
+        onPressed = () => Navigator.of(context).pop();
         backgroundColor = Colors.deepPurple;
       }
     } else {
       buttonText = "📋 VOIR LES RÉSULTATS";
-      onPressed = () {
-        Navigator.of(context).pop();
-        _navigateToChallengeDetails(context, challenge);
-      };
+      onPressed = () => Navigator.of(context).pop();
       backgroundColor = Colors.grey;
     }
 
@@ -2435,15 +2416,6 @@ class ChallengeModal {
     );
   }
 
-  static void _navigateToChallengeDetails(BuildContext context, Challenge challenge) {
-    // Votre navigation vers la page de détails
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ChallengeDetailPage(challengeId: challenge.id!),
-      ),
-    );
-  }
 }
 
 // Ajoutez cette classe après les autres modals

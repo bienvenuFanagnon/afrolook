@@ -111,7 +111,6 @@ class UserInterests {
     UserInterest(code: 'business_entrepreneuriat', emoji: '🚀', labelFr: 'Entrepreneuriat', labelEn: 'Entrepreneurship', category: 'business'),
     UserInterest(code: 'business_investissement',   emoji: '📈', labelFr: 'Investissement & Bourse', labelEn: 'Investment & Trading', category: 'business'),
     UserInterest(code: 'business_immobilier',       emoji: '🏠', labelFr: 'Immobilier', labelEn: 'Real Estate', category: 'business'),
-    UserInterest(code: 'business_crypto',           emoji: '₿',  labelFr: 'Crypto & Web3', labelEn: 'Crypto & Web3', category: 'business'),
     UserInterest(code: 'business_ecommerce',        emoji: '🛒', labelFr: 'E-commerce & Vente', labelEn: 'E-commerce & Sales', category: 'business'),
     UserInterest(code: 'business_marketing',        emoji: '📢', labelFr: 'Marketing & Influence', labelEn: 'Marketing & Influence', category: 'business'),
 

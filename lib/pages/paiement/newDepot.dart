@@ -2,6 +2,7 @@ import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:convert';
 
 import 'package:afrotok/providers/authProvider.dart';
+import 'package:afrotok/utils/platform_guard.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:flutter/material.dart';
@@ -87,19 +88,6 @@ class _DepositScreenState extends State<DepositScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: ListView(
                   children: [
-                    _PaymentMethodCard(
-                      title: 'Carte Bancaire',
-                      subtitle: 'Visa / Mastercard — Toute l\'Afrique',
-                      description: 'Frais : 7%  •  Conversion FCFA automatique',
-                      icon: Icons.credit_card,
-                      color: colors.primary,
-                      iconColor: colors.onPrimary,
-                      onTap: () {
-                        Navigator.pop(context);
-                        _processCinetPayPayment(paymentType: 'CARD');
-                      },
-                    ),
-                    const SizedBox(height: 12),
                     _PaymentMethodCard(
                       title: 'FeexPay Mobile Money',
                       subtitle: 'Afrique de l\'Ouest',
@@ -824,6 +812,54 @@ class _DepositScreenState extends State<DepositScreen> {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final t = AppLocalizations.of(context);
+
+    if (kIsAppleStore) {
+      return Scaffold(
+        backgroundColor: colors.background,
+        appBar: AppBar(
+          title: Text(t.depositTitle, style: TextStyle(fontWeight: FontWeight.bold, color: colors.onPrimary)),
+          centerTitle: true,
+          backgroundColor: colors.primary,
+          elevation: 0,
+          iconTheme: IconThemeData(color: colors.onPrimary),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('🍎', style: TextStyle(fontSize: 48)),
+                const SizedBox(height: 20),
+                Text(
+                  'Non disponible sur iOS',
+                  style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 18),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Le rechargement par Mobile Money n\'est pas disponible sur iOS. Utilisez l\'application web ou Android pour recharger votre solde.',
+                  style: TextStyle(color: colors.textSecondary, fontSize: 14, height: 1.5),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colors.primary,
+                    foregroundColor: colors.onPrimary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                    elevation: 0,
+                  ),
+                  child: const Text('Retour', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: colors.background,

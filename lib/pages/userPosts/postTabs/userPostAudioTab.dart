@@ -1,8 +1,11 @@
 ﻿import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
+import 'package:afrotok/pages/coins/coin_recharge_screen.dart';
 
 import 'dart:io';
 import 'package:afrotok/models/model_data.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrotok/pages/userPosts/postWidgets/defi_config_section.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -59,9 +62,11 @@ import '../../widgetGlobal.dart';
 
 class UserPostLookAudioTab extends StatefulWidget {
   final Canal? canal;
+  final String? defiPostId;
   const UserPostLookAudioTab({
     super.key,
     required this.canal,
+    this.defiPostId,
   });
 
   @override
@@ -119,6 +124,8 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
   final int _maxAudioDuration = 180; // 3 minutes en secondes
   final int _maxAudioSize = 10 * 1024 * 1024; // 10 MB
 
+  DefiConfig? _defiConfig;
+
   final Map<String, Map<String, dynamic>> _postTypes = {
     'LOOKS': {'label': 'Looks', 'icon': Icons.style},
     'ACTUALITES': {'label': 'Actualités', 'icon': Icons.article},
@@ -126,6 +133,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
     'EVENEMENT': {'label': 'Événement', 'icon': Icons.event},
     'OFFRES': {'label': 'Offres', 'icon': Icons.local_offer},
     'GAMER': {'label': 'Games story', 'icon': Icons.gamepad},
+    'DEFI': {'label': 'Défi 🏆', 'icon': Icons.emoji_events},
   };
 
   late AppColors _c;
@@ -155,6 +163,8 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
     _setupAudioListener();
 
     _countrySearchController.addListener(_filterCountries);
+
+    if (widget.defiPostId != null) _selectedPostType = 'LOOKS';
   }
 
   void _setupAudioListener() {
@@ -1639,7 +1649,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
         ..updatedAt = DateTime.now().microsecondsSinceEpoch
         ..createdAt = DateTime.now().microsecondsSinceEpoch
         ..status = PostStatus.VALIDE.name
-        ..type = PostType.POST.name
+        ..type = _selectedPostType == 'DEFI' ? PostType.DEFI.name : PostType.POST.name
         ..comments = 0
         ..typeTabbar = _selectedPostType
         ..nombrePersonneParJour = 60
@@ -1657,13 +1667,46 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
         post.availableCountries = _selectedCountries.map((c) => c.code).toList();
       }
 
+      if (_selectedPostType == 'DEFI' && _defiConfig != null) {
+        post.defiConfigMap = _defiConfig!.toJson();
+      }
+
       if (widget.canal != null) {
         post.canal_id = widget.canal!.id;
         post.categorie = "CANAL";
       }
+      if (widget.defiPostId != null) {
+        post.defiResponseToPostId = widget.defiPostId;
+      }
       post.creatorSnapshot = Post.buildCreatorSnapshot(authProvider.loginUserData);
 
-      await FirebaseFirestore.instance.collection('Posts').doc(postId).set(post.toJson());
+      // Participation DÉFI : la Cloud Function paie et crée le post dans une seule transaction
+      if (widget.defiPostId != null) {
+        try {
+          await FirebaseFunctions.instance.httpsCallable('handleDefiAction').call({
+            'action': 'participate',
+            'postId': widget.defiPostId,
+            'post': post.toJson(),
+          });
+        } on FirebaseFunctionsException catch (e) {
+          if (mounted) Navigator.of(context, rootNavigator: true).pop();
+          setState(() => onTap = false);
+          if (mounted) {
+            if (e.code == 'resource-exhausted') {
+              _showDefiInsufficientDialog();
+            } else if (e.code == 'already-exists') {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vous participez déjà à ce DÉFI.')));
+              } else if (e.code == 'failed-precondition') {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ce DÉFI est terminé, les participations sont closes.')));
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erreur de participation. Réessaie plus tard.')));
+            }
+          }
+          return;
+        }
+      } else {
+        await FirebaseFirestore.instance.collection('Posts').doc(postId).set(post.toJson());
+      }
       if (widget.canal != null && (_selectedPostType ?? '').isNotEmpty) {
         FirebaseFirestore.instance.collection('Canaux').doc(widget.canal!.id!).update({
           'categories': FieldValue.arrayUnion([_selectedPostType!]),
@@ -1795,6 +1838,41 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
 
     await storageReference.putFile(_coverImage!);
     return await storageReference.getDownloadURL();
+  }
+
+  void _showDefiInsufficientDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: _c.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.monetization_on, color: Color(0xFFFF9500)),
+            SizedBox(width: 8),
+            Text('Solde insuffisant', style: TextStyle(color: Color(0xFFFF9500), fontWeight: FontWeight.bold, fontSize: 16)),
+          ],
+        ),
+        content: Text(
+          'Vous n\'avez pas assez de pièces pour participer à ce DÉFI.\nRechargez votre solde pour continuer.',
+          style: TextStyle(color: _c.textSecondary, fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Fermer', style: TextStyle(color: _c.textSecondary)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF9500), foregroundColor: Colors.white, shape: const StadiumBorder()),
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const CoinRechargeScreen()));
+            },
+            child: const Text('Recharger', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showErrorSnackbar(String message) {
@@ -1977,7 +2055,11 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
 
                 if (!_canPost && _cooldownMinutes > 0) _buildCooldownAlert(),
 
-                _buildPostTypeSelector(),
+                if (widget.defiPostId == null) _buildPostTypeSelector(),
+                if (widget.defiPostId == null && _selectedPostType == 'DEFI')
+                  DefiConfigSection(
+                    onChanged: (config) => setState(() => _defiConfig = config),
+                  ),
                 _buildCountrySelectionCard(),
 
                 Container(
@@ -2116,13 +2198,6 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                               end: Alignment.centerRight,
                             ),
                             borderRadius: BorderRadius.circular(25),
-                            boxShadow: [
-                              BoxShadow(
-                                color: _c.primary.withOpacity(0.3),
-                                blurRadius: 10,
-                                offset: Offset(0, 4),
-                              ),
-                            ],
                           ),
                           child: Material(
                             color: Colors.transparent,

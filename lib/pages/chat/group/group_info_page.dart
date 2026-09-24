@@ -1222,7 +1222,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
         if (isPrivate && subscriptionPrice > 0) ...[
           const SizedBox(height: 4),
           Text(
-            '${subscriptionPrice.toStringAsFixed(0)} FCFA / mois',
+            '${subscriptionPrice.toStringAsFixed(0)} Afrcoins / mois',
             style: const TextStyle(color: Color(0xFFFFD700), fontSize: 12, fontWeight: FontWeight.w600),
           ),
         ],
@@ -1397,7 +1397,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
             title: 'Groupe privé payant',
             subtitle: isGold
                 ? (isPrivate
-                    ? 'Actif · ${price > 0 ? '${price.toStringAsFixed(0)} FCFA/mois' : 'Prix non défini'}'
+                    ? 'Actif · ${price > 0 ? '${price.toStringAsFixed(0)} Afrcoins/mois' : 'Prix non défini'}'
                     : 'Non activé · définissez un prix d\'accès mensuel')
                 : 'Rendez votre groupe payant avec abonnement mensuel pour les membres',
             isGold: isGold,
@@ -1419,7 +1419,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                 children: [
                   Expanded(
                     child: Text(
-                      'Prix mensuel : ${price > 0 ? '${price.toStringAsFixed(0)} FCFA' : 'Non défini'}',
+                      'Prix mensuel : ${price > 0 ? '${price.toStringAsFixed(0)} Afrcoins' : 'Non défini'}',
                       style: const TextStyle(color: Color(0xFFFFD700), fontSize: 13, fontWeight: FontWeight.w600),
                     ),
                   ),

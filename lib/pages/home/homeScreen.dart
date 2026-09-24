@@ -1,4 +1,5 @@
 import 'package:afrotok/utils/responsive_sheet.dart';
+import 'package:afrotok/utils/platform_guard.dart';
 import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
@@ -8,7 +9,6 @@ import '../user/otherUser/otherUser.dart';
 import '../search/creator_canal_search_page.dart';
 import 'package:afrotok/pages/canaux/listCanal.dart';
 import 'package:afrotok/pages/canaux/detailsCanal.dart';
-import 'package:afrotok/pages/challengeMonth/challenge_month_page.dart';
 import 'package:afrotok/pages/weekly_top/weekly_top_posts_page.dart';
 import 'package:afrotok/pages/weekly_top/weekly_top_commentators_page.dart';
 import 'package:afrotok/pages/regles_confidentialite_page.dart';
@@ -60,16 +60,10 @@ import '../../widgets/user_badge_widget.dart';
 import '../../widgets/notification_toast_widget.dart';
 import '../LiveAgora/livesAgora.dart';
 import '../LiveAgora/mesLives.dart';
-import '../Marketing/affiliationMarketing.dart';
-import '../Marketing/affiliation_announce_modal.dart';
 import '../UserServices/listUserService.dart';
 import '../UserServices/presence_en_ligne.dart';
 import '../afroshop/marketPlace/acceuil/home_afroshop.dart';
 
-import '../challenge/listChallengePost.dart';
-
-import '../challenge/userlistchallenge.dart';
-import '../challengeMonth/challenge_announce_modal.dart';
 import '../chat/myChat.dart';
 import '../chronique/chroniquedetails.dart';
 import '../chronique/chroniquehome.dart';
@@ -90,7 +84,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../contenuPayant/content_detail_page.dart';
 import '../contenuPayant/profileScreenContent.dart';
-import '../cryptoMarket/cryptoMarketpage.dart';
 import '../dating/dating_entry_page.dart';
 import '../dating/dating_notifications_page.dart';
 import '../dating/widgets/dating_top_modal.dart';
@@ -107,12 +100,14 @@ import '../user/amis/ami.dart';
 import '../user/amis/pageMesInvitations.dart';
 import '../user/inviteAmis.dart';
 import '../user/monetisation.dart';
+import '../user/account_deletion_page.dart';
 import '../user/remuneration_home_page.dart';
 import '../userPosts/favorites_posts.dart';
 import '../vibe/vibesPage.dart';
 import '../widgetGlobal.dart';
 import 'HomePostType.dart';
 import 'homeSportPost.dart';
+import '../defi/defi_discover_page.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/theme_provider.dart';
@@ -583,8 +578,8 @@ class _MyHomePageState extends State<MyHomePage>
                     iconColor: colors.primary,
                     collapsedIconColor: colors.textSecondary,
                     children: [
-                      // Afro Love
-                      ListTile(
+                      // Afro Love — masqué sur iOS (App Store)
+                      if (!kIsAppleStore) ListTile(
                         contentPadding: const EdgeInsets.only(left: 32, right: 16),
                         leading: Icon(Fontisto.tinder, size: 24, color: Colors.red),
                         title: TextCustomerMenu(
@@ -765,23 +760,6 @@ class _MyHomePageState extends State<MyHomePage>
                           ));
                         },
                       ),
-                      // Top Posts du mois
-                      ListTile(
-                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
-                        leading: Icon(Icons.emoji_events, size: 24, color: colors.primary),
-                        title: TextCustomerMenu(
-                          titre: l10n.menuTopPostsMonth,
-                          fontSize: SizeText.homeProfileTextSize,
-                          couleur: colors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(context, MaterialPageRoute(
-                            builder: (context) => const ChallengeMonthPage(),
-                          ));
-                        },
-                      ),
                       // Top Posts de la semaine
                       ListTile(
                         contentPadding: const EdgeInsets.only(left: 32, right: 16),
@@ -848,23 +826,6 @@ class _MyHomePageState extends State<MyHomePage>
                           ));
                         },
                       ),
-                      // Mes Challenges
-                      ListTile(
-                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
-                        leading: Icon(Icons.emoji_events, size: 24, color: colors.primary),
-                        title: TextCustomerMenu(
-                          titre: l10n.menuMyChallenges,
-                          fontSize: SizeText.homeProfileTextSize,
-                          couleur: colors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(context, MaterialPageRoute(
-                            builder: (context) => UserChallengesPage(),
-                          ));
-                        },
-                      ),
                       // Mes Chroniques
                       ListTile(
                         contentPadding: const EdgeInsets.only(left: 32, right: 16),
@@ -925,23 +886,6 @@ class _MyHomePageState extends State<MyHomePage>
                         onTap: () {
                           Navigator.push(context, MaterialPageRoute(
                             builder: (context) => RemunerationHomePage(user: authProvider.loginUserData!),
-                          ));
-                        },
-                      ),
-                      // Marketing
-                      ListTile(
-                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
-                        leading: Icon(Icons.connect_without_contact, size: 24, color: colors.primary),
-                        title: TextCustomerMenu(
-                          titre: l10n.menuMarketing,
-                          fontSize: SizeText.homeProfileTextSize,
-                          couleur: colors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(context, MaterialPageRoute(
-                            builder: (context) => MarketingAffiliationPage(),
                           ));
                         },
                       ),
@@ -1161,6 +1105,19 @@ class _MyHomePageState extends State<MyHomePage>
                       onTap: () async {
                         await authProvider.logout(context);
 
+                      },
+                    ),
+                    ListTile(
+                      leading: Icon(Icons.delete_forever_rounded, color: colors.danger),
+                      title: TextCustomerMenu(
+                        titre: 'Supprimer mon compte',
+                        fontSize: 14,
+                        couleur: colors.danger,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const AccountDeletionPage()));
                       },
                     ),
                   ],
@@ -1514,7 +1471,7 @@ class _MyHomePageState extends State<MyHomePage>
 
 
     // _tabController = TabController(length: _tabs.length, vsync: this);
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     // Écouter le changement d'onglet
     _tabController!.addListener(() {
       if (_tabController!.indexIsChanging) return;
@@ -1539,6 +1496,15 @@ class _MyHomePageState extends State<MyHomePage>
             builder: (context) =>
                 HomeSportPostPage(type: TabBarType.DECOUVERTE.name),
           ),
+        ).then((_) {
+          _tabController!.animateTo(0);
+        });
+      }
+      // index 4 → Défis (push + retour à 0)
+      if (_tabController!.index == 4) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const DefiDiscoverPage()),
         ).then((_) {
           _tabController!.animateTo(0);
         });
@@ -1814,10 +1780,6 @@ class _MyHomePageState extends State<MyHomePage>
       showRemunerationAnnounceModal(context, authProvider.loginUserData.id!);
     } else if (modalToShow == 'top_dating') {
       showTopDatingAnnounceModal(context);
-    } else if (modalToShow == 'challenge_month') {
-      showChallengeMonthAnnounceModal(context);
-    } else if (modalToShow == 'affiliation_marketing') {
-      showAffiliationAnnounceModal(context);
     }
     await DailyModalService.markModalShownToday(modalToShow);
   }
@@ -2101,7 +2063,7 @@ class _MyHomePageState extends State<MyHomePage>
                             size: navIconSize,
                           ),
                         ),
-                        GestureDetector(
+                        if (!kIsAppleStore) GestureDetector(
                           onTap: () {
                             Navigator.push(context, MaterialPageRoute(builder: (_) => const DatingSwipePage()));
                           },
@@ -2166,6 +2128,7 @@ class _MyHomePageState extends State<MyHomePage>
                         Tab(text: l10n.tabSport),
                         Tab(text: l10n.tabEvents),
                         Tab(text: l10n.tabDiscovery),
+                        Tab(text: l10n.tabDefi),
                       ],
                     ),
                   ),
@@ -2534,6 +2497,7 @@ class _MyHomePageState extends State<MyHomePage>
     const SizedBox.shrink(), // Sport → push page dédiée
     HomeConstPostTypePage(key: _discoverKey, type: TabBarType.EVENEMENT.name, sortType: 'recent'),
     const SizedBox.shrink(), // Découverte → push page dédiée
+    const SizedBox.shrink(), // Défis → push page dédiée
   ];
 
   /// Scaffold principal pour tablette et desktop.
@@ -2746,8 +2710,8 @@ class _MyHomePageState extends State<MyHomePage>
                     wide: wide,
                     colors: colors,
                   ),
-                  // Afrolove
-                  _sidebarItem(
+                  // Afrolove — masqué sur iOS (App Store)
+                  if (!kIsAppleStore) _sidebarItem(
                     context: context,
                     icon: Fontisto.tinder,
                     label: 'Afrolove',
@@ -3024,6 +2988,7 @@ class _MyHomePageState extends State<MyHomePage>
           Tab(text: l10n.tabSport),
           Tab(text: l10n.tabEvents),
           Tab(text: l10n.tabDiscovery),
+          Tab(text: l10n.tabDefi),
         ],
       ),
     );
@@ -3097,7 +3062,7 @@ class _MyHomePageState extends State<MyHomePage>
 
                 // ── Réseaux sociaux ──────────────────────────────────
                 _rpSection(colors, 'Réseaux'),
-                _rpItem(context, colors, icon: Fontisto.tinder, iconColor: Colors.red,     label: 'Afro Love',            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DatingSwipePage()))),
+                if (!kIsAppleStore) _rpItem(context, colors, icon: Fontisto.tinder, iconColor: Colors.red,     label: 'Afro Love',            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DatingSwipePage()))),
                 _rpItem(context, colors, icon: Icons.group,                                label: l10n.menuFriends,        onTap: () => _setDesktopSection(Amis(), l10n.menuFriends)),
                 _rpItem(context, colors, icon: Icons.search,                               label: l10n.menuSearchUsers,    onTap: () => _setDesktopSection(AddListAmis(), l10n.menuSearchUsers)),
                 _rpItem(context, colors, icon: Icons.notifications_none_rounded,           label: 'Notifications',         onTap: () => _setDesktopSection(MesNotification(), 'Notifications')),
@@ -3108,20 +3073,16 @@ class _MyHomePageState extends State<MyHomePage>
                 _rpItem(context, colors, icon: Icons.supervised_user_circle,               label: l10n.menuProfile,        onTap: () => Navigator.pushNamed(context, '/home_profile_user')),
                 _rpItem(context, colors, icon: Icons.bookmark_outlined,                    label: l10n.menuFavorites,       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => FavoritePostsPage()))),
                 _rpItem(context, colors, icon: Icons.history_toggle_off_sharp,             label: l10n.menuMyChroniques,    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MyChroniquesPage()))),
-                _rpItem(context, colors, icon: Icons.emoji_events,                         label: l10n.menuMyChallenges,    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserChallengesPage()))),
                 _rpItem(context, colors, icon: FontAwesome.tv,                             label: l10n.menuMyLives,         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserLivesPage()))),
 
                 // ── Business & Monétisation ──────────────────────────
                 _rpSection(colors, 'Business'),
                 _rpItem(context, colors, icon: Icons.play_lesson_outlined, iconColor: const Color(0xFFFFD400), label: 'Contenu Business', onTap: () => _setDesktopSection(DashboardContentScreen(), 'Business')),
                 _rpItem(context, colors, icon: Icons.monetization_on,                      label: l10n.profileMenuRemunerationSpace, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => RemunerationHomePage(user: authProvider.loginUserData)))),
-                _rpItem(context, colors, icon: Icons.connect_without_contact,              label: l10n.menuMarketing,       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MarketingAffiliationPage()))),
-                _rpItem(context, colors, icon: AntDesign.linechart,                        label: l10n.menuAfroCoinMarket,  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CryptoMarketPage()))),
 
                 // ── Découverte ───────────────────────────────────────
                 _rpSection(colors, 'Découverte'),
                 _rpItem(context, colors, icon: Entypo.trophy,                              label: l10n.menuTopStars,        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const UserClassement()))),
-                _rpItem(context, colors, icon: Icons.emoji_events,                         label: l10n.menuTopPostsMonth,   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChallengeMonthPage()))),
                 _rpItem(context, colors, icon: MaterialIcons.sports_soccer,                label: l10n.menuPronosticsBetting, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PronosticsFeedPage()))),
                 _rpItem(context, colors, icon: FontAwesome.forumbee,                       label: l10n.menuCanaux,          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CanalListPage(isUserCanals: false)))),
                 _rpItem(context, colors, icon: Icons.store_mall_directory,                 label: l10n.menuAfroshopMarket,  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HomeAfroshopPage(title: '')))),
@@ -3184,6 +3145,13 @@ class _MyHomePageState extends State<MyHomePage>
                   label: l10n.menuLogout,
                   labelColor: colors.danger,
                   onTap: () => authProvider.logout(context),
+                ),
+                _rpItem(context, colors,
+                  icon: Icons.delete_forever_rounded,
+                  iconColor: colors.danger,
+                  label: 'Supprimer mon compte',
+                  labelColor: colors.danger,
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AccountDeletionPage())),
                 ),
 
                 // ── Version ─────────────────────────────────────────

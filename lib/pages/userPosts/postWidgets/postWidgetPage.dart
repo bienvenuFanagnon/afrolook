@@ -65,6 +65,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../youTube_video_card.dart';
 import 'audioPostWidget.dart';
+import '../userPostForm.dart';
 import '../../../services/postService/post_view_service.dart';
 import '../../../services/postService/feed_interaction_service.dart';
 import '../../../services/streak_service.dart';
@@ -151,6 +152,11 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   bool _isLoadingUser = false;
   bool _isLoadingCanal = false;
   bool _isLiking = false;
+  bool _isVoting = false;
+  int _localDefiVotes = 0;
+  bool _hasVotedLocally = false;
+  late AnimationController _voteAnimController;
+  late Animation<double> _voteScaleAnim;
   // État local du like — résistant aux rebuilds du parent qui remplace widget.post
   // depuis le cache stale (FeedCacheService). L'état local persiste tant que
   // le même State est réutilisé par Flutter (garanti par ValueKey dans le parent).
@@ -301,6 +307,13 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   @override
   void initState() {
     super.initState();
+    _voteAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _voteScaleAnim = Tween<double>(begin: 1.0, end: 1.4).animate(
+      CurvedAnimation(parent: _voteAnimController, curve: Curves.elasticOut),
+    );
     final swInit = Stopwatch()..start();
     final postId = widget.post.id ?? '?';
     final isCanalPost = widget.post.canal_id != null && widget.post.canal_id!.isNotEmpty;
@@ -358,6 +371,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     _isLikedLocally = widget.post.users_love_id?.contains(userId) ?? false;
     _localLovesCount = widget.post.loves ?? 0;
     _localCommentsCount = widget.post.comments ?? 0;
+    _localDefiVotes = widget.post.defiVotes ?? 0;
+    _hasVotedLocally = widget.post.defiVoterIds?.contains(userId) ?? false;
   }
 
   /// Charge créateur/canal depuis le snapshot dénormalisé stocké dans le post.
@@ -626,6 +641,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
   @override
   void dispose() {
+    _voteAnimController.dispose();
     _quickCommentController.dispose();
     _previewTimer?.cancel();
     _previewController?.dispose();
@@ -1875,64 +1891,19 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
             children: [
               Opacity(
                 opacity: isLocked ? 0.15 : 1.0,
-                child: DoubleTapLike(
-                  alreadyLiked: _isLikedLocally,
-                  onDoubleTap: () { if (!_isLikedLocally) _handleLike(); },
-                  child: GestureDetector(
-                    onTap: _openDetailsPage,
-                    child: CachedNetworkImage(
-                      imageUrl: imgUrl,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(color: colors.shimmerBase),
-                      errorWidget: (context, url, error) => Container(
-                        color: colors.shimmerBase,
-                        child: Icon(Icons.broken_image, color: colors.textSecondary),
-                      ),
+                child: GestureDetector(
+                  onTap: _openDetailsPage,
+                  child: CachedNetworkImage(
+                    imageUrl: imgUrl,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(color: colors.shimmerBase),
+                    errorWidget: (context, url, error) => Container(
+                      color: colors.shimmerBase,
+                      child: Icon(Icons.broken_image, color: colors.textSecondary),
                     ),
                   ),
                 ),
               ),
-              if (!isLocked && (widget.post.description ?? '').trim().isNotEmpty)
-                Positioned(
-                  bottom: 0, left: 0, right: 0,
-                  child: GestureDetector(
-                    onTap: _openDetailsPage,
-                    child: Container(
-                      padding: const EdgeInsets.fromLTRB(12, 40, 12, 10),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [Colors.transparent, Colors.black.withOpacity(0.78)],
-                        ),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              widget.post.description!,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 13,
-                                height: 1.35,
-                                decoration: TextDecoration.none,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          const Text('Voir plus', style: TextStyle(
-                            color: Colors.white70, fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            decoration: TextDecoration.none,
-                          )),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
               if (isLocked)
                 Positioned.fill(
                   child: Container(
@@ -1976,11 +1947,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           children: [
             Opacity(
               opacity: isLocked ? 0.15 : 1.0,
-              child: DoubleTapLike(
-                alreadyLiked: _isLikedLocally,
-                onDoubleTap: () { if (!_isLikedLocally) _handleLike(); },
-                child: _buildImageGrid(gridHeight, imageCount),
-              ),
+              child: _buildImageGrid(gridHeight, imageCount),
             ),
             if (isLocked)
               Positioned.fill(
@@ -2566,16 +2533,184 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     );
   }
 
+  static const Color _defiYellow = Color(0xFFFF9500);
+
+  Widget _buildDefiMiniBanner() {
+    final colors = AppColors.of(context);
+    final post = widget.post;
+    final isDefiResponse = post.defiResponseToPostId != null;
+    final isDefi = post.type == PostType.DEFI.name;
+    if (!isDefi && !isDefiResponse) return const SizedBox.shrink();
+
+    return GestureDetector(
+      onTap: isDefiResponse ? () {
+        FirebaseFirestore.instance
+            .collection('Posts')
+            .doc(post.defiResponseToPostId)
+            .get()
+            .then((doc) {
+          if (doc.exists && mounted) {
+            final defiPost = Post.fromJson(doc.data()!);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => DetailsPost(post: defiPost)),
+            );
+          }
+        });
+      } : null,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0x22FFE14D),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: _defiYellow.withOpacity(0.45)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.emoji_events, color: _defiYellow, size: 14),
+            const SizedBox(width: 6),
+            Text(
+              isDefiResponse ? 'Réponse à un Défi  •  $_localDefiVotes votes' : 'Défi  •  $_localDefiVotes votes',
+              style: const TextStyle(color: _defiYellow, fontSize: 11, fontWeight: FontWeight.w600),
+            ),
+            if (isDefiResponse) ...[
+              const SizedBox(width: 4),
+              const Icon(Icons.chevron_right, color: _defiYellow, size: 14),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVoteButton(bool hasAccess) {
+    final post = widget.post;
+    final isDefi = post.type == PostType.DEFI.name;
+    final isDefiResponse = post.defiResponseToPostId != null;
+    if (!isDefi && !isDefiResponse) return const SizedBox.shrink();
+
+    // Post DÉFI original → bouton "Participer"
+    if (isDefi) {
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: hasAccess ? () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => UserPostForm(defiPostId: post.id!),
+              ),
+            );
+          } : null,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: hasAccess ? _defiYellow : _defiYellow.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.sports_score, size: 14, color: Colors.white),
+                SizedBox(width: 4),
+                Text(
+                  'Participer',
+                  style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Réponse DÉFI → bouton Vote existant
+    final canVote = hasAccess && !_hasVotedLocally && !_isVoting;
+
+    return ScaleTransition(
+      scale: _voteScaleAnim,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: canVote ? () {
+            _handleDefiVote();
+            recordUniquePostView();
+          } : null,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: canVote
+                  ? _defiYellow
+                  : _hasVotedLocally
+                      ? _defiYellow.withOpacity(0.2)
+                      : _defiYellow.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+              border: _hasVotedLocally
+                  ? Border.all(color: _defiYellow, width: 1)
+                  : null,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _isVoting
+                    ? const SizedBox(
+                        width: 14, height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : Icon(
+                        _hasVotedLocally ? Icons.how_to_vote : Icons.how_to_vote_outlined,
+                        size: 14,
+                        color: canVote ? Colors.white
+                            : _hasVotedLocally ? _defiYellow
+                            : _defiYellow.withOpacity(0.5),
+                      ),
+                const SizedBox(width: 4),
+                Text(
+                  _formatCount(_localDefiVotes),
+                  style: TextStyle(
+                    color: canVote ? Colors.white
+                        : _hasVotedLocally ? _defiYellow
+                        : _defiYellow.withOpacity(0.5),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildPostActions(bool hasAccess) {
     final colors = AppColors.of(context);
     final isLiked = _isLikedLocally;
+    final post = widget.post;
+    final isDefi = post.type == PostType.DEFI.name;
+    final isDefiResponse = post.defiResponseToPostId != null;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // ── Banner DÉFI + bouton Participer/Vote sur la même ligne ──────
+        if (isDefi || isDefiResponse)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6, top: 4),
+            child: Row(
+              children: [
+                _buildDefiMiniBanner(),
+                const SizedBox(width: 8),
+                _buildVoteButton(hasAccess),
+              ],
+            ),
+          ),
         Container(
-      margin: const EdgeInsets.only(top: 8),
+      margin: const EdgeInsets.only(top: 4),
       child: Row(
         children: [
           // ── Actions interactives (proches des doigts) ────────────────────
@@ -3561,6 +3696,45 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     }).catchError((_) {});
   }
 
+  Future<void> _handleDefiVote() async {
+    if (_isVoting || _hasVotedLocally) return;
+    final userId = authProvider.loginUserData.id;
+    if (userId == null) return;
+    final postId = widget.post.id;
+    if (postId == null) return;
+
+    // Optimistic update
+    setState(() {
+      _isVoting = true;
+      _hasVotedLocally = true;
+      _localDefiVotes++;
+    });
+    _voteAnimController.forward().then((_) => _voteAnimController.reverse());
+
+    try {
+      await FirebaseFunctions.instance.httpsCallable('handleDefiAction').call({
+        'action': 'vote',
+        'postId': postId,
+      });
+    } catch (e) {
+      // Rollback si erreur
+      if (mounted) {
+        setState(() {
+          _hasVotedLocally = false;
+          _localDefiVotes = (_localDefiVotes - 1).clamp(0, 999999);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur : impossible de voter — $e'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isVoting = false);
+    }
+  }
+
   Future<void> _refreshPostStats() async {
     if (widget.post.id == null || !mounted) return;
     try {
@@ -3857,7 +4031,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(ctx);
-                Navigator.push(ctx, MaterialPageRoute(builder: (context) => DepositScreen()));
+                Navigator.push(ctx, MaterialPageRoute(builder: (context) => const CoinRechargeScreen()));
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: dc.primary,

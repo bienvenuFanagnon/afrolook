@@ -1662,7 +1662,6 @@ class _UserPubVibeState extends State<UserPubVibe> {
                   decoration: BoxDecoration(
                     color: _c.surface,
                     borderRadius: BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20)),
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 15, offset: Offset(0, 4))],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

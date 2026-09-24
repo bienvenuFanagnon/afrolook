@@ -480,7 +480,7 @@ class _PronosticDetailPageState extends State<PronosticDetailPage> with SingleTi
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Vous allez payer ${pronostic.prixParticipation.toStringAsFixed(0)} FCFA pour participer.', style: TextStyle(color: Colors.grey)),
+            Text('Vous allez payer ${pronostic.prixParticipation.toStringAsFixed(0)} Afrcoins pour participer.', style: TextStyle(color: Colors.grey)),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),
@@ -490,9 +490,9 @@ class _PronosticDetailPageState extends State<PronosticDetailPage> with SingleTi
               ),
               child: Column(
                 children: [
-                  _buildInfoRow('Votre solde', '${solde.toStringAsFixed(0)} FCFA', soldeSuffisant ? Colors.green : Colors.red),
+                  _buildInfoRow('Votre solde', '${solde.toStringAsFixed(0)} Afrcoins', soldeSuffisant ? Colors.green : Colors.red),
                   const Divider(color: Colors.grey, height: 16),
-                  _buildInfoRow('Nouveau solde', '${(solde - pronostic.prixParticipation).toStringAsFixed(0)} FCFA', Colors.white),
+                  _buildInfoRow('Nouveau solde', '${(solde - pronostic.prixParticipation).toStringAsFixed(0)} Afrcoins', Colors.white),
                 ],
               ),
             ),
@@ -664,7 +664,7 @@ class _PronosticDetailPageState extends State<PronosticDetailPage> with SingleTi
                     children: [
                       Icon(Iconsax.money, size: 14, color: _secondaryColor),
                       const SizedBox(width: 4),
-                      Text('${pronostic.prixParticipation.toStringAsFixed(0)} FCFA', style: TextStyle(color: _secondaryColor, fontWeight: FontWeight.bold, fontSize: 12)),
+                      Text('${pronostic.prixParticipation.toStringAsFixed(0)} Afrcoins', style: TextStyle(color: _secondaryColor, fontWeight: FontWeight.bold, fontSize: 12)),
                     ],
                   ),
                 ),
@@ -943,7 +943,7 @@ class _PronosticDetailPageState extends State<PronosticDetailPage> with SingleTi
               style: ElevatedButton.styleFrom(backgroundColor: _primaryColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25))),
               child: _isParticipating
                   ? const CircularProgressIndicator(color: Colors.white)
-                  : Text(pronostic.typeAcces == 'PAYANT' ? 'PAYER ${pronostic.prixParticipation.toStringAsFixed(0)} FCFA ET VALIDER' : 'VALIDER MON PRONOSTIC',
+                  : Text(pronostic.typeAcces == 'PAYANT' ? 'PAYER ${pronostic.prixParticipation.toStringAsFixed(0)} Afrcoins ET VALIDER' : 'VALIDER MON PRONOSTIC',
                   style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
             ),
           ),

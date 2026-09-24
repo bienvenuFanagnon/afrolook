@@ -20,6 +20,10 @@ class CoinPack {
   String get displayPrice => '${priceFcfa.toInt()} FCFA';
   int get fcfaPerCoin => (priceFcfa / coins).ceil();
 
+  /// Prix affiché sur iOS : intègre les 15% de commission Apple (priceFcfa / 0.85).
+  /// Ainsi après déduction Apple, l'appli reçoit le même montant qu'en Mobile Money.
+  double get iosPriceFcfa => (priceFcfa / 0.85).ceilToDouble();
+
   static List<CoinPack> get defaultPacks => [
     CoinPack(coins: 5, priceFcfa: 2, icon: '🌟', label: 'Mini'),
     CoinPack(coins: 25, priceFcfa: 10, icon: '❤️', label: 'Cœur'),

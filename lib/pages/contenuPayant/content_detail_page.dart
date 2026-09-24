@@ -9,6 +9,7 @@ import 'package:afrotok/pages/contenuPayant/widgets/boost_modal.dart';
 import 'package:afrotok/pages/contenuPayant/widgets/content_comments_section.dart';
 import 'package:afrotok/pages/contenuPayant/widgets/promo_code_modal.dart';
 import 'package:afrotok/pages/paiement/newDepot.dart';
+import 'package:afrotok/pages/coins/coin_recharge_screen.dart';
 import 'package:chewie/chewie.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:afrotok/providers/authProvider.dart';
@@ -234,7 +235,7 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => DepositScreen(defaultAmount: _finalPrice),
+                        builder: (_) => const CoinRechargeScreen(),
                       ),
                     );
                   },

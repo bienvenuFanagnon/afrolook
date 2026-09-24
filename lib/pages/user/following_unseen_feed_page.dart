@@ -7,7 +7,6 @@ import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../models/model_data.dart';
 import '../../theme/app_colors.dart';
-import '../challenge/postChallengeWidget.dart';
 import '../postDetailsVideo.dart';
 import '../userPosts/postWidgets/postWidgetPage.dart';
 import '../userPosts/youTube_video_card.dart';
@@ -255,10 +254,7 @@ class _FollowingUnseenFeedPageState extends State<FollowingUnseenFeedPage> {
       onVisibilityChanged: (info) => _handleVisibilityChanged(post, info),
       child: post.type == PostType.PRONOSTIC.name
           ? const SizedBox.shrink()
-          : post.type == PostType.CHALLENGEPARTICIPATION.name
-              ? LookChallengePostWidget(
-                  post: post, height: height, width: width)
-              : (post.type == PostType.POST.name &&
+          : (post.type == PostType.POST.name &&
                       post.dataType == PostDataType.VIDEO.name)
                   ? YouTubeVideoCard(
                       key: ValueKey('ytcard_${post.id}'),

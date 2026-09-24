@@ -27,6 +27,7 @@ import '../../../../../../constant/sizeButtons.dart';
 import '../../../../../../models/model_data.dart';
 
 import '../../../../../../providers/authProvider.dart';
+import '../../../eula_screen.dart';
 import '../../../../../providers/userProvider.dart';
 
 import 'dart:async';
@@ -425,7 +426,7 @@ class _LoginPageUserState extends State<LoginPageUser> {
           ),
           child: IconButton(
             onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => SignUpScreen()));
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const EulaScreen()));
             },
             icon: Icon(
               Icons.person_add_alt_1,
@@ -641,7 +642,7 @@ class _LoginPageUserState extends State<LoginPageUser> {
           height: 50,
           child: ElevatedButton(
             onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => SignUpScreen()));
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const EulaScreen()));
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.transparent,

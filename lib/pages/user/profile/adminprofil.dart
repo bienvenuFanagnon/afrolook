@@ -18,8 +18,6 @@ import 'package:iconsax/iconsax.dart';
 
 import '../../../models/model_data.dart';
 
-import '../../Marketing/adminAffiliationStatsPage.dart';
-
 import '../../admin/ad_admin_page.dart';
 
 import '../../admin/remuneration_admin_page.dart';
@@ -320,13 +318,6 @@ class _AdminHubPageState extends State<AdminHubPage> {
                       icon: Iconsax.video_play,
                       couleur: Colors.purple,
                       page: AdAdminPage(),
-                    ),
-                    _buildAdminCard(
-                      titre: 'AFFILIATION',
-                      sousTitre: 'Stats parrainage',
-                      icon: Iconsax.people,
-                      couleur: Colors.green,
-                      page: AdminAffiliationStatsPage(),
                     ),
                     _buildAdminCard(
                       titre: 'UTILISATEURS',

@@ -14,7 +14,6 @@ import 'dating/admin_dating_profiles_page.dart';
 import 'influencer_requests_page.dart';
 import 'official_accounts_page.dart';
 import 'remuneration_admin_page.dart';
-import '../challenge/challengeDashbord.dart';
 import '../contenuPayant/admin_content_page.dart';
 import '../pronostics/admin_pronostics_page.dart';
 import '../weekly_top/weekly_top_commentators_page.dart';
@@ -959,14 +958,6 @@ class _ModulesGrid extends StatelessWidget {
         iconBg: const Color(0xFFE1F5EE),
         iconColor: const Color(0xFF0F6E56),
         page: RemunerationAdminPage(),
-      ),
-      _ModuleItem(
-        icon: Icons.emoji_events_rounded,
-        label: 'Challenge',
-        desc: 'GÃ©rer les dÃ©fis',
-        iconBg: const Color(0xFFEAF3DE),
-        iconColor: const Color(0xFF3B6D11),
-        page: ChallengeDashboardPage(),
       ),
       _ModuleItem(
         icon: Icons.favorite_rounded,

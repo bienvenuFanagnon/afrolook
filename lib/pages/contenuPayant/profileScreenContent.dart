@@ -11,7 +11,7 @@ import '../../theme/app_colors.dart';
 import '../../widgets/user_badge_widget.dart';
 import '../user/profile/profile.dart';
 import 'content_detail_page.dart';
-import 'affiliation_marketplace_page.dart';
+
 import 'contentForm.dart';
 import 'my_purchases_page.dart';
 import 'seriesDetailScreenContenu.dart';
@@ -509,20 +509,6 @@ class _ProfileScreenContenuState extends State<ProfileScreenContenu>
                           ),
                           icon: const Icon(Icons.shopping_bag_outlined, size: 16),
                           label: const Text('Mes achats', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AffiliationMarketplacePage())),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.white,
-                            side: const BorderSide(color: Colors.white38),
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-                          ),
-                          icon: const Icon(Icons.link_rounded, size: 16),
-                          label: const Text('Gains affiliation', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                         ),
                       ),
                     ],

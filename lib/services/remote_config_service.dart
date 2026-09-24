@@ -17,10 +17,16 @@ class RemoteConfigService {
   };
 
   Future<void> initialize() async {
+    if (kDebugMode) {
+      // En mode debug (émulateur) : on utilise les defaults locaux sans appel production
+      await _rc.setDefaults(_defaults);
+      printVm('🛠️ RemoteConfig DEBUG — valeurs par défaut locales utilisées (pas de fetch production)');
+      return;
+    }
     try {
       await _rc.setConfigSettings(RemoteConfigSettings(
         fetchTimeout: const Duration(seconds: 10),
-        minimumFetchInterval: kDebugMode ? Duration.zero : const Duration(hours: 1),
+        minimumFetchInterval: const Duration(hours: 1),
       ));
       await _rc.setDefaults(_defaults);
       await _rc.fetchAndActivate();
