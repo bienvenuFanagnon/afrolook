@@ -5542,8 +5542,7 @@
         }
       ],
       "density": "SPARSE_ALL"
-    }
-    ,
+    },
     {
       "collectionGroup": "Posts",
       "queryScope": "COLLECTION",
@@ -5595,6 +5594,24 @@
         {
           "fieldPath": "__name__",
           "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "Posts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "type",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "defi_config.status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "defi_config.end_date",
+          "order": "ASCENDING"
         }
       ]
     }

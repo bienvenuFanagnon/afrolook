@@ -1,18 +1,14 @@
-import 'dart:math' as math;
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/theme/app_colors.dart';
-import 'package:afrotok/pages/userPosts/userPostForm.dart';
 import 'package:afrotok/pages/userPosts/postWidgets/postWidgetPage.dart';
 import 'package:afrotok/pages/userPosts/youTube_video_card.dart';
 import 'package:afrotok/pages/postDetailsVideo.dart';
 import 'package:afrotok/pages/pub/afrolook_inline_ad.dart';
-import 'package:afrotok/pages/coins/coin_recharge_screen.dart';
-import 'package:afrotok/providers/authProvider.dart';
+import 'package:afrotok/pages/defi/defi_ui.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 
 const Color _yellow = Color(0xFFFF9500);
 const Color _yellowBg = Color(0x22FF9500);
@@ -81,25 +77,7 @@ class DefiDetailsSection extends StatelessWidget {
                 if (!isOver) ...[
                   const SizedBox(width: 8),
                   GestureDetector(
-                    onTap: () {
-                      final auth = Provider.of<UserAuthProvider>(context, listen: false);
-                      if (defiPost.defiParticipantIds?.contains(auth.loginUserData.id) ?? false) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Vous participez déjà à ce DÉFI.'), duration: Duration(seconds: 2)),
-                        );
-                        return;
-                      }
-                      final balance = auth.loginUserData.giftCoinsBalance ?? 0;
-                      final fee = cfg.participationFee;
-                      if (fee > 0 && balance < fee) {
-                        _showInsufficientBalanceDialog(context);
-                        return;
-                      }
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => UserPostForm(defiPostId: defiPost.id!)),
-                      );
-                    },
+                    onTap: () => openDefiParticipation(context, defiPost),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                       decoration: BoxDecoration(
@@ -177,6 +155,10 @@ class DefiDetailsSection extends StatelessWidget {
                   style: TextStyle(color: c.textSecondary, fontSize: 11),
                 ),
                 const SizedBox(height: 4),
+                if (isOver) ...[
+                  const SizedBox(height: 12),
+                  _buildResults(c, cfg),
+                ],
               ],
             ),
           ),
@@ -185,38 +167,64 @@ class DefiDetailsSection extends StatelessWidget {
     );
   }
 
-  void _showInsufficientBalanceDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: AppColors.of(context).surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
+  // Résultat après la clôture : gagnants et gains, ou état du versement en cours.
+  Widget _buildResults(AppColors c, DefiConfig cfg) {
+    final winners = defiPost.defiWinners;
+
+    Widget notice(IconData icon, String text) => Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.monetization_on, color: _yellow),
-            SizedBox(width: 8),
-            Text('Solde insuffisant', style: TextStyle(color: _yellow, fontWeight: FontWeight.bold, fontSize: 16)),
+            Icon(icon, color: _yellow, size: 16),
+            const SizedBox(width: 6),
+            Expanded(child: Text(text, style: TextStyle(color: c.textSecondary, fontSize: 12))),
           ],
-        ),
-        content: Text(
-          'Vous n\'avez pas assez de pièces pour participer à ce DÉFI.\nRechargez votre solde pour continuer.',
-          style: TextStyle(color: AppColors.of(context).textSecondary, fontSize: 13),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Fermer', style: TextStyle(color: AppColors.of(context).textSecondary)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: _yellow, foregroundColor: Colors.white, shape: StadiumBorder()),
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const CoinRechargeScreen()));
-            },
-            child: const Text('Recharger', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
+        );
+
+    if (!cfg.isTermine) {
+      return notice(
+        cfg.isPayoutWaitingFunds ? Icons.hourglass_top : Icons.schedule,
+        cfg.isPayoutWaitingFunds
+            ? 'Versement des gains en attente : le créateur doit recharger son solde pour financer la cagnotte.'
+            : 'DÉFI terminé : calcul du classement et versement des gains en cours (quelques minutes).',
+      );
+    }
+    if (winners.isEmpty) {
+      return notice(Icons.info_outline, 'DÉFI terminé sans gagnant : la cagnotte a été rendue au créateur.');
+    }
+
+    const medals = ['🥇', '🥈', '🥉'];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('🏆 Gagnants', style: TextStyle(color: c.textPrimary, fontSize: 13, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        ...winners.map((w) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  Text(w.rank >= 1 && w.rank <= 3 ? medals[w.rank - 1] : '${w.rank}.', style: const TextStyle(fontSize: 18)),
+                  const SizedBox(width: 8),
+                  CircleAvatar(
+                    radius: 14,
+                    backgroundColor: _yellowBg,
+                    backgroundImage: w.imageUrl.isNotEmpty ? NetworkImage(w.imageUrl) : null,
+                    child: w.imageUrl.isEmpty ? const Icon(Icons.person, size: 16, color: _yellow) : null,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      w.pseudo.isNotEmpty ? '@${w.pseudo}' : 'Participant',
+                      style: TextStyle(color: c.textPrimary, fontSize: 13, fontWeight: FontWeight.w600),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Text('${w.votes} vote${w.votes > 1 ? 's' : ''}', style: TextStyle(color: c.textSecondary, fontSize: 11)),
+                  const SizedBox(width: 10),
+                  Text('+${w.coins} 🪙', style: const TextStyle(color: _yellow, fontSize: 13, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            )),
+      ],
     );
   }
 
@@ -279,19 +287,6 @@ class _DefiResponsesFeedState extends State<DefiResponsesFeed> {
   bool _isVoting = false;
   final Map<String, GlobalKey> _voteKeys = {};
 
-  void _triggerVoteAnimation(GlobalKey btnKey) {
-    final box = btnKey.currentContext?.findRenderObject() as RenderBox?;
-    final pos = box != null
-        ? box.localToGlobal(Offset(box.size.width / 2, box.size.height / 2))
-        : Offset(MediaQuery.of(context).size.width / 2, MediaQuery.of(context).size.height * 0.6);
-    final overlay = Overlay.of(context);
-    late OverlayEntry entry;
-    entry = OverlayEntry(
-      builder: (_) => _VoteSuccessOverlay(start: pos, onDone: () => entry.remove()),
-    );
-    overlay.insert(entry);
-  }
-
   @override
   void initState() {
     super.initState();
@@ -330,13 +325,14 @@ class _DefiResponsesFeedState extends State<DefiResponsesFeed> {
     final postId = response.id;
     if (postId == null) return;
 
-    // already-voted : contrôle local avant appel réseau
+    if (widget.isDefiOver) {
+      DefiDialogs.defiEnded(context);
+      return;
+    }
     final alreadyVotedLocally = _votedInSession.contains(postId)
         || (response.defiVoterIds?.contains(widget.currentUserId) ?? false);
     if (alreadyVotedLocally) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vous avez déjà voté pour ce post.'), duration: Duration(seconds: 2)),
-      );
+      DefiDialogs.alreadyVoted(context);
       return;
     }
 
@@ -351,79 +347,18 @@ class _DefiResponsesFeedState extends State<DefiResponsesFeed> {
         'action': 'vote',
         'postId': postId,
       });
-      // ✅ Succès — animation vote
-      if (mounted) _triggerVoteAnimation(btnKey);
-    } on FirebaseFunctionsException catch (e) {
-      if (mounted) {
-        setState(() {
-          _votedInSession.remove(postId);
-          _localVoteMap.remove(postId);
-        });
-        if (e.code == 'resource-exhausted') {
-          _showInsufficientBalanceDialog();
-        } else if (e.code == 'already-exists') {
-          // Firebase confirme le double-vote : garder l'état voté mais montrer message
-          setState(() => _votedInSession.add(postId));
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Vous avez déjà voté pour ce post.'), duration: Duration(seconds: 2)),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Erreur lors du vote. Réessaie plus tard.'), duration: Duration(seconds: 3)),
-          );
-        }
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() {
-          _votedInSession.remove(postId);
-          _localVoteMap.remove(postId);
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Erreur lors du vote. Réessaie plus tard.'), duration: Duration(seconds: 3)),
-        );
-      }
+      if (mounted) showDefiVoteAnimation(context, anchor: btnKey);
+    } catch (e) {
+      if (!mounted) return;
+      final alreadyVoted = e is FirebaseFunctionsException && e.code == 'already-exists';
+      setState(() {
+        _localVoteMap.remove(postId);
+        if (!alreadyVoted) _votedInSession.remove(postId);
+      });
+      DefiDialogs.handleError(context, e, isVote: true);
     } finally {
       if (mounted) setState(() => _isVoting = false);
     }
-  }
-
-  void _showInsufficientBalanceDialog() {
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        final c = AppColors.of(ctx);
-        return AlertDialog(
-          backgroundColor: c.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: _yellow, width: 2),
-          ),
-          title: const Text(
-            'Solde insuffisant 🪙',
-            style: TextStyle(color: _yellow, fontWeight: FontWeight.bold),
-          ),
-          content: Text(
-            'Votre solde Afrcoins est insuffisant pour voter. Rechargez votre compte pour continuer.',
-            style: TextStyle(color: c.textPrimary),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text('Annuler', style: TextStyle(color: c.textSecondary)),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                Navigator.push(ctx, MaterialPageRoute(builder: (_) => const CoinRechargeScreen()));
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: _yellow),
-              child: const Text('Recharger', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   @override
@@ -591,19 +526,6 @@ class _DefiResponseBannerState extends State<DefiResponseBanner> {
   late bool _hasVoted;
   final GlobalKey _voteBtnKey = GlobalKey();
 
-  void _triggerVoteAnimation() {
-    final box = _voteBtnKey.currentContext?.findRenderObject() as RenderBox?;
-    final pos = box != null
-        ? box.localToGlobal(Offset(box.size.width / 2, box.size.height / 2))
-        : Offset(MediaQuery.of(context).size.width / 2, MediaQuery.of(context).size.height * 0.6);
-    final overlay = Overlay.of(context);
-    late OverlayEntry entry;
-    entry = OverlayEntry(
-      builder: (_) => _VoteSuccessOverlay(start: pos, onDone: () => entry.remove()),
-    );
-    overlay.insert(entry);
-  }
-
   @override
   void initState() {
     super.initState();
@@ -632,11 +554,13 @@ class _DefiResponseBannerState extends State<DefiResponseBanner> {
     final postId = widget.responsePost.id;
     if (postId == null || widget.currentUserId.isEmpty) return;
 
-    // already-voted : contrôle local avant appel réseau
+    final cfg = _defiPost?.defiConfig;
+    if (cfg != null && (cfg.isTermine || DateTime.fromMillisecondsSinceEpoch(cfg.endDate).isBefore(DateTime.now()))) {
+      DefiDialogs.defiEnded(context);
+      return;
+    }
     if (_hasVoted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vous avez déjà voté pour ce post.'), duration: Duration(seconds: 2)),
-      );
+      DefiDialogs.alreadyVoted(context);
       return;
     }
 
@@ -647,58 +571,18 @@ class _DefiResponseBannerState extends State<DefiResponseBanner> {
         'action': 'vote',
         'postId': postId,
       });
-      // ✅ Succès — animation vote
-      if (mounted) _triggerVoteAnimation();
-    } on FirebaseFunctionsException catch (e) {
-      if (mounted) {
-        if (e.code == 'resource-exhausted') {
-          setState(() { _hasVoted = false; _localVotes = (_localVotes - 1).clamp(0, 999999); });
-          _showInsufficientDialog();
-        } else if (e.code == 'already-exists') {
-          // Firebase confirme : garder _hasVoted = true, juste informer
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Vous avez déjà voté pour ce post.'), duration: Duration(seconds: 2)),
-          );
-        } else {
-          setState(() { _hasVoted = false; _localVotes = (_localVotes - 1).clamp(0, 999999); });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Erreur lors du vote. Réessaie plus tard.'), duration: Duration(seconds: 3)),
-          );
-        }
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() { _hasVoted = false; _localVotes = (_localVotes - 1).clamp(0, 999999); });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Erreur lors du vote. Réessaie plus tard.'), duration: Duration(seconds: 3)),
-        );
-      }
+      if (mounted) showDefiVoteAnimation(context, anchor: _voteBtnKey);
+    } catch (e) {
+      if (!mounted) return;
+      final alreadyVoted = e is FirebaseFunctionsException && e.code == 'already-exists';
+      setState(() {
+        _localVotes = (_localVotes - 1).clamp(0, 999999);
+        _hasVoted = alreadyVoted;
+      });
+      DefiDialogs.handleError(context, e, isVote: true);
     } finally {
       if (mounted) setState(() => _isVoting = false);
     }
-  }
-
-  void _showInsufficientDialog() {
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        final c = AppColors.of(ctx);
-        return AlertDialog(
-          backgroundColor: c.surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: _yellow, width: 2)),
-          title: const Text('Solde insuffisant 🪙', style: TextStyle(color: _yellow, fontWeight: FontWeight.bold)),
-          content: Text('Votre solde est insuffisant pour voter. Rechargez pour continuer.', style: TextStyle(color: c.textPrimary)),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Annuler', style: TextStyle(color: c.textSecondary))),
-            ElevatedButton(
-              onPressed: () { Navigator.pop(ctx); Navigator.push(ctx, MaterialPageRoute(builder: (_) => const CoinRechargeScreen())); },
-              style: ElevatedButton.styleFrom(backgroundColor: _yellow),
-              child: const Text('Recharger', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   @override
@@ -802,110 +686,3 @@ class _DefiResponseBannerState extends State<DefiResponseBanner> {
   }
 }
 
-// ── Animation vote réussi (trophées volants + badge "+1 Vote") ───────────────
-class _VoteSuccessOverlay extends StatefulWidget {
-  final Offset start;
-  final VoidCallback onDone;
-  const _VoteSuccessOverlay({required this.start, required this.onDone});
-
-  @override
-  State<_VoteSuccessOverlay> createState() => _VoteSuccessOverlayState();
-}
-
-class _VoteSuccessOverlayState extends State<_VoteSuccessOverlay> with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-  late final Animation<double> _p;
-  final _rnd = math.Random();
-  late final List<_Particle> _particles;
-
-  @override
-  void initState() {
-    super.initState();
-    _particles = List.generate(7, (_) => _Particle(
-      dx: (_rnd.nextDouble() - 0.5) * 160,
-      dy: -(90 + _rnd.nextDouble() * 140),
-      rotation: (_rnd.nextDouble() - 0.5) * 0.9,
-      size: 18 + _rnd.nextDouble() * 14,
-      emoji: const ['🏆', '⭐', '🗳️', '✨'][_rnd.nextInt(4)],
-    ));
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1400));
-    _p = CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic);
-    _ctrl.forward().whenComplete(widget.onDone);
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  double _opacity(double p) => p < 0.7 ? 1.0 : (1.0 - (p - 0.7) / 0.3).clamp(0.0, 1.0);
-
-  double _scale(double p) {
-    if (p < 0.25) return 0.5 + (p / 0.25) * 0.8;
-    if (p < 0.7) return 1.3;
-    return (1.3 - ((p - 0.7) / 0.3) * 0.6).clamp(0.3, 1.5);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: AnimatedBuilder(
-        animation: _p,
-        builder: (_, __) {
-          final p = _p.value;
-          final op = _opacity(p);
-          return Stack(
-            children: [
-              ..._particles.map((pt) => Positioned(
-                    left: widget.start.dx + pt.dx * p - pt.size / 2,
-                    top: widget.start.dy + pt.dy * p - pt.size / 2,
-                    child: Opacity(
-                      opacity: op,
-                      child: Transform.rotate(
-                        angle: pt.rotation * (p < 0.5 ? p * 2 : (1 - p) * 2),
-                        child: Transform.scale(
-                          scale: _scale(p),
-                          child: Text(pt.emoji, style: TextStyle(fontSize: pt.size, decoration: TextDecoration.none)),
-                        ),
-                      ),
-                    ),
-                  )),
-              Positioned(
-                left: widget.start.dx - 60,
-                top: widget.start.dy - 30 - 110 * p,
-                width: 120,
-                child: Opacity(
-                  opacity: op,
-                  child: Transform.scale(
-                    scale: _scale(p),
-                    child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: _yellow,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [BoxShadow(color: _yellow.withOpacity(0.5), blurRadius: 14)],
-                        ),
-                        child: const Text(
-                          '+1 Vote',
-                          style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold, decoration: TextDecoration.none),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _Particle {
-  final double dx, dy, rotation, size;
-  final String emoji;
-  const _Particle({required this.dx, required this.dy, required this.rotation, required this.size, required this.emoji});
-}

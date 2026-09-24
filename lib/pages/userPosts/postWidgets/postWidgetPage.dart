@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:afrotok/pages/defi/defi_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
@@ -65,7 +66,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../youTube_video_card.dart';
 import 'audioPostWidget.dart';
-import '../userPostForm.dart';
 import '../../../services/postService/post_view_service.dart';
 import '../../../services/postService/feed_interaction_service.dart';
 import '../../../services/streak_service.dart';
@@ -155,6 +155,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   bool _isVoting = false;
   int _localDefiVotes = 0;
   bool _hasVotedLocally = false;
+  final GlobalKey _voteBtnKey = GlobalKey();
   late AnimationController _voteAnimController;
   late Animation<double> _voteScaleAnim;
   // État local du like — résistant aux rebuilds du parent qui remplace widget.post
@@ -2590,20 +2591,14 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     final isDefiResponse = post.defiResponseToPostId != null;
     if (!isDefi && !isDefiResponse) return const SizedBox.shrink();
 
-    // Post DÉFI original → bouton "Participer"
+    // Post DÉFI original → bouton "Participer" (ou badge "Terminé")
     if (isDefi) {
+      if (isDefiOver(post)) return const DefiEndedChip();
       return Material(
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
-          onTap: hasAccess ? () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => UserPostForm(defiPostId: post.id!),
-              ),
-            );
-          } : null,
+          onTap: hasAccess ? () => openDefiParticipation(context, post) : null,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
@@ -2626,7 +2621,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       );
     }
 
-    // Réponse DÉFI → bouton Vote existant
+    // Réponse DÉFI → bouton Voter (reste cliquable après vote pour expliquer "déjà voté")
     final canVote = hasAccess && !_hasVotedLocally && !_isVoting;
 
     return ScaleTransition(
@@ -2635,11 +2630,12 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
-          onTap: canVote ? () {
+          onTap: hasAccess && !_isVoting ? () {
             _handleDefiVote();
             recordUniquePostView();
           } : null,
           child: Container(
+            key: _voteBtnKey,
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
               color: canVote
@@ -2669,7 +2665,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                       ),
                 const SizedBox(width: 4),
                 Text(
-                  _formatCount(_localDefiVotes),
+                  '${_hasVotedLocally ? 'Voté' : 'Voter'} · ${_formatCount(_localDefiVotes)}',
                   style: TextStyle(
                     color: canVote ? Colors.white
                         : _hasVotedLocally ? _defiYellow
@@ -3697,13 +3693,15 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
 
   Future<void> _handleDefiVote() async {
-    if (_isVoting || _hasVotedLocally) return;
+    if (_isVoting) return;
     final userId = authProvider.loginUserData.id;
-    if (userId == null) return;
     final postId = widget.post.id;
-    if (postId == null) return;
+    if (userId == null || postId == null) return;
+    if (_hasVotedLocally) {
+      DefiDialogs.alreadyVoted(context);
+      return;
+    }
 
-    // Optimistic update
     setState(() {
       _isVoting = true;
       _hasVotedLocally = true;
@@ -3716,20 +3714,15 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         'action': 'vote',
         'postId': postId,
       });
+      if (mounted) showDefiVoteAnimation(context, anchor: _voteBtnKey);
     } catch (e) {
-      // Rollback si erreur
-      if (mounted) {
-        setState(() {
-          _hasVotedLocally = false;
-          _localDefiVotes = (_localDefiVotes - 1).clamp(0, 999999);
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur : impossible de voter — $e'),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
+      if (!mounted) return;
+      final alreadyVoted = e is FirebaseFunctionsException && e.code == 'already-exists';
+      setState(() {
+        _localDefiVotes = (_localDefiVotes - 1).clamp(0, 999999);
+        _hasVotedLocally = alreadyVoted;
+      });
+      DefiDialogs.handleError(context, e, isVote: true);
     } finally {
       if (mounted) setState(() => _isVoting = false);
     }

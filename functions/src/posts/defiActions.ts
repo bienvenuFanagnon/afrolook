@@ -1,10 +1,10 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { FieldValue, Transaction, DocumentReference } from "firebase-admin/firestore";
 import { db } from "../shared/firebase";
+import {
+  APP_DATA_DOC, POST_ID_PATTERN, defaultRewardSplit, defiLabel, sanitizeClientPost, sendDefiNotification,
+} from "./defiShared";
 
-// Mêmes champs et même répartition que l'envoi de cadeau (lib/services/coin_gift_service.dart) :
-// créateur = floor(70 %) sur giftCoinsBalance, reste → AppData.solde_gain_pieces.
-const APP_DATA_DOC = "XgkSxKc10vWsJJ2uBraT";
 
 function computeShares(prix: number): { appShare: number; creatorShare: number } {
   const creatorShare = Math.floor(prix * 0.7);
@@ -20,6 +20,8 @@ function computeShares(prix: number): { appShare: number; creatorShare: number }
  *   "participate" — payer la participation ET créer le post-réponse dans la même
  *                   transaction (postId = défi, post = post-réponse sérialisé) ;
  *                   une seule participation par utilisateur et par DÉFI
+ *   "create"      — créer un DÉFI en débitant la cagnotte au créateur dans la même
+ *                   transaction (postId = id du nouveau post, post = post DÉFI sérialisé)
  */
 export const handleDefiAction = onCall(
   { timeoutSeconds: 30, memory: "256MiB", cpu: 1 },
@@ -49,6 +51,12 @@ export const handleDefiAction = onCall(
         throw new HttpsError("invalid-argument", "Le post de participation est requis.");
       }
       return handleParticipation(uid, postId, post);
+    }
+    if (action === "create") {
+      if (!post || typeof post !== "object") {
+        throw new HttpsError("invalid-argument", "Le post DÉFI est requis.");
+      }
+      return handleCreateDefi(uid, postId, post);
     }
 
     throw new HttpsError("invalid-argument", `Action inconnue : ${action}`);
@@ -124,6 +132,17 @@ function chargeFee(tx: Transaction, params: {
 
 // ── Vote ──────────────────────────────────────────────────────────────────────
 async function handleVote(voterId: string, responsePostId: string) {
+  const vote = await recordVote(voterId, responsePostId);
+  try {
+    await notifyVote({ ...vote, voterId, responsePostId });
+  } catch (err) {
+    // Le vote est déjà enregistré : un échec de notification ne doit pas le faire échouer.
+    console.error("[handleDefiAction] Notification de vote échouée:", err);
+  }
+  return { success: true };
+}
+
+async function recordVote(voterId: string, responsePostId: string) {
   const responseRef = db.collection("Posts").doc(responsePostId);
   const voterRef = db.collection("Users").doc(voterId);
 
@@ -162,6 +181,11 @@ async function handleVote(voterId: string, responsePostId: string) {
     const defiCreatorId: string | undefined = defiData["user_id"];
     const voteFee: number = (defiConfig?.["vote_fee"] as number) ?? 0;
 
+    const endDate = (defiConfig?.["end_date"] as number) ?? 0;
+    if (defiConfig?.["status"] === "termine" || (endDate > 0 && endDate < Date.now())) {
+      throw new HttpsError("failed-precondition", "Ce DÉFI est terminé.");
+    }
+
     if (voteFee > 0) {
       if (!defiCreatorId) {
         throw new HttpsError("not-found", "Créateur du DÉFI introuvable.");
@@ -196,67 +220,76 @@ async function handleVote(voterId: string, responsePostId: string) {
       defi_voter_ids: FieldValue.arrayUnion(voterId),
     });
 
-    return { success: true };
+    const voterData = voterDoc.data()!;
+    return {
+      defiPostId,
+      defiCreatorId,
+      defiDescription: (defiData["description"] as string | undefined) ?? "",
+      responseOwnerId: responseData["user_id"] as string | undefined,
+      responseDataType: (responseData["dataType"] as string | undefined) ?? "",
+      responseThumbnail: (responseData["thumbnail"] as string | undefined)
+        ?? ((responseData["images"] as string[] | undefined)?.[0]) ?? "",
+      voterPseudo: (voterData["pseudo"] as string | undefined) ?? "",
+      voterImage: (voterData["imageUrl"] as string | undefined) ?? "",
+    };
   });
 }
 
-// ── Participation ─────────────────────────────────────────────────────────────
-const POST_ID_PATTERN = /^[A-Za-z0-9_-]{10,64}$/;
+// Notifie le participant (son post a reçu un vote) et le créateur du DÉFI.
+async function notifyVote(p: {
+  voterId: string;
+  responsePostId: string;
+  defiPostId: string;
+  defiCreatorId?: string;
+  defiDescription: string;
+  responseOwnerId?: string;
+  responseDataType: string;
+  responseThumbnail: string;
+  voterPseudo: string;
+  voterImage: string;
+}) {
+  const ownerId = p.responseOwnerId;
+  const creatorId = p.defiCreatorId;
+  const notifyOwner = !!ownerId && ownerId !== p.voterId;
+  const notifyCreator = !!creatorId && creatorId !== p.voterId && creatorId !== ownerId;
+  if (!notifyOwner && !notifyCreator) return;
 
-// Le post vient du client : on impose l'identité, le lien au DÉFI et on remet
-// à zéro tout ce qui ne doit pas pouvoir être fixé à la création.
-function sanitizeParticipationPost(
-  raw: Record<string, unknown>,
-  postId: string,
-  userId: string,
-  defiPostId: string,
-): Record<string, unknown> {
-  const data: Record<string, unknown> = { ...raw };
-  for (const key of [
-    "defi_config", "rawScore", "postScore", "reporterIds", "wrongCategoryReporterIds",
-    "reportCount", "commentSuggestions", "isRepost", "reposterUserId", "reposterPseudo",
-    "reposterImageUrl", "originalPostId",
-  ]) {
-    delete data[key];
-  }
-  return {
-    ...data,
-    id: postId,
-    user_id: userId,
-    type: "POST",
-    status: "VALIDE",
-    defi_response_to_post_id: defiPostId,
-    defi_votes: 0,
-    defi_voter_ids: [],
-    likes: 0,
-    loves: 0,
-    comments: 0,
-    partage: 0,
-    vues: 0,
-    popularity: 0,
-    giftCount: 0,
-    feedScore: 0,
-    uniqueViewsCount: 0,
-    favorites_count: 0,
-    adSupportCount: 0,
-    seen_by_users_count: 0,
-    seen_by_users_map: {},
-    votes_challenge: 0,
-    users_like_id: [],
-    users_love_id: [],
-    users_vue_id: [],
-    users_republier_id: [],
-    users_favorite_id: [],
-    users_votes_ids: [],
-    isBoosted: false,
-    isAdvertisement: false,
-    advertisementId: null,
-    rang_gagnant: null,
-    prix_gagnant: null,
-    prix_deja_encaisser: null,
-    date_encaissement: null,
+  const [appDoc, ownerDoc] = await Promise.all([
+    db.collection("AppData").doc(APP_DATA_DOC).get(),
+    ownerId ? db.collection("Users").doc(ownerId).get() : Promise.resolve(null),
+  ]);
+  const appConfig = appDoc.data() ?? {};
+  const voter = p.voterPseudo ? `@${p.voterPseudo}` : "Quelqu'un";
+  const ownerPseudo = (ownerDoc?.data()?.["pseudo"] as string | undefined) ?? "";
+  const label = defiLabel(p.defiDescription);
+  const common = {
+    senderId: p.voterId,
+    postId: p.responsePostId,
+    postDataType: p.responseDataType,
+    image: p.voterImage,
+    thumbnail: p.responseThumbnail,
+    defiPostId: p.defiPostId,
+    appConfig,
   };
+
+  await Promise.all([
+    notifyOwner ? sendDefiNotification({
+      ...common,
+      receiverId: ownerId!,
+      receiverData: ownerDoc?.data(),
+      titre: "🗳️ Nouveau vote",
+      message: `🗳️ ${voter} a voté pour ta participation au DÉFI${label}`,
+    }) : Promise.resolve(),
+    notifyCreator ? sendDefiNotification({
+      ...common,
+      receiverId: creatorId!,
+      titre: "🗳️ Vote dans ton DÉFI",
+      message: `🗳️ ${voter} a voté pour ${ownerPseudo ? `@${ownerPseudo}` : "une participation"} dans ton DÉFI${label}`,
+    }) : Promise.resolve(),
+  ]);
 }
+
+// ── Participation ─────────────────────────────────────────────────────────────
 
 async function handleParticipation(
   participantId: string,
@@ -343,11 +376,116 @@ async function handleParticipation(
       });
     }
 
-    tx.set(newPostRef, sanitizeParticipationPost(rawPost, newPostId, participantId, defiPostId));
+    tx.set(newPostRef, {
+      ...sanitizeClientPost(rawPost, newPostId, participantId),
+      type: "POST",
+      defi_response_to_post_id: defiPostId,
+    });
 
     tx.update(defiRef, {
       defi_participant_ids: FieldValue.arrayUnion(participantId),
       defi_participant_count: FieldValue.increment(1),
+    });
+
+    return { success: true, postId: newPostId };
+  });
+}
+
+// ── Création d'un DÉFI ────────────────────────────────────────────────────────
+const MAX_CAGNOTTE = 10_000_000;
+const MAX_DEFI_DURATION_MS = 90 * 24 * 3600 * 1000;
+
+function toInt(v: unknown): number {
+  return typeof v === "number" && Number.isFinite(v) ? Math.floor(v) : NaN;
+}
+
+async function handleCreateDefi(creatorId: string, newPostId: string, rawPost: Record<string, unknown>) {
+  if (!POST_ID_PATTERN.test(newPostId) || rawPost["id"] !== newPostId) {
+    throw new HttpsError("invalid-argument", "Identifiant de post invalide.");
+  }
+
+  const cfg = rawPost["defi_config"] as Record<string, unknown> | undefined;
+  if (!cfg || typeof cfg !== "object") {
+    throw new HttpsError("invalid-argument", "Configuration du DÉFI manquante.");
+  }
+  const cagnotte = toInt(cfg["cagnotte_pieces"]);
+  const participationFee = toInt(cfg["participation_fee"] ?? 0);
+  const voteFee = toInt(cfg["vote_fee"] ?? 0);
+  const winnersCount = toInt(cfg["winners_count"] ?? 1);
+  const endDate = toInt(cfg["end_date"]);
+  const now = Date.now();
+
+  if (!(cagnotte >= 0 && cagnotte <= MAX_CAGNOTTE)
+      || !(participationFee >= 0)
+      || !(voteFee === 0 || voteFee >= 5)
+      || !(winnersCount >= 1 && winnersCount <= 3)
+      || !(endDate > now && endDate <= now + MAX_DEFI_DURATION_MS)) {
+    throw new HttpsError("invalid-argument", "Configuration du DÉFI invalide.");
+  }
+
+  const postRef = db.collection("Posts").doc(newPostId);
+  const creatorRef = db.collection("Users").doc(creatorId);
+
+  return db.runTransaction(async (tx) => {
+    const [existingDoc, creatorDoc] = await Promise.all([tx.get(postRef), tx.get(creatorRef)]);
+
+    // Relance après une réponse perdue : le DÉFI a déjà été créé et la cagnotte débitée.
+    if (existingDoc.exists) {
+      const existing = existingDoc.data()!;
+      if (existing["user_id"] === creatorId && existing["type"] === "DEFI") {
+        return { success: true, postId: newPostId, alreadyCreated: true };
+      }
+      throw new HttpsError("already-exists", "Identifiant de post déjà utilisé.");
+    }
+    if (!creatorDoc.exists) {
+      throw new HttpsError("not-found", "Compte créateur introuvable.");
+    }
+
+    if (cagnotte > 0) {
+      const balance = (creatorDoc.data()!["giftCoinsBalance"] as number) ?? 0;
+      if (balance < cagnotte) {
+        throw new HttpsError(
+          "resource-exhausted",
+          `Solde insuffisant — ${balance} pièces disponibles, ${cagnotte} requises pour la cagnotte.`
+        );
+      }
+      tx.update(creatorRef, {
+        giftCoinsBalance: FieldValue.increment(-cagnotte),
+        totalGiftCoinsSpent: FieldValue.increment(cagnotte),
+        updatedAt: now,
+      });
+      const txRef = db.collection("TransactionSoldes").doc();
+      tx.set(txRef, {
+        id: txRef.id,
+        user_id: creatorId,
+        type: "DEPENSE",
+        statut: "VALIDER",
+        description: `Cagnotte DÉFI — ${cagnotte} pièces mises en jeu`,
+        montant: cagnotte,
+        frais: 0,
+        montant_total: cagnotte,
+        methode_paiement: "pieces",
+        createdAt: now,
+        updatedAt: now,
+        defiPostId: newPostId,
+      });
+    }
+
+    tx.set(postRef, {
+      ...sanitizeClientPost(rawPost, newPostId, creatorId),
+      type: "DEFI",
+      defi_participant_ids: [],
+      defi_participant_count: 0,
+      defi_config: {
+        cagnotte_pieces: cagnotte,
+        participation_fee: participationFee,
+        vote_fee: voteFee,
+        winners_count: winnersCount,
+        reward_split: defaultRewardSplit(winnersCount),
+        end_date: endDate,
+        status: "en_cours",
+        cagnotte_funded: true,
+      },
     });
 
     return { success: true, postId: newPostId };

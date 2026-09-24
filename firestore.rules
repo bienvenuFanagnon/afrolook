@@ -239,9 +239,11 @@ service cloud.firestore {
     // Cloud Function handleDefiAction : le client ne peut ni les créer ni les
     // modifier, ce qui empêche de participer ou voter sans payer.
     // ─────────────────────────────────────────────────────────────
+    // La création d'un DÉFI (cagnotte débitée) et sa clôture (gains versés) passent
+    // aussi uniquement par les Cloud Functions : defi_config et le type DEFI sont réservés.
     function defiServerKeys() {
       return ['defi_response_to_post_id', 'defi_participant_ids', 'defi_participant_count',
-              'defi_votes', 'defi_voter_ids'];
+              'defi_votes', 'defi_voter_ids', 'defi_config', 'defi_winners', 'defi_settled_at'];
     }
 
     match /Posts/{postId} {
@@ -249,13 +251,14 @@ service cloud.firestore {
 
       allow create: if isAuth()
           && (request.resource.data.user_id == uid() || isAdmin())
+          && request.resource.data.get('type', '') != 'DEFI'
           && !request.resource.data.keys().hasAny(defiServerKeys());
 
       allow update: if isAuth()
           && !request.resource.data.diff(resource.data).affectedKeys()
               .hasAny(defiServerKeys().concat(['user_id']))
-          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['defi_config'])
-              || resource.data.user_id == uid() || isAdmin());
+          && !(request.resource.data.diff(resource.data).affectedKeys().hasAny(['type'])
+               && (resource.data.get('type', '') == 'DEFI' || request.resource.data.get('type', '') == 'DEFI'));
 
       allow delete: if isAuth() && (resource.data.user_id == uid() || isAdmin());
     }

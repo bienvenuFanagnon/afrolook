@@ -1,10 +1,10 @@
 ﻿import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
-import 'package:afrotok/pages/coins/coin_recharge_screen.dart';
 
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrotok/pages/defi/defi_ui.dart';
 
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/userPosts/postWidgets/defi_config_section.dart';
@@ -1467,42 +1467,20 @@ class _UserPubVideoState extends State<UserPubVideo> {
     }
   }
 
-  void _showDefiInsufficientDialog() {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: _c.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.monetization_on, color: Color(0xFFFF9500)),
-            SizedBox(width: 8),
-            Text('Solde insuffisant', style: TextStyle(color: Color(0xFFFF9500), fontWeight: FontWeight.bold, fontSize: 16)),
-          ],
-        ),
-        content: Text(
-          'Vous n\'avez pas assez de pièces pour participer à ce DÉFI.\nRechargez votre solde pour continuer.',
-          style: TextStyle(color: _c.textSecondary, fontSize: 13),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Fermer', style: TextStyle(color: _c.textSecondary)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF9500), foregroundColor: Colors.white, shape: const StadiumBorder()),
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const CoinRechargeScreen()));
-            },
-            child: const Text('Recharger', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
-  }
 
   Future<void> _publishVideo() async {
+    if (widget.defiPostId == null && _selectedPostType == 'DEFI') {
+      if (_defiConfig == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Complète la configuration du DÉFI (date de fin et cagnotte).', textAlign: TextAlign.center),
+        ));
+        return;
+      }
+      if (_defiConfig!.cagnottePieces > (authProvider.loginUserData.giftCoinsBalance ?? 0)) {
+        DefiDialogs.insufficientBalance(context, isVote: false, isCreation: true);
+        return;
+      }
+    }
     if (onTap) return;
 
     if (widget.canal != null) {
@@ -1691,20 +1669,24 @@ class _UserPubVideoState extends State<UserPubVideo> {
               'postId': widget.defiPostId,
               'post': post.toJson(),
             });
-          } on FirebaseFunctionsException catch (e) {
+          } catch (e) {
             if (mounted) Navigator.of(context, rootNavigator: true).pop();
             setState(() => onTap = false);
-            if (mounted) {
-              if (e.code == 'resource-exhausted') {
-                _showDefiInsufficientDialog();
-              } else if (e.code == 'already-exists') {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vous participez déjà à ce DÉFI.')));
-              } else if (e.code == 'failed-precondition') {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ce DÉFI est terminé, les participations sont closes.')));
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erreur de participation. Réessaie plus tard.')));
-              }
-            }
+            if (mounted) DefiDialogs.handleError(context, e, isVote: false);
+            return;
+          }
+        } else if (post.type == PostType.DEFI.name) {
+          // Création DÉFI : la Cloud Function débite la cagnotte et crée le post dans une seule transaction
+          try {
+            await FirebaseFunctions.instance.httpsCallable('handleDefiAction').call({
+              'action': 'create',
+              'postId': postId,
+              'post': {...post.toJson(), 'defi_config': post.defiConfigMap},
+            });
+          } catch (e) {
+            if (mounted) Navigator.of(context, rootNavigator: true).pop();
+            setState(() => onTap = false);
+            if (mounted) DefiDialogs.handleError(context, e, isVote: false, isCreation: true);
             return;
           }
         } else {

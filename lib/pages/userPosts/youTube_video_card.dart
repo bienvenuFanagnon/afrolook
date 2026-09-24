@@ -9,6 +9,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:afrotok/pages/defi/defi_ui.dart';
 import '../../widgets/smart_video_player.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
@@ -54,7 +55,6 @@ import '../../widgets/user_badge_widget.dart';
 import '../../theme/app_colors.dart';
 import '../../providers/locale_provider.dart';
 import 'postWidgets/translatable_description.dart';
-import 'userPostForm.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'video_preload_manager.dart';
 import '../../services/media_cache_service.dart';
@@ -306,6 +306,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   bool _isVoting = false;
   int _localDefiVotes = 0;
   bool _hasVotedLocally = false;
+  final GlobalKey _voteBtnKey = GlobalKey();
   late AnimationController _voteAnimController;
   late Animation<double> _voteScaleAnim;
   int _localCommentsCount = 0;
@@ -2218,11 +2219,14 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   static const Color _defiYellow = Color(0xFFFF9500);
 
   Future<void> _handleDefiVote() async {
-    if (_isVoting || _hasVotedLocally) return;
+    if (_isVoting) return;
     final userId = _authProvider.loginUserData.id;
-    if (userId == null) return;
     final postId = widget.post.id;
-    if (postId == null) return;
+    if (userId == null || postId == null) return;
+    if (_hasVotedLocally) {
+      DefiDialogs.alreadyVoted(context);
+      return;
+    }
 
     setState(() {
       _isVoting = true;
@@ -2236,16 +2240,15 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
         'action': 'vote',
         'postId': postId,
       });
+      if (mounted) showDefiVoteAnimation(context, anchor: _voteBtnKey);
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _hasVotedLocally = false;
-          _localDefiVotes = (_localDefiVotes - 1).clamp(0, 999999);
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur vote : $e'), duration: const Duration(seconds: 2)),
-        );
-      }
+      if (!mounted) return;
+      final alreadyVoted = e is FirebaseFunctionsException && e.code == 'already-exists';
+      setState(() {
+        _localDefiVotes = (_localDefiVotes - 1).clamp(0, 999999);
+        _hasVotedLocally = alreadyVoted;
+      });
+      DefiDialogs.handleError(context, e, isVote: true);
     } finally {
       if (mounted) setState(() => _isVoting = false);
     }
@@ -2305,20 +2308,14 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     final isDefiResponse = post.defiResponseToPostId != null;
     if (!isDefi && !isDefiResponse) return const SizedBox.shrink();
 
-    // Post DÉFI original → bouton "Participer"
+    // Post DÉFI original → bouton "Participer" (ou badge "Terminé")
     if (isDefi) {
+      if (isDefiOver(post)) return const DefiEndedChip();
       return Material(
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
-          onTap: hasAccess ? () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => UserPostForm(defiPostId: post.id!),
-              ),
-            );
-          } : null,
+          onTap: hasAccess ? () => openDefiParticipation(context, post) : null,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
@@ -2352,8 +2349,9 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
-          onTap: canVote ? _handleDefiVote : null,
+          onTap: hasAccess && !_isVoting ? _handleDefiVote : null,
           child: Container(
+            key: _voteBtnKey,
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
               color: canVote
@@ -2383,9 +2381,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                       ),
                 const SizedBox(width: 4),
                 Text(
-                  _localDefiVotes >= 1000
-                      ? '${(_localDefiVotes / 1000).toStringAsFixed(1)}k'
-                      : '$_localDefiVotes',
+                  '${_hasVotedLocally ? 'Voté' : 'Voter'} · '
+                  '${_localDefiVotes >= 1000 ? '${(_localDefiVotes / 1000).toStringAsFixed(1)}k' : '$_localDefiVotes'}',
                   style: TextStyle(
                     color: canVote ? Colors.white
                         : _hasVotedLocally ? _defiYellow

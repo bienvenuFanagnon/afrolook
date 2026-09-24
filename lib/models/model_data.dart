@@ -1617,6 +1617,9 @@ class Post {
   // Présent sur un post DEFI : utilisateurs ayant déjà participé (écrit par la Cloud Function)
   List<String>? defiParticipantIds = [];
 
+  // Présent sur un post DEFI clôturé : gagnants et gains versés (écrit par la Cloud Function)
+  List<DefiWinner> defiWinners = [];
+
   // Snapshot du créateur/canal stocké à la création du post pour éviter les fetches profil
   Map<String, dynamic>? creatorSnapshot;
   Map<String, dynamic>? canalSnapshot;
@@ -1756,6 +1759,9 @@ class Post {
     defiVotes = json['defi_votes'] ?? 0;
     defiVoterIds = json['defi_voter_ids'] == null ? [] : List<String>.from(json['defi_voter_ids']);
     defiParticipantIds = json['defi_participant_ids'] == null ? [] : List<String>.from(json['defi_participant_ids']);
+    defiWinners = json['defi_winners'] is List
+        ? (json['defi_winners'] as List).whereType<Map>().map((m) => DefiWinner.fromJson(Map<String, dynamic>.from(m))).toList()
+        : [];
     if (json['defi_config'] != null) {
       defiConfigMap = Map<String, dynamic>.from(json['defi_config']);
     }
@@ -1912,11 +1918,11 @@ class Post {
     data['users_votes_ids'] = usersVotesIds;
 
     // Champs DÉFI
-    // defi_votes, defi_voter_ids et defi_participant_ids sont écrits uniquement par la Cloud
-    // Function : les exclure évite qu'un update(post.toJson()) avec une copie locale périmée
-    // (like, vue…) écrase les votes, et les règles Firestore refusent de les modifier côté client.
+    // defi_config, defi_votes, defi_voter_ids et defi_participant_ids sont écrits uniquement par
+    // les Cloud Functions : les exclure évite qu'un update(post.toJson()) avec une copie locale
+    // périmée (like, vue…) les écrase, et les règles Firestore refusent de les modifier côté client.
+    // La création d'un DÉFI envoie defi_config explicitement à handleDefiAction.
     if (defiResponseToPostId != null) data['defi_response_to_post_id'] = defiResponseToPostId;
-    if (defiConfigMap != null) data['defi_config'] = defiConfigMap;
 
     data['seen_by_users_count'] = seenByUsersCount;
     data['seen_by_users_map'] = seenByUsersMap ?? {};
@@ -2592,6 +2598,7 @@ class DefiConfig {
   final List<int> rewardSplit;  // Répartition en % [70, 20, 10] par ex.
   final int endDate;            // Timestamp ms de fin du défi
   final String status;          // 'en_cours' | 'termine'
+  final String? payoutStatus;   // 'paye' | 'fonds_insuffisants' (écrit par la Cloud Function)
 
   const DefiConfig({
     required this.cagnottePieces,
@@ -2601,6 +2608,7 @@ class DefiConfig {
     this.rewardSplit = const [100],
     required this.endDate,
     this.status = 'en_cours',
+    this.payoutStatus,
   });
 
   factory DefiConfig.fromJson(Map<String, dynamic> json) => DefiConfig(
@@ -2613,6 +2621,7 @@ class DefiConfig {
             : const [100],
         endDate: (json['end_date'] as num?)?.toInt() ?? 0,
         status: json['status'] as String? ?? 'en_cours',
+        payoutStatus: json['payout_status'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -2628,6 +2637,38 @@ class DefiConfig {
   bool get isPayantParticipation => participationFee > 0;
   bool get isPayantVote => voteFee > 0;
   bool get isTermine => status == 'termine';
+  bool get isPayoutWaitingFunds => payoutStatus == 'fonds_insuffisants';
+}
+
+// Gagnant d'un DÉFI clôturé (écrit par la Cloud Function settleEndedDefis)
+class DefiWinner {
+  final String userId;
+  final String postId;
+  final int rank;
+  final int coins;
+  final int votes;
+  final String pseudo;
+  final String imageUrl;
+
+  const DefiWinner({
+    required this.userId,
+    required this.postId,
+    required this.rank,
+    required this.coins,
+    required this.votes,
+    this.pseudo = '',
+    this.imageUrl = '',
+  });
+
+  factory DefiWinner.fromJson(Map<String, dynamic> json) => DefiWinner(
+        userId: json['userId'] as String? ?? '',
+        postId: json['postId'] as String? ?? '',
+        rank: (json['rank'] as num?)?.toInt() ?? 0,
+        coins: (json['coins'] as num?)?.toInt() ?? 0,
+        votes: (json['votes'] as num?)?.toInt() ?? 0,
+        pseudo: json['pseudo'] as String? ?? '',
+        imageUrl: json['imageUrl'] as String? ?? '',
+      );
 }
 
 // challenge_model.dart (ancien système — conservé pour rétrocompatibilité)

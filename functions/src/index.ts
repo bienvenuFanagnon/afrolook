@@ -20,3 +20,4 @@ export * from "./streak/streakReminder";
 export * from "./ads/ad_notifications";
 export * from "./posts/repostNotification";
 export * from "./posts/defiActions";
+export * from "./posts/defiSettlement";
