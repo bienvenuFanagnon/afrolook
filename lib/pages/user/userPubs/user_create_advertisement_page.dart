@@ -5,6 +5,8 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../../../utils/platform_guard.dart';
+import '../../../widgets/ios_purchase_unavailable.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:image_picker/image_picker.dart';
@@ -724,6 +726,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
   // ========== BUILD ==========
   @override
   Widget build(BuildContext context) {
+    if (kIsAppleStore) return const IosPurchaseUnavailableScreen(title: 'Publicité');
     _c = AppColors.of(context);
     return Scaffold(
       backgroundColor: _c.background,

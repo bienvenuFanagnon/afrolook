@@ -1,5 +1,6 @@
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'package:afrotok/utils/platform_guard.dart';
+import 'package:afrotok/services/apple_iap_service.dart';
 import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
@@ -1373,6 +1374,8 @@ class _MyHomePageState extends State<MyHomePage>
   void initState() {
     // _changeColor();
     super.initState();
+    // Achats App Store interrompus (iOS) : Apple les redonne à l'écoute, ils sont vérifiés puis crédités.
+    AppleIapService.instance.start();
     _headerCtrl = AnimationController(
       vsync: this,
       value: 1.0,

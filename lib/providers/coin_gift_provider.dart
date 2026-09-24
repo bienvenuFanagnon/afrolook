@@ -147,6 +147,8 @@ class CoinGiftUserProvider with ChangeNotifier {
         tx.update(ref, {
           'giftCoinsBalance': current + 10,
           'hasClaimedFreeCoins': true,
+          // Bonus offert : dépensable, mais pas convertible en argent.
+          ...CoinGiftService.lockFieldsAfterPurchase(snap.data(), 10),
         });
         credited = true;
       });

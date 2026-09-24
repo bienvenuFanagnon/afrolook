@@ -957,6 +957,20 @@ class UserData {
   int? totalGiftCoinsSpent;       // Total des pièces dépensées (cadeaux envoyés)
   int? totalGiftCoinsConverted;   // Total des pièces converties en FCFA
   bool? hasClaimedFreeCoins;      // Offre gratuite 10 pièces déjà utilisée (one-shot)
+  // Pièces achetées (App Store, Mobile Money, bonus) : dépensables mais non convertibles.
+  // Même calcul que functions/src/shared/coin_locks.ts ; lus seulement, jamais renvoyés par toJson.
+  int? lockedCoins;
+  int? lockedCoinsSpentBaseline;
+
+  int get lockedGiftCoins {
+    final locked = lockedCoins ?? 0;
+    if (locked <= 0) return 0;
+    final spentSinceLock = ((totalGiftCoinsSpent ?? 0) - (lockedCoinsSpentBaseline ?? 0)).clamp(0, 999999999999);
+    return (locked - spentSinceLock).clamp(0, giftCoinsBalance ?? 0);
+  }
+
+  /// Pièces gagnées, convertibles en FCFA puis retirables.
+  int get convertibleGiftCoins => ((giftCoinsBalance ?? 0) - lockedGiftCoins).clamp(0, 999999999999);
 
   // Monétisation par vues de posts
   int? totalPostUniqueViews = 0;          // Total cumulé de vues uniques sur ses posts normaux
@@ -1352,6 +1366,8 @@ class UserData {
     totalGiftCoinsPurchased = json['totalGiftCoinsPurchased'] ?? 0;
     totalGiftCoinsSpent = json['totalGiftCoinsSpent'] ?? 0;
     totalGiftCoinsConverted = json['totalGiftCoinsConverted'] ?? 0;
+    lockedCoins = (json['lockedCoins'] as num?)?.toInt() ?? 0;
+    lockedCoinsSpentBaseline = (json['lockedCoinsSpentBaseline'] as num?)?.toInt() ?? 0;
     hasClaimedFreeCoins = json['hasClaimedFreeCoins'] as bool? ?? false;
 
     totalPostUniqueViews = json['totalPostUniqueViews'] ?? 0;

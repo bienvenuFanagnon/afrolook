@@ -24,6 +24,13 @@ class CoinPack {
   /// Ainsi après déduction Apple, l'appli reçoit le même montant qu'en Mobile Money.
   double get iosPriceFcfa => (priceFcfa / 0.85).ceilToDouble();
 
+  /// Identifiant du produit consommable App Store Connect pour ce pack.
+  /// Doit correspondre à APPLE_COIN_PRODUCTS (functions/src/payments/appleIap.ts).
+  String get appleProductId => 'com.afrotok.afrotok.coins$coins';
+
+  /// Packs vendus via In-App Purchase sur iOS (mêmes quantités que la recharge).
+  static List<CoinPack> get appleProducts => rechargePacks;
+
   static List<CoinPack> get defaultPacks => [
     CoinPack(coins: 5, priceFcfa: 2, icon: '🌟', label: 'Mini'),
     CoinPack(coins: 25, priceFcfa: 10, icon: '❤️', label: 'Cœur'),

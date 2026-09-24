@@ -2,7 +2,7 @@ import 'package:afrotok/layout/centered_content.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/coin_gift_provider.dart';
@@ -22,7 +22,9 @@ class _CoinConversionPageState extends State<CoinConversionPage>
   final FocusNode _focusNode = FocusNode();
 
   bool _isLoading = false;
+  // Pièces convertibles (gagnées) : seules elles peuvent être converties puis retirées.
   int _coinsBalance = 0;
+  int _totalCoins = 0;
   int _coinsToConvert = 0;
   double _fcfaToGet = 0;
   String _errorMessage = '';
@@ -60,7 +62,10 @@ class _CoinConversionPageState extends State<CoinConversionPage>
     await coinProvider.refreshBalance(authPro.loginUserData!.id!);
     final user = coinProvider.currentUser;
     if (user != null) {
-      setState(() => _coinsBalance = user.giftCoinsBalance ?? 0);
+      setState(() {
+        _totalCoins = user.giftCoinsBalance ?? 0;
+        _coinsBalance = user.convertibleGiftCoins;
+      });
     }
   }
 
@@ -80,7 +85,7 @@ class _CoinConversionPageState extends State<CoinConversionPage>
         return;
       }
       if (parsed > _coinsBalance) {
-        _errorMessage = 'Maximum disponible : ${_fmt(_coinsBalance)} pièces';
+        _errorMessage = 'Maximum convertible : ${_fmt(_coinsBalance)} pièces gagnées';
         _coinsToConvert = 0;
         _fcfaToGet = 0;
       } else if (parsed < _minCoins) {
@@ -105,12 +110,10 @@ class _CoinConversionPageState extends State<CoinConversionPage>
     if (_coinsToConvert < _minCoins) return;
     setState(() => _isLoading = true);
     try {
-      final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-      await CoinGiftService.convertCoinsToFcfa(
-        userId: authProvider.loginUserData!.id!,
-        coinsAmount: _coinsToConvert,
-        firestore: FirebaseFirestore.instance,
-      );
+      // Côté serveur : vérifie que seules des pièces gagnées sont converties.
+      await FirebaseFunctions.instance
+          .httpsCallable('convertGiftCoins')
+          .call({'coinsAmount': _coinsToConvert});
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -128,8 +131,16 @@ class _CoinConversionPageState extends State<CoinConversionPage>
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
+      final notConvertible = e is FirebaseFunctionsException && e.code == 'failed-precondition';
+      if (notConvertible) await _loadBalance();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('❌ Erreur : $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text(notConvertible
+              ? 'Seules tes pièces gagnées sont convertibles : ${_fmt(_coinsBalance)} pièces maximum.'
+              : "La conversion n'a pas pu être effectuée. Vérifie ta connexion et réessaie."),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -247,10 +258,19 @@ class _CoinConversionPageState extends State<CoinConversionPage>
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              'pièces disponibles',
+              'pièces gagnées convertibles',
               style: TextStyle(color: colors.accent, fontSize: 11, fontWeight: FontWeight.w600),
             ),
           ),
+          if (_totalCoins > _coinsBalance) ...[
+            const SizedBox(height: 10),
+            Text(
+              'Solde total : ${_fmt(_totalCoins)} pièces, dont ${_fmt(_totalCoins - _coinsBalance)} achetées '
+              '(utilisables pour les cadeaux, votes et DÉFI, mais non convertibles).',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: colors.textSecondary, fontSize: 12, height: 1.4),
+            ),
+          ],
         ],
       ),
     );

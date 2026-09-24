@@ -8,6 +8,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import '../../../utils/platform_guard.dart';
+import '../../../widgets/ios_purchase_unavailable.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:image_picker/image_picker.dart';
@@ -642,6 +644,10 @@ class _GroupChatPageState extends State<GroupChatPage> {
   }
 
   Future<void> _payGroupSubscription(Map<String, dynamic> groupData, double price) async {
+    if (kIsAppleStore) {
+      showIosPurchaseUnavailable(context);
+      return;
+    }
     // Verrou anti-double-paiement
     if (_isPaymentProcessing) return;
     if (mounted) setState(() => _isPaymentProcessing = true);

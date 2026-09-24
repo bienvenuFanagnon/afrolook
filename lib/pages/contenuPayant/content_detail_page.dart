@@ -17,6 +17,8 @@ import 'package:afrotok/theme/app_colors.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../../utils/platform_guard.dart';
+import '../../widgets/ios_purchase_unavailable.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -457,6 +459,10 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
   }
 
   Future<void> _buy() async {
+    if (kIsAppleStore) {
+      showIosPurchaseUnavailable(context);
+      return;
+    }
     if (_content.id == null || _content.ownerId == null) return;
 
     setState(() => _buying = true);

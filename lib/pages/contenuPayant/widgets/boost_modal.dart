@@ -4,6 +4,8 @@ import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/theme/app_colors.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
+import '../../../utils/platform_guard.dart';
+import '../../../widgets/ios_purchase_unavailable.dart';
 import 'package:provider/provider.dart';
 
 class BoostModal extends StatefulWidget {
@@ -59,6 +61,10 @@ class _BoostModalState extends State<BoostModal> {
   }
 
   Future<void> _confirm() async {
+    if (kIsAppleStore) {
+      showIosPurchaseUnavailable(context);
+      return;
+    }
     if (widget.content.id == null) return;
     // Capturer le messenger AVANT l'await — le contexte de la BottomSheet
     // peut devenir invalide après la fermeture, et le SnackBar resterait invisible.

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../utils/platform_guard.dart';
+import '../../../widgets/ios_purchase_unavailable.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -118,6 +120,7 @@ class _OfficialSubscriptionPageState extends State<OfficialSubscriptionPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (kIsAppleStore) return const IosPurchaseUnavailableScreen(title: 'Compte officiel');
     final colors = AppColors.of(context);
     final fmt = DateFormat('dd/MM/yyyy');
 

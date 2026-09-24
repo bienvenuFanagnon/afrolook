@@ -8,6 +8,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
+import '../../../utils/platform_guard.dart';
+import '../../../widgets/ios_purchase_unavailable.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -385,6 +387,7 @@ class _UserProfileBoostPageState extends State<UserProfileBoostPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (kIsAppleStore) return const IosPurchaseUnavailableScreen(title: 'Booster mon profil');
     _c = AppColors.of(context);
     final entityLabel = _isGroup ? 'groupe' : _isCanal ? 'canal' : 'profil';
     final entityName = _isGroup

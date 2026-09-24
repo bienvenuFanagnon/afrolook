@@ -4,6 +4,8 @@ import 'package:afrotok/pages/paiement/newDepot.dart';
 import 'package:afrotok/pages/coins/coin_recharge_screen.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:flutter/material.dart';
+import '../../utils/platform_guard.dart';
+import '../../widgets/ios_purchase_unavailable.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/model_data.dart';
@@ -92,6 +94,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
 
   @override
   Widget build(BuildContext context) {
+    if (kIsAppleStore) return const IosPurchaseUnavailableScreen(title: 'Abonnement');
     final colors = AppColors.of(context);
     final authProvider = Provider.of<UserAuthProvider>(context);
     final user = authProvider.loginUserData!;

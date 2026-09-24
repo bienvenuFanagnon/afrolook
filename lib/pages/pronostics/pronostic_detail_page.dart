@@ -12,6 +12,8 @@ import 'package:afrotok/services/postService/feed_interaction_service.dart';
 import 'package:afrotok/services/pronostic_payment_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../../utils/platform_guard.dart';
+import '../../widgets/ios_purchase_unavailable.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 
 import 'package:iconsax/iconsax.dart';
@@ -371,6 +373,13 @@ class _PronosticDetailPageState extends State<PronosticDetailPage> with SingleTi
           _isParticipating = false;
         });
         return;
+      }
+
+      if (pronostic.typeAcces == 'PAYANT' && kIsAppleStore) {
+        setState(() => _isParticipating = false);
+        showIosPurchaseUnavailable(context);
+        return;
+
       }
 
       if (pronostic.typeAcces == 'PAYANT') {

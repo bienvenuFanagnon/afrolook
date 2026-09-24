@@ -25,6 +25,20 @@ class CoinGiftService {
   static const int coinsPerFcfa = 25;   // pour 10 FCFA
   static const int fcfaBase = 10;
 
+  /// Champs de verrouillage à écrire quand [delta] pièces achetées (ou bonus) sont ajoutées :
+  /// ces pièces restent dépensables mais pas convertibles en argent.
+  /// Même calcul que lockFieldsAfterChange (functions/src/shared/coin_locks.ts).
+  static Map<String, int> lockFieldsAfterPurchase(Map<String, dynamic>? user, int delta) {
+    int n(String k) => (user?[k] as num?)?.toInt() ?? 0;
+    final locked = n('lockedCoins');
+    final spentSinceLock = (n('totalGiftCoinsSpent') - n('lockedCoinsSpentBaseline')).clamp(0, 999999999999);
+    final effective = locked <= 0 ? 0 : (locked - spentSinceLock).clamp(0, n('giftCoinsBalance'));
+    return {
+      'lockedCoins': (effective + delta).clamp(0, 999999999999),
+      'lockedCoinsSpentBaseline': n('totalGiftCoinsSpent'),
+    };
+  }
+
   /// Conversion FCFA → pièces (arrondi défavorable à l'utilisateur)
   static int fcfaToCoins(double fcfaAmount) {
     return ((fcfaAmount / fcfaBase) * coinsPerFcfa).floor();
@@ -66,10 +80,8 @@ class CoinGiftService {
       }
 
       // 3️⃣ Vérifier que le destinataire existe (si différent du payeur)
-      if (!isForSelf) {
-        final receiverSnap = await tx.get(receiverRef);
-        if (!receiverSnap.exists) throw Exception('Destinataire introuvable');
-      }
+      final receiverSnap = isForSelf ? payerSnap : await tx.get(receiverRef);
+      if (!receiverSnap.exists) throw Exception('Destinataire introuvable');
 
       // 4️⃣ DÉBITER le payeur sur le solde choisi (dépôt ou gains)
       tx.update(payerRef, {
@@ -78,9 +90,11 @@ class CoinGiftService {
       });
 
       // 5️⃣ CRÉDITER le destinataire en pièces
+      // Pièces achetées : dépensables, mais pas convertibles en argent.
       tx.update(receiverRef, {
         'giftCoinsBalance': FieldValue.increment(coinsAmount),
         'totalGiftCoinsPurchased': FieldValue.increment(coinsAmount),
+        ...lockFieldsAfterPurchase(receiverSnap.data(), coinsAmount),
         'updatedAt': DateTime.now().millisecondsSinceEpoch,
       });
 

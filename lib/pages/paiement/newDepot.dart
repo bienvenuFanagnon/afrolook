@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/utils/platform_guard.dart';
+import 'package:afrotok/pages/coins/apple_coin_store_view.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:flutter/material.dart';
@@ -832,19 +833,22 @@ class _DepositScreenState extends State<DepositScreen> {
                 const Text('🍎', style: TextStyle(fontSize: 48)),
                 const SizedBox(height: 20),
                 Text(
-                  'Non disponible sur iOS',
+                  'Achète des pièces avec l\'App Store',
                   style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 18),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Le rechargement par Mobile Money n\'est pas disponible sur iOS. Utilisez l\'application web ou Android pour recharger votre solde.',
+                  'Sur iPhone, les pièces s\'achètent directement dans l\'app, avec un paiement sécurisé par l\'App Store.',
                   style: TextStyle(color: colors.textSecondary, fontSize: 14, height: 1.5),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 28),
                 ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () => Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AppleCoinStoreView()),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: colors.primary,
                     foregroundColor: colors.onPrimary,
@@ -852,7 +856,7 @@ class _DepositScreenState extends State<DepositScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
                     elevation: 0,
                   ),
-                  child: const Text('Retour', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text('Acheter des pièces', style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
